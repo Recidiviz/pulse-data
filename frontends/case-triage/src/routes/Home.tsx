@@ -37,6 +37,7 @@ import {
   trackSearchBarEnterPressed,
   trackSearchBarFocused,
 } from "../analytics";
+import { device } from "../components/styles";
 
 const Container = styled.div`
   display: flex;
@@ -47,12 +48,21 @@ const Container = styled.div`
 `;
 
 const Left = styled.div`
-  width: 700px;
+  width: 100%;
+
+  @media ${device.desktop} {
+    width: 700px;
+  }
 `;
 
 const Right = styled.div`
   padding-left: ${rem(spacing.xl)};
-  width: 555px;
+  display: none;
+
+  @media ${device.desktop} {
+    display: block;
+    width: 555px;
+  }
 `;
 
 const ReloadButton = styled(Button)`

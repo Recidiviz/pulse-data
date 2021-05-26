@@ -23,10 +23,12 @@ import { DecoratedClient } from "../../stores/ClientsStore";
 import { useRootStore } from "../../stores";
 import {
   ClientListCardElement,
+  ClientNameSupervisionLevel,
   ClientNeed,
   FirstCardSection,
   InProgressIndicator,
   MainText,
+  MobileClientIcons,
   NeedsIconsCardSection,
   NextActionCardSection,
   PendingText,
@@ -92,14 +94,65 @@ const TertiaryText = observer(({ client }: TertiaryTextProps): JSX.Element => {
   return <DueDate date={getNextContactDate(client)} />;
 });
 
-const ClientComponent: React.FC<ClientProps> = observer(
-  ({ client }: ClientProps) => {
-    const { clientsStore, opportunityStore, policyStore } = useRootStore();
-    const cardRef = React.useRef<HTMLDivElement>(null);
+const ClientCardIcons: React.FC<ClientProps> = observer(
+  ({ client }: ClientProps): JSX.Element => {
+    const { opportunityStore } = useRootStore();
 
     const topOpp = opportunityStore.getTopOpportunityForClient(
       client.personExternalId
     );
+
+    return (
+      <>
+        {topOpp ? (
+          <Tooltip
+            key={topOpp.opportunityType}
+            title={OPPORTUNITY_TITLES[topOpp.opportunityType]}
+          >
+            <ClientNeed kind={IconSVG.Star} state={NeedState.NOT_MET} />
+          </Tooltip>
+        ) : null}
+        <Tooltip
+          title={client.needsMet.employment ? "Employed" : "Employment Missing"}
+        >
+          <ClientNeed
+            kind={IconSVG.NeedsEmployment}
+            state={getNeedsMetState(client.needsMet, "employment")}
+          />
+        </Tooltip>
+        <Tooltip
+          title={
+            client.needsMet.assessment
+              ? "Risk Assessment Up to Date"
+              : "Risk Assessment Needed"
+          }
+        >
+          <ClientNeed
+            kind={IconSVG.NeedsRiskAssessment}
+            state={getNeedsMetState(client.needsMet, "assessment")}
+          />
+        </Tooltip>
+        <Tooltip
+          title={
+            client.needsMet.faceToFaceContact
+              ? "Face to Face Contact Up to Date"
+              : "Face to Face Contact Needed"
+          }
+        >
+          <ClientNeed
+            kind={IconSVG.NeedsContact}
+            state={getNeedsMetState(client.needsMet, "faceToFaceContact")}
+          />
+        </Tooltip>
+      </>
+    );
+  }
+);
+
+const ClientComponent: React.FC<ClientProps> = observer(
+  ({ client }: ClientProps) => {
+    const { clientsStore, policyStore } = useRootStore();
+    const cardRef = React.useRef<HTMLDivElement>(null);
 
     const viewClient = React.useCallback(() => {
       clientsStore.view(
@@ -132,14 +185,12 @@ const ClientComponent: React.FC<ClientProps> = observer(
 
     const omsName = policyStore.policies?.omsName || "OMS";
 
+    const active =
+      clientsStore.activeClient?.personExternalId === client.personExternalId;
+
     return (
       <ClientListCardElement
-        className={
-          clientsStore.activeClient?.personExternalId ===
-          client.personExternalId
-            ? "client-card--active"
-            : ""
-        }
+        className={active ? "client-card--active" : ""}
         ref={cardRef}
         onClick={() => {
           trackPersonSelected(client);
@@ -147,63 +198,25 @@ const ClientComponent: React.FC<ClientProps> = observer(
         }}
       >
         <FirstCardSection className="fs-exclude">
-          <MainText>{client.name}</MainText>
-          <SecondaryText>
-            {titleCase(client.supervisionType)},{" "}
-            {titleCase(client.supervisionLevelText)}
-          </SecondaryText>
+          <ClientNameSupervisionLevel>
+            <MainText>{client.name}</MainText>
+            <SecondaryText>
+              {titleCase(client.supervisionType)},{" "}
+              {titleCase(client.supervisionLevelText)}
+            </SecondaryText>
+          </ClientNameSupervisionLevel>
+          <MobileClientIcons>
+            <ClientCardIcons client={client} />
+          </MobileClientIcons>
         </FirstCardSection>
-        <NeedsIconsCardSection>
-          <TertiaryText client={client} />
-        </NeedsIconsCardSection>
         <NextActionCardSection>
-          {topOpp ? (
-            <Tooltip
-              key={topOpp.opportunityType}
-              title={OPPORTUNITY_TITLES[topOpp.opportunityType]}
-            >
-              <ClientNeed kind={IconSVG.Star} state={NeedState.NOT_MET} />
-            </Tooltip>
-          ) : null}
-          <Tooltip
-            title={
-              client.needsMet.employment ? "Employed" : "Employment Missing"
-            }
-          >
-            <ClientNeed
-              kind={IconSVG.NeedsEmployment}
-              state={getNeedsMetState(client.needsMet, "employment")}
-            />
-          </Tooltip>
-          <Tooltip
-            title={
-              client.needsMet.assessment
-                ? "Risk Assessment Up to Date"
-                : "Risk Assessment Needed"
-            }
-          >
-            <ClientNeed
-              kind={IconSVG.NeedsRiskAssessment}
-              state={getNeedsMetState(client.needsMet, "assessment")}
-            />
-          </Tooltip>
-          <Tooltip
-            title={
-              client.needsMet.faceToFaceContact
-                ? "Face to Face Contact Up to Date"
-                : "Face to Face Contact Needed"
-            }
-          >
-            <ClientNeed
-              kind={IconSVG.NeedsContact}
-              state={
-                client.needsMet.faceToFaceContact
-                  ? NeedState.MET
-                  : NeedState.NOT_MET
-              }
-            />
-          </Tooltip>
+          <TertiaryText client={client} />
         </NextActionCardSection>
+
+        <NeedsIconsCardSection>
+          <ClientCardIcons client={client} />
+        </NeedsIconsCardSection>
+
         {numInProgressActions > 0 ? (
           <Tooltip
             title={

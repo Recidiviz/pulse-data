@@ -26,8 +26,11 @@ import { rem } from "polished";
 import NeedsCorrectionDropdown from "../NeedsActionFlow/NeedsCorrectionDropdown";
 
 export const CaseCard = styled(Card)`
-  box-shadow: 0px 15px 40px rgba(53, 83, 98, 0.3),
-    inset 0px -1px 1px rgba(19, 44, 82, 0.2);
+  // Override base <Card/> shadow
+  && {
+    box-shadow: 0px 15px 40px rgba(53, 83, 98, 0.3),
+      inset 0px -1px 1px rgba(19, 44, 82, 0.2);
+  }
 `;
 
 export const CaseCardSection = styled(CardSection)`
