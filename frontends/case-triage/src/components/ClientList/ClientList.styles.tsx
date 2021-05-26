@@ -25,6 +25,7 @@ import {
   palette,
   spacing,
 } from "@recidiviz/design-system";
+import { device } from "../styles";
 
 export const ClientNeed = styled(Need)`
   margin-left: ${rem(spacing.md)};
@@ -42,9 +43,19 @@ export const ClientListCardElement = styled(Card).attrs(
     };
   }
 )`
-  padding: ${rem(spacing.lg)};
   position: relative;
   min-height: 92px;
+
+  // Override base <Card/> flex-direction
+  && {
+    flex-direction: column;
+  }
+
+  @media ${device.desktop} {
+    && {
+      flex-direction: row;
+    }
+  }
 
   &:hover,
   &:focus {
@@ -77,27 +88,53 @@ export const SecondaryText = styled.span`
   color: ${palette.slate70};
 `;
 
-export const FlexCardSection = styled(CardSection)`
+export const BaseCardSection = styled(CardSection)`
+  padding: ${rem(spacing.lg)};
+`;
+
+export const FlexCardSection = styled(BaseCardSection)`
   display: flex;
   align-items: center;
 `;
 
 export const FirstCardSection = styled(FlexCardSection)`
   display: flex;
+  justify-content: space-between
+  flex: 0 0 30% !important;
+  border-bottom: 1px solid ${palette.slate20};
+  
+  @media ${device.desktop} {
+    border-bottom: none;
+  }
+`;
+
+export const ClientNameSupervisionLevel = styled.div`
+  display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
-
-  flex: 0 0 30% !important;
 `;
 
 export const NextActionCardSection = styled(FlexCardSection)`
-  flex: 0 0 30% !important;
-  justify-content: flex-end;
+  flex: 0 1 40% !important;
 `;
 
 export const NeedsIconsCardSection = styled(FlexCardSection)`
-  flex: 0 1 40% !important;
+  flex: 0 0 30% !important;
+  justify-content: flex-end;
+  display: none;
+
+  @media ${device.desktop} {
+    display: flex;
+  }
+`;
+
+export const MobileClientIcons = styled.div`
+  margin-left: auto;
+  display: flex;
+  @media ${device.desktop} {
+    display: none;
+  }
 `;
 
 export const FirstClientListHeading = styled(H2)`
