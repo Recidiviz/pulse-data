@@ -11,9 +11,9 @@ products:
       - state_code: US_WW
         environment: staging
   - name: Test State Agnostic Product
-    is_state_agnostic: True
     exports:
       - MOCK_EXPORT_NAME
+    states: []
     environment:
       staging
   - name: Test Product Without Exports
