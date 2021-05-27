@@ -17,24 +17,24 @@
 """A class to manage all SQLAlchemy Engines for our database instances."""
 import logging
 import os.path
-from typing import Any, Dict, Optional, List, Set
+from typing import Any, Dict, List, Optional, Set
 
-from opencensus.stats import aggregation, measure, view
 import sqlalchemy
-from sqlalchemy.engine import Engine
+from opencensus.stats import aggregation, measure, view
+from sqlalchemy.engine import Engine, create_engine
 
 from recidiviz.persistence.database.constants import (
-    SQLALCHEMY_DB_NAME,
     SQLALCHEMY_DB_HOST,
-    SQLALCHEMY_DB_USER,
+    SQLALCHEMY_DB_NAME,
     SQLALCHEMY_DB_PASSWORD,
-    SQLALCHEMY_USE_SSL,
+    SQLALCHEMY_DB_USER,
     SQLALCHEMY_SSL_CERT_PATH,
     SQLALCHEMY_SSL_KEY_PATH,
+    SQLALCHEMY_USE_SSL,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.utils import monitoring, secrets, environment
+from recidiviz.utils import environment, monitoring, secrets
 
 m_failed_engine_initialization = measure.MeasureInt(
     "persistence/database/sqlalchemy_engine_initialization_failures",
@@ -429,3 +429,23 @@ class SQLAlchemyEngineManager:
             cloudsql_instance_id=cloudsql_instance_id,
         )
         return sqlalchemy_url
+
+    @classmethod
+    @environment.local_only
+    def get_engine_for_database_with_ssl_certs(
+        cls, *, database_key: SQLAlchemyDatabaseKey, ssl_cert_path: str
+    ) -> Engine:
+        db_user = cls._get_db_user(database_key=database_key)
+        db_password = cls._get_db_password(database_key=database_key)
+        host_name = cls._get_db_host(database_key=database_key)
+        db_name = database_key.db_name
+
+        return create_engine(
+            f"postgresql://{db_user}:{db_password}@{host_name}/{db_name}",
+            connect_args={
+                "sslmode": "require",
+                "sslcert": os.path.join(ssl_cert_path, "client-cert.pem"),
+                "sslkey": os.path.join(ssl_cert_path, "client-key.pem"),
+                "sslrootcert": os.path.join(ssl_cert_path, "server-ca.pem"),
+            },
+        )
