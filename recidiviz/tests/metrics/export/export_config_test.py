@@ -30,7 +30,9 @@ from recidiviz.metrics.export.export_config import (
     VIEW_COLLECTION_EXPORT_INDEX,
     ProductConfig,
     ProductStateConfig,
-    PRODUCTS_CONFIG_PATH,
+    ProductConfigs,
+    ProductExportConfig,
+    BadProductExportSpecificationError,
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.tests.ingest import fixtures
@@ -39,10 +41,62 @@ from recidiviz.tests.ingest import fixtures
 class TestProductConfig(unittest.TestCase):
     """Tests the functionality of the ProductConfig class."""
 
-    def test_product_configs_from_file(self) -> None:
-        product_configs = ProductConfig.product_configs_from_file(
-            fixtures.as_filepath("fixture_products.yaml")
+    def test_product_config_valid(self) -> None:
+        _ = ProductConfig(
+            name="Test Product",
+            exports=["EXPORT", "OTHER_EXPORT"],
+            states=[
+                ProductStateConfig(state_code="US_XX", environment="production"),
+                ProductStateConfig(state_code="US_WW", environment="staging"),
+            ],
+            environment=None,
+            is_state_agnostic=False,
         )
+
+    def test_product_config_invalid_environment(self) -> None:
+        with self.assertRaises(ValueError):
+            _ = ProductConfig(
+                name="Test Product",
+                exports=["EXPORT", "OTHER_EXPORT"],
+                states=[
+                    ProductStateConfig(state_code="US_XX", environment="production"),
+                    ProductStateConfig(state_code="US_WW", environment="staging"),
+                ],
+                environment="production",
+                is_state_agnostic=False,
+            )
+
+    def test_product_config_invalid_is_state_agnostic(self) -> None:
+        with self.assertRaises(ValueError):
+            _ = ProductConfig(
+                name="Test Product",
+                exports=["EXPORT", "OTHER_EXPORT"],
+                states=[
+                    ProductStateConfig(state_code="US_XX", environment="production"),
+                    ProductStateConfig(state_code="US_WW", environment="staging"),
+                ],
+                environment="production",
+                is_state_agnostic=True,
+            )
+
+        with self.assertRaises(ValueError):
+            _ = ProductConfig(
+                name="Test Product",
+                exports=["EXPORT", "OTHER_EXPORT"],
+                states=None,
+                environment="production",
+                is_state_agnostic=False,
+            )
+
+
+class TestProductConfigs(unittest.TestCase):
+    """Tests the functionality of the ProductConfigs class."""
+
+    def test_from_file(self) -> None:
+        product_configs = ProductConfigs.from_file(
+            path=fixtures.as_filepath("fixture_products.yaml")
+        )
+
         expected_product_configs = [
             ProductConfig(
                 name="Test Product",
@@ -52,25 +106,74 @@ class TestProductConfig(unittest.TestCase):
                     ProductStateConfig(state_code="US_WW", environment="staging"),
                 ],
                 environment=None,
+                is_state_agnostic=False,
             ),
             ProductConfig(
                 name="Test State Agnostic Product",
                 exports=["MOCK_EXPORT_NAME"],
-                states=[],
+                states=None,
                 environment="staging",
+                is_state_agnostic=True,
             ),
             ProductConfig(
                 name="Test Product Without Exports",
                 exports=[],
                 states=[ProductStateConfig(state_code="US_XX", environment="staging")],
                 environment=None,
+                is_state_agnostic=False,
             ),
         ]
 
-        self.assertEqual(expected_product_configs, product_configs)
+        self.assertEqual(expected_product_configs, product_configs.products)
+        self.assertEqual(expected_product_configs, product_configs.products)
 
-    def test_product_configs_from_product_config_file(self) -> None:
-        _product_configs = ProductConfig.product_configs_from_file(PRODUCTS_CONFIG_PATH)
+    def test_get_all_product_export_configs(self) -> None:
+        product_configs = ProductConfigs.from_file(
+            path=fixtures.as_filepath("fixture_products.yaml")
+        )
+        export_configs = product_configs.get_all_export_configs()
+        expected = [
+            ProductExportConfig(export_job_name="EXPORT", state_code="US_XX"),
+            ProductExportConfig(export_job_name="EXPORT", state_code="US_WW"),
+            ProductExportConfig(export_job_name="OTHER_EXPORT", state_code="US_XX"),
+            ProductExportConfig(export_job_name="OTHER_EXPORT", state_code="US_WW"),
+            ProductExportConfig(export_job_name="MOCK_EXPORT_NAME", state_code=None),
+        ]
+        self.assertEqual(expected, export_configs)
+
+    def test_get_export_config_valid(self) -> None:
+        product_configs = ProductConfigs.from_file(
+            path=fixtures.as_filepath("fixture_products.yaml")
+        )
+        _export_config = product_configs.get_export_config(
+            export_job_name="EXPORT",
+            state_code="US_XX",
+        )
+
+    def test_get_export_config_missing_state_code(self) -> None:
+        product_configs = ProductConfigs.from_file(
+            path=fixtures.as_filepath("fixture_products.yaml")
+        )
+        with self.assertRaisesRegex(
+            BadProductExportSpecificationError,
+            "Missing required state_code parameter for export_job_name EXPORT",
+        ):
+            product_configs.get_export_config(
+                export_job_name="EXPORT",
+            )
+
+    def test_get_export_config_too_many_exports(self) -> None:
+        product_configs = ProductConfigs.from_file(
+            path=fixtures.as_filepath("fixture_products.yaml")
+        )
+        product_configs.products.append(product_configs.products[0])
+        with self.assertRaisesRegex(
+            BadProductExportSpecificationError,
+            "Wrong number of products returned for export for export_job_name EXPORT",
+        ):
+            product_configs.get_export_config(
+                export_job_name="EXPORT",
+            )
 
 
 class TestExportViewCollectionConfig(unittest.TestCase):
@@ -233,10 +336,10 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             bq_view_namespace=self.mock_big_query_view_namespace,
         )
 
-        mock_export_job_filter = "US_XX"
+        mock_state_code = "US_XX"
 
         view_configs_to_export = lantern_dashboard_with_state_dataset_export_config.export_configs_for_views_to_export(
-            project_id=self.mock_project_id, state_code_filter=mock_export_job_filter
+            project_id=self.mock_project_id, state_code_filter=mock_state_code
         )
 
         expected_view = self.mock_view_builder.build()
