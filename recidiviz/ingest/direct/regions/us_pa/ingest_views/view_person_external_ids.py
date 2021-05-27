@@ -35,6 +35,7 @@ SELECT
 FROM recidiviz_master_person_ids
 GROUP BY recidiviz_master_person_id;"""
 
+# TODO(#7222): Delete this view once person_external_ids_v2 has shipped to prod
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_pa",
     ingest_view_name="person_external_ids",

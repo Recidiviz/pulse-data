@@ -1,4 +1,3 @@
-# TODO(#7222): Delete this once doc_person_info_v2 has shipped to prod
 key_mappings:
   Lst_Nm: state_person.surname
   Frst_Nm: state_person.given_names

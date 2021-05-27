@@ -21,8 +21,8 @@
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestViewBuilder,
 )
-from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids import (
-    MASTER_STATE_IDS_FRAGMENT,
+from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids_v2 import (
+    MASTER_STATE_IDS_FRAGMENT_V2,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -30,7 +30,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = f"""
 WITH 
-{MASTER_STATE_IDS_FRAGMENT},
+{MASTER_STATE_IDS_FRAGMENT_V2},
 movements_base AS (
   SELECT
       recidiviz_master_person_id,

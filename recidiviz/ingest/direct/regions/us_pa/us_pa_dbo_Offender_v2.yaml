@@ -1,4 +1,3 @@
-# TODO(#7222): Delete this once Offender_v2 has shipped to prod
 key_mappings:
   ParoleNumber: state_person.state_person_id
   OffSex: state_person.gender
