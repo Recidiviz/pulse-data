@@ -23,7 +23,7 @@ from typing import Optional
 from unittest import mock
 
 import flask
-from mock import ANY, Mock, create_autospec
+from mock import Mock, create_autospec
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.bq_refresh import cloud_sql_to_bq_refresh_control
@@ -591,37 +591,6 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             message=message, topic=topic
         )
         self.assertFalse(self.mock_lock_manager.is_locked(SchemaType.STATE))
-
-    # TODO(#7397): Delete this test once federated export ships to production.
-    @mock.patch(
-        "recidiviz.utils.environment.get_gcp_environment",
-        Mock(return_value="production"),
-    )
-    def test_legacy_create_refresh_bq_tasks_state(
-        self,
-    ) -> None:
-        # Arrange
-        mock_table = Mock()
-        mock_table.name = "test_table"
-        self.mock_bq_refresh_config.get_tables_to_export.return_value = [mock_table]
-
-        # Act
-        response = self.mock_flask_client.get(
-            "/create_refresh_bq_tasks/state",
-            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
-        )
-
-        # Assert
-        self.assertIsOnlySchemaLocked(SchemaType.STATE)
-
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.mock_bq_refresh_config.for_schema_type.assert_called_with(SchemaType.STATE)
-        self.mock_task_manager.create_refresh_bq_table_task.assert_called_with(
-            "test_table", SchemaType.STATE
-        )
-        self.mock_task_manager.create_bq_refresh_monitor_task.assert_called_with(
-            SchemaType.STATE.value, "v1.calculator.trigger_daily_pipelines", ANY
-        )
 
     # TODO(#7397): Change this environment when federated export ships to production.
     @mock.patch(
