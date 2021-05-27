@@ -115,11 +115,11 @@ found in `us_ww_raw_data_up_to_date_views`.
 
 First raw file.
 
-|      Column       |                                                                     Column Description                                                                      |Part of Primary Key?|                          Distinct Values                           |
-|-------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|--------------------------------------------------------------------|
-|col_name_1a        |First column.                                                                                                                                                |YES                 |<b>VAL1: </b> value 1, <b>VAL2: </b> value 2, <b>UNKWN: </b> Unknown|
-|col_name_1b        |A column description that is long enough to take up multiple lines. This text block will be interpreted literally and trailing/leading whitespace is removed.|YES                 |N/A                                                                 |
-|undocumented_column|<No documentation>                                                                                                                                           |                    |N/A                                                                 |
+|      Column       |                                                                     Column Description                                                                      |Part of Primary Key?|                               Distinct Values                                |
+|-------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|------------------------------------------------------------------------------|
+|col_name_1a        |First column.                                                                                                                                                |YES                 |<b>VAL1: </b> value 1, <br/><b>VAL2: </b> value 2, <br/><b>UNKWN: </b> Unknown|
+|col_name_1b        |A column description that is long enough to take up multiple lines. This text block will be interpreted literally and trailing/leading whitespace is removed.|YES                 |N/A                                                                           |
+|undocumented_column|<No documentation>                                                                                                                                           |                    |N/A                                                                           |
 """
 
         expected_tag_columns_missing = """## tagColumnsMissing
