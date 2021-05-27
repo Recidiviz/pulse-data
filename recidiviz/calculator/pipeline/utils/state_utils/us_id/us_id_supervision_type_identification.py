@@ -25,8 +25,8 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
     NonRevocationReturnSupervisionTimeBucket,
     RevocationReturnSupervisionTimeBucket,
 )
-from recidiviz.calculator.pipeline.utils.supervision_period_index import (
-    SupervisionPeriodIndex,
+from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
+    PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     get_supervision_periods_from_sentences,
@@ -216,7 +216,7 @@ def us_id_supervision_period_is_out_of_state(
 
 def us_id_get_supervision_period_admission_override(
     supervision_period: StateSupervisionPeriod,
-    supervision_period_index: SupervisionPeriodIndex,
+    supervision_period_index: PreProcessedSupervisionPeriodIndex,
 ) -> Optional[StateSupervisionPeriodAdmissionReason]:
     """Looks at the provided |supervision_period| and all supervision periods for this person via the
     |supervision_period_index| and returns the (potentially updated) admission reason for this |supervision period|.

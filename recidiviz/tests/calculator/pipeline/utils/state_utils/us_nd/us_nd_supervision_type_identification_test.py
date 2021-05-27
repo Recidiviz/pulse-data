@@ -21,16 +21,16 @@ from typing import Optional
 
 import pytest
 
-from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
-    IncarcerationPeriodIndex,
+from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
+    PreProcessedIncarcerationPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_type_identification import (
     us_nd_get_post_incarceration_supervision_type,
     us_nd_infer_supervision_period_admission,
     us_nd_get_pre_commitment_supervision_type,
 )
-from recidiviz.calculator.pipeline.utils.supervision_period_index import (
-    SupervisionPeriodIndex,
+from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
+    PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -301,11 +301,11 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             )
         )
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[current_supervision_period]
         )
 
-        incarceration_period_index = IncarcerationPeriodIndex(
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
             incarceration_periods=[previous_incarceration_period]
         )
 
@@ -347,14 +347,16 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             )
         )
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[
                 previous_supervision_period,
                 current_supervision_period,
             ]
         )
 
-        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[])
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[]
+        )
 
         admission_reason: Optional[
             StateSupervisionPeriodAdmissionReason
@@ -397,14 +399,16 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             )
         )
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[
                 previous_supervision_period,
                 current_supervision_period,
             ]
         )
 
-        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[])
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[]
+        )
 
         admission_reason: Optional[
             StateSupervisionPeriodAdmissionReason
@@ -447,14 +451,16 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             )
         )
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[
                 previous_supervision_period,
                 current_supervision_period,
             ]
         )
 
-        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[])
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[]
+        )
 
         admission_reason: Optional[
             StateSupervisionPeriodAdmissionReason
@@ -485,13 +491,15 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             )
         )
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[
                 current_supervision_period,
             ]
         )
 
-        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[])
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[]
+        )
 
         admission_reason: Optional[
             StateSupervisionPeriodAdmissionReason
@@ -522,13 +530,15 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             )
         )
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[
                 current_supervision_period,
             ]
         )
 
-        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[])
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[]
+        )
 
         admission_reason: Optional[
             StateSupervisionPeriodAdmissionReason
@@ -559,13 +569,15 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             )
         )
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[
                 current_supervision_period,
             ]
         )
 
-        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[])
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[]
+        )
 
         admission_reason: Optional[
             StateSupervisionPeriodAdmissionReason
@@ -610,14 +622,16 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             )
         )
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[
                 previous_supervision_period,
                 current_supervision_period,
             ]
         )
 
-        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[])
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[]
+        )
 
         admission_reason: Optional[
             StateSupervisionPeriodAdmissionReason
@@ -662,14 +676,16 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             )
         )
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[
                 previous_supervision_period,
                 current_supervision_period,
             ]
         )
 
-        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[])
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[]
+        )
 
         admission_reason: Optional[
             StateSupervisionPeriodAdmissionReason
@@ -714,14 +730,16 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             )
         )
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[
                 previous_supervision_period,
                 current_supervision_period,
             ]
         )
 
-        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[])
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[]
+        )
 
         admission_reason: Optional[
             StateSupervisionPeriodAdmissionReason

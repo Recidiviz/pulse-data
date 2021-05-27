@@ -36,10 +36,14 @@ from recidiviz.calculator.pipeline.recidivism.release_event import (
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     extract_county_of_residence_from_rows,
 )
-from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
-    prepare_incarceration_periods_for_calculations,
-    drop_temporary_custody_periods,
-    IncarcerationPreProcessingConfig,
+from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
+    IncarcerationPreProcessingManager,
+)
+from recidiviz.calculator.pipeline.utils.period_utils import (
+    find_earliest_date_of_period_ending_in_death,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
+    get_state_specific_incarceration_period_pre_processing_delegate,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
@@ -51,6 +55,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason as ReleaseReason,
 )
 from recidiviz.common.date import DateRange, DateRangeDiff
+from recidiviz.persistence.entity.entity_utils import get_single_state_code
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
 )
@@ -93,9 +98,29 @@ def find_release_events_by_cohort_year(
         persons_to_recent_county_of_residence
     )
 
-    incarceration_periods = prepare_incarceration_periods_for_recidivism_calculations(
-        incarceration_periods
+    state_code = get_single_state_code(incarceration_periods)
+
+    state_ip_pre_processing_manager_delegate = (
+        get_state_specific_incarceration_period_pre_processing_delegate(state_code)
     )
+
+    # The IP pre-processing function needs to know if this person has any periods that
+    # ended because of death to handle any open periods or periods that extend past
+    # their death date accordingly.
+    earliest_death_date: Optional[date] = find_earliest_date_of_period_ending_in_death(
+        periods=incarceration_periods
+    )
+
+    ip_pre_processing_manager = IncarcerationPreProcessingManager(
+        incarceration_periods,
+        state_ip_pre_processing_manager_delegate,
+        earliest_death_date,
+    )
+
+    incarceration_periods = ip_pre_processing_manager.pre_processed_incarceration_period_index_for_calculations(
+        collapse_transfers=True,
+        overwrite_facility_information_in_transfers=True,
+    ).incarceration_periods
 
     for index, incarceration_period in enumerate(incarceration_periods):
         state_code = incarceration_period.state_code
@@ -179,31 +204,6 @@ def find_release_events_by_cohort_year(
                 release_events[release_cohort].append(event)
 
     return release_events
-
-
-def prepare_incarceration_periods_for_recidivism_calculations(
-    incarceration_periods: List[StateIncarcerationPeriod],
-) -> List[StateIncarcerationPeriod]:
-    """Returns a filtered list of the provided |incarceration_periods| to be used for recidivism calculation."""
-
-    ip_pre_processing_config = IncarcerationPreProcessingConfig(
-        drop_temporary_custody_periods=False,
-        drop_non_state_prison_incarceration_type_periods=False,
-        collapse_transfers=True,
-        collapse_temporary_custody_periods_with_revocation=True,
-        collapse_transfers_with_different_pfi=True,
-        overwrite_facility_information_in_transfers=True,
-    )
-
-    incarceration_periods = prepare_incarceration_periods_for_calculations(
-        incarceration_periods, ip_pre_processing_config
-    )
-
-    # TODO(#2936): Consider not dropping temporary custody periods when we want to use the recidivism output for states
-    #  that may have temporary custody periods at this point (currently just US_MO).
-    incarceration_periods = drop_temporary_custody_periods(incarceration_periods)
-
-    return incarceration_periods
 
 
 def find_valid_reincarceration_period(

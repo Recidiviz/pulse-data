@@ -34,8 +34,10 @@ from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
 
 @attr.s
-class SupervisionPeriodIndex:
-    """A class for caching information about a set of supervision periods for use in the calculation pipelines."""
+class PreProcessedSupervisionPeriodIndex:
+    """A class for caching information about a set of pre-processed supervision periods
+    for use in the calculation pipelines.
+    """
 
     supervision_periods: List[StateSupervisionPeriod] = attr.ib(
         converter=standard_date_sort_for_supervision_periods

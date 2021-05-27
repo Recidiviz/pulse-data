@@ -18,6 +18,7 @@
 # pylint: disable=unused-import,wrong-import-order
 
 """Tests for recidivism/identifier.py."""
+from unittest import mock
 
 import pytest
 import unittest
@@ -41,7 +42,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason as ReleaseReason,
 )
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
-
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
+    UsXxIncarcerationPreProcessingDelegate,
+)
 
 _COUNTY_OF_RESIDENCE = "county"
 _COUNTY_OF_RESIDENCE_ROWS = [
@@ -55,6 +58,19 @@ _COUNTY_OF_RESIDENCE_ROWS = [
 
 class TestClassifyReleaseEvents(unittest.TestCase):
     """Tests for the find_release_events_by_cohort_year function."""
+
+    def setUp(self) -> None:
+        self.pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.recidivism.identifier"
+            ".get_state_specific_incarceration_period_pre_processing_delegate"
+        )
+        self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
+        self.mock_pre_processing_delegate.return_value = (
+            UsXxIncarcerationPreProcessingDelegate()
+        )
+
+    def tearDown(self) -> None:
+        self.pre_processing_delegate_patcher.stop()
 
     def testFindReleaseEventsByCohortYear_usNd_ignoreTemporaryCustody(self):
         """Tests the find_release_events_by_cohort_year function for US_ND where temporary custody periods are
@@ -137,9 +153,11 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_events_by_cohort[2010],
         )
 
-    def testFindReleaseEventsByCohortYear_collapseTemporaryCustodyAndRevocation(self):
-        """Tests the find_release_events_by_cohort_year function where a temporary custody incarceration period
-        is followed by a revocation period. In this test case the person did recidivate.
+    def testFindReleaseEventsByCohortYear_ParoleBoardHoldThenRevocation(self):
+        """Tests the find_release_events_by_cohort_year function where a parole board
+        hold period is followed by a revocation period. In this test case the person
+        did recidivate, and the revocation admission should be counted as the date of
+        reincarceration.
         """
         initial_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -194,7 +212,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                     original_admission_date=initial_incarceration_period.admission_date,
                     release_date=initial_incarceration_period.release_date,
                     release_facility=None,
-                    reincarceration_date=temporary_custody_reincarceration.admission_date,
+                    reincarceration_date=revocation_incarceration_period.admission_date,
                     reincarceration_facility=None,
                     county_of_residence=_COUNTY_OF_RESIDENCE,
                 )

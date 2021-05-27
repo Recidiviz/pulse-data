@@ -26,19 +26,34 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
     RevocationReturnSupervisionTimeBucket,
 )
 from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
-from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
-    IncarcerationPeriodIndex,
+from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
+    PreProcessedIncarcerationPeriodIndex,
+)
+from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
+    StateSpecificIncarcerationPreProcessingDelegate,
 )
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     period_edges_are_valid_transfer,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_period_pre_processing_delegate import (
+    UsIdIncarcerationPreProcessingDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_incarceration_period_pre_processing_delegate import (
+    UsMoIncarcerationPreProcessingDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd import us_nd_violation_utils
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_utils import (
     us_nd_pre_commitment_supervision_period_if_commitment,
     us_nd_violation_history_window_pre_commitment_from_supervision,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_period_pre_processing_delegate import (
+    UsNdIncarcerationPreProcessingDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from_supervision_utils import (
     us_pa_pre_commitment_supervision_period_if_commitment,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_period_pre_processing_delegate import (
+    UsPaIncarcerationPreProcessingDelegate,
 )
 from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
@@ -72,8 +87,8 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa import (
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_compliance import (
     UsPaSupervisionCaseCompliance,
 )
-from recidiviz.calculator.pipeline.utils.supervision_period_index import (
-    SupervisionPeriodIndex,
+from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
+    PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     get_commitment_from_supervision_supervision_period,
@@ -138,28 +153,6 @@ def supervision_types_mutually_exclusive_for_state(state_code: str) -> bool:
     return state_code.upper() in ("US_ID", "US_MO")
 
 
-def drop_temporary_custody_periods(state_code: str) -> bool:
-    """Whether or not incarceration periods with an admission_reason of TEMPORARY_CUSTODY
-    should be dropped from calculations.
-    - US_ID: False
-    - US_MO: False
-    - US_ND: True
-    - US_PA: False
-    """
-    return state_code.upper() == "US_ND"
-
-
-def drop_non_state_prison_incarceration_type_periods(state_code: str) -> bool:
-    """Whether or not incarceration periods that aren't in a STATE_PRISON
-    should be dropped from calculations.
-    - US_ID: False
-    - US_MO: True
-    - US_ND: False
-    - US_PA: False
-    """
-    return state_code.upper() == "US_MO"
-
-
 def investigation_periods_in_supervision_population(_state_code: str) -> bool:
     """Whether or not supervision periods that have a supervision_period_supervision_type of INVESTIGATION should be
     counted in the supervision calculations.
@@ -169,21 +162,6 @@ def investigation_periods_in_supervision_population(_state_code: str) -> bool:
         - US_PA: False
     """
     return False
-
-
-def should_collapse_transfers_different_purposes_for_incarceration(
-    state_code: str,
-) -> bool:
-    """Whether or not incarceration periods that are connected by a TRANSFER release and a TRANSFER admission should
-    be collapsed into one period if they have different specialized_purpose_for_incarceration values.
-        - US_ID: False
-            We need the dates of transfers from parole board holds and treatment custody to identify revocations
-            in US_ID.
-        - US_MO: True
-        - US_ND: True
-        - US_PA: True
-    """
-    return state_code.upper() != "US_ID"
 
 
 def filter_out_federal_and_other_country_supervision_periods(_state_code: str) -> bool:
@@ -531,6 +509,23 @@ def get_state_specific_case_compliance_manager(
     return None
 
 
+def get_state_specific_incarceration_period_pre_processing_delegate(
+    state_code: str,
+) -> StateSpecificIncarcerationPreProcessingDelegate:
+    """Returns the type of IncarcerationPreProcessingManager that should be used for
+    pre-processing StateIncarcerationPeriod entities from a given |state_code|."""
+    if state_code == StateCode.US_ID.value:
+        return UsIdIncarcerationPreProcessingDelegate()
+    if state_code == StateCode.US_ND.value:
+        return UsNdIncarcerationPreProcessingDelegate()
+    if state_code == StateCode.US_MO.value:
+        return UsMoIncarcerationPreProcessingDelegate()
+    if state_code == StateCode.US_PA.value:
+        return UsPaIncarcerationPreProcessingDelegate()
+
+    raise ValueError(f"Unexpected state code [{state_code}]")
+
+
 # TODO(#3829): Remove this helper once we've built level 1/level 2 supervision location distinction directly into our
 #  schema (info currently packed into supervision_site for states that have both).
 def get_supervising_officer_and_location_info_from_supervision_period(
@@ -717,7 +712,7 @@ def pre_commitment_supervision_period_if_commitment(
     state_code: str,
     incarceration_period: StateIncarcerationPeriod,
     supervision_periods: List[StateSupervisionPeriod],
-    incarceration_period_index: IncarcerationPeriodIndex,
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
 ) -> Tuple[bool, Optional[StateSupervisionPeriod]]:
     """If the incarceration period was a result of a commitment from supervision, finds
     the supervision period that caused the commitment from supervision.
@@ -802,8 +797,8 @@ def state_specific_purpose_for_incarceration_and_subtype(
 def state_specific_supervision_admission_reason_override(
     state_code: str,
     supervision_period: StateSupervisionPeriod,
-    supervision_period_index: SupervisionPeriodIndex,
-    incarceration_period_index: IncarcerationPeriodIndex,
+    supervision_period_index: PreProcessedSupervisionPeriodIndex,
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
 ) -> Optional[StateSupervisionPeriodAdmissionReason]:
     if state_code == "US_ID":
         return us_id_get_supervision_period_admission_override(
@@ -838,6 +833,8 @@ def state_specific_violation_response_pre_processing_function(
     return None
 
 
+# TODO(#7441): Move this logic to the UsIdIncarcerationPreProcessingManager, and don't
+#  allow mid-calculation admission_reason overrides
 def state_specific_incarceration_admission_reason_override(
     incarceration_period: StateIncarcerationPeriod,
     admission_reason: StateIncarcerationPeriodAdmissionReason,
@@ -857,6 +854,8 @@ def state_specific_incarceration_admission_reason_override(
         ):
             return StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
 
+        # TODO(#7523): Use this logic for all states in IP pre-processing to set
+        #  STATUS_CHANGE reasons
         # If a person's previous IP has a different specialized_purpose_for_incarceration
         # than the current period, the correct admission reason is STATUS_CHANGE
         if (
@@ -874,6 +873,8 @@ def state_specific_incarceration_admission_reason_override(
     return admission_reason
 
 
+# TODO(#7523): Use this logic for all states in IP pre-processing to set
+#  STATUS_CHANGE reasons
 def state_specific_incarceration_release_reason_override(
     incarceration_period: StateIncarcerationPeriod,
     release_reason: StateIncarcerationPeriodReleaseReason,
@@ -907,6 +908,8 @@ def state_specific_specialized_purpose_for_incarceration_override(
 ) -> Optional[StateSpecializedPurposeForIncarceration]:
     """Returns a (potentially) updated specialized_purpose_for_incarceration to be used in calculations, given an
     |incarceration_period}| and |admission_reason|."""
+    # TODO(#7442): This US_MO logic should be obsolete once we are setting this
+    #  PAROLE_BOARD_HOLD specialized_purpose_for_incarceration on board holds in ingest
     if incarceration_period.state_code == "US_MO":
         if (
             admission_reason

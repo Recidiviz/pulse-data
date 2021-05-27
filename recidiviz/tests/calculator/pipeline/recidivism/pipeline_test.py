@@ -20,6 +20,7 @@
 """Tests for recidivism/pipeline.py."""
 import unittest
 from typing import Optional, Set
+from unittest import mock
 
 import apache_beam as beam
 from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
@@ -77,6 +78,9 @@ from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
     run_test_pipeline,
     test_pipeline_options,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
+    UsXxIncarcerationPreProcessingDelegate,
+)
 from recidiviz.tests.persistence.database import database_test_utils
 
 _COUNTY_OF_RESIDENCE = "county"
@@ -93,6 +97,18 @@ class TestRecidivismPipeline(unittest.TestCase):
     def setUp(self) -> None:
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
         self.fake_bq_sink_factory = FakeWriteToBigQueryFactory(FakeWriteToBigQuery)
+
+        self.pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.recidivism.identifier"
+            ".get_state_specific_incarceration_period_pre_processing_delegate"
+        )
+        self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
+        self.mock_pre_processing_delegate.return_value = (
+            UsXxIncarcerationPreProcessingDelegate()
+        )
+
+    def tearDown(self) -> None:
+        self.pre_processing_delegate_patcher.stop()
 
     @staticmethod
     def build_data_dict(fake_person_id: int):
@@ -483,6 +499,19 @@ class TestRecidivismPipeline(unittest.TestCase):
 
 class TestClassifyReleaseEvents(unittest.TestCase):
     """Tests the ClassifyReleaseEvents DoFn in the pipeline."""
+
+    def setUp(self) -> None:
+        self.pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.recidivism.identifier"
+            ".get_state_specific_incarceration_period_pre_processing_delegate"
+        )
+        self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
+        self.mock_pre_processing_delegate.return_value = (
+            UsXxIncarcerationPreProcessingDelegate()
+        )
+
+    def tearDown(self) -> None:
+        self.pre_processing_delegate_patcher.stop()
 
     def testClassifyReleaseEvents(self):
         """Tests the ClassifyReleaseEvents DoFn when there are two instances

@@ -40,8 +40,11 @@ from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     list_of_dicts_to_dict_with_keys,
 )
-from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
-    IncarcerationPeriodIndex,
+from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
+    IncarcerationPreProcessingManager,
+)
+from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
+    PreProcessedIncarcerationPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_earliest_date_of_period_ending_in_death,
@@ -55,7 +58,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     get_month_supervision_type,
     terminating_supervision_period_supervision_type,
     supervision_period_counts_towards_supervision_population_in_date_range_state_specific,
-    should_collapse_transfers_different_purposes_for_incarceration,
     filter_supervision_periods_for_commitment_from_supervision_identification,
     get_commitment_from_supervision_supervision_type,
     should_produce_supervision_time_bucket_for_period,
@@ -67,13 +69,12 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     state_specific_violation_response_pre_processing_function,
     state_specific_supervision_admission_reason_override,
     filter_out_federal_and_other_country_supervision_periods,
-    drop_temporary_custody_periods,
-    drop_non_state_prison_incarceration_type_periods,
     state_specific_violation_responses_for_violation_history,
     state_specific_violation_history_window_pre_commitment_from_supervision,
+    get_state_specific_incarceration_period_pre_processing_delegate,
 )
-from recidiviz.calculator.pipeline.utils.supervision_period_index import (
-    SupervisionPeriodIndex,
+from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
+    PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     prepare_supervision_periods_for_calculations,
@@ -94,10 +95,6 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
-    prepare_incarceration_periods_for_calculations,
-    IncarcerationPreProcessingConfig,
-)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
     StateSupervisionPeriodSupervisionType,
@@ -199,39 +196,29 @@ def find_supervision_time_buckets(
         periods=all_periods
     )
 
-    supervision_periods = prepare_supervision_periods_for_calculations(
+    pre_processed_sps_for_calculations = prepare_supervision_periods_for_calculations(
         supervision_periods,
         should_drop_federal_and_other_country,
         earliest_death_date,
     )
 
-    should_collapse_transfers_with_different_pfi = (
-        should_collapse_transfers_different_purposes_for_incarceration(state_code)
+    state_ip_pre_processing_manager_delegate = (
+        get_state_specific_incarceration_period_pre_processing_delegate(state_code)
     )
 
-    # We don't want to collapse temporary custody periods with revocations because we want to use the actual date
-    # of the revocation admission for the revocation buckets
-    ip_pre_processing_config = IncarcerationPreProcessingConfig(
-        drop_temporary_custody_periods=drop_temporary_custody_periods(state_code),
-        drop_non_state_prison_incarceration_type_periods=drop_non_state_prison_incarceration_type_periods(
-            state_code
-        ),
+    ip_pre_processing_manager = IncarcerationPreProcessingManager(
+        incarceration_periods,
+        state_ip_pre_processing_manager_delegate,
+        earliest_death_date,
+    )
+
+    incarceration_period_index = ip_pre_processing_manager.pre_processed_incarceration_period_index_for_calculations(
         collapse_transfers=True,
-        collapse_temporary_custody_periods_with_revocation=False,
-        collapse_transfers_with_different_pfi=should_collapse_transfers_with_different_pfi,
         overwrite_facility_information_in_transfers=True,
-        earliest_death_date=earliest_death_date,
     )
 
-    incarceration_periods = prepare_incarceration_periods_for_calculations(
-        incarceration_periods, ip_pre_processing_config
-    )
-
-    supervision_period_index = SupervisionPeriodIndex(
-        supervision_periods=supervision_periods
-    )
-    incarceration_period_index = IncarcerationPeriodIndex(
-        incarceration_periods=incarceration_periods
+    supervision_period_index = PreProcessedSupervisionPeriodIndex(
+        supervision_periods=pre_processed_sps_for_calculations
     )
 
     sorted_violation_responses = prepare_violation_responses_for_calculations(
@@ -328,8 +315,8 @@ def find_time_buckets_for_supervision_period(
     supervision_sentences: List[StateSupervisionSentence],
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_period: StateSupervisionPeriod,
-    supervision_period_index: SupervisionPeriodIndex,
-    incarceration_period_index: IncarcerationPeriodIndex,
+    supervision_period_index: PreProcessedSupervisionPeriodIndex,
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
     assessments: List[StateAssessment],
     violation_responses_for_history: List[StateSupervisionViolationResponse],
     supervision_contacts: List[StateSupervisionContact],
@@ -521,7 +508,7 @@ def find_time_buckets_for_supervision_period(
 
 def supervision_period_counts_towards_supervision_population_in_date_range(
     date_range: DateRange,
-    incarceration_period_index: IncarcerationPeriodIndex,
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
     supervision_sentences: List[StateSupervisionSentence],
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_period: StateSupervisionPeriod,
@@ -558,7 +545,7 @@ def on_supervision_on_date(
     supervision_sentences: List[StateSupervisionSentence],
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_period: StateSupervisionPeriod,
-    incarceration_period_index: IncarcerationPeriodIndex,
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
 ) -> bool:
     """Determines whether the person was on supervision on a given date."""
     # This should never happen
@@ -584,8 +571,8 @@ def on_supervision_on_date(
 
 def find_supervision_start_bucket(
     supervision_period: StateSupervisionPeriod,
-    supervision_period_index: SupervisionPeriodIndex,
-    incarceration_period_index: IncarcerationPeriodIndex,
+    supervision_period_index: PreProcessedSupervisionPeriodIndex,
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
     supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
     judicial_district_code: Optional[str] = None,
 ) -> Optional[SupervisionTimeBucket]:
@@ -642,7 +629,7 @@ def find_supervision_termination_bucket(
     supervision_sentences: List[StateSupervisionSentence],
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_period: StateSupervisionPeriod,
-    supervision_period_index: SupervisionPeriodIndex,
+    supervision_period_index: PreProcessedSupervisionPeriodIndex,
     assessments: List[StateAssessment],
     violation_responses_for_history: List[StateSupervisionViolationResponse],
     supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
@@ -843,7 +830,7 @@ def find_revocation_return_buckets(
     sorted_violation_responses: List[StateSupervisionViolationResponse],
     supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
     supervision_period_to_judicial_district_associations: Dict[int, Dict[Any, Any]],
-    incarceration_period_index: IncarcerationPeriodIndex,
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
 ) -> List[SupervisionTimeBucket]:
     """Looks at all incarceration periods to see if they were revocation returns. For each revocation admission, adds
     one RevocationReturnSupervisionTimeBuckets for each overlapping supervision period. If there are no overlapping
@@ -1100,7 +1087,7 @@ def find_revocation_return_buckets(
 
 def classify_supervision_success(
     supervision_sentences: List[StateSupervisionSentence],
-    incarceration_period_index: IncarcerationPeriodIndex,
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
     supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
     supervision_period_to_judicial_district_associations: Dict[int, Dict[Any, Any]],
 ) -> List[ProjectedSupervisionCompletionBucket]:
@@ -1154,7 +1141,7 @@ def classify_supervision_success(
 def _get_projected_completion_bucket(
     supervision_sentence: StateSupervisionSentence,
     supervision_period: StateSupervisionPeriod,
-    incarceration_period_index: IncarcerationPeriodIndex,
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
     supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
     supervision_period_to_judicial_district_associations: Dict[int, Dict[Any, Any]],
 ) -> Optional[ProjectedSupervisionCompletionBucket]:
@@ -1536,7 +1523,7 @@ def find_assessment_score_change(
 
 
 def _get_supervision_downgrade_details_if_downgrade_occurred(
-    supervision_period_index: SupervisionPeriodIndex,
+    supervision_period_index: PreProcessedSupervisionPeriodIndex,
     current_supervision_period: StateSupervisionPeriod,
 ) -> Tuple[bool, Optional[StateSupervisionLevel]]:
     """Given a supervision period and the supervision period index it belongs to, determine whether a supervision
