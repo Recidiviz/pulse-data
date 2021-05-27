@@ -16,10 +16,12 @@
 # =============================================================================
 """Implements admin panel route for importing GCS to Cloud SQL."""
 import logging
-from typing import List
+from typing import List, Optional
 
 from recidiviz.cloud_sql.cloud_sql_client import CloudSQLClientImpl
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.persistence.database.session import Session
+from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
@@ -27,49 +29,43 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 from recidiviz.persistence.database.schema_utils import SchemaType
 
 
-def import_gcs_csv_to_cloud_sql(
+def _import_csv_to_temp_table(
+    session: Session,
     schema_type: SchemaType,
     destination_table: str,
+    tmp_table_name: str,
     gcs_uri: GcsfsFilePath,
     columns: List[str],
     seconds_to_wait: int = 60,
 ) -> None:
-    """Implements the import of GCS CSV to Cloud SQL by creating a temporary table, uploading the
-    results to the temporary table, and then swapping the contents of the table."""
-    engine = SQLAlchemyEngineManager.get_engine_for_database(
-        SQLAlchemyDatabaseKey.for_schema(schema_type=schema_type)
-    )
-    if engine is None:
-        raise RuntimeError("Could not create postgres sqlalchemy engine")
-
-    # Drop old temporary table if it exists
-    tmp_table_name = f"tmp__{destination_table}"
-    with engine.connect() as conn:
-        conn.execute(f"DROP TABLE IF EXISTS {tmp_table_name}")
-
-    # Create temporary table
-    with engine.connect() as conn:
-        conn.execute(
+    """Imports a GCS CSV file to a temp table that is created with the destination table as a template."""
+    try:
+        # Drop old temp table if exists, Create new temp table
+        session.execute(f"DROP TABLE IF EXISTS {tmp_table_name}")
+        session.execute(
             f"CREATE TABLE {tmp_table_name} AS TABLE {destination_table} WITH NO DATA"
         )
 
-    try:
-        # Start actual Cloud SQL import
+        # Import CSV to temp table
         logging.info("Starting import from GCS URI: %s", gcs_uri)
-        logging.info("Starting import to destination table: %s", destination_table)
+        logging.info("Starting import to tmp destination table: %s", tmp_table_name)
         logging.info("Starting import using columns: %s", columns)
+
         cloud_sql_client = CloudSQLClientImpl()
         instance_name = SQLAlchemyEngineManager.get_stripped_cloudsql_instance_id(
             schema_type=schema_type
         )
         if instance_name is None:
             raise ValueError("Could not find instance name.")
+
+        # Create temp table with CSV file
         operation_id = cloud_sql_client.import_gcs_csv(
             instance_name=instance_name,
             table_name=tmp_table_name,
             gcs_uri=gcs_uri,
             columns=columns,
         )
+
         if operation_id is None:
             raise RuntimeError(
                 "Cloud SQL import operation was not started successfully."
@@ -81,15 +77,57 @@ def import_gcs_csv_to_cloud_sql(
         )
 
         if not operation_succeeded:
-            raise RuntimeError("Cloud SQL import failed.")
+            raise RuntimeError(f"Cloud SQL import to {tmp_table_name} failed.")
     except Exception as e:
-        logging.warning("Dropping newly created table due to raised exception.")
-        conn.execute(f"DROP TABLE {tmp_table_name}")
+        session.rollback()
         raise e
+    finally:
+        session.close()
 
-    # Swap in new table
-    old_table_name = f"old__{destination_table}"
-    with engine.begin() as conn:
-        conn.execute(f"ALTER TABLE {destination_table} RENAME TO {old_table_name}")
-        conn.execute(f"ALTER TABLE {tmp_table_name} RENAME TO {destination_table}")
-        conn.execute(f"DROP TABLE {old_table_name}")
+
+def import_gcs_csv_to_cloud_sql(
+    schema_type: SchemaType,
+    destination_table: str,
+    gcs_uri: GcsfsFilePath,
+    columns: List[str],
+    region_code: Optional[str] = None,
+    seconds_to_wait: int = 60,
+) -> None:
+    """Implements the import of GCS CSV to Cloud SQL by creating a temporary table, uploading the
+    results to the temporary table, and then swapping the contents of the table.
+
+    If a region_code is provided, selects all rows in the destination_table that do not equal the region_code and
+    inserts them into the temp table before swapping.
+    """
+    tmp_table_name = f"tmp__{destination_table}"
+    database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=schema_type)
+    session = SessionFactory.for_database(database_key=database_key)
+    try:
+        _import_csv_to_temp_table(
+            session=session,
+            schema_type=schema_type,
+            destination_table=destination_table,
+            tmp_table_name=tmp_table_name,
+            gcs_uri=gcs_uri,
+            columns=columns,
+            seconds_to_wait=seconds_to_wait,
+        )
+
+        if region_code is not None:
+            # Import the rest of the regions into temp table
+            session.execute(
+                f"INSERT INTO {tmp_table_name} SELECT * FROM {destination_table} "
+                f"WHERE state_code != '{region_code}'"
+            )
+
+        # Swap the temp table and destination table, dropping the old destination table at the end.
+        old_table_name = f"old__{destination_table}"
+        session.execute(f"ALTER TABLE {destination_table} RENAME TO {old_table_name}")
+        session.execute(f"ALTER TABLE {tmp_table_name} RENAME TO {destination_table}")
+        session.execute(f"DROP TABLE {old_table_name}")
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()

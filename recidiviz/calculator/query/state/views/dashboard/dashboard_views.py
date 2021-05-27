@@ -19,6 +19,9 @@ import itertools
 from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.selected_columns_big_query_view import (
+    SelectedColumnsBigQueryViewBuilder,
+)
 from recidiviz.calculator.query.state.views.dashboard.admissions import admissions_views
 from recidiviz.calculator.query.state.views.dashboard.program_evaluation import (
     program_evaluation_views,
@@ -65,9 +68,9 @@ UP_DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = (
     + vitals_views.VITALS_VIEW_BUILDERS
 )
 
-DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = [
-    SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_VIEW_BUILDER
-]
+DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDERS: Sequence[
+    SelectedColumnsBigQueryViewBuilder
+] = [SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_VIEW_BUILDER]
 
 
 DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = list(

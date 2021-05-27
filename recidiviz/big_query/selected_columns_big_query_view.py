@@ -39,17 +39,21 @@ class SelectedColumnsBigQueryView(BigQueryView):
         view_id: str,
         view_query_template: str,
         columns: List[str],
+        description: Optional[str],
         should_materialize: bool,
         materialized_address_override: Optional[BigQueryAddress],
         dataset_overrides: Optional[Dict[str, str]],
         **query_format_kwargs: str,
     ):
         query_format_kwargs["columns"] = ",\n    ".join(columns)
-        description = f"{view_id} view with selected columns"
+        full_description = f"{view_id} view with selected columns. " + (
+            description if description else ""
+        )
+
         super().__init__(
             dataset_id=dataset_id,
             view_id=view_id,
-            description=description,
+            description=full_description,
             view_query_template=view_query_template,
             should_materialize=should_materialize,
             materialized_address_override=materialized_address_override,
@@ -79,6 +83,7 @@ class SelectedColumnsBigQueryViewBuilder(
         view_id: str,
         view_query_template: str,
         columns: List[str],
+        description: str = None,
         should_materialize: bool = False,
         materialized_address_override: Optional[BigQueryAddress] = None,
         # All keyword args must have string values
@@ -88,6 +93,7 @@ class SelectedColumnsBigQueryViewBuilder(
         self.view_id = view_id
         self.view_query_template = view_query_template
         self.columns = columns
+        self.description = description
         self.should_materialize = should_materialize
         self.materialized_address_override = materialized_address_override
         self.query_format_kwargs = query_format_kwargs
@@ -100,6 +106,7 @@ class SelectedColumnsBigQueryViewBuilder(
             view_id=self.view_id,
             view_query_template=self.view_query_template,
             columns=self.columns,
+            description=self.description,
             should_materialize=self.should_materialize,
             materialized_address_override=self.materialized_address_override,
             dataset_overrides=dataset_overrides,
