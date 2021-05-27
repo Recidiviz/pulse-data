@@ -18,11 +18,12 @@
 in US_ID."""
 from typing import List, Tuple, Optional
 
-from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
-    IncarcerationPeriodIndex,
-)
+
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_last_terminated_period_before_date,
+)
+from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
+    PreProcessedIncarcerationPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
@@ -44,7 +45,7 @@ from recidiviz.persistence.entity.state.entities import (
 def us_id_pre_commitment_supervision_period_if_commitment(
     incarceration_period: StateIncarcerationPeriod,
     filtered_supervision_periods: List[StateSupervisionPeriod],
-    incarceration_period_index: IncarcerationPeriodIndex,
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
 ) -> Tuple[bool, Optional[StateSupervisionPeriod]]:
     """Determines whether the incarceration_period started because of a commitment from
     supervision, which is either a sanction or a revocation admission. If a commitment

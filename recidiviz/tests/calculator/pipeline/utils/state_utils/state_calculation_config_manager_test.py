@@ -26,9 +26,10 @@ from dateutil.relativedelta import relativedelta
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
     RevocationReturnSupervisionTimeBucket,
 )
-from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
-    IncarcerationPeriodIndex,
+from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
+    PreProcessedIncarcerationPeriodIndex,
 )
+
 from recidiviz.calculator.pipeline.utils.state_utils import (
     state_calculation_config_manager,
 )
@@ -77,7 +78,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
         )
 
         supervision_periods: List[StateSupervisionPeriod] = []
-        ip_index = IncarcerationPeriodIndex([incarceration_period])
+        ip_index = PreProcessedIncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_revocation,
@@ -109,7 +110,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
         )
 
         supervision_periods: List[StateSupervisionPeriod] = []
-        ip_index = IncarcerationPeriodIndex([incarceration_period])
+        ip_index = PreProcessedIncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_revocation,
@@ -141,7 +142,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
         )
 
         supervision_periods: List[StateSupervisionPeriod] = []
-        ip_index = IncarcerationPeriodIndex([incarceration_period])
+        ip_index = PreProcessedIncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_revocation,
@@ -194,7 +195,9 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
         )
 
         supervision_periods = [supervision_period]
-        ip_index = IncarcerationPeriodIndex([treatment_period, incarceration_period])
+        ip_index = PreProcessedIncarcerationPeriodIndex(
+            [treatment_period, incarceration_period]
+        )
 
         (
             admission_is_revocation,
@@ -247,7 +250,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
         )
 
         supervision_periods = [supervision_period]
-        ip_index = IncarcerationPeriodIndex([incarceration_period])
+        ip_index = PreProcessedIncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_revocation,
@@ -289,7 +292,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
         )
 
         supervision_periods = [supervision_period]
-        ip_index = IncarcerationPeriodIndex([incarceration_period])
+        ip_index = PreProcessedIncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_revocation,
@@ -329,7 +332,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
         )
 
         supervision_periods = [supervision_period]
-        ip_index = IncarcerationPeriodIndex([incarceration_period])
+        ip_index = PreProcessedIncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_commitment_from_supervision,
@@ -369,7 +372,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
         )
 
         supervision_periods = [supervision_period]
-        ip_index = IncarcerationPeriodIndex([incarceration_period])
+        ip_index = PreProcessedIncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_commitment_from_supervision,
@@ -409,7 +412,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
         )
 
         supervision_periods = [supervision_period]
-        ip_index = IncarcerationPeriodIndex([incarceration_period])
+        ip_index = PreProcessedIncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_commitment_from_supervision,
@@ -449,7 +452,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
         )
 
         supervision_periods = [supervision_period]
-        ip_index = IncarcerationPeriodIndex([incarceration_period])
+        ip_index = PreProcessedIncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_commitment_from_supervision,
@@ -477,7 +480,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
         )
 
-        ip_index = IncarcerationPeriodIndex([incarceration_period])
+        ip_index = PreProcessedIncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_commitment_from_supervision,

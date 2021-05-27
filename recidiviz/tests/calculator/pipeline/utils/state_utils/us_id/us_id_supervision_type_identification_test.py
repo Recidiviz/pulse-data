@@ -33,8 +33,8 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_typ
     us_id_supervision_period_is_out_of_state,
     us_id_get_supervision_period_admission_override,
 )
-from recidiviz.calculator.pipeline.utils.supervision_period_index import (
-    SupervisionPeriodIndex,
+from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
+    PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -529,7 +529,7 @@ class UsIdGetSupervisionPeriodAdmissionOverrideTest(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
-        idx = SupervisionPeriodIndex(
+        idx = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[supervision_period, supervision_period_previous]
         )
         found_admission_reason = us_id_get_supervision_period_admission_override(
@@ -558,7 +558,7 @@ class UsIdGetSupervisionPeriodAdmissionOverrideTest(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
-        idx = SupervisionPeriodIndex(
+        idx = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[supervision_period, supervision_period_previous]
         )
         found_admission_reason = us_id_get_supervision_period_admission_override(
@@ -584,7 +584,7 @@ class UsIdGetSupervisionPeriodAdmissionOverrideTest(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
-        idx = SupervisionPeriodIndex(
+        idx = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[supervision_period, supervision_period_previous]
         )
         found_admission_reason = us_id_get_supervision_period_admission_override(
@@ -622,7 +622,7 @@ class UsIdGetSupervisionPeriodAdmissionOverrideTest(unittest.TestCase):
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
-        idx = SupervisionPeriodIndex(
+        idx = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[
                 supervision_period_previous,
                 supervision_period_ongoing,
@@ -670,7 +670,7 @@ class UsIdGetSupervisionPeriodAdmissionOverrideTest(unittest.TestCase):
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
-        idx = SupervisionPeriodIndex(
+        idx = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[
                 supervision_period_previous,
                 supervision_period_ongoing,

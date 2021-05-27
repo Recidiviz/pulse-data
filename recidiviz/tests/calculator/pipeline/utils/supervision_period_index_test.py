@@ -19,8 +19,8 @@
 import unittest
 from datetime import date
 
-from recidiviz.calculator.pipeline.utils.supervision_period_index import (
-    SupervisionPeriodIndex,
+from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
+    PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
@@ -55,7 +55,7 @@ class TestSupervisionPeriodIndexSupervisionPeriodsConverter(unittest.TestCase):
 
         supervision_periods = [supervision_period_2, supervision_period_1]
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods
         )
 
@@ -83,7 +83,7 @@ class TestSupervisionPeriodIndexSupervisionPeriodsConverter(unittest.TestCase):
 
         supervision_periods = [supervision_period_2, supervision_period_1]
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods
         )
 
@@ -114,7 +114,7 @@ class TestSupervisionPeriodIndexSupervisionPeriodsConverter(unittest.TestCase):
 
         supervision_periods = [supervision_period_2, supervision_period_1]
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods
         )
 
@@ -147,7 +147,7 @@ class TestSupervisionPeriodIndexSupervisionPeriodsConverter(unittest.TestCase):
 
         supervision_periods = [supervision_period_2, supervision_period_1]
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods
         )
 
@@ -182,7 +182,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
 
         supervision_periods = [supervision_period_2, supervision_period_1]
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods
         )
 
@@ -244,7 +244,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_period_1,
         ]
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods
         )
 
@@ -308,7 +308,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_period_1,
         ]
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods
         )
 
@@ -346,7 +346,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
 
         supervision_periods = [supervision_period_2, supervision_period_1]
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods
         )
 
@@ -403,7 +403,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_period_1,
         ]
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods
         )
 
@@ -461,7 +461,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_period_1,
         ]
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods
         )
 
@@ -517,7 +517,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_period_1,
         ]
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods
         )
 
@@ -575,7 +575,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_period_1,
         ]
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods
         )
 
@@ -615,7 +615,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
 
         supervision_periods = [supervision_period_2, supervision_period_1]
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods
         )
 
@@ -647,7 +647,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
 
         supervision_periods = [supervision_period_2, supervision_period_1]
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods
         )
 
@@ -681,7 +681,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
 
         supervision_periods = [supervision_period_2, supervision_period_1]
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods
         )
 
@@ -719,7 +719,7 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
 
         supervision_periods = [supervision_period_1, supervision_period_2]
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods
         )
 
@@ -750,7 +750,7 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
 
         supervision_periods = [supervision_period_1, supervision_period_2]
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods
         )
 
@@ -772,7 +772,7 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
 
         supervision_periods = [supervision_period]
 
-        supervision_period_index = SupervisionPeriodIndex(
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods
         )
 

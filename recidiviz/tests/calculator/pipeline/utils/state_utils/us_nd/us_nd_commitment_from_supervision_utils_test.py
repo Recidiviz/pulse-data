@@ -19,8 +19,8 @@ from datetime import date
 
 import unittest
 
-from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
-    IncarcerationPeriodIndex,
+from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
+    PreProcessedIncarcerationPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_utils import (
     us_nd_pre_commitment_supervision_period_if_commitment,
@@ -75,7 +75,7 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
         )
 
         supervision_periods = [supervision_period]
-        ip_index = IncarcerationPeriodIndex([incarceration_period])
+        ip_index = PreProcessedIncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_revocation,
@@ -116,7 +116,7 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
         )
 
         supervision_periods = [supervision_period]
-        ip_index = IncarcerationPeriodIndex([incarceration_period])
+        ip_index = PreProcessedIncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_revocation,
@@ -157,7 +157,7 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
         )
 
         supervision_periods = [supervision_period]
-        ip_index = IncarcerationPeriodIndex([incarceration_period])
+        ip_index = PreProcessedIncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_revocation,
@@ -213,7 +213,7 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
             earlier_probation_supervision_period,
             later_parole_supervision_period,
         ]
-        ip_index = IncarcerationPeriodIndex([incarceration_period])
+        ip_index = PreProcessedIncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_revocation,
@@ -254,7 +254,7 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
         )
 
         supervision_periods = [supervision_period]
-        ip_index = IncarcerationPeriodIndex([incarceration_period])
+        ip_index = PreProcessedIncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_revocation,
@@ -283,7 +283,7 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
         )
 
-        ip_index = IncarcerationPeriodIndex([incarceration_period])
+        ip_index = PreProcessedIncarcerationPeriodIndex([incarceration_period])
 
         (
             admission_is_revocation,
@@ -339,7 +339,7 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
         )
 
         supervision_periods = [supervision_period]
-        ip_index = IncarcerationPeriodIndex(
+        ip_index = PreProcessedIncarcerationPeriodIndex(
             [initial_commitment_incarceration_period, subsequent_incarceration_period]
         )
 
@@ -395,7 +395,7 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
         )
 
         supervision_periods = [supervision_period]
-        ip_index = IncarcerationPeriodIndex(
+        ip_index = PreProcessedIncarcerationPeriodIndex(
             [initial_commitment_incarceration_period, subsequent_incarceration_period]
         )
 

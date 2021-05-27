@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A class for caching information about a set of incarceration periods for use in the calculation pipelines."""
+"""A class for caching information about a set of incarceration periods that are ready
+for use in the calculation pipelines."""
 
 from collections import defaultdict
 from datetime import date
@@ -22,9 +23,6 @@ from typing import List, Set, Tuple, Dict, Optional
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
-    standard_date_sort_for_incarceration_periods,
-)
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -36,12 +34,12 @@ from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
 @attr.s
-class IncarcerationPeriodIndex:
-    """A class for caching information about a set of incarceration periods for use in the calculation pipelines."""
+class PreProcessedIncarcerationPeriodIndex:
+    """A class for caching information about a set of pre-processed incarceration
+    periods for use in the calculation pipelines.
+    """
 
-    incarceration_periods: List[StateIncarcerationPeriod] = attr.ib(
-        converter=standard_date_sort_for_incarceration_periods
-    )
+    incarceration_periods: List[StateIncarcerationPeriod] = attr.ib()
 
     # Incarceration periods during which a person cannot also be counted in the supervision population
     incarceration_periods_not_under_supervision_authority: List[

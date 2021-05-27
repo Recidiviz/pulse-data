@@ -21,8 +21,8 @@ from typing import List, Tuple, Optional
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
-    IncarcerationPeriodIndex,
+from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
+    PreProcessedIncarcerationPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_last_terminated_period_before_date,
@@ -55,7 +55,7 @@ _NEW_ADMISSION_PROBATION_COMMITMENT_LOOKBACK_MONTHS = 24
 def us_nd_pre_commitment_supervision_period_if_commitment(
     incarceration_period: StateIncarcerationPeriod,
     supervision_periods: List[StateSupervisionPeriod],
-    incarceration_period_index: IncarcerationPeriodIndex,
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
 ) -> Tuple[bool, Optional[StateSupervisionPeriod]]:
     """Determines whether the incarceration_period started because of a commitment from
     supervision. If a commitment from supervision did occur, this finds the supervision
@@ -210,7 +210,7 @@ def _us_nd_pre_commitment_supervision_period(
 def _intermediate_state_prison_admission(
     most_recent_supervision_period: StateSupervisionPeriod,
     incarceration_period: StateIncarcerationPeriod,
-    incarceration_period_index: IncarcerationPeriodIndex,
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
 ) -> bool:
     """Returns whether or not there was an admission to a state prison after the most
     recent supervision period ended and before the given incarceration period started,

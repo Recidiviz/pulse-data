@@ -22,6 +22,7 @@ from datetime import date
 
 import unittest
 from typing import List, Optional, Any, Dict
+from unittest import mock
 
 import attr
 import pytest
@@ -37,8 +38,8 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
     IncarcerationCommitmentFromSupervisionAdmissionEvent,
     IncarcerationStandardAdmissionEvent,
 )
-from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
-    IncarcerationPeriodIndex,
+from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
+    PreProcessedIncarcerationPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
     SupervisionTypeSpan,
@@ -92,6 +93,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponseDecisionEntry,
     StateSupervisionCaseTypeEntry,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
+    UsXxIncarcerationPreProcessingDelegate,
+)
 from recidiviz.tests.calculator.pipeline.utils.us_mo_fakes import (
     FakeUsMoSupervisionSentence,
     FakeUsMoIncarcerationSentence,
@@ -129,6 +133,18 @@ _DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST = list(
 
 class TestFindIncarcerationEvents(unittest.TestCase):
     """Tests the find_incarceration_events function."""
+
+    def setUp(self) -> None:
+        self.pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_incarceration_period_pre_processing_delegate"
+        )
+        self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
+        self.mock_pre_processing_delegate.return_value = (
+            UsXxIncarcerationPreProcessingDelegate()
+        )
+
+    def tearDown(self) -> None:
+        self.pre_processing_delegate_patcher.stop()
 
     @staticmethod
     def _run_find_incarceration_events(
@@ -495,6 +511,8 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         """Tests that with state code US_ID, treatment in prison periods that are followed by a transfer to general
         result in the correct IncarcerationStayEvents, IncarcerationAdmissionEvents, and
         IncarcerationReleaseEvents with updated STATUS_CHANGE reasons"""
+        self.pre_processing_delegate_patcher.stop()
+
         treatment_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=_DEFAULT_IP_ID,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -542,7 +560,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         )
 
         sentence_group = StateSentenceGroup.new_with_defaults(
-            state_code="US_XX",
+            state_code="US_ID",
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_sentences=[incarceration_sentence],
         )
@@ -757,6 +775,8 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         """Tests that with state code US_ND, temporary custody periods are dropped before finding all incarceration
         events.
         """
+        self.pre_processing_delegate_patcher.stop()
+
         temp_custody_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             external_id="1",
@@ -920,9 +940,11 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         )
 
     def testFindIncarcerationEvents_usMo_tempCustodyFollowedByRevocation(self):
-        """Tests that when a temporary custody period is followed by a revocation period, we collapse the two when
-        generating IncarcerationAdmissionEvents, but do not when creating IncarcerationStayEvents.
+        """Tests that when a temporary custody period is followed by a revocation
+        period.
         """
+        self.pre_processing_delegate_patcher.stop()
+
         temp_custody_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             external_id="1",
@@ -1039,7 +1061,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         incarceration_events = self._run_find_incarceration_events(sentence_groups)
 
-        self.maxDiff = None
         self.assertCountEqual(
             [
                 IncarcerationStayEvent(
@@ -1063,10 +1084,19 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     most_serious_offense_ncic_code="0901",
                     most_serious_offense_statute="9999",
                 ),
-                IncarcerationCommitmentFromSupervisionAdmissionEvent(
+                IncarcerationStandardAdmissionEvent(
                     state_code=temp_custody_period.state_code,
                     event_date=temp_custody_period.admission_date,
                     facility=temp_custody_period.facility,
+                    county_of_residence=_COUNTY_OF_RESIDENCE,
+                    admission_reason=temp_custody_period.admission_reason,
+                    admission_reason_raw_text=temp_custody_period.admission_reason_raw_text,
+                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+                ),
+                IncarcerationCommitmentFromSupervisionAdmissionEvent(
+                    state_code=revocation_period.state_code,
+                    event_date=revocation_period.admission_date,
+                    facility=revocation_period.facility,
                     county_of_residence=_COUNTY_OF_RESIDENCE,
                     admission_reason=revocation_period.admission_reason,
                     admission_reason_raw_text=revocation_period.admission_reason_raw_text,
@@ -1074,6 +1104,19 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     case_type=StateSupervisionCaseType.GENERAL,
                     supervision_level=supervision_period.supervision_level,
+                ),
+                IncarcerationReleaseEvent(
+                    state_code=temp_custody_period.state_code,
+                    event_date=temp_custody_period.release_date,
+                    facility=temp_custody_period.facility,
+                    county_of_residence=_COUNTY_OF_RESIDENCE,
+                    release_reason=temp_custody_period.release_reason,
+                    admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+                    total_days_incarcerated=(
+                        temp_custody_period.release_date
+                        - temp_custody_period.admission_date
+                    ).days,
+                    purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
                 ),
                 IncarcerationReleaseEvent(
                     state_code=revocation_period.state_code,
@@ -1084,7 +1127,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                     total_days_incarcerated=(
                         revocation_period.release_date
-                        - temp_custody_period.admission_date
+                        - revocation_period.admission_date
                     ).days,
                 ),
             ],
@@ -1093,6 +1136,8 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
     def testFindIncarcerationEvents_usMo_tempCustody(self):
         """Tests that when there is only a temporary custody period."""
+        self.pre_processing_delegate_patcher.stop()
+
         temp_custody_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             external_id="1",
@@ -1177,7 +1222,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         incarceration_events = self._run_find_incarceration_events(sentence_groups)
 
-        self.maxDiff = None
         self.assertCountEqual(
             [
                 IncarcerationStayEvent(
@@ -1219,6 +1263,8 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
     def testFindIncarcerationEvents_usId_RevocationAdmission(self):
         """Tests the find_supervision_time_buckets function for state code US_ID."""
+        self.pre_processing_delegate_patcher.stop()
+
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SP_ID,
             external_id="sp1",
@@ -1318,6 +1364,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
     def testFindIncarcerationEvents_usPA_SanctionAdmission(self):
         """Tests the find_incarceration_events function for periods in US_PA, where
         there is a sanction admission for shock incarceration."""
+        self.pre_processing_delegate_patcher.stop()
         state_code = "US_PA"
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -1532,7 +1579,9 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
             123: _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION[0]
         }
 
-        incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            [incarceration_period]
+        )
 
         return identifier.find_incarceration_stays(
             incarceration_sentences,
@@ -1599,7 +1648,9 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
             }
         }
 
-        incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            [incarceration_period]
+        )
 
         incarceration_sentences = []
         incarceration_events = identifier.find_incarceration_stays(
@@ -2106,7 +2157,7 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
             }
         }
 
-        incarceration_period_index = IncarcerationPeriodIndex(
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
             [incarceration_period_1, incarceration_period_2]
         )
 
@@ -2179,7 +2230,9 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
             }
         }
 
-        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods)
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods
+        )
 
         incarceration_sentences = []
         incarceration_events = identifier.find_incarceration_stays(
@@ -2198,155 +2251,15 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
         self.assertEqual(expected_incarceration_events, incarceration_events)
 
 
-class TestDeDuplicatedAdmissions(unittest.TestCase):
-    """Tests the de_duplicated_admissions function."""
-
-    def test_de_duplicated_admissions(self):
-        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_XX",
-            facility="PRISON3",
-            admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_date=date(2008, 11, 20),
-            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-        )
-
-        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_XX",
-            facility="PRISON3",
-            admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_date=date(2010, 12, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-        )
-
-        incarceration_periods = [incarceration_period_1, incarceration_period_2]
-
-        de_duplicated_incarceration_admissions = identifier.de_duplicated_admissions(
-            incarceration_periods
-        )
-
-        self.assertEqual(
-            [incarceration_period_1], de_duplicated_incarceration_admissions
-        )
-
-    def test_de_duplicated_admissions_different_reason(self):
-        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_XX",
-            facility="PRISON3",
-            admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_date=date(2008, 11, 20),
-            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-        )
-
-        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_XX",
-            facility="PRISON3",
-            admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-            release_date=date(2010, 12, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-        )
-
-        incarceration_periods = [incarceration_period_1, incarceration_period_2]
-
-        de_duplicated_incarceration_admissions = identifier.de_duplicated_admissions(
-            incarceration_periods
-        )
-
-        self.assertEqual(incarceration_periods, de_duplicated_incarceration_admissions)
-
-
-class TestDeDuplicatedReleases(unittest.TestCase):
-    """Tests the de_duplicated_releases function."""
-
-    def test_de_duplicated_releases(self):
-        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_XX",
-            facility="PRISON3",
-            admission_date=date(2008, 11, 19),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_date=date(2010, 12, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-        )
-
-        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_XX",
-            facility="PRISON3",
-            admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_date=date(2010, 12, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-        )
-
-        incarceration_periods = [incarceration_period_1, incarceration_period_2]
-
-        de_duplicated_incarceration_releases = identifier.de_duplicated_releases(
-            incarceration_periods
-        )
-
-        self.assertEqual([incarceration_period_1], de_duplicated_incarceration_releases)
-
-    def test_de_duplicated_releases_different_reason(self):
-        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_XX",
-            facility="PRISON3",
-            admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_date=date(2010, 12, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-        )
-
-        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1111,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_XX",
-            facility="PRISON3",
-            admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_date=date(2010, 12, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-        )
-
-        incarceration_periods = [incarceration_period_1, incarceration_period_2]
-
-        de_duplicated_incarceration_releases = identifier.de_duplicated_releases(
-            incarceration_periods
-        )
-
-        self.assertEqual(incarceration_periods, de_duplicated_incarceration_releases)
-
-
 class TestAdmissionEventForPeriod(unittest.TestCase):
     """Tests the admission_event_for_period function."""
 
     @staticmethod
     def _run_admission_event_for_period(
         incarceration_period: StateIncarcerationPeriod,
-        incarceration_period_index: Optional[IncarcerationPeriodIndex] = None,
+        incarceration_period_index: Optional[
+            PreProcessedIncarcerationPeriodIndex
+        ] = None,
         incarceration_sentences: Optional[List[StateIncarcerationSentence]] = None,
         supervision_sentences: Optional[List[StateSupervisionSentence]] = None,
         supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
@@ -2363,7 +2276,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         supervision_sentences = supervision_sentences or []
         incarceration_period_index = (
             incarceration_period_index
-            or IncarcerationPeriodIndex([incarceration_period])
+            or PreProcessedIncarcerationPeriodIndex([incarceration_period])
         )
         supervision_periods = supervision_periods or []
         assessments = assessments or []
@@ -2418,7 +2331,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             release_date=date(2008, 12, 21),
         )
 
-        incarceration_period_index = IncarcerationPeriodIndex(
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
             [previous_treatment_period, current_general_period]
         )
 
@@ -3247,7 +3160,9 @@ class TestReleaseEventForPeriod(unittest.TestCase):
         incarceration_sentences = []
         supervision_sentences = []
 
-        incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            [incarceration_period]
+        )
 
         return identifier.release_event_for_period(
             incarceration_sentences,
@@ -3382,7 +3297,9 @@ class TestReleaseEventForPeriod(unittest.TestCase):
 
         incarceration_sentences = []
 
-        incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            [incarceration_period]
+        )
 
         release_event = identifier.release_event_for_period(
             incarceration_sentences=incarceration_sentences,
@@ -3442,7 +3359,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
-        incarceration_period_index = IncarcerationPeriodIndex(
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
             [incarceration_period_1, incarceration_period_2]
         )
 
@@ -3509,7 +3426,9 @@ class TestReleaseEventForPeriod(unittest.TestCase):
         )
         incarceration_sentences = []
 
-        incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            [incarceration_period]
+        )
 
         release_event = identifier.release_event_for_period(
             incarceration_sentences=incarceration_sentences,

@@ -17,14 +17,14 @@
 """Utils for determining supervision type information for US_ND."""
 from typing import Optional, Union, List
 
-from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
-    IncarcerationPeriodIndex,
+from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
+    PreProcessedIncarcerationPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_last_terminated_period_before_date,
 )
-from recidiviz.calculator.pipeline.utils.supervision_period_index import (
-    SupervisionPeriodIndex,
+from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
+    PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
     get_pre_incarceration_supervision_type_from_incarceration_period,
@@ -142,8 +142,8 @@ def us_nd_get_post_incarceration_supervision_type(
 
 def us_nd_infer_supervision_period_admission(
     supervision_period: StateSupervisionPeriod,
-    supervision_period_index: SupervisionPeriodIndex,
-    incarceration_period_index: IncarcerationPeriodIndex,
+    supervision_period_index: PreProcessedSupervisionPeriodIndex,
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
 ) -> Optional[StateSupervisionPeriodAdmissionReason]:
     """Looks at the provided |supervision_period|, all supervision periods for this person via the
     |supervision_period_index|, and all incarceration periods via |incarceration_period_index| and returns the
