@@ -1,0 +1,17 @@
+file_tag: dbo_DeActivateParoleNumber
+file_description: |-
+  A table containing information about supervision identifiers that have been
+  deactivated by PBPP along with the new idtentifierthat should be used instead.
+primary_key_cols:
+  - ParoleNumber
+columns:
+  - name: ParoleNumber
+    description: |-
+      External ID for a unique person who has been supervised by PBPP.
+  - name: InActiveParoleNumber
+    description: |-
+      Old, deprecated ParoleNumber for this person.
+separator: ‡
+custom_line_terminator: †
+ignore_quotes: True
+encoding: WINDOWS-1252
