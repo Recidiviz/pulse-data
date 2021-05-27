@@ -18,7 +18,7 @@
 
 import logging
 import re
-from typing import Any, Dict, Iterator, List, Optional, Sequence, Set, Tuple, Type
+from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple, Type
 import unittest
 
 import attr
@@ -70,7 +70,13 @@ class MockTableSchema:
         cls, config: DirectIngestRawFileConfig
     ) -> "MockTableSchema":
         return cls(
-            {column.name: sqltypes.String for column in config.available_columns}
+            {
+                # Postgres does case-sensitive lowercase search on all non-quoted
+                # column (and table) names. We lowercase all the column names so that
+                # a query like "SELECT MyCol FROM table;" finds the column "mycol".
+                column.name.lower(): sqltypes.String
+                for column in config.available_columns
+            }
         )
 
     @classmethod
@@ -146,6 +152,8 @@ _DROP_COND_FUNC = """
 DROP FUNCTION cond(boolean, anyelement, anyelement)
 """
 
+MAX_POSTGRES_TABLE_NAME_LENGTH = 63
+
 
 @pytest.mark.uses_db
 class BaseViewTest(unittest.TestCase):
@@ -178,7 +186,7 @@ class BaseViewTest(unittest.TestCase):
 
     def setUp(self) -> None:
         # Stores the list of mock tables that have been created as (dataset_id, table_id) tuples.
-        self.mock_bq_tables: Set[BigQueryAddress] = set()
+        self.mock_bq_to_postgres_tables: Dict[BigQueryAddress, str] = {}
 
         self.type_name_generator = NameGenerator("__type_")
         self.postgres_engine = create_engine(
@@ -205,12 +213,10 @@ class BaseViewTest(unittest.TestCase):
     def tearDown(self) -> None:
         close_all_sessions()
 
-        if self.mock_bq_tables:
+        if self.mock_bq_to_postgres_tables:
             # Execute each statement one at a time for resilience.
-            for table_location in self.mock_bq_tables:
-                self._execute_statement(
-                    f"DROP TABLE {self._to_postgres_table_name(table_location)}"
-                )
+            for postgres_table_name in self.mock_bq_to_postgres_tables.values():
+                self._execute_statement(f"DROP TABLE IF EXISTS {postgres_table_name}")
             for type_name in self.type_name_generator.all_names_generated():
                 self._execute_statement(f"DROP TYPE {type_name}")
         self._execute_statement(_DROP_ARRAY_CONCAT_AGG_FUNC)
@@ -233,10 +239,11 @@ class BaseViewTest(unittest.TestCase):
         mock_schema: MockTableSchema,
         mock_data: pd.DataFrame,
     ) -> None:
-        location = BigQueryAddress(dataset_id=dataset_id, table_id=table_id)
-        self.mock_bq_tables.add(location)
+        postgres_table_name = self.register_bq_address(
+            address=BigQueryAddress(dataset_id=dataset_id, table_id=table_id)
+        )
         mock_data.to_sql(
-            name=self._to_postgres_table_name(location),
+            name=postgres_table_name,
             con=self.postgres_engine,
             dtype=mock_schema.data_types,
             index=False,
@@ -249,9 +256,17 @@ class BaseViewTest(unittest.TestCase):
         mock_data: List[Tuple[Any, ...]],
     ) -> None:
         mock_schema = MockTableSchema.from_raw_file_config(file_config)
+
+        # For the raw data tables we make the table name `us_xx_file_tag`. It would be
+        # closer to the actual produced query to make it something like
+        # `us_xx_raw_data_up_to_date_views_file_tag_latest`, but that very easily gets
+        # us closer to the 63 character hard limit imposed by Postgres.
         self.create_mock_bq_table(
-            dataset_id=f"{region_code.lower()}_raw_data_up_to_date_views",
-            table_id=f"{file_config.file_tag}_latest",
+            dataset_id=region_code.lower(),
+            # Postgres does case-sensitive lowercase search on all non-quoted
+            # table (and column) names. We lowercase all the table names so that
+            # a query like "SELECT my_col FROM MyTable;" finds the table "mytable".
+            table_id=file_config.file_tag.lower(),
             mock_schema=mock_schema,
             mock_data=pd.DataFrame(mock_data, columns=mock_schema.data_types.keys()),
         )
@@ -288,8 +303,7 @@ class BaseViewTest(unittest.TestCase):
     def create_view(self, view_builder: BigQueryViewBuilder) -> None:
         view: BigQueryView = view_builder.build()
         table_location = view.table_for_query
-        self.mock_bq_tables.add(table_location)
-
+        self.register_bq_address(table_location)
         query = (
             f"CREATE TABLE "
             f"`{view.project}.{table_location.dataset_id}.{table_location.table_id}` "
@@ -298,10 +312,46 @@ class BaseViewTest(unittest.TestCase):
         query = self._rewrite_sql(query)
         self._execute_statement(query)
 
-    @classmethod
-    def _to_postgres_table_name(cls, bq_location: BigQueryAddress) -> str:
+    def register_bq_address(self, address: BigQueryAddress) -> str:
+        """Registers a BigQueryAddress in the map of address -> Postgres tables. Returns
+        the corresponding Postgres table name.
+        """
         # Postgres does not support '.' in table names, so we instead join them with an underscore.
-        return "_".join([bq_location.dataset_id, bq_location.table_id])
+        postgres_table_name = "_".join([address.dataset_id, address.table_id])
+        if len(postgres_table_name) > MAX_POSTGRES_TABLE_NAME_LENGTH:
+            new_postgres_table_name = postgres_table_name[
+                :MAX_POSTGRES_TABLE_NAME_LENGTH
+            ]
+
+            for (
+                other_address,
+                other_postgres_table_name,
+            ) in self.mock_bq_to_postgres_tables.items():
+                if (
+                    other_postgres_table_name == new_postgres_table_name
+                    and address != other_address
+                ):
+                    raise ValueError(
+                        f"Truncated postgres table name [{new_postgres_table_name}] "
+                        f"for address [{address}] collides with name for "
+                        f"[{other_address}]."
+                    )
+
+            logging.warning(
+                "Table name [%s] too long, truncating to [%s]",
+                postgres_table_name,
+                new_postgres_table_name,
+            )
+            postgres_table_name = new_postgres_table_name
+
+        if address in self.mock_bq_to_postgres_tables:
+            if self.mock_bq_to_postgres_tables[address] != postgres_table_name:
+                raise ValueError(
+                    f"Address [{address}] already has a different postgres table associated with it: {self.mock_bq_to_postgres_tables[address]}"
+                )
+
+        self.mock_bq_to_postgres_tables[address] = postgres_table_name
+        return postgres_table_name
 
     def _rewrite_sql(self, query: str) -> str:
         """Modifies the SQL query, translating BQ syntax to Postgres syntax where necessary."""
@@ -380,6 +430,14 @@ class BaseViewTest(unittest.TestCase):
             "DATE_TRUNC('{second}', {first})::date",
         )
 
+        # The REGEXP_CONTAINS function does not exist in postgres, so we replace with
+        # 'SUBSTRING() IS NOT NULL', which has the same behavior.
+        query = _replace_iter(
+            query,
+            r"REGEXP_CONTAINS\((?P<first>.+?), (?P<second>.+?)\)",
+            "SUBSTRING({first}, {second}) IS NOT NULL",
+        )
+
         # EXTRACT returns a double in postgres, but for all part types shared between
         # the two, bigquery returns an int
         query = _replace_iter(
@@ -404,6 +462,14 @@ class BaseViewTest(unittest.TestCase):
         )
 
         query = _replace_iter(query, r"SAFE_CAST", "CAST", flags=re.IGNORECASE)
+
+        # String type does not exist in Postgres
+        query = _replace_iter(
+            query,
+            r"CAST\((?P<value>.+?) AS STRING\)",
+            "CAST({value} AS VARCHAR)",
+            flags=re.IGNORECASE,
+        )
         query = _replace_iter(query, r"IFNULL", "COALESCE", flags=re.IGNORECASE)
         query = _replace_iter(query, r"(^| )IF\s*\(", " COND(", flags=re.IGNORECASE)
 
@@ -426,13 +492,25 @@ class BaseViewTest(unittest.TestCase):
         for match in re.finditer(table_reference_regex, query):
             table_reference = match.group()
             dataset_id, table_id = match.groups()
+            dataset_match = re.match(
+                r"(us_[a-z]{2})_raw_data_up_to_date_views", dataset_id
+            )
+            if dataset_match:
+                dataset_id = dataset_match.group(1)  # region_code
+
+                table_match = re.search("_latest", table_id)
+                if not table_match:
+                    raise ValueError(f"Unexpected table name [{table_id}]")
+                table_id = table_id[: -len("_latest")].lower()
+
             location = BigQueryAddress(dataset_id=dataset_id, table_id=table_id)
-            if location not in self.mock_bq_tables:
+            if location not in self.mock_bq_to_postgres_tables:
                 raise KeyError(
-                    f"Table {table_reference} does not exist, must be created via create_mock_bq_table."
+                    f"BigQuery location [{location}] not properly registered - must be"
+                    f"created via create_mock_bq_table."
                 )
             query = query.replace(
-                table_reference, self._to_postgres_table_name(location)
+                table_reference, self.mock_bq_to_postgres_tables[location]
             )
         return query
 

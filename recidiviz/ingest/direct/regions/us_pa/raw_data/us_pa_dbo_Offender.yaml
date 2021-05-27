@@ -12,7 +12,7 @@ columns:
       Current parole status of the person within PADOC.
   - name: OffSID
     description: |-
-      State identifier of the person.
+      Pennsylvania state identifier - always null.
   - name: OffReceptionDate
     is_datetime: True
     description: |-

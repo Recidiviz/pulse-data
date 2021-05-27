@@ -1,3 +1,4 @@
+# TODO(#7222): Delete this once sci_incarceration_period_v2 has shipped to prod
 key_mappings:
   start_movement_date: state_incarceration_period.admission_date
   end_movement_date: state_incarceration_period.release_date

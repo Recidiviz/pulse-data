@@ -22,7 +22,7 @@ columns:
       and this is retroactively edited with some low frequency.
   - name: state_id_num
     description: |-
-      Pennsylvania state identifier.
+      Pennsylvania state identifier - always null.
   - name: location_in_transi
     description: |-
       Unused.

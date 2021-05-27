@@ -37,6 +37,11 @@ US_MO_OLN = "US_MO_OLN"
 US_ND_ELITE = "US_ND_ELITE"
 US_ND_SID = "US_ND_SID"
 
+# PA Control Number - tracks someone across all incarceration stays (theoretically)
 US_PA_CONTROL = "US_PA_CONT"
+# PA Parole Number - tracks someone across all supervision terms (theoretically)
 US_PA_PBPP = "US_PA_PBPP"
+# PA Inmate Number - associated with a single contiguous incarceration stay
+US_PA_INMATE = "US_PA_INMATE"
+# Legacy type for un-hashed state ID values.
 US_PA_SID = "US_PA_SID"

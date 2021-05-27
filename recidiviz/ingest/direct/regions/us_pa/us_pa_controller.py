@@ -33,9 +33,10 @@ from recidiviz.common.constants.standard_enum_overrides import (
     get_standard_enum_overrides,
 )
 from recidiviz.common.constants.state.external_id_types import (
-    US_PA_SID,
     US_PA_CONTROL,
     US_PA_PBPP,
+    US_PA_SID,
+    US_PA_INMATE,
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_agent import StateAgentType
@@ -163,7 +164,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
             gen_label_single_external_id_hook(US_PA_CONTROL),
             self.gen_hydrate_alternate_external_ids(
                 {
-                    "SID_Num": US_PA_SID,
                     "PBPP_Num": US_PA_PBPP,
                 }
             ),
@@ -186,9 +186,19 @@ class UsPaController(CsvGcsfsDirectIngestController):
             self._set_supervision_period_custodial_authority,
         ]
 
+        dbo_offender_postprocessors: List[Callable] = [
+            gen_label_single_external_id_hook(US_PA_PBPP),
+            self._hydrate_races,
+            gen_rationalize_race_and_ethnicity(self.ENUM_OVERRIDES),
+        ]
+
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
+            # TODO(#7222): Delete this once person_external_ids_v2 has shipped to prod
             "person_external_ids": [self._hydrate_person_external_ids],
+            "person_external_ids_v2": [self._hydrate_person_external_ids],
+            # TODO(#7222): Delete this once v2 has shipped to prod
             "doc_person_info": doc_person_info_postprocessors,
+            "doc_person_info_v2": doc_person_info_postprocessors,
             "dbo_tblInmTestScore": [
                 gen_label_single_external_id_hook(US_PA_CONTROL),
                 self._generate_doc_assessment_external_id,
@@ -201,6 +211,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._rationalize_offense_type,
                 self._set_is_violent,
             ],
+            # TODO(#7222): Delete this once v2 has shipped to prod
             "sci_incarceration_period": sci_incarceration_period_row_postprocessors,
             "sci_incarceration_period_v2": sci_incarceration_period_row_postprocessors,
             "ccis_incarceration_period": [
@@ -210,11 +221,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._concatenate_incarceration_purpose_codes,
             ],
             "dbo_Miscon": dbo_Miscon_postprocessors,
-            "dbo_Offender": [
-                gen_label_single_external_id_hook(US_PA_PBPP),
-                self._hydrate_races,
-                gen_rationalize_race_and_ethnicity(self.ENUM_OVERRIDES),
-            ],
+            # TODO(#7222): Delete this once v2 has shipped to prod
+            "dbo_Offender": dbo_offender_postprocessors,
+            "dbo_Offender_v2": dbo_offender_postprocessors,
             # TODO(#7222): Delete this when dbo_LSIHistory has shipped to prod
             "dbo_LSIR": [
                 gen_label_single_external_id_hook(US_PA_PBPP),
@@ -248,12 +257,17 @@ class UsPaController(CsvGcsfsDirectIngestController):
         }
 
         self.file_post_processors_by_file: Dict[str, List[Callable]] = {
+            # TODO(#7222): Delete this once person_external_ids_v2 has shipped to prod
             "person_external_ids": [],
+            "person_external_ids_v2": [],
+            # TODO(#7222): Delete this once v2 has shipped to prod
             "doc_person_info": [],
+            "doc_person_info_v2": [],
             "dbo_tblInmTestScore": [],
             "dbo_Senrec": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
+            # TODO(#7222): Delete this once v2 has shipped to prod
             "sci_incarceration_period": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
@@ -266,7 +280,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
             "dbo_Miscon": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
+            # TODO(#7222): Delete this once v2 has shipped to prod
             "dbo_Offender": [],
+            "dbo_Offender_v2": [],
             "dbo_LSIR": [],
             "dbo_LSIHistory": [],
             "supervision_period": [
@@ -292,6 +308,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         }
 
         self.primary_key_override_hook_by_file: Dict[str, Callable] = {
+            # TODO(#7222): Delete this once v2 has shipped to prod
             "sci_incarceration_period": _generate_sci_incarceration_period_primary_key,
             "sci_incarceration_period_v2": _generate_sci_incarceration_period_primary_key,
             "supervision_period": _generate_supervision_period_primary_key,
@@ -304,6 +321,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         }
 
         self.ancestor_chain_overrides_callback_by_file: Dict[str, Callable] = {
+            # TODO(#7222): Delete this once v2 has shipped to prod
             "sci_incarceration_period": _state_incarceration_period_ancestor_chain_overrides,
             "sci_incarceration_period_v2": _state_incarceration_period_ancestor_chain_overrides,
             "ccis_incarceration_period": _state_incarceration_period_ancestor_chain_overrides,
@@ -698,14 +716,22 @@ class UsPaController(CsvGcsfsDirectIngestController):
     ENUM_IGNORE_PREDICATES: Dict[EntityEnumMeta, EnumIgnorePredicate] = {}
 
     def get_file_tag_rank_list(self) -> List[str]:
-        launched_file_tags = [
+        launched_file_tags = []
+        if environment.in_gcp():
             # Data source: Mixed
-            "person_external_ids",
+            launched_file_tags.append("person_external_ids")
             # Data source: DOC
-            "doc_person_info",
+            launched_file_tags.append("doc_person_info")
+        else:
+            # TODO(#6251): Ungate this for next PA rerun.
+            launched_file_tags.append("person_external_ids_v2")
+            launched_file_tags.append("doc_person_info_v2")
+
+        launched_file_tags += [
             "dbo_tblInmTestScore",
             "dbo_Senrec",
         ]
+
         if environment.in_gcp():
             launched_file_tags.append("sci_incarceration_period")
         else:
@@ -716,14 +742,16 @@ class UsPaController(CsvGcsfsDirectIngestController):
             "dbo_Miscon",
             # Data source: CCIS
             "ccis_incarceration_period",
-            # Data source: PBPP
-            "dbo_Offender",
         ]
+
         if environment.in_gcp():
+            # Data source: PBPP
+            launched_file_tags.append("dbo_Offender")
             launched_file_tags.append("dbo_LSIR")
             launched_file_tags.append("supervision_period")
         else:
             # TODO(#6251): Ungate this for next PA rerun.
+            launched_file_tags.append("dbo_Offender_v2")
             launched_file_tags.append("dbo_LSIHistory")
             launched_file_tags.append("supervision_period_v2")
 
@@ -814,6 +842,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _get_id_type(file_tag: str) -> Optional[str]:
         if file_tag in [
             "dbo_Senrec",
+            # TODO(#7222): Delete this once v2 has shipped to prod
             "sci_incarceration_period",
             "sci_incarceration_period_v2",
             "ccis_incarceration_period",
@@ -834,7 +863,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _hydrate_person_external_ids(
-        _file_tag: str,
+        file_tag: str,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -845,18 +874,36 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 control_numbers = (
                     row["control_numbers"].split(",") if row["control_numbers"] else []
                 )
-                state_ids = row["state_ids"].split(",") if row["state_ids"] else []
                 parole_numbers = (
                     row["parole_numbers"].split(",") if row["parole_numbers"] else []
                 )
 
                 external_ids_to_create = []
-                for state_id in state_ids:
-                    external_ids_to_create.append(
-                        StatePersonExternalId(
-                            state_person_external_id_id=state_id, id_type=US_PA_SID
+                # TODO(#7222): Delete this once v2 has shipped to prod
+                if file_tag == "person_external_ids":
+                    state_ids = row["state_ids"].split(",") if row["state_ids"] else []
+                    for state_id in state_ids:
+                        external_ids_to_create.append(
+                            StatePersonExternalId(
+                                state_person_external_id_id=state_id, id_type=US_PA_SID
+                            )
                         )
+                elif file_tag == "person_external_ids_v2":
+                    inmate_numbers = (
+                        row["inmate_numbers"].split(",")
+                        if row["inmate_numbers"]
+                        else []
                     )
+                    for inmate_number in inmate_numbers:
+                        external_ids_to_create.append(
+                            StatePersonExternalId(
+                                state_person_external_id_id=inmate_number,
+                                id_type=US_PA_INMATE,
+                            )
+                        )
+                else:
+                    raise ValueError(f"Unexpected file_tag: [{file_tag}]")
+
                 for control_number in control_numbers:
                     external_ids_to_create.append(
                         StatePersonExternalId(
@@ -1158,6 +1205,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
                 if file_tag in (
+                    # TODO(#7222): Delete this once v2 has shipped to prod
                     "sci_incarceration_period",
                     "sci_incarceration_period_v2",
                 ):
@@ -1181,6 +1229,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             if isinstance(obj, StateIncarcerationPeriod):
                 if obj.release_date:
                     if file_tag in (
+                        # TODO(#7222): Delete this once v2 has shipped to prod
                         "sci_incarceration_period",
                         "sci_incarceration_period_v2",
                     ):
@@ -1203,6 +1252,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
                 if file_tag in (
+                    # TODO(#7222): Delete this once v2 has shipped to prod
                     "sci_incarceration_period",
                     "sci_incarceration_period_v2",
                 ):
@@ -1225,6 +1275,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
                 if file_tag in (
+                    # TODO(#7222): Delete this once v2 has shipped to prod
                     "sci_incarceration_period",
                     "sci_incarceration_period_v2",
                 ):

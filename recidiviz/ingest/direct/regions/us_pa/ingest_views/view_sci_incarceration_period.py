@@ -172,6 +172,7 @@ SELECT *
 FROM periods
 """
 
+# TODO(#7222): Delete this view once v2 has shipped to prod
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_pa",
     ingest_view_name="sci_incarceration_period",
