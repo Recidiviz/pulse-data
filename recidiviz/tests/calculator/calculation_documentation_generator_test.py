@@ -31,6 +31,7 @@ from recidiviz.calculator.calculation_documentation_generator import (
     CALC_DOCS_PATH,
     PipelineMetricInfo,
     StateMetricInfo,
+    generate_calculation_documentation,
 )
 from recidiviz.calculator.pipeline.incarceration.metrics import (
     IncarcerationAdmissionMetric,
@@ -433,6 +434,8 @@ If you are interested in what views rely on this metric, please run the followin
         os.environ.get("TRAVIS") == "true", "docs/ does not exist in Travis"
     )
     def test_generate_markdowns(self) -> None:
+        # If this test is failing, you may need to delete old calc doc files or regenerate calc docs.
+        # When deleting old files, be sure not to remove calculation_specification_template.md
         products = ProductConfigs.from_file(PRODUCTS_CONFIG_PATH).products
 
         with tempfile.TemporaryDirectory() as tmpdirname:
@@ -446,10 +449,30 @@ If you are interested in what views rely on this metric, please run the followin
                 docs_generator = CalculationDocumentationGenerator(
                     products=products, root_calc_docs_dir=tmpdirname
                 )
-            docs_generator.generate_products_markdowns()
-            docs_generator.generate_states_markdowns()
+            _ = generate_calculation_documentation(docs_generator)
+
             dir_comparison = dircmp(
                 tmpdirname,
                 os.path.join(os.path.dirname(recidiviz.__file__), "..", CALC_DOCS_PATH),
             )
-            self.assertEqual(len(dir_comparison.diff_files), 0)
+
+            diff_file_names = []
+
+            def _check_dir_cmp(dir_cmp: dircmp) -> None:
+                # All files that either contain different contents, or only exist in one directory
+                all_diffs = dir_cmp.diff_files + dir_cmp.left_only + dir_cmp.right_only
+                for name in all_diffs:
+                    diff_file_names.append(name)
+
+                for _, sub_dir_cmp in dir_cmp.subdirs.items():
+                    _check_dir_cmp(sub_dir_cmp)
+
+            _check_dir_cmp(dir_comparison)
+
+            # The calculation specification template is an existing doc that provides a
+            # template for recording a detailed breakdown of the metric logic and process.
+            # It is separate from calc doc generation and may eventually be deprecated.
+            self.assertEqual(len(diff_file_names), 1)
+            self.assertEqual(
+                diff_file_names[0], "calculation_specification_template.md"
+            )
