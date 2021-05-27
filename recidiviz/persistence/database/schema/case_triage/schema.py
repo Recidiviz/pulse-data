@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-
+# TODO(#7533): Rename CaseTriage schema to UnifiedProducts
 """Define the ORM schema objects that map directly to the database,
-for Case Triage related entities.
+for Unified Products related entities.
 
 """
 import uuid
@@ -34,6 +34,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    ARRAY,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
@@ -370,3 +371,39 @@ class OpportunityDeferral(CaseTriageBase):
             reminder_was_requested=reminder_was_requested,
             opportunity_metadata=etl_opportunity.opportunity_metadata,
         )
+
+
+class DashboardUserRestrictions(CaseTriageBase):
+    """Represents a user's access restrictions for Unified Product dashboards."""
+
+    __tablename__ = "dashboard_user_restrictions"
+    __table_args__ = (UniqueConstraint("state_code", "restricted_user_email"),)
+    state_code = Column(
+        String(255), nullable=False, index=True, comment="Dashboard user's state code"
+    )
+    restricted_user_email = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        primary_key=True,
+        comment="Dashboard user's email address",
+    )
+    # TODO(#7413) Remove allowed_level_1_supervision_location_ids once FE is no longer using it
+    allowed_level_1_supervision_location_ids = Column(
+        String(255),
+        nullable=False,
+        comment="Deprecated column for allowed supervision location ids",
+    )
+    allowed_supervision_location_ids = Column(
+        ARRAY(String),
+        nullable=False,
+        comment="Array of supervision location IDs the user can access",
+    )
+    allowed_supervision_location_level = Column(
+        String(255),
+        nullable=True,
+        comment="The supervision location level, i.e. level_1_supervision_location",
+    )
+    internal_role = Column(
+        String(255), nullable=False, comment="Dashboard user's access level role"
+    )

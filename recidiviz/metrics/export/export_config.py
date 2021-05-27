@@ -399,12 +399,16 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         export_name="VITALS",
         bq_view_namespace=BigQueryViewNamespace.STATE,
     ),
-    # Lantern and Core Dashboard User Restrictions views
+    # Unified Product - User Restrictions
     ExportViewCollectionConfig(
         view_builders_to_export=DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDERS,
         output_directory_uri_template=DASHBOARD_USER_RESTRICTIONS_OUTPUT_DIRECTORY_URI,
         export_name="DASHBOARD_USER_RESTRICTIONS",
         bq_view_namespace=BigQueryViewNamespace.STATE,
+        export_output_formats=[
+            ExportOutputFormatType.HEADERLESS_CSV,
+            ExportOutputFormatType.JSON,
+        ],
     ),
 ]
 
