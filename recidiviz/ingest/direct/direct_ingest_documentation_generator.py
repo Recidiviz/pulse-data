@@ -146,7 +146,7 @@ class DirectIngestDocumentationGenerator:
                 return "N/A"
             if not known_values:
                 return "<No documentation>"
-            list_contents = ", ".join(
+            list_contents = ", <br/>".join(
                 [
                     f"<b>{enum.value}: </b> {enum.description if enum.description else 'Unknown'}"
                     for enum in known_values
