@@ -15,7 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Functionality for generating documentation about our calculations."""
+"""A script which will be called using a pre-commit githook to generate our Calc Catalog documentation.
+
+Can be run on-demand using:
+    $ python -m recidiviz.calculator.calculation_documentation_generator
+"""
+
 import logging
 import os
 import sys
