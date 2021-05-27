@@ -173,9 +173,8 @@ class BaseDirectIngestController(Ingestor):
     def region_code(cls) -> str:
         pass
 
-    @classmethod
     @abc.abstractmethod
-    def get_file_tag_rank_list(cls) -> List[str]:
+    def get_file_tag_rank_list(self) -> List[str]:
         pass
 
     @property

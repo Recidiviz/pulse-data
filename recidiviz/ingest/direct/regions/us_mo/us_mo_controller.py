@@ -535,8 +535,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             "tak291_tak292_tak024_citations": self._supervision_violation_citation_ancestor_chain_override,
         }
 
-    @classmethod
-    def get_file_tag_rank_list(cls) -> List[str]:
+    def get_file_tag_rank_list(self) -> List[str]:
         file_tags = [
             # SQL Preprocessing View
             "tak001_offender_identification",
