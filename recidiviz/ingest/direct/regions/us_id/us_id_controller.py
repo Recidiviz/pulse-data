@@ -589,8 +589,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
 
     ENUM_IGNORE_PREDICATES: Dict[EntityEnumMeta, EnumIgnorePredicate] = {}
 
-    @classmethod
-    def get_file_tag_rank_list(cls) -> List[str]:
+    def get_file_tag_rank_list(self) -> List[str]:
         shared_file_tags = [
             "offender_ofndr_dob_address",
             "ofndr_tst_ofndr_tst_cert",

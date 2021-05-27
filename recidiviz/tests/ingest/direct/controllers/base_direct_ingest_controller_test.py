@@ -103,9 +103,8 @@ class BaseTestCsvGcsfsDirectIngestController(CsvGcsfsDirectIngestController):
         super().__init__(ingest_bucket_path)
         self.local_paths: Set[str] = set()
 
-    @classmethod
     @abc.abstractmethod
-    def get_file_tag_rank_list(cls) -> List[str]:
+    def get_file_tag_rank_list(self) -> List[str]:
         pass
 
     def _get_contents_handle(
@@ -136,8 +135,7 @@ class StateTestGcsfsDirectIngestController(BaseTestCsvGcsfsDirectIngestControlle
             region_module=fake_regions_module,
         )
 
-    @classmethod
-    def get_file_tag_rank_list(cls) -> List[str]:
+    def get_file_tag_rank_list(self) -> List[str]:
         return ["tagA", "tagB", "tagC"]
 
 
@@ -156,8 +154,7 @@ class StagingOnlyStateTestGcsfsDirectIngestController(
 class CrashingStateTestGcsfsDirectIngestController(
     StateTestGcsfsDirectIngestController
 ):
-    @classmethod
-    def get_file_tag_rank_list(cls) -> List[str]:
+    def get_file_tag_rank_list(self) -> List[str]:
         return ["tagC"]
 
     def _run_ingest_job(self, args: GcsfsIngestArgs) -> bool:
@@ -167,8 +164,7 @@ class CrashingStateTestGcsfsDirectIngestController(
 class SingleTagStateTestGcsfsDirectIngestController(
     StateTestGcsfsDirectIngestController
 ):
-    @classmethod
-    def get_file_tag_rank_list(cls) -> List[str]:
+    def get_file_tag_rank_list(self) -> List[str]:
         return ["tagC"]
 
 
@@ -186,8 +182,7 @@ class CountyTestGcsfsDirectIngestController(BaseTestCsvGcsfsDirectIngestControll
             region_module=fake_regions_module,
         )
 
-    @classmethod
-    def get_file_tag_rank_list(cls) -> List[str]:
+    def get_file_tag_rank_list(self) -> List[str]:
         return ["tagA", "tagB"]
 
 
