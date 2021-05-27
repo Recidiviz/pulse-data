@@ -55,7 +55,7 @@ PERSON_DEMOGRAPHICS_QUERY_TEMPLATE = """
     SELECT DISTINCT
         state_code,
         person_id,
-        FIRST_VALUE(race_or_ethnicity) OVER (PARTITION BY state_code, person_id ORDER BY representation_priority) as prioritized_race_or_ethnicity
+        FIRST_VALUE(race_or_ethnicity) OVER (PARTITION BY state_code, person_id ORDER BY COALESCE(representation_priority, 100)) as prioritized_race_or_ethnicity
     FROM race_or_ethnicity_cte
     LEFT JOIN `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
             USING (state_code, race_or_ethnicity)
