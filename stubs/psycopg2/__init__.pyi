@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 from types import TracebackType
-from typing import Optional, Any, TextIO, List
+from typing import Any, List, Optional, TextIO
 
 class OperationalError:
     pgcode: str
@@ -36,5 +36,15 @@ class Connection:
     def cursor(self) -> Cursor: ...
     def execute(self, query: str) -> None: ...
     def set_isolation_level(self, isolation_level: int) -> None: ...
+    def commit(self) -> None: ...
+    def close(self) -> None: ...
 
-def connect(dbname: str, host: str, user: str, password: str) -> Connection: ...
+def connect(
+    dbname: str,
+    host: str,
+    user: str,
+    password: str,
+    sslrootcert: Optional[str] = None,
+    sslcert: Optional[str] = None,
+    sslkey: Optional[str] = None,
+) -> Connection: ...
