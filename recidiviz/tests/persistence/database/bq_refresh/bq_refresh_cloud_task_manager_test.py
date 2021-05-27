@@ -56,109 +56,6 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
 
     @patch(f"{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid")
     @patch("google.cloud.tasks_v2.CloudTasksClient")
-    @freeze_time("2019-04-12")
-    def test_create_refresh_bq_table_task(
-        self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
-    ) -> None:
-        # Arrange
-        uuid = "random-uuid"
-        mock_uuid.uuid4.return_value = uuid
-
-        table_name = "test_table"
-        schema_type = SchemaType.JAILS.value
-        queue_path = f"queue_path/{self.mock_project_id}/{QUEUES_REGION}"
-        task_id = f"test_table-{schema_type}-2019-04-12-random-uuid"
-        task_path = f"{queue_path}/{task_id}"
-
-        body = {"table_name": table_name, "schema_type": schema_type}
-
-        task = tasks_v2.types.task_pb2.Task(
-            name=task_path,
-            app_engine_http_request={
-                "http_method": "POST",
-                "relative_uri": "/cloud_sql_to_bq/refresh_bq_table",
-                "body": json.dumps(body).encode(),
-            },
-        )
-
-        mock_client.return_value.task_path.return_value = task_path
-        mock_client.return_value.queue_path.return_value = queue_path
-
-        # Act
-        BQRefreshCloudTaskManager().create_refresh_bq_table_task(
-            table_name=table_name, schema_type=SchemaType.JAILS
-        )
-
-        # Assert
-        mock_client.return_value.queue_path.assert_called_with(
-            self.mock_project_id, QUEUES_REGION, BIGQUERY_QUEUE_V2
-        )
-        mock_client.return_value.task_path.assert_called_with(
-            self.mock_project_id, QUEUES_REGION, BIGQUERY_QUEUE_V2, task_id
-        )
-        mock_client.return_value.create_task.assert_called_with(
-            parent=queue_path, task=task
-        )
-
-    @patch(f"{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid")
-    @patch("google.cloud.tasks_v2.CloudTasksClient")
-    @freeze_time("2019-04-13")
-    def test_create_bq_refresh_monitor_task(
-        self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
-    ) -> None:
-        # Arrange
-        delay_sec = 60
-        now_utc_timestamp = int(datetime.datetime.now().timestamp())
-
-        uuid = "random-uuid"
-        mock_uuid.uuid4.return_value = uuid
-
-        schema = "schema"
-        topic = "fake.topic"
-        message = "A fake message"
-        queue_path = f"queue_path/{self.mock_project_id}/{QUEUES_REGION}"
-        task_id = "fake-topic-2019-04-13-random-uuid"
-        task_path = f"{queue_path}/{task_id}"
-
-        body = {
-            "schema": schema,
-            "topic": topic,
-            "message": message,
-        }
-
-        task = tasks_v2.types.task_pb2.Task(
-            name=task_path,
-            schedule_time=timestamp_pb2.Timestamp(
-                seconds=(now_utc_timestamp + delay_sec)
-            ),
-            app_engine_http_request={
-                "http_method": "POST",
-                "relative_uri": "/cloud_sql_to_bq/monitor_refresh_bq_tasks",
-                "body": json.dumps(body).encode(),
-            },
-        )
-
-        mock_client.return_value.task_path.return_value = task_path
-        mock_client.return_value.queue_path.return_value = queue_path
-
-        # Act
-        BQRefreshCloudTaskManager().create_bq_refresh_monitor_task(
-            schema="schema", topic=topic, message=message
-        )
-
-        # Assert
-        mock_client.return_value.queue_path.assert_called_with(
-            self.mock_project_id, QUEUES_REGION, JOB_MONITOR_QUEUE_V2
-        )
-        mock_client.return_value.task_path.assert_called_with(
-            self.mock_project_id, QUEUES_REGION, JOB_MONITOR_QUEUE_V2, task_id
-        )
-        mock_client.return_value.create_task.assert_called_with(
-            parent=queue_path, task=task
-        )
-
-    @patch(f"{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid")
-    @patch("google.cloud.tasks_v2.CloudTasksClient")
     @freeze_time("2019-04-13")
     def test_reattempt_create_refresh_tasks_task(
         self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
@@ -203,7 +100,7 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
             ),
             app_engine_http_request={
                 "http_method": "POST",
-                "relative_uri": "/cloud_sql_to_bq/create_refresh_bq_tasks/fake_schema",
+                "relative_uri": "/cloud_sql_to_bq/create_refresh_bq_schema_task/fake_schema",
                 "body": json.dumps(body).encode(),
             },
         )

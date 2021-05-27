@@ -35,10 +35,7 @@ county_columns_to_exclude:
 from typing import Dict, List, Optional
 
 import yaml
-import sqlalchemy
 from sqlalchemy import Table
-from google.cloud import bigquery
-from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_view import BigQueryAddress
 
 from recidiviz.calculator.query.county.dataset_config import (
@@ -63,15 +60,16 @@ from recidiviz.case_triage.views.dataset_config import (
 )
 from recidiviz.common.constants.states import StateCode
 
+from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
+
 # TODO(#4302): Remove unused schema module imports
 # These imports are needed to ensure that the SQL Alchemy table metadata is loaded for the
 # metadata_base in this class. We would like to eventually have a better
 # way to achieve this and have the tables loaded alongside the DeclarativeMeta base class.
 # pylint:disable=unused-import
-from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
-    DirectIngestInstance,
-)
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
@@ -81,7 +79,6 @@ from recidiviz.persistence.database.schema.justice_counts import (
 )
 from recidiviz.persistence.database.sqlalchemy_database_key import (
     SQLAlchemyDatabaseKey,
-    SQLAlchemyStateDatabaseVersion,
 )
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
@@ -94,15 +91,10 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence.database.schema_utils import (
     get_table_class_by_name,
-    BQ_TYPES,
-    get_region_code_col,
-    schema_has_region_code_query_support,
     SchemaType,
     schema_type_to_schema_base,
 )
 from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
-    CloudSqlSchemaTableRegionFilteredQueryBuilder,
-    BigQuerySchemaTableRegionFilteredQueryBuilder,
     FederatedSchemaTableRegionFilteredQueryBuilder,
 )
 
@@ -312,73 +304,6 @@ class CloudSqlToBQConfig:
             if column.name not in self.columns_to_exclude.get(table.name, [])
         )
 
-    # TODO(#7397): Delete this function once federated export ships to production.
-    def get_bq_schema_for_table(self, table_name: str) -> List[bigquery.SchemaField]:
-        """Return a List of SchemaField objects for a given table name
-        If it is an association table for a schema that includes the region code, a region code schema field
-        is appended.
-        """
-        table = get_table_class_by_name(table_name, self.sorted_tables)
-        columns = [
-            bigquery.SchemaField(
-                column.name,
-                BQ_TYPES[type(column.type)],
-                "NULLABLE" if column.nullable else "REQUIRED",
-            )
-            for column in table.columns
-            if column.name in self._get_table_columns_to_export(table)
-        ]
-
-        if not schema_has_region_code_query_support(self.metadata_base):
-            # We shouldn't add a region code column for this schema
-            return columns
-
-        column_names = {column.name for column in table.columns}
-        region_code_col = get_region_code_col(self.metadata_base, table)
-        if region_code_col in column_names:
-            # We already have the region column we need in the table
-            return columns
-
-        columns.append(
-            bigquery.SchemaField(
-                region_code_col, BQ_TYPES[sqlalchemy.String], "NULLABLE"
-            )
-        )
-
-        return columns
-
-    # TODO(#7397): Delete this function once federated export ships to production.
-    def get_gcs_export_uri_for_table(self, table_name: str) -> str:
-        """Return export URI location in Google Cloud Storage given a table name."""
-        project_id = self._get_project_id()
-        bucket = "{}-dbexport".format(project_id)
-        gcs_export_uri_format = "gs://{bucket}/{table_name}.csv"
-        uri = gcs_export_uri_format.format(bucket=bucket, table_name=table_name)
-        return uri
-
-    # TODO(#7397): Delete this function once federated export ships to production.
-    def get_table_export_query(self, table_name: str) -> str:
-        """Return a formatted SQL query for a given table name
-
-        For association tables, it adds a region code column to the select statement through a join.
-
-        If there are region codes to exclude from the export, it either:
-            1. Returns a query that excludes rows by region codes from the table
-            2. Returns a query that joins an association table to its referred table to filter
-                by region code. It also includes the region code column in the association table's
-                select statement (i.e. state_code, region_code).
-
-        """
-        table = get_table_class_by_name(table_name, self.sorted_tables)
-        columns = self._get_table_columns_to_export(table)
-        query_builder = CloudSqlSchemaTableRegionFilteredQueryBuilder(
-            self.metadata_base,
-            table,
-            columns,
-            region_codes_to_exclude=self.region_codes_to_exclude,
-        )
-        return query_builder.full_query()
-
     def get_single_state_table_federated_export_query(
         self, table: Table, state_code: StateCode
     ) -> str:
@@ -436,40 +361,6 @@ class CloudSqlToBQConfig:
             table
             for table in self.sorted_tables
             if table not in self._get_tables_to_exclude()
-        )
-
-    # TODO(#7397): Delete this function once federated export ships to production.
-    def get_dataset_ref(
-        self, big_query_client: BigQueryClient
-    ) -> Optional[bigquery.DatasetReference]:
-        """Uses the dataset_id to request the BigQuery dataset reference to load the table into.
-        Gets created if it does not already exist."""
-        return big_query_client.dataset_ref_for_id(self.dataset_id)
-
-    # TODO(#7397): Delete this property once federated export ships to production.
-    @property
-    def dataset_id(self) -> str:
-        """Returns the dataset for legacy refresh."""
-        return self.unioned_multi_region_dataset(dataset_override_prefix=None)
-
-    # TODO(#7397): Delete this function once federated export ships to production.
-    def get_stale_bq_rows_for_excluded_regions_query_builder(
-        self, table_name: str
-    ) -> BigQuerySchemaTableRegionFilteredQueryBuilder:
-        table = get_table_class_by_name(table_name, self.sorted_tables)
-        columns = self._get_table_columns_to_export(table)
-        # Include region codes in query that were excluded from the export to GCS
-        # If no region codes are excluded, an empty list will generate a query for zero rows.
-        region_codes_to_include = (
-            self.region_codes_to_exclude if self.region_codes_to_exclude else []
-        )
-        return BigQuerySchemaTableRegionFilteredQueryBuilder(
-            project_id=self._get_project_id(),
-            dataset_id=self.dataset_id,
-            metadata_base=self.metadata_base,
-            table=table,
-            columns_to_include=columns,
-            region_codes_to_include=region_codes_to_include,
         )
 
     @staticmethod
