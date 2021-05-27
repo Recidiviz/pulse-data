@@ -14,10 +14,10 @@ max_allowed_error_overrides:
     override_reason: TODO(#5074) - The age_bucket_breakdown_sum column does not match the others - investigate.
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
-    num_allowed_rows_override: 200
+    num_allowed_rows_override: 300
     override_reason: In MO we rely on a table where they build incarceration period spans for us; some older rows have issues with overlap.
   - validation_name: overlapping_supervision_periods
-    num_allowed_rows_override: 450
+    num_allowed_rows_override: 700
     override_reason: Older raw data from MO contains overlapping period information that we do not correct.
   - validation_name: supervision_termination_prior_to_start
     num_allowed_rows_override: 5
