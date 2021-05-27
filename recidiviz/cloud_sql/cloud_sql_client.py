@@ -52,7 +52,7 @@ class CloudSQLClient:
         gcs_uri: GcsfsFilePath,
         columns: List[str],
     ) -> Optional[str]:
-        """Triggers a Cloud SQL Import operation and returns the associated operation id or None if unsuccesful."""
+        """Triggers a Cloud SQL Import operation and returns the associated operation id or None if unsuccessful."""
 
     @abc.abstractmethod
     def wait_until_operation_completed(

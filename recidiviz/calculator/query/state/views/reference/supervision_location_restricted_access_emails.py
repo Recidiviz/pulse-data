@@ -19,7 +19,9 @@ locations.
 """
 
 # pylint: disable=trailing-whitespace
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.selected_columns_big_query_view import (
+    SelectedColumnsBigQueryViewBuilder,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -68,16 +70,25 @@ SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_QUERY_TEMPLATE = """
             AND empl_stat = 'A'
         GROUP BY empl_sdesc, empl_title
     )
-    SELECT * from mo_restricted_access
+    SELECT {columns} FROM mo_restricted_access
     UNION ALL
-    SELECT * FROM id_restricted_access;
+    SELECT {columns} FROM id_restricted_access;
     """
 
-SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
     view_id=SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_VIEW_NAME,
     view_query_template=SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_QUERY_TEMPLATE,
     description=SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_DESCRIPTION,
+    columns=[
+        "state_code",
+        "restricted_user_email",
+        # TODO(#7413) Remove allowed_level_1_supervision_location_ids once FE is no longer using it
+        "allowed_level_1_supervision_location_ids",
+        "allowed_supervision_location_ids",
+        "allowed_supervision_location_level",
+        "internal_role",
+    ],
 )
 
 if __name__ == "__main__":
