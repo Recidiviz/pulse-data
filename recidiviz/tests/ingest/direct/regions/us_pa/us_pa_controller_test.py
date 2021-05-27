@@ -29,8 +29,9 @@ from recidiviz.common.constants.person_characteristics import (
 )
 from recidiviz.common.constants.state.external_id_types import (
     US_PA_CONTROL,
-    US_PA_SID,
     US_PA_PBPP,
+    US_PA_INMATE,
+    US_PA_INMATE,
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_agent import StateAgentType
@@ -131,10 +132,11 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         expected = IngestInfo(
             state_people=[
                 StatePerson(
-                    state_person_id="RECIDIVIZ_MASTER_STATE_ID_12345678",
+                    state_person_id="RECIDIVIZ_MASTER_CONTROL_NUMBER_123456",
                     state_person_external_ids=[
                         StatePersonExternalId(
-                            state_person_external_id_id="12345678", id_type=US_PA_SID
+                            state_person_external_id_id="12345678",
+                            id_type=US_PA_INMATE,
                         ),
                         StatePersonExternalId(
                             state_person_external_id_id="123456", id_type=US_PA_CONTROL
@@ -145,13 +147,15 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                     ],
                 ),
                 StatePerson(
-                    state_person_id="RECIDIVIZ_MASTER_STATE_ID_55554444",
+                    state_person_id="RECIDIVIZ_MASTER_CONTROL_NUMBER_654321",
                     state_person_external_ids=[
                         StatePersonExternalId(
-                            state_person_external_id_id="55554444", id_type=US_PA_SID
+                            state_person_external_id_id="55554444",
+                            id_type=US_PA_INMATE,
                         ),
                         StatePersonExternalId(
-                            state_person_external_id_id="66665555", id_type=US_PA_SID
+                            state_person_external_id_id="66665555",
+                            id_type=US_PA_INMATE,
                         ),
                         StatePersonExternalId(
                             state_person_external_id_id="654321", id_type=US_PA_CONTROL
@@ -170,10 +174,11 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                     ],
                 ),
                 StatePerson(
-                    state_person_id="RECIDIVIZ_MASTER_STATE_ID_09876543",
+                    state_person_id="RECIDIVIZ_MASTER_CONTROL_NUMBER_778899",
                     state_person_external_ids=[
                         StatePersonExternalId(
-                            state_person_external_id_id="09876543", id_type=US_PA_SID
+                            state_person_external_id_id="09876543",
+                            id_type=US_PA_INMATE,
                         ),
                         StatePersonExternalId(
                             state_person_external_id_id="778899", id_type=US_PA_CONTROL
@@ -198,10 +203,11 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                     ],
                 ),
                 StatePerson(
-                    state_person_id="RECIDIVIZ_MASTER_STATE_ID_888888888",
+                    state_person_id="RECIDIVIZ_MASTER_PAROLE_NUMBER_888P",
                     state_person_external_ids=[
                         StatePersonExternalId(
-                            state_person_external_id_id="888888888", id_type=US_PA_SID
+                            state_person_external_id_id="888888888",
+                            id_type=US_PA_INMATE,
                         ),
                         StatePersonExternalId(
                             state_person_external_id_id="888P", id_type=US_PA_PBPP
@@ -209,10 +215,11 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                     ],
                 ),
                 StatePerson(
-                    state_person_id="RECIDIVIZ_MASTER_STATE_ID_9999999",
+                    state_person_id="RECIDIVIZ_MASTER_CONTROL_NUMBER_090909",
                     state_person_external_ids=[
                         StatePersonExternalId(
-                            state_person_external_id_id="9999999", id_type=US_PA_SID
+                            state_person_external_id_id="9999999",
+                            id_type=US_PA_INMATE,
                         ),
                         StatePersonExternalId(
                             state_person_external_id_id="090909", id_type=US_PA_CONTROL
@@ -220,13 +227,15 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                     ],
                 ),
                 StatePerson(
-                    state_person_id="RECIDIVIZ_MASTER_STATE_ID_66666666",
+                    state_person_id="RECIDIVIZ_MASTER_CONTROL_NUMBER_060606",
                     state_person_external_ids=[
                         StatePersonExternalId(
-                            state_person_external_id_id="66666666", id_type=US_PA_SID
+                            state_person_external_id_id="66666666",
+                            id_type=US_PA_INMATE,
                         ),
                         StatePersonExternalId(
-                            state_person_external_id_id="66666667", id_type=US_PA_SID
+                            state_person_external_id_id="66666667",
+                            id_type=US_PA_INMATE,
                         ),
                         StatePersonExternalId(
                             state_person_external_id_id="060606", id_type=US_PA_CONTROL
@@ -245,7 +254,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "person_external_ids")
+        self.run_parse_file_test(expected, "person_external_ids_v2")
 
     def test_populate_data_doc_person_info(self) -> None:
         expected = IngestInfo(
@@ -352,7 +361,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "doc_person_info")
+        self.run_parse_file_test(expected, "doc_person_info_v2")
 
     def test_populate_data_dbo_tblInmTestScore(self) -> None:
         expected = IngestInfo(
@@ -1366,7 +1375,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "dbo_Offender")
+        self.run_parse_file_test(expected, "dbo_Offender_v2")
 
     def test_populate_data_dbo_LSIHistory(self) -> None:
         expected = IngestInfo(
@@ -2352,7 +2361,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
                     external_id="12345678",
-                    id_type=US_PA_SID,
+                    id_type=US_PA_INMATE,
                 ),
             ],
         )
@@ -2371,12 +2380,12 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
                     external_id="55554444",
-                    id_type=US_PA_SID,
+                    id_type=US_PA_INMATE,
                 ),
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
                     external_id="66665555",
-                    id_type=US_PA_SID,
+                    id_type=US_PA_INMATE,
                 ),
             ],
         )
@@ -2414,7 +2423,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
                     external_id="09876543",
-                    id_type=US_PA_SID,
+                    id_type=US_PA_INMATE,
                 ),
             ],
         )
@@ -2434,7 +2443,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
                     external_id="888888888",
-                    id_type=US_PA_SID,
+                    id_type=US_PA_INMATE,
                 ),
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id="888P", id_type=US_PA_PBPP
@@ -2448,7 +2457,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
                     external_id="9999999",
-                    id_type=US_PA_SID,
+                    id_type=US_PA_INMATE,
                 ),
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
@@ -2464,12 +2473,12 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
                     external_id="66666666",
-                    id_type=US_PA_SID,
+                    id_type=US_PA_INMATE,
                 ),
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
                     external_id="66666667",
-                    id_type=US_PA_SID,
+                    id_type=US_PA_INMATE,
                 ),
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
@@ -2504,7 +2513,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename("person_external_ids.csv")
+        self._run_ingest_job_for_filename("person_external_ids_v2.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -2648,7 +2657,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename("doc_person_info.csv")
+        self._run_ingest_job_for_filename("doc_person_info_v2.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -3964,7 +3973,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename("dbo_Offender.csv")
+        self._run_ingest_job_for_filename("dbo_Offender_v2.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)

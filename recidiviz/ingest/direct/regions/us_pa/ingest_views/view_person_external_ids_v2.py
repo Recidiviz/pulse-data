@@ -14,50 +14,32 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query containing person demographic and identifier information from PBPP."""
+"""Query for all external ids ever associated with any person in the DOC or PBPP systems."""
 
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestViewBuilder,
 )
-from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids import (
-    MASTER_STATE_IDS_FRAGMENT,
+from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids_v2 import (
+    MASTER_STATE_IDS_FRAGMENT_V2,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = f"""WITH
-{MASTER_STATE_IDS_FRAGMENT},
-base_query AS (
-  SELECT 
-    ids.recidiviz_master_person_id, ParoleNumber, OffRaceEthnicGroup, OffSex,
-    ROW_NUMBER() OVER (PARTITION BY recidiviz_master_person_id ORDER BY LastModifiedDate DESC) AS recency_rank
-  FROM dbo_Offender_generated_view offender
-  JOIN
-  (SELECT DISTINCT recidiviz_master_person_id, parole_number FROM recidiviz_master_person_ids) ids
-  ON ids.parole_number = offender.ParoleNumber
-),
-races_ethnicities AS (
-  SELECT 
-    recidiviz_master_person_id,
-    STRING_AGG(DISTINCT OffRaceEthnicGroup, ',' ORDER BY OffRaceEthnicGroup) AS races_ethnicities_list
-  FROM base_query
-  GROUP BY recidiviz_master_person_id
-)
-SELECT * EXCEPT (recency_rank)
-FROM base_query
-LEFT OUTER JOIN
-races_ethnicities
-USING (recidiviz_master_person_id)
-WHERE recency_rank = 1
-"""
+{MASTER_STATE_IDS_FRAGMENT_V2}
+SELECT 
+  recidiviz_master_person_id,
+  STRING_AGG(DISTINCT control_number, ',' ORDER BY control_number) AS control_numbers,
+  STRING_AGG(DISTINCT inmate_number, ',' ORDER BY inmate_number) AS inmate_numbers,
+  STRING_AGG(DISTINCT parole_number, ',' ORDER BY parole_number) AS parole_numbers
+FROM recidiviz_master_person_ids
+GROUP BY recidiviz_master_person_id;"""
 
-# TODO(#7222): Delete this view once v2 has shipped to prod
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_pa",
-    ingest_view_name="dbo_Offender",
+    ingest_view_name="person_external_ids_v2",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols=None,
-    materialize_raw_data_table_views=True,
+    order_by_cols="recidiviz_master_person_id",
 )
 
 if __name__ == "__main__":

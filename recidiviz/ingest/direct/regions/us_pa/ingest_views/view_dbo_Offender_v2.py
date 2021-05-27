@@ -19,14 +19,14 @@
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestViewBuilder,
 )
-from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids import (
-    MASTER_STATE_IDS_FRAGMENT,
+from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids_v2 import (
+    MASTER_STATE_IDS_FRAGMENT_V2,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = f"""WITH
-{MASTER_STATE_IDS_FRAGMENT},
+{MASTER_STATE_IDS_FRAGMENT_V2},
 base_query AS (
   SELECT 
     ids.recidiviz_master_person_id, ParoleNumber, OffRaceEthnicGroup, OffSex,
@@ -51,10 +51,9 @@ USING (recidiviz_master_person_id)
 WHERE recency_rank = 1
 """
 
-# TODO(#7222): Delete this view once v2 has shipped to prod
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_pa",
-    ingest_view_name="dbo_Offender",
+    ingest_view_name="dbo_Offender_v2",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols=None,
     materialize_raw_data_table_views=True,
