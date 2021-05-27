@@ -63,7 +63,6 @@ from recidiviz.ingest.direct.direct_ingest_region_utils import (
 )
 from recidiviz.tools import deploy
 from recidiviz.utils.environment import GCPEnvironment
-from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.regions import get_region, Region
 
 _REGION_REGEX = re.compile(r"us_[a-z]{2}(_[a-z]+)?")
@@ -171,7 +170,9 @@ class DirectIngestRegionDirStructureBase:
                 is_direct_ingest=True,
                 region_module_override=self.region_module_override,
             )
-            with local_project_id_override("recidiviz-456"):
+            with patch(
+                "recidiviz.utils.metadata.project_id", return_value="recidiviz-456"
+            ):
                 controller_class = DirectIngestControllerFactory.get_controller_class(
                     region
                 )
@@ -194,7 +195,9 @@ class DirectIngestRegionDirStructureBase:
                 is_direct_ingest=True,
                 region_module_override=self.region_module_override,
             )
-            with local_project_id_override("recidiviz-456"):
+            with patch(
+                "recidiviz.utils.metadata.project_id", return_value="recidiviz-456"
+            ):
                 controller = DirectIngestControllerFactory.build(
                     ingest_bucket_path=self.primary_ingest_bucket_for_region(region),
                     allow_unlaunched=True,
@@ -210,12 +213,16 @@ class DirectIngestRegionDirStructureBase:
                 region_module_override=self.region_module_override,
             )
 
-            controller_class = DirectIngestControllerFactory.get_controller_class(
-                region
-            )
+            with patch(
+                "recidiviz.utils.metadata.project_id", return_value="recidiviz-456"
+            ):
+                controller = DirectIngestControllerFactory.build(
+                    ingest_bucket_path=self.primary_ingest_bucket_for_region(region),
+                    allow_unlaunched=True,
+                )
 
             builders = DirectIngestPreProcessedIngestViewCollector(
-                region, controller_class.get_file_tag_rank_list()
+                region, controller.get_file_tag_rank_list()
             ).collect_view_builders()
 
             raw_file_manager = DirectIngestRegionRawFileConfig(
@@ -255,12 +262,19 @@ class DirectIngestRegionDirStructureBase:
                         region_module_override=self.region_module_override,
                     )
 
-                    controller_class = (
-                        DirectIngestControllerFactory.get_controller_class(region)
-                    )
+                    with patch(
+                        "recidiviz.utils.metadata.project_id",
+                        return_value="recidiviz-456",
+                    ):
+                        controller = DirectIngestControllerFactory.build(
+                            ingest_bucket_path=self.primary_ingest_bucket_for_region(
+                                region
+                            ),
+                            allow_unlaunched=True,
+                        )
 
                     builders = DirectIngestPreProcessedIngestViewCollector(
-                        region, controller_class.get_file_tag_rank_list()
+                        region, controller.get_file_tag_rank_list()
                     ).collect_view_builders()
                     for builder in builders:
                         builder.build()

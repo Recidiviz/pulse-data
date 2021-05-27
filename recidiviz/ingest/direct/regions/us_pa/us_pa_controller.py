@@ -697,8 +697,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     }
     ENUM_IGNORE_PREDICATES: Dict[EntityEnumMeta, EnumIgnorePredicate] = {}
 
-    @classmethod
-    def get_file_tag_rank_list(cls) -> List[str]:
+    def get_file_tag_rank_list(self) -> List[str]:
         launched_file_tags = [
             # Data source: Mixed
             "person_external_ids",

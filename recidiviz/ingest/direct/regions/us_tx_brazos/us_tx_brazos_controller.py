@@ -57,8 +57,7 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
     ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {}
     ENUM_IGNORE_PREDICATES: Dict[EntityEnumMeta, EnumIgnorePredicate] = {}
 
-    @classmethod
-    def get_file_tag_rank_list(cls) -> List[str]:
+    def get_file_tag_rank_list(self) -> List[str]:
         return []
 
     def generate_enum_overrides(self) -> EnumOverrides:

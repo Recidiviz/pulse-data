@@ -89,9 +89,8 @@ class CsvGcsfsDirectIngestController(BaseDirectIngestController):
             )
         )
 
-    @classmethod
     @abc.abstractmethod
-    def get_file_tag_rank_list(cls) -> List[str]:
+    def get_file_tag_rank_list(self) -> List[str]:
         pass
 
     def _file_meets_file_line_limit(self, line_limit: int, path: GcsfsFilePath) -> bool:

@@ -223,8 +223,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
         self.files_to_set_with_empty_values = ["elite_offendersentenceterms"]
 
-    @classmethod
-    def get_file_tag_rank_list(cls) -> List[str]:
+    def get_file_tag_rank_list(self) -> List[str]:
         # NOTE: The order of ingest here is important! Do not change unless you know what you're doing!
         tags = [
             # Elite - incarceration-focused
@@ -240,11 +239,10 @@ class UsNdController(CsvGcsfsDirectIngestController):
             "elite_externalmovements",
         ]
 
-        if not environment.in_gcp_production():
+        if not environment.in_gcp():
             # TODO(#2399): Once we are capable of handling historical and nightly ingest of
             #  'elite_offense_in_custody_and_pos_report_data', remove this check.
-            if not environment.in_gcp_staging():
-                tags.append("elite_offense_in_custody_and_pos_report_data")
+            tags.append("elite_offense_in_custody_and_pos_report_data")
 
         tags += [
             # Docstars - supervision-focused

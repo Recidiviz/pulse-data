@@ -149,6 +149,7 @@ def get_touched_raw_data_regions(touched_files: Optional[List[str]]) -> Set[str]
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
+    """Generates direct ingest region documentation."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "filenames",
@@ -164,6 +165,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         modified = False
         touched_raw_data_regions = get_touched_raw_data_regions(args.filenames)
         for region_code in touched_raw_data_regions:
+            if not StateCode.is_state_code(region_code):
+                logging.info(
+                    "Skipping raw data documentation for non-state region [%s]",
+                    region_code,
+                )
+                continue
             logging.info(
                 "Generating raw data documentation for region [%s]", region_code
             )
