@@ -437,7 +437,7 @@ class MonthlyDatePartitionViewBuilder(SimpleBigQueryViewBuilder):
     ):
         super().__init__(
             dataset_id=dataset_id,
-            view_id=f"{view_prefix_for_metric_name(metric_name)}_monthly",
+            view_id=f"{view_prefix_for_metric_name(metric_name)}_monthly_partitions",
             view_query_template=MONTHLY_DATE_PARTITION_VIEW_TEMPLATE,
             # Query Format Arguments
             description=f"{metric_name} with monthly date partitions",
@@ -554,7 +554,7 @@ class AnnualDatePartitionViewBuilder(SimpleBigQueryViewBuilder):
     ):
         super().__init__(
             dataset_id=dataset_id,
-            view_id=f"{view_prefix_for_metric_name(metric_name)}_annual",
+            view_id=f"{view_prefix_for_metric_name(metric_name)}_annual_partitions",
             view_query_template=ANNUAL_DATE_PARTITION_VIEW_TEMPLATE,
             # Query Format Arguments
             description=f"{metric_name} with annual date partitions",
@@ -721,7 +721,7 @@ class AggregateToDatePartitionsViewBuilder(SimpleBigQueryViewBuilder):
     ):
         super().__init__(
             dataset_id=dataset_id,
-            view_id=f"{view_prefix_for_metric_name(metric_name)}_annual",
+            view_id=f"{view_prefix_for_metric_name(metric_name)}_aggregated_{time_aggregation.value}",
             view_query_template=AGGREGATE_TO_DATE_PARTITIONS_VIEW_TEMPLATE,
             # Query Format Arguments
             description=f"{metric_name} aggregated to date partitions",
@@ -799,7 +799,7 @@ def time_aggregation_view_chain(
 
     aggregated_view = AggregateToDatePartitionsViewBuilder(
         dataset_id=dataset_id,
-        metric_name=f"{metric_to_calculate.output_name}_{time_aggregation.value}",
+        metric_name=metric_to_calculate.output_name,
         input_view=aggregation_partition_view,
         time_aggregation=time_aggregation,
     )
