@@ -62,27 +62,24 @@ class ViewExportCloudTaskManagerTest(unittest.TestCase):
     @parameterized.expand(
         [
             (
-                "with_export_name_filter",
+                "with_state_code_and_export_name",
                 "CORE",
-                "/export/metric_view_data?export_job_filter=CORE",
-            ),
-            (
-                "with_state_filter",
-                "US_MO",
-                "/export/metric_view_data?export_job_filter=US_MO",
+                "US_ND",
+                "/export/metric_view_data?export_job_name=CORE&state_code=US_ND",
             ),
         ]
     )
     @freeze_time("2019-04-12")
     def test_create_metric_view_data_export_task(
-        self, _name: str, export_job_filter: str, expected_url: str
+        self, _name: str, export_job_name: str, state_code: str, expected_url: str
     ) -> None:
+
         # Arrange
         uuid = "random-uuid"
         self.mock_uuid.uuid4.return_value = uuid
 
         queue_path = f"queue_path/{self.mock_project_id}/{QUEUES_REGION}"
-        task_id = f"view_export-{export_job_filter}-2019-04-12-random-uuid"
+        task_id = f"view_export-{export_job_name}-{state_code}-2019-04-12-random-uuid"
         task_path = f"{queue_path}/{task_id}"
 
         task = tasks_v2.types.task_pb2.Task(
@@ -99,7 +96,57 @@ class ViewExportCloudTaskManagerTest(unittest.TestCase):
 
         # Act
         ViewExportCloudTaskManager().create_metric_view_data_export_task(
-            export_job_filter=export_job_filter
+            export_job_name=export_job_name, state_code=state_code
+        )
+
+        # Assert
+        self.mock_client.return_value.queue_path.assert_called_with(
+            self.mock_project_id, QUEUES_REGION, BIGQUERY_QUEUE_V2
+        )
+        self.mock_client.return_value.task_path.assert_called_with(
+            self.mock_project_id, QUEUES_REGION, BIGQUERY_QUEUE_V2, task_id
+        )
+        self.mock_client.return_value.create_task.assert_called_with(
+            parent=queue_path, task=task
+        )
+
+    @parameterized.expand(
+        [
+            (
+                "with_state_code_and_export_name",
+                "CORE",
+                "/export/metric_view_data?export_job_name=CORE",
+            ),
+        ]
+    )
+    @freeze_time("2019-04-12")
+    def test_create_metric_view_data_export_task_state_agnostic(
+        self, _name: str, export_job_name: str, expected_url: str
+    ) -> None:
+
+        # Arrange
+        uuid = "random-uuid"
+        self.mock_uuid.uuid4.return_value = uuid
+
+        queue_path = f"queue_path/{self.mock_project_id}/{QUEUES_REGION}"
+        task_id = f"view_export-{export_job_name}-2019-04-12-random-uuid"
+        task_path = f"{queue_path}/{task_id}"
+
+        task = tasks_v2.types.task_pb2.Task(
+            name=task_path,
+            app_engine_http_request={
+                "http_method": "POST",
+                "relative_uri": expected_url,
+                "body": json.dumps({}).encode(),
+            },
+        )
+
+        self.mock_client.return_value.task_path.return_value = task_path
+        self.mock_client.return_value.queue_path.return_value = queue_path
+
+        # Act
+        ViewExportCloudTaskManager().create_metric_view_data_export_task(
+            export_job_name=export_job_name,
         )
 
         # Assert

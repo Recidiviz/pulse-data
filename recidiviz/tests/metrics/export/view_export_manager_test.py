@@ -18,9 +18,13 @@
 """Tests for view_export_manager.py."""
 
 import unittest
+from http import HTTPStatus
+from typing import Any, Dict
 from unittest import mock
-from unittest.mock import Mock
+from unittest.mock import Mock, MagicMock
 
+import flask
+from flask import Flask
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -28,6 +32,12 @@ from recidiviz.big_query.export.big_query_view_exporter import ViewExportValidat
 from recidiviz.big_query.export.export_query_config import (
     ExportBigQueryViewConfig,
     ExportOutputFormatType,
+)
+from recidiviz.metrics.export.view_export_manager import (
+    export_blueprint,
+)
+from recidiviz.tests.ingest.scrape.scraper_cloud_task_manager_test import (
+    CLOUD_TASK_MANAGER_PACKAGE_NAME,
 )
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.namespaces import BigQueryViewNamespace
@@ -40,6 +50,16 @@ from recidiviz.tests.ingest import fixtures
 
 
 @mock.patch(
+    "recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project")
+)
+@mock.patch(
+    "recidiviz.utils.metadata.project_number", MagicMock(return_value="123456789")
+)
+@mock.patch(
+    "recidiviz.utils.validate_jwt.validate_iap_jwt_from_app_engine",
+    MagicMock(return_value=("test-user", "test-user@recidiviz.org", None)),
+)
+@mock.patch(
     f"{view_export_manager.__name__}.PRODUCTS_CONFIG_PATH",
     fixtures.as_filepath("fixture_products.yaml"),
 )
@@ -47,8 +67,26 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
     """Tests for view_export_manager.py."""
 
     def setUp(self) -> None:
+        self.app = Flask(__name__)
+        self.app.register_blueprint(export_blueprint)
+        self.app.config["TESTING"] = True
+        self.headers: Dict[str, Dict[Any, Any]] = {"x-goog-iap-jwt-assertion": {}}
+        self.client = self.app.test_client()
+        self.mock_cloud_task_client_patcher = mock.patch(
+            "google.cloud.tasks_v2.CloudTasksClient"
+        )
+        self.mock_cloud_task_client_patcher.start()
+        self.mock_uuid_patcher = mock.patch(f"{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid")
+        self.mock_uuid = self.mock_uuid_patcher.start()
+        with self.app.test_request_context():
+            self.metric_view_data_export_url = flask.url_for(
+                "export.metric_view_data_export"
+            )
+            self.create_metric_view_data_export_tasks_url = flask.url_for(
+                "export.create_metric_view_data_export_tasks"
+            )
         self.mock_state_code = "US_XX"
-        self.mock_project_id = "fake-recidiviz-project"
+        self.mock_project_id = "test-project"
         self.mock_dataset_id = "base_dataset"
         self.mock_dataset = bigquery.dataset.DatasetReference(
             self.mock_project_id, self.mock_dataset_id
@@ -135,66 +173,8 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         self.export_config_patcher.stop()
         self.metadata_patcher.stop()
         self.gcs_factory_patcher.stop()
-
-    @mock.patch("recidiviz.utils.environment.get_gcp_environment")
-    def test_get_configs_for_state(self, mock_environment: mock.MagicMock) -> None:
-        """Tests get_configs_for_state function to ensure that state codes correctly match"""
-
-        mock_environment.return_value = "production"
-        export_configs_for_filter = view_export_manager.get_configs_for_state(
-            state_code="US_XX", project_id=self.mock_project_id
-        )
-        view = self.mock_view_builder.build()
-        metric_view = self.mock_metric_view_builder.build()
-
-        expected_view_config_list_1 = [
-            ExportBigQueryViewConfig(
-                bq_view_namespace=self.mock_big_query_view_namespace,
-                view=view,
-                view_filter_clause=" WHERE state_code = 'US_XX'",
-                intermediate_table_name=f"{view.view_id}_table_US_XX",
-                output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
-                        project_id=self.mock_project_id,
-                        state_code="US_XX",
-                    )
-                ),
-                export_output_formats=[ExportOutputFormatType.JSON],
-            )
-        ]
-
-        expected_view_config_list_2 = [
-            ExportBigQueryViewConfig(
-                bq_view_namespace=self.mock_big_query_view_namespace,
-                view=metric_view,
-                view_filter_clause=" WHERE state_code = 'US_XX'",
-                intermediate_table_name=f"{view.view_id}_table_US_XX",
-                output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
-                        project_id=self.mock_project_id,
-                        state_code="US_XX",
-                    )
-                ),
-                export_output_formats=[
-                    ExportOutputFormatType.JSON,
-                    ExportOutputFormatType.METRIC,
-                ],
-            )
-        ]
-
-        expected_export_configs_for_filter = {
-            "EXPORT": expected_view_config_list_1,
-            "OTHER_EXPORT": expected_view_config_list_2,
-        }
-
-        self.assertEqual(expected_export_configs_for_filter, export_configs_for_filter)
-
-        # Test for case insensitivity
-
-        export_configs_for_filter = view_export_manager.get_configs_for_state(
-            state_code="US_xx", project_id=self.mock_project_id
-        )
-        self.assertEqual(expected_export_configs_for_filter, export_configs_for_filter)
+        self.mock_uuid_patcher.stop()
+        self.mock_cloud_task_client_patcher.stop()
 
     @mock.patch("recidiviz.utils.environment.get_gcp_environment")
     def test_get_configs_for_export_name(
@@ -204,7 +184,69 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
         mock_environment.return_value = "production"
         export_configs_for_filter = view_export_manager.get_configs_for_export_name(
-            export_name="MOCK_EXPORT_NAME", project_id=self.mock_project_id
+            export_name=self.mock_export_name,
+            state_code=self.mock_state_code,
+            project_id=self.mock_project_id,
+        )
+        view = self.mock_view_builder.build()
+        metric_view = self.mock_metric_view_builder.build()
+
+        expected_view_config_list = [
+            ExportBigQueryViewConfig(
+                bq_view_namespace=self.mock_big_query_view_namespace,
+                view=view,
+                view_filter_clause=f" WHERE state_code = '{self.mock_state_code}'",
+                intermediate_table_name=f"{view.view_id}_table_{self.mock_state_code}",
+                output_directory=GcsfsDirectoryPath.from_absolute_path(
+                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
+                        project_id=self.mock_project_id,
+                        state_code=self.mock_state_code,
+                    )
+                ),
+                export_output_formats=[ExportOutputFormatType.JSON],
+            ),
+            ExportBigQueryViewConfig(
+                bq_view_namespace=self.mock_big_query_view_namespace,
+                view=metric_view,
+                view_filter_clause=f" WHERE state_code = '{self.mock_state_code}'",
+                intermediate_table_name=f"{view.view_id}_table_{self.mock_state_code}",
+                output_directory=GcsfsDirectoryPath.from_absolute_path(
+                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
+                        project_id=self.mock_project_id,
+                        state_code=self.mock_state_code,
+                    )
+                ),
+                export_output_formats=[
+                    ExportOutputFormatType.JSON,
+                    ExportOutputFormatType.METRIC,
+                ],
+            ),
+        ]
+
+        expected_export_configs_for_filter = {
+            self.mock_export_name: expected_view_config_list,
+        }
+
+        self.assertEqual(expected_export_configs_for_filter, export_configs_for_filter)
+
+        # Test for case insensitivity
+
+        export_configs_for_filter = view_export_manager.get_configs_for_export_name(
+            export_name=self.mock_export_name.lower(),
+            state_code=self.mock_state_code.lower(),
+            project_id=self.mock_project_id,
+        )
+        self.assertEqual(expected_export_configs_for_filter, export_configs_for_filter)
+
+    @mock.patch("recidiviz.utils.environment.get_gcp_environment")
+    def test_get_configs_for_export_name_state_agnostic(
+        self, mock_environment: mock.MagicMock
+    ) -> None:
+        """Tests get_configs_for_export_name function to ensure that export names correctly match"""
+
+        mock_environment.return_value = "production"
+        export_configs_for_filter = view_export_manager.get_configs_for_export_name(
+            export_name=self.mock_export_name, project_id=self.mock_project_id
         )
         view = self.mock_view_builder.build()
         metric_view = self.mock_metric_view_builder.build()
@@ -216,7 +258,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 view_filter_clause=None,
                 intermediate_table_name=f"{view.view_id}_table",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    "gs://{project_id}-dataset-location/subdirectory/".format(
+                    "gs://{project_id}-dataset-location/subdirectory".format(
                         project_id=self.mock_project_id,
                     )
                 ),
@@ -228,7 +270,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 view_filter_clause=None,
                 intermediate_table_name=f"{view.view_id}_table",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    "gs://{project_id}-dataset-location/subdirectory/".format(
+                    "gs://{project_id}-dataset-location/subdirectory".format(
                         project_id=self.mock_project_id,
                     )
                 ),
@@ -248,8 +290,9 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         # Test for case insensitivity
 
         export_configs_for_filter = view_export_manager.get_configs_for_export_name(
-            export_name="mock_export_name", project_id=self.mock_project_id
+            export_name=self.mock_export_name.lower(), project_id=self.mock_project_id
         )
+
         self.assertEqual(expected_export_configs_for_filter, export_configs_for_filter)
 
     @mock.patch(
@@ -263,7 +306,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
     ) -> None:
         """Tests the table is created from the view and then extracted."""
         view_export_manager.export_view_data_to_cloud_storage(
-            self.mock_state_code, mock_view_exporter
+            self.mock_export_name, self.mock_state_code, mock_view_exporter
         )
 
         view = self.mock_view_builder.build()
@@ -303,32 +346,23 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 ],
             )
         ]
-
         mock_view_update_manager_rematerialize.assert_called()
         mock_view_exporter.export_and_validate.assert_has_calls(
             [
                 mock.call([]),  # CSV export
                 mock.call([]),
-                mock.call([]),
-                mock.call([]),
-                mock.call([]),
                 mock.call(
                     [
-                        conf.pointed_to_staging_subdirectory()
-                        for conf in expected_view_config_list_1
+                        expected_view_config_list_1[
+                            0
+                        ].pointed_to_staging_subdirectory(),
+                        expected_view_config_list_2[
+                            0
+                        ].pointed_to_staging_subdirectory(),
                     ]
-                ),  # JSON export 1 ("EXPORT")
+                ),  # JSON exports
                 mock.call(
-                    [
-                        conf.pointed_to_staging_subdirectory()
-                        for conf in expected_view_config_list_2
-                    ]
-                ),  # JSON export 2 ("OTHER_EXPORT")
-                mock.call(
-                    [
-                        conf.pointed_to_staging_subdirectory()
-                        for conf in expected_view_config_list_2
-                    ]
+                    [expected_view_config_list_2[0].pointed_to_staging_subdirectory()]
                 ),  # METRIC export ("OTHER_EXPORT")
             ],
             any_order=True,
@@ -351,12 +385,12 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
         with self.assertRaises(ValueError) as e:
             view_export_manager.export_view_data_to_cloud_storage(
-                "US_YY", mock_view_exporter
+                export_job_name="JOBZZZ", override_view_exporter=mock_view_exporter
             )
             self.assertEqual(
                 str(e.exception),
                 "Export filter did not match any export configs:",
-                " US_YY",
+                " JOBZZZ",
             )
 
     @mock.patch(
@@ -383,7 +417,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         )
 
         view_export_manager.export_view_data_to_cloud_storage(
-            export_job_filter=self.mock_export_name,
+            export_job_name=self.mock_export_name,
             override_view_exporter=mock_view_exporter,
         )
 
@@ -421,6 +455,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         ]
 
         mock_view_update_manager_rematerialize.assert_called()
+
         mock_view_exporter.export_and_validate.assert_has_calls(
             [
                 mock.call([]),  # CSV export
@@ -451,7 +486,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         mock_view_exporter.export_and_validate.side_effect = ValueError
         with self.assertRaises(ValueError):
             view_export_manager.export_view_data_to_cloud_storage(
-                self.mock_state_code, mock_view_exporter
+                self.mock_export_name, override_view_exporter=mock_view_exporter
             )
 
         # Just the metric export is attempted and then the raise stops subsequent checks from happening
@@ -472,7 +507,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
         # Should not throw
         view_export_manager.export_view_data_to_cloud_storage(
-            self.mock_state_code, mock_view_exporter
+            self.mock_export_name, override_view_exporter=mock_view_exporter
         )
 
         # Just the metric export is attempted and then the raise stops subsequent checks from happening
@@ -508,7 +543,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         }
 
         view_export_manager.export_view_data_to_cloud_storage(
-            self.mock_state_code, mock_view_exporter
+            self.mock_export_name, override_view_exporter=mock_view_exporter
         )
 
         mock_view_update_manager_deploy.assert_called_with(
@@ -544,7 +579,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         }
 
         view_export_manager.export_view_data_to_cloud_storage(
-            self.mock_state_code, mock_view_exporter
+            self.mock_export_name, override_view_exporter=mock_view_exporter
         )
 
         mock_view_update_manager_rematerialize.assert_called_with(
@@ -554,3 +589,205 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 self.mock_big_query_view_namespace
             ],
         )
+
+    @mock.patch(
+        "recidiviz.metrics.export.view_export_manager.export_view_data_to_cloud_storage"
+    )
+    def test_metric_view_data_export_valid_request(
+        self, mock_export_view_data_to_cloud_storage: Mock
+    ) -> None:
+        with self.app.test_request_context():
+            mock_export_view_data_to_cloud_storage.return_value = None
+            response = self.client.get(
+                self.metric_view_data_export_url,
+                headers=self.headers,
+                query_string="export_job_name=EXPORT&state_code=US_XX",
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
+            response = self.client.get(
+                self.metric_view_data_export_url,
+                headers=self.headers,
+                query_string="export_job_name=export&state_code=us_xx",
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
+    @mock.patch(
+        "recidiviz.metrics.export.view_export_manager.export_view_data_to_cloud_storage"
+    )
+    def test_metric_view_data_export_state_agnostic(
+        self, mock_export_view_data_to_cloud_storage: Mock
+    ) -> None:
+        with self.app.test_request_context():
+            mock_export_view_data_to_cloud_storage.return_value = None
+            response = self.client.get(
+                self.metric_view_data_export_url,
+                headers=self.headers,
+                query_string="export_job_name=MOCK_EXPORT_NAME",
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
+            # case insensitive
+            response = self.client.get(
+                self.metric_view_data_export_url,
+                headers=self.headers,
+                query_string="export_job_name=mock_export_name",
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
+    @mock.patch(
+        "recidiviz.metrics.export.view_export_manager.export_view_data_to_cloud_storage"
+    )
+    def test_metric_view_data_export_missing_required_state_code(
+        self, mock_export_view_data_to_cloud_storage: Mock
+    ) -> None:
+        with self.app.test_request_context():
+            mock_export_view_data_to_cloud_storage.return_value = None
+            response = self.client.get(
+                self.metric_view_data_export_url,
+                headers=self.headers,
+                query_string="export_job_name=EXPORT",
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            self.assertEqual(
+                b"Missing required state_code parameter for export_job_name EXPORT",
+                response.data,
+            )
+
+            # case insensitive
+            response = self.client.get(
+                self.metric_view_data_export_url,
+                headers=self.headers,
+                query_string="export_job_name=export",
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            self.assertEqual(
+                b"Missing required state_code parameter for export_job_name EXPORT",
+                response.data,
+            )
+
+    @mock.patch(
+        "recidiviz.metrics.export.view_export_manager.export_view_data_to_cloud_storage"
+    )
+    def test_metric_view_data_export_missing_export_job_name(
+        self, mock_export_view_data_to_cloud_storage: Mock
+    ) -> None:
+        with self.app.test_request_context():
+            mock_export_view_data_to_cloud_storage.return_value = None
+            response = self.client.get(
+                self.metric_view_data_export_url,
+                headers=self.headers,
+                query_string="state_code=US_XX",
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            self.assertEqual(
+                b"Missing required export_job_name URL parameter", response.data
+            )
+
+    @mock.patch(
+        "recidiviz.metrics.export.view_export_cloud_task_manager.ViewExportCloudTaskManager.create_metric_view_data_export_task"
+    )
+    def test_create_metric_view_data_export_tasks_state_code_filter(
+        self, mock_create_metric_view_data_export_task: Mock
+    ) -> None:
+        with self.app.test_request_context():
+            mock_create_metric_view_data_export_task.return_value = None
+            response = self.client.get(
+                self.create_metric_view_data_export_tasks_url,
+                headers=self.headers,
+                query_string="export_job_filter=US_XX",
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_create_metric_view_data_export_task.assert_has_calls(
+                [
+                    mock.call(export_job_name="EXPORT", state_code="US_XX"),
+                    mock.call(export_job_name="OTHER_EXPORT", state_code="US_XX"),
+                ],
+                any_order=True,
+            )
+
+            response = self.client.get(
+                self.create_metric_view_data_export_tasks_url,
+                headers=self.headers,
+                query_string="export_job_filter=us_xx",
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_create_metric_view_data_export_task.assert_has_calls(
+                [
+                    mock.call(export_job_name="EXPORT", state_code="US_XX"),
+                    mock.call(export_job_name="OTHER_EXPORT", state_code="US_XX"),
+                ],
+                any_order=True,
+            )
+
+    @mock.patch(
+        "recidiviz.metrics.export.view_export_cloud_task_manager.ViewExportCloudTaskManager.create_metric_view_data_export_task"
+    )
+    def test_create_metric_view_data_export_tasks_export_name_filter_state_agnostic(
+        self, mock_create_metric_view_data_export_task: Mock
+    ) -> None:
+        with self.app.test_request_context():
+            mock_create_metric_view_data_export_task.return_value = None
+            response = self.client.get(
+                self.create_metric_view_data_export_tasks_url,
+                headers=self.headers,
+                query_string="export_job_filter=MOCK_EXPORT_NAME",
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_create_metric_view_data_export_task.assert_has_calls(
+                [
+                    mock.call(export_job_name="MOCK_EXPORT_NAME", state_code=None),
+                ],
+                any_order=True,
+            )
+
+            # case insensitive
+            response = self.client.get(
+                self.create_metric_view_data_export_tasks_url,
+                headers=self.headers,
+                query_string="export_job_filter=mock_export_name",
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_create_metric_view_data_export_task.assert_has_calls(
+                [
+                    mock.call(export_job_name="MOCK_EXPORT_NAME", state_code=None),
+                ],
+                any_order=True,
+            )
+
+    @mock.patch(
+        "recidiviz.metrics.export.view_export_cloud_task_manager.ViewExportCloudTaskManager.create_metric_view_data_export_task"
+    )
+    def test_create_metric_view_data_export_tasks_export_name_filter(
+        self, mock_create_metric_view_data_export_task: Mock
+    ) -> None:
+        with self.app.test_request_context():
+            mock_create_metric_view_data_export_task.return_value = None
+            response = self.client.get(
+                self.create_metric_view_data_export_tasks_url,
+                headers=self.headers,
+                query_string="export_job_filter=EXPORT",
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_create_metric_view_data_export_task.assert_has_calls(
+                [
+                    mock.call(export_job_name="EXPORT", state_code="US_XX"),
+                    mock.call(export_job_name="EXPORT", state_code="US_WW"),
+                ],
+                any_order=True,
+            )
+
+            # case insensitive
+            response = self.client.get(
+                self.create_metric_view_data_export_tasks_url,
+                headers=self.headers,
+                query_string="export_job_filter=export",
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_create_metric_view_data_export_task.assert_has_calls(
+                [
+                    mock.call(export_job_name="EXPORT", state_code="US_XX"),
+                    mock.call(export_job_name="EXPORT", state_code="US_WW"),
+                ],
+                any_order=True,
+            )
