@@ -20,7 +20,6 @@ from datetime import date
 from typing import List, Optional, Any, Dict, Set, Union, Tuple
 
 from dateutil.relativedelta import relativedelta
-from pydot import frozendict
 
 from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
     IncarcerationEvent,
@@ -39,12 +38,11 @@ from recidiviz.calculator.pipeline.utils.execution_utils import (
     list_of_dicts_to_dict_with_keys,
     extract_county_of_residence_from_rows,
 )
-from recidiviz.calculator.pipeline.utils.incarceration_period_index import (
-    IncarcerationPeriodIndex,
+from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
+    PreProcessedIncarcerationPeriodIndex,
 )
-from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
-    prepare_incarceration_periods_for_calculations,
-    IncarcerationPreProcessingConfig,
+from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
+    IncarcerationPreProcessingManager,
 )
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_earliest_date_of_period_ending_in_death,
@@ -54,9 +52,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     get_post_incarceration_supervision_type,
     state_specific_incarceration_admission_reason_override,
     state_specific_incarceration_release_reason_override,
-    should_collapse_transfers_different_purposes_for_incarceration,
-    drop_temporary_custody_periods,
-    drop_non_state_prison_incarceration_type_periods,
     state_specific_specialized_purpose_for_incarceration_override,
     pre_commitment_supervision_period_if_commitment,
     filter_supervision_periods_for_commitment_from_supervision_identification,
@@ -65,6 +60,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     state_specific_violation_history_window_pre_commitment_from_supervision,
     state_specific_violation_responses_for_violation_history,
     state_specific_violation_response_pre_processing_function,
+    get_state_specific_incarceration_period_pre_processing_delegate,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     get_supervision_periods_from_sentences,
@@ -166,15 +162,23 @@ def find_incarceration_events(
         StateSupervisionPeriod.get_class_id_name(),
     )
 
+    state_ip_pre_processing_manager_delegate = (
+        get_state_specific_incarceration_period_pre_processing_delegate(state_code)
+    )
+
+    ip_pre_processing_manager = IncarcerationPreProcessingManager(
+        incarceration_periods,
+        state_ip_pre_processing_manager_delegate,
+        earliest_death_date,
+    )
+
     incarceration_events.extend(
         find_all_stay_events(
-            state_code,
-            incarceration_sentences,
-            supervision_sentences,
-            incarceration_periods,
-            incarceration_period_to_judicial_district,
-            county_of_residence,
-            earliest_death_date,
+            incarceration_sentences=incarceration_sentences,
+            supervision_sentences=supervision_sentences,
+            ip_pre_processing_manager=ip_pre_processing_manager,
+            incarceration_period_to_judicial_district=incarceration_period_to_judicial_district,
+            county_of_residence=county_of_residence,
         )
     )
 
@@ -183,12 +187,11 @@ def find_incarceration_events(
             state_code=state_code,
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
-            original_incarceration_periods=incarceration_periods,
+            ip_pre_processing_manager=ip_pre_processing_manager,
             assessments=assessments,
             violation_responses=violation_responses,
             supervision_period_to_agent_associations=supervision_period_to_agent_associations,
             county_of_residence=county_of_residence,
-            earliest_death_date=earliest_death_date,
         )
     )
 
@@ -199,12 +202,11 @@ def find_all_admission_release_events(
     state_code: str,
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
-    original_incarceration_periods: List[StateIncarcerationPeriod],
+    ip_pre_processing_manager: IncarcerationPreProcessingManager,
     assessments: List[StateAssessment],
     violation_responses: List[StateSupervisionViolationResponse],
     supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
     county_of_residence: Optional[str],
-    earliest_death_date: Optional[date] = None,
 ) -> List[Union[IncarcerationAdmissionEvent, IncarcerationReleaseEvent]]:
     """Given the |original_incarceration_periods| generates and returns all IncarcerationAdmissionEvents and
     IncarcerationReleaseEvents.
@@ -213,36 +215,9 @@ def find_all_admission_release_events(
         Union[IncarcerationAdmissionEvent, IncarcerationReleaseEvent]
     ] = []
 
-    should_collapse_transfers_with_different_pfi: bool = (
-        should_collapse_transfers_different_purposes_for_incarceration(state_code)
-    )
-
-    ip_pre_processing_config: IncarcerationPreProcessingConfig = IncarcerationPreProcessingConfig(
-        drop_temporary_custody_periods=drop_temporary_custody_periods(state_code),
-        drop_non_state_prison_incarceration_type_periods=drop_non_state_prison_incarceration_type_periods(
-            state_code
-        ),
+    incarceration_period_index_for_admissions = ip_pre_processing_manager.pre_processed_incarceration_period_index_for_calculations(
         collapse_transfers=True,
-        collapse_temporary_custody_periods_with_revocation=True,
-        collapse_transfers_with_different_pfi=should_collapse_transfers_with_different_pfi,
         overwrite_facility_information_in_transfers=False,
-        earliest_death_date=earliest_death_date,
-    )
-
-    incarceration_periods_for_admissions: List[
-        StateIncarcerationPeriod
-    ] = prepare_incarceration_periods_for_calculations(
-        original_incarceration_periods, ip_pre_processing_config
-    )
-
-    de_duplicated_incarceration_admissions: List[
-        StateIncarcerationPeriod
-    ] = de_duplicated_admissions(incarceration_periods_for_admissions)
-
-    incarceration_periods_for_admissions_index: IncarcerationPeriodIndex = (
-        IncarcerationPeriodIndex(
-            incarceration_periods=de_duplicated_incarceration_admissions
-        )
     )
 
     supervision_periods = get_supervision_periods_from_sentences(
@@ -256,12 +231,14 @@ def find_all_admission_release_events(
         ),
     )
 
-    for incarceration_period in de_duplicated_incarceration_admissions:
+    for (
+        incarceration_period
+    ) in incarceration_period_index_for_admissions.incarceration_periods:
         admission_event = admission_event_for_period(
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
             incarceration_period=incarceration_period,
-            incarceration_period_index=incarceration_periods_for_admissions_index,
+            incarceration_period_index=incarceration_period_index_for_admissions,
             supervision_periods=supervision_periods,
             assessments=assessments,
             sorted_violation_responses=sorted_violation_responses,
@@ -272,40 +249,20 @@ def find_all_admission_release_events(
         if admission_event:
             incarceration_events.append(admission_event)
 
-    ip_pre_processing_config = IncarcerationPreProcessingConfig(
-        drop_temporary_custody_periods=drop_temporary_custody_periods(state_code),
-        drop_non_state_prison_incarceration_type_periods=drop_non_state_prison_incarceration_type_periods(
-            state_code
-        ),
+    incarceration_period_index_for_releases = ip_pre_processing_manager.pre_processed_incarceration_period_index_for_calculations(
         collapse_transfers=True,
-        collapse_temporary_custody_periods_with_revocation=True,
-        collapse_transfers_with_different_pfi=should_collapse_transfers_with_different_pfi,
         overwrite_facility_information_in_transfers=True,
     )
 
-    incarceration_periods_for_releases: List[
-        StateIncarcerationPeriod
-    ] = prepare_incarceration_periods_for_calculations(
-        original_incarceration_periods, ip_pre_processing_config
-    )
-
-    de_duplicated_incarceration_releases: List[
-        StateIncarcerationPeriod
-    ] = de_duplicated_releases(incarceration_periods_for_releases)
-
-    incarceration_periods_for_releases_index: IncarcerationPeriodIndex = (
-        IncarcerationPeriodIndex(
-            incarceration_periods=de_duplicated_incarceration_releases
-        )
-    )
-
-    for incarceration_period in de_duplicated_incarceration_releases:
+    for (
+        incarceration_period
+    ) in incarceration_period_index_for_releases.incarceration_periods:
         release_event = release_event_for_period(
-            incarceration_sentences,
-            supervision_sentences,
-            incarceration_period,
-            incarceration_periods_for_releases_index,
-            county_of_residence,
+            incarceration_sentences=incarceration_sentences,
+            supervision_sentences=supervision_sentences,
+            incarceration_period=incarceration_period,
+            incarceration_period_index=incarceration_period_index_for_releases,
+            county_of_residence=county_of_residence,
         )
 
         if release_event:
@@ -315,42 +272,23 @@ def find_all_admission_release_events(
 
 
 def find_all_stay_events(
-    state_code: str,
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
-    original_incarceration_periods: List[StateIncarcerationPeriod],
+    ip_pre_processing_manager: IncarcerationPreProcessingManager,
     incarceration_period_to_judicial_district: Dict[int, Dict[Any, Any]],
     county_of_residence: Optional[str],
-    earliest_death_date: Optional[date] = None,
 ) -> List[IncarcerationStayEvent]:
     """Given the |original_incarceration_periods| generates and returns all IncarcerationStayEvents based on the
     final day relevant months.
     """
     incarceration_stay_events: List[IncarcerationStayEvent] = []
 
-    ip_pre_processing_config: IncarcerationPreProcessingConfig = IncarcerationPreProcessingConfig(
-        drop_temporary_custody_periods=drop_temporary_custody_periods(state_code),
-        drop_non_state_prison_incarceration_type_periods=drop_non_state_prison_incarceration_type_periods(
-            state_code
-        ),
+    incarceration_period_index = ip_pre_processing_manager.pre_processed_incarceration_period_index_for_calculations(
         collapse_transfers=False,
-        collapse_temporary_custody_periods_with_revocation=False,
-        collapse_transfers_with_different_pfi=False,
         overwrite_facility_information_in_transfers=False,
-        earliest_death_date=earliest_death_date,
     )
 
-    incarceration_periods: List[
-        StateIncarcerationPeriod
-    ] = prepare_incarceration_periods_for_calculations(
-        original_incarceration_periods, ip_pre_processing_config
-    )
-
-    incarceration_period_index: IncarcerationPeriodIndex = IncarcerationPeriodIndex(
-        incarceration_periods=incarceration_periods
-    )
-
-    for incarceration_period in incarceration_periods:
+    for incarceration_period in incarceration_period_index.incarceration_periods:
         period_stay_events: List[IncarcerationStayEvent] = find_incarceration_stays(
             incarceration_sentences,
             supervision_sentences,
@@ -370,7 +308,7 @@ def find_incarceration_stays(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
     incarceration_period: StateIncarcerationPeriod,
-    incarceration_period_index: IncarcerationPeriodIndex,
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
     incarceration_period_to_judicial_district: Dict[int, Dict[Any, Any]],
     county_of_residence: Optional[str],
 ) -> List[IncarcerationStayEvent]:
@@ -568,69 +506,11 @@ def find_most_serious_prior_charge_in_sentence_group(
     return None
 
 
-def de_duplicated_admissions(
-    incarceration_periods: List[StateIncarcerationPeriod],
-) -> List[StateIncarcerationPeriod]:
-    """Returns a list of incarceration periods that are de-duplicated
-    for any incarceration periods that share state_code,
-    admission_date, admission_reason, and facility."""
-
-    unique_admission_dicts: Set[Dict[str, Any]] = set()
-
-    unique_incarceration_admissions: List[StateIncarcerationPeriod] = []
-
-    for incarceration_period in incarceration_periods:
-        admission_dict = frozendict(
-            {
-                "state_code": incarceration_period.state_code,
-                "admission_date": incarceration_period.admission_date,
-                "admission_reason": incarceration_period.admission_reason,
-                "facility": incarceration_period.facility,
-            }
-        )
-
-        if admission_dict not in unique_admission_dicts:
-            unique_incarceration_admissions.append(incarceration_period)
-
-        unique_admission_dicts.add(admission_dict)
-
-    return unique_incarceration_admissions
-
-
-def de_duplicated_releases(
-    incarceration_periods: List[StateIncarcerationPeriod],
-) -> List[StateIncarcerationPeriod]:
-    """Returns a list of incarceration periods that are de-duplicated
-    for any incarceration periods that share state_code,
-    release_date, release_reason, and facility."""
-
-    unique_release_dicts: Set[Dict[str, Any]] = set()
-
-    unique_incarceration_releases: List[StateIncarcerationPeriod] = []
-
-    for incarceration_period in incarceration_periods:
-        release_dict = frozendict(
-            {
-                "state_code": incarceration_period.state_code,
-                "release_date": incarceration_period.release_date,
-                "release_reason": incarceration_period.release_reason,
-                "facility": incarceration_period.facility,
-            }
-        )
-
-        if release_dict not in unique_release_dicts:
-            unique_incarceration_releases.append(incarceration_period)
-
-        unique_release_dicts.add(release_dict)
-
-    return unique_incarceration_releases
-
-
 def admission_event_for_period(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
     incarceration_period: StateIncarcerationPeriod,
-    incarceration_period_index: IncarcerationPeriodIndex,
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
     supervision_periods: List[StateSupervisionPeriod],
     assessments: List[StateAssessment],
     sorted_violation_responses: List[StateSupervisionViolationResponse],
@@ -857,7 +737,7 @@ def release_event_for_period(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
     incarceration_period: StateIncarcerationPeriod,
-    incarceration_period_index: IncarcerationPeriodIndex,
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
     county_of_residence: Optional[str],
 ) -> Optional[IncarcerationReleaseEvent]:
     """Returns an IncarcerationReleaseEvent if this incarceration period represents an release from incarceration."""

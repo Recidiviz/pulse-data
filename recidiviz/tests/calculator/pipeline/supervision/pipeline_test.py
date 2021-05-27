@@ -114,6 +114,9 @@ from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
     run_test_pipeline,
     test_pipeline_options,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
+    UsXxIncarcerationPreProcessingDelegate,
+)
 from recidiviz.tests.calculator.pipeline.utils.us_mo_fakes import (
     FakeUsMoSupervisionSentence,
 )
@@ -145,8 +148,18 @@ class TestSupervisionPipeline(unittest.TestCase):
             StateAssessmentType.LSIR,
         ]
 
+        self.pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.supervision.identifier"
+            ".get_state_specific_incarceration_period_pre_processing_delegate"
+        )
+        self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
+        self.mock_pre_processing_delegate.return_value = (
+            UsXxIncarcerationPreProcessingDelegate()
+        )
+
     def tearDown(self) -> None:
         self.assessment_types_patcher.stop()
+        self.pre_processing_delegate_patcher.stop()
 
     @staticmethod
     def _default_data_dict():
@@ -1607,8 +1620,18 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             StateAssessmentType.LSIR,
         ]
 
+        self.pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.supervision.identifier"
+            ".get_state_specific_incarceration_period_pre_processing_delegate"
+        )
+        self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
+        self.mock_pre_processing_delegate.return_value = (
+            UsXxIncarcerationPreProcessingDelegate()
+        )
+
     def tearDown(self) -> None:
         self.assessment_types_patcher.stop()
+        self.pre_processing_delegate_patcher.stop()
 
     @staticmethod
     def load_person_entities_dict(

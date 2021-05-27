@@ -18,6 +18,7 @@
 
 """Tests for incarceration/pipeline.py"""
 import unittest
+from unittest import mock
 
 from freezegun import freeze_time
 from typing import Optional, Set, List, Dict, Any
@@ -96,6 +97,9 @@ from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
     run_test_pipeline,
     test_pipeline_options,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
+    UsXxIncarcerationPreProcessingDelegate,
+)
 from recidiviz.tests.persistence.database import database_test_utils
 
 _COUNTY_OF_RESIDENCE = "county_of_residence"
@@ -124,6 +128,17 @@ class TestIncarcerationPipeline(unittest.TestCase):
     def setUp(self) -> None:
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
         self.fake_bq_sink_factory = FakeWriteToBigQueryFactory(FakeWriteToBigQuery)
+
+        self.pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_incarceration_period_pre_processing_delegate"
+        )
+        self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
+        self.mock_pre_processing_delegate.return_value = (
+            UsXxIncarcerationPreProcessingDelegate()
+        )
+
+    def tearDown(self) -> None:
+        self.pre_processing_delegate_patcher.stop()
 
     @staticmethod
     def _default_data_dict():
@@ -684,6 +699,18 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
 class TestClassifyIncarcerationEvents(unittest.TestCase):
     """Tests the ClassifyIncarcerationEvents DoFn in the pipeline."""
+
+    def setUp(self) -> None:
+        self.pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_incarceration_period_pre_processing_delegate"
+        )
+        self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
+        self.mock_pre_processing_delegate.return_value = (
+            UsXxIncarcerationPreProcessingDelegate()
+        )
+
+    def tearDown(self) -> None:
+        self.pre_processing_delegate_patcher.stop()
 
     @staticmethod
     def load_person_entities_dict(
