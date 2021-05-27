@@ -1,15 +1,18 @@
 file_tag: dbo_ParoleCount
 file_description: |-
-  A table containing information about supervision identifiers that have changed but
-  should be associated with the same person.
+  A table containing information that links Pennsylvania Board of Probation and Parole
+  (PBPP) identification numbers to PA DOC inmate numbers.
 primary_key_cols:
   - ParoleNumber
 columns:
   - name: ParoleNumber
     description: |-
-      External ID for a unique person who has been supervised by PADOC.
+      External ID for a unique person who has been supervised by PBPP.
   - name: ParoleInstNumber
     description: |-
-      (Needs confirmation) ParoleNumber that this person has also been assigned.
+      Inmate number that was most recently associated with this person when they were
+      first assigned a parole number. A person may have multiple inmate numbers (often
+      corresponding to different incarceration stays) and not all of them will be listed
+      in this table.
 separator: ‡
 encoding: WINDOWS-1252
