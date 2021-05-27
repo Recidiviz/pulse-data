@@ -45,7 +45,6 @@ from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_to_bq_refresh
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.utils import pubsub_helper
 from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils import environment
 
 cloud_sql_to_bq_blueprint = flask.Blueprint("export_manager", __name__)
 
@@ -174,11 +173,7 @@ def wait_for_ingest_to_create_tasks(schema_arg: str) -> Tuple[str, HTTPStatus]:
         return "", HTTPStatus.OK
 
     logging.info("No regions running, triggering BQ refresh.")
-    if environment.in_gcp_production():
-        # TODO(#7397): Ship federated export to production and delete this code.
-        create_all_bq_refresh_tasks_for_schema(schema_type)
-    else:
-        task_manager.create_refresh_bq_schema_task(schema_type=schema_type)
+    task_manager.create_refresh_bq_schema_task(schema_type=schema_type)
     return "", HTTPStatus.OK
 
 
