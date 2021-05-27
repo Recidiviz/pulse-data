@@ -144,6 +144,7 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
         ARRAY_AGG(COALESCE(classification_type, 'MISSING')) classification_type,
         ARRAY_AGG(COALESCE(description, 'MISSING')) description,
         ARRAY_AGG(COALESCE(ncic_code, 'MISSING')) ncic_code,
+        ARRAY_AGG(COALESCE(offense_type, 'MISSING')) offense_type,
         LOGICAL_OR(life_sentence) AS life_sentence,
     FROM unioned_sentences_cte
     WHERE start_date IS NOT NULL
@@ -229,6 +230,7 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
         classification_type,
         description,
         ncic_code,
+        offense_type,
         CASE WHEN completion_date < last_day_of_data THEN sentence_length_days END AS sentence_length_days,
         min_projected_sentence_length,
         max_projected_sentence_length
