@@ -66,7 +66,11 @@ SELECT
   parole_number,
   parole_count_id,
   set_id,
-  EXTRACT(DATE FROM MIN(PARSE_TIMESTAMP("%m/%d/%Y %T", violation_timestamp))) as violation_date,
+  EXTRACT(
+    DATE FROM MIN(
+        PARSE_TIMESTAMP("%Y-%m-%d %H:%M:%E3S", violation_timestamp)
+    )
+  ) as violation_date,
   TO_JSON_STRING(
     ARRAY_AGG(STRUCT(sequence_id, violation_code) ORDER BY sequence_id)
   ) AS violation_types

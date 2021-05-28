@@ -43,6 +43,8 @@ columns:
     description: |-
       Assessment version number (sequence ID for a particular instance of a particular assessment for a particular person).
   - name: Fab_ind
+    description: |-
+      Unknown meaning
   - name: RSTRvsd_Flg
     description: |-
       For RST assessments, whether this was the latest version of the assessment that was administered.
