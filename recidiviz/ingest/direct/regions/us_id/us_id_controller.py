@@ -15,16 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Direct ingest controller implementation for US_ID."""
-from typing import List, Dict, Optional, Callable
+from typing import Callable, Dict, List, Optional
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import (
-    EnumOverrides,
-    EnumMapper,
     EnumIgnorePredicate,
+    EnumMapper,
+    EnumOverrides,
 )
-from recidiviz.common.constants.person_characteristics import Race, Ethnicity, Gender
+from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.standard_enum_overrides import (
     get_standard_enum_overrides,
 )
@@ -35,8 +35,8 @@ from recidiviz.common.constants.state.shared_enums import (
 )
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
-    StateAssessmentType,
     StateAssessmentLevel,
+    StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_early_discharge import (
@@ -53,15 +53,15 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
-    StateSupervisionContactType,
     StateSupervisionContactReason,
     StateSupervisionContactStatus,
+    StateSupervisionContactType,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodTerminationReason,
-    StateSupervisionPeriodSupervisionType,
     StateSupervisionLevel,
+    StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -79,53 +79,53 @@ from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller impo
     CsvGcsfsDirectIngestController,
 )
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
-    update_overrides_from_maps,
     create_if_not_exists,
+    update_overrides_from_maps,
 )
 from recidiviz.ingest.direct.regions.us_id.us_id_constants import (
-    INTERSTATE_FACILITY_CODE,
-    FUGITIVE_FACILITY_CODE,
-    VIOLATION_REPORT_NO_RECOMMENDATION_VALUES,
-    VIOLATION_REPORT_CONSTANTS_INCLUDING_COMMA,
     ALL_NEW_CRIME_TYPES,
-    VIOLENT_CRIME_TYPES,
-    SEX_CRIME_TYPES,
-    MAX_DATE_STR,
-    PREVIOUS_FACILITY_CODE,
-    NEXT_FACILITY_CODE,
-    CURRENT_FACILITY_CODE,
-    PAROLE_COMMISSION_CODE,
-    LIMITED_SUPERVISION_LIVING_UNIT,
     BENCH_WARRANT_LIVING_UNIT,
+    CONTACT_RESULT_ARREST,
+    CONTACT_TYPES_TO_BECOME_LOCATIONS,
     COURT_PROBATION_LIVING_UNIT,
-    LIMITED_SUPERVISION_UNIT_NAME,
-    DISTRICT_0,
-    UNKNOWN,
+    CURRENT_FACILITY_CODE,
     CURRENT_FACILITY_NAME,
-    CURRENT_LOCATION_NAME,
     CURRENT_LIVING_UNIT_CODE,
     CURRENT_LIVING_UNIT_NAME,
     CURRENT_LOCATION_CODE,
-    CONTACT_TYPES_TO_BECOME_LOCATIONS,
-    CONTACT_RESULT_ARREST,
-    UNKNOWN_EMPLOYEE_SDESC,
+    CURRENT_LOCATION_NAME,
     DEPORTED_LOCATION_NAME,
-    NEXT_LOCATION_NAME,
-    PREVIOUS_LOCATION_NAME,
-    HISTORY_FACILITY_TYPE,
-    NEXT_FACILITY_TYPE,
-    FEDERAL_CUSTODY_LOCATION_NAMES,
+    DISTRICT_0,
     FEDERAL_CUSTODY_LOCATION_CODE,
+    FEDERAL_CUSTODY_LOCATION_NAMES,
+    FUGITIVE_FACILITY_CODE,
+    HISTORY_FACILITY_TYPE,
+    INTERSTATE_FACILITY_CODE,
+    LIMITED_SUPERVISION_LIVING_UNIT,
+    LIMITED_SUPERVISION_UNIT_NAME,
+    MAX_DATE_STR,
+    NEXT_FACILITY_CODE,
+    NEXT_FACILITY_TYPE,
+    NEXT_LOCATION_NAME,
+    PAROLE_COMMISSION_CODE,
+    PREVIOUS_FACILITY_CODE,
+    PREVIOUS_LOCATION_NAME,
+    SEX_CRIME_TYPES,
+    UNKNOWN,
+    UNKNOWN_EMPLOYEE_SDESC,
+    VIOLATION_REPORT_CONSTANTS_INCLUDING_COMMA,
+    VIOLATION_REPORT_NO_RECOMMENDATION_VALUES,
+    VIOLENT_CRIME_TYPES,
 )
 from recidiviz.ingest.direct.regions.us_id.us_id_enum_helpers import (
+    custodial_authority_mapper,
     incarceration_admission_reason_mapper,
     incarceration_release_reason_mapper,
-    supervision_admission_reason_mapper,
-    supervision_termination_reason_mapper,
     is_jail_facility,
     purpose_for_incarceration_mapper,
+    supervision_admission_reason_mapper,
     supervision_period_supervision_type_mapper,
-    custodial_authority_mapper,
+    supervision_termination_reason_mapper,
 )
 from recidiviz.ingest.direct.state_shared_row_posthooks import (
     copy_name_to_alias,
@@ -134,22 +134,22 @@ from recidiviz.ingest.direct.state_shared_row_posthooks import (
 )
 from recidiviz.ingest.models.ingest_info import (
     IngestObject,
-    StateAssessment,
-    StateIncarcerationSentence,
-    StateCharge,
     StateAgent,
+    StateAssessment,
+    StateCharge,
     StateCourtCase,
-    StateSentenceGroup,
-    StateSupervisionSentence,
+    StateEarlyDischarge,
     StateIncarcerationPeriod,
+    StateIncarcerationSentence,
+    StateSentenceGroup,
+    StateSupervisionCaseTypeEntry,
+    StateSupervisionContact,
     StateSupervisionPeriod,
+    StateSupervisionSentence,
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
     StateSupervisionViolationResponseDecisionEntry,
     StateSupervisionViolationTypeEntry,
-    StateEarlyDischarge,
-    StateSupervisionContact,
-    StateSupervisionCaseTypeEntry,
 )
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils.params import str_to_bool
@@ -265,6 +265,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
         Race.BLACK: ["B"],
         Race.AMERICAN_INDIAN_ALASKAN_NATIVE: ["I"],
         Race.OTHER: ["O"],
+        Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: ["P"],
         Race.EXTERNAL_UNKNOWN: ["U"],
         Race.WHITE: ["W"],
         Ethnicity.HISPANIC: ["H"],
