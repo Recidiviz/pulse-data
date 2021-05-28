@@ -1,6 +1,7 @@
 file_tag: dbo_pb_SENTENCE
 file_description: |-
   A table containing a rough summary of sentences to incarceration under PADOC authority.
+  NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - sid
 #      - inmate_number

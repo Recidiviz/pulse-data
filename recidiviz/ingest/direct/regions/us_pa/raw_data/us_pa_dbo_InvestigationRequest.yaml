@@ -1,7 +1,7 @@
 file_tag: dbo_InvestigationRequest
 file_description: |-
   A table containing detailed information about investigations conducted in response to a development in some
-  supervision case.
+  supervision case. NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - PBPP30ID

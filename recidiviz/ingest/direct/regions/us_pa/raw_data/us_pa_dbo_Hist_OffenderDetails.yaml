@@ -1,6 +1,7 @@
 file_tag: dbo_Hist_OffenderDetails
 file_description: |-
   A table with detailed demographic information for people under supervision in the past.
+  NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - ParoleCountID

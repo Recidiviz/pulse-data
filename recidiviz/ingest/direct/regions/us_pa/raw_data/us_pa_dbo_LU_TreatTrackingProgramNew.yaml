@@ -1,6 +1,7 @@
 file_tag: dbo_LU_TreatTrackingProgramNew
 file_description: |-
   A lookup table with codes describing treatments and programs available to people under PADOC authority.
+  NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - TreatTrackProgCode
 primary_key_cols: []

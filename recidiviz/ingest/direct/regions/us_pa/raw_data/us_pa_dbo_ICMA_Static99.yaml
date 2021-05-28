@@ -1,7 +1,7 @@
 file_tag: dbo_ICMA_Static99
 file_description: |-
   A table containing a list of Static-99 assessments that have been conducted for people who have been incarcerated or
-  under supervision.
+  under supervision. NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - InstitutionNumber

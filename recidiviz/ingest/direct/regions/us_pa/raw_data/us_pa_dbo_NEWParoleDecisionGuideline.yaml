@@ -1,7 +1,7 @@
 file_tag: dbo_NEWParoleDecisionGuideline
 file_description: |-
   A table with detailed information about parole board decisions which have been made, e.g. in response to applications
-  for release to parole or for potential revocations of parole.
+  for release to parole or for potential revocations of parole. NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - ParoleCountID

@@ -1,6 +1,7 @@
 file_tag: dbo_Treatment
 file_description: |-
   A table with information on referred treatments for people under supervision.
+  NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - ParoleCountID

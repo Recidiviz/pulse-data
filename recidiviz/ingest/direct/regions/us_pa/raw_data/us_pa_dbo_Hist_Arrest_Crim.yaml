@@ -1,6 +1,6 @@
 file_tag: dbo_Hist_Arrest_Crim
 file_description: |-
-  A table containing arrests for historical criminal offenses.
+  A table containing arrests for historical criminal offenses. NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - ArrestReportNO

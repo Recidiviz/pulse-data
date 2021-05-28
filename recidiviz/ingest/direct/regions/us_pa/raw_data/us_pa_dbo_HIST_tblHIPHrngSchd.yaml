@@ -1,6 +1,6 @@
 file_tag: dbo_HIST_tblHIPHrngSchd
 file_description: |-
-  Unclear as of yet.
+  Unclear as of yet. NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - HrngID
 #      - SchdID

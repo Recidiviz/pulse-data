@@ -1,7 +1,7 @@
 file_tag: dbo_Mischg
 file_description: |-
   A table with additional charge information about "misconduct" events involving incarcerated people. This provides
-  additional information for `dbo_Miscon`.
+  additional information for `dbo_Miscon`. NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - inmate_cnt_num1
 #      - inmate_cnt_num2

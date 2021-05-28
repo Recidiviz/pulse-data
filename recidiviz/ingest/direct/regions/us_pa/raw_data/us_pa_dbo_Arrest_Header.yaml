@@ -1,6 +1,7 @@
 file_tag: dbo_Arrest_Header
 file_description: |-
-  A table containing general metadata about arrests and bookings thereof.
+  A table containing general metadata about arrests and bookings thereof. NOT REFRESHED
+  REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - ArrestReportNO

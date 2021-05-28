@@ -167,3 +167,7 @@ columns:
     description: |-
       Prior Inmate Number when an inmate rolls over into a new sentence without
       being released.
+separator: ‡
+custom_line_terminator: †
+ignore_quotes: True
+encoding: WINDOWS-1252

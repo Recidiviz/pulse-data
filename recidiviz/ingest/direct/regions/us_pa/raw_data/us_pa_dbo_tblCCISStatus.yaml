@@ -23,3 +23,7 @@ columns:
   - name: LstMod_EmpNum
     is_datetime: False
     description: The ID of the employee that last modified the row in the table.
+separator: ‡
+custom_line_terminator: †
+ignore_quotes: True
+encoding: WINDOWS-1252

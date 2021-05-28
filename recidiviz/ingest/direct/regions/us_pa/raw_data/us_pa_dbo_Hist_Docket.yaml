@@ -1,6 +1,7 @@
 file_tag: dbo_Hist_Docket
 file_description: |-
   A table containing the docket of board actions that were taken in the past.
+  NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 primary_key_cols: []

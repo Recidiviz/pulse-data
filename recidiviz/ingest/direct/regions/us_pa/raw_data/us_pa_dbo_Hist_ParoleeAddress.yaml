@@ -1,6 +1,7 @@
 file_tag: dbo_Hist_ParoleeAddress
 file_description: |-
-  A table with address information for historical supervision cases.
+  A table with address information for historical supervision cases. NOT REFRESHED
+  REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - EffDate
