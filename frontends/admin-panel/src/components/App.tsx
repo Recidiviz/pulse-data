@@ -18,18 +18,19 @@ import { Layout, Menu, Typography } from "antd";
 import * as React from "react";
 import { Link, Redirect, Route, Switch, useLocation } from "react-router-dom";
 import MetadataDataset from "../models/MetadataDatasets";
-import * as CaseTriage from "../navigation/CaseTriage";
+import * as LineStaffTools from "../navigation/LineStaffTools";
 import * as DatasetMetadata from "../navigation/DatasetMetadata";
 import * as IngestOperations from "../navigation/IngestOperations";
 import "../style/App.css";
 import CloudSQLExportView from "./CloudSQLExportView";
 import CloudSQLImportView from "./CloudSQLImportView";
-import ColumnView from "./ColumnView";
 import DataDiscoveryView from "./DataDiscoveryView";
+import POFeedbackView from "./POFeedbackView";
+import POEmailsView from "./POEmailsView";
+import ColumnView from "./ColumnView";
 import DataFreshnessView from "./DataFreshnessView";
 import DatasetView from "./DatasetView";
 import IngestOperationsView from "./IngestOperationsView";
-import POFeedbackView from "./POFeedbackView";
 import TableView from "./TableView";
 
 const App = (): JSX.Element => {
@@ -90,19 +91,24 @@ const App = (): JSX.Element => {
               </Link>
             </Menu.Item>
           </Menu.ItemGroup>
-          <Menu.ItemGroup title="Case Triage">
-            <Menu.Item key={CaseTriage.GCS_CSV_TO_CLOUD_SQL_ROUTE}>
-              <Link to={CaseTriage.GCS_CSV_TO_CLOUD_SQL_ROUTE}>
+          <Menu.ItemGroup title="Line Staff Tools">
+            <Menu.Item key={LineStaffTools.GCS_CSV_TO_CLOUD_SQL_ROUTE}>
+              <Link to={LineStaffTools.GCS_CSV_TO_CLOUD_SQL_ROUTE}>
                 GCS &rarr; Cloud SQL
               </Link>
             </Menu.Item>
-            <Menu.Item key={CaseTriage.CLOUD_SQL_TO_GCS_CSV_ROUTE}>
-              <Link to={CaseTriage.CLOUD_SQL_TO_GCS_CSV_ROUTE}>
+            <Menu.Item key={LineStaffTools.CLOUD_SQL_TO_GCS_CSV_ROUTE}>
+              <Link to={LineStaffTools.CLOUD_SQL_TO_GCS_CSV_ROUTE}>
                 Cloud SQL &rarr; GCS
               </Link>
             </Menu.Item>
-            <Menu.Item key={CaseTriage.PO_FEEDBACK_ROUTE}>
-              <Link to={CaseTriage.PO_FEEDBACK_ROUTE}>PO Feedback</Link>
+            <Menu.Item key={LineStaffTools.PO_FEEDBACK_ROUTE}>
+              <Link to={LineStaffTools.PO_FEEDBACK_ROUTE}>PO Feedback</Link>
+            </Menu.Item>
+            <Menu.Item key={LineStaffTools.PO_MONTHLY_REPORTS_ROUTE}>
+              <Link to={LineStaffTools.PO_MONTHLY_REPORTS_ROUTE}>
+                PO Monthly Reports
+              </Link>
             </Menu.Item>
           </Menu.ItemGroup>
         </Menu>
@@ -136,16 +142,20 @@ const App = (): JSX.Element => {
             component={IngestOperationsView}
           />
           <Route
-            path={CaseTriage.GCS_CSV_TO_CLOUD_SQL_ROUTE}
+            path={LineStaffTools.GCS_CSV_TO_CLOUD_SQL_ROUTE}
             component={CloudSQLImportView}
           />
           <Route
-            path={CaseTriage.CLOUD_SQL_TO_GCS_CSV_ROUTE}
+            path={LineStaffTools.CLOUD_SQL_TO_GCS_CSV_ROUTE}
             component={CloudSQLExportView}
           />
           <Route
-            path={CaseTriage.PO_FEEDBACK_ROUTE}
+            path={LineStaffTools.PO_FEEDBACK_ROUTE}
             component={POFeedbackView}
+          />
+          <Route
+            path={LineStaffTools.PO_MONTHLY_REPORTS_ROUTE}
+            component={POEmailsView}
           />
           <Redirect
             from="/"
@@ -180,14 +190,17 @@ function selectedMenuKeys(pathname: string): string[] {
   if (pathname.startsWith(IngestOperations.INGEST_ACTIONS_ROUTE)) {
     return [IngestOperations.INGEST_ACTIONS_ROUTE];
   }
-  if (pathname.startsWith(CaseTriage.GCS_CSV_TO_CLOUD_SQL_ROUTE)) {
-    return [CaseTriage.GCS_CSV_TO_CLOUD_SQL_ROUTE];
+  if (pathname.startsWith(LineStaffTools.GCS_CSV_TO_CLOUD_SQL_ROUTE)) {
+    return [LineStaffTools.GCS_CSV_TO_CLOUD_SQL_ROUTE];
   }
-  if (pathname.startsWith(CaseTriage.CLOUD_SQL_TO_GCS_CSV_ROUTE)) {
-    return [CaseTriage.CLOUD_SQL_TO_GCS_CSV_ROUTE];
+  if (pathname.startsWith(LineStaffTools.CLOUD_SQL_TO_GCS_CSV_ROUTE)) {
+    return [LineStaffTools.CLOUD_SQL_TO_GCS_CSV_ROUTE];
   }
-  if (pathname.startsWith(CaseTriage.PO_FEEDBACK_ROUTE)) {
-    return [CaseTriage.PO_FEEDBACK_ROUTE];
+  if (pathname.startsWith(LineStaffTools.PO_FEEDBACK_ROUTE)) {
+    return [LineStaffTools.PO_FEEDBACK_ROUTE];
+  }
+  if (pathname.startsWith(LineStaffTools.PO_MONTHLY_REPORTS_ROUTE)) {
+    return [LineStaffTools.PO_MONTHLY_REPORTS_ROUTE];
   }
   if (pathname.startsWith(DatasetMetadata.DATA_DISCOVERY_ROUTE)) {
     return [DatasetMetadata.DATA_DISCOVERY_ROUTE];

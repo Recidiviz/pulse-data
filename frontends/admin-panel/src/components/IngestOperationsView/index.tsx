@@ -29,13 +29,14 @@ import {
 import * as React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
+import ActionRegionConfirmationForm from "../Utilities/ActionRegionConfirmationForm";
 import {
+  fetchIngestStateCodes,
   getIngestInstanceSummaries,
   getIngestQueuesState,
   startIngestRun,
   updateIngestQueuesState,
 } from "../../AdminPanelAPI";
-import IngestStateSelector from "../IngestStateSelector";
 import {
   actionNames,
   DirectIngestInstance,
@@ -43,11 +44,13 @@ import {
   IngestInstanceSummary,
   QueueMetadata,
   QueueState,
+  StateCodeInfo,
 } from "./constants";
-import IngestActionConfirmationForm from "./IngestActionConfirmationForm";
 import IngestInstanceCard from "./IngestInstanceCard";
 import IngestLogsCard from "./IngestLogsCard";
 import IngestQueuesTable from "./IngestQueuesTable";
+import StateSelector from "../Utilities/StateSelector";
+import useFetchedData from "../../hooks";
 
 const IngestOperationsView = (): JSX.Element => {
   const env = window.RUNTIME_GCP_ENVIRONMENT || "unknown env";
@@ -131,7 +134,7 @@ const IngestOperationsView = (): JSX.Element => {
   }
 
   const onIngestActionConfirmation = async (
-    ingestActionToExecute: IngestActions | undefined
+    ingestActionToExecute: string | undefined
   ) => {
     setIsConfirmationModalVisible(false);
     if (stateCode) {
@@ -154,6 +157,10 @@ const IngestOperationsView = (): JSX.Element => {
     setIsConfirmationModalVisible(true);
   };
 
+  const { loading, data } = useFetchedData<StateCodeInfo[]>(
+    fetchIngestStateCodes
+  );
+
   return (
     <>
       <PageHeader
@@ -166,9 +173,11 @@ const IngestOperationsView = (): JSX.Element => {
             disabled={!stateCode}
             onClick={() => getData()}
           />,
-          <IngestStateSelector
+          <StateSelector
             handleStateCodeChange={handleStateCodeChange}
             initialValue={initialStateCode}
+            loading={loading}
+            data={data}
           />,
         ]}
       />
@@ -220,13 +229,14 @@ const IngestOperationsView = (): JSX.Element => {
       </div>
 
       {stateCode && ingestAction ? (
-        <IngestActionConfirmationForm
+        <ActionRegionConfirmationForm
           visible={isConfirmationModalVisible}
           onConfirm={onIngestActionConfirmation}
           onCancel={() => {
             setIsConfirmationModalVisible(false);
           }}
-          ingestAction={ingestAction}
+          action={ingestAction}
+          actionName={actionNames[ingestAction]}
           regionCode={stateCode}
           ingestInstance={ingestInstance}
         />
