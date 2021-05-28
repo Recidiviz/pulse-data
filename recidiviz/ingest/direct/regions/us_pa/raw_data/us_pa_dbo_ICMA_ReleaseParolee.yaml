@@ -1,6 +1,7 @@
 file_tag: dbo_ICMA_ReleaseParolee
 file_description: |-
   A table containing a rough summary of people who were previously under supervision.
+  NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - InstitutionNumber
 #      - ParoleNumber

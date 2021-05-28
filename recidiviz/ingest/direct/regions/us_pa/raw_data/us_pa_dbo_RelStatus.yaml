@@ -38,3 +38,7 @@ columns:
   - name: RelStatusProcDateDay
     description: |-
       Day when the current status was officially processed for data entry.
+separator: ‡
+custom_line_terminator: †
+ignore_quotes: True
+encoding: WINDOWS-1252

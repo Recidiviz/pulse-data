@@ -1,6 +1,6 @@
 file_tag: dbo_Arrest_Tech
 file_description: |-
-  A table containing arrests for technical violations.
+  A table containing arrests for technical violations. NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - ArrestReportNO

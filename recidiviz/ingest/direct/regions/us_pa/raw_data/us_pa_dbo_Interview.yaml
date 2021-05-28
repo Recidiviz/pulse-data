@@ -1,7 +1,7 @@
 file_tag: dbo_Interview
 file_description: |-
   A table listing interviews that have been conducted for people under supervision as part of some board action to be
-  conducted.
+  conducted. NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - InstitutionNumber
 #      - ParoleNumber

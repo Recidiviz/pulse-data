@@ -139,3 +139,7 @@ columns:
     description: |-
       Whether or not the event was drug-related.
   - name: refer_formal_ind
+separator: ‡
+custom_line_terminator: †
+ignore_quotes: True
+encoding: WINDOWS-1252

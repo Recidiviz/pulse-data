@@ -1,7 +1,7 @@
 file_tag: dbo_Mishea
 file_description: |-
   A table with additional hearing information about "misconduct" events involving incarcerated people. This provides
-  additional information for `dbo_Miscon`.
+  additional information for `dbo_Miscon`. NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - Inmate_Cnt_Num
 #      - Miscndct_Number

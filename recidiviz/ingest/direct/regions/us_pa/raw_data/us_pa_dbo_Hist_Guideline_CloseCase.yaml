@@ -1,7 +1,7 @@
 file_tag: dbo_Hist_Guideline_CloseCase
 file_description: |-
   A table with detailed case information, such as assessments, program referrals, and various case notes, for
-  historical supervision cases.
+  historical supervision cases. NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - ParoleCountID

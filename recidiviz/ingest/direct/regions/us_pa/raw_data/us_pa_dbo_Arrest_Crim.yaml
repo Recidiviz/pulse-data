@@ -1,6 +1,6 @@
 file_tag: dbo_Arrest_Crim
 file_description: |-
-  A table containing arrests for new criminal offenses.
+  A table containing arrests for new criminal offenses. NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - ArrestReportNO

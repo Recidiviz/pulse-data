@@ -84,3 +84,7 @@ columns:
     description: |-
       Statute code of the offense with the third longest sentence.
   - name: Display
+separator: ‡
+custom_line_terminator: †
+ignore_quotes: True
+encoding: WINDOWS-1252

@@ -103,3 +103,7 @@ columns:
   - name: LastModifiedBy
     description: |-
       Who this record was last modified by.
+separator: ‡
+custom_line_terminator: †
+ignore_quotes: True
+encoding: WINDOWS-1252

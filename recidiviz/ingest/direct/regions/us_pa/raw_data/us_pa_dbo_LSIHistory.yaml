@@ -227,3 +227,7 @@ columns:
     is_datetime: True
     description: |-
       Date when the record was last modified.
+separator: ‡
+custom_line_terminator: †
+ignore_quotes: True
+encoding: WINDOWS-1252
