@@ -36,7 +36,7 @@ list of objects; or create new objects as needed.
 
 import abc
 import logging
-from typing import Union, List, Optional, Sequence, Dict, Set, Tuple
+from typing import Union, List, Optional, Sequence, Dict, Set, Tuple, Any
 
 import yaml
 from lxml.html import HtmlElement
@@ -49,7 +49,7 @@ from recidiviz.ingest.models.ingest_object_hierarchy import get_ancestor_class_s
 class DataExtractor(metaclass=abc.ABCMeta):
     """Base class for automatically extracting data from a file."""
 
-    def __init__(self, key_mapping_file, should_cache=False):
+    def __init__(self, key_mapping_file: str, should_cache: bool = False):
         """The init of the data extractor.
 
         Args:
@@ -69,7 +69,7 @@ class DataExtractor(metaclass=abc.ABCMeta):
         if not self.keys:
             self.keys = {}
 
-        self.ingest_object_cache: IngestObjectCache = (
+        self.ingest_object_cache: Optional[IngestObjectCache] = (
             IngestObjectCache() if should_cache else None
         )
 
@@ -94,7 +94,7 @@ class DataExtractor(metaclass=abc.ABCMeta):
         seen_map: Dict[int, Set[str]],
         ancestor_chain: Dict[str, str] = None,
         enforced_ancestor_types: Dict[str, str] = None,
-        **create_args,
+        **create_args: Any,
     ) -> List[IngestObject]:
         """Contains the logic to set or create a field on an ingest object.
         The logic here is that we check if we have an object with a matching id
@@ -160,7 +160,7 @@ class DataExtractor(metaclass=abc.ABCMeta):
         is_multi_key: bool,
         ancestor_chain: Dict[str, str],
         enforced_ancestor_types: Dict[str, str],
-        **create_args,
+        **create_args: Any,
     ) -> IngestObject:
         """Finds or creates the parent of the object we are going to set, which
         may need to have its own parent created if it is a hold or charge in a
@@ -232,7 +232,7 @@ class DataExtractor(metaclass=abc.ABCMeta):
         is_multi_key: bool,
         ancestor_chain: Dict[str, str],
         enforced_ancestor_types: Dict[str, str],
-        **create_args,
+        **create_args: Any,
     ) -> IngestObject:
         """Finds or creates the object we are going to set, which may already
         exist in the multi-key case."""
@@ -295,8 +295,8 @@ class DataExtractor(metaclass=abc.ABCMeta):
         ingest_info: IngestInfo,
         hierarchy: Sequence[str],
         val_index: int,
-        ancestor_chain=None,
-        **create_args,
+        ancestor_chain: Optional[Dict[str, str]] = None,
+        **create_args: Any,
     ) -> IngestObject:
         """Find the parent object to set the value on
 
@@ -401,7 +401,7 @@ class DataExtractor(metaclass=abc.ABCMeta):
 
     def _overwrite_last_ancestor_obj_if_cannot_create_next_child(
         self, ancestor_objs: List[Tuple[str, IngestObject]], next_child_class: str
-    ):
+    ) -> None:
         """Our ingest algorithm generates dummy placeholder objects with null
         ids. We may add multiple child objects to this dummy object when in
         reality, the dummy object will eventually be split into multiple
@@ -444,6 +444,8 @@ class DataExtractor(metaclass=abc.ABCMeta):
             # hier_class may not be in ancestor_chain if the ancestor chain
             # derived from the content being extracted is partial
             if hier_class in ancestor_chain:
+                if not self.ingest_object_cache:
+                    raise ValueError("The ingest_object_cache must not be null.")
                 parent = self.ingest_object_cache.get_object_by_id(
                     hier_class, ancestor_chain[hier_class]
                 )
@@ -455,7 +457,7 @@ class DataExtractor(metaclass=abc.ABCMeta):
                     return hier_class, parent, remaining_uncached_ancestors
         return None, None, hierarchy_sequence
 
-    def _create(self, parent: IngestObject, class_name: str, **create_args):
+    def _create(self, parent: IngestObject, class_name: str, **create_args: Any):
         created_obj = getattr(parent, "create_" + class_name)(**create_args)
 
         if self.ingest_object_cache:

@@ -70,6 +70,9 @@ from recidiviz.common.str_field_utils import (
 )
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import (
     CsvGcsfsDirectIngestController,
+    IngestRowPosthookCallable,
+    IngestPrimaryKeyOverrideCallable,
+    IngestAncestorChainOverridesCallable,
 )
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     create_if_not_exists,
@@ -127,9 +130,11 @@ from recidiviz.ingest.direct.state_shared_row_posthooks import (
     gen_set_is_life_sentence_hook,
     gen_convert_person_ids_to_external_id_objects,
     gen_set_field_as_concatenated_values_hook,
-    RowPosthookCallable,
+    IngestGatingContext,
 )
-from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
+from recidiviz.ingest.extractor.csv_data_extractor import (
+    IngestFieldCoordinates,
+)
 from recidiviz.ingest.models.ingest_info import (
     IngestObject,
     StateSentenceGroup,
@@ -440,7 +445,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         self.enum_overrides = self.generate_enum_overrides()
         self.row_pre_processors_by_file: Dict[str, List[Callable]] = {}
 
-        incarceration_period_row_posthooks: List[RowPosthookCallable] = [
+        incarceration_period_row_posthooks: List[IngestRowPosthookCallable] = [
             self._replace_invalid_release_date,
             self._gen_clear_magical_date_value(
                 "release_date", self.PERIOD_MAGICAL_DATES, StateIncarcerationPeriod
@@ -489,7 +494,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             self._set_decision_agent,
         ]
         tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_row_processors: List[
-            Callable
+            IngestRowPosthookCallable
         ] = [
             self._gen_clear_magical_date_value(
                 "termination_date", self.PERIOD_MAGICAL_DATES, StateSupervisionPeriod
@@ -499,7 +504,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             self._set_empty_admisssion_releases_as_transfers,
         ]
 
-        self.row_post_processors_by_file: Dict[str, List[Callable]] = {
+        self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
             # SQL Preprocessing View
             "tak001_offender_identification": tak001_offender_identification_row_processors,
             "tak040_offender_cycles": tak040_offender_cycles_row_processors,
@@ -512,7 +517,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
             "tak291_tak292_tak024_citations": tak291_tak292_tak024_citations_row_processors,
         }
 
-        self.primary_key_override_by_file: Dict[str, Callable] = {
+        self.primary_key_override_by_file: Dict[
+            str, IngestPrimaryKeyOverrideCallable
+        ] = {
             # SQL Preprocessing View
             "oras_assessments_weekly": self._generate_assessment_id_coords,
             "tak022_tak023_tak025_tak026_offender_sentence_institution": self._generate_incarceration_sentence_id_coords,
@@ -524,7 +531,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
             "tak291_tak292_tak024_citations": self._generate_supervision_violation_id_coords_for_citations,
         }
 
-        self.ancestor_chain_override_by_file: Dict[str, Callable] = {
+        self.ancestor_chain_override_by_file: Dict[
+            str, IngestAncestorChainOverridesCallable
+        ] = {
             # SQL Preprocessing View
             "tak022_tak023_tak025_tak026_offender_sentence_institution": self._sentence_group_ancestor_chain_override,
             "tak022_tak024_tak025_tak026_offender_sentence_supervision": self._sentence_group_ancestor_chain_override,
@@ -554,7 +563,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
     def _get_row_pre_processors_for_file(self, file_tag: str) -> List[Callable]:
         return self.row_pre_processors_by_file.get(file_tag, [])
 
-    def _get_row_post_processors_for_file(self, file_tag: str) -> List[Callable]:
+    def _get_row_post_processors_for_file(
+        self, file_tag: str
+    ) -> List[IngestRowPosthookCallable]:
         return self.row_post_processors_by_file.get(file_tag, [])
 
     def _get_file_post_processors_for_file(self, _file_tag: str) -> List[Callable]:
@@ -563,7 +574,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
         ]
         return post_processors
 
-    def _get_primary_key_override_for_file(self, file_tag: str) -> Optional[Callable]:
+    def _get_primary_key_override_for_file(
+        self, file_tag: str
+    ) -> Optional[IngestPrimaryKeyOverrideCallable]:
         return self.primary_key_override_by_file.get(file_tag, None)
 
     def _get_ancestor_chain_overrides_callback_for_file(
@@ -605,7 +618,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @classmethod
     def tak022_tak023_set_parole_eligibility_date(
         cls,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -630,7 +643,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @classmethod
     def set_charge_id_from_sentence_id(
         cls,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         _row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -657,7 +670,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @classmethod
     def _set_charge_is_violent_from_ncic(
         cls,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -677,9 +690,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @classmethod
     def _gen_violation_response_type_posthook(
         cls, response_type: StateSupervisionViolationResponseType
-    ) -> Callable:
+    ) -> IngestRowPosthookCallable:
         def _set_response_type(
-            _file_tag: str,
+            _gating_context: IngestGatingContext,
             _row: Dict[str, str],
             extracted_objects: List[IngestObject],
             _cache: IngestObjectCache,
@@ -694,7 +707,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @classmethod
     def _set_deciding_body_as_supervising_officer(
         cls,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         _row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -710,7 +723,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @classmethod
     def _set_violation_response_id_from_violation(
         cls,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         _row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -724,7 +737,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @classmethod
     def _set_finally_formed_date_on_response(
         cls,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -749,7 +762,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @classmethod
     def _set_violated_conditions_on_violation(
         cls,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -772,7 +785,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @classmethod
     def _set_violation_type_on_violation(
         cls,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -793,7 +806,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     def _set_recommendations_on_violation_response(
         self,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -872,7 +885,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @classmethod
     def _set_decision_agent(
         cls,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -890,7 +903,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @classmethod
     def _set_supervising_officer_on_period(
         cls,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -907,7 +920,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @classmethod
     def _parse_case_types(
         cls,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -928,7 +941,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @classmethod
     def _set_empty_admisssion_releases_as_transfers(
         cls,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         _row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -966,7 +979,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     def _set_completion_date_if_necessary(
         self,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -984,7 +997,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     def _set_sentence_status(
         self,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1035,7 +1048,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @classmethod
     def _clear_zero_date_string(
         cls,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1050,7 +1063,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @classmethod
     def _replace_invalid_release_date(
         cls,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1067,9 +1080,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
         field_name: str,
         magical_dates: List[str],
         sentence_type: Type[IngestObject],
-    ) -> Callable:
+    ) -> IngestRowPosthookCallable:
         def _clear_magical_date_values(
-            _file_tag: str,
+            _gating_context: IngestGatingContext,
             _row: Dict[str, str],
             extracted_objects: List[IngestObject],
             _cache: IngestObjectCache,
@@ -1083,7 +1096,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     def _create_source_violation_response(
         self,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1172,7 +1185,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @classmethod
     def _set_incarceration_period_status(
         cls,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         _row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1186,17 +1199,19 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     @classmethod
     def _sentence_group_ancestor_chain_override(
-        cls, file_tag: str, row: Dict[str, str]
+        cls, gating_context: IngestGatingContext, row: Dict[str, str]
     ) -> Dict[str, str]:
-        coords = cls._generate_sentence_group_id_coords(file_tag, row)
+        coords = cls._generate_sentence_group_id_coords(gating_context, row)
         return {coords.class_name: coords.field_value}
 
     @classmethod
     def _incarceration_sentence_ancestor_chain_override(
-        cls, file_tag: str, row: Dict[str, str]
+        cls, gating_context: IngestGatingContext, row: Dict[str, str]
     ) -> Dict[str, str]:
-        group_coords = cls._generate_sentence_group_id_coords(file_tag, row)
-        sentence_coords = cls._generate_incarceration_sentence_id_coords(file_tag, row)
+        group_coords = cls._generate_sentence_group_id_coords(gating_context, row)
+        sentence_coords = cls._generate_incarceration_sentence_id_coords(
+            gating_context, row
+        )
 
         return {
             group_coords.class_name: group_coords.field_value,
@@ -1205,10 +1220,12 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     @classmethod
     def _supervision_sentence_ancestor_chain_override(
-        cls, file_tag: str, row: Dict[str, str]
+        cls, gating_context: IngestGatingContext, row: Dict[str, str]
     ) -> Dict[str, str]:
-        group_coords = cls._generate_sentence_group_id_coords(file_tag, row)
-        sentence_coords = cls._generate_supervision_sentence_id_coords(file_tag, row)
+        group_coords = cls._generate_sentence_group_id_coords(gating_context, row)
+        sentence_coords = cls._generate_supervision_sentence_id_coords(
+            gating_context, row
+        )
 
         return {
             group_coords.class_name: group_coords.field_value,
@@ -1217,16 +1234,16 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     @classmethod
     def _supervision_violation_report_ancestor_chain_override(
-        cls, file_tag: str, row: Dict[str, str]
+        cls, gating_context: IngestGatingContext, row: Dict[str, str]
     ) -> Dict[str, str]:
-        group_coords = cls._generate_sentence_group_id_coords(file_tag, row)
+        group_coords = cls._generate_sentence_group_id_coords(gating_context, row)
         if row.get(f"{TAK076_PREFIX}_{FIELD_KEY_SEQ}", "0") == "0":
             sentence_coords = cls._generate_incarceration_sentence_id_coords(
-                file_tag, row, TAK076_PREFIX
+                gating_context, row, TAK076_PREFIX
             )
         else:
             sentence_coords = cls._generate_supervision_sentence_id_coords(
-                file_tag, row, TAK076_PREFIX
+                gating_context, row, TAK076_PREFIX
             )
         return {
             group_coords.class_name: group_coords.field_value,
@@ -1235,16 +1252,16 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     @classmethod
     def _supervision_violation_citation_ancestor_chain_override(
-        cls, file_tag: str, row: Dict[str, str]
+        cls, gating_context: IngestGatingContext, row: Dict[str, str]
     ) -> Dict[str, str]:
-        group_coords = cls._generate_sentence_group_id_coords(file_tag, row)
+        group_coords = cls._generate_sentence_group_id_coords(gating_context, row)
         if row.get(f"{TAK291_PREFIX}_{FIELD_KEY_SEQ}", "0") == "0":
             sentence_coords = cls._generate_incarceration_sentence_id_coords(
-                file_tag, row, TAK291_PREFIX
+                gating_context, row, TAK291_PREFIX
             )
         else:
             sentence_coords = cls._generate_supervision_sentence_id_coords(
-                file_tag, row, TAK291_PREFIX
+                gating_context, row, TAK291_PREFIX
             )
         return {
             group_coords.class_name: group_coords.field_value,
@@ -1254,12 +1271,12 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @classmethod
     def normalize_sentence_group_ids(
         cls,
-        file_tag: str,
+        gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
     ) -> None:
-        col_prefix = cls.primary_col_prefix_for_file_tag(file_tag)
+        col_prefix = cls.primary_col_prefix_for_file_tag(gating_context.file_tag)
         for obj in extracted_objects:
             if isinstance(obj, StateSentenceGroup):
                 obj.state_sentence_group_id = cls._generate_sentence_group_id(
@@ -1268,7 +1285,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     @classmethod
     def _generate_assessment_id_coords(
-        cls, _file_tag: str, row: Dict[str, str]
+        cls, _gating_context: IngestGatingContext, row: Dict[str, str]
     ) -> IngestFieldCoordinates:
 
         doc_id = row.get(ORAS_ASSESSMENTS_DOC_ID, "")
@@ -1281,9 +1298,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     @classmethod
     def _generate_sentence_group_id_coords(
-        cls, file_tag: str, row: Dict[str, str]
+        cls, gating_context: IngestGatingContext, row: Dict[str, str]
     ) -> IngestFieldCoordinates:
-        col_prefix = cls.primary_col_prefix_for_file_tag(file_tag)
+        col_prefix = cls.primary_col_prefix_for_file_tag(gating_context.file_tag)
         return IngestFieldCoordinates(
             "state_sentence_group",
             "state_sentence_group_id",
@@ -1292,10 +1309,13 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     @classmethod
     def _generate_supervision_sentence_id_coords(
-        cls, file_tag: str, row: Dict[str, str], col_prefix: str = None
+        cls,
+        gating_context: IngestGatingContext,
+        row: Dict[str, str],
+        col_prefix: str = None,
     ) -> IngestFieldCoordinates:
         if not col_prefix:
-            col_prefix = cls.primary_col_prefix_for_file_tag(file_tag)
+            col_prefix = cls.primary_col_prefix_for_file_tag(gating_context.file_tag)
         return IngestFieldCoordinates(
             "state_supervision_sentence",
             "state_supervision_sentence_id",
@@ -1304,10 +1324,13 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     @classmethod
     def _generate_incarceration_sentence_id_coords(
-        cls, file_tag: str, row: Dict[str, str], col_prefix: str = None
+        cls,
+        gating_context: IngestGatingContext,
+        row: Dict[str, str],
+        col_prefix: str = None,
     ) -> IngestFieldCoordinates:
         if not col_prefix:
-            col_prefix = cls.primary_col_prefix_for_file_tag(file_tag)
+            col_prefix = cls.primary_col_prefix_for_file_tag(gating_context.file_tag)
         return IngestFieldCoordinates(
             "state_incarceration_sentence",
             "state_incarceration_sentence_id",
@@ -1316,9 +1339,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     @classmethod
     def _generate_supervision_period_id_coords(
-        cls, file_tag: str, row: Dict[str, str]
+        cls, gating_context: IngestGatingContext, row: Dict[str, str]
     ) -> IngestFieldCoordinates:
-        col_prefix = cls.primary_col_prefix_for_file_tag(file_tag)
+        col_prefix = cls.primary_col_prefix_for_file_tag(gating_context.file_tag)
 
         sentence_group_id = cls._generate_sentence_group_id(col_prefix, row)
 
@@ -1336,9 +1359,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     @classmethod
     def _generate_incarceration_period_id_coords(
-        cls, file_tag: str, row: Dict[str, str]
+        cls, gating_context: IngestGatingContext, row: Dict[str, str]
     ) -> IngestFieldCoordinates:
-        col_prefix = cls.primary_col_prefix_for_file_tag(file_tag)
+        col_prefix = cls.primary_col_prefix_for_file_tag(gating_context.file_tag)
 
         sentence_group_id = cls._generate_sentence_group_id(col_prefix, row)
 
@@ -1359,9 +1382,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     @classmethod
     def _generate_supervision_violation_id_coords_for_reports(
-        cls, file_tag: str, row: Dict[str, str]
+        cls, gating_context: IngestGatingContext, row: Dict[str, str]
     ) -> IngestFieldCoordinates:
-        col_prefix = cls.primary_col_prefix_for_file_tag(file_tag)
+        col_prefix = cls.primary_col_prefix_for_file_tag(gating_context.file_tag)
         return IngestFieldCoordinates(
             "state_supervision_violation",
             "state_supervision_violation_id",
@@ -1370,9 +1393,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     @classmethod
     def _generate_supervision_violation_id_coords_for_citations(
-        cls, file_tag: str, row: Dict[str, str]
+        cls, gating_context: IngestGatingContext, row: Dict[str, str]
     ) -> IngestFieldCoordinates:
-        col_prefix = cls.primary_col_prefix_for_file_tag(file_tag)
+        col_prefix = cls.primary_col_prefix_for_file_tag(gating_context.file_tag)
         return IngestFieldCoordinates(
             "state_supervision_violation",
             "state_supervision_violation_id",
@@ -1545,7 +1568,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     def get_tak022_tak023_tak025_tak026_offender_sentence_institution_row_processors(
         self,
-    ) -> List[RowPosthookCallable]:
+    ) -> List[IngestRowPosthookCallable]:
         return [
             gen_normalize_county_codes_posthook(
                 self.region.region_code, CHARGE_COUNTY_CODE, StateCharge
@@ -1588,7 +1611,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     def get_tak022_tak023_tak025_tak026_offender_sentence_supervision_row_processors(
         self,
-    ) -> List[RowPosthookCallable]:
+    ) -> List[IngestRowPosthookCallable]:
         return [
             gen_normalize_county_codes_posthook(
                 self.region.region_code, CHARGE_COUNTY_CODE, StateCharge

@@ -19,7 +19,7 @@
 
 import json
 import re
-from typing import List, Dict, Optional, Callable
+from typing import List, Dict, Optional
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
@@ -81,6 +81,10 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import (
     CsvGcsfsDirectIngestController,
+    IngestRowPosthookCallable,
+    IngestFilePostprocessorCallable,
+    IngestPrimaryKeyOverrideCallable,
+    IngestAncestorChainOverridesCallable,
 )
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     update_overrides_from_maps,
@@ -113,8 +117,11 @@ from recidiviz.ingest.direct.state_shared_row_posthooks import (
     gen_label_single_external_id_hook,
     gen_rationalize_race_and_ethnicity,
     gen_convert_person_ids_to_external_id_objects,
+    IngestGatingContext,
 )
-from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
+from recidiviz.ingest.extractor.csv_data_extractor import (
+    IngestFieldCoordinates,
+)
 from recidiviz.ingest.models.ingest_info import (
     IngestObject,
     StatePerson,
@@ -151,7 +158,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         super().__init__(ingest_bucket_path)
         self.enum_overrides = self.generate_enum_overrides()
 
-        sci_incarceration_period_row_postprocessors = [
+        sci_incarceration_period_row_postprocessors: List[IngestRowPosthookCallable] = [
             gen_label_single_external_id_hook(US_PA_CONTROL),
             self._concatenate_admission_reason_codes,
             self._concatenate_release_reason_codes,
@@ -160,7 +167,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             self._set_sci_incarceration_period_custodial_authority,
         ]
 
-        doc_person_info_postprocessors: List[Callable] = [
+        doc_person_info_postprocessors: List[IngestRowPosthookCallable] = [
             gen_label_single_external_id_hook(US_PA_CONTROL),
             self.gen_hydrate_alternate_external_ids(
                 {
@@ -172,27 +179,27 @@ class UsPaController(CsvGcsfsDirectIngestController):
             self._compose_current_address,
             self._hydrate_sentence_group_ids,
         ]
-        dbo_Miscon_postprocessors: List[Callable] = [
+        dbo_Miscon_postprocessors: List[IngestRowPosthookCallable] = [
             gen_label_single_external_id_hook(US_PA_CONTROL),
             self._specify_incident_location,
             self._specify_incident_type,
             self._specify_incident_details,
             self._specify_incident_outcome,
         ]
-        supervision_period_postprocessors: List[Callable] = [
+        supervision_period_postprocessors: List[IngestRowPosthookCallable] = [
             self._unpack_supervision_period_conditions,
             self._set_supervising_officer,
             self._set_supervision_site,
             self._set_supervision_period_custodial_authority,
         ]
 
-        dbo_offender_postprocessors: List[Callable] = [
+        dbo_offender_postprocessors: List[IngestRowPosthookCallable] = [
             gen_label_single_external_id_hook(US_PA_PBPP),
             self._hydrate_races,
             gen_rationalize_race_and_ethnicity(self.ENUM_OVERRIDES),
         ]
 
-        self.row_post_processors_by_file: Dict[str, List[Callable]] = {
+        self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
             # TODO(#7222): Delete this once person_external_ids_v2 has shipped to prod
             "person_external_ids": [self._hydrate_person_external_ids],
             "person_external_ids_v2": [self._hydrate_person_external_ids],
@@ -256,7 +263,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
             ],
         }
 
-        self.file_post_processors_by_file: Dict[str, List[Callable]] = {
+        self.file_post_processors_by_file: Dict[
+            str, List[IngestFilePostprocessorCallable]
+        ] = {
             # TODO(#7222): Delete this once person_external_ids_v2 has shipped to prod
             "person_external_ids": [],
             "person_external_ids_v2": [],
@@ -307,7 +316,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
             ],
         }
 
-        self.primary_key_override_hook_by_file: Dict[str, Callable] = {
+        self.primary_key_override_hook_by_file: Dict[
+            str, IngestPrimaryKeyOverrideCallable
+        ] = {
             # TODO(#7222): Delete this once v2 has shipped to prod
             "sci_incarceration_period": _generate_sci_incarceration_period_primary_key,
             "sci_incarceration_period_v2": _generate_sci_incarceration_period_primary_key,
@@ -320,7 +331,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
             "board_action": _generate_board_action_supervision_violation_response_primary_key,
         }
 
-        self.ancestor_chain_overrides_callback_by_file: Dict[str, Callable] = {
+        self.ancestor_chain_overrides_callback_by_file: Dict[
+            str, IngestAncestorChainOverridesCallable
+        ] = {
             # TODO(#7222): Delete this once v2 has shipped to prod
             "sci_incarceration_period": _state_incarceration_period_ancestor_chain_overrides,
             "sci_incarceration_period_v2": _state_incarceration_period_ancestor_chain_overrides,
@@ -785,24 +798,30 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def get_enum_overrides(self) -> EnumOverrides:
         return self.enum_overrides
 
-    def _get_row_post_processors_for_file(self, file_tag: str) -> List[Callable]:
+    def _get_row_post_processors_for_file(
+        self, file_tag: str
+    ) -> List[IngestRowPosthookCallable]:
         return self.row_post_processors_by_file.get(file_tag, [])
 
-    def _get_file_post_processors_for_file(self, file_tag: str) -> List[Callable]:
+    def _get_file_post_processors_for_file(
+        self, file_tag: str
+    ) -> List[IngestFilePostprocessorCallable]:
         return self.file_post_processors_by_file.get(file_tag, [])
 
-    def _get_primary_key_override_for_file(self, file: str) -> Optional[Callable]:
-        return self.primary_key_override_hook_by_file.get(file, None)
+    def _get_primary_key_override_for_file(
+        self, file_tag: str
+    ) -> Optional[IngestPrimaryKeyOverrideCallable]:
+        return self.primary_key_override_hook_by_file.get(file_tag, None)
 
     def _get_ancestor_chain_overrides_callback_for_file(
         self, file: str
-    ) -> Optional[Callable]:
+    ) -> Optional[IngestAncestorChainOverridesCallable]:
         return self.ancestor_chain_overrides_callback_by_file.get(file, None)
 
     @staticmethod
     def gen_hydrate_alternate_external_ids(
         columns_to_id_types: Dict[str, str]
-    ) -> Callable:
+    ) -> IngestRowPosthookCallable:
         """Generates a row post-hook that will hydrate alternate external ids than the "main" external id in a row, for
         rows which have multiple external ids to be hydrated.
 
@@ -811,7 +830,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         """
 
         def _hydrate_external_id(
-            _file_tag: str,
+            _gating_context: IngestGatingContext,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
             _cache: IngestObjectCache,
@@ -861,7 +880,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _hydrate_person_external_ids(
-        file_tag: str,
+        gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -878,7 +897,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
                 external_ids_to_create = []
                 # TODO(#7222): Delete this once v2 has shipped to prod
-                if file_tag == "person_external_ids":
+                if gating_context.file_tag == "person_external_ids":
                     state_ids = row["state_ids"].split(",") if row["state_ids"] else []
                     for state_id in state_ids:
                         external_ids_to_create.append(
@@ -886,7 +905,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
                                 state_person_external_id_id=state_id, id_type=US_PA_SID
                             )
                         )
-                elif file_tag == "person_external_ids_v2":
+                elif gating_context.file_tag == "person_external_ids_v2":
                     inmate_numbers = (
                         row["inmate_numbers"].split(",")
                         if row["inmate_numbers"]
@@ -900,7 +919,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
                             )
                         )
                 else:
-                    raise ValueError(f"Unexpected file_tag: [{file_tag}]")
+                    raise ValueError(
+                        f"Unexpected file_tag: [{gating_context.file_tag}]"
+                    )
 
                 for control_number in control_numbers:
                     external_ids_to_create.append(
@@ -921,7 +942,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _hydrate_sentence_group_ids(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -943,7 +964,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _hydrate_races(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -961,7 +982,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _compose_current_address(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -991,7 +1012,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _generate_doc_assessment_external_id(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1009,7 +1030,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     def _enrich_doc_assessments(
         self,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1042,7 +1063,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     # TODO(#7222): Delete this when dbo_LSIHistory has shipped to prod
     @staticmethod
     def _generate_legacy_pbpp_assessment_external_id(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1059,7 +1080,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _generate_pbpp_assessment_external_id(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1079,7 +1100,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _enrich_pbpp_assessments(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         _row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1093,7 +1114,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _set_incarceration_sentence_id(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1108,7 +1129,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _enrich_incarceration_sentence(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1152,7 +1173,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     # TODO(#3020): When PA is switched to use SQL pre-processing, this will no longer be necessary.
     @staticmethod
     def _strip_id_whitespace(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         _row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1165,7 +1186,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _set_is_violent(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1179,7 +1200,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _rationalize_offense_type(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1194,7 +1215,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _concatenate_admission_reason_codes(
-        file_tag: str,
+        gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1202,7 +1223,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         """Concatenates the incarceration period admission reason-related codes to be parsed in the enum mapper."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
-                if file_tag in (
+                if gating_context.file_tag in (
                     # TODO(#7222): Delete this once v2 has shipped to prod
                     "sci_incarceration_period",
                     "sci_incarceration_period_v2",
@@ -1210,14 +1231,14 @@ class UsPaController(CsvGcsfsDirectIngestController):
                     obj.admission_reason = (
                         concatenate_sci_incarceration_period_start_codes(row)
                     )
-                elif file_tag == "ccis_incarceration_period":
+                elif gating_context.file_tag == "ccis_incarceration_period":
                     obj.admission_reason = (
                         concatenate_ccis_incarceration_period_start_codes(row)
                     )
 
     @staticmethod
     def _concatenate_release_reason_codes(
-        file_tag: str,
+        gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1226,7 +1247,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
                 if obj.release_date:
-                    if file_tag in (
+                    if gating_context.file_tag in (
                         # TODO(#7222): Delete this once v2 has shipped to prod
                         "sci_incarceration_period",
                         "sci_incarceration_period_v2",
@@ -1234,14 +1255,14 @@ class UsPaController(CsvGcsfsDirectIngestController):
                         obj.release_reason = (
                             concatenate_sci_incarceration_period_end_codes(row)
                         )
-                    elif file_tag == "ccis_incarceration_period":
+                    elif gating_context.file_tag == "ccis_incarceration_period":
                         obj.release_reason = (
                             concatenate_ccis_incarceration_period_end_codes(row)
                         )
 
     @staticmethod
     def _concatenate_incarceration_purpose_codes(
-        file_tag: str,
+        gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1249,7 +1270,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         """Concatenates the incarceration period specialized purpose-related codes to be parsed in the enum mapper."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
-                if file_tag in (
+                if gating_context.file_tag in (
                     # TODO(#7222): Delete this once v2 has shipped to prod
                     "sci_incarceration_period",
                     "sci_incarceration_period_v2",
@@ -1257,14 +1278,14 @@ class UsPaController(CsvGcsfsDirectIngestController):
                     obj.specialized_purpose_for_incarceration = (
                         concatenate_sci_incarceration_period_purpose_codes(row)
                     )
-                elif file_tag == "ccis_incarceration_period":
+                elif gating_context.file_tag == "ccis_incarceration_period":
                     obj.specialized_purpose_for_incarceration = (
                         concatenate_ccis_incarceration_period_purpose_codes(row)
                     )
 
     @staticmethod
     def _add_incarceration_type(
-        file_tag: str,
+        gating_context: IngestGatingContext,
         _row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1272,7 +1293,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         """Sets incarceration type on incarceration periods based on facility."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
-                if file_tag in (
+                if gating_context.file_tag in (
                     # TODO(#7222): Delete this once v2 has shipped to prod
                     "sci_incarceration_period",
                     "sci_incarceration_period_v2",
@@ -1280,12 +1301,12 @@ class UsPaController(CsvGcsfsDirectIngestController):
                     # TODO(#3312): Figure out how to fill out the incarceration_type COUNTY_JAIL/STATE/FEDERAL based on
                     #  IC sentence status + location codes? Ask PA about this!
                     obj.incarceration_type = "SCI"
-                elif file_tag == "ccis_incarceration_period":
+                elif gating_context.file_tag == "ccis_incarceration_period":
                     obj.incarceration_type = "CCIS"
 
     @staticmethod
     def _specify_incident_location(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1302,7 +1323,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _specify_incident_type(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1320,7 +1341,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _specify_incident_details(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1347,7 +1368,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _specify_incident_outcome(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1370,7 +1391,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _unpack_supervision_period_conditions(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1386,7 +1407,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _set_supervising_officer(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1420,7 +1441,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _set_supervision_site(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1436,7 +1457,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _set_supervision_period_custodial_authority(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1458,7 +1479,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _set_sci_incarceration_period_custodial_authority(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         _row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1470,7 +1491,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _append_supervision_violation_entries(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1511,7 +1532,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _append_supervision_violation_response_entries(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1540,7 +1561,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _set_violation_response_type(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         _row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1558,7 +1579,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _set_board_action_violation_response_fields(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         _row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1575,7 +1596,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _append_board_action_supervision_violation_response_entries(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1596,7 +1617,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _set_supervision_contact_agent(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1620,7 +1641,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _set_supervision_contact_fields(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1640,7 +1661,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
 
 def _generate_sci_incarceration_period_primary_key(
-    _file_tag: str, row: Dict[str, str]
+    _gating_context: IngestGatingContext, row: Dict[str, str]
 ) -> IngestFieldCoordinates:
     sentence_group_id = row["inmate_number"]
     sequence_number = row["sequence_number"]
@@ -1654,7 +1675,7 @@ def _generate_sci_incarceration_period_primary_key(
 
 
 def _state_incarceration_period_ancestor_chain_overrides(
-    _file_tag: str, row: Dict[str, str]
+    _gating_context: IngestGatingContext, row: Dict[str, str]
 ) -> Dict[str, str]:
     """This creates an incarceration sentence id for specifying the ancestor of an incarceration period.
 
@@ -1672,7 +1693,7 @@ def _state_incarceration_period_ancestor_chain_overrides(
 
 
 def _generate_supervision_period_primary_key(
-    _file_tag: str, row: Dict[str, str]
+    _gating_context: IngestGatingContext, row: Dict[str, str]
 ) -> IngestFieldCoordinates:
     person_id = row["parole_number"]
     period_sequence_number = row["period_sequence_number"]
@@ -1684,7 +1705,7 @@ def _generate_supervision_period_primary_key(
 
 
 def _generate_supervision_violation_primary_key(
-    _file_tag: str, row: Dict[str, str]
+    _gating_context: IngestGatingContext, row: Dict[str, str]
 ) -> IngestFieldCoordinates:
     person_id = row["parole_number"]
     parole_count = row["parole_count_id"]
@@ -1697,7 +1718,7 @@ def _generate_supervision_violation_primary_key(
 
 
 def _state_supervision_violation_ancestor_chain_overrides(
-    _file_tag: str, row: Dict[str, str]
+    _gating_context: IngestGatingContext, row: Dict[str, str]
 ) -> Dict[str, str]:
     person_id = row["parole_number"]
     parole_count = row["parole_count_id"]
@@ -1707,7 +1728,7 @@ def _state_supervision_violation_ancestor_chain_overrides(
 
 
 def _generate_supervision_violation_response_primary_key(
-    _file_tag: str, row: Dict[str, str]
+    _gating_context: IngestGatingContext, row: Dict[str, str]
 ) -> IngestFieldCoordinates:
     person_id = row["parole_number"]
     parole_count = row["parole_count_id"]
@@ -1722,7 +1743,7 @@ def _generate_supervision_violation_response_primary_key(
 
 
 def _generate_board_action_supervision_violation_response_primary_key(
-    _file_tag: str, row: Dict[str, str]
+    _gating_context: IngestGatingContext, row: Dict[str, str]
 ) -> IngestFieldCoordinates:
     parole_id = row["ParoleNumber"]
     parole_count_id = row["ParoleCountID"]
@@ -1737,7 +1758,7 @@ def _generate_board_action_supervision_violation_response_primary_key(
 
 
 def _state_supervision_violation_response_ancestor_chain_overrides(
-    _file_tag: str, row: Dict[str, str]
+    _gating_context: IngestGatingContext, row: Dict[str, str]
 ) -> Dict[str, str]:
     person_id = row["parole_number"]
     parole_count = row["parole_count_id"]

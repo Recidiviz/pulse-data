@@ -23,7 +23,18 @@ import collections.abc
 import csv
 import logging
 from collections import defaultdict, OrderedDict
-from typing import Any, Dict, Set, List, Callable, Optional, Iterable, Union
+from typing import (
+    Any,
+    Dict,
+    Set,
+    List,
+    Optional,
+    Iterable,
+    Union,
+    Callable,
+    Generic,
+    TypeVar,
+)
 
 import more_itertools
 
@@ -45,7 +56,7 @@ class IngestFieldCoordinates:
         self.field_name = field_name
         self.field_value = field_value
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
         if other is None:
             return False
         return self.__dict__ == other.__dict__
@@ -60,20 +71,38 @@ class IngestFieldCoordinates:
 
 _DUMMY_KEY_PREFIX = "CSV_EXTRACTOR_DUMMY_KEY"
 
+HookContextType = TypeVar("HookContextType")
 
-class CsvDataExtractor(DataExtractor):
+RowType = Dict[str, str]
+RowPrehookCallable = Callable[[HookContextType, RowType], None]
+RowPosthookCallable = Callable[
+    [HookContextType, RowType, List[IngestObject], IngestObjectCache], None
+]
+FilePostprocessorCallable = Callable[
+    [HookContextType, IngestInfo, Optional[IngestObjectCache]], None
+]
+PrimaryKeyOverrideCallable = Callable[
+    [HookContextType, RowType], IngestFieldCoordinates
+]
+AncestorChainOverridesCallable = Callable[[HookContextType, RowType], Dict[str, str]]
+
+
+class CsvDataExtractor(Generic[HookContextType], DataExtractor):
     """Data extractor for CSV text."""
 
     def __init__(
         self,
-        key_mapping_file=None,
-        row_pre_hooks=None,
-        row_post_hooks=None,
-        file_post_hooks=None,
-        ancestor_chain_overrides_callback=None,
-        primary_key_override_callback=None,
-        system_level=SystemLevel.COUNTY,
-        set_with_empty_value=False,
+        key_mapping_file: str,
+        hook_context: HookContextType,
+        row_pre_hooks: Optional[List[RowPrehookCallable]] = None,
+        row_post_hooks: Optional[List[RowPosthookCallable]] = None,
+        file_post_hooks: Optional[List[FilePostprocessorCallable]] = None,
+        ancestor_chain_overrides_callback: Optional[
+            AncestorChainOverridesCallable
+        ] = None,
+        primary_key_override_callback: Optional[PrimaryKeyOverrideCallable] = None,
+        system_level: SystemLevel = SystemLevel.COUNTY,
+        set_with_empty_value: bool = False,
     ) -> None:
         """
         Args:
@@ -102,25 +131,25 @@ class CsvDataExtractor(DataExtractor):
         self.enforced_ancestor_types: Dict[str, str] = self.manifest.get(
             "enforced_ancestor_types", {}
         )
-
+        self.hook_context = hook_context
         if row_pre_hooks is None:
             row_pre_hooks = []
-        self.row_pre_hooks: List[Callable] = row_pre_hooks
+        self.row_pre_hooks: List[RowPrehookCallable] = row_pre_hooks
 
         if row_post_hooks is None:
             row_post_hooks = []
-        self.row_post_hooks: List[Callable] = row_post_hooks
+        self.row_post_hooks: List[RowPosthookCallable] = row_post_hooks
 
         if file_post_hooks is None:
             file_post_hooks = []
-        self.file_post_hooks: List[
-            Callable[[IngestInfo, Optional[IngestObjectCache]], None]
-        ] = file_post_hooks
+        self.file_post_hooks: List[FilePostprocessorCallable] = file_post_hooks
 
-        self.ancestor_chain_overrides_callback: Callable = (
-            ancestor_chain_overrides_callback
-        )
-        self.primary_key_override_callback: Callable = primary_key_override_callback
+        self.ancestor_chain_overrides_callback: Optional[
+            AncestorChainOverridesCallable
+        ] = ancestor_chain_overrides_callback
+        self.primary_key_override_callback: Optional[
+            PrimaryKeyOverrideCallable
+        ] = primary_key_override_callback
         self.system_level: SystemLevel = system_level
         self.set_with_empty_value: bool = set_with_empty_value
 
@@ -283,7 +312,7 @@ class CsvDataExtractor(DataExtractor):
 
     def _run_file_post_hooks(self, ingest_info: IngestInfo) -> None:
         for post_hook in self.file_post_hooks:
-            post_hook(ingest_info, self.ingest_object_cache)
+            post_hook(self.hook_context, ingest_info, self.ingest_object_cache)
 
     def _set_value_if_key_exists(
         self,
@@ -319,7 +348,7 @@ class CsvDataExtractor(DataExtractor):
         """Applies pre-processing on the data in the given row, before we
         try to extract ingested objects."""
         for hook in self.row_pre_hooks:
-            hook(row)
+            hook(self.hook_context, row)
 
     def _post_process_row(
         self, row: Dict[str, str], extracted_objects: List[IngestObject]
@@ -333,7 +362,14 @@ class CsvDataExtractor(DataExtractor):
                 unique_extracted_objects[object_id] = extracted_object
 
         for hook in self.row_post_hooks:
-            hook(row, unique_extracted_objects.values(), self.ingest_object_cache)
+            if not self.ingest_object_cache:
+                raise ValueError("Must have ingest object cache to run row posthook.")
+            hook(
+                self.hook_context,
+                row,
+                list(unique_extracted_objects.values()),
+                self.ingest_object_cache,
+            )
 
     def _build_dummy_child_primary_key(
         self,
@@ -422,7 +458,9 @@ class CsvDataExtractor(DataExtractor):
                 ancestor_chain[coordinate.class_name] = coordinate.field_value
 
         if self.ancestor_chain_overrides_callback:
-            ancestor_addition = self.ancestor_chain_overrides_callback(row)
+            ancestor_addition = self.ancestor_chain_overrides_callback(
+                self.hook_context, row
+            )
             ancestor_chain.update(ancestor_addition)
 
         return ancestor_chain
@@ -437,11 +475,11 @@ class CsvDataExtractor(DataExtractor):
         its output. Otherwise, we return the primary key mapping or None.
         """
         if self.primary_key_override_callback:
-            return self.primary_key_override_callback(row)
+            return self.primary_key_override_callback(self.hook_context, row)
 
         if self.primary_key:
-            coordinates = self._get_coordinates_from_mapping(self.primary_key, row)
-            coordinates = more_itertools.one(coordinates)
+            coordinates_list = self._get_coordinates_from_mapping(self.primary_key, row)
+            coordinates = more_itertools.one(coordinates_list)
             if not coordinates.field_value:
                 raise ValueError(
                     f"Found empty primary coordinates mapping in col [{self.primary_key}] for "
