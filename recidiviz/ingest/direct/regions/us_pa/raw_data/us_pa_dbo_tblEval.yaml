@@ -1,6 +1,7 @@
 file_tag: dbo_tblEval
 file_description: |-
   A table containing assignments to programming for people currently incarcerated.
+  NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - Control_Number
 primary_key_cols: []

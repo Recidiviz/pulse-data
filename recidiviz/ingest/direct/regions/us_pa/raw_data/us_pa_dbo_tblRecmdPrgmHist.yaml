@@ -1,6 +1,7 @@
 file_tag: dbo_tblRecmdPrgmHist
 file_description: |-
   A table containing referrals to programming for people previously incarcerated.
+  NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - Control_Number
 #      - Prgm_Cd

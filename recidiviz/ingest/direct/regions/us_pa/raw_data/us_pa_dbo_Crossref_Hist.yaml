@@ -1,6 +1,6 @@
 file_tag: dbo_Crossref_Hist
 file_description: |-
-  A table that provides a "cross-walk" to be able to tie together IDs for people who have an ID change in their history.
+  A table that provides a "cross-walk" to be able to tie together IDs for people who have an ID change in their history. NOT REFRESHED REGULARLY.
 primary_key_cols: []
 columns:
   - name: prev_inmate_number

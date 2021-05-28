@@ -175,3 +175,7 @@ columns:
   - name: RskAct97Other
     description: |-
       Whether any other Act 97 considerations apply to this period of supervision.
+separator: ‡
+custom_line_terminator: †
+ignore_quotes: True
+encoding: WINDOWS-1252

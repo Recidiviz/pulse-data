@@ -1,6 +1,7 @@
 file_tag: dbo_LU_ReleaseEntryCodesAddCase
 file_description: |-
   A lookup table mapping "Release table" entry codes to additional contextual information.
+  NOT REFRESHED REGULARLY.
 primary_key_cols:
   - ReleaseEntryCode
 columns:

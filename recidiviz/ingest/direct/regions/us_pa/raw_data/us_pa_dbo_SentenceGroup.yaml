@@ -112,3 +112,7 @@ columns:
     is_datetime: True
     description: |-
       "True" minimum date of release from this sentence, with all factors included.
+separator: ‡
+custom_line_terminator: †
+ignore_quotes: True
+encoding: WINDOWS-1252

@@ -1,6 +1,6 @@
 file_tag: dbo_BdActionProcessed
 file_description: |-
-  A table describing when board actions were processed.
+  A table describing when board actions were processed. NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - ParoleCountID

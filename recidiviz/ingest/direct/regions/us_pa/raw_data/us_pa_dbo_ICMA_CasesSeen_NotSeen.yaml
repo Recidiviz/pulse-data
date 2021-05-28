@@ -1,6 +1,7 @@
 file_tag: dbo_ICMA_CasesSeen_NotSeen
 file_description: |-
   A table containing an index of supervision cases that have been undertaken by specific officers.
+  NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - InstitutionNumber

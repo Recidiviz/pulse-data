@@ -1,6 +1,7 @@
 file_tag: dbo_IcsCriminalHist
 file_description: |-
-  A table containing a brief history of arrest information for people who have been incarcerated.
+  A table containing a brief history of arrest information for people who have been
+  incarcerated. NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - Doc_Id
 #      - CrmlHistSeq_Id

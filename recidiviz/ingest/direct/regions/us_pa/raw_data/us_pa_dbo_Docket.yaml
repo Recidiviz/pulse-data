@@ -1,6 +1,7 @@
 file_tag: dbo_Docket
 file_description: |-
   A table containing the docket of new board actions that may be taken in the future.
+  NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - ParoleNumber
 #      - DocketID

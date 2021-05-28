@@ -2,7 +2,7 @@ file_tag: dbo_vwCCISAllInmate
 file_description: |-
   A table from the Community Corrections Information System (CCIS) tracking the
   set of individuals incarcerated within Community Corrections Centers and Community Contract
-  Facilities.
+  Facilities. NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - Control_Number
 #      - Inmate_Number

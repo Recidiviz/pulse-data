@@ -1,6 +1,7 @@
 file_tag: dbo_pb_INMATE_SUMMARY
 file_description: |-
   A table containing a rough summary of people who were previously incarcerated.
+  NOT REFRESHED REGULARLY.
 # Best initial (unconfirmed) guess at primary keys for this table:
 #      - sid
 #      - inmate_number
