@@ -17,7 +17,7 @@
 """Wrapper around the Auth0 Client
 """
 import math
-from typing import List, Dict, TypedDict
+from typing import List, Dict, TypedDict, Optional
 from auth0.v3.authentication import GetToken
 from auth0.v3.management import Auth0
 
@@ -27,7 +27,7 @@ Auth0AppMetadata = TypedDict(
     "Auth0AppMetadata",
     {
         "allowed_supervision_location_ids": List[str],
-        "allowed_supervision_location_level": str,
+        "allowed_supervision_location_level": Optional[str],
     },
 )
 
