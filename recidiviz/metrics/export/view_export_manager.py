@@ -101,7 +101,7 @@ def create_metric_view_data_export_tasks() -> Tuple[str, HTTPStatus]:
     """Queues a task to export data in BigQuery metric views to cloud storage buckets.
 
     Example:
-        export/create_metric_view_data_export_task?export_job_filter=US_ID
+        export/create_metric_view_data_export_tasks?export_job_filter=US_ID
     URL parameters:
         export_job_filter: Job name to initiate export for (e.g. US_ID or LANTERN).
                            If state_code, will create tasks for all products that have launched for that state_code.

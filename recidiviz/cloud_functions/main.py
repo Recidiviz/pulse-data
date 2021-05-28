@@ -59,7 +59,7 @@ _DIRECT_INGEST_NORMALIZE_RAW_PATH_URL = (
 )
 
 _METRIC_VIEW_EXPORT_CLOUD_FUNCTION_URL = (
-    "http://{}.appspot.com/export/create_metric_view_data_export_task"
+    "http://{}.appspot.com/export/create_metric_view_data_export_tasks"
 )
 _APP_ENGINE_PO_MONTHLY_REPORT_GENERATE_EMAILS_URL = (
     "https://{}.appspot.com/reporting/start_new_batch{}"
