@@ -38,3 +38,11 @@ export const runCloudSQLImport = async (
 export const getPOFeedback = async (): Promise<Response> => {
   return postWithURLAndBody("/api/case_triage/get_po_feedback");
 };
+
+// Fetch states for po monthly reports
+export const fetchEmailStateCodes = async (): Promise<Response> => {
+  return postWithURLAndBody(
+    // change to fetch_email_state_codes
+    "/api/ingest_operations/fetch_ingest_state_codes"
+  );
+};

@@ -55,6 +55,7 @@ export const fetchDataFreshness = async (): Promise<Response> => {
 
 export {
   fetchETLViewIds,
+  fetchEmailStateCodes,
   generateCaseUpdatesExport,
   getPOFeedback,
   runCloudSQLImport,

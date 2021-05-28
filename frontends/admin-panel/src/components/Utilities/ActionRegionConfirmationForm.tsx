@@ -14,35 +14,37 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+
 import * as React from "react";
 import { Form, Input, Modal } from "antd";
-import { actionNames, DirectIngestInstance, IngestActions } from "./constants";
+import { DirectIngestInstance } from "../IngestOperationsView/constants";
 
-interface IngestActionConfirmationFormProps {
+interface ActionRegionConfirmationFormProps {
   visible: boolean;
-  onConfirm: (ingestAction: IngestActions) => void;
+  onConfirm: (confirmAction: string) => void;
   onCancel: () => void;
-  ingestAction: IngestActions;
+  action: string;
+  actionName: string;
   regionCode: string;
-  ingestInstance: DirectIngestInstance | undefined;
+  ingestInstance?: DirectIngestInstance | undefined;
 }
 
-const IngestActionConfirmationForm: React.FC<IngestActionConfirmationFormProps> =
+const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> =
   ({
     visible,
     onConfirm,
     onCancel,
-    ingestAction,
+    action,
+    actionName,
     regionCode,
     ingestInstance,
   }) => {
     const [form] = Form.useForm();
-    const actionName = actionNames[ingestAction];
     const confirmationRegEx = ingestInstance
       ? regionCode
           .toUpperCase()
-          .concat("_", ingestAction.toUpperCase(), "_", ingestInstance)
-      : regionCode.toUpperCase().concat("_", ingestAction.toUpperCase());
+          .concat("_", action.toUpperCase(), "_", ingestInstance)
+      : regionCode.toUpperCase().concat("_", action.toUpperCase());
 
     return (
       <Modal
@@ -56,7 +58,7 @@ const IngestActionConfirmationForm: React.FC<IngestActionConfirmationFormProps> 
             .validateFields()
             .then((values) => {
               form.resetFields();
-              onConfirm(ingestAction);
+              onConfirm(action);
             })
             .catch((info) => {
               form.resetFields();
@@ -92,4 +94,4 @@ const IngestActionConfirmationForm: React.FC<IngestActionConfirmationFormProps> 
     );
   };
 
-export default IngestActionConfirmationForm;
+export default ActionRegionConfirmationForm;
