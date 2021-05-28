@@ -22,7 +22,7 @@ import json
 import logging
 import os
 from http import HTTPStatus
-from typing import Tuple, List, Dict, Union, Any
+from typing import Tuple, List, Dict, Union, Any, Optional
 
 import sqlalchemy.orm.exc
 from sqlalchemy import func
@@ -244,13 +244,15 @@ def update_auth0_user_metadata() -> Tuple[str, HTTPStatus]:
             )
 
         user_restrictions: List[Dict[str, Any]] = _load_json_lines(temp_file_handler)
-        user_restrictions_by_email: Dict[str, List[str]] = {}
+        user_restrictions_by_email: Dict[str, Tuple[List[str], Optional[str]]] = {}
 
         for user_restriction in user_restrictions:
             email = user_restriction.get("restricted_user_email", "").lower()
-            user_restrictions_by_email[email] = user_restriction.get(
-                "allowed_supervision_location_ids", []
+            allowed_ids = user_restriction.get("allowed_supervision_location_ids", [])
+            allowed_level = user_restriction.get(
+                "allowed_supervision_location_level", None
             )
+            user_restrictions_by_email[email] = (allowed_ids, allowed_level)
 
         auth0 = Auth0Client()
         email_addresses = list(user_restrictions_by_email.keys())
@@ -260,16 +262,29 @@ def update_auth0_user_metadata() -> Tuple[str, HTTPStatus]:
         for user in users:
             email = user.get("email", "")
             current_app_metadata = user.get("app_metadata", {})
-            current_restrictions = current_app_metadata.get(
+            new_restrictions: Tuple[
+                List[str], Optional[str]
+            ] = user_restrictions_by_email.get(email, ([], None))
+
+            new_restrictions_ids, new_restrictions_level = new_restrictions
+
+            current_restrictions_ids: List[str] = current_app_metadata.get(
                 "allowed_supervision_location_ids", []
             )
-            new_restrictions = user_restrictions_by_email.get(email, [])
+            current_restrictions_level: Optional[str] = current_app_metadata.get(
+                "allowed_supervision_location_level", None
+            )
 
-            if _should_update_restrictions(current_restrictions, new_restrictions):
+            if _should_update_restrictions(
+                current_restrictions_ids,
+                current_restrictions_level,
+                new_restrictions_ids,
+                new_restrictions_level,
+            ):
                 num_updated_users += 1
                 app_metadata: Auth0AppMetadata = {
-                    "allowed_supervision_location_ids": new_restrictions,
-                    "allowed_supervision_location_level": "level_1_supervision_location",
+                    "allowed_supervision_location_ids": new_restrictions_ids,
+                    "allowed_supervision_location_level": new_restrictions_level,
                 }
                 auth0.update_user_app_metadata(
                     user_id=user.get("user_id", ""), app_metadata=app_metadata
@@ -296,13 +311,18 @@ def _validate_region_code(region_code: str) -> None:
 
 
 def _should_update_restrictions(
-    current_restrictions: List[str], new_restrictions: List[str]
+    current_restrictions_ids: List[str],
+    current_restrictions_level: Optional[str],
+    new_restrictions_ids: List[str],
+    new_restrictions_level: Optional[str],
 ) -> bool:
     return bool(
-        new_restrictions
+        len(new_restrictions_ids) > 0
+        and new_restrictions_level is not None
         and (
-            collections.Counter(current_restrictions)
-            != collections.Counter(new_restrictions)
+            collections.Counter(current_restrictions_ids)
+            != collections.Counter(new_restrictions_ids)
+            or current_restrictions_level != new_restrictions_level
         )
     )
 

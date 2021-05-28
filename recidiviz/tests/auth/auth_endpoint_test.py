@@ -334,18 +334,67 @@ class AuthEndpointTests(TestCase):
                 response.data,
             )
 
-    def test_update_auth0_user_metadata_should_update(self) -> None:
+    def test_update_auth0_user_metadata_should_update_level(self) -> None:
         with self.app.test_request_context():
             self.mock_auth0_client.get_all_users_by_email_addresses.return_value = [
                 {
                     "email": "test-user+0@test.org",
                     "user_id": "0",
-                    "app_metadata": {"allowed_supervision_location_ids": ["11", "EP"]},
+                    "app_metadata": {
+                        "allowed_supervision_location_ids": ["11", "EP"],
+                        "allowed_supervision_location_level": "level_1_supervision_location",
+                    },
                 },
                 {
                     "email": "test-user+1@test.org",
                     "user_id": "1",
-                    "app_metadata": {"allowed_supervision_location_ids": ["44", "23"]},
+                    "app_metadata": {
+                        "allowed_supervision_location_ids": ["23"],
+                        "allowed_supervision_location_level": "level_2_supervision_location",
+                    },
+                },
+            ]
+
+            response = self.client.get(
+                self.update_auth0_user_metadata_url,
+                headers=self.headers,
+                query_string={**self.update_query_params},
+            )
+            self.mock_auth0_client.update_user_app_metadata.assert_has_calls(
+                [
+                    call(
+                        user_id="1",
+                        app_metadata={
+                            "allowed_supervision_location_ids": ["23"],
+                            "allowed_supervision_location_level": "level_1_supervision_location",
+                        },
+                    ),
+                ]
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.assertEqual(
+                b"Finished updating 1 auth0 users with restrictions for region US_MO",
+                response.data,
+            )
+
+    def test_update_auth0_user_metadata_should_update_ids(self) -> None:
+        with self.app.test_request_context():
+            self.mock_auth0_client.get_all_users_by_email_addresses.return_value = [
+                {
+                    "email": "test-user+0@test.org",
+                    "user_id": "0",
+                    "app_metadata": {
+                        "allowed_supervision_location_ids": ["11", "EP"],
+                        "allowed_supervision_location_level": "level_1_supervision_location",
+                    },
+                },
+                {
+                    "email": "test-user+1@test.org",
+                    "user_id": "1",
+                    "app_metadata": {
+                        "allowed_supervision_location_ids": ["44", "23"],
+                        "allowed_supervision_location_level": "level_1_supervision_location",
+                    },
                 },
                 {"email": "test-user+2@test.org", "user_id": "2", "app_metadata": {}},
             ]
