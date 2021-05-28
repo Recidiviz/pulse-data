@@ -15,9 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for gcs_import_to_cloud_sql.py"""
-from typing import Optional, List
+from typing import Any, List, Optional
 from unittest import TestCase
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -33,8 +33,8 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
 from recidiviz.tests.auth.helpers import (
-    generate_fake_user_restrictions,
     add_users_to_database_session,
+    generate_fake_user_restrictions,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
 
@@ -86,11 +86,10 @@ class TestGCSImportToCloudSQL(TestCase):
         self.cloud_sql_client_patcher.stop()
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
 
-    def _mock_load_data_from_csv(self, values: Optional[List[str]] = None) -> None:
+    def _mock_load_data_from_csv(
+        self, values: Optional[List[str]] = None, **_kwargs: Any
+    ) -> str:
         session = SessionFactory.for_database(self.database_key)
-        session.execute(
-            f"CREATE TABLE IF NOT EXISTS tmp__{self.table_name} AS TABLE {self.table_name} WITH NO DATA"
-        )
         csv_values = [
             f"('US_MO', '{self.user_1_email}', '', '{{1}}', 'level_1_supervision_location', 'level_1_access_role')",
         ]
@@ -101,12 +100,12 @@ class TestGCSImportToCloudSQL(TestCase):
             f"VALUES {','.join(csv_values)}"
         )
         session.commit()
+        return "fake-id"
 
     def test_import_gcs_csv_to_cloud_sql_swaps_tables(self) -> None:
         """Assert that the temp table and destination are successfully swapped."""
-        # pylint: disable=assignment-from-no-return
         self.mock_cloud_sql_client.import_gcs_csv.side_effect = (
-            self._mock_load_data_from_csv()  # type: ignore[func-returns-value]
+            self._mock_load_data_from_csv
         )
         self.mock_cloud_sql_client.wait_until_operation_completed.return_value = True
 
@@ -144,13 +143,16 @@ class TestGCSImportToCloudSQL(TestCase):
             allowed_supervision_location_ids=["AB"],
         )
         add_users_to_database_session(self.database_key, [user_1, user_2])
-        # pylint: disable=assignment-from-no-return
-        self.mock_cloud_sql_client.import_gcs_csv.side_effect = self._mock_load_data_from_csv(
-            values=[
-                "('US_MO', 'user-1@test.gov', '', '{2}', 'level_1_supervision_location', 'level_1_access_role')",
-                "('US_MO', 'user-2@test.gov', '', '{3}', 'level_1_supervision_location', 'level_1_access_role')",
-            ]
-        )  # type: ignore[func-returns-value]
+
+        def _mock_side_effect(**_kwargs: Any) -> str:
+            return self._mock_load_data_from_csv(
+                values=[
+                    "('US_MO', 'user-1@test.gov', '', '{2}', 'level_1_supervision_location', 'level_1_access_role')",
+                    "('US_MO', 'user-2@test.gov', '', '{3}', 'level_1_supervision_location', 'level_1_access_role')",
+                ]
+            )
+
+        self.mock_cloud_sql_client.import_gcs_csv.side_effect = _mock_side_effect
         self.mock_cloud_sql_client.wait_until_operation_completed.return_value = True
 
         import_gcs_csv_to_cloud_sql(
