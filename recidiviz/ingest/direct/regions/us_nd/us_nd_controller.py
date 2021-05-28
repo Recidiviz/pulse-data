@@ -19,7 +19,7 @@
 import json
 import os
 import re
-from typing import List, Optional, Dict, Callable, cast, Pattern, Tuple
+from typing import List, Optional, Dict, cast, Pattern, Tuple
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common import ncic
@@ -57,6 +57,11 @@ from recidiviz.common.str_field_utils import (
 )
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import (
     CsvGcsfsDirectIngestController,
+    IngestRowPrehookCallable,
+    IngestPrimaryKeyOverrideCallable,
+    IngestFilePostprocessorCallable,
+    IngestRowPosthookCallable,
+    IngestAncestorChainOverridesCallable,
 )
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     create_if_not_exists,
@@ -72,6 +77,7 @@ from recidiviz.ingest.direct.state_shared_row_posthooks import (
     gen_convert_person_ids_to_external_id_objects,
     get_normalized_ymd_str,
     gen_set_agent_type,
+    IngestGatingContext,
 )
 from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import (
     normalized_county_code,
@@ -79,7 +85,10 @@ from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import (
 from recidiviz.ingest.direct.regions.us_nd.us_nd_judicial_district_code_reference import (
     normalized_judicial_district_code,
 )
-from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
+from recidiviz.ingest.extractor.csv_data_extractor import (
+    IngestFieldCoordinates,
+    AncestorChainOverridesCallable,
+)
 from recidiviz.ingest.models.ingest_info import (
     IngestObject,
     StatePerson,
@@ -102,6 +111,7 @@ from recidiviz.ingest.models.ingest_info import (
     StateSupervisionViolationTypeEntry,
     StateSupervisionCaseTypeEntry,
     StateSupervisionContact,
+    IngestInfo,
 )
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import environment
@@ -121,7 +131,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
         self.enum_overrides = generate_enum_overrides()
 
-        self.row_pre_processors_by_file: Dict[str, List[Callable]] = {
+        self.row_pre_processors_by_file: Dict[str, List[IngestRowPrehookCallable]] = {
             "elite_offenderidentifier": [self._normalize_id_fields],
             "elite_alias": [self._normalize_id_fields],
             "elite_offendersentences": [self._normalize_id_fields],
@@ -130,7 +140,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
             "elite_orderstable": [self._normalize_id_fields],
             "elite_externalmovements": [self._normalize_id_fields],
         }
-        self.row_post_processors_by_file: Dict[str, List[Callable]] = {
+        self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
             "elite_offenders": [copy_name_to_alias],
             "elite_offenderidentifier": [self._normalize_external_id_type],
             "elite_offendersentenceaggs": [
@@ -210,16 +220,18 @@ class UsNdController(CsvGcsfsDirectIngestController):
             ],
         }
 
-        self.primary_key_override_hook_by_file: Dict[str, Callable] = {
+        self.primary_key_override_hook_by_file: Dict[
+            str, IngestPrimaryKeyOverrideCallable
+        ] = {
             "elite_offendersentences": _generate_sentence_primary_key,
             "elite_externalmovements": _generate_period_primary_key,
             "elite_offenderchargestable": _generate_charge_primary_key,
             "elite_offense_in_custody_and_pos_report_data": _generate_incident_primary_key,
         }
 
-        self.ancestor_chain_overrides_callback_by_file: Dict[str, Callable] = {
-            "elite_offenderchargestable": _state_charge_ancestor_chain_overrides
-        }
+        self.ancestor_chain_overrides_callback_by_file: Dict[
+            str, AncestorChainOverridesCallable
+        ] = {"elite_offenderchargestable": _state_charge_ancestor_chain_overrides}
 
         self.files_to_set_with_empty_values = ["elite_offendersentenceterms"]
 
@@ -257,7 +269,9 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
         return tags
 
-    def _normalize_id_fields(self, _file_tag: str, row: Dict[str, str]) -> None:
+    def _normalize_id_fields(
+        self, _gating_context: IngestGatingContext, row: Dict[str, str]
+    ) -> None:
         """A number of ID fields come in as comma-separated strings in some of the files. This function converts
         those id column values to a standard format without decimals or commas before the row is processed.
 
@@ -286,14 +300,20 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
         return str(int(float(dec_str.replace(",", ""))))
 
-    def _get_row_pre_processors_for_file(self, file: str) -> List[Callable]:
-        return self.row_pre_processors_by_file.get(file, [])
+    def _get_row_pre_processors_for_file(
+        self, file_tag: str
+    ) -> List[IngestRowPrehookCallable]:
+        return self.row_pre_processors_by_file.get(file_tag, [])
 
-    def _get_row_post_processors_for_file(self, file: str) -> List[Callable]:
-        return self.row_post_processors_by_file.get(file, [])
+    def _get_row_post_processors_for_file(
+        self, file_tag: str
+    ) -> List[IngestRowPosthookCallable]:
+        return self.row_post_processors_by_file.get(file_tag, [])
 
-    def _get_file_post_processors_for_file(self, _file_tag: str) -> List[Callable]:
-        post_processors: List[Callable] = [
+    def _get_file_post_processors_for_file(
+        self, _file_tag: str
+    ) -> List[IngestFilePostprocessorCallable]:
+        post_processors: List[IngestFilePostprocessorCallable] = [
             self._rationalize_race_and_ethnicity,
             gen_convert_person_ids_to_external_id_objects(self._get_id_type),
         ]
@@ -301,10 +321,12 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     def _get_ancestor_chain_overrides_callback_for_file(
         self, file: str
-    ) -> Optional[Callable]:
+    ) -> Optional[IngestAncestorChainOverridesCallable]:
         return self.ancestor_chain_overrides_callback_by_file.get(file, None)
 
-    def _get_primary_key_override_for_file(self, file: str) -> Optional[Callable]:
+    def _get_primary_key_override_for_file(
+        self, file: str
+    ) -> Optional[IngestPrimaryKeyOverrideCallable]:
         return self.primary_key_override_hook_by_file.get(file, None)
 
     def _get_files_to_set_with_empty_values(self) -> List[str]:
@@ -321,7 +343,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _add_supervision_officer_to_contact(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -349,7 +371,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     def _add_location_to_contact(
         self,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -367,7 +389,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     def _add_status_to_contact(
         self,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -389,7 +411,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _add_supervising_officer(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -410,7 +432,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _add_case_type_external_id(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -418,15 +440,17 @@ class UsNdController(CsvGcsfsDirectIngestController):
         """Adds the person external_id to the extracted supervision case type."""
         external_id = row.get("SID")
         if not external_id:
-            raise ValueError(f"File [{_file_tag}] is missing an SID external id")
+            raise ValueError(
+                f"File [{_gating_context.file_tag}] is missing an SID external id"
+            )
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateSupervisionCaseTypeEntry):
                 extracted_object.state_supervision_case_type_entry_id = external_id
 
     @staticmethod
     def _rationalize_race_and_ethnicity(
-        _file_tag: str,
-        _extracted_objects: List[IngestObject],
+        _gating_context: IngestGatingContext,
+        _ingest_info: IngestInfo,
         cache: Optional[IngestObjectCache],
     ) -> None:
         """For a person whose provided race is HISPANIC, we set the ethnicity to HISPANIC, and the race will be
@@ -452,7 +476,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
     @classmethod
     def _set_sentence_group_length_max_length(
         cls,
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -482,7 +506,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _normalize_external_id_type(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         _row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -494,7 +518,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _process_external_movement(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -541,7 +565,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _enrich_addresses(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -559,7 +583,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _enrich_sorac_assessments(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         _row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -572,7 +596,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _process_lsir_assessments(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -625,7 +649,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _process_ftr_episode(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -660,7 +684,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _add_terminating_officer_to_supervision_periods(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -683,7 +707,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _add_officer_to_supervision_periods(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -727,7 +751,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
     # can be mapped to multiple fields.
     @staticmethod
     def _hydrate_supervision_period_sentence_shared_date_fields(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         _row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -757,7 +781,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _concatenate_docstars_length_periods(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -793,7 +817,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _record_revocation(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -821,7 +845,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _rationalize_incident_type(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         _row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -834,7 +858,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _rationalize_outcome_type(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -850,7 +874,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _set_punishment_length_days(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -878,7 +902,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _set_location_within_facility(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -902,7 +926,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _set_incident_outcome_id(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -921,7 +945,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _add_sentence_children(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -955,7 +979,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _set_elite_charge_status(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         _row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -967,7 +991,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _rationalize_controlling_charge(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -981,7 +1005,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _rationalize_violent_charge(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -995,7 +1019,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _parse_elite_charge_classification(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1005,7 +1029,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _parse_docstars_charge_classification(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1015,7 +1039,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _parse_docstars_charge_offense(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1035,7 +1059,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _normalize_judicial_district_code(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         _row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -1056,7 +1080,7 @@ def _yaml_filepath(filename: str) -> str:
 
 
 def _generate_sentence_primary_key(
-    _file_tag: str, row: Dict[str, str]
+    _gating_context: IngestGatingContext, row: Dict[str, str]
 ) -> IngestFieldCoordinates:
     return IngestFieldCoordinates(
         "state_incarceration_sentence",
@@ -1073,7 +1097,7 @@ def _generate_sentence_id(row: Dict[str, str]) -> str:
 
 
 def _generate_incident_primary_key(
-    _file_tag: str, row: Dict[str, str]
+    _gating_context: IngestGatingContext, row: Dict[str, str]
 ) -> IngestFieldCoordinates:
     return IngestFieldCoordinates(
         "state_incarceration_incident",
@@ -1090,7 +1114,7 @@ def _generate_incident_id(row: Dict[str, str]) -> str:
 
 
 def _generate_period_primary_key(
-    _file_tag: str, row: Dict[str, str]
+    _gating_context: IngestGatingContext, row: Dict[str, str]
 ) -> IngestFieldCoordinates:
     return IngestFieldCoordinates(
         "state_incarceration_period",
@@ -1116,7 +1140,7 @@ def _recover_movement_sequence(period_id: str) -> str:
 
 
 def _generate_charge_primary_key(
-    _file_tag: str, row: Dict[str, str]
+    _gating_context: IngestGatingContext, row: Dict[str, str]
 ) -> IngestFieldCoordinates:
     return IngestFieldCoordinates(
         "state_charge", "state_charge_id", _generate_charge_id(row)
@@ -1131,7 +1155,7 @@ def _generate_charge_id(row: Dict[str, str]) -> str:
 
 
 def _state_charge_ancestor_chain_overrides(
-    _file_tag: str, row: Dict[str, str]
+    _gating_context: IngestGatingContext, row: Dict[str, str]
 ) -> Dict[str, str]:
     # The charge id can be used interchangeably in ND with the sentence id because there is a 1:1 mapping between
     # charges and sentences, so the CHARGE_SEQ and SENTENCE_SEQ numbers can be used interchangeably.

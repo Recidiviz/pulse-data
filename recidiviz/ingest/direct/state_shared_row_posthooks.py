@@ -23,11 +23,20 @@ import importlib
 import logging
 from typing import Dict, List, Callable, Type, Optional, Union
 
+import attr
+
 from recidiviz.common.constants.entity_enum import EntityEnum
 from recidiviz.common.constants.person_characteristics import Ethnicity
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.ingest.direct.direct_ingest_controller_utils import create_if_not_exists
+from recidiviz.ingest.extractor.csv_data_extractor import (
+    RowPosthookCallable,
+    FilePostprocessorCallable,
+)
 from recidiviz.ingest.models.ingest_info import (
     IngestObject,
     StateAlias,
@@ -42,18 +51,17 @@ from recidiviz.ingest.models.ingest_info import (
 )
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
-RowPosthookCallable = Callable[
-    [str, Dict[str, str], List[IngestObject], IngestObjectCache], None
-]
-FilePostprocessorCallable = Callable[
-    [str, IngestInfo, Optional[IngestObjectCache]], None
-]
+
+@attr.s(frozen=True, kw_only=True)
+class IngestGatingContext:
+    file_tag: str = attr.ib()
+    ingest_instance: DirectIngestInstance = attr.ib()
 
 
 # TODO(#1882): This should no-longer be necessary once you can map a column
 #  value to multiple fields on the ingested object.
 def copy_name_to_alias(
-    _file_tag: str,
+    _gating_context: IngestGatingContext,
     _row: Dict[str, str],
     extracted_objects: List[IngestObject],
     _cache: IngestObjectCache,
@@ -82,7 +90,7 @@ def gen_rationalize_race_and_ethnicity(
     them as ethnicities instead of races."""
 
     def _rationalize_race_and_ethnicity(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         _row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -118,7 +126,7 @@ def gen_label_single_external_id_hook(external_id_type: str) -> RowPosthookCalla
     """
 
     def _label_external_id(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         _row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -182,7 +190,7 @@ def gen_normalize_county_codes_posthook(
     county_codes_map = _load_county_codes_map_for_state(state_code)
 
     def _normalize_county_codes(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -222,7 +230,7 @@ def gen_map_ymd_counts_to_max_length_field_posthook(
     """
 
     def _normalize_ymd_codes(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -273,7 +281,7 @@ def gen_set_is_life_sentence_hook(
     ingest_type: Type[Union[StateSentenceGroup, StateIncarcerationSentence]],
 ) -> RowPosthookCallable:
     def _set_is_life_sentence(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -296,9 +304,11 @@ def gen_convert_person_ids_to_external_id_objects(
     get_id_type: Callable[[str], Optional[str]]
 ) -> FilePostprocessorCallable:
     def _convert_person_ids_to_external_id_objects(
-        file_tag: str, ingest_info: IngestInfo, cache: Optional[IngestObjectCache]
+        gating_context: IngestGatingContext,
+        ingest_info: IngestInfo,
+        cache: Optional[IngestObjectCache],
     ) -> None:
-        id_type = get_id_type(file_tag)
+        id_type = get_id_type(gating_context.file_tag)
         if not id_type:
             return
 
@@ -349,7 +359,7 @@ def gen_set_field_as_concatenated_values_hook(
     """
 
     def set_field_as_concatenated_values_hook(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
@@ -366,7 +376,7 @@ def gen_set_agent_type(agent_type: StateAgentType) -> RowPosthookCallable:
     """Generates a row post-hook that sets the StateAgentType.agent_type field to the given argument."""
 
     def _set_judge_agent_type(
-        _file_tag: str,
+        _gating_context: IngestGatingContext,
         _row: Dict[str, str],
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,

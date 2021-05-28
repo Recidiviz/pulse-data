@@ -19,11 +19,12 @@
 import csv
 import os
 import unittest
-from typing import Callable, Dict
+from typing import Dict, Any, Optional
 
 from recidiviz.ingest.extractor.csv_data_extractor import (
     CsvDataExtractor,
     IngestFieldCoordinates,
+    PrimaryKeyOverrideCallable,
 )
 from recidiviz.tests.ingest import fixtures
 
@@ -68,7 +69,7 @@ class CsvDataExtractorTest(unittest.TestCase):
         self.assertEqual(expected_args, args)
 
     def test_get_creation_args_with_override(self) -> None:
-        def _override(_row: Dict[str, str]) -> IngestFieldCoordinates:
+        def _override(_context: Any, _row: Dict[str, str]) -> IngestFieldCoordinates:
             return IngestFieldCoordinates(
                 "sentence_group", "sentence_group_id", "abcdef"
             )
@@ -92,7 +93,7 @@ class CsvDataExtractorTest(unittest.TestCase):
         self.assertEqual(args, {"incarceration_sentence_id": "CSV_EXTRACTOR_DUMMY_KEY"})
 
     def test_get_creation_args_override_but_not_for_current_field(self) -> None:
-        def _override(_row: Dict[str, str]) -> IngestFieldCoordinates:
+        def _override(_context: Any, _row: Dict[str, str]) -> IngestFieldCoordinates:
             return IngestFieldCoordinates(
                 "sentence_group", "sentence_group_id", "abcdef"
             )
@@ -138,7 +139,7 @@ class CsvDataExtractorTest(unittest.TestCase):
             "sentence_group", "sentence_group_id", "abcdef"
         )
 
-        def _override(_row: Dict[str, str]) -> IngestFieldCoordinates:
+        def _override(_context: Any, _row: Dict[str, str]) -> IngestFieldCoordinates:
             return coordinates
 
         extractor = _instantiate_extractor(
@@ -194,13 +195,14 @@ class CsvDataExtractorTest(unittest.TestCase):
 
 
 def _instantiate_extractor(
-    yaml_filename: str, primary_key_override: Callable = None
+    yaml_filename: str,
+    primary_key_override: Optional[PrimaryKeyOverrideCallable] = None,
 ) -> CsvDataExtractor:
     yaml_path = os.path.join(
         os.path.dirname(__file__), "../testdata/data_extractor/yaml", yaml_filename
     )
     return CsvDataExtractor(
-        yaml_path, primary_key_override_callback=primary_key_override
+        yaml_path, hook_context=None, primary_key_override_callback=primary_key_override
     )
 
 
