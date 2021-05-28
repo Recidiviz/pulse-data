@@ -717,7 +717,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     def get_file_tag_rank_list(self) -> List[str]:
         launched_file_tags = []
-        if environment.in_gcp():
+        if environment.in_gcp_production():
             # Data source: Mixed
             launched_file_tags.append("person_external_ids")
             # Data source: DOC
@@ -732,10 +732,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
             "dbo_Senrec",
         ]
 
-        if environment.in_gcp():
+        if environment.in_gcp_production():
             launched_file_tags.append("sci_incarceration_period")
         else:
-            # TODO(#6251): Ungate this for next PA rerun.
             launched_file_tags.append("sci_incarceration_period_v2")
 
         launched_file_tags += [
@@ -744,13 +743,12 @@ class UsPaController(CsvGcsfsDirectIngestController):
             "ccis_incarceration_period",
         ]
 
-        if environment.in_gcp():
+        if environment.in_gcp_production():
             # Data source: PBPP
             launched_file_tags.append("dbo_Offender")
             launched_file_tags.append("dbo_LSIR")
             launched_file_tags.append("supervision_period")
         else:
-            # TODO(#6251): Ungate this for next PA rerun.
             launched_file_tags.append("dbo_Offender_v2")
             launched_file_tags.append("dbo_LSIHistory")
             launched_file_tags.append("supervision_period_v2")
