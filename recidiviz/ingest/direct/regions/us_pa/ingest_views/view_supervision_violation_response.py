@@ -65,7 +65,11 @@ SELECT
   parole_number,
   parole_count_id,
   set_id,
-  EXTRACT(DATE FROM MIN(PARSE_TIMESTAMP("%m/%d/%Y %T", sanction_timestamp))) as sanction_date,
+  EXTRACT(
+    DATE FROM MIN(
+        PARSE_TIMESTAMP("%Y-%m-%d %H:%M:%E3S", sanction_timestamp)
+    )
+  ) as sanction_date,
   TO_JSON_STRING(
     ARRAY_AGG(STRUCT(sequence_id, sanction_code) ORDER BY sequence_id)
   ) AS sanction_types,
