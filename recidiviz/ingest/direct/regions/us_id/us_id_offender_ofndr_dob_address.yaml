@@ -8,7 +8,7 @@ key_mappings:
   current_address: state_person.current_address
 
 child_key_mappings:
-  ethnic_cd: state_person_race.race
+  race_cd: state_person_race.race
   docno: state_person_external_id.state_person_external_id_id
 
 primary_key:
@@ -50,3 +50,4 @@ keys_to_ignore:
   - birth_city          # Unused - birth city (mostly null)
   - dob_dtd             # Unused - birth date (not present in manual files)
   - offendernumber      # Unused - duplicate of docno
+  - ethnic_cd           # Unused - Less accurate source of race & ethnicity information

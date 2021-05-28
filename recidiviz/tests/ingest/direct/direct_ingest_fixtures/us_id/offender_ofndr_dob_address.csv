@@ -1,5 +1,5 @@
-docno,lnam,title,fnam,mnam,sex_cd,ethnic_cd,activ_flg,sealed_flg,noter_fac,fbi_nbr,sid_nbr,felony_arr,misdem_arr,probations,prob_revokes,paroles,par_absconds,par_revokes,off_docket_no,incrno,move_srl,fac_cd,lu_cd,loc_cd,perm_fac_cd,move_dtd,move_typ,move_pod,move_tier,move_cell,move_bunk,cnty_cd,empl_cd,bank_cd,ofndr_num,dob,offendernumber,current_address,st,birth_ctry_cd,birth_city
-1111,LAST_1,,FIRST_1,MIDDLE_1,M,W,H,,,FBI_1,,,,,,,,,,1,,HS,HS,0,,2002-01-01 13:00,H,,,,,,,1,1111,01/01/75,1111,"11 HOME ST, CITY, ID, 99999",,,
-2222,LAST_2,,FIRST_2,MIDDLE_2,F,H,H,,,FBI_2,,,,,,,,,,2,,HS,HS,0,,2004-01-01 13:00,H,,,,,,,1,2222,01/01/85,2222,"22 HOME ST, CITY, ID, 99999",,,
-3333,LAST_3,,FIRST_3,MIDDLE_3,F,O,H,,,,,,,,,,,,,1,,HS,HS,0,,2010-01-01 13:00,H,,,,,,,1,3333,01/01/95,3333,"33 HOME ST, CITY, ID, 99999",,,
-4444,NULL,,FIRST_4,MIDDLE_4,F,O,H,,,,,,,,,,,,,1,,HS,HS,0,,2010-01-01 13:00,H,,,,,,,1,3333,01/01/05,4444,"44 HOME ST, CITY, ID, 99999",,,
+docno,lnam,title,fnam,mnam,sex_cd,ethnic_cd,race_cd,activ_flg,sealed_flg,noter_fac,fbi_nbr,sid_nbr,felony_arr,misdem_arr,probations,prob_revokes,paroles,par_absconds,par_revokes,off_docket_no,incrno,move_srl,fac_cd,lu_cd,loc_cd,perm_fac_cd,move_dtd,move_typ,move_pod,move_tier,move_cell,move_bunk,cnty_cd,empl_cd,bank_cd,ofndr_num,dob,offendernumber,current_address,st,birth_ctry_cd,birth_city
+1111,LAST_1,,FIRST_1,MIDDLE_1,M,W,W,H,,,FBI_1,,,,,,,,,,1,,HS,HS,0,,2002-01-01 13:00,H,,,,,,,1,1111,01/01/75,1111,"11 HOME ST, CITY, ID, 99999",,,
+2222,LAST_2,,FIRST_2,MIDDLE_2,F,H,H,H,,,FBI_2,,,,,,,,,,2,,HS,HS,0,,2004-01-01 13:00,H,,,,,,,1,2222,01/01/85,2222,"22 HOME ST, CITY, ID, 99999",,,
+3333,LAST_3,,FIRST_3,MIDDLE_3,F,O,O,H,,,,,,,,,,,,,1,,HS,HS,0,,2010-01-01 13:00,H,,,,,,,1,3333,01/01/95,3333,"33 HOME ST, CITY, ID, 99999",,,
+4444,NULL,,FIRST_4,MIDDLE_4,F,U,O,H,,,,,,,,,,,,,1,,HS,HS,0,,2010-01-01 13:00,H,,,,,,,1,3333,01/01/05,4444,"44 HOME ST, CITY, ID, 99999",,,
