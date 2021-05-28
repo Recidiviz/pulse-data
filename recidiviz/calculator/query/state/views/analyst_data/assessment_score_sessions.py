@@ -49,7 +49,7 @@ ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE = """
             ROW_NUMBER() OVER(PARTITION BY person_id, assessment_date ORDER BY assessment_score DESC) AS rn
         FROM `{project_id}.{base_dataset}.state_assessment` 
         WHERE assessment_date IS NOT NULL 
-            AND assessment_type = 'LSIR'
+            AND (assessment_type = 'LSIR' OR assessment_type LIKE 'ORAS%')
         )
     WHERE rn = 1
     ORDER BY assessment_date
