@@ -16,23 +16,26 @@
 // =============================================================================
 import { Select } from "antd";
 import * as React from "react";
-import { fetchIngestStateCodes } from "../AdminPanelAPI";
-import useFetchedData from "../hooks";
-import { StateCodeInfo } from "./IngestOperationsView/constants";
+import {
+  fetchEmailStateCodes,
+  fetchIngestStateCodes,
+} from "../../AdminPanelAPI";
+import useFetchedData from "../../hooks";
+import { StateCodeInfo } from "../IngestOperationsView/constants";
 
-interface IngestInstanceCardProps {
+interface StateSelectorProps {
   handleStateCodeChange: (stateCode: string) => void;
-  initialValue: string | null;
+  initialValue?: string | null;
+  loading: boolean;
+  data: StateCodeInfo[] | undefined;
 }
 
-const IngestStateSelector: React.FC<IngestInstanceCardProps> = ({
+const StateSelector: React.FC<StateSelectorProps> = ({
   handleStateCodeChange,
   initialValue,
+  loading,
+  data,
 }) => {
-  const { loading, data } = useFetchedData<StateCodeInfo[]>(
-    fetchIngestStateCodes
-  );
-
   const handleOnChange = (value: string) => {
     if (handleStateCodeChange) {
       handleStateCodeChange(value);
@@ -74,4 +77,4 @@ const IngestStateSelector: React.FC<IngestInstanceCardProps> = ({
   );
 };
 
-export default IngestStateSelector;
+export default StateSelector;
