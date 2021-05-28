@@ -20,17 +20,16 @@ from typing import List, Optional
 
 from recidiviz.cloud_sql.cloud_sql_client import CloudSQLClientImpl
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.persistence.database.session import Session
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
 
 
 def _import_csv_to_temp_table(
-    session: Session,
+    database_key: SQLAlchemyDatabaseKey,
     schema_type: SchemaType,
     destination_table: str,
     tmp_table_name: str,
@@ -39,12 +38,14 @@ def _import_csv_to_temp_table(
     seconds_to_wait: int = 60,
 ) -> None:
     """Imports a GCS CSV file to a temp table that is created with the destination table as a template."""
+    session = SessionFactory.for_database(database_key=database_key)
     try:
         # Drop old temp table if exists, Create new temp table
         session.execute(f"DROP TABLE IF EXISTS {tmp_table_name}")
         session.execute(
             f"CREATE TABLE {tmp_table_name} AS TABLE {destination_table} WITH NO DATA"
         )
+        session.commit()
 
         # Import CSV to temp table
         logging.info("Starting import from GCS URI: %s", gcs_uri)
@@ -104,7 +105,7 @@ def import_gcs_csv_to_cloud_sql(
     session = SessionFactory.for_database(database_key=database_key)
     try:
         _import_csv_to_temp_table(
-            session=session,
+            database_key=database_key,
             schema_type=schema_type,
             destination_table=destination_table,
             tmp_table_name=tmp_table_name,
