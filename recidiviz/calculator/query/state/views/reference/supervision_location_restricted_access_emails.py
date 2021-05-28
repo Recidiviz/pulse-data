@@ -41,13 +41,17 @@ SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_QUERY_TEMPLATE = """
             'US_MO' AS state_code,
             EMAIL AS restricted_user_email,
             # TODO(#7413) Remove allowed_level_1_supervision_location_ids once FE is no longer using it
-            STRING_AGG(DISTINCT DISTRICT, ',') AS allowed_level_1_supervision_location_ids,
-            ARRAY_AGG(DISTINCT DISTRICT) AS allowed_supervision_location_ids,
-            'level_1_supervision_location' as allowed_supervision_location_level,
-            'level_1_access_role' as internal_role
+            CASE
+                WHEN STRING_AGG(DISTINCT DISTRICT, ',') IS NOT NULL
+                THEN STRING_AGG(DISTINCT DISTRICT, ',')
+                ELSE ''
+            END AS allowed_level_1_supervision_location_ids,
+            ARRAY_AGG(DISTINCT DISTRICT IGNORE NULLS) AS allowed_supervision_location_ids,
+            IF(DISTRICT IS NOT NULL, 'level_1_supervision_location', NULL) AS allowed_supervision_location_level,
+            IF(DISTRICT IS NOT NULL, 'level_1_access_role', 'leadership_role') as internal_role
         FROM `{project_id}.us_mo_raw_data_up_to_date_views.LANTERN_DA_RA_LIST_latest`
-        WHERE DISTRICT IS NOT NULL
-        GROUP BY EMAIL
+        WHERE EMAIL IS NOT NULL
+        GROUP BY EMAIL, DISTRICT
     ),
     id_restricted_access AS (
         SELECT
@@ -56,7 +60,7 @@ SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_QUERY_TEMPLATE = """
             # TODO(#7413) Remove allowed_level_1_supervision_location_ids once FE is no longer using it
             '' AS allowed_level_1_supervision_location_ids,
             ARRAY<string>[] AS allowed_supervision_location_ids,
-            'statewide' as allowed_supervision_location_level,
+            CAST(NULL AS STRING) as allowed_supervision_location_level,
             CASE
                 WHEN empl_title LIKE '%OFFICER%' THEN 'level_1_access_role'
                 WHEN empl_title LIKE '%SUPERVISOR%' THEN 'level_2_access_role'
