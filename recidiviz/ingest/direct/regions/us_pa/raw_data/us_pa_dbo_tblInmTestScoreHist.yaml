@@ -50,7 +50,10 @@ columns:
     description: |-
       For RST assessments, whether this was the latest version of the assessment that was administered.
   - name: FAB_ind
-supplemental_order_by_clause: "PARSE_DATETIME('%m/%d/%Y %H:%M:%S', Hist_dt) DESC"
+    description: |-
+      Unknown meaning
+supplemental_order_by_clause: |-
+  PARSE_DATETIME('%Y-%m-%d %H:%M:%E3S', Hist_dt) DESC
 separator: ‡
 custom_line_terminator: †
 ignore_quotes: True

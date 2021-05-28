@@ -31,7 +31,7 @@ base_query AS (
   SELECT 
     ids.recidiviz_master_person_id, ParoleNumber, OffRaceEthnicGroup, OffSex,
     ROW_NUMBER() OVER (PARTITION BY recidiviz_master_person_id ORDER BY LastModifiedDate DESC) AS recency_rank
-  FROM dbo_Offender_generated_view offender
+  FROM {{dbo_Offender}} offender
   JOIN
   (SELECT DISTINCT recidiviz_master_person_id, parole_number FROM recidiviz_master_person_ids) ids
   ON ids.parole_number = offender.ParoleNumber

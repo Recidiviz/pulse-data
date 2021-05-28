@@ -180,7 +180,7 @@ columns:
   - name: HHPIntenseSup
     description: |-
       HHPA intense supervision score lower bound
-  - name: IcMinfrom
+  - name: IcMinfro
     description: |-
       Minimum level score lower bound - "Ic"
   - name: IcMinto
