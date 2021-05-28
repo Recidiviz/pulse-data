@@ -49,18 +49,39 @@ WITH current_address_view AS (
             AND {{cis_offenderaddress}}.validaddress = 'T' -- Valid address
             AND {{cis_offenderaddress}}.enddate IS NULL -- Active address
             AND {{cis_personaddress}}.codeaddresstypeid IN ('1')) -- Physical address
-    WHERE row_num = 1)
+    WHERE row_num = 1),
+ethnicity AS (
+    SELECT
+        ofndr_num as docno,
+        race_cd
+    FROM
+        {{ofndr}}
+)
 
 
 SELECT
     *
-    EXCEPT(updt_dt, updt_usr_id)  # Seem to update every week? (table is generated)
+    EXCEPT(
+        updt_dt,
+        updt_usr_id,  # Seem to update every week? (table is generated)
+        race_cd
+    ),
+    IF(ethnic_cd IS NULL,
+        race_cd,
+        IF(race_cd IS NULL OR race_cd = 'U',
+            ethnic_cd,
+            race_cd
+        )
+    ) AS race_cd
 FROM
     {{offender}}
 LEFT JOIN
     {{ofndr_dob}}
 ON
   {{offender}}.docno = {{ofndr_dob}}.ofndr_num
+LEFT JOIN
+    ethnicity
+USING (docno)
 LEFT JOIN
     current_address_view
 ON
