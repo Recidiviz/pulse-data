@@ -16,7 +16,7 @@
 # =============================================================================
 """Direct ingest controller implementation for US_TX_BRAZOS."""
 
-from typing import List, Dict, Optional, Callable
+from typing import List, Dict, Optional
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
@@ -27,6 +27,10 @@ from recidiviz.common.constants.enum_overrides import (
 )
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import (
     CsvGcsfsDirectIngestController,
+    IngestRowPosthookCallable,
+    IngestFilePostprocessorCallable,
+    IngestPrimaryKeyOverrideCallable,
+    IngestAncestorChainOverridesCallable,
 )
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     update_overrides_from_maps,
@@ -44,13 +48,21 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
         super().__init__(ingest_bucket_path)
         self.enum_overrides = self.generate_enum_overrides()
 
-        self.row_post_processors_by_file: Dict[str, List[Callable]] = {}
+        self.row_post_processors_by_file: Dict[
+            str, List[IngestRowPosthookCallable]
+        ] = {}
 
-        self.file_post_processors_by_file: Dict[str, List[Callable]] = {}
+        self.file_post_processors_by_file: Dict[
+            str, List[IngestFilePostprocessorCallable]
+        ] = {}
 
-        self.primary_key_override_hook_by_file: Dict[str, Callable] = {}
+        self.primary_key_override_hook_by_file: Dict[
+            str, IngestPrimaryKeyOverrideCallable
+        ] = {}
 
-        self.ancestor_chain_overrides_callback_by_file: Dict[str, Callable] = {}
+        self.ancestor_chain_overrides_callback_by_file: Dict[
+            str, IngestAncestorChainOverridesCallable
+        ] = {}
 
     ENUM_OVERRIDES: Dict[EntityEnum, List[str]] = {}
     ENUM_MAPPERS: Dict[EntityEnumMeta, EnumMapper] = {}
@@ -74,16 +86,22 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
     def get_enum_overrides(self) -> EnumOverrides:
         return self.enum_overrides
 
-    def _get_row_post_processors_for_file(self, file_tag: str) -> List[Callable]:
+    def _get_row_post_processors_for_file(
+        self, file_tag: str
+    ) -> List[IngestRowPosthookCallable]:
         return self.row_post_processors_by_file.get(file_tag, [])
 
-    def _get_file_post_processors_for_file(self, file_tag: str) -> List[Callable]:
+    def _get_file_post_processors_for_file(
+        self, file_tag: str
+    ) -> List[IngestFilePostprocessorCallable]:
         return self.file_post_processors_by_file.get(file_tag, [])
 
-    def _get_primary_key_override_for_file(self, file: str) -> Optional[Callable]:
+    def _get_primary_key_override_for_file(
+        self, file: str
+    ) -> Optional[IngestPrimaryKeyOverrideCallable]:
         return self.primary_key_override_hook_by_file.get(file, None)
 
     def _get_ancestor_chain_overrides_callback_for_file(
         self, file: str
-    ) -> Optional[Callable]:
+    ) -> Optional[IngestAncestorChainOverridesCallable]:
         return self.ancestor_chain_overrides_callback_by_file.get(file, None)

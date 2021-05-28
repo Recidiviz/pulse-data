@@ -20,7 +20,7 @@ GCSFileSystem.
 
 import abc
 import os
-from typing import List, Optional, Callable, Any
+from typing import List, Optional, Callable, Dict
 
 import gcsfs
 import pandas as pd
@@ -50,9 +50,32 @@ from recidiviz.ingest.direct.controllers.gcsfs_csv_reader_delegates import (
     SplittingGcsfsCsvReaderDelegate,
 )
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
-from recidiviz.ingest.extractor.csv_data_extractor import CsvDataExtractor
-from recidiviz.ingest.models.ingest_info import IngestInfo
+from recidiviz.ingest.direct.state_shared_row_posthooks import (
+    IngestGatingContext,
+)
+from recidiviz.ingest.extractor.csv_data_extractor import (
+    CsvDataExtractor,
+    RowType,
+    IngestFieldCoordinates,
+)
+from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject
+from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import metadata
+
+
+IngestRowPrehookCallable = Callable[[IngestGatingContext, RowType], None]
+IngestRowPosthookCallable = Callable[
+    [IngestGatingContext, RowType, List[IngestObject], IngestObjectCache], None
+]
+IngestFilePostprocessorCallable = Callable[
+    [IngestGatingContext, IngestInfo, Optional[IngestObjectCache]], None
+]
+IngestPrimaryKeyOverrideCallable = Callable[
+    [IngestGatingContext, RowType], IngestFieldCoordinates
+]
+IngestAncestorChainOverridesCallable = Callable[
+    [IngestGatingContext, RowType], Dict[str, str]
+]
 
 
 class DirectIngestFileSplittingGcsfsCsvReaderDelegate(SplittingGcsfsCsvReaderDelegate):
@@ -137,33 +160,13 @@ class CsvGcsfsDirectIngestController(BaseDirectIngestController):
             f"{self.region.region_code.lower()}_{file_tag}.yaml",
         )
 
-    WrappableCallable = Callable[[str, Any], Any]
-    WrappedCallable = Callable[..., Any]
-
-    @staticmethod
-    def _wrap_with_tag(
-        file_tag: str, callback: Optional[WrappableCallable]
-    ) -> Optional[WrappedCallable]:
-        if callback is None:
-            return None
-
-        def wrapped_cb(*args: Any) -> Any:
-            if callback is None:
-                raise ValueError("Unexpected None value for callback")
-            return callback(file_tag, *args)
-
-        return wrapped_cb
-
-    @classmethod
-    def _wrap_list_with_tag(
-        cls, file_tag: str, callbacks: List[Callable]
-    ) -> List[Optional[WrappedCallable]]:
-        return [cls._wrap_with_tag(file_tag, callback) for callback in callbacks]
-
     def _parse(
         self, args: GcsfsIngestArgs, contents_handle: GcsfsFileContentsHandle
     ) -> IngestInfo:
         file_tag = self.file_tag(args.file_path)
+        gating_context = IngestGatingContext(
+            file_tag=file_tag, ingest_instance=self.ingest_instance
+        )
 
         if file_tag not in self.get_file_tag_rank_list():
             raise DirectIngestError(
@@ -173,29 +176,24 @@ class CsvGcsfsDirectIngestController(BaseDirectIngestController):
 
         file_mapping = self._yaml_filepath(file_tag)
 
-        row_pre_processors = self._wrap_list_with_tag(
-            file_tag, self._get_row_pre_processors_for_file(file_tag)
-        )
-        row_post_processors = self._wrap_list_with_tag(
-            file_tag, self._get_row_post_processors_for_file(file_tag)
-        )
-        file_post_processors = self._wrap_list_with_tag(
-            file_tag, self._get_file_post_processors_for_file(file_tag)
+        row_pre_processors = self._get_row_pre_processors_for_file(file_tag)
+        row_post_processors = self._get_row_post_processors_for_file(file_tag)
+        file_post_processors = self._get_file_post_processors_for_file(file_tag)
+        # pylint: disable=assignment-from-none
+        primary_key_override_callback = self._get_primary_key_override_for_file(
+            file_tag
         )
         # pylint: disable=assignment-from-none
-        primary_key_override_callback = self._wrap_with_tag(
-            file_tag, self._get_primary_key_override_for_file(file_tag)
-        )
-        # pylint: disable=assignment-from-none
-        ancestor_chain_overrides_callback = self._wrap_with_tag(
-            file_tag, self._get_ancestor_chain_overrides_callback_for_file(file_tag)
+        ancestor_chain_overrides_callback = (
+            self._get_ancestor_chain_overrides_callback_for_file(file_tag)
         )
         should_set_with_empty_values = (
-            file_tag in self._get_files_to_set_with_empty_values()
+            gating_context.file_tag in self._get_files_to_set_with_empty_values()
         )
 
         data_extractor = CsvDataExtractor(
             file_mapping,
+            gating_context,
             row_pre_processors,
             row_post_processors,
             file_post_processors,
@@ -221,19 +219,25 @@ class CsvGcsfsDirectIngestController(BaseDirectIngestController):
         )
         return delegate.df is None
 
-    def _get_row_pre_processors_for_file(self, _file_tag: str) -> List[Callable]:
+    def _get_row_pre_processors_for_file(
+        self, _file_tag: str
+    ) -> List[IngestRowPrehookCallable]:
         """Subclasses should override to return row_pre_processors for a given
         file tag.
         """
         return []
 
-    def _get_row_post_processors_for_file(self, _file_tag: str) -> List[Callable]:
+    def _get_row_post_processors_for_file(
+        self, _file_tag: str
+    ) -> List[IngestRowPosthookCallable]:
         """Subclasses should override to return row_post_processors for a given
         file tag.
         """
         return []
 
-    def _get_file_post_processors_for_file(self, _file_tag: str) -> List[Callable]:
+    def _get_file_post_processors_for_file(
+        self, _file_tag: str
+    ) -> List[IngestFilePostprocessorCallable]:
         """Subclasses should override to return file_post_processors for a given
         file tag.
         """
@@ -241,13 +245,15 @@ class CsvGcsfsDirectIngestController(BaseDirectIngestController):
 
     def _get_ancestor_chain_overrides_callback_for_file(
         self, _file_tag: str
-    ) -> Optional[Callable]:
+    ) -> Optional[IngestAncestorChainOverridesCallable]:
         """Subclasses should override to return an
         ancestor_chain_overrides_callback for a given file tag.
         """
         return None
 
-    def _get_primary_key_override_for_file(self, _file_tag: str) -> Optional[Callable]:
+    def _get_primary_key_override_for_file(
+        self, _file_tag: str
+    ) -> Optional[IngestPrimaryKeyOverrideCallable]:
         """Subclasses should override to return a primary_key_override for a
         given file tag.
         """
