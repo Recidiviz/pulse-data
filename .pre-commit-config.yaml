@@ -8,6 +8,14 @@ repos:
     hooks:
       - id: black
         language_version: python3
+  - repo: https://github.com/pycqa/isort
+    rev: 5.6.4
+    hooks:
+      - id: isort
+        name: isort (python)
+      - id: isort
+        name: isort (pyi)
+        types: [pyi]
   - repo: local
     hooks:
       - id: generate_docs_for_region
@@ -29,5 +37,5 @@ repos:
         entry: pipenv run python -m recidiviz.tools.docs.entity_documentation_generator
         language: system
         files: >
-           (?x)(^recidiviz/persistence/database/schema/state/schema.py|^recidiviz/persistence/database/schema/history_table_shared_columns_mixin.py)$
+          (?x)(^recidiviz/persistence/database/schema/state/schema.py|^recidiviz/persistence/database/schema/history_table_shared_columns_mixin.py)$
         require_serial: true
