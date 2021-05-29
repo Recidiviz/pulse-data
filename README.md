@@ -318,9 +318,19 @@ inbound pull request.
 
 #### Autoformatting
 
-We use `black` to ensure consistent formatting across the code base. There is a pre-commit hook that will format all of your files automatically. It is defined in `githooks/pre-commit` and is installed by `./initial_pipenv_setup_mac.sh`.
+We use `black` to ensure consistent formatting across the code base and `isort` to sort imports. There is a pre-commit hook that will format all of your files automatically. It is defined in `githooks/pre-commit` and is installed by `./initial_pipenv_setup_mac.sh`.
 
-You can also set up your editor to run `black` on save, see [the black docs](https://black.readthedocs.io/en/stable/editor_integration.html). In VSCode just add `"editor.formatOnSave": true, "python.formatting.provider": "black",` to `.vscode/settings.json`. How easy was that!
+You can also set up your editor to run `black` and `isort` on save. See [the black docs](https://black.readthedocs.io/en/stable/integrations/editors.html) for how to configure external tools (both `black` and `isort`) to run in PyCharm (more info in PyCQA/isort#258).
+
+In VSCode just add the following to your `.vscode/settings.json`:
+
+```json
+    "editor.formatOnSave": true,
+    "python.formatting.provider": "black",
+    "[python.editor.codeActionsOnSave]": {
+        "source.organizeImports": true
+    },
+```
 
 #### Static type checking
 
