@@ -1054,7 +1054,6 @@ def _create_ingest_catalog_calculation_summary(
 def generate_calculation_documentation(
     docs_generator: CalculationDocumentationGenerator,
 ) -> bool:
-    # TODO(#7125): Add calc doc generation to the pre-commit config
     modified = docs_generator.generate_products_markdowns()
     modified |= docs_generator.generate_states_markdowns()
     modified |= docs_generator.generate_view_markdowns()
