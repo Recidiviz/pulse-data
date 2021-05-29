@@ -429,7 +429,6 @@ If you are interested in what views rely on this metric, please run the followin
 """
         self.assertEqual(expected_documentation_string, docs)
 
-    # TODO(#7125): Improve calc docs generation speed
     @unittest.skipIf(
         os.environ.get("TRAVIS") == "true", "docs/ does not exist in Travis"
     )

@@ -39,3 +39,10 @@ repos:
         files: >
           (?x)(^recidiviz/persistence/database/schema/state/schema.py|^recidiviz/persistence/database/schema/history_table_shared_columns_mixin.py)$
         require_serial: true
+      - id: generate_calc_documentation
+        name: generate_calc_documentation
+        entry: pipenv run python -m recidiviz.calculator.calculation_documentation_generator
+        language: system
+        files: ^recidiviz/calculator/|^recidiviz/metrics/|^recidiviz/.*/views/|^recidiviz/big_query/
+        exclude: ^recidiviz/tests/|^recidiviz/calculator/modeling/
+        require_serial: true
