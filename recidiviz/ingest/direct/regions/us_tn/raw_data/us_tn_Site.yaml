@@ -1,5 +1,5 @@
 file_tag: Site
-file_description: |- 
+file_description: |-
   This entity describes any organizational or physical unit to which an offender or staff person can be assigned. These types include adult institutions, agencies, parole, probation, or community serivice offices, local jails, or institution jails. Staff here represents the warden, office supervisor, etc.
 primary_key_cols:
   - SiteID
@@ -13,13 +13,43 @@ columns:
   - name: SiteType
     description: |-
       The type of site that an offender is assigned.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: BC
+        description: "TODO(#7424): Update with definition."
+      - value: CA
+        description: "TODO(#7424): Update with definition."
+      - value: CC
+        description: "TODO(#7424): Update with definition."
+      - value: CK
+        description: "TODO(#7424): Update with definition."
+      - value: CV
+        description: "TODO(#7424): Update with definition."
+      - value: DA
+        description: "TODO(#7424): Update with definition."
+      - value: IJ
+        description: "TODO(#7424): Update with definition."
+      - value: IN
+        description: "TODO(#7424): Update with definition."
+      - value: JA
+        description: "TODO(#7424): Update with definition."
+      - value: OA
+        description: "TODO(#7424): Update with definition."
+      - value: PA
+        description: "TODO(#7424): Update with definition."
+      - value: PR
+        description: "TODO(#7424): Update with definition."
+      - value: PX
+        description: "TODO(#7424): Update with definition."
+      - value: TC
+        description: "TODO(#7424): Update with definition."
   - name: Status
     description: |-
       The status of a site to which an offender is assigned.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: A
+        description: "TODO(#7424): Update with definition."
+      - value: I
+        description: "TODO(#7424): Update with definition."
   - name: StatusDate
     is_datetime: True
     description: |-
@@ -45,8 +75,15 @@ columns:
   - name: SecurityLevel
     description: |-
       The highest level of inmate security that a particular TDOC institution maintains.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: LVF
+        description: "TODO(#7424): Update with definition."
+      - value: LVO
+        description: "TODO(#7424): Update with definition."
+      - value: LVS
+        description: "TODO(#7424): Update with definition."
+      - value: LVT
+        description: "TODO(#7424): Update with definition."
   - name: Region
     description: |-
       A unique geographical location governed by its own administrative unit.
@@ -68,8 +105,13 @@ columns:
   - name: SexTypesAllowed
     description: |-
       This value indicates if males, females, or both can be admitted to a particular institution.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: B
+        description: "TODO(#7424): Update with definition."
+      - value: F
+        description: "TODO(#7424): Update with definition."
+      - value: M
+        description: "TODO(#7424): Update with definition."
   - name: ContactPerson
     description: |-
       Free form text containing the person to contact at a site.

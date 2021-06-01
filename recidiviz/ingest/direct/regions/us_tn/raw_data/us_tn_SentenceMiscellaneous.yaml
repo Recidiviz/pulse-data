@@ -1,5 +1,5 @@
 file_tag: SentenceMiscellaneous
-file_description: |- 
+file_description: |-
   This table contains one occurrence for each sentence received by the offender. It contains miscellaneous information about the sentence.
 primary_key_cols:
   - OffenderID
@@ -41,8 +41,9 @@ columns:
   - name: BOPFlag
     description: |-
       An indicator of whether the offender is awaiting a Board of Parole Date.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: StaffID
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.

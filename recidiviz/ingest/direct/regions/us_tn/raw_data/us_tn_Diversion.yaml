@@ -1,5 +1,5 @@
 file_tag: Diversion
-file_description: |- 
+file_description: |-
   This table contains one occurrence for each diversion that applies to the specified case. These diversions apply to offenders who have not yet been sentenced.
 primary_key_cols:
   - OffenderID
@@ -26,13 +26,19 @@ columns:
   - name: DiversionType
     description: |-
       The type of diversion that an offender is being supervised under. This will either be a standard diversion or a memorandum of understanding.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: D
+        description: "TODO(#7424): Update with definition."
+      - value: M
+        description: "TODO(#7424): Update with definition."
   - name: DiversionStatus
     description: |-
       The status of an offender's diversion.  A valid status is either open or closed.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: C
+        description: "TODO(#7424): Update with definition."
+      - value: O
+        description: "TODO(#7424): Update with definition."
   - name: StatusDate
     is_datetime: True
     description: |-
@@ -44,8 +50,6 @@ columns:
   - name: Offense
     description: |-
       The offense codes as defined by the UNIFORM CRIME REPORTING AGENCY.  This code is tied directly to the offense code TCA.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
   - name: ExpirationDate
     is_datetime: True
     description: |-

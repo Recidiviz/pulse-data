@@ -266,7 +266,8 @@ class DirectIngestRawFileConfig:
                     description=column.get("description", None),
                     known_values=[
                         ColumnEnumValueInfo(
-                            value=x["value"], description=x.get("description", None)
+                            value=str(x["value"]),
+                            description=x.get("description", None),
                         )
                         for x in column["known_values"]
                     ]

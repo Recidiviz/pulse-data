@@ -33,6 +33,8 @@ columns:
         description: TODO(#7424) - Populate with definition.
       - value: INV
         description: TODO(#7424) - Populate with definition.
+      - value: IPO
+        description: "TODO(#7424): Update with definition."
       - value: ISC
         description: TODO(#7424) - Populate with definition.
       - value: PAO

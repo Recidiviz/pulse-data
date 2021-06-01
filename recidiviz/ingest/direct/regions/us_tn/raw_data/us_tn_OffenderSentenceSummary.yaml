@@ -1,5 +1,5 @@
 file_tag: OffenderSentenceSummary
-file_description: |- 
+file_description: |-
   This table contains one occurrence for each offender. It summarizes all dates for all sentences pertaining to the offender.
 primary_key_cols:
   - OffenderID
@@ -80,13 +80,19 @@ columns:
   - name: OutToCourtFlag
     description: |-
       Indicator for an offender that tells whether the offender is out to court.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: CalculateOffenderFlag
     description: |-
       Indicator specifying the need to calculate sentences of an offender.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.

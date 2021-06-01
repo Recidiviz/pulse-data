@@ -1,5 +1,5 @@
 file_tag: JOIllegalReasons
-file_description: |- 
+file_description: |-
   This table contains one occurrence of a reason why a judgment order is illegal or incomplete. Multiple reasons can be present for a particular judgment order.
 primary_key_cols:
   - OffenderID
@@ -29,8 +29,11 @@ columns:
   - name: ReasonType
     description: |-
       Indicator to tell whether a judgment order illegal/incomplete reason is either illegal or incomplete.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: I
+        description: "TODO(#7424): Update with definition."
+      - value: L
+        description: "TODO(#7424): Update with definition."
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.

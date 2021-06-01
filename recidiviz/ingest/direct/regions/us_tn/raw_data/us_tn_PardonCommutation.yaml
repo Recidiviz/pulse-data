@@ -1,5 +1,5 @@
 file_tag: PardonCommutation
-file_description: |- 
+file_description: |-
   This table contains one occurrance for each board member's recommendation for clemency for the offender.
 primary_key_cols:
   - Offender
@@ -33,8 +33,19 @@ columns:
   - name: PardonCommutationType
     description: |-
       The type of commutation or the pardon for a sentence.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: CS
+        description: "TODO(#7424): Update with definition."
+      - value: LI
+        description: "TODO(#7424): Update with definition."
+      - value: LW
+        description: "TODO(#7424): Update with definition."
+      - value: PA
+        description: "TODO(#7424): Update with definition."
+      - value: RT
+        description: "TODO(#7424): Update with definition."
+      - value: TS
+        description: "TODO(#7424): Update with definition."
   - name: MaxSentenceDay
     description: |-
       The maximum number of days for an offender's sentence.

@@ -1,5 +1,5 @@
 file_tag: SAIUFinding
-file_description: |- 
+file_description: |-
   This table contains one occurrence for the results of an SAIU (Sentence Alternative Incarceration Unit) findings request for a specified TOMIS ID.
 primary_key_cols:
   - OffenderID
@@ -18,18 +18,27 @@ columns:
   - name: SAIUVolunteerFlag
     description: |-
       Indicates whether or not the offender has volunteered to participate in the SAIU program (boot camp).
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: RecommendedByJudgeFlag
     description: |-
       Indicates whether or not a sentencing judge recommends the offender to SAIU.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: EligibleFlag
     description: |-
       Indicates whether or not an offender is considered eligible for 7IU after the screening.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: StaffID
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.

@@ -1,5 +1,5 @@
 file_tag: Referral
-file_description: |- 
+file_description: |-
   This table contains one occurrence for each Referral for each offender.
 primary_key_cols:
   - OffenderID
@@ -19,8 +19,17 @@ columns:
   - name: ReferralType
     description: |-
       An abbreviation for the type of referral given to an offender.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: CLR
+        description: "TODO(#7424): Update with definition."
+      - value: PDR
+        description: "TODO(#7424): Update with definition."
+      - value: PSI
+        description: "TODO(#7424): Update with definition."
+      - value: PSR
+        description: "TODO(#7424): Update with definition."
+      - value: SDR
+        description: "TODO(#7424): Update with definition."
   - name: DueDate
     is_datetime: True
     description: |-
@@ -38,8 +47,15 @@ columns:
   - name: BondCondition
     description: |-
       A code value defining a reason for the conditions of Bond for a offender awaiting sentencing.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: R
+        description: "TODO(#7424): Update with definition."
+      - value: S
+        description: "TODO(#7424): Update with definition."
+      - value: U
+        description: "TODO(#7424): Update with definition."
   - name: CoOffenderID1
     description: |-
       The first codefendant TOMIS ID for an offender.
@@ -67,21 +83,88 @@ columns:
   - name: DefenseAttorneyType
     description: |-
       The type of defense attorney that a defendant has during his trial.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: AP
+        description: "TODO(#7424): Update with definition."
+      - value: CW
+        description: "TODO(#7424): Update with definition."
+      - value: PD
+        description: "TODO(#7424): Update with definition."
+      - value: PS
+        description: "TODO(#7424): Update with definition."
+      - value: RE
+        description: "TODO(#7424): Update with definition."
   - name: County
     description: |-
       The code name of a territorial division for local government within a state.
   - name: WeaponFlag
     description: |-
       Indicator to tell whether an offender used weapons in committing his offense.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: Violence
     description: |-
       Indicator for an offense statute that tells whether the particular offense was violent.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: "'"
+        description: "TODO(#7424): Update with definition."
+      - value: "-"
+        description: "TODO(#7424): Update with definition."
+      - value: /
+        description: "TODO(#7424): Update with definition."
+      - value: 0
+        description: "TODO(#7424): Update with definition."
+      - value: 1
+        description: "TODO(#7424): Update with definition."
+      - value: 4
+        description: "TODO(#7424): Update with definition."
+      - value: 6
+        description: "TODO(#7424): Update with definition."
+      - value: "@"
+        description: "TODO(#7424): Update with definition."
+      - value: A
+        description: "TODO(#7424): Update with definition."
+      - value: B
+        description: "TODO(#7424): Update with definition."
+      - value: C
+        description: "TODO(#7424): Update with definition."
+      - value: D
+        description: "TODO(#7424): Update with definition."
+      - value: H
+        description: "TODO(#7424): Update with definition."
+      - value: J
+        description: "TODO(#7424): Update with definition."
+      - value: M
+        description: "TODO(#7424): Update with definition."
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: O
+        description: "TODO(#7424): Update with definition."
+      - value: P
+        description: "TODO(#7424): Update with definition."
+      - value: R
+        description: "TODO(#7424): Update with definition."
+      - value: S
+        description: "TODO(#7424): Update with definition."
+      - value: T
+        description: "TODO(#7424): Update with definition."
+      - value: U
+        description: "TODO(#7424): Update with definition."
+      - value: V
+        description: "TODO(#7424): Update with definition."
+      - value: W
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
+      - value: "\\"
+        description: "TODO(#7424): Update with definition."
+      - value: "`"
+        description: "TODO(#7424): Update with definition."
+      - value: "{"
+        description: "TODO(#7424): Update with definition."
   - name: OfficeID
     description: |-
       The identifying code for a probation, parole or community corrections office.

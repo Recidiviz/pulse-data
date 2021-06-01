@@ -1,5 +1,5 @@
 file_tag: OffenseStatute
-file_description: |- 
+file_description: |-
   This table contains one occurrence for each offense type. It contains information about the offense for sentencing and for statistical analysis.
 primary_key_cols: []
 columns:
@@ -18,53 +18,213 @@ columns:
   - name: OffenseSeverity
     description: |-
       A rating of the severity of an offense by TDOC.  Each offense statute will be assigned a severity code.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: 1
+        description: "TODO(#7424): Update with definition."
+      - value: 2
+        description: "TODO(#7424): Update with definition."
+      - value: 3
+        description: "TODO(#7424): Update with definition."
+      - value: 4
+        description: "TODO(#7424): Update with definition."
   - name: FelonyClass
     description: |-
       Class code assigned to a particular offense statute under 1194. For a particular UCR code there can be only one felony class.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: 1
+        description: "TODO(#7424): Update with definition."
+      - value: A
+        description: "TODO(#7424): Update with definition."
+      - value: B
+        description: "TODO(#7424): Update with definition."
+      - value: C
+        description: "TODO(#7424): Update with definition."
+      - value: D
+        description: "TODO(#7424): Update with definition."
+      - value: E
+        description: "TODO(#7424): Update with definition."
   - name: PsychologicalEvaluationRequiredFlag
     description: |-
       Indicates whether or not a psychological evaluation must be done on an offender. This flag is tied to the offense statute.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: DrugOffensesFlag
     description: |-
       Indicates an offense is a drug related offense for which an offender may serve the sentence in boot camp when the sentence length is greater than six years. Tied to offender status.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: AssaultiveOffenseFlag
     description: |-
       Indicator to tell whether an offense was assaultive or not. This information is used for classification.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: SexOffenderFlag
     description: |-
       Indicates the offense is considered to be a sex offense. This flag is tied to the offense status, and is used to determine eligibility for safety-value release.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: FelonyFlag
     description: |-
       An indicator for whether a crime was a felony.
-    # TODO(#7424) - Populate with definitions.
     known_values: []
   - name: MisdemeanorFlag
     description: |-
       An indicator for whether a crime was a misdemeanor.
-    # TODO(#7424) - Populate with definitions.
     known_values: []
   - name: MisdemeanorClass
     description: |-
       Class code assigned to a particular offense statute under 1194. For a particular UCR code there can be only one misdemeanor class.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: A
+        description: "TODO(#7424): Update with definition."
+      - value: B
+        description: "TODO(#7424): Update with definition."
+      - value: C
+        description: "TODO(#7424): Update with definition."
   - name: TIBRSOffense
     description: |-
       A categorizing code for felony offenses based on the FBI's National Incident Based Reporting System (NIBRS).
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: 09A
+        description: "TODO(#7424): Update with definition."
+      - value: 09B
+        description: "TODO(#7424): Update with definition."
+      - value: 100
+        description: "TODO(#7424): Update with definition."
+      - value: 11A
+        description: "TODO(#7424): Update with definition."
+      - value: 120
+        description: "TODO(#7424): Update with definition."
+      - value: 120A
+        description: "TODO(#7424): Update with definition."
+      - value: 13A
+        description: "TODO(#7424): Update with definition."
+      - value: 13AX
+        description: "TODO(#7424): Update with definition."
+      - value: 13AZ
+        description: "TODO(#7424): Update with definition."
+      - value: 13B
+        description: "TODO(#7424): Update with definition."
+      - value: 13C
+        description: "TODO(#7424): Update with definition."
+      - value: 13D
+        description: "TODO(#7424): Update with definition."
+      - value: 200
+        description: "TODO(#7424): Update with definition."
+      - value: 210
+        description: "TODO(#7424): Update with definition."
+      - value: 220
+        description: "TODO(#7424): Update with definition."
+      - value: 23A
+        description: "TODO(#7424): Update with definition."
+      - value: 240
+        description: "TODO(#7424): Update with definition."
+      - value: 250
+        description: "TODO(#7424): Update with definition."
+      - value: 26A
+        description: "TODO(#7424): Update with definition."
+      - value: 26B
+        description: "TODO(#7424): Update with definition."
+      - value: 26C
+        description: "TODO(#7424): Update with definition."
+      - value: 26D
+        description: "TODO(#7424): Update with definition."
+      - value: 270
+        description: "TODO(#7424): Update with definition."
+      - value: 290
+        description: "TODO(#7424): Update with definition."
+      - value: 29O
+        description: "TODO(#7424): Update with definition."
+      - value: 35A
+        description: "TODO(#7424): Update with definition."
+      - value: 35AZ
+        description: "TODO(#7424): Update with definition."
+      - value: 35B
+        description: "TODO(#7424): Update with definition."
+      - value: 36A
+        description: "TODO(#7424): Update with definition."
+      - value: 36B
+        description: "TODO(#7424): Update with definition."
+      - value: 370
+        description: "TODO(#7424): Update with definition."
+      - value: 39B
+        description: "TODO(#7424): Update with definition."
+      - value: 40A
+        description: "TODO(#7424): Update with definition."
+      - value: 40B
+        description: "TODO(#7424): Update with definition."
+      - value: 510
+        description: "TODO(#7424): Update with definition."
+      - value: 520
+        description: "TODO(#7424): Update with definition."
+      - value: 72O
+        description: "TODO(#7424): Update with definition."
+      - value: 90A
+        description: "TODO(#7424): Update with definition."
+      - value: 90C
+        description: "TODO(#7424): Update with definition."
+      - value: 90D
+        description: "TODO(#7424): Update with definition."
+      - value: 90DA
+        description: "TODO(#7424): Update with definition."
+      - value: 90F
+        description: "TODO(#7424): Update with definition."
+      - value: 90G
+        description: "TODO(#7424): Update with definition."
+      - value: 90Z
+        description: "TODO(#7424): Update with definition."
+      - value: 90Z1
+        description: "TODO(#7424): Update with definition."
+      - value: 90ZA
+        description: "TODO(#7424): Update with definition."
+      - value: 90ZB
+        description: "TODO(#7424): Update with definition."
+      - value: 90ZC
+        description: "TODO(#7424): Update with definition."
+      - value: 90ZD
+        description: "TODO(#7424): Update with definition."
+      - value: 90ZE
+        description: "TODO(#7424): Update with definition."
+      - value: 90ZF
+        description: "TODO(#7424): Update with definition."
+      - value: 90ZG
+        description: "TODO(#7424): Update with definition."
+      - value: 90ZH
+        description: "TODO(#7424): Update with definition."
+      - value: 90ZI
+        description: "TODO(#7424): Update with definition."
+      - value: 90ZJ
+        description: "TODO(#7424): Update with definition."
+      - value: 90ZK
+        description: "TODO(#7424): Update with definition."
+      - value: 90ZL
+        description: "TODO(#7424): Update with definition."
+      - value: 90ZM
+        description: "TODO(#7424): Update with definition."
+      - value: 90ZN
+        description: "TODO(#7424): Update with definition."
+      - value: 90ZO
+        description: "TODO(#7424): Update with definition."
+      - value: 90ZP
+        description: "TODO(#7424): Update with definition."
+      - value: 90ZQ
+        description: "TODO(#7424): Update with definition."
+      - value: 90ZR
+        description: "TODO(#7424): Update with definition."
+      - value: 90ZZ
+        description: "TODO(#7424): Update with definition."
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
