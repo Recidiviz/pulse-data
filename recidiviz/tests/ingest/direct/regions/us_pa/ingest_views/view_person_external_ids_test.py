@@ -16,11 +16,11 @@
 # =============================================================================
 """Tests the PA external ids query functionality"""
 
-from typing import List, Any, Optional
+from typing import Any, List, Optional
 
 import attr
-from mock import Mock, patch
 import pandas as pd
+from mock import Mock, patch
 from more_itertools import one
 from pandas.testing import assert_frame_equal
 
@@ -305,6 +305,74 @@ class ViewPersonExternalIdsTest(BaseViewTest):
                     "10000000,20000000",  # control_numbers
                     "II1111,II2222,II3333,II4444",  # inmate_numbers
                     "1111P,2222P,3333P",  # parole_numbers
+                ]
+            ],
+        )
+
+    def test_view_person_external_ids_v2_join_on_parole(self) -> None:
+        self.run_test(
+            dbo_parole_count_ids=[
+                ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="AB1234"),
+                ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="CC4567"),
+            ],
+            dbo_tbl_search_inmate_info_ids=[
+                TblSearchInmateInfoIds(
+                    inmate_number="AB1234", control_number="12345678"
+                ),
+            ],
+            expected_output=[
+                [
+                    "RECIDIVIZ_MASTER_CONTROL_NUMBER_12345678",
+                    "12345678",  # control_numbers
+                    "AB1234,CC4567",  # inmate_numbers
+                    "0420X",  # parole_numbers
+                ]
+            ],
+        )
+
+    def test_view_person_external_ids_v2_join_on_parole_2(self) -> None:
+        self.run_test(
+            dbo_parole_count_ids=[
+                ParoleCountIds(ParoleNumber="1234R", ParoleInstNumber=None),
+                ParoleCountIds(ParoleNumber="444GS", ParoleInstNumber="KS0000"),
+                ParoleCountIds(ParoleNumber="444GS", ParoleInstNumber=None),
+            ],
+            dbo_tbl_search_inmate_info_ids=[
+                TblSearchInmateInfoIds(inmate_number="KS0000", control_number="280123"),
+            ],
+            expected_output=[
+                [
+                    "RECIDIVIZ_MASTER_CONTROL_NUMBER_280123",
+                    "280123",  # control_numbers
+                    "KS0000",  # inmate_numbers
+                    "444GS",  # parole_numbers
+                ],
+                [
+                    "RECIDIVIZ_MASTER_PAROLE_NUMBER_1234R",
+                    None,  # control_numbers
+                    None,  # inmate_numbers
+                    "1234R",  # parole_numbers
+                ],
+            ],
+        )
+
+    def test_view_person_external_ids_v2_join_on_parole_mismatch_casing(self) -> None:
+        self.run_test(
+            dbo_parole_count_ids=[
+                ParoleCountIds(ParoleNumber="0420x", ParoleInstNumber="AB1234"),
+                ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="CC4567"),
+            ],
+            dbo_tbl_search_inmate_info_ids=[
+                TblSearchInmateInfoIds(
+                    inmate_number="Ab1234", control_number="12345678"
+                ),
+            ],
+            expected_output=[
+                [
+                    "RECIDIVIZ_MASTER_CONTROL_NUMBER_12345678",
+                    "12345678",  # control_numbers
+                    "AB1234,CC4567",  # inmate_numbers
+                    "0420X",  # parole_numbers
                 ]
             ],
         )
