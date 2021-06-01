@@ -34,7 +34,6 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
-    ARRAY,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
@@ -395,9 +394,9 @@ class DashboardUserRestrictions(CaseTriageBase):
         comment="Deprecated column for allowed supervision location ids",
     )
     allowed_supervision_location_ids = Column(
-        ARRAY(String),
+        String(255),
         nullable=False,
-        comment="Array of supervision location IDs the user can access",
+        comment="String array of supervision location IDs the user can access",
     )
     allowed_supervision_location_level = Column(
         String(255),

@@ -22,12 +22,13 @@ import json
 import logging
 import os
 from http import HTTPStatus
-from typing import Tuple, List, Dict, Union, Any, Optional
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import sqlalchemy.orm.exc
-from sqlalchemy import func
 from flask import Blueprint, request
+from sqlalchemy import func
 
+from recidiviz.auth.auth0_client import Auth0AppMetadata, Auth0Client
 from recidiviz.calculator.query.state.views.reference.supervision_location_restricted_access_emails import (
     SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_VIEW_BUILDER,
 )
@@ -49,7 +50,6 @@ from recidiviz.reporting.email_reporting_utils import validate_email_address
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_only_str_param_value
-from recidiviz.auth.auth0_client import Auth0Client, Auth0AppMetadata
 
 auth_endpoint_blueprint = Blueprint("auth_endpoint_blueprint", __name__)
 
@@ -163,7 +163,9 @@ def dashboard_user_restrictions_by_email() -> Tuple[
         )
 
         restrictions = {
-            "allowed_supervision_location_ids": user_restrictions.allowed_supervision_location_ids,
+            "allowed_supervision_location_ids": _format_user_restrictions(
+                user_restrictions.allowed_supervision_location_ids
+            ),
             "allowed_supervision_location_level": user_restrictions.allowed_supervision_location_level,
         }
 
@@ -248,7 +250,9 @@ def update_auth0_user_metadata() -> Tuple[str, HTTPStatus]:
 
         for user_restriction in user_restrictions:
             email = user_restriction.get("restricted_user_email", "").lower()
-            allowed_ids = user_restriction.get("allowed_supervision_location_ids", [])
+            allowed_ids = _format_user_restrictions(
+                user_restriction.get("allowed_supervision_location_ids", "")
+            )
             allowed_level = user_restriction.get(
                 "allowed_supervision_location_level", None
             )
@@ -301,6 +305,16 @@ def update_auth0_user_metadata() -> Tuple[str, HTTPStatus]:
             f"Error using Auth0 management API to update users: {error}",
             HTTPStatus.INTERNAL_SERVER_ERROR,
         )
+
+
+def _format_user_restrictions(user_restrictions: str) -> List[str]:
+    if not user_restrictions:
+        return []
+    return [
+        restriction.strip()
+        for restriction in user_restrictions.split(",")
+        if restriction.strip()
+    ]
 
 
 def _validate_region_code(region_code: str) -> None:
