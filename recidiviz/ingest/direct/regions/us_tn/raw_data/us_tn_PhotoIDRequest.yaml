@@ -126,15 +126,15 @@ columns:
       The reason something is not submitted.
     known_values:
       - value: AL
-        description: "TODO(#7424): Update with definition."
+        description: ALREADY HAS ID/LICENSE
       - value: AN
         description: "TODO(#7424): Update with definition."
       - value: DN
-        description: "TODO(#7424): Update with definition."
+        description: DOES NOT PLAN TO RESIDE IN TN UPON RELEASE
       - value: NE
-        description: "TODO(#7424): Update with definition."
+        description: NOT ELIGIBLE DUE TO CITIZENSHIP STATUS
       - value: RC
-        description: "TODO(#7424): Update with definition."
+        description: REFUSES TO COMPLETE AN APPLICATION
   - name: IndigentFlag
     description: |-
       This indicates the offender is indigent (suffering from extreme poverty).

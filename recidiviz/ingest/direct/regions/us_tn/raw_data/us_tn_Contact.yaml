@@ -18,15 +18,15 @@ columns:
       The NCIC (National Crime Information Center) race code.
     known_values:
       - value: A
-        description: TODO(#7424) - Populate with definition.
+        description: ASIAN OR PACIFIC ISLANDER
       - value: B
-        description: TODO(#7424) - Populate with definition.
+        description: BLACK
       - value: H
-        description: TODO(#7424) - Populate with definition.
+        description: HISPANIC
       - value: I
-        description: TODO(#7424) - Populate with definition.
+        description: AMERICAN INDIAN OR ALASKAN NATIVE
       - value: W
-        description: TODO(#7424) - Populate with definition.
+        description: WHITE
   - name: Sex
     description: |-
       This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.

@@ -18,47 +18,47 @@ columns:
       An abbreviation for the type of assignment given to an offender.
     known_values:
       - value: CAM
-        description: TODO(#7424) - Populate with definition.
+        description: CASE MANAGER
       - value: CCC
-        description: TODO(#7424) - Populate with definition.
+        description: COMMUNITY CORR CASEWORK
       - value: CLR
-        description: TODO(#7424) - Populate with definition.
+        description: CLASSIFICATION REPORT
       - value: COU
-        description: TODO(#7424) - Populate with definition.
+        description: COUNSELOR - INSTITUTION
       - value: CWO
-        description: TODO(#7424) - Populate with definition.
+        description: CASE WORKER
       - value: FOO
-        description: TODO(#7424) - Populate with definition.
+        description: FACTS OF OFFENSE
       - value: INP
-        description: TODO(#7424) - Populate with definition.
+        description: INTENSIVE PROBATION OFFICER
       - value: INV
-        description: TODO(#7424) - Populate with definition.
+        description: INVESTIGATION
       - value: IPO
-        description: "TODO(#7424): Update with definition."
+        description: INSTITUTIONAL PAROLE OFFICER
       - value: ISC
         description: TODO(#7424) - Populate with definition.
       - value: PAO
-        description: TODO(#7424) - Populate with definition.
+        description: PAROLE OFFICER
       - value: PDR
-        description: TODO(#7424) - Populate with definition.
+        description: PRETRIAL DIVERSION REPORT
       - value: PRI
-        description: TODO(#7424) - Populate with definition.
+        description: PROB. RELEASE INVESTIGATION
       - value: PRO
-        description: TODO(#7424) - Populate with definition.
+        description: PROBATION OFFICER
       - value: PSI
-        description: TODO(#7424) - Populate with definition.
+        description: PRESENTENCE REPORT
       - value: PSR
-        description: TODO(#7424) - Populate with definition.
+        description: POST SENTENCE REPORT
       - value: PSW
-        description: TODO(#7424) - Populate with definition.
+        description: PSI WRITER
       - value: RPI
-        description: TODO(#7424) - Populate with definition.
+        description: RELEASE PLAN INVESTIGATION
       - value: SDR
-        description: TODO(#7424) - Populate with definition.
+        description: SPECIFIC DATA REPORT
       - value: TII
-        description: TODO(#7424) - Populate with definition.
+        description: TRANSFER IN INVESTIGATION
       - value: WPC
-        description: TODO(#7424) - Populate with definition.
+        description: WORK PROJECT COORDINATOR
   - name: StartDate
     description: |-
       The date on which an inmate begins a job, class or program.

@@ -61,13 +61,13 @@ columns:
       Code that tells how a case was decided, such as by guilty plea or jury verdict.
     known_values:
       - value: GB
-        description: "TODO(#7424): Update with definition."
+        description: GUILTY BENCH TRIAL
       - value: GJ
-        description: "TODO(#7424): Update with definition."
+        description: GUILTY JURY VERDICT
       - value: NC
-        description: "TODO(#7424): Update with definition."
+        description: NOLO CONTENDRE
       - value: PG
-        description: "TODO(#7424): Update with definition."
+        description: PLED GUILTY
   - name: JudgeName
     description: |-
       The name for a judge. This element is only 30 characters instead of 50 characters used for JUDGE-NAME.

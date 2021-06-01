@@ -32,13 +32,13 @@ columns:
       The sentence status indicates whether a sentence is currently be- ing served in incarceration, on parole, on probation in community corrections, on probation due to determinate release, or the sentence has ended.
     known_values:
       - value: AC
-        description: "TODO(#7424): Update with definition."
+        description: ACTIVE
       - value: CC
-        description: "TODO(#7424): Update with definition."
+        description: COMMUNITY CORRECTION
       - value: IN
-        description: "TODO(#7424): Update with definition."
+        description: INACTIVE
       - value: PB
-        description: "TODO(#7424): Update with definition."
+        description: PROBATION
   - name: SentenceStatusDate
     is_datetime: True
     description: |-

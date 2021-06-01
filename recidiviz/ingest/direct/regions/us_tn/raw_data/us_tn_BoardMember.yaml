@@ -47,21 +47,21 @@ columns:
       An abbreviation used for the type of board/committee member.
     known_values:
       - value: AC
-        description: TODO(#5582) - Populate with definition.
+        description: ALT CHAIRMAN
       - value: AM
-        description: TODO(#5582) - Populate with definition.
+        description: ALT MEMBER
       - value: CH
-        description: TODO(#5582) - Populate with definition.
+        description: CHAIRMAN
       - value: IA
-        description: TODO(#5582) - Populate with definition.
+        description: INMATE ADVISOR
       - value: IC
-        description: TODO(#5582) - Populate with definition.
+        description: INMATE CLERK
       - value: IM
-        description: TODO(#5582) - Populate with definition.
+        description: INMATE MEMBER
       - value: ME
-        description: TODO(#5582) - Populate with definition.
+        description: MEMBER
       - value: SM
-        description: TODO(#5582) - Populate with definition.
+        description: STAFF MEMBER
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.

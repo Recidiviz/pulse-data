@@ -15,63 +15,63 @@ columns:
       The type of finding about an offender as observed by the arresting officer or TDOC staff.
     known_values:
       - value: AL
-        description: "TODO(#7424): Update with definition."
+        description: ASSAULT BY OFFENDER
       - value: AP
-        description: "TODO(#7424): Update with definition."
+        description: ADMIN SEGREGATION PLACEMENT
       - value: AS
-        description: "TODO(#7424): Update with definition."
+        description: ADMIN SEGREGATION REVIEW
       - value: CC
-        description: "TODO(#7424): Update with definition."
+        description: COMM.CORR. CASE DETAIL SUMMARY
       - value: CF
-        description: "TODO(#7424): Update with definition."
+        description: COURT FINDINGS
       - value: CP
-        description: "TODO(#7424): Update with definition."
+        description: COMPLETED PROGRAM
       - value: CS
-        description: "TODO(#7424): Update with definition."
+        description: CHAPLAIN'S SUMMARY
       - value: EI
-        description: "TODO(#7424): Update with definition."
+        description: ESCAPE INFORMATION
       - value: GP
-        description: "TODO(#7424): Update with definition."
+        description: GOVERNOR'S PARD/COMM DECISION
       - value: IP
-        description: "TODO(#7424): Update with definition."
+        description: INCOMPLETE PROGRAM
       - value: MP
-        description: "TODO(#7424): Update with definition."
+        description: MANDATORY SEG. PLACEMENT
       - value: MS
-        description: "TODO(#7424): Update with definition."
+        description: MANDATORY SEGREGATION REVIEW
       - value: NA
-        description: "TODO(#7424): Update with definition."
+        description: NEEDS ASSESSMENT
       - value: ON
-        description: "TODO(#7424): Update with definition."
+        description: OFFENSE NARRATIVE
       - value: OR
-        description: "TODO(#7424): Update with definition."
+        description: OVERRIDE REASON
       - value: PC
-        description: "TODO(#7424): Update with definition."
+        description: PROTECTIVE CUST HEARING/REVIEW
       - value: PI
-        description: "TODO(#7424): Update with definition."
+        description: PRIVATE HEALTH INSURANCE
       - value: PM
-        description: "TODO(#7424): Update with definition."
+        description: PRE-MARRIAGE COUNSELING/CHAPLA
       - value: PP
-        description: "TODO(#7424): Update with definition."
+        description: PROTECTIVE CUSTODY PLACEMENT
       - value: PS
-        description: "TODO(#7424): Update with definition."
+        description: PUNITIVE SEGREGATION REVIEW
       - value: PT
-        description: "TODO(#7424): Update with definition."
+        description: PUNITIVE SEGREGATION PLACEMENT
       - value: QQ
-        description: "TODO(#7424): Update with definition."
+        description: NO FINDING CODE, TYPED TEXT
       - value: SI
-        description: "TODO(#7424): Update with definition."
+        description: INITIAL CFYN STRUCTURED INTVW
       - value: SK
-        description: "TODO(#7424): Update with definition."
+        description: SAFEKEEPING REVIEW
       - value: SS
-        description: "TODO(#7424): Update with definition."
+        description: SOCIAL SECURITY NUMBER PROBLEM
       - value: TC
-        description: "TODO(#7424): Update with definition."
+        description: TREATMENT COMMENTS
       - value: TV
-        description: "TODO(#7424): Update with definition."
+        description: TECHNICAL VIOLATOR
       - value: WR
-        description: "TODO(#7424): Update with definition."
+        description: WEEKLY REVIEW
       - value: WS
-        description: "TODO(#7424): Update with definition."
+        description: OFFENDER IN WARRANT STATUS
   - name: StaffID
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.

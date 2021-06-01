@@ -52,9 +52,9 @@ columns:
       Indicator to tell whether a sentence related to a judgment order is a felony or a misdemeanor.
     known_values:
       - value: F
-        description: "TODO(#7424): Update with definition."
+        description: FELONY
       - value: M
-        description: "TODO(#7424): Update with definition."
+        description: MISDEMEANOR
   - name: OriginalSentence
     description: |-
       Indicator to tell whether a related sentence is a Tennessee sentence or an ISC sentence.

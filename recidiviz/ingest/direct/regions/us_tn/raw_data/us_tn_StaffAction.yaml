@@ -22,133 +22,133 @@ columns:
       An abbreviation describing the type of action a staff member may take in regards to a parole or other type hearing.
     known_values:
       - value: AAP
-        description: "TODO(#7424): Update with definition."
+        description: APPEAL APPROVED
       - value: ADN
-        description: "TODO(#7424): Update with definition."
+        description: APPEAL DENIED
       - value: AFI
-        description: "TODO(#7424): Update with definition."
+        description: APPEAL FILED
       - value: AHS
-        description: "TODO(#7424): Update with definition."
+        description: APPEAL HEARING SCHEDULED
       - value: ATD
-        description: "TODO(#7424): Update with definition."
+        description: ADD TO DOCKET
       - value: BCT
-        description: "TODO(#7424): Update with definition."
+        description: BALDWIN CASE TYPE
       - value: BDM
-        description: "TODO(#7424): Update with definition."
+        description: MODIFYING BOP TO BEGIN AT EXP
       - value: BFC
-        description: "TODO(#7424): Update with definition."
+        description: BOARD FILE CREATED
       - value: BFD
-        description: "TODO(#7424): Update with definition."
+        description: BOARD FILE DELETED
       - value: BFR
-        description: "TODO(#7424): Update with definition."
+        description: BOARD FILE RETURNED
       - value: BIF
-        description: "TODO(#7424): Update with definition."
+        description: BIFURCATED HEARING
       - value: BRE
-        description: "TODO(#7424): Update with definition."
+        description: BOARD REQUESTED REPORT RECEIVED
       - value: BRP
-        description: "TODO(#7424): Update with definition."
+        description: BOARD RECOMMENDATION POSTED
       - value: BRR
-        description: "TODO(#7424): Update with definition."
+        description: BOARD REQUESTED REPORT
       - value: CAR
-        description: "TODO(#7424): Update with definition."
+        description: COMMUTATION APPLICATION RECEIVED
       - value: CRI
-        description: "TODO(#7424): Update with definition."
+        description: COMMUTATION REVOCATION INFORMATION
       - value: CTH
-        description: "TODO(#7424): Update with definition."
+        description: CERTIFICATE HOLD
       - value: DFD
-        description: "TODO(#7424): Update with definition."
+        description: DELETE FROM DOCKET
       - value: DNO
-        description: "TODO(#7424): Update with definition."
+        description: DECISION NOTIFICATION TO OFFENDER
       - value: DTV
-        description: "TODO(#7424): Update with definition."
+        description: DELINQUENT TIME VACATED BY BOARD
       - value: ERB
-        description: "TODO(#7424): Update with definition."
+        description: ELIGIBILITY REVIEW BOARD
       - value: FJC
-        description: "TODO(#7424): Update with definition."
+        description: FOREIGN JURISDICTION CERTIFICATE
       - value: FJD
-        description: "TODO(#7424): Update with definition."
+        description: FOREIGN JURISDICTION DOCKET
       - value: FNC
-        description: "TODO(#7424): Update with definition."
+        description: FILENET CREATED
       - value: FNH
-        description: "TODO(#7424): Update with definition."
+        description: FILENET HEARING
       - value: FNO
-        description: "TODO(#7424): Update with definition."
+        description: FACTS OF OFFENSE
       - value: FOO
-        description: "TODO(#7424): Update with definition."
+        description: OFFENSE REPORT REQUESTED
       - value: FXN
-        description: "TODO(#7424): Update with definition."
+        description: FAXED NOTIFICATION
       - value: GNC
-        description: "TODO(#7424): Update with definition."
+        description: GENERAL COMMENTS
       - value: GOV
-        description: "TODO(#7424): Update with definition."
+        description: GOVERNOR'S DECISION
       - value: HNO
-        description: "TODO(#7424): Update with definition."
+        description: HEARING NOTIFICATION TO OFFENDER
       - value: HWS
-        description: "TODO(#7424): Update with definition."
+        description: HEARING WAIVER SIGNED
       - value: IPT
-        description: "TODO(#7424): Update with definition."
+        description: IN PERSON TESTIMONY
       - value: ISC
-        description: "TODO(#7424): Update with definition."
+        description: INTERSTATE COMPACT
       - value: NAR
-        description: "TODO(#7424): Update with definition."
+        description: NO AUDIO RECORDING
       - value: NTY
-        description: "TODO(#7424): Update with definition."
+        description: NOTIFICATION
       - value: OFM
-        description: "TODO(#7424): Update with definition."
+        description: OFFENDER NOTIFICATION MAILED
       - value: PAR
-        description: "TODO(#7424): Update with definition."
+        description: PARDON APPLICATON RECEIVED
       - value: PHN
-        description: "TODO(#7424): Update with definition."
+        description: PHONED HEARING NOTICE
       - value: PIN
-        description: "TODO(#7424): Update with definition."
+        description: PSYCHOLOGICAL INFORMATION
       - value: PRP
-        description: "TODO(#7424): Update with definition."
+        description: PROGRESS REPORT
       - value: PSH
-        description: "TODO(#7424): Update with definition."
+        description: TIME-SETTING HEARING
       - value: PYR
-        description: "TODO(#7424): Update with definition."
+        description: PSYCH RECEIVED
       - value: QUO
-        description: "TODO(#7424): Update with definition."
+        description: QUORUM
       - value: RAD
-        description: "TODO(#7424): Update with definition."
+        description: REQUEST ADMINISTRATIVE
       - value: RCS
-        description: "TODO(#7424): Update with definition."
+        description: RELEASE CERTIFICATE SENT
       - value: RFH
-        description: "TODO(#7424): Update with definition."
+        description: REVOCATION FILE HELD
       - value: RPA
-        description: "TODO(#7424): Update with definition."
+        description: RELEASE PLAN APPROVED
       - value: RPC
-        description: "TODO(#7424): Update with definition."
+        description: RECEIVED PARTY CONTACT
       - value: RPR
-        description: "TODO(#7424): Update with definition."
+        description: RELEASE PLAN REJECTED
       - value: RPS
-        description: "TODO(#7424): Update with definition."
+        description: RELEASE PLAN SUBMITTED AT HRG
       - value: RRA
-        description: "TODO(#7424): Update with definition."
+        description: POST-PAROLE RESCISSION
       - value: RRB
-        description: "TODO(#7424): Update with definition."
+        description: PRE-PAROLE RESCISSION
       - value: RRE
-        description: "TODO(#7424): Update with definition."
+        description: REQUEST RESCISSION
       - value: RRV
-        description: "TODO(#7424): Update with definition."
+        description: REQUEST REVOCATION
       - value: RRW
-        description: "TODO(#7424): Update with definition."
+        description: REQUEST REVIEW
       - value: SHN
-        description: "TODO(#7424): Update with definition."
+        description: SENT HEARING NOTICE
       - value: SIP
-        description: "TODO(#7424): Update with definition."
+        description: SCHEDULE INTERSTATE PAROLE HEARING
       - value: SLM
-        description: "TODO(#7424): Update with definition."
+        description: SHERIFF LETTER MAILED
       - value: SVR
-        description: "TODO(#7424): Update with definition."
+        description: SLAGLE VERSUS REYNOLDS
       - value: TCW
-        description: "TODO(#7424): Update with definition."
+        description: TENN. CORR. WORK CENTER
       - value: TFR
-        description: "TODO(#7424): Update with definition."
+        description: TAPE FILE REQUEST
       - value: VSI
-        description: "TODO(#7424): Update with definition."
+        description: VICTIM SERVICE INFORMATION
       - value: WAR
-        description: "TODO(#7424): Update with definition."
+        description: WAIVER ADMINISTRATIVE REVIEW
   - name: StaffAction
     description: |-
       Free form text giving reasons for a particular action taken by a staff member.

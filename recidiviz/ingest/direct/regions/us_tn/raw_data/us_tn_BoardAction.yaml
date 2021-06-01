@@ -14,61 +14,61 @@ columns:
       An abbreviation to describe the type of hearing.
     known_values:
       - value: AA
-        description: "TODO(#7424): Update with definition."
+        description: APPEAL POST-PAROLE RESCISSION
       - value: AB
-        description: "TODO(#7424): Update with definition."
+        description: APPEAL PRE-PAROLE RESCISSION
       - value: AD
-        description: "TODO(#7424): Update with definition."
+        description: ADMINISTRATIVE
       - value: AF
-        description: "TODO(#7424): Update with definition."
+        description: FOREIGN JURISD. APPEAL
       - value: AI
-        description: "TODO(#7424): Update with definition."
+        description: INITIAL PAROLE APPEAL
       - value: AM
-        description: "TODO(#7424): Update with definition."
+        description: ADMINISTRATIVE APPEAL
       - value: AP
-        description: "TODO(#7424): Update with definition."
+        description: APPEAL
       - value: AR
-        description: "TODO(#7424): Update with definition."
+        description: REVOCATION APPEAL
       - value: AU
-        description: "TODO(#7424): Update with definition."
+        description: CUSTODIAL APPEAL
       - value: AV
-        description: "TODO(#7424): Update with definition."
+        description: PAROLE REVIEW APPEAL
       - value: AY
-        description: "TODO(#7424): Update with definition."
+        description: COURTESY APPEAL
       - value: CM
-        description: "TODO(#7424): Update with definition."
+        description: COMMUTATION
       - value: CR
-        description: "TODO(#7424): Update with definition."
+        description: CONTINUE, RESCHEDULE
       - value: CU
-        description: "TODO(#7424): Update with definition."
+        description: CUSTODIAL
       - value: CY
-        description: "TODO(#7424): Update with definition."
+        description: COURTESY
       - value: FJ
-        description: "TODO(#7424): Update with definition."
+        description: FOREIGN JURISDICTION
       - value: IP
-        description: "TODO(#7424): Update with definition."
+        description: INITIAL PAROLE
       - value: MN
-        description: "TODO(#7424): Update with definition."
+        description: MANDATORY
       - value: PC
-        description: "TODO(#7424): Update with definition."
+        description: PROBABLE CAUSE
       - value: PV
-        description: "TODO(#7424): Update with definition."
+        description: PAROLE REVIEW
       - value: RA
-        description: "TODO(#7424): Update with definition."
+        description: RESCISSION, POST-PAROLE
       - value: RB
-        description: "TODO(#7424): Update with definition."
+        description: RESCISSION, PRE-PAROLE
       - value: RC
-        description: "TODO(#7424): Update with definition."
+        description: COMMUTATION REVOCATION
       - value: RE
-        description: "TODO(#7424): Update with definition."
+        description: RESCISSION
       - value: RG
-        description: "TODO(#7424): Update with definition."
+        description: VIOLATION HEARING
       - value: RV
-        description: "TODO(#7424): Update with definition."
+        description: REVOCATION
       - value: TO
-        description: "TODO(#7424): Update with definition."
+        description: CONTINUED HEARING
       - value: TS
-        description: "TODO(#7424): Update with definition."
+        description: TIME SETTING
   - name: StaffID
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
@@ -83,73 +83,73 @@ columns:
       An abbreviated board action that describes a parole board member's decision on a parole hearing.
     known_values:
       - value: BS
-        description: "TODO(#7424): Update with definition."
+        description: DECL FOR BAL OF SENTD
       - value: CO
-        description: "TODO(#7424): Update with definition."
+        description: CONTINUED C
       - value: CP
-        description: "TODO(#7424): Update with definition."
+        description: REC CUST,BEG NXT SNTR
       - value: CR
-        description: "TODO(#7424): Update with definition."
+        description: CONTINUE RESCHEDULE C
       - value: DB
-        description: "TODO(#7424): Update with definition."
+        description: DECL TO EXP, CUSTDL D
       - value: DC
-        description: "TODO(#7424): Update with definition."
+        description: DECLINE CUSTODIAL D
       - value: DE
-        description: "TODO(#7424): Update with definition."
+        description: DECLINE EARLY RELEASD
       - value: DG
-        description: "TODO(#7424): Update with definition."
+        description: DECL REG PAROLE DATED
       - value: DN
-        description: "TODO(#7424): Update with definition."
+        description: COMMUTAT NOT RECOMNDD
       - value: DP
         description: "TODO(#7424): Update with definition."
       - value: DR
-        description: "TODO(#7424): Update with definition."
+        description: DECLINE RED D
       - value: DS
-        description: "TODO(#7424): Update with definition."
+        description: DECLINED D
       - value: DT
-        description: "TODO(#7424): Update with definition."
+        description: DECLINE - PAST RED D
       - value: EF
-        description: "TODO(#7424): Update with definition."
+        description: REC EFFECTV REL DATER
       - value: ER
-        description: "TODO(#7424): Update with definition."
+        description: REC EARLY RELEAS DT R
       - value: EX
-        description: "TODO(#7424): Update with definition."
+        description: RECUSED
       - value: OY
-        description: "TODO(#7424): Update with definition."
+        description: DELETE, RESCHEDULE D
       - value: PF
-        description: "TODO(#7424): Update with definition."
+        description: PROBABLE CAUSE FOUNDD
       - value: PN
-        description: "TODO(#7424): Update with definition."
+        description: PROB CAUSE NOT FOUNDR
       - value: PP
-        description: "TODO(#7424): Update with definition."
+        description: REC PROB. PAROLE R
       - value: PR
-        description: "TODO(#7424): Update with definition."
+        description: PREV DECIS. REMAINS R
       - value: RB
-        description: "TODO(#7424): Update with definition."
+        description: REVOKE BEG NEW SENT D
       - value: RC
-        description: "TODO(#7424): Update with definition."
+        description: RECOMMEND. RESCINDEDD
       - value: RD
-        description: "TODO(#7424): Update with definition."
+        description: REC RELEAS ELIG DATER
       - value: RE
-        description: "TODO(#7424): Update with definition."
+        description: REVOKE EXP OF SENT D
       - value: RG
-        description: "TODO(#7424): Update with definition."
+        description: RVOK/GRANT/COMP TVDPR
       - value: RM
-        description: "TODO(#7424): Update with definition."
+        description: RECOMND COMMUTATION R
       - value: RN
-        description: "TODO(#7424): Update with definition."
+        description: REC TO DATE CERTAIN R
       - value: RP
-        description: "TODO(#7424): Update with definition."
+        description: REC REGULAR PAROLE R
       - value: RR
-        description: "TODO(#7424): Update with definition."
+        description: RECOM, PAST RELEASE R
       - value: RS
-        description: "TODO(#7424): Update with definition."
+        description: REVOK PAROLE RESCHEDD
       - value: RT
-        description: "TODO(#7424): Update with definition."
+        description: REINSTATE ON PAROLE R
       - value: RV
-        description: "TODO(#7424): Update with definition."
+        description: REVOKE D
       - value: TS
-        description: "TODO(#7424): Update with definition."
+        description: BEG NEW SENT D
   - name: BoardActionReason
     description: |-
       A code value defining a reason for a particular board member's decision on a parole hearing.
@@ -173,15 +173,15 @@ columns:
       - value: CB
         description: "TODO(#7424): Update with definition."
       - value: CR
-        description: "TODO(#7424): Update with definition."
+        description: CONTINUE RESCHEDULE C
       - value: CT
         description: "TODO(#7424): Update with definition."
       - value: DC
-        description: "TODO(#7424): Update with definition."
+        description: DECLINE CUSTODIAL D
       - value: DE
-        description: "TODO(#7424): Update with definition."
+        description: DECLINE EARLY RELEASD
       - value: DR
-        description: "TODO(#7424): Update with definition."
+        description: DECLINE RED D
       - value: FP
         description: "TODO(#7424): Update with definition."
       - value: FR
@@ -223,9 +223,9 @@ columns:
       - value: OW
         description: "TODO(#7424): Update with definition."
       - value: OX
-        description: "TODO(#7424): Update with definition."
+        description: REC PROG NOT APPROVDD
       - value: OY
-        description: "TODO(#7424): Update with definition."
+        description: DELETE, RESCHEDULE D
       - value: PA
         description: "TODO(#7424): Update with definition."
       - value: PD
@@ -241,15 +241,15 @@ columns:
       - value: PV
         description: "TODO(#7424): Update with definition."
       - value: RD
-        description: "TODO(#7424): Update with definition."
+        description: REC RELEAS ELIG DATER
       - value: RV
-        description: "TODO(#7424): Update with definition."
+        description: REVOKE D
       - value: SO
         description: "TODO(#7424): Update with definition."
       - value: SP
         description: "TODO(#7424): Update with definition."
       - value: TC
-        description: "TODO(#7424): Update with definition."
+        description: RECOMM/TECH CENTER R
       - value: TF
         description: "TODO(#7424): Update with definition."
       - value: TM
@@ -257,17 +257,17 @@ columns:
       - value: TP
         description: "TODO(#7424): Update with definition."
       - value: TS
-        description: "TODO(#7424): Update with definition."
+        description: BEG NEW SENT D
       - value: TT
         description: "TODO(#7424): Update with definition."
       - value: ZC
-        description: "TODO(#7424): Update with definition."
+        description: OTHER, SEE COMMENTS C
       - value: ZD
-        description: "TODO(#7424): Update with definition."
+        description: OTHER, SEE COMMENTS D
       - value: ZP
         description: "TODO(#7424): Update with definition."
       - value: ZR
-        description: "TODO(#7424): Update with definition."
+        description: OTHER, SEE COMMENTS R
   - name: BoardActionReason2
     description: |-
       An abbreviated board action that describes a parole board member's decision on a parole hearing.
@@ -297,15 +297,15 @@ columns:
       - value: CE
         description: "TODO(#7424): Update with definition."
       - value: CO
-        description: "TODO(#7424): Update with definition."
+        description: CONTINUED C
       - value: CT
         description: "TODO(#7424): Update with definition."
       - value: DC
-        description: "TODO(#7424): Update with definition."
+        description: DECLINE CUSTODIAL D
       - value: DE
-        description: "TODO(#7424): Update with definition."
+        description: DECLINE EARLY RELEASD
       - value: DR
-        description: "TODO(#7424): Update with definition."
+        description: DECLINE RED D
       - value: FH
         description: "TODO(#7424): Update with definition."
       - value: FP
@@ -349,9 +349,9 @@ columns:
       - value: OW
         description: "TODO(#7424): Update with definition."
       - value: OX
-        description: "TODO(#7424): Update with definition."
+        description: REC PROG NOT APPROVDD
       - value: OY
-        description: "TODO(#7424): Update with definition."
+        description: DELETE, RESCHEDULE D
       - value: PA
         description: "TODO(#7424): Update with definition."
       - value: PD
@@ -367,9 +367,9 @@ columns:
       - value: PV
         description: "TODO(#7424): Update with definition."
       - value: RD
-        description: "TODO(#7424): Update with definition."
+        description: REC RELEAS ELIG DATER
       - value: RV
-        description: "TODO(#7424): Update with definition."
+        description: REVOKE D
       - value: SO
         description: "TODO(#7424): Update with definition."
       - value: SP
@@ -377,7 +377,7 @@ columns:
       - value: ST
         description: "TODO(#7424): Update with definition."
       - value: TC
-        description: "TODO(#7424): Update with definition."
+        description: RECOMM/TECH CENTER R
       - value: TF
         description: "TODO(#7424): Update with definition."
       - value: TM
@@ -385,165 +385,165 @@ columns:
       - value: TP
         description: "TODO(#7424): Update with definition."
       - value: TS
-        description: "TODO(#7424): Update with definition."
+        description: BEG NEW SENT D
       - value: TT
         description: "TODO(#7424): Update with definition."
       - value: ZC
-        description: "TODO(#7424): Update with definition."
+        description: OTHER, SEE COMMENTS C
       - value: ZD
-        description: "TODO(#7424): Update with definition."
+        description: OTHER, SEE COMMENTS D
       - value: ZP
         description: "TODO(#7424): Update with definition."
       - value: ZR
-        description: "TODO(#7424): Update with definition."
+        description: OTHER, SEE COMMENTS R
   - name: ParoleCondition1
     description: |-
       An abbreviation representing an condition for parole.
     known_values:
       - value: AC
-        description: "TODO(#7424): Update with definition."
+        description: PARTICIPATE IN ACADEMIC PROGRAM
       - value: AU
-        description: "TODO(#7424): Update with definition."
+        description: ANY USE/POSS/ILL DRG/ALCOHOL/SUB ABUSE
       - value: BI
-        description: "TODO(#7424): Update with definition."
+        description: BATTERER'S INTERVENTION CLASS
       - value: BR
-        description: "TODO(#7424): Update with definition."
+        description: BARBERING
       - value: CA
-        description: "TODO(#7424): Update with definition."
+        description: COMPLETE ANGER MANAGEMENT PROGRAM
       - value: CB
         description: "TODO(#7424): Update with definition."
       - value: CC
-        description: "TODO(#7424): Update with definition."
+        description: CORE CARPENTRY I & II
       - value: CE
-        description: "TODO(#7424): Update with definition."
+        description: CORE ELECRICAL I & II
       - value: CI
         description: "TODO(#7424): Update with definition."
       - value: CP
-        description: "TODO(#7424): Update with definition."
+        description: COMPLETE PRE-RELEASE PROGRAM
       - value: CR
-        description: "TODO(#7424): Update with definition."
+        description: CONSTRUCTION CORE
       - value: CS
-        description: "TODO(#7424): Update with definition."
+        description: COMPLETE SUB ABUS PRG - CODE DEACTIVATED
       - value: CT
-        description: "TODO(#7424): Update with definition."
+        description: COMPLETE THERAPEUTIC COMMUNITY
       - value: CW
-        description: "TODO(#7424): Update with definition."
+        description: COMMUNITY SERVICE REFERRAL
       - value: DA
         description: "TODO(#7424): Update with definition."
       - value: DL
-        description: "TODO(#7424): Update with definition."
+        description: DESIGN FOR LIVING PROGRAM
       - value: DV
-        description: "TODO(#7424): Update with definition."
+        description: DOMESTIC VIOLENCE CLASS
       - value: GT
-        description: "TODO(#7424): Update with definition."
+        description: COMPLETE GROUP THERAPY
       - value: HC
-        description: "TODO(#7424): Update with definition."
+        description: CORE, HVAC & REFRIGERATION I & II
       - value: HH
-        description: "TODO(#7424): Update with definition."
+        description: HALFWAY HOUSE ONLY
       - value: HP
-        description: "TODO(#7424): Update with definition."
+        description: HALFWAY HOUSE OR APPROVED RELEASE PLAN
       - value: IW
-        description: "TODO(#7424): Update with definition."
+        description: ISSUE P.V. WARRANT
       - value: LC
-        description: "TODO(#7424): Update with definition."
+        description: LIVING CONDITIONS SPECIFIED
       - value: LP
-        description: "TODO(#7424): Update with definition."
+        description: LIFELINE PROGRAM
       - value: MH
-        description: "TODO(#7424): Update with definition."
+        description: EVAL FOR MH TREATMENT
       - value: MS
-        description: "TODO(#7424): Update with definition."
+        description: MANDATORY SUBSTANCE ABUSE PROGRAM
       - value: NC
-        description: "TODO(#7424): Update with definition."
+        description: NO CONTACT WITH VICTIM
       - value: ND
-        description: "TODO(#7424): Update with definition."
+        description: NO DRINKING
       - value: NM
-        description: "TODO(#7424): Update with definition."
+        description: NO CONTACT WITH MINOR CHILDREN
       - value: NS
-        description: "TODO(#7424): Update with definition."
+        description: NO SPECIAL CONDITIONS
       - value: NV
-        description: "TODO(#7424): Update with definition."
+        description: NO DRIVING
       - value: NW
-        description: "TODO(#7424): Update with definition."
+        description: NO WEAPONS
       - value: O0
-        description: "TODO(#7424): Update with definition."
+        description: NO JOB WAIVER
       - value: O1
-        description: "TODO(#7424): Update with definition."
+        description: ALCOHOL PROGRAM
       - value: O2
         description: "TODO(#7424): Update with definition."
       - value: O3
         description: "TODO(#7424): Update with definition."
       - value: O4
-        description: "TODO(#7424): Update with definition."
+        description: VOCATIONAL PROGRAM
       - value: O5
-        description: "TODO(#7424): Update with definition."
+        description: HALFWAY HOUSE
       - value: O6
-        description: "TODO(#7424): Update with definition."
+        description: DETAINER ONLY
       - value: O8
-        description: "TODO(#7424): Update with definition."
+        description: MAXIMUM SUPERVISION
       - value: OC
-        description: "TODO(#7424): Update with definition."
+        description: OTHER-SEE COMMENT
       - value: OE
-        description: "TODO(#7424): Update with definition."
+        description: EDUCATIONAL PROGRAM
       - value: OH
-        description: "TODO(#7424): Update with definition."
+        description: INPATIENT TREATMENT
       - value: OS
-        description: "TODO(#7424): Update with definition."
+        description: POST PAROLE CONDITION
       - value: OX
-        description: "TODO(#7424): Update with definition."
+        description: PRE-PAROLE CONDITION
       - value: OZ
-        description: "TODO(#7424): Update with definition."
+        description: EFFECTIVE DATE CER
       - value: PD
-        description: "TODO(#7424): Update with definition."
+        description: COMPLETE PRO-SOCIAL LIFE SKILLS
       - value: PR
-        description: "TODO(#7424): Update with definition."
+        description: PAY RESTITUTION AS ORDERED BY COURT
       - value: PS
         description: "TODO(#7424): Update with definition."
       - value: RC
-        description: "TODO(#7424): Update with definition."
+        description: RELEASE CENTER PLACEMENT
       - value: RD
-        description: "TODO(#7424): Update with definition."
+        description: RANDOM DRUG SCREENS
       - value: RS
-        description: "TODO(#7424): Update with definition."
+        description: RESTITUTION PROGRAM
       - value: SA
-        description: "TODO(#7424): Update with definition."
+        description: SUBSTANCE ABUSE TREATMENT/PO DISCRETION
       - value: SC
         description: "TODO(#7424): Update with definition."
       - value: SH
-        description: "TODO(#7424): Update with definition."
+        description: STAYING HOME
       - value: SO
-        description: "TODO(#7424): Update with definition."
+        description: SEX OFFENDER TREATMENT
       - value: SP
-        description: "TODO(#7424): Update with definition."
+        description: COMPLETE SUCCESS PROGRAM
       - value: SR
-        description: "TODO(#7424): Update with definition."
+        description: COMP MEMPHIS/SHELBY CO.REENTRY PROGRAM
       - value: ST
-        description: "TODO(#7424): Update with definition."
+        description: EVAL FOR SUBSTANCE ABUSE
       - value: SU
-        description: "TODO(#7424): Update with definition."
+        description: SUBSTANCE ABUSE AFTER CARE REFERRAL
       - value: SW
-        description: "TODO(#7424): Update with definition."
+        description: FORENSIC SOCIAL WORKER REFERRAL
       - value: TA
-        description: "TODO(#7424): Update with definition."
+        description: SUBSTANCE ABUSE TREATMENT AS ASSESSED
       - value: TN
-        description: "TODO(#7424): Update with definition."
+        description: TN BRIDGES (INACT 01/01/2006)
       - value: TP
-        description: "TODO(#7424): Update with definition."
+        description: TRANSITION CENTER PLACEMENT
       - value: VC
-        description: "TODO(#7424): Update with definition."
+        description: VICTIM IMPACT CLASS, POST PAROLE
       - value: VI
-        description: "TODO(#7424): Update with definition."
+        description: VICTIM IMPACT CLASS
       - value: VN
-        description: "TODO(#7424): Update with definition."
+        description: VIOLATION NOT SUSTAINED
       - value: VO
-        description: "TODO(#7424): Update with definition."
+        description: PARTICIPATE IN VOCATIONAL PROGRAM
       - value: VP
-        description: "TODO(#7424): Update with definition."
+        description: PARTICIPATE - VOCATIONAL PRG,POST PAROLE
       - value: WH
-        description: "TODO(#7424): Update with definition."
+        description: MEDICAL JOB WAIVER
       - value: WP
-        description: "TODO(#7424): Update with definition."
+        description: PERMANENT JOB WAIVER
       - value: WT
-        description: "TODO(#7424): Update with definition."
+        description: TEMPORARY JOB WAIVER
   - name: ParoleCondition2
     description: |-
       An abbreviation representing an condition for parole.
