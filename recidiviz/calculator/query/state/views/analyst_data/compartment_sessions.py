@@ -26,6 +26,8 @@ COMPARTMENT_SESSIONS_VIEW_NAME = "compartment_sessions"
 
 COMPARTMENT_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of each individual. Session defined as continuous stay within a compartment"""
 
+MO_DATA_GAP_DAYS = "10"
+
 COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
     /*{description}*/
     WITH dataflow_session_gaps AS
@@ -158,6 +160,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         LEAD(sessions.compartment_level_2) OVER(PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS outflow_to_level_2,
         LAG(ends.end_reason) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS prev_end_reason,
         LEAD(starts.start_reason) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS next_start_reason,
+        LAG(sessions.end_date) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS prev_end_date,
+        LEAD(sessions.start_date) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS next_start_date,
     FROM sessions_aggregated AS sessions
     LEFT JOIN `{project_id}.{analyst_dataset}.compartment_session_start_reasons_materialized` starts
         ON sessions.person_id =  starts.person_id
@@ -193,7 +197,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         dataflow_session_id_end,
         state_code,
         COALESCE(
-            CASE WHEN inferred_release THEN 'RELEASE'
+            CASE WHEN inferred_release OR inferred_mo_release THEN 'RELEASE'
                 WHEN inferred_escape OR start_reason = 'ABSCONSION' THEN LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY start_date)
                 WHEN inferred_death THEN 'DEATH'    
                 WHEN inferred_erroneous THEN 'ERRONEOUS_RELEASE'
@@ -206,7 +210,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
                 WHEN inferred_suspension THEN 'SUSPENSION'
                 ELSE compartment_level_1 END, 'INTERNAL_UNKNOWN') AS compartment_level_1,
         COALESCE(
-            CASE WHEN inferred_release THEN 'RELEASE'
+            CASE WHEN inferred_release OR inferred_mo_release THEN 'RELEASE'
                 WHEN inferred_escape OR start_reason = 'ABSCONSION' THEN 'ABSCONSION'
                 WHEN inferred_death THEN 'DEATH'
                 WHEN inferred_erroneous THEN 'ERRONEOUS_RELEASE'
@@ -250,7 +254,13 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
             metric_source = 'INFERRED'
                 AND inflow_from_level_1 = outflow_to_level_1 AND inflow_from_level_2 = outflow_to_level_2
                 AND COALESCE(prev_end_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')
-                AND COALESCE(next_start_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')  AS inferred_missing_data, 
+                AND COALESCE(next_start_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')  
+                AND (state_code != 'US_MO' OR DATE_DIFF(next_start_date, prev_end_date, DAY) <= {mo_data_gap_days}) AS inferred_missing_data, 
+            metric_source = 'INFERRED'
+                AND COALESCE(prev_end_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')
+                AND COALESCE(next_start_reason,'INTERNAL_UNKNOWN') IN ('INTERNAL_UNKNOWN', 'TRANSFER_WITHIN_STATE', 'TRANSFER')
+                AND state_code = 'US_MO'
+                AND DATE_DIFF(next_start_date, prev_end_date, DAY) > {mo_data_gap_days} AS inferred_mo_release,
         FROM sessions_joined_with_dataflow
         )
     )
@@ -390,6 +400,7 @@ COMPARTMENT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=COMPARTMENT_SESSIONS_QUERY_TEMPLATE,
     description=COMPARTMENT_SESSIONS_VIEW_DESCRIPTION,
     analyst_dataset=ANALYST_VIEWS_DATASET,
+    mo_data_gap_days=MO_DATA_GAP_DAYS,
     should_materialize=True,
 )
 
