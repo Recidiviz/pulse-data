@@ -25,63 +25,55 @@ import logging
 import os
 import sys
 from collections import defaultdict
-from typing import List, Dict, Set, Optional, Type
+from typing import Dict, List, Optional, Set, Type
 
 import attr
 from pytablewriter import MarkdownTableWriter
 
-from recidiviz.big_query.big_query_view import (
-    BigQueryAddress,
-    BigQueryView,
-)
-from recidiviz.big_query.view_update_manager import _build_views_to_update
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
-from recidiviz.calculator.query.state.dataset_config import (
-    DATAFLOW_METRICS_DATASET,
-    DATAFLOW_METRICS_MATERIALIZED_DATASET,
-)
+from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import (
+    BigQueryViewDagNodeFamily,
     BigQueryViewDagWalker,
     DagKey,
-    BigQueryViewDagNodeFamily,
 )
+from recidiviz.big_query.view_update_manager import _build_views_to_update
 from recidiviz.calculator.dataflow_config import (
-    PRODUCTION_TEMPLATES_PATH,
     DATAFLOW_METRICS_TO_TABLES,
     DATAFLOW_TABLES_TO_METRIC_TYPES,
+    PRODUCTION_TEMPLATES_PATH,
 )
 from recidiviz.calculator.pipeline.incarceration.metrics import IncarcerationMetric
 from recidiviz.calculator.pipeline.program.metrics import ProgramMetric
 from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismMetric,
 )
-from recidiviz.calculator.pipeline.supervision.metrics import (
-    SupervisionMetric,
+from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetric
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
+from recidiviz.calculator.pipeline.violation.metrics import ViolationMetric
+from recidiviz.calculator.query.state.dataset_config import (
+    DATAFLOW_METRICS_DATASET,
+    DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 from recidiviz.common import attr_validators
-
 from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.export.export_config import (
     PRODUCTS_CONFIG_PATH,
-    ProductConfig,
     VIEW_COLLECTION_EXPORT_INDEX,
-    ProductName,
+    ProductConfig,
     ProductConfigs,
+    ProductName,
 )
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
 from recidiviz.tools.docs.utils import persist_file_contents
-from recidiviz.utils.environment import (
-    GCP_PROJECT_STAGING,
-    GCPEnvironment,
-)
+from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCPEnvironment
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.yaml_dict import YAMLDict
 from recidiviz.view_registry.datasets import (
-    VIEW_SOURCE_TABLE_DATASETS,
-    OTHER_SOURCE_TABLE_DATASETS,
     LATEST_VIEW_DATASETS,
-    VIEW_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS,
+    OTHER_SOURCE_TABLE_DATASETS,
     RAW_TABLE_DATASETS,
+    VIEW_SOURCE_TABLE_DATASETS,
+    VIEW_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS,
 )
 from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
 
@@ -397,6 +389,8 @@ class CalculationDocumentationGenerator:
                 metrics_dict["Program"].append(metric)
             elif issubclass(metric, IncarcerationMetric):
                 metrics_dict["Incarceration"].append(metric)
+            elif issubclass(metric, ViolationMetric):
+                metrics_dict["Violation"].append(metric)
             else:
                 raise ValueError(
                     f"{metric.__name__} is not a subclass of an expected"
