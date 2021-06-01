@@ -17,11 +17,9 @@
 """Implements API routes for the Case Triage app."""
 from datetime import date, datetime
 from http import HTTPStatus
-from typing import Optional
 
 import pytz
-
-from flask import Blueprint, current_app, g, jsonify, Response
+from flask import Blueprint, Response, current_app, g, jsonify
 from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import generate_csrf
 
@@ -45,9 +43,7 @@ from recidiviz.case_triage.client_info.interface import (
     DemoClientInfoInterface,
 )
 from recidiviz.case_triage.demo_helpers import DEMO_FROZEN_DATE, DEMO_FROZEN_DATETIME
-from recidiviz.case_triage.exceptions import (
-    CaseTriageBadRequestException,
-)
+from recidiviz.case_triage.exceptions import CaseTriageBadRequestException
 from recidiviz.case_triage.opportunities.interface import (
     DemoOpportunitiesInterface,
     OpportunitiesInterface,
@@ -88,9 +84,7 @@ def load_client(person_external_id: str) -> ETLClient:
         ) from e
 
 
-def create_api_blueprint(
-    segment_client: Optional[CaseTriageSegmentClient] = None,
-) -> Blueprint:
+def create_api_blueprint(segment_client: CaseTriageSegmentClient) -> Blueprint:
     """Creates Blueprint object that is parameterized with a SegmentClient."""
     api = Blueprint("api", __name__)
 
@@ -166,14 +160,13 @@ def create_api_blueprint(
                     g.api_data["request_reminder"],
                 )
 
-                if segment_client:
-                    segment_client.track_opportunity_deferred(
-                        g.email,
-                        etl_client,
-                        g.api_data["opportunity_type"],
-                        g.api_data["defer_until"],
-                        g.api_data["request_reminder"],
-                    )
+                segment_client.track_opportunity_deferred(
+                    g.email,
+                    etl_client,
+                    g.api_data["opportunity_type"],
+                    g.api_data["defer_until"],
+                    g.api_data["request_reminder"],
+                )
         except OpportunityDoesNotExistError as e:
             raise CaseTriageBadRequestException(
                 "not_found", "The opportunity could not be found."
@@ -201,13 +194,12 @@ def create_api_blueprint(
 
                 etl_client = load_client(opportunity_deferral.person_external_id)
 
-                if segment_client:
-                    segment_client.track_opportunity_deferral_deleted(
-                        g.email,
-                        etl_client,
-                        OpportunityDeferralType(opportunity_deferral.deferral_type),
-                        deferral_id,
-                    )
+                segment_client.track_opportunity_deferral_deleted(
+                    g.email,
+                    etl_client,
+                    OpportunityDeferralType(opportunity_deferral.deferral_type),
+                    deferral_id,
+                )
         except OpportunityDeferralDoesNotExistError as e:
             raise CaseTriageBadRequestException(
                 "not_found", "The opportunity deferral could not be found."
@@ -249,12 +241,11 @@ def create_api_blueprint(
                 g.api_data.get("comment", None),
             )
 
-            if segment_client:
-                segment_client.track_person_action_taken(
-                    g.email,
-                    etl_client,
-                    g.api_data["action_type"],
-                )
+            segment_client.track_person_action_taken(
+                g.email,
+                etl_client,
+                g.api_data["action_type"],
+            )
         presenter = CaseUpdatePresenter(etl_client, case_update)
         return jsonify(presenter.to_json())
 
@@ -276,13 +267,12 @@ def create_api_blueprint(
 
                 etl_client = load_client(case_update.person_external_id)
 
-                if segment_client:
-                    segment_client.track_person_action_removed(
-                        g.email,
-                        etl_client,
-                        CaseUpdateActionType(case_update.action_type),
-                        str(case_update.update_id),
-                    )
+                segment_client.track_person_action_removed(
+                    g.email,
+                    etl_client,
+                    CaseUpdateActionType(case_update.action_type),
+                    str(case_update.update_id),
+                )
         except CaseUpdateDoesNotExistError as e:
             raise CaseTriageBadRequestException(
                 "not_found", "The case update could not be found."
