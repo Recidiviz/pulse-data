@@ -19,9 +19,9 @@ columns:
       An abbreviation to describe the type of hearing.
     known_values:
       - value: CM
-        description: "TODO(#7424): Update with definition."
+        description: COMMUTATION
       - value: CR
-        description: "TODO(#7424): Update with definition."
+        description: CONTINUE, RESCHEDULE
       - value: EC
         description: "TODO(#7424): Update with definition."
   - name: StaffID
@@ -35,7 +35,7 @@ columns:
       An abbreviation representing an condition for parole.
     known_values:
       - value: OC
-        description: "TODO(#7424): Update with definition."
+        description: OTHER-SEE COMMENT
   - name: ParoleCondition2
     description: |-
       An abbreviation representing an condition for parole.

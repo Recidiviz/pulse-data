@@ -17,7 +17,7 @@ columns:
       - value: 0
         description: TODO(#7424) - Populate with definition.
       - value: O
-        description: "TODO(#7424): Update with definition."
+        description: OUTSIDE AGENCY
   - name: SequenceNumber
     description: |-
       Uniquely identifies various DB2 tables.

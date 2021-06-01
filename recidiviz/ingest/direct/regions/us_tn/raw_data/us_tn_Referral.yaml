@@ -21,15 +21,15 @@ columns:
       An abbreviation for the type of referral given to an offender.
     known_values:
       - value: CLR
-        description: "TODO(#7424): Update with definition."
+        description: CLASSIFICATION REPORT
       - value: PDR
-        description: "TODO(#7424): Update with definition."
+        description: PRETRIAL DIVERSION REPORT
       - value: PSI
-        description: "TODO(#7424): Update with definition."
+        description: PRESENTENCE REPORT
       - value: PSR
-        description: "TODO(#7424): Update with definition."
+        description: POST SENTENCE REPORT
       - value: SDR
-        description: "TODO(#7424): Update with definition."
+        description: SPECIFIC DATA REPORT
   - name: DueDate
     is_datetime: True
     description: |-
@@ -49,13 +49,13 @@ columns:
       A code value defining a reason for the conditions of Bond for a offender awaiting sentencing.
     known_values:
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: NO BOND DUE TO OFFENSE
       - value: R
-        description: "TODO(#7424): Update with definition."
+        description: RELEASED TO OWN RECOGNIZANCE
       - value: S
-        description: "TODO(#7424): Update with definition."
+        description: RELEASED ON BOND
       - value: U
-        description: "TODO(#7424): Update with definition."
+        description: UNABLE TO MAKE BOND
   - name: CoOffenderID1
     description: |-
       The first codefendant TOMIS ID for an offender.
@@ -85,15 +85,15 @@ columns:
       The type of defense attorney that a defendant has during his trial.
     known_values:
       - value: AP
-        description: "TODO(#7424): Update with definition."
+        description: APPOINTED
       - value: CW
-        description: "TODO(#7424): Update with definition."
+        description: COUNSEL WAIVED
       - value: PD
-        description: "TODO(#7424): Update with definition."
+        description: PUBLIC DEFENDER
       - value: PS
-        description: "TODO(#7424): Update with definition."
+        description: PRO SE
       - value: RE
-        description: "TODO(#7424): Update with definition."
+        description: RETAINED
   - name: County
     description: |-
       The code name of a territorial division for local government within a state.
@@ -118,11 +118,11 @@ columns:
       - value: 0
         description: "TODO(#7424): Update with definition."
       - value: 1
-        description: "TODO(#7424): Update with definition."
+        description: DEADLY WEAPON USED
       - value: 4
-        description: "TODO(#7424): Update with definition."
+        description: VERBAL
       - value: 6
-        description: "TODO(#7424): Update with definition."
+        description: SEXUAL
       - value: "@"
         description: "TODO(#7424): Update with definition."
       - value: A

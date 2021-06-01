@@ -16,9 +16,9 @@ columns:
       - value: 0
         description: TODO(#7424) - Populate with definition.
       - value: O
-        description: "TODO(#7424): Update with definition."
+        description: OUTSIDE AGENCY
       - value: T
-        description: TODO(#7424) - Populate with definition.
+        description: TDOC COMMITMENT
   - name: SequenceNumber
     description: |-
       Uniquely identifies various DB2 tables.
@@ -27,13 +27,13 @@ columns:
       The status of an offender's detainer.  This will indicate if a detainer is placed, pending, lifted or a commitment detainer.
     known_values:
       - value: CO
-        description: TODO(#7424) - Populate with definition.
+        description: COMMITMENT
       - value: LI
-        description: TODO(#7424) - Populate with definition.
+        description: LIFTED
       - value: PE
-        description: TODO(#7424) - Populate with definition.
+        description: PENDING
       - value: PL
-        description: TODO(#7424) - Populate with definition.
+        description: PLACED
   - name: Jurisdiction
     description: |-
       The code for the jurisdiction in which an offender is serving his sentence.

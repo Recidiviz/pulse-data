@@ -97,13 +97,13 @@ columns:
       This field describes the security status code for a user ID.
     known_values:
       - value: A
-        description: "TODO(#7424): Update with definition."
+        description: ACTIVE
       - value: I
-        description: "TODO(#7424): Update with definition."
+        description: INACTIVE
       - value: NULL
         description: "TODO(#7424): Update with definition."
       - value: R
-        description: "TODO(#7424): Update with definition."
+        description: REVOKED
   - name: SecurityStatusDate
     is_datetime: True
     description: |-
@@ -122,15 +122,15 @@ columns:
       The NCIC race code.
     known_values:
       - value: A
-        description: "TODO(#7424): Update with definition."
+        description: ASIAN OR PACIFIC ISLANDER
       - value: B
-        description: "TODO(#7424): Update with definition."
+        description: BLACK
       - value: H
-        description: "TODO(#7424): Update with definition."
+        description: HISPANIC
       - value: I
-        description: "TODO(#7424): Update with definition."
+        description: AMERICAN INDIAN OR ALASKAN NATIVE
       - value: W
-        description: "TODO(#7424): Update with definition."
+        description: WHITE
   - name: Sex
     description: |-
       An abbreviation that identifies the sex of an offender.
@@ -159,9 +159,9 @@ columns:
       The status of a staff person in the TOMIS system. This status will change over the career of the individual, and can be changed at any time.
     known_values:
       - value: A
-        description: "TODO(#7424): Update with definition."
+        description: ACTIVE
       - value: I
-        description: "TODO(#7424): Update with definition."
+        description: INACTIVE
   - name: StatusDate
     is_datetime: True
     description: |-

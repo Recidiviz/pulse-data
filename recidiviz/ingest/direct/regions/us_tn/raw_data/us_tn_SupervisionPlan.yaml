@@ -18,13 +18,13 @@ columns:
       The type of plan of supvn. that an offender has agreed to follow.
     known_values:
       - value: COMM
-        description: "TODO(#7424): Update with definition."
+        description: COMMUNITY CORRECTIONS
       - value: IPP
-        description: "TODO(#7424): Update with definition."
+        description: IPP
       - value: PARO
-        description: "TODO(#7424): Update with definition."
+        description: PAROLE
       - value: PROB
-        description: "TODO(#7424): Update with definition."
+        description: PROBATION
   - name: PlanEndDate
     is_datetime: True
     description: |-
@@ -42,35 +42,35 @@ columns:
       An abbreviation for the level of supervision required to secure an offender.
     known_values:
       - value: 1D1
-        description: "TODO(#7424): Update with definition."
+        description: SPEC RESTRCT - DRC PHASE 1
       - value: 1EN
-        description: "TODO(#7424): Update with definition."
+        description: SPEC RESTRCT - ENHANCED
       - value: 1SA
-        description: "TODO(#7424): Update with definition."
+        description: SPEC RESTRCT - SANCTIONED
       - value: 2D2
-        description: "TODO(#7424): Update with definition."
+        description: RESTRICTED - DRC PHASE 2
       - value: 2IN
-        description: "TODO(#7424): Update with definition."
+        description: RESTRICTED - INTAKE
       - value: 2P1
-        description: "TODO(#7424): Update with definition."
+        description: RESTRICTED - PSU PHASE ONE
       - value: 2PV
-        description: "TODO(#7424): Update with definition."
+        description: RESTRICTED - POST VIOLATN
       - value: 3D3
-        description: "TODO(#7424): Update with definition."
+        description: ELEVATED - DRC PHASE 3
       - value: 3MA
-        description: "TODO(#7424): Update with definition."
+        description: ELEVATED - MAXIMUM
       - value: 3P2
-        description: "TODO(#7424): Update with definition."
+        description: ELEVATED - PSU PHASE TWO
       - value: 3RE
-        description: "TODO(#7424): Update with definition."
+        description: ELEVATED - RESISTIVE
       - value: 4ME
-        description: "TODO(#7424): Update with definition."
+        description: STANDARD - MEDIUM
       - value: 4MI
-        description: "TODO(#7424): Update with definition."
+        description: STANDARD - MINIMUM
       - value: 4P3
-        description: "TODO(#7424): Update with definition."
+        description: STANDARD - PSU PHASE THREE
       - value: 4TR
-        description: "TODO(#7424): Update with definition."
+        description: STANDARD - TELEPHONE RPT
       - value: 6P1
         description: "TODO(#7424): Update with definition."
       - value: 6P2
@@ -80,191 +80,191 @@ columns:
       - value: 6P4
         description: "TODO(#7424): Update with definition."
       - value: 9AB
-        description: "TODO(#7424): Update with definition."
+        description: ADM - ABSCONDED OFFENDER
       - value: 9DP
-        description: "TODO(#7424): Update with definition."
+        description: ADM - DEPORTED
       - value: 9DT
-        description: "TODO(#7424): Update with definition."
+        description: ADM - DETAINER
       - value: 9IC
-        description: "TODO(#7424): Update with definition."
+        description: ADM - IN CUST TDOC SENT
       - value: 9IS
-        description: "TODO(#7424): Update with definition."
+        description: ADM - ISC OUTGOING
       - value: 9JS
-        description: "TODO(#7424): Update with definition."
+        description: ADM - JUDICIAL SUSP SUPVN
       - value: 9RT
-        description: "TODO(#7424): Update with definition."
+        description: ADM - RES. TREATMNT PLCMT
       - value: 9SD
-        description: "TODO(#7424): Update with definition."
+        description: ADM - SUSP OF DIRECT SUPVN
       - value: 9WR
-        description: "TODO(#7424): Update with definition."
+        description: ADM - WARRANT
       - value: ABS
-        description: "TODO(#7424): Update with definition."
+        description: ABSCONDED OFFENDER
       - value: DET
-        description: "TODO(#7424): Update with definition."
+        description: DETAINER STATUS OFFENDER
       - value: ENH
-        description: "TODO(#7424): Update with definition."
+        description: ENHANCED OFFENDER
       - value: ICU
-        description: "TODO(#7424): Update with definition."
+        description: IN CUST ON TDOC/BOPP SENT
       - value: IOT
-        description: "TODO(#7424): Update with definition."
+        description: INTERACTIVE OFFENDER TRAC
       - value: IPA
-        description: "TODO(#7424): Update with definition."
+        description: INTAKE PAROLE
       - value: IPR
-        description: "TODO(#7424): Update with definition."
+        description: INTAKE PROBATION
       - value: ISC
-        description: "TODO(#7424): Update with definition."
+        description: ISC TRANSFER OUT OF STATE
       - value: JSS
-        description: "TODO(#7424): Update with definition."
+        description: JUDICIAL SUSPENSION SUPVN
       - value: KG2
-        description: "TODO(#7424): Update with definition."
+        description: KNOWN SEX MOT ON GPS - ME
       - value: KG3
-        description: "TODO(#7424): Update with definition."
+        description: KNOWN SEX MOT ON GPS - MA
       - value: KGE
-        description: "TODO(#7424): Update with definition."
+        description: KNOWN SEX MOT ON GPS - EN
       - value: KN2
-        description: "TODO(#7424): Update with definition."
+        description: KNOWN SEX MOT NO GPS - ME
       - value: KN3
-        description: "TODO(#7424): Update with definition."
+        description: KNOWN SEX MOT NO GPS - MA
       - value: KNE
-        description: "TODO(#7424): Update with definition."
+        description: KNOWN SEX MOT NO GPS - EN
       - value: MAX
-        description: "TODO(#7424): Update with definition."
+        description: MAXIMUM OFFENDER
       - value: MED
-        description: "TODO(#7424): Update with definition."
+        description: MEDIUM OFFENDER
       - value: MIN
-        description: "TODO(#7424): Update with definition."
+        description: MINIMUM OFFENDER
       - value: MSD
-        description: "TODO(#7424): Update with definition."
+        description: MISDEMEANOR OFFENDER
       - value: NIA
-        description: "TODO(#7424): Update with definition."
+        description: WARRANT FILED; NOT SERVED
       - value: QG2
-        description: "TODO(#7424): Update with definition."
+        description: VIOL SEX OFF ON GPS - MED
       - value: QG3
-        description: "TODO(#7424): Update with definition."
+        description: VIOL SEX OFF ON GPS - MAX
       - value: QGE
-        description: "TODO(#7424): Update with definition."
+        description: VIOL SEX OFF ON GPS - ENH
       - value: QN2
-        description: "TODO(#7424): Update with definition."
+        description: VIOL SEX OFF NO GPS - MED
       - value: QN3
-        description: "TODO(#7424): Update with definition."
+        description: VIOL SEX OFF NO GPS - MAX
       - value: QNE
-        description: "TODO(#7424): Update with definition."
+        description: VIOL SEX OFF NO GPS - ENH
       - value: RTP
-        description: "TODO(#7424): Update with definition."
+        description: RESIDENT TREATMT PLACEMNT
       - value: SDS
-        description: "TODO(#7424): Update with definition."
+        description: SUSPENSION OF DIRECT SUPV
       - value: VG2
-        description: "TODO(#7424): Update with definition."
+        description: VIOL OFFEN ON GPS - MED
       - value: VG3
-        description: "TODO(#7424): Update with definition."
+        description: VIOL OFFEN ON GPS - MAX
       - value: VGE
-        description: "TODO(#7424): Update with definition."
+        description: VIOL OFFEN ON GPS - ENH
       - value: VN2
-        description: "TODO(#7424): Update with definition."
+        description: VIOL OFFEN NO GPS - MED
       - value: VN3
-        description: "TODO(#7424): Update with definition."
+        description: VIOL OFFEN NO GPS - MAX
       - value: VNE
-        description: "TODO(#7424): Update with definition."
+        description: VIOL OFFEN NO GPS - ENH
       - value: WRB
-        description: "TODO(#7424): Update with definition."
+        description: WARRANT ON BOND
       - value: WRT
-        description: "TODO(#7424): Update with definition."
+        description: WARRANT STATUS OFFENDER
       - value: XEN
-        description: "TODO(#7424): Update with definition."
+        description: ENHANCED SEX OFFENDER
       - value: XG2
-        description: "TODO(#7424): Update with definition."
+        description: SEX OFFENDER ON GPS - MED
       - value: XG3
-        description: "TODO(#7424): Update with definition."
+        description: SEX OFFENDER ON GPS - MAX
       - value: XGE
-        description: "TODO(#7424): Update with definition."
+        description: SEX OFFENDER ON GPS - ENH
       - value: XMD
-        description: "TODO(#7424): Update with definition."
+        description: MEDIUM SEX OFFENDER
       - value: XMX
-        description: "TODO(#7424): Update with definition."
+        description: MAXIMUM SEX OFFENDER
       - value: XN2
-        description: "TODO(#7424): Update with definition."
+        description: SEX OFFENDER NO GPS - MED
       - value: XN3
-        description: "TODO(#7424): Update with definition."
+        description: SEX OFFENDER NO GPS - MAX
       - value: XNE
-        description: "TODO(#7424): Update with definition."
+        description: SEX OFFENDER NO GPS - ENH
       - value: XPA
-        description: "TODO(#7424): Update with definition."
+        description: INTAKE SEX OFFNDR PAROLE
       - value: XPR
-        description: "TODO(#7424): Update with definition."
+        description: INTAKE SEX OFFNDR PROB.
       - value: Z
-        description: "TODO(#7424): Update with definition."
+        description: NO SUPERVISION LVL (ARCV)
       - value: Z1A
-        description: "TODO(#7424): Update with definition."
+        description: MINIMUM SUPV PROBATION
       - value: Z1C
-        description: "TODO(#7424): Update with definition."
+        description: INTENSIVE PHASE 1
       - value: Z1E
-        description: "TODO(#7424): Update with definition."
+        description: INTENSIVE ELECTRONIC 1
       - value: Z1M
-        description: "TODO(#7424): Update with definition."
+        description: MISDEMEANOR, MIN SUPV
       - value: Z2A
-        description: "TODO(#7424): Update with definition."
+        description: MEDIUM SUPV PROBATION
       - value: Z2C
-        description: "TODO(#7424): Update with definition."
+        description: INTENSIVE PHASE 2
       - value: Z2E
-        description: "TODO(#7424): Update with definition."
+        description: INTENSIVE ELECTRONIC 2
       - value: Z2M
-        description: "TODO(#7424): Update with definition."
+        description: MISDEMEANOR, MED SUPV
       - value: Z3A
-        description: "TODO(#7424): Update with definition."
+        description: MAXIMUM SUPV PROBATION
       - value: Z3B
         description: "TODO(#7424): Update with definition."
       - value: Z3C
-        description: "TODO(#7424): Update with definition."
+        description: INTENSIVE PHASE 3
       - value: Z3E
-        description: "TODO(#7424): Update with definition."
+        description: INTENSIVE ELECTRONIC 3
       - value: Z4A
-        description: "TODO(#7424): Update with definition."
+        description: PHASE 2 INTENSIVE
       - value: ZAB
-        description: "TODO(#7424): Update with definition."
+        description: ABSCONDER PROBATION
       - value: ZAC
-        description: "TODO(#7424): Update with definition."
+        description: ABSCONDER COMM. CORR.
       - value: ZAP
-        description: "TODO(#7424): Update with definition."
+        description: ABSCONDER PAROLE
       - value: ZCU
-        description: "TODO(#7424): Update with definition."
+        description: VIOLATOR IN CUSTODY
       - value: ZDE
-        description: "TODO(#7424): Update with definition."
+        description: DETAINER PAROLE
       - value: ZDS
-        description: "TODO(#7424): Update with definition."
+        description: DISCHARGED
       - value: ZEN
-        description: "TODO(#7424): Update with definition."
+        description: ENHANCED SUPERVISION
       - value: ZIC
-        description: "TODO(#7424): Update with definition."
+        description: INACTIVE SUPV COMM. CORR.
       - value: ZIN
-        description: "TODO(#7424): Update with definition."
+        description: INACTIVE SUPV PROBATION
       - value: ZIS
-        description: "TODO(#7424): Update with definition."
+        description: ISC TRANSFER IN
       - value: ZIT
-        description: "TODO(#7424): Update with definition."
+        description: INTERSTATE TRANSFER OUTST
       - value: ZMA
-        description: "TODO(#7424): Update with definition."
+        description: MAXIMUM SUPV PAROLE
       - value: ZME
-        description: "TODO(#7424): Update with definition."
+        description: MEDIUM SUPV PAROLE
       - value: ZMI
-        description: "TODO(#7424): Update with definition."
+        description: MINIMUM SUPV PAROLE
       - value: ZRE
-        description: "TODO(#7424): Update with definition."
+        description: RESIDENTIAL
       - value: ZS1
-        description: "TODO(#7424): Update with definition."
+        description: STEP 1
       - value: ZS2
-        description: "TODO(#7424): Update with definition."
+        description: STEP 2
       - value: ZS3
-        description: "TODO(#7424): Update with definition."
+        description: STEP 3
       - value: ZS4
-        description: "TODO(#7424): Update with definition."
+        description: STEP 4
       - value: ZSS
-        description: "TODO(#7424): Update with definition."
+        description: SUSPENDED SUPV PAROLE
       - value: ZTS
-        description: "TODO(#7424): Update with definition."
+        description: TEMPORARY STATUS
       - value: ZTV
-        description: "TODO(#7424): Update with definition."
+        description: TECHNICAL VIOLATOR
       - value: ZWS
-        description: "TODO(#7424): Update with definition."
+        description: WARRANT STATUS
   - name: OPIScore
     description: |-
       Used to store OPI score. OPI is the acronym for Offender Profile Index.
@@ -324,37 +324,37 @@ columns:
       - value: 049
         description: "TODO(#7424): Update with definition."
       - value: ARR
-        description: "TODO(#7424): Update with definition."
+        description: ARREST CHECK
       - value: COL
-        description: "TODO(#7424): Update with definition."
+        description: COLLATERAL CONTACT
       - value: ECO
-        description: "TODO(#7424): Update with definition."
+        description: EMPLOYER CONTACT
       - value: EVE
-        description: "TODO(#7424): Update with definition."
+        description: EMPLOYMENT VERIFICATION
       - value: FAV
-        description: "TODO(#7424): Update with definition."
+        description: FAMILY VISIT
       - value: FTF
-        description: "TODO(#7424): Update with definition."
+        description: FACE TO FACE
       - value: GRP
-        description: "TODO(#7424): Update with definition."
+        description: GROUP REPORTING
       - value: HOM
-        description: "TODO(#7424): Update with definition."
+        description: HOME VISIT
       - value: HOV
-        description: "TODO(#7424): Update with definition."
+        description: HOUSE VISIT
       - value: IFA
-        description: "TODO(#7424): Update with definition."
+        description: INACTIVE - FIRST ARCHIVE
       - value: ISA
-        description: "TODO(#7424): Update with definition."
+        description: INACTIVE - SECOND ARCHIVE
       - value: OFF
-        description: "TODO(#7424): Update with definition."
+        description: OVER 55 YRS
       - value: PER
-        description: "TODO(#7424): Update with definition."
+        description: PERSONAL CONTACT
       - value: REC
-        description: "TODO(#7424): Update with definition."
+        description: RECORDS CHECK
       - value: SPC
-        description: "TODO(#7424): Update with definition."
+        description: SPECIAL CONDITIONS
       - value: URI
-        description: "TODO(#7424): Update with definition."
+        description: URINALYSIS
   - name: ConditionFrequency1
     description: |-
       The number of times a condition is to be met.

@@ -65,15 +65,15 @@ columns:
       The type of defense attorney that a defendant has during his trial.
     known_values:
       - value: AP
-        description: "TODO(#7424): Update with definition."
+        description: APPOINTED
       - value: CW
-        description: "TODO(#7424): Update with definition."
+        description: COUNSEL WAIVED
       - value: PD
-        description: "TODO(#7424): Update with definition."
+        description: PUBLIC DEFENDER
       - value: PS
-        description: "TODO(#7424): Update with definition."
+        description: PRO SE
       - value: RE
-        description: "TODO(#7424): Update with definition."
+        description: RETAINED
   - name: SIDNumber
     description: |-
       An alphanumeric identifier assigned by the state of Tennesse which uniquely identifies an offender. 8 characters.

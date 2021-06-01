@@ -24,15 +24,15 @@ columns:
       The type of warrant that is requested and/or issued for an offender.
     known_values:
       - value: CCOV
-        description: "TODO(#7424): Update with definition."
+        description: COM. CORRECTION VIOLATION
       - value: COMV
-        description: "TODO(#7424): Update with definition."
+        description: COMMUTATION VIOLATION
       - value: PARV
-        description: "TODO(#7424): Update with definition."
+        description: PAROLE VIOLATION
       - value: PROV
-        description: "TODO(#7424): Update with definition."
+        description: PROBATION VIOLATION
       - value: PVRT
-        description: "TODO(#7424): Update with definition."
+        description: PROBATION VIOLATION REPORT
   - name: WarrantReason
     description: |-
       The reason specified for issuing a warrant for an offender.
@@ -82,13 +82,13 @@ columns:
       The status of a warrant that has been issued for an offender.
     known_values:
       - value: D
-        description: "TODO(#7424): Update with definition."
+        description: DISPOSED OF
       - value: I
-        description: "TODO(#7424): Update with definition."
+        description: ISSUED
       - value: P
-        description: "TODO(#7424): Update with definition."
+        description: PENDING
       - value: S
-        description: "TODO(#7424): Update with definition."
+        description: SERVED
   - name: WarrantStatusDate
     is_datetime: True
     description: |-

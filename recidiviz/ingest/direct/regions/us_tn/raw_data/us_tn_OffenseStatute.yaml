@@ -98,133 +98,133 @@ columns:
       A categorizing code for felony offenses based on the FBI's National Incident Based Reporting System (NIBRS).
     known_values:
       - value: 09A
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 09B
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 100
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 11A
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 120
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 120A
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 13A
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 13AX
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 13AZ
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 13B
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 13C
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 13D
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 200
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 210
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 220
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 23A
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 240
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 250
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 26A
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 26B
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 26C
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 26D
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 270
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 290
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 29O
         description: "TODO(#7424): Update with definition."
       - value: 35A
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 35AZ
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 35B
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 36A
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 36B
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 370
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 39B
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 40A
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 40B
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 510
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 520
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 72O
         description: "TODO(#7424): Update with definition."
       - value: 90A
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90C
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90D
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90DA
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90F
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90G
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90Z
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90Z1
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90ZA
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90ZB
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90ZC
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90ZD
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90ZE
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90ZF
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90ZG
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90ZH
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90ZI
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90ZJ
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90ZK
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90ZL
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90ZM
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90ZN
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90ZO
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90ZP
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90ZQ
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90ZR
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: 90ZZ
-        description: "TODO(#7424): Update with definition."
+        description: 
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.

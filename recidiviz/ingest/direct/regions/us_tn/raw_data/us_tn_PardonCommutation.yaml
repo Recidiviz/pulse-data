@@ -35,17 +35,17 @@ columns:
       The type of commutation or the pardon for a sentence.
     known_values:
       - value: CS
-        description: "TODO(#7424): Update with definition."
+        description: COMMUTED TIME SERVED SUPERVSN
       - value: LI
-        description: "TODO(#7424): Update with definition."
+        description: COMMUTED LIFE
       - value: LW
-        description: "TODO(#7424): Update with definition."
+        description: COMMUTED LIFE W/O PAROLE
       - value: PA
-        description: "TODO(#7424): Update with definition."
+        description: PARDON
       - value: RT
-        description: "TODO(#7424): Update with definition."
+        description: COMMUTED REDUCED TIME SERVED
       - value: TS
-        description: "TODO(#7424): Update with definition."
+        description: COMMUTED TIME SERVED
   - name: MaxSentenceDay
     description: |-
       The maximum number of days for an offender's sentence.

@@ -20,111 +20,111 @@ columns:
       The code of an offender's relationship to a visitor.
     known_values:
       - value: AP
-        description: "TODO(#7424): Update with definition."
+        description: ADOPTIVE PARENT
       - value: AU
-        description: "TODO(#7424): Update with definition."
+        description: AUNT
       - value: BL
-        description: "TODO(#7424): Update with definition."
+        description: BROTHER-IN-LAW
       - value: BR
-        description: "TODO(#7424): Update with definition."
+        description: BROTHER
       - value: BY
-        description: "TODO(#7424): Update with definition."
+        description: BOYFRIEND
       - value: CH
-        description: "TODO(#7424): Update with definition."
+        description: COMMON LAW HUSBAND
       - value: CL
-        description: "TODO(#7424): Update with definition."
+        description: CLERGY
       - value: CO
-        description: "TODO(#7424): Update with definition."
+        description: COUSIN
       - value: CS
-        description: "TODO(#7424): Update with definition."
+        description: COHABITING SPOUSE
       - value: CW
-        description: "TODO(#7424): Update with definition."
+        description: COMMON LAW WIFE
       - value: DA
-        description: "TODO(#7424): Update with definition."
+        description: DAUGHTER
       - value: DI
-        description: "TODO(#7424): Update with definition."
+        description: DAUGHTER-IN-LAW
       - value: FA
-        description: "TODO(#7424): Update with definition."
+        description: FATHER
       - value: FC
-        description: "TODO(#7424): Update with definition."
+        description: FOSTER CHILD
       - value: FI
-        description: "TODO(#7424): Update with definition."
+        description: FIANCE
       - value: FL
-        description: "TODO(#7424): Update with definition."
+        description: FATHER-IN-LAW
       - value: FP
-        description: "TODO(#7424): Update with definition."
+        description: FOSTER PARENT
       - value: FR
-        description: "TODO(#7424): Update with definition."
+        description: FRIEND
       - value: GD
-        description: "TODO(#7424): Update with definition."
+        description: GRANDDAUGHTER
       - value: GF
-        description: "TODO(#7424): Update with definition."
+        description: GRANDFATHER
       - value: GI
-        description: "TODO(#7424): Update with definition."
+        description: GIRLFRIEND
       - value: GM
-        description: "TODO(#7424): Update with definition."
+        description: GRANDMOTHER
       - value: GS
-        description: "TODO(#7424): Update with definition."
+        description: GRANDSON
       - value: HB
-        description: "TODO(#7424): Update with definition."
+        description: HALF BROTHER
       - value: HS
-        description: "TODO(#7424): Update with definition."
+        description: HALF SISTER
       - value: HU
-        description: "TODO(#7424): Update with definition."
+        description: HUSBAND
       - value: LG
-        description: "TODO(#7424): Update with definition."
+        description: LEGAL GUARDIAN
       - value: ML
-        description: "TODO(#7424): Update with definition."
+        description: MOTHER-IN-LAW
       - value: MO
-        description: "TODO(#7424): Update with definition."
+        description: MOTHER
       - value: NE
-        description: "TODO(#7424): Update with definition."
+        description: NEPHEW
       - value: NI
-        description: "TODO(#7424): Update with definition."
+        description: NIECE
       - value: SB
-        description: "TODO(#7424): Update with definition."
+        description: STEP-BROTHER
       - value: SD
-        description: "TODO(#7424): Update with definition."
+        description: STEP-DAUGHTER
       - value: SF
-        description: "TODO(#7424): Update with definition."
+        description: STEP-FATHER
       - value: SI
-        description: "TODO(#7424): Update with definition."
+        description: SISTER
       - value: SL
-        description: "TODO(#7424): Update with definition."
+        description: SISTER-IN-LAW
       - value: SM
-        description: "TODO(#7424): Update with definition."
+        description: STEP-MOTHER
       - value: SN
-        description: "TODO(#7424): Update with definition."
+        description: SON
       - value: SO
-        description: "TODO(#7424): Update with definition."
+        description: SON-IN-LAW
       - value: SR
-        description: "TODO(#7424): Update with definition."
+        description: STEP-SISTER
       - value: SS
-        description: "TODO(#7424): Update with definition."
+        description: STEP-SON
       - value: UN
-        description: "TODO(#7424): Update with definition."
+        description: UNCLE
       - value: WI
-        description: "TODO(#7424): Update with definition."
+        description: WIFE
       - value: XH
-        description: "TODO(#7424): Update with definition."
+        description: EX-HUSBAND
       - value: XW
-        description: "TODO(#7424): Update with definition."
+        description: EX-WIFE
   - name: VisitorStatus
     description: |-
       The status of a visitor's priveleges.
     known_values:
       - value: A
-        description: "TODO(#7424): Update with definition."
+        description: APPROVED
       - value: D
-        description: "TODO(#7424): Update with definition."
+        description: DENIED
       - value: N
-        description: "TODO(#7424): Update with definition."
+        description: NO-CONTACT
       - value: P
-        description: "TODO(#7424): Update with definition."
+        description: PENDING
       - value: R
-        description: "TODO(#7424): Update with definition."
+        description: REVOKED
       - value: S
-        description: "TODO(#7424): Update with definition."
+        description: SUSPENDED
   - name: StartDate
     is_datetime: True
     description: |-
@@ -138,63 +138,63 @@ columns:
       The reason the visitation status is changed.
     known_values:
       - value: COND
-        description: "TODO(#7424): Update with definition."
+        description: CONDUCT OF VISITOR/INMATE
       - value: EXTN
-        description: "TODO(#7424): Update with definition."
+        description: EX-STATE-EMPLOYEE
       - value: FAAP
         description: "TODO(#7424): Update with definition."
       - value: FOVF
-        description: "TODO(#7424): Update with definition."
+        description: FALSIFICATION OF VISIT. FORM
       - value: FRND
-        description: "TODO(#7424): Update with definition."
+        description: ADDITIONAL FRIENDS NOT ALLOWED
       - value: FTCC
-        description: "TODO(#7424): Update with definition."
+        description: FAILURE TO CONTROL CHILDREN
       - value: ILEG
-        description: "TODO(#7424): Update with definition."
+        description: ILLEGAL ACTS
       - value: INTX
-        description: "TODO(#7424): Update with definition."
+        description: INTOXICATION
       - value: INVF
-        description: "TODO(#7424): Update with definition."
+        description: INCOMPLETE VISITATION FORM
       - value: NOAP
-        description: "TODO(#7424): Update with definition."
+        description: NO APPLICATION ON FILE
       - value: NOPM
-        description: "TODO(#7424): Update with definition."
+        description: NOTARIZED PERM. FORM NOT REC.
       - value: NWOF
-        description: "TODO(#7424): Update with definition."
+        description: NEWLY ADMITTED OFFENDER
       - value: OAVL
-        description: "TODO(#7424): Update with definition."
+        description: ON ANOTHER OFFENDER VISIT LIST
       - value: ODAD
-        description: "TODO(#7424): Update with definition."
+        description: OFFENDER DISCIPLINARY ADMIN.
       - value: ODDC
-        description: "TODO(#7424): Update with definition."
+        description: OFFENDER DISC. DRUG CONVICTION
       - value: ONAI
-        description: "TODO(#7424): Update with definition."
+        description: OFFENDER NOT AT INSTITUTION
       - value: PLTH
-        description: "TODO(#7424): Update with definition."
+        description: PERSON LESS THAN 18 YRS OLD
       - value: POPR
-        description: "TODO(#7424): Update with definition."
+        description: PERSON ON PROBATION
       - value: RFSH
-        description: "TODO(#7424): Update with definition."
+        description: REFUSED SEARCH
       - value: RISK
-        description: "TODO(#7424): Update with definition."
+        description: RISK TO SECURITY OF INSTIT
       - value: RPIR
-        description: "TODO(#7424): Update with definition."
+        description: REMOVED PER INMATE REQUEST
       - value: RPVR
-        description: "TODO(#7424): Update with definition."
+        description: REMOVED PER VISITOR'S REQUEST
       - value: SEXM
-        description: "TODO(#7424): Update with definition."
+        description: SEXUAL MISCONDUCT
       - value: SPVI
         description: "TODO(#7424): Update with definition."
       - value: STEM
-        description: "TODO(#7424): Update with definition."
+        description: STATE EMPLOYEE
       - value: VIRC
-        description: "TODO(#7424): Update with definition."
+        description: VISITATION RULE VIOLATION
       - value: VPOA
-        description: "TODO(#7424): Update with definition."
+        description: POSSESSION ALCOHOL (VISITOR)
       - value: VPOD
-        description: "TODO(#7424): Update with definition."
+        description: POSSESSION DRUGS (VISITOR)
       - value: VPOF
-        description: "TODO(#7424): Update with definition."
+        description: POSSESSION FIREARM (VISITOR)
   - name: VisitorStatusReason2
     description: |-
       The reason the visitation status is changed.
