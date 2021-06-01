@@ -18,6 +18,7 @@
 from http import HTTPStatus
 from typing import Optional
 from unittest import TestCase
+from unittest.mock import MagicMock
 
 import pytest
 from flask import Flask
@@ -34,11 +35,8 @@ from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.tests.case_triage.api_test_helpers import (
-    CaseTriageTestHelpers,
-)
+from recidiviz.tests.case_triage.api_test_helpers import CaseTriageTestHelpers
 from recidiviz.tools.postgres import local_postgres_helpers
-
 
 DEMO_USER_EMAIL = "demo_user@recidiviz.org"
 
@@ -57,7 +55,8 @@ class TestDemoUser(TestCase):
     def setUp(self) -> None:
         self.test_app = Flask(__name__)
         register_error_handlers(self.test_app)
-        api = create_api_blueprint()
+        mock_segment_client = MagicMock()
+        api = create_api_blueprint(mock_segment_client)
         self.test_app.register_blueprint(api)
         self.test_client = self.test_app.test_client()
         self.helpers = CaseTriageTestHelpers.from_test(self, self.test_app)

@@ -21,9 +21,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from recidiviz.case_triage.client_info.types import PreferredContactMethod
-from recidiviz.case_triage.demo_helpers import (
-    fake_person_id_for_demo_user,
-)
+from recidiviz.case_triage.demo_helpers import fake_person_id_for_demo_user
 from recidiviz.persistence.database.schema.case_triage.schema import (
     ClientInfo,
     ETLClient,
@@ -35,12 +33,21 @@ class ClientInfoInterface:
 
     @staticmethod
     def set_preferred_contact_method(
-        session: Session, client: ETLClient, contact_method: PreferredContactMethod
+        session: Session,
+        client: ETLClient,
+        contact_method: PreferredContactMethod,
+        *,
+        demo_user_email: Optional[str] = None
     ) -> None:
+        person_external_id = (
+            fake_person_id_for_demo_user(demo_user_email, client.person_external_id)
+            if demo_user_email
+            else client.person_external_id
+        )
         insert_statement = (
             insert(ClientInfo)
             .values(
-                person_external_id=client.person_external_id,
+                person_external_id=person_external_id,
                 state_code=client.state_code,
                 preferred_contact_method=contact_method.value,
             )
@@ -54,12 +61,21 @@ class ClientInfoInterface:
 
     @staticmethod
     def set_preferred_name(
-        session: Session, client: ETLClient, name: Optional[str]
+        session: Session,
+        client: ETLClient,
+        name: Optional[str],
+        *,
+        demo_user_email: Optional[str] = None
     ) -> None:
+        person_external_id = (
+            fake_person_id_for_demo_user(demo_user_email, client.person_external_id)
+            if demo_user_email
+            else client.person_external_id
+        )
         insert_statement = (
             insert(ClientInfo)
             .values(
-                person_external_id=client.person_external_id,
+                person_external_id=person_external_id,
                 state_code=client.state_code,
                 preferred_name=name,
             )
@@ -82,50 +98,14 @@ class DemoClientInfoInterface:
         client: ETLClient,
         contact_method: PreferredContactMethod,
     ) -> None:
-        insert_statement = (
-            insert(ClientInfo)
-            .values(
-                person_external_id=fake_person_id_for_demo_user(
-                    user_email, client.person_external_id
-                ),
-                state_code=client.state_code,
-                preferred_contact_method=contact_method.value,
-            )
-            .on_conflict_do_update(
-                constraint="unique_person",
-                set_={"preferred_contact_method": contact_method.value},
-            )
+        ClientInfoInterface.set_preferred_contact_method(
+            session, client, contact_method, demo_user_email=user_email
         )
-        session.execute(insert_statement)
-        session.commit()
 
     @staticmethod
     def set_preferred_name(
         session: Session, user_email: str, client: ETLClient, name: Optional[str]
-    ) -> ClientInfo:
-        fake_person_external_id = fake_person_id_for_demo_user(
-            user_email, client.person_external_id
-        )
-        insert_statement = (
-            insert(ClientInfo)
-            .values(
-                person_external_id=fake_person_external_id,
-                state_code=client.state_code,
-                preferred_name=name,
-            )
-            .on_conflict_do_update(
-                constraint="unique_person",
-                set_={"preferred_name": name},
-            )
-        )
-        session.execute(insert_statement)
-        session.commit()
-
-        return (
-            session.query(ClientInfo)
-            .filter(
-                ClientInfo.person_external_id == fake_person_external_id,
-                ClientInfo.state_code == client.state_code,
-            )
-            .one()
+    ) -> None:
+        ClientInfoInterface.set_preferred_name(
+            session, client, name, demo_user_email=user_email
         )
