@@ -48,14 +48,16 @@ end up with master_control_number C1.
 EXPLORE_GRAPH_BY_COLUMN_TEMPLATE = """SELECT
         control_number, inmate_number, parole_number,
         IF(new_master_control_number_candidate IS NULL OR master_control_number < new_master_control_number_candidate,
-           master_control_number,
+           CAST(master_control_number AS STRING),
            -- Cast here only necessary for view to play nicely with Postgres tests
            CAST(new_master_control_number_candidate AS STRING)
         ) AS master_control_number
       FROM (
         SELECT 
           control_number, inmate_number, parole_number, master_control_number,
-          MIN(new_row_master_control_number_candidate) OVER (PARTITION BY master_control_number) AS new_master_control_number_candidate
+          MIN(new_row_master_control_number_candidate) OVER (
+            PARTITION BY COALESCE(master_control_number, new_row_master_control_number_candidate)
+          ) AS new_master_control_number_candidate
         FROM (
           SELECT 
             primary_table.control_number, primary_table.inmate_number, primary_table.parole_number, primary_table.master_control_number,
@@ -65,7 +67,10 @@ EXPLORE_GRAPH_BY_COLUMN_TEMPLATE = """SELECT
           LEFT OUTER JOIN
             {base_table_name} control_joins
           ON primary_table.{join_col_name} = control_joins.{join_col_name} 
-            AND primary_table.master_control_number > control_joins.master_control_number
+            AND (
+                (primary_table.master_control_number IS NULL AND control_joins.master_control_number IS NOT NULL) 
+                OR primary_table.master_control_number > control_joins.master_control_number
+            )
           GROUP BY primary_table.control_number, primary_table.inmate_number, primary_table.parole_number, primary_table.master_control_number
         ) a
       ) b"""
@@ -87,15 +92,17 @@ recidiviz_master_person_ids AS (
     WITH
     distinct_control_to_inmate AS (
         SELECT
-            DISTINCT inmate_number, control_number
+            DISTINCT
+                UPPER(inmate_number) AS inmate_number,
+                UPPER(control_number) AS control_number
         FROM {{dbo_tblSearchInmateInfo}}
     ),
     inmate_to_parole_number_edges AS (
         SELECT 
-            DISTINCT ParoleNumber AS parole_number,
+            DISTINCT UPPER(ParoleNumber) AS parole_number,
             IF(
-                REGEXP_CONTAINS(ParoleInstNumber, '^[A-Z][A-Z][0-9][0-9][0-9][0-9]$'),
-                ParoleInstNumber,
+                REGEXP_CONTAINS(UPPER(ParoleInstNumber), '^[A-Z][A-Z][0-9][0-9][0-9][0-9]$'),
+                UPPER(ParoleInstNumber),
                 NULL
             ) AS inmate_number
         FROM {{dbo_ParoleCount}}
