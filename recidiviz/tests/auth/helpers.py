@@ -28,7 +28,7 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 def generate_fake_user_restrictions(
     region_code: str,
     email: str,
-    allowed_supervision_location_ids: List[str] = None,
+    allowed_supervision_location_ids: str = "",
     allowed_supervision_location_level: str = "level_1_supervision_location",
 ) -> DashboardUserRestrictions:
     return DashboardUserRestrictions(
