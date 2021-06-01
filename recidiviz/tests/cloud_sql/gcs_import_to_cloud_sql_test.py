@@ -135,12 +135,12 @@ class TestGCSImportToCloudSQL(TestCase):
         user_1 = generate_fake_user_restrictions(
             "US_PA",
             "user-3@test.gov",
-            allowed_supervision_location_ids=["1", "2"],
+            allowed_supervision_location_ids="1,2",
         )
         user_2 = generate_fake_user_restrictions(
             "US_PA",
             "user-4@test.gov",
-            allowed_supervision_location_ids=["AB"],
+            allowed_supervision_location_ids="AB",
         )
         add_users_to_database_session(self.database_key, [user_1, user_2])
 
@@ -174,7 +174,7 @@ class TestGCSImportToCloudSQL(TestCase):
         user_1 = generate_fake_user_restrictions(
             "US_PA",
             "user-3@test.gov",
-            allowed_supervision_location_ids=["1", "2"],
+            allowed_supervision_location_ids="1,2",
         )
         add_users_to_database_session(self.database_key, [user_1])
         self.mock_cloud_sql_client.import_gcs_csv.side_effect = Exception(
@@ -197,7 +197,7 @@ class TestGCSImportToCloudSQL(TestCase):
         user_1 = generate_fake_user_restrictions(
             "US_PA",
             "user-3@test.gov",
-            allowed_supervision_location_ids=["1", "2"],
+            allowed_supervision_location_ids="1,2",
         )
         add_users_to_database_session(self.database_key, [user_1])
         with self.assertRaises(Exception) as e:

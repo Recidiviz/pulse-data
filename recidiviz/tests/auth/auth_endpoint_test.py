@@ -21,7 +21,7 @@ import os
 from http import HTTPStatus
 from typing import Any, Dict, Optional
 from unittest import TestCase, mock
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import MagicMock, call, patch
 
 import flask
 import pytest
@@ -35,8 +35,8 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.auth.helpers import (
-    generate_fake_user_restrictions,
     add_users_to_database_session,
+    generate_fake_user_restrictions,
 )
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.postgres import local_postgres_helpers
@@ -265,12 +265,12 @@ class AuthEndpointTests(TestCase):
         user_1 = generate_fake_user_restrictions(
             self.region_code,
             "user-1@test.gov",
-            allowed_supervision_location_ids=["1", "2"],
+            allowed_supervision_location_ids="1,2",
         )
         user_2 = generate_fake_user_restrictions(
             self.region_code,
             "user-2@test.gov",
-            allowed_supervision_location_ids=["AB"],
+            allowed_supervision_location_ids="AB",
         )
         add_users_to_database_session(self.database_key, [user_1, user_2])
 
