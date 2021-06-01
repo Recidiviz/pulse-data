@@ -35,11 +35,11 @@ columns:
       Code used to indicate if the judgment order is illegal, incomplete, or complete/legal.
     known_values:
       - value: CL
-        description: "TODO(#7424): Update with definition."
+        description: COMPLETE/LEGAL
       - value: IL
-        description: "TODO(#7424): Update with definition."
+        description: ILLEGAL
       - value: IN
-        description: "TODO(#7424): Update with definition."
+        description: INCOMPLETE
   - name: OverridenToLegalFlag
     description: |-
       Indicator for a judgment order to tell if the judgment order has been overriden to legal.

@@ -15,41 +15,41 @@ columns:
       The type of site that an offender is assigned.
     known_values:
       - value: BC
-        description: "TODO(#7424): Update with definition."
+        description: SAIU (BOOT CAMP)
       - value: CA
-        description: "TODO(#7424): Update with definition."
+        description: COUNTY AGENCY
       - value: CC
-        description: "TODO(#7424): Update with definition."
+        description: COMMUNITY CORRECTIONS OFFICE
       - value: CK
-        description: "TODO(#7424): Update with definition."
+        description: CRIMINAL COURT CLERK
       - value: CV
-        description: "TODO(#7424): Update with definition."
+        description: CONTRACT VENDOR
       - value: DA
-        description: "TODO(#7424): Update with definition."
+        description: DISTRICT ATTORNEY'S OFFICE
       - value: IJ
-        description: "TODO(#7424): Update with definition."
+        description: INSTITUTION/JAIL
       - value: IN
-        description: "TODO(#7424): Update with definition."
+        description: ADULT INSTITUTION
       - value: JA
-        description: "TODO(#7424): Update with definition."
+        description: LOCAL JAIL
       - value: OA
-        description: "TODO(#7424): Update with definition."
+        description: OTHER STATE/FEDERAL AGENCY
       - value: PA
-        description: "TODO(#7424): Update with definition."
+        description: PAROLE OFFICE
       - value: PR
-        description: "TODO(#7424): Update with definition."
+        description: PROBATION OFFICE
       - value: PX
-        description: "TODO(#7424): Update with definition."
+        description: PROBATION-PAROLE OFFICE
       - value: TC
-        description: "TODO(#7424): Update with definition."
+        description: TDOC CENTRAL OFFICE
   - name: Status
     description: |-
       The status of a site to which an offender is assigned.
     known_values:
       - value: A
-        description: "TODO(#7424): Update with definition."
+        description: ACTIVE
       - value: I
-        description: "TODO(#7424): Update with definition."
+        description: INACTIVE
   - name: StatusDate
     is_datetime: True
     description: |-
@@ -77,13 +77,13 @@ columns:
       The highest level of inmate security that a particular TDOC institution maintains.
     known_values:
       - value: LVF
-        description: "TODO(#7424): Update with definition."
+        description: LEVEL IV
       - value: LVO
-        description: "TODO(#7424): Update with definition."
+        description: LEVEL I
       - value: LVS
-        description: "TODO(#7424): Update with definition."
+        description: LEVEL II
       - value: LVT
-        description: "TODO(#7424): Update with definition."
+        description: LEVEL III
   - name: Region
     description: |-
       A unique geographical location governed by its own administrative unit.
@@ -107,11 +107,11 @@ columns:
       This value indicates if males, females, or both can be admitted to a particular institution.
     known_values:
       - value: B
-        description: "TODO(#7424): Update with definition."
+        description: BOTH
       - value: F
-        description: "TODO(#7424): Update with definition."
+        description: FEMALE
       - value: M
-        description: "TODO(#7424): Update with definition."
+        description: MALE
   - name: ContactPerson
     description: |-
       Free form text containing the person to contact at a site.

@@ -4385,17 +4385,17 @@ columns:
       Class code assigned to a particular offense statute that is the conviction offense of an offender.
     known_values:
       - value: 1
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: A
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: B
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: C
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: D
-        description: "TODO(#7424): Update with definition."
+        description: 
       - value: E
-        description: "TODO(#7424): Update with definition."
+        description: 
   - name: IndictmentClass
     description: |-
       Felony class code for the offense that an offender is indicted.
@@ -4417,9 +4417,9 @@ columns:
       Indicator to tell whether a sentence related to a judgment order is a felony or a misdemeanor.
     known_values:
       - value: F
-        description: "TODO(#7424): Update with definition."
+        description: FELONY
       - value: M
-        description: "TODO(#7424): Update with definition."
+        description: MISDEMEANOR
   - name: OffenseDate
     is_datetime: True
     description: |-
@@ -4437,15 +4437,15 @@ columns:
       This code will be used to post the correct sentence law when inputting the judgment order in TOMIS.
     known_values:
       - value: D
-        description: "TODO(#7424): Update with definition."
+        description: DETERMINATE
       - value: I
-        description: "TODO(#7424): Update with definition."
+        description: INDETERMINATE
       - value: J
-        description: "TODO(#7424): Update with definition."
+        description: JUDGE
       - value: R
         description: "TODO(#7424): Update with definition."
       - value: X
-        description: "TODO(#7424): Update with definition."
+        description: CLASS X
   - name: SentenceOffenderType
     description: |-
       An abbreviation used for one of the types of offenders as desig- nated on the offender's judgement order.  Also the range percent used to calculate an offender's RED date will be tied to the offender type for a particular sentence law.
@@ -4453,31 +4453,31 @@ columns:
       - value: 60
         description: "TODO(#7424): Update with definition."
       - value: 70
-        description: "TODO(#7424): Update with definition."
+        description: SEVENTY PERCENT
       - value: 75
-        description: "TODO(#7424): Update with definition."
+        description: SEVENTY-FIVE PERCENT
       - value: 85
-        description: "TODO(#7424): Update with definition."
+        description: EIGHTY-FIVE PERCENT
       - value: AP
-        description: "TODO(#7424): Update with definition."
+        description: AGGRAVATED AND PERSISTENT
       - value: CR
-        description: "TODO(#7424): Update with definition."
+        description: CAREER
       - value: EA
-        description: "TODO(#7424): Update with definition."
+        description: ESPECIALLY AGGRAVATED
       - value: EM
-        description: "TODO(#7424): Update with definition."
+        description: ESPECIALLY MITIGATED
       - value: HP
-        description: "TODO(#7424): Update with definition."
+        description: HUNDRED PERCENT
       - value: M3
-        description: "TODO(#7424): Update with definition."
+        description: MITIGATED 30%
       - value: MI
-        description: "TODO(#7424): Update with definition."
+        description: MITIGATED 20%
       - value: MU
-        description: "TODO(#7424): Update with definition."
+        description: MULTIPLE
       - value: PR
-        description: "TODO(#7424): Update with definition."
+        description: PERSISTENT
       - value: ST
-        description: "TODO(#7424): Update with definition."
+        description: STANDARD
   - name: SentencedTo
     description: |-
       An abbreviation indicating where an offender sentenced in Tennessee is to serve his time.
@@ -4495,9 +4495,9 @@ columns:
       The location that an offender is to serve the rest of a split confinement.
     known_values:
       - value: CC
-        description: "TODO(#7424): Update with definition."
+        description: COMMUNITY CORRECTION
       - value: PB
-        description: "TODO(#7424): Update with definition."
+        description: PROBATION
   - name: MultipleRapistFlag
     description: |-
       Indicates if a sentence is for a multiple rape offense.

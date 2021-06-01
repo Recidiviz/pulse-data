@@ -39,115 +39,115 @@ columns:
       - value: AGCC
         description: "TODO(#7424): Update with definition."
       - value: ASIM
-        description: "TODO(#7424): Update with definition."
+        description: ALT SENT IMPOSED DATE MODIFIED
       - value: BOPM
-        description: "TODO(#7424): Update with definition."
+        description: BOARD OF PAROLE DATE MODIFIED
       - value: CMTA
-        description: "TODO(#7424): Update with definition."
+        description: COMMUTATION ADDED
       - value: CMTD
-        description: "TODO(#7424): Update with definition."
+        description: COMMUTATION DELETED
       - value: CMTM
-        description: "TODO(#7424): Update with definition."
+        description: COMMUTATION MODIFIED
       - value: CRLW
-        description: "TODO(#7424): Update with definition."
+        description: CREDIT LAW RESET TO ORIGINAL
       - value: CRWV
-        description: "TODO(#7424): Update with definition."
+        description: CREDIT LAW WAIVED
       - value: CUSM
-        description: "TODO(#7424): Update with definition."
+        description: CUSTODIAL PAROLE DATE MODIFIED
       - value: CVBC
-        description: "TODO(#7424): Update with definition."
+        description: CONV BEHAV CREDIT MODIFIED
       - value: CVDT
-        description: "TODO(#7424): Update with definition."
+        description: CONV DEAD TIME MODIFIED
       - value: CVNL
-        description: "TODO(#7424): Update with definition."
+        description: CONV NET LOSS GCC MODIFIED
       - value: CVPC
-        description: "TODO(#7424): Update with definition."
+        description: CONV PROG CREDIT MODIFIED
       - value: CVPP
-        description: "TODO(#7424): Update with definition."
+        description: CONV PPSC MODIFIED
       - value: DTRR
-        description: "TODO(#7424): Update with definition."
+        description: DETERMINATE RELEASE REPORT
       - value: JCAD
-        description: "TODO(#7424): Update with definition."
+        description: JAIL CREDITS ADDED
       - value: JCDE
-        description: "TODO(#7424): Update with definition."
+        description: JAIL CREDITS DELETED
       - value: JCMO
-        description: "TODO(#7424): Update with definition."
+        description: JAIL CREDITS MODIFIED
       - value: JLTR
-        description: "TODO(#7424): Update with definition."
+        description: JO LETTER CREATED
       - value: JOAD
-        description: "TODO(#7424): Update with definition."
+        description: JO ORIGINAL ADD
       - value: JOAM
-        description: "TODO(#7424): Update with definition."
+        description: JO AMENDED
       - value: JOCL
-        description: "TODO(#7424): Update with definition."
+        description: JO COMPLETE AND LEGAL
       - value: JOCR
-        description: "TODO(#7424): Update with definition."
+        description: JO CORRECTIONS
       - value: JOFA
-        description: "TODO(#7424): Update with definition."
+        description: JO FINAL APPEAL
       - value: JOII
-        description: "TODO(#7424): Update with definition."
+        description: JO INCOMPLETE AND ILLEGAL
       - value: JOTL
-        description: "TODO(#7424): Update with definition."
+        description: J.O. OVERRIDDEN TO LEGAL
       - value: JPCR
-        description: "TODO(#7424): Update with definition."
+        description: JO POST CONVICTION RELIEF
       - value: JRCC
-        description: "TODO(#7424): Update with definition."
+        description: JO REVOKED COMMUNITY CRCT
       - value: JRPR
-        description: "TODO(#7424): Update with definition."
+        description: JO REVOKED PROBATION
       - value: LSPR
-        description: "TODO(#7424): Update with definition."
+        description: LIFETIME SUPERVISION REMOVED
       - value: LSPY
-        description: "TODO(#7424): Update with definition."
+        description: LIFETIME SUPERVISION IMPOSED
       - value: MDAD
-        description: "TODO(#7424): Update with definition."
+        description: MANDATORY START DATE ADDED
       - value: MDCR
-        description: "TODO(#7424): Update with definition."
+        description: MANDATORY START DATE MODIFIED
       - value: MDDE
-        description: "TODO(#7424): Update with definition."
+        description: MANDATORY START DATE DELETED
       - value: PARA
-        description: "TODO(#7424): Update with definition."
+        description: PARDON ADDED
       - value: PARM
-        description: "TODO(#7424): Update with definition."
+        description: PARDON MODIFIED
       - value: RLSA
-        description: "TODO(#7424): Update with definition."
+        description: RELATED SENTENCES ADDED
       - value: RLSD
-        description: "TODO(#7424): Update with definition."
+        description: RELATED SENTENCES DELETED
       - value: RLSM
-        description: "TODO(#7424): Update with definition."
+        description: RELATED SENTENCES MODIFIED
       - value: RSNE
-        description: "TODO(#7424): Update with definition."
+        description: RELATED SENTENCES DO NOT EXIST
       - value: STAM
-        description: "TODO(#7424): Update with definition."
+        description: SENTENCE STATUS MODIFIED
       - value: STMA
-        description: "TODO(#7424): Update with definition."
+        description: TIME ADJUSTMENT ADDED
       - value: STMD
-        description: "TODO(#7424): Update with definition."
+        description: TIME ADJUSTMENT DELETED
       - value: STMM
-        description: "TODO(#7424): Update with definition."
+        description: TIME ADJUSTMENT MODIFIED
       - value: SVFL
-        description: "TODO(#7424): Update with definition."
+        description: SAVETY VALVE FLAG MODIFIED
       - value: SXTA
-        description: "TODO(#7424): Update with definition."
+        description: SENTENCE EXTENSION ADDED
       - value: SXTD
-        description: "TODO(#7424): Update with definition."
+        description: SENTENCE EXTENSION DELETED
       - value: SXTM
-        description: "TODO(#7424): Update with definition."
+        description: SENTENCE EXTENSION MODIFIED
       - value: VAMJ
-        description: "TODO(#7424): Update with definition."
+        description: VERIFIED AMENDED JO
       - value: VCOR
-        description: "TODO(#7424): Update with definition."
+        description: VERIFIED CORRECTION JO
       - value: VFAJ
-        description: "TODO(#7424): Update with definition."
+        description: VERIFIED FINAL APPEAL JO
       - value: VOJO
-        description: "TODO(#7424): Update with definition."
+        description: VERIFIED ORIGINAL JO
       - value: VPCR
-        description: "TODO(#7424): Update with definition."
+        description: VERIFIED POST CONVICTION
       - value: VPJO
-        description: "TODO(#7424): Update with definition."
+        description: VERIFIED PROBATION JO
       - value: VRVC
-        description: "TODO(#7424): Update with definition."
+        description: VERIFIED REVOKED CC
       - value: VRVP
-        description: "TODO(#7424): Update with definition."
+        description: VERIFIED REVOKED PROBATION
   - name: StaffID
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.

@@ -16,357 +16,357 @@ columns:
       This is the general type of movement of the offender and incitates the "from" and "to" locations (e.g. facility).
     known_values:
       - value: ABCC
-        description: "TODO(#7424): Update with definition."
+        description: ABSCOND TO COMMUNITY CORR
       - value: ABPA
-        description: "TODO(#7424): Update with definition."
+        description: ABSCOND TO PAROLE
       - value: ABPR
-        description: "TODO(#7424): Update with definition."
+        description: ABSCOND TO PROBATION
       - value: BOFA
-        description: "TODO(#7424): Update with definition."
+        description: BOND TO FACILITY
       - value: CCAB
-        description: "TODO(#7424): Update with definition."
+        description: COMMUNITY CORR TO ABSCOND
       - value: CCCC
-        description: "TODO(#7424): Update with definition."
+        description: COMMUNITY CORR TO COMM CORR
       - value: CCDI
-        description: "TODO(#7424): Update with definition."
+        description: COMMUNITY CORRECTIONS TO DISCH
       - value: CCFA
-        description: "TODO(#7424): Update with definition."
+        description: COMMUNITY CORR TO FACILITY
       - value: CCNC
-        description: "TODO(#7424): Update with definition."
+        description: COMMUNITY CORR TO NOT IN CSTDY
       - value: CCOJ
-        description: "TODO(#7424): Update with definition."
+        description: COMMUNITY CORR TO OTHER JURISD
       - value: CCPA
-        description: "TODO(#7424): Update with definition."
+        description: COMMUNITY CORR TO PAROLE
       - value: CCPR
-        description: "TODO(#7424): Update with definition."
+        description: COMMUNITY CORR TO PROBATION
       - value: CTCC
-        description: "TODO(#7424): Update with definition."
+        description: COURT TO COMMUNITY CORRECTIONS
       - value: CTDV
-        description: "TODO(#7424): Update with definition."
+        description: COURT TO DIVERSION
       - value: CTFA
-        description: "TODO(#7424): Update with definition."
+        description: COURT TO FACILITY
       - value: CTPR
-        description: "TODO(#7424): Update with definition."
+        description: COURT TO PROBATION
       - value: DIFA
-        description: "TODO(#7424): Update with definition."
+        description: DISCHARGE TO FACILITY
       - value: DVCT
-        description: "TODO(#7424): Update with definition."
+        description: DIVERSION TO COURT
       - value: DVDI
-        description: "TODO(#7424): Update with definition."
+        description: DIVERSION TO DISCHARGE
       - value: EIFA
-        description: "TODO(#7424): Update with definition."
+        description: EIC TO FACILITY
       - value: ESFA
-        description: "TODO(#7424): Update with definition."
+        description: ESCAPE TO FACILITY
       - value: FABO
-        description: "TODO(#7424): Update with definition."
+        description: FACILITY TO BOND
       - value: FACC
-        description: "TODO(#7424): Update with definition."
+        description: FACILITY TO COMM CORRECTIONS
       - value: FACT
-        description: "TODO(#7424): Update with definition."
+        description: FACILITY TO COURT
       - value: FADI
-        description: "TODO(#7424): Update with definition."
+        description: FACILITY TO DISCHARGE
       - value: FAEI
-        description: "TODO(#7424): Update with definition."
+        description: FACILITY TO EIC
       - value: FAES
-        description: "TODO(#7424): Update with definition."
+        description: FACILITY TO ESCAPE
       - value: FAFA
-        description: "TODO(#7424): Update with definition."
+        description: FACILITY TO FACILITY
       - value: FAFH
-        description: "TODO(#7424): Update with definition."
+        description: FACILITY TO FREEWORLD HOSPITAL
       - value: FAFU
-        description: "TODO(#7424): Update with definition."
+        description: FACILITY TO FURLOUGH OR PASS
       - value: FAOJ
-        description: "TODO(#7424): Update with definition."
+        description: FACILITY TO OTHER JURISDICTION
       - value: FAPA
-        description: "TODO(#7424): Update with definition."
+        description: FACILITY TO PAROLE
       - value: FAPR
-        description: "TODO(#7424): Update with definition."
+        description: FACILITY TO PROBATION
       - value: FAWR
-        description: "TODO(#7424): Update with definition."
+        description: FACILITY TO WORK RELEASE
       - value: FHFA
-        description: "TODO(#7424): Update with definition."
+        description: FREEWORLD HOSPITAL TO FACILITY
       - value: FUFA
-        description: "TODO(#7424): Update with definition."
+        description: FURLOUGH OR PASS TO FACILITY
       - value: NCCC
-        description: "TODO(#7424): Update with definition."
+        description: NOT IN CSTDY TO COMMUNITY CORR
       - value: NCFA
-        description: "TODO(#7424): Update with definition."
+        description: NOT IN CUSTODY TO FACILITY
       - value: NCPR
-        description: "TODO(#7424): Update with definition."
+        description: NOT IN CUSTODY TO PROBATION
       - value: OJCC
-        description: "TODO(#7424): Update with definition."
+        description: OTHER JUR TO COMMUNITY CORR
       - value: OJFA
-        description: "TODO(#7424): Update with definition."
+        description: OTHER JURISDICTION TO FACILITY
       - value: OJPA
-        description: "TODO(#7424): Update with definition."
+        description: OTHER JURISDICTION TO PAROLE
       - value: OJPR
-        description: "TODO(#7424): Update with definition."
+        description: OTHER JURISDICTION TO PBTN
       - value: PAAB
-        description: "TODO(#7424): Update with definition."
+        description: PAROLE TO ABSCOND
       - value: PADI
-        description: "TODO(#7424): Update with definition."
+        description: PAROLE TO DISCHARGE
       - value: PAFA
-        description: "TODO(#7424): Update with definition."
+        description: PAROLE TO FACILITY
       - value: PAOJ
-        description: "TODO(#7424): Update with definition."
+        description: PAROLE TO OTHER JURISDICTION
       - value: PAPA
-        description: "TODO(#7424): Update with definition."
+        description: PAROLE TO PAROLE
       - value: PRAB
-        description: "TODO(#7424): Update with definition."
+        description: PROBATION TO ABSCOND
       - value: PRCC
-        description: "TODO(#7424): Update with definition."
+        description: PROBATION TO COMMUNITY CORRECT
       - value: PRDI
-        description: "TODO(#7424): Update with definition."
+        description: PROBATION TO DISCHARGE
       - value: PRFA
-        description: "TODO(#7424): Update with definition."
+        description: PROBATION TO FACILITY
       - value: PRNC
-        description: "TODO(#7424): Update with definition."
+        description: PROBATION TO NOT IN CUSTODY
       - value: PROJ
-        description: "TODO(#7424): Update with definition."
+        description: PROBATION TO OTHER JURISDICT.
       - value: PRPA
-        description: "TODO(#7424): Update with definition."
+        description: PROBATION TO PAROLE
       - value: PRPR
-        description: "TODO(#7424): Update with definition."
+        description: PROBATION TO PROBATION
       - value: WRFA
-        description: "TODO(#7424): Update with definition."
+        description: WORK RELEASE TO FACILITY
   - name: MovementReason
     description: |-
       This is the description of the specific reason for the movement of the offender (e.g. parole revoked). The movement is temporary or permanent, based on the movement reasons.
     known_values:
       - value: 1DAY
-        description: "TODO(#7424): Update with definition."
+        description: 1-DAY FURLOUGH PASS
       - value: 3DAY
-        description: "TODO(#7424): Update with definition."
+        description: 3-DAY FURLOUGH PASS
       - value: 61DAY
-        description: "TODO(#7424): Update with definition."
+        description: 61 DAY PERMANENT RESIDENT
       - value: ABSPA
-        description: "TODO(#7424): Update with definition."
+        description: ABSCOND PAROLE
       - value: ABSTR
-        description: "TODO(#7424): Update with definition."
+        description: ABSCONDER TRANSFER TO OIC
       - value: ADMCO
-        description: "TODO(#7424): Update with definition."
+        description: ADMIN CORRECTION/COURT ORDERED
       - value: ADMDI
-        description: "TODO(#7424): Update with definition."
+        description: ADMIN DISCHARGE/COURT ORDERED
       - value: ADMIN
-        description: "TODO(#7424): Update with definition."
+        description: ADMINISTRATIVE TRANSFER
       - value: ADSEG
-        description: "TODO(#7424): Update with definition."
+        description: ADMINISTRATIVE SEGREGATION
       - value: APPDI
-        description: "TODO(#7424): Update with definition."
+        description: APPEAL DISPOSITION
       - value: BCDET
-        description: "TODO(#7424): Update with definition."
+        description: BOOT CAMP / DETAINER
       - value: BOND
-        description: "TODO(#7424): Update with definition."
+        description: BOND
       - value: BONDR
-        description: "TODO(#7424): Update with definition."
+        description: BOND RETURN
       - value: BOOTC
-        description: "TODO(#7424): Update with definition."
+        description: BOOT CAMP
       - value: CLASN
-        description: "TODO(#7424): Update with definition."
+        description: CLASSIFICATION ASSIGNMENT
       - value: CLASP
-        description: "TODO(#7424): Update with definition."
+        description: INIT. CLASS COMPL PERMANENT
       - value: CLAST
-        description: "TODO(#7424): Update with definition."
+        description: INIT. CLASS COMPL TRANSFER
       - value: CLINT
-        description: "TODO(#7424): Update with definition."
+        description: CLOSE INTEREST
       - value: COMMT
-        description: "TODO(#7424): Update with definition."
+        description: COMMUTATION
       - value: CONIN
-        description: "TODO(#7424): Update with definition."
+        description: CNDCT INCNTVE / RELEASNG TO DETNR
       - value: COURT
-        description: "TODO(#7424): Update with definition."
+        description: COURT ORDERED
       - value: CUSTY
-        description: "TODO(#7424): Update with definition."
+        description: CUSTODY LEVEL CHANGE
       - value: CWORK
-        description: "TODO(#7424): Update with definition."
+        description: COMMUNITY WORK PROGRAM
       - value: DETAN
-        description: "TODO(#7424): Update with definition."
+        description: DETAINER
       - value: DETDT
-        description: "TODO(#7424): Update with definition."
+        description: DETERMINATE RELEASE WITH DETAINER
       - value: DETRE
-        description: "TODO(#7424): Update with definition."
+        description: DETERMINATE RELEASE
       - value: DISCI
-        description: "TODO(#7424): Update with definition."
+        description: DISCIPLINARY
       - value: EXPDE
-        description: "TODO(#7424): Update with definition."
+        description: EXPIRATION / DETAINER
       - value: EXPIR
-        description: "TODO(#7424): Update with definition."
+        description: EXPIRATION OF SENTENCE
       - value: FAILB
-        description: "TODO(#7424): Update with definition."
+        description: FAILED BOOT CAMP
       - value: FAILR
-        description: "TODO(#7424): Update with definition."
+        description: FAILURE TO REPORT
       - value: FEDER
-        description: "TODO(#7424): Update with definition."
+        description: FEDERAL
       - value: FHOSP
-        description: "TODO(#7424): Update with definition."
+        description: FROM FREEWORLD HOSPITAL
       - value: FRMIN
-        description: "TODO(#7424): Update with definition."
+        description: FROM FACILITY-MINIMUM
       - value: FRSEC
-        description: "TODO(#7424): Update with definition."
+        description: FROM FACILITY-SECURE
       - value: FURLO
-        description: "TODO(#7424): Update with definition."
+        description: FURLOUGH
       - value: FURPA
-        description: "TODO(#7424): Update with definition."
+        description: FURLOUGH PASS
       - value: GTDAY
-        description: "TODO(#7424): Update with definition."
+        description: GREATER THAN 30 DAYS ON ESCAPE
       - value: IADDE
-        description: "TODO(#7424): Update with definition."
+        description: INTERSTATE ON DETAINER
       - value: INCIB
-        description: "TODO(#7424): Update with definition."
+        description: INCIDENT-BEHAVIORAL
       - value: INCIE
-        description: "TODO(#7424): Update with definition."
+        description: INCIDENT-ESCAPE OR THREAT
       - value: INCOM
-        description: "TODO(#7424): Update with definition."
+        description: INCOMPATIBLE
       - value: INCVI
-        description: "TODO(#7424): Update with definition."
+        description: INCIDENT-VIOLENCE OR THREAT
       - value: INTER
-        description: "TODO(#7424): Update with definition."
+        description: INTERNAL TRANSFER
       - value: INTRS
-        description: "TODO(#7424): Update with definition."
+        description: IN TRANSIT
       - value: ISC
-        description: "TODO(#7424): Update with definition."
+        description: ISC (ICC)
       - value: JAILT
-        description: "TODO(#7424): Update with definition."
+        description: LOCAL JAIL TRANSFER
       - value: JAORD
-        description: "TODO(#7424): Update with definition."
+        description: JAIL ORDER
       - value: JOBAS
-        description: "TODO(#7424): Update with definition."
+        description: JOB ASSIGNMENT
       - value: JOBTE
-        description: "TODO(#7424): Update with definition."
+        description: JOB ASSIGNMENT-TEMP.
       - value: JUDDE
-        description: "TODO(#7424): Update with definition."
+        description: JUDICIAL RELEASE / DETAINER
       - value: JUDRE
-        description: "TODO(#7424): Update with definition."
+        description: JUDICIAL RELEASE
       - value: LFSP
-        description: "TODO(#7424): Update with definition."
+        description: LIFETIME SUPERVISION
       - value: MANDE
-        description: "TODO(#7424): Update with definition."
+        description: MANDATORY / DETAINER
       - value: MANPA
-        description: "TODO(#7424): Update with definition."
+        description: MANDATORY PAROLE
       - value: MEDAD
-        description: "TODO(#7424): Update with definition."
+        description: MEDICAL ADMIN
       - value: MEDOJ
-        description: "TODO(#7424): Update with definition."
+        description: MED OTHER JUR
       - value: MEDRE
-        description: "TODO(#7424): Update with definition."
+        description: MEDICAL, REGULAR
       - value: MEDTE
-        description: "TODO(#7424): Update with definition."
+        description: MEDICAL, TEMPORARY
       - value: MIDIS
-        description: "TODO(#7424): Update with definition."
+        description: MISDEMEANOR DISCHARGED
       - value: MISPR
-        description: "TODO(#7424): Update with definition."
+        description: MISDEMEANOR PROBATION
       - value: MIVOK
-        description: "TODO(#7424): Update with definition."
+        description: MISDEMEANOR REVOKED
       - value: NELIG
-        description: "TODO(#7424): Update with definition."
+        description: NOT ELIGIBLE DUE TO LAW
       - value: NEWAD
-        description: "TODO(#7424): Update with definition."
+        description: NEW ADMISSION
       - value: NEWCH
-        description: "TODO(#7424): Update with definition."
+        description: NEW CHARGES
       - value: NEWCV
-        description: "TODO(#7424): Update with definition."
+        description: NEW CONVICTION
       - value: OUTCT
-        description: "TODO(#7424): Update with definition."
+        description: OUT TO COURT
       - value: OUTNO
-        description: "TODO(#7424): Update with definition."
+        description: OUT TO COURT - NO CHARGES
       - value: OUTYS
-        description: "TODO(#7424): Update with definition."
+        description: OUT TO COURT - CHARGES
       - value: PANEL
-        description: "TODO(#7424): Update with definition."
+        description: PANEL APPEARANCE
       - value: PARDO
-        description: "TODO(#7424): Update with definition."
+        description: PARDON
       - value: PASS
-        description: "TODO(#7424): Update with definition."
+        description: PASS
       - value: PAVOK
-        description: "TODO(#7424): Update with definition."
+        description: PAROLE REVOKED
       - value: PBNPA
-        description: "TODO(#7424): Update with definition."
+        description: PROBATIONARY PAROLE
       - value: PBPAD
-        description: "TODO(#7424): Update with definition."
+        description: PROBATIONARY PAROLE/DETAINER
       - value: PGMCO
-        description: "TODO(#7424): Update with definition."
+        description: PROGRAM COMPLETION
       - value: POPMG
-        description: "TODO(#7424): Update with definition."
+        description: POPULATION MANAGEMENT
       - value: PRVOK
-        description: "TODO(#7424): Update with definition."
+        description: PROBATION REVOKED
       - value: PTVOK
-        description: "TODO(#7424): Update with definition."
+        description: PARTIAL REVOCATION
       - value: RCPAR
-        description: "TODO(#7424): Update with definition."
+        description: ALREADY RECOMMENDED PAROLE
       - value: RECIS
-        description: "TODO(#7424): Update with definition."
+        description: RECISSION
       - value: REGDE
-        description: "TODO(#7424): Update with definition."
+        description: REGULAR / DETAINER
       - value: REGPA
-        description: "TODO(#7424): Update with definition."
+        description: REGULAR (PAROLE)
       - value: REGTR
-        description: "TODO(#7424): Update with definition."
+        description: REGULAR TRANSFER
       - value: REINS
-        description: "TODO(#7424): Update with definition."
+        description: REINSTATEMENT
       - value: RELED
-        description: "TODO(#7424): Update with definition."
+        description: RELEASE ELIGIBILITY/DETAINER
       - value: RELEL
-        description: "TODO(#7424): Update with definition."
+        description: RELEASE ELIGIBILITY
       - value: RESEG
-        description: "TODO(#7424): Update with definition."
+        description: RELEASE FROM ADMIN SEGREGATION
       - value: RETNO
-        description: "TODO(#7424): Update with definition."
+        description: RETURN - NO CHARGES
       - value: RETSP
-        description: "TODO(#7424): Update with definition."
+        description: RETURN SPLIT CONFINEMENT
       - value: RETWK
-        description: "TODO(#7424): Update with definition."
+        description: RETURN FROM WORK RELEASE
       - value: REVOK
-        description: "TODO(#7424): Update with definition."
+        description: REVOKED
       - value: RTABS
-        description: "TODO(#7424): Update with definition."
+        description: RETURNED ABSCONDER
       - value: RTCHG
-        description: "TODO(#7424): Update with definition."
+        description: RETURN - CHARGES
       - value: RTCUS
-        description: "TODO(#7424): Update with definition."
+        description: RETURN TO CUSTODY
       - value: RTDET
-        description: "TODO(#7424): Update with definition."
+        description: RETURN FROM DETAINER
       - value: RTESC
-        description: "TODO(#7424): Update with definition."
+        description: RETURNED ESCAPEE
       - value: RTFED
-        description: "TODO(#7424): Update with definition."
+        description: RETURN FROM FEDERAL
       - value: RTFUR
-        description: "TODO(#7424): Update with definition."
+        description: RETURN FROM FURLOUGH OR PASS
       - value: RTIAD
-        description: "TODO(#7424): Update with definition."
+        description: RETURN INTERSTATE ON DETAINER
       - value: RTMED
-        description: "TODO(#7424): Update with definition."
+        description: RET FROM OJ/MED
       - value: RTOUT
-        description: "TODO(#7424): Update with definition."
+        description: RETURN FROM OUT TO COURT
       - value: RVIA
-        description: "TODO(#7424): Update with definition."
+        description: REVOKED IN ABSENCE
       - value: SAFED
-        description: "TODO(#7424): Update with definition."
+        description: SAFETY VALVE / DETAINER
       - value: SAFEV
-        description: "TODO(#7424): Update with definition."
+        description: SAFETY VALVE
       - value: SAREC
-        description: "TODO(#7424): Update with definition."
+        description: SAFEKEEPING RECEIVED
       - value: SARET
-        description: "TODO(#7424): Update with definition."
+        description: SAFEKEEPING RETURNED
       - value: SEXOF
-        description: "TODO(#7424): Update with definition."
+        description: SEX OFFENDER TREATMENT
       - value: SICKB
-        description: "TODO(#7424): Update with definition."
+        description: SICK BED VISIT
       - value: SPLIT
-        description: "TODO(#7424): Update with definition."
+        description: SPLIT CONFINEMENT
       - value: SPLTD
-        description: "TODO(#7424): Update with definition."
+        description: SPLIT CONFINEMENT / DETAINER
       - value: SPTER
-        description: "TODO(#7424): Update with definition."
+        description: SUPERVISION TERMINATED
       - value: VIOLT
-        description: "TODO(#7424): Update with definition."
+        description: VIOLATION WARRANT-TECHNICAL
       - value: VIOLW
-        description: "TODO(#7424): Update with definition."
+        description: VIOLATION WARRANT-NEW CHARGE
       - value: WKEND
-        description: "TODO(#7424): Update with definition."
+        description: SERVING WEEKEND
       - value: WKREL
-        description: "TODO(#7424): Update with definition."
+        description: WORK/RELEASE
       - value: WKRET
-        description: "TODO(#7424): Update with definition."
+        description: WEEKEND RETURN
   - name: FromLocationID
     description: |-
       This identifies an organizational/location entity. Location may include institutions, staff agencies, hospitals, etc. This is a database element.
