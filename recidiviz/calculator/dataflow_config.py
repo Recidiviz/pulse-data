@@ -20,36 +20,40 @@ from typing import Dict, Type
 
 from recidiviz.calculator.pipeline.incarceration.metrics import (
     IncarcerationAdmissionMetric,
+    IncarcerationCommitmentFromSupervisionMetric,
+    IncarcerationMetricType,
     IncarcerationPopulationMetric,
     IncarcerationReleaseMetric,
-    IncarcerationMetricType,
-    IncarcerationCommitmentFromSupervisionMetric,
 )
 from recidiviz.calculator.pipeline.program.metrics import (
-    ProgramReferralMetric,
-    ProgramParticipationMetric,
     ProgramMetricType,
+    ProgramParticipationMetric,
+    ProgramReferralMetric,
 )
 from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismCountMetric,
-    ReincarcerationRecidivismRateMetric,
     ReincarcerationRecidivismMetricType,
+    ReincarcerationRecidivismRateMetric,
 )
 from recidiviz.calculator.pipeline.supervision.metrics import (
-    SupervisionPopulationMetric,
-    SupervisionRevocationMetric,
-    SupervisionSuccessMetric,
     SuccessfulSupervisionSentenceDaysServedMetric,
     SupervisionCaseComplianceMetric,
-    SupervisionTerminationMetric,
-    SupervisionStartMetric,
-    SupervisionOutOfStatePopulationMetric,
     SupervisionDowngradeMetric,
     SupervisionMetricType,
+    SupervisionOutOfStatePopulationMetric,
+    SupervisionPopulationMetric,
+    SupervisionRevocationMetric,
+    SupervisionStartMetric,
+    SupervisionSuccessMetric,
+    SupervisionTerminationMetric,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import (
     RecidivizMetric,
     RecidivizMetricType,
+)
+from recidiviz.calculator.pipeline.violation.metrics import (
+    ViolationMetricType,
+    ViolationWithResponseMetric,
 )
 
 STAGING_ONLY_TEMPLATES_PATH = os.path.join(
@@ -97,6 +101,8 @@ DATAFLOW_METRICS_TO_TABLES: Dict[Type[RecidivizMetric], str] = {
     SupervisionSuccessMetric: "supervision_success_metrics",
     SuccessfulSupervisionSentenceDaysServedMetric: "successful_supervision_sentence_days_served_metrics",
     SupervisionTerminationMetric: "supervision_termination_metrics",
+    # ViolationMetrics
+    ViolationWithResponseMetric: "violation_with_response_metrics",
 }
 
 # A map from the BigQuery Dataflow metric table to the RecidivizMetricType stored in the table
@@ -122,4 +128,6 @@ DATAFLOW_TABLES_TO_METRIC_TYPES: Dict[str, RecidivizMetricType] = {
     "supervision_success_metrics": SupervisionMetricType.SUPERVISION_SUCCESS,
     "successful_supervision_sentence_days_served_metrics": SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED,
     "supervision_termination_metrics": SupervisionMetricType.SUPERVISION_TERMINATION,
+    # ViolationMetrics
+    "violation_with_response_metrics": ViolationMetricType.VIOLATION,
 }

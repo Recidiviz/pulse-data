@@ -94,6 +94,12 @@ class ViolationResponseMixin(BuildableAttr):
     # Violation date - the date the violating behavior occurred, if recorded
     violation_date: Optional[datetime.date] = attr.ib(default=None)
 
+    # Whether the violation was violent in nature
+    is_violent: Optional[bool] = attr.ib(default=None)
+
+    # Whether the violation was a sex offense
+    is_sex_offense: Optional[bool] = attr.ib(default=None)
+
     # The most severe decision on the response to the associated StateSupervisionViolation
     most_severe_response_decision: Optional[
         StateSupervisionViolationResponseDecision
