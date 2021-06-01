@@ -1,5 +1,5 @@
 file_tag: OffenderContact
-file_description: |- 
+file_description: |-
   This table contains one occurrence for each offender/contact combination.
 primary_key_cols:
   - OffenderID
@@ -18,13 +18,113 @@ columns:
   - name: Relation
     description: |-
       The code of an offender's relationship to a visitor.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: AP
+        description: "TODO(#7424): Update with definition."
+      - value: AU
+        description: "TODO(#7424): Update with definition."
+      - value: BL
+        description: "TODO(#7424): Update with definition."
+      - value: BR
+        description: "TODO(#7424): Update with definition."
+      - value: BY
+        description: "TODO(#7424): Update with definition."
+      - value: CH
+        description: "TODO(#7424): Update with definition."
+      - value: CL
+        description: "TODO(#7424): Update with definition."
+      - value: CO
+        description: "TODO(#7424): Update with definition."
+      - value: CS
+        description: "TODO(#7424): Update with definition."
+      - value: CW
+        description: "TODO(#7424): Update with definition."
+      - value: DA
+        description: "TODO(#7424): Update with definition."
+      - value: DI
+        description: "TODO(#7424): Update with definition."
+      - value: FA
+        description: "TODO(#7424): Update with definition."
+      - value: FC
+        description: "TODO(#7424): Update with definition."
+      - value: FI
+        description: "TODO(#7424): Update with definition."
+      - value: FL
+        description: "TODO(#7424): Update with definition."
+      - value: FP
+        description: "TODO(#7424): Update with definition."
+      - value: FR
+        description: "TODO(#7424): Update with definition."
+      - value: GD
+        description: "TODO(#7424): Update with definition."
+      - value: GF
+        description: "TODO(#7424): Update with definition."
+      - value: GI
+        description: "TODO(#7424): Update with definition."
+      - value: GM
+        description: "TODO(#7424): Update with definition."
+      - value: GS
+        description: "TODO(#7424): Update with definition."
+      - value: HB
+        description: "TODO(#7424): Update with definition."
+      - value: HS
+        description: "TODO(#7424): Update with definition."
+      - value: HU
+        description: "TODO(#7424): Update with definition."
+      - value: LG
+        description: "TODO(#7424): Update with definition."
+      - value: ML
+        description: "TODO(#7424): Update with definition."
+      - value: MO
+        description: "TODO(#7424): Update with definition."
+      - value: NE
+        description: "TODO(#7424): Update with definition."
+      - value: NI
+        description: "TODO(#7424): Update with definition."
+      - value: SB
+        description: "TODO(#7424): Update with definition."
+      - value: SD
+        description: "TODO(#7424): Update with definition."
+      - value: SF
+        description: "TODO(#7424): Update with definition."
+      - value: SI
+        description: "TODO(#7424): Update with definition."
+      - value: SL
+        description: "TODO(#7424): Update with definition."
+      - value: SM
+        description: "TODO(#7424): Update with definition."
+      - value: SN
+        description: "TODO(#7424): Update with definition."
+      - value: SO
+        description: "TODO(#7424): Update with definition."
+      - value: SR
+        description: "TODO(#7424): Update with definition."
+      - value: SS
+        description: "TODO(#7424): Update with definition."
+      - value: UN
+        description: "TODO(#7424): Update with definition."
+      - value: WI
+        description: "TODO(#7424): Update with definition."
+      - value: XH
+        description: "TODO(#7424): Update with definition."
+      - value: XW
+        description: "TODO(#7424): Update with definition."
   - name: VisitorStatus
     description: |-
       The status of a visitor's priveleges.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: A
+        description: "TODO(#7424): Update with definition."
+      - value: D
+        description: "TODO(#7424): Update with definition."
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: P
+        description: "TODO(#7424): Update with definition."
+      - value: R
+        description: "TODO(#7424): Update with definition."
+      - value: S
+        description: "TODO(#7424): Update with definition."
   - name: StartDate
     is_datetime: True
     description: |-
@@ -36,18 +136,171 @@ columns:
   - name: VisitorStatusReason1
     description: |-
       The reason the visitation status is changed.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: COND
+        description: "TODO(#7424): Update with definition."
+      - value: EXTN
+        description: "TODO(#7424): Update with definition."
+      - value: FAAP
+        description: "TODO(#7424): Update with definition."
+      - value: FOVF
+        description: "TODO(#7424): Update with definition."
+      - value: FRND
+        description: "TODO(#7424): Update with definition."
+      - value: FTCC
+        description: "TODO(#7424): Update with definition."
+      - value: ILEG
+        description: "TODO(#7424): Update with definition."
+      - value: INTX
+        description: "TODO(#7424): Update with definition."
+      - value: INVF
+        description: "TODO(#7424): Update with definition."
+      - value: NOAP
+        description: "TODO(#7424): Update with definition."
+      - value: NOPM
+        description: "TODO(#7424): Update with definition."
+      - value: NWOF
+        description: "TODO(#7424): Update with definition."
+      - value: OAVL
+        description: "TODO(#7424): Update with definition."
+      - value: ODAD
+        description: "TODO(#7424): Update with definition."
+      - value: ODDC
+        description: "TODO(#7424): Update with definition."
+      - value: ONAI
+        description: "TODO(#7424): Update with definition."
+      - value: PLTH
+        description: "TODO(#7424): Update with definition."
+      - value: POPR
+        description: "TODO(#7424): Update with definition."
+      - value: RFSH
+        description: "TODO(#7424): Update with definition."
+      - value: RISK
+        description: "TODO(#7424): Update with definition."
+      - value: RPIR
+        description: "TODO(#7424): Update with definition."
+      - value: RPVR
+        description: "TODO(#7424): Update with definition."
+      - value: SEXM
+        description: "TODO(#7424): Update with definition."
+      - value: SPVI
+        description: "TODO(#7424): Update with definition."
+      - value: STEM
+        description: "TODO(#7424): Update with definition."
+      - value: VIRC
+        description: "TODO(#7424): Update with definition."
+      - value: VPOA
+        description: "TODO(#7424): Update with definition."
+      - value: VPOD
+        description: "TODO(#7424): Update with definition."
+      - value: VPOF
+        description: "TODO(#7424): Update with definition."
   - name: VisitorStatusReason2
     description: |-
       The reason the visitation status is changed.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: COND
+        description: "TODO(#7424): Update with definition."
+      - value: EXTN
+        description: "TODO(#7424): Update with definition."
+      - value: FOVF
+        description: "TODO(#7424): Update with definition."
+      - value: FRND
+        description: "TODO(#7424): Update with definition."
+      - value: ILEG
+        description: "TODO(#7424): Update with definition."
+      - value: INTX
+        description: "TODO(#7424): Update with definition."
+      - value: INVF
+        description: "TODO(#7424): Update with definition."
+      - value: NOAP
+        description: "TODO(#7424): Update with definition."
+      - value: NOPM
+        description: "TODO(#7424): Update with definition."
+      - value: NWOF
+        description: "TODO(#7424): Update with definition."
+      - value: OAVL
+        description: "TODO(#7424): Update with definition."
+      - value: ODAD
+        description: "TODO(#7424): Update with definition."
+      - value: ODDC
+        description: "TODO(#7424): Update with definition."
+      - value: ONAI
+        description: "TODO(#7424): Update with definition."
+      - value: PLTH
+        description: "TODO(#7424): Update with definition."
+      - value: POPR
+        description: "TODO(#7424): Update with definition."
+      - value: RFSH
+        description: "TODO(#7424): Update with definition."
+      - value: RISK
+        description: "TODO(#7424): Update with definition."
+      - value: RPIR
+        description: "TODO(#7424): Update with definition."
+      - value: RPVR
+        description: "TODO(#7424): Update with definition."
+      - value: SEXM
+        description: "TODO(#7424): Update with definition."
+      - value: STEM
+        description: "TODO(#7424): Update with definition."
+      - value: VIRC
+        description: "TODO(#7424): Update with definition."
+      - value: VPOA
+        description: "TODO(#7424): Update with definition."
+      - value: VPOD
+        description: "TODO(#7424): Update with definition."
+      - value: VPOF
+        description: "TODO(#7424): Update with definition."
   - name: VisitorStatusReason3
     description: |-
       The reason the visitation status is changed.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: COND
+        description: "TODO(#7424): Update with definition."
+      - value: EXTN
+        description: "TODO(#7424): Update with definition."
+      - value: FOVF
+        description: "TODO(#7424): Update with definition."
+      - value: FRND
+        description: "TODO(#7424): Update with definition."
+      - value: ILEG
+        description: "TODO(#7424): Update with definition."
+      - value: INTX
+        description: "TODO(#7424): Update with definition."
+      - value: INVF
+        description: "TODO(#7424): Update with definition."
+      - value: NOAP
+        description: "TODO(#7424): Update with definition."
+      - value: NOPM
+        description: "TODO(#7424): Update with definition."
+      - value: NWOF
+        description: "TODO(#7424): Update with definition."
+      - value: OAVL
+        description: "TODO(#7424): Update with definition."
+      - value: ODAD
+        description: "TODO(#7424): Update with definition."
+      - value: ODDC
+        description: "TODO(#7424): Update with definition."
+      - value: ONAI
+        description: "TODO(#7424): Update with definition."
+      - value: PLTH
+        description: "TODO(#7424): Update with definition."
+      - value: POPR
+        description: "TODO(#7424): Update with definition."
+      - value: RISK
+        description: "TODO(#7424): Update with definition."
+      - value: RPIR
+        description: "TODO(#7424): Update with definition."
+      - value: RPVR
+        description: "TODO(#7424): Update with definition."
+      - value: SEXM
+        description: "TODO(#7424): Update with definition."
+      - value: VIRC
+        description: "TODO(#7424): Update with definition."
+      - value: VPOD
+        description: "TODO(#7424): Update with definition."
+      - value: VPOF
+        description: "TODO(#7424): Update with definition."
   - name: IncidentID
     description: |-
       The unique identifier for an incident.

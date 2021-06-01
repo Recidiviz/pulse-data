@@ -19,20 +19,20 @@ columns:
     description: |-
       This is the Appointment Type Code for the Appointment Type.
     known_values:
-      - value: JOB
-        description:  TODO(#5582) - Populate with definition.
-      - value: DHR
-        description:  TODO(#5582) - Populate with definition.
-      - value: DEN
-        description:  TODO(#5582) - Populate with definition.
       - value: CLF
-        description:  TODO(#5582) - Populate with definition.
-      - value: CNS
-        description:  TODO(#5582) - Populate with definition.
+        description: TODO(#5582) - Populate with definition.
       - value: CLS
-        description:  TODO(#5582) - Populate with definition.
+        description: TODO(#5582) - Populate with definition.
+      - value: CNS
+        description: TODO(#5582) - Populate with definition.
+      - value: DEN
+        description: TODO(#5582) - Populate with definition.
+      - value: DHR
+        description: TODO(#5582) - Populate with definition.
+      - value: JOB
+        description: TODO(#5582) - Populate with definition.
       - value: RTC
-        description:  TODO(#5582) - Populate with definition.
+        description: TODO(#5582) - Populate with definition.
   - name: OffenderID
     description: |-
       This is a unique identifier assigned to a particular offender in the TOMIS system or a current, valid OBSCID ID number.

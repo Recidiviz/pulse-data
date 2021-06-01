@@ -1,5 +1,5 @@
 file_tag: PretrialJailCredits
-file_description: |- 
+file_description: |-
   This table contains one occurrence for each pre-trial credit recieved by the offender for the sentence.
 primary_key_cols:
   - OffenderID
@@ -43,8 +43,13 @@ columns:
   - name: PretrialJailCreditType
     description: |-
       Pretrial Credit Type.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: J
+        description: "TODO(#7424): Update with definition."
+      - value: R
+        description: "TODO(#7424): Update with definition."
+      - value: S
+        description: "TODO(#7424): Update with definition."
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.

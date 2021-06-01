@@ -14,8 +14,10 @@ columns:
     description: |-
       The type of detainer for an offender.  This will either be a regular detainer or a commitment detainer.
     known_values:
-      - value: "0"
+      - value: 0
         description: TODO(#7424) - Populate with definition.
+      - value: O
+        description: "TODO(#7424): Update with definition."
   - name: SequenceNumber
     description: |-
       Uniquely identifies various DB2 tables.
@@ -39,7 +41,7 @@ columns:
       This is the date that a detainer form is mailed.
   - name: LastUpdateUserID
     description: |-
-        This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

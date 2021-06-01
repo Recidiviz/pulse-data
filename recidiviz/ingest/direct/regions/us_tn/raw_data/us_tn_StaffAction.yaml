@@ -1,5 +1,5 @@
 file_tag: StaffAction
-file_description: |- 
+file_description: |-
   This table contains one occurrence for every staff action logged within the parole subsystem.
 primary_key_cols:
   - OffenderID
@@ -20,8 +20,135 @@ columns:
   - name: StaffActionType
     description: |-
       An abbreviation describing the type of action a staff member may take in regards to a parole or other type hearing.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: AAP
+        description: "TODO(#7424): Update with definition."
+      - value: ADN
+        description: "TODO(#7424): Update with definition."
+      - value: AFI
+        description: "TODO(#7424): Update with definition."
+      - value: AHS
+        description: "TODO(#7424): Update with definition."
+      - value: ATD
+        description: "TODO(#7424): Update with definition."
+      - value: BCT
+        description: "TODO(#7424): Update with definition."
+      - value: BDM
+        description: "TODO(#7424): Update with definition."
+      - value: BFC
+        description: "TODO(#7424): Update with definition."
+      - value: BFD
+        description: "TODO(#7424): Update with definition."
+      - value: BFR
+        description: "TODO(#7424): Update with definition."
+      - value: BIF
+        description: "TODO(#7424): Update with definition."
+      - value: BRE
+        description: "TODO(#7424): Update with definition."
+      - value: BRP
+        description: "TODO(#7424): Update with definition."
+      - value: BRR
+        description: "TODO(#7424): Update with definition."
+      - value: CAR
+        description: "TODO(#7424): Update with definition."
+      - value: CRI
+        description: "TODO(#7424): Update with definition."
+      - value: CTH
+        description: "TODO(#7424): Update with definition."
+      - value: DFD
+        description: "TODO(#7424): Update with definition."
+      - value: DNO
+        description: "TODO(#7424): Update with definition."
+      - value: DTV
+        description: "TODO(#7424): Update with definition."
+      - value: ERB
+        description: "TODO(#7424): Update with definition."
+      - value: FJC
+        description: "TODO(#7424): Update with definition."
+      - value: FJD
+        description: "TODO(#7424): Update with definition."
+      - value: FNC
+        description: "TODO(#7424): Update with definition."
+      - value: FNH
+        description: "TODO(#7424): Update with definition."
+      - value: FNO
+        description: "TODO(#7424): Update with definition."
+      - value: FOO
+        description: "TODO(#7424): Update with definition."
+      - value: FXN
+        description: "TODO(#7424): Update with definition."
+      - value: GNC
+        description: "TODO(#7424): Update with definition."
+      - value: GOV
+        description: "TODO(#7424): Update with definition."
+      - value: HNO
+        description: "TODO(#7424): Update with definition."
+      - value: HWS
+        description: "TODO(#7424): Update with definition."
+      - value: IPT
+        description: "TODO(#7424): Update with definition."
+      - value: ISC
+        description: "TODO(#7424): Update with definition."
+      - value: NAR
+        description: "TODO(#7424): Update with definition."
+      - value: NTY
+        description: "TODO(#7424): Update with definition."
+      - value: OFM
+        description: "TODO(#7424): Update with definition."
+      - value: PAR
+        description: "TODO(#7424): Update with definition."
+      - value: PHN
+        description: "TODO(#7424): Update with definition."
+      - value: PIN
+        description: "TODO(#7424): Update with definition."
+      - value: PRP
+        description: "TODO(#7424): Update with definition."
+      - value: PSH
+        description: "TODO(#7424): Update with definition."
+      - value: PYR
+        description: "TODO(#7424): Update with definition."
+      - value: QUO
+        description: "TODO(#7424): Update with definition."
+      - value: RAD
+        description: "TODO(#7424): Update with definition."
+      - value: RCS
+        description: "TODO(#7424): Update with definition."
+      - value: RFH
+        description: "TODO(#7424): Update with definition."
+      - value: RPA
+        description: "TODO(#7424): Update with definition."
+      - value: RPC
+        description: "TODO(#7424): Update with definition."
+      - value: RPR
+        description: "TODO(#7424): Update with definition."
+      - value: RPS
+        description: "TODO(#7424): Update with definition."
+      - value: RRA
+        description: "TODO(#7424): Update with definition."
+      - value: RRB
+        description: "TODO(#7424): Update with definition."
+      - value: RRE
+        description: "TODO(#7424): Update with definition."
+      - value: RRV
+        description: "TODO(#7424): Update with definition."
+      - value: RRW
+        description: "TODO(#7424): Update with definition."
+      - value: SHN
+        description: "TODO(#7424): Update with definition."
+      - value: SIP
+        description: "TODO(#7424): Update with definition."
+      - value: SLM
+        description: "TODO(#7424): Update with definition."
+      - value: SVR
+        description: "TODO(#7424): Update with definition."
+      - value: TCW
+        description: "TODO(#7424): Update with definition."
+      - value: TFR
+        description: "TODO(#7424): Update with definition."
+      - value: VSI
+        description: "TODO(#7424): Update with definition."
+      - value: WAR
+        description: "TODO(#7424): Update with definition."
   - name: StaffAction
     description: |-
       Free form text giving reasons for a particular action taken by a staff member.

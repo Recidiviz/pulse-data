@@ -1,5 +1,5 @@
 file_tag: ReleasePlan
-file_description: |- 
+file_description: |-
   This table contains one occurrence of each employment plan submitted by the offender for parole consideration.
 primary_key_cols:
   - OffenderID
@@ -50,8 +50,11 @@ columns:
   - name: EmployerVerified
     description: |-
       A code value describing the status of an employer contained in a parole plan or transfer in request.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: A
+        description: "TODO(#7424): Update with definition."
+      - value: D
+        description: "TODO(#7424): Update with definition."
   - name: JobTitle
     description: |-
       The first name of the offender's job.
@@ -71,39 +74,235 @@ columns:
   - name: ParolePlanFlag
     description: |-
       A field that decribes whether an offender's release plan is for release on parole.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: ParolePlanStatus
     description: |-
       The indication of whether an offender's parole plan has been approved or denied based on the status of the address and employment.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: APPROVED
+        description: "TODO(#7424): Update with definition."
+      - value: CANCELED
+        description: "TODO(#7424): Update with definition."
+      - value: DENIED
+        description: "TODO(#7424): Update with definition."
+      - value: PENDING
+        description: "TODO(#7424): Update with definition."
   - name: PayPeriod
     description: |-
       The code of the pay period of an offender for a job in the free world.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: BM
+        description: "TODO(#7424): Update with definition."
+      - value: DL
+        description: "TODO(#7424): Update with definition."
+      - value: HR
+        description: "TODO(#7424): Update with definition."
+      - value: MN
+        description: "TODO(#7424): Update with definition."
+      - value: TW
+        description: "TODO(#7424): Update with definition."
+      - value: WK
+        description: "TODO(#7424): Update with definition."
   - name: PhoneNumber
     description: |-
       The number at which someone can be reached.
   - name: ProbationPlanFlag
     description: |-
       A field that decribes whether an offender's release plan is for probation release.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: RatePayAmount
     description: |-
       Rate of Pay
   - name: Relation1
     description: |-
       The code of an offender's relationship to a visitor.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: AP
+        description: "TODO(#7424): Update with definition."
+      - value: AU
+        description: "TODO(#7424): Update with definition."
+      - value: BL
+        description: "TODO(#7424): Update with definition."
+      - value: BR
+        description: "TODO(#7424): Update with definition."
+      - value: BY
+        description: "TODO(#7424): Update with definition."
+      - value: CH
+        description: "TODO(#7424): Update with definition."
+      - value: CL
+        description: "TODO(#7424): Update with definition."
+      - value: CO
+        description: "TODO(#7424): Update with definition."
+      - value: CS
+        description: "TODO(#7424): Update with definition."
+      - value: CW
+        description: "TODO(#7424): Update with definition."
+      - value: DA
+        description: "TODO(#7424): Update with definition."
+      - value: DI
+        description: "TODO(#7424): Update with definition."
+      - value: FA
+        description: "TODO(#7424): Update with definition."
+      - value: FI
+        description: "TODO(#7424): Update with definition."
+      - value: FL
+        description: "TODO(#7424): Update with definition."
+      - value: FP
+        description: "TODO(#7424): Update with definition."
+      - value: FR
+        description: "TODO(#7424): Update with definition."
+      - value: GD
+        description: "TODO(#7424): Update with definition."
+      - value: GF
+        description: "TODO(#7424): Update with definition."
+      - value: GI
+        description: "TODO(#7424): Update with definition."
+      - value: GM
+        description: "TODO(#7424): Update with definition."
+      - value: GS
+        description: "TODO(#7424): Update with definition."
+      - value: HB
+        description: "TODO(#7424): Update with definition."
+      - value: HS
+        description: "TODO(#7424): Update with definition."
+      - value: HU
+        description: "TODO(#7424): Update with definition."
+      - value: LG
+        description: "TODO(#7424): Update with definition."
+      - value: ML
+        description: "TODO(#7424): Update with definition."
+      - value: MO
+        description: "TODO(#7424): Update with definition."
+      - value: NE
+        description: "TODO(#7424): Update with definition."
+      - value: NI
+        description: "TODO(#7424): Update with definition."
+      - value: SB
+        description: "TODO(#7424): Update with definition."
+      - value: SD
+        description: "TODO(#7424): Update with definition."
+      - value: SF
+        description: "TODO(#7424): Update with definition."
+      - value: SI
+        description: "TODO(#7424): Update with definition."
+      - value: SL
+        description: "TODO(#7424): Update with definition."
+      - value: SM
+        description: "TODO(#7424): Update with definition."
+      - value: SN
+        description: "TODO(#7424): Update with definition."
+      - value: SO
+        description: "TODO(#7424): Update with definition."
+      - value: SR
+        description: "TODO(#7424): Update with definition."
+      - value: SS
+        description: "TODO(#7424): Update with definition."
+      - value: UN
+        description: "TODO(#7424): Update with definition."
+      - value: WI
+        description: "TODO(#7424): Update with definition."
+      - value: XH
+        description: "TODO(#7424): Update with definition."
+      - value: XW
+        description: "TODO(#7424): Update with definition."
   - name: Relation2
     description: |-
       An abbreviation representing an offender's relationship to a visitor or another party.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: AP
+        description: "TODO(#7424): Update with definition."
+      - value: AU
+        description: "TODO(#7424): Update with definition."
+      - value: BL
+        description: "TODO(#7424): Update with definition."
+      - value: BR
+        description: "TODO(#7424): Update with definition."
+      - value: BY
+        description: "TODO(#7424): Update with definition."
+      - value: CL
+        description: "TODO(#7424): Update with definition."
+      - value: CO
+        description: "TODO(#7424): Update with definition."
+      - value: CS
+        description: "TODO(#7424): Update with definition."
+      - value: CW
+        description: "TODO(#7424): Update with definition."
+      - value: DA
+        description: "TODO(#7424): Update with definition."
+      - value: DI
+        description: "TODO(#7424): Update with definition."
+      - value: FA
+        description: "TODO(#7424): Update with definition."
+      - value: FI
+        description: "TODO(#7424): Update with definition."
+      - value: FL
+        description: "TODO(#7424): Update with definition."
+      - value: FP
+        description: "TODO(#7424): Update with definition."
+      - value: FR
+        description: "TODO(#7424): Update with definition."
+      - value: GD
+        description: "TODO(#7424): Update with definition."
+      - value: GF
+        description: "TODO(#7424): Update with definition."
+      - value: GI
+        description: "TODO(#7424): Update with definition."
+      - value: GM
+        description: "TODO(#7424): Update with definition."
+      - value: GS
+        description: "TODO(#7424): Update with definition."
+      - value: HB
+        description: "TODO(#7424): Update with definition."
+      - value: HS
+        description: "TODO(#7424): Update with definition."
+      - value: HU
+        description: "TODO(#7424): Update with definition."
+      - value: LG
+        description: "TODO(#7424): Update with definition."
+      - value: ML
+        description: "TODO(#7424): Update with definition."
+      - value: MO
+        description: "TODO(#7424): Update with definition."
+      - value: NE
+        description: "TODO(#7424): Update with definition."
+      - value: NI
+        description: "TODO(#7424): Update with definition."
+      - value: SB
+        description: "TODO(#7424): Update with definition."
+      - value: SD
+        description: "TODO(#7424): Update with definition."
+      - value: SF
+        description: "TODO(#7424): Update with definition."
+      - value: SI
+        description: "TODO(#7424): Update with definition."
+      - value: SL
+        description: "TODO(#7424): Update with definition."
+      - value: SM
+        description: "TODO(#7424): Update with definition."
+      - value: SN
+        description: "TODO(#7424): Update with definition."
+      - value: SO
+        description: "TODO(#7424): Update with definition."
+      - value: SR
+        description: "TODO(#7424): Update with definition."
+      - value: SS
+        description: "TODO(#7424): Update with definition."
+      - value: UN
+        description: "TODO(#7424): Update with definition."
+      - value: WI
+        description: "TODO(#7424): Update with definition."
+      - value: XH
+        description: "TODO(#7424): Update with definition."
+      - value: XW
+        description: "TODO(#7424): Update with definition."
   - name: RelationName1
     description: |-
       The name of a person related to or involved with an offender on a release plan.
@@ -119,13 +318,163 @@ columns:
   - name: ReleasedRelation1
     description: |-
       An abbreviation representing an offender's proposed relationship to visitor or another party.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: AP
+        description: "TODO(#7424): Update with definition."
+      - value: AU
+        description: "TODO(#7424): Update with definition."
+      - value: BL
+        description: "TODO(#7424): Update with definition."
+      - value: BR
+        description: "TODO(#7424): Update with definition."
+      - value: BY
+        description: "TODO(#7424): Update with definition."
+      - value: CH
+        description: "TODO(#7424): Update with definition."
+      - value: CL
+        description: "TODO(#7424): Update with definition."
+      - value: CO
+        description: "TODO(#7424): Update with definition."
+      - value: CS
+        description: "TODO(#7424): Update with definition."
+      - value: CW
+        description: "TODO(#7424): Update with definition."
+      - value: DA
+        description: "TODO(#7424): Update with definition."
+      - value: DI
+        description: "TODO(#7424): Update with definition."
+      - value: FA
+        description: "TODO(#7424): Update with definition."
+      - value: FI
+        description: "TODO(#7424): Update with definition."
+      - value: FL
+        description: "TODO(#7424): Update with definition."
+      - value: FP
+        description: "TODO(#7424): Update with definition."
+      - value: FR
+        description: "TODO(#7424): Update with definition."
+      - value: GD
+        description: "TODO(#7424): Update with definition."
+      - value: GF
+        description: "TODO(#7424): Update with definition."
+      - value: GI
+        description: "TODO(#7424): Update with definition."
+      - value: GM
+        description: "TODO(#7424): Update with definition."
+      - value: GS
+        description: "TODO(#7424): Update with definition."
+      - value: HB
+        description: "TODO(#7424): Update with definition."
+      - value: HU
+        description: "TODO(#7424): Update with definition."
+      - value: LG
+        description: "TODO(#7424): Update with definition."
+      - value: ML
+        description: "TODO(#7424): Update with definition."
+      - value: MO
+        description: "TODO(#7424): Update with definition."
+      - value: NE
+        description: "TODO(#7424): Update with definition."
+      - value: NI
+        description: "TODO(#7424): Update with definition."
+      - value: SB
+        description: "TODO(#7424): Update with definition."
+      - value: SD
+        description: "TODO(#7424): Update with definition."
+      - value: SF
+        description: "TODO(#7424): Update with definition."
+      - value: SI
+        description: "TODO(#7424): Update with definition."
+      - value: SL
+        description: "TODO(#7424): Update with definition."
+      - value: SM
+        description: "TODO(#7424): Update with definition."
+      - value: SN
+        description: "TODO(#7424): Update with definition."
+      - value: SO
+        description: "TODO(#7424): Update with definition."
+      - value: SR
+        description: "TODO(#7424): Update with definition."
+      - value: SS
+        description: "TODO(#7424): Update with definition."
+      - value: UN
+        description: "TODO(#7424): Update with definition."
+      - value: WI
+        description: "TODO(#7424): Update with definition."
+      - value: XH
+        description: "TODO(#7424): Update with definition."
+      - value: XW
+        description: "TODO(#7424): Update with definition."
   - name: ReleasedRelation2
     description: |-
       An abbreviation representing an offender's proposed relationship to visitor or another party.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: AP
+        description: "TODO(#7424): Update with definition."
+      - value: AU
+        description: "TODO(#7424): Update with definition."
+      - value: BL
+        description: "TODO(#7424): Update with definition."
+      - value: BR
+        description: "TODO(#7424): Update with definition."
+      - value: CL
+        description: "TODO(#7424): Update with definition."
+      - value: CO
+        description: "TODO(#7424): Update with definition."
+      - value: DA
+        description: "TODO(#7424): Update with definition."
+      - value: DI
+        description: "TODO(#7424): Update with definition."
+      - value: FA
+        description: "TODO(#7424): Update with definition."
+      - value: FI
+        description: "TODO(#7424): Update with definition."
+      - value: FL
+        description: "TODO(#7424): Update with definition."
+      - value: FP
+        description: "TODO(#7424): Update with definition."
+      - value: FR
+        description: "TODO(#7424): Update with definition."
+      - value: GF
+        description: "TODO(#7424): Update with definition."
+      - value: GI
+        description: "TODO(#7424): Update with definition."
+      - value: GM
+        description: "TODO(#7424): Update with definition."
+      - value: HU
+        description: "TODO(#7424): Update with definition."
+      - value: LG
+        description: "TODO(#7424): Update with definition."
+      - value: ML
+        description: "TODO(#7424): Update with definition."
+      - value: MO
+        description: "TODO(#7424): Update with definition."
+      - value: NE
+        description: "TODO(#7424): Update with definition."
+      - value: NI
+        description: "TODO(#7424): Update with definition."
+      - value: SF
+        description: "TODO(#7424): Update with definition."
+      - value: SI
+        description: "TODO(#7424): Update with definition."
+      - value: SL
+        description: "TODO(#7424): Update with definition."
+      - value: SM
+        description: "TODO(#7424): Update with definition."
+      - value: SN
+        description: "TODO(#7424): Update with definition."
+      - value: SO
+        description: "TODO(#7424): Update with definition."
+      - value: SR
+        description: "TODO(#7424): Update with definition."
+      - value: UN
+        description: "TODO(#7424): Update with definition."
+      - value: WI
+        description: "TODO(#7424): Update with definition."
+      - value: XH
+        description: "TODO(#7424): Update with definition."
+      - value: XW
+        description: "TODO(#7424): Update with definition."
   - name: ReleasedRelationName1
     description: |-
       The name of a person related to or involved with an offender on a release plan.
@@ -153,13 +502,19 @@ columns:
   - name: ResidenceVerified
     description: |-
       A code value describing the status of an address contained in a parole plan.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: A
+        description: "TODO(#7424): Update with definition."
+      - value: D
+        description: "TODO(#7424): Update with definition."
   - name: ResidenceVerified2
     description: |-
       A code value describing the status of an address contained in a parole plan.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: A
+        description: "TODO(#7424): Update with definition."
+      - value: D
+        description: "TODO(#7424): Update with definition."
   - name: StaffID
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.

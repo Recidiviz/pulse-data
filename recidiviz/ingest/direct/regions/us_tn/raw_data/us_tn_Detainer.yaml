@@ -13,8 +13,10 @@ columns:
     description: |-
       The type of detainer for an offender.  This will either be a regular detainer or a commitment detainer.
     known_values:
-      - value: "0"
+      - value: 0
         description: TODO(#7424) - Populate with definition.
+      - value: O
+        description: "TODO(#7424): Update with definition."
       - value: T
         description: TODO(#7424) - Populate with definition.
   - name: SequenceNumber
@@ -28,9 +30,9 @@ columns:
         description: TODO(#7424) - Populate with definition.
       - value: LI
         description: TODO(#7424) - Populate with definition.
-      - value: PL
-        description: TODO(#7424) - Populate with definition.
       - value: PE
+        description: TODO(#7424) - Populate with definition.
+      - value: PL
         description: TODO(#7424) - Populate with definition.
   - name: Jurisdiction
     description: |-
@@ -79,7 +81,7 @@ columns:
       This is the date that a detainer is placed by the entity that requests the individual.
   - name: DetainerPendingDate
     description: |-
-        This is the date that a detainer status is pending.
+      This is the date that a detainer status is pending.
   - name: DetainerCommitmentDate
     description: |-
       This is the date that the entity requesting an offender commits to taking the offender.
@@ -100,13 +102,13 @@ columns:
       The date information is entered into the system. This field is necessary to provide a processing audit trail.
   - name: ChargePendingFlag
     description: |-
-        This flag indicates that an offender for which a detainer is posted has charges pending.
+      This flag indicates that an offender for which a detainer is posted has charges pending.
   - name: LastModificationDate
     description: |-
       The date that an entity was last modified by a user through a TOMIS conversation.
   - name: LastUpdateUserID
     description: |-
-        This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+      This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
   - name: LastUpdateDate
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.

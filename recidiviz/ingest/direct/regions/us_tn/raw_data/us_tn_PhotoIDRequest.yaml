@@ -1,5 +1,5 @@
 file_tag: PhotoIDRequest
-file_description: |- 
+file_description: |-
   This table contains one occurrence for each photo id eligibility that is sent to the TN Dept. of Safety.  The response code and date and subsequent staff action are stored.
 primary_key_cols:
   - OffenderID
@@ -34,13 +34,25 @@ columns:
   - name: RequestRace
     description: |-
       The NCIC race code.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: A
+        description: "TODO(#7424): Update with definition."
+      - value: B
+        description: "TODO(#7424): Update with definition."
+      - value: H
+        description: "TODO(#7424): Update with definition."
+      - value: I
+        description: "TODO(#7424): Update with definition."
+      - value: W
+        description: "TODO(#7424): Update with definition."
   - name: RequestGender
     description: |-
       An abbreviation that identifies the sex of an offender.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: F
+        description: "TODO(#7424): Update with definition."
+      - value: M
+        description: "TODO(#7424): Update with definition."
   - name: RequestDriverLicenseNumber
     description: |-
       A unique identifier assigned to a driver's license by the state issuing the license.
@@ -54,13 +66,57 @@ columns:
   - name: ResponseEligibleCode
     description: |-
       Indicates the status of the eligibility response.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: 00
+        description: "TODO(#7424): Update with definition."
+      - value: 10
+        description: "TODO(#7424): Update with definition."
+      - value: 20
+        description: "TODO(#7424): Update with definition."
+      - value: 21
+        description: "TODO(#7424): Update with definition."
+      - value: 22
+        description: "TODO(#7424): Update with definition."
+      - value: 23
+        description: "TODO(#7424): Update with definition."
+      - value: 30
+        description: "TODO(#7424): Update with definition."
+      - value: 31
+        description: "TODO(#7424): Update with definition."
+      - value: 32
+        description: "TODO(#7424): Update with definition."
+      - value: 33
+        description: "TODO(#7424): Update with definition."
+      - value: 40
+        description: "TODO(#7424): Update with definition."
+      - value: 41
+        description: "TODO(#7424): Update with definition."
+      - value: 50
+        description: "TODO(#7424): Update with definition."
+      - value: 60
+        description: "TODO(#7424): Update with definition."
+      - value: 61
+        description: "TODO(#7424): Update with definition."
+      - value: 62
+        description: "TODO(#7424): Update with definition."
+      - value: 63
+        description: "TODO(#7424): Update with definition."
+      - value: 70
+        description: "TODO(#7424): Update with definition."
+      - value: 71
+        description: "TODO(#7424): Update with definition."
+      - value: 72
+        description: "TODO(#7424): Update with definition."
+      - value: 73
+        description: "TODO(#7424): Update with definition."
   - name: SubmittedApplicationFlag
     description: |-
       Indicates an application has been submitted.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: SubmittedApplicationDate
     is_datetime: True
     description: |-
@@ -68,13 +124,25 @@ columns:
   - name: NonSubmittedReason
     description: |-
       The reason something is not submitted.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: AL
+        description: "TODO(#7424): Update with definition."
+      - value: AN
+        description: "TODO(#7424): Update with definition."
+      - value: DN
+        description: "TODO(#7424): Update with definition."
+      - value: NE
+        description: "TODO(#7424): Update with definition."
+      - value: RC
+        description: "TODO(#7424): Update with definition."
   - name: IndigentFlag
     description: |-
       This indicates the offender is indigent (suffering from extreme poverty).
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: ReceivedDate
     is_datetime: True
     description: |-
@@ -104,8 +172,11 @@ columns:
   - name: IssueTypeID
     description: |-
       Code used for the Photo ID type issued from the institution.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: I
+        description: "TODO(#7424): Update with definition."
+      - value: L
+        description: "TODO(#7424): Update with definition."
   - name: InterimDocumentFiledDate
     is_datetime: True
     description: |-

@@ -1,5 +1,5 @@
 file_tag: PardonCommutationRecommendation
-file_description: |- 
+file_description: |-
   This table contains one occurrence for each pardon or commutation received by the offender.
 primary_key_cols:
   - OffenderID
@@ -17,8 +17,13 @@ columns:
   - name: HearingType
     description: |-
       An abbreviation to describe the type of hearing.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: CM
+        description: "TODO(#7424): Update with definition."
+      - value: CR
+        description: "TODO(#7424): Update with definition."
+      - value: EC
+        description: "TODO(#7424): Update with definition."
   - name: StaffID
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
@@ -28,22 +33,20 @@ columns:
   - name: ParoleCondition1
     description: |-
       An abbreviation representing an condition for parole.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: OC
+        description: "TODO(#7424): Update with definition."
   - name: ParoleCondition2
     description: |-
       An abbreviation representing an condition for parole.
-    # TODO(#7424) - Populate with definitions.
     known_values: []
   - name: ParoleCondition3
     description: |-
       An abbreviation representing an condition for parole.
-    # TODO(#7424) - Populate with definitions.
     known_values: []
   - name: ParoleCondition4
     description: |-
       An abbreviation representing an condition for parole.
-    # TODO(#7424) - Populate with definitions.
     known_values: []
   - name: Comments
     description: |-
@@ -51,8 +54,11 @@ columns:
   - name: PresentAtHearing
     description: |-
       An indicator informing whether a staff member is presiding at a meeting.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: PostedDate
     is_datetime: True
     description: |-

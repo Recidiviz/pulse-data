@@ -1,5 +1,5 @@
 file_tag: Sentence
-file_description: |- 
+file_description: |-
   This entity stores information about each sentence which applies to a certain offense.  This includes suspendedsentences, probation, SAIU, etc.
 primary_key_cols:
   - OffenderID
@@ -30,8 +30,15 @@ columns:
   - name: SentenceStatus
     description: |-
       The sentence status indicates whether a sentence is currently be- ing served in incarceration, on parole, on probation in community corrections, on probation due to determinate release, or the sentence has ended.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: AC
+        description: "TODO(#7424): Update with definition."
+      - value: CC
+        description: "TODO(#7424): Update with definition."
+      - value: IN
+        description: "TODO(#7424): Update with definition."
+      - value: PB
+        description: "TODO(#7424): Update with definition."
   - name: SentenceStatusDate
     is_datetime: True
     description: |-
@@ -111,33 +118,51 @@ columns:
   - name: InactivePardonedFlag
     description: |-
       This is a flag indicating if an offender's sentence is inactive on account of a pardon.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: InactiveDismissedFlag
     description: |-
       This is a flag indicating if an offender's sentence is inactive because it has been dismissed.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: InactiveCommutedFlag
     description: |-
       This is a flag indicating if an offender's sentence is inactive on account of a commutation.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: InactiveExpiredFlag
     description: |-
       This is a flag indicating if an offender's sentence is inactive because it has expired.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: InactiveAwaitingRetrialFlag
     description: |-
       This is a flag indicating if an offender's sentence is inactive because it is waiting a retrial.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: InactiveCourtOrderFlag
     description: |-
       This is a flag indicating if an offender's sentence is inactive on account of a court order.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: ConfinementExpirationDate
     is_datetime: True
     description: |-
@@ -164,18 +189,21 @@ columns:
   - name: SlagleFlag
     description: |-
       This flag indicates the sentence is calculated under Slagle rules.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: ViolentOneHundredPercentFlag
     description: |-
       Indicator that tells should calculate as violent 100 percent.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: NoPreviousParoleFlag
     description: |-
       The code specifying for the sentence calculations that all sentences with a sentence imposed date prior to the offense date of the current sentence should not have any parole dates calculated.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: OriginalBehaviorCredits
     description: |-
       The number of original PSRC behavior credits for a credit month

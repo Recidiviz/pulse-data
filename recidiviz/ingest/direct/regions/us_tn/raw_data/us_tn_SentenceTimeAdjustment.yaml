@@ -1,5 +1,5 @@
 file_tag: SentenceTimeAdjustment
-file_description: |- 
+file_description: |-
   This table contains information about dead, delinquent, or street time an offender has received for a particular time period for a particular sentence. There is one occurrence for each debit to the offender's sentence.
 primary_key_cols:
   - OffenderID
@@ -39,8 +39,13 @@ columns:
   - name: TimeType
     description: |-
       The type of a sentence time, either dead, delinquent or street, that an offender is serving.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: D
+        description: "TODO(#7424): Update with definition."
+      - value: L
+        description: "TODO(#7424): Update with definition."
+      - value: S
+        description: "TODO(#7424): Update with definition."
   - name: TimeReason
     description: |-
       The reason an offender is given dead, delinquent or street time.

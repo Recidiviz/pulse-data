@@ -14,13 +14,13 @@ columns:
     description: |-
       The types of committees or boards that are set up for each institution.
     known_values:
-      - value: GC
-        description: TODO(#5582) - TODO(#5582) - Populate with definition.
-      - value: PB
-        description: TODO(#5582) - TODO(#5582) - Populate with definition.
       - value: CC
         description: TODO(#5582) - TODO(#5582) - Populate with definition.
       - value: DB
+        description: TODO(#5582) - TODO(#5582) - Populate with definition.
+      - value: GC
+        description: TODO(#5582) - TODO(#5582) - Populate with definition.
+      - value: PB
         description: TODO(#5582) - TODO(#5582) - Populate with definition.
   - name: StartDate
     description: |-
@@ -46,21 +46,21 @@ columns:
     description: |-
       An abbreviation used for the type of board/committee member.
     known_values:
-      - value: IC
-        description: TODO(#5582) - Populate with definition.
-      - value: CH
-        description: TODO(#5582) - Populate with definition.
       - value: AC
-        description: TODO(#5582) - Populate with definition.
-      - value: SM
-        description: TODO(#5582) - Populate with definition.
-      - value: ME
         description: TODO(#5582) - Populate with definition.
       - value: AM
         description: TODO(#5582) - Populate with definition.
+      - value: CH
+        description: TODO(#5582) - Populate with definition.
       - value: IA
         description: TODO(#5582) - Populate with definition.
+      - value: IC
+        description: TODO(#5582) - Populate with definition.
       - value: IM
+        description: TODO(#5582) - Populate with definition.
+      - value: ME
+        description: TODO(#5582) - Populate with definition.
+      - value: SM
         description: TODO(#5582) - Populate with definition.
   - name: LastUpdateUserID
     description: |-
