@@ -1,5 +1,5 @@
 file_tag: JOMiscellaneous
-file_description: |- 
+file_description: |-
   This table contains one occurrence for each judgment order received by an offender. This table contains miscellaneous information about the judgment order.
 primary_key_cols:
   - OffenderID
@@ -33,13 +33,21 @@ columns:
   - name: JOStatus
     description: |-
       Code used to indicate if the judgment order is illegal, incomplete, or complete/legal.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: CL
+        description: "TODO(#7424): Update with definition."
+      - value: IL
+        description: "TODO(#7424): Update with definition."
+      - value: IN
+        description: "TODO(#7424): Update with definition."
   - name: OverridenToLegalFlag
     description: |-
       Indicator for a judgment order to tell if the judgment order has been overriden to legal.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: JOEntryDate
     is_datetime: True
     description: |-

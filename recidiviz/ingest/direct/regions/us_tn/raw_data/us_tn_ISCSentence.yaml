@@ -1,5 +1,5 @@
 file_tag: ISCSentence
-file_description: |- 
+file_description: |-
   This table contains one occurrence for each out of Tennessee jurisdiction sentence tracked for the offender.
 primary_key_cols:
   - OffenderID
@@ -39,8 +39,13 @@ columns:
   - name: ISCSentencyType
     description: |-
       Indicates if an offender's ISC sentence is an incarceration, pro_ bation or parole sentence.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: B
+        description: "TODO(#7424): Update with definition."
+      - value: C
+        description: "TODO(#7424): Update with definition."
+      - value: P
+        description: "TODO(#7424): Update with definition."
   - name: WarrantNumber
     description: |-
       A unique identifier number assigned to a warrant for a particular judgment order.
@@ -54,8 +59,15 @@ columns:
   - name: DispositionCase
     description: |-
       Code that tells how a case was decided, such as by guilty plea or jury verdict.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: GB
+        description: "TODO(#7424): Update with definition."
+      - value: GJ
+        description: "TODO(#7424): Update with definition."
+      - value: NC
+        description: "TODO(#7424): Update with definition."
+      - value: PG
+        description: "TODO(#7424): Update with definition."
   - name: JudgeName
     description: |-
       The name for a judge. This element is only 30 characters instead of 50 characters used for JUDGE-NAME.

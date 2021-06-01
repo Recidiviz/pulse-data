@@ -1,5 +1,5 @@
 file_tag: SupervisionStandardType
-file_description: |- 
+file_description: |-
   This table contains one occurrance for each Supervision Standard Type associated with a particular Supervision Std.
 primary_key_cols:
   - PlanType
@@ -10,8 +10,159 @@ columns:
   - name: SupervisionLevel
     description: |-
       An abbreviation for the level of supervision required to secure an offender.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: 1D1
+        description: "TODO(#7424): Update with definition."
+      - value: 1EN
+        description: "TODO(#7424): Update with definition."
+      - value: 1SA
+        description: "TODO(#7424): Update with definition."
+      - value: 2D2
+        description: "TODO(#7424): Update with definition."
+      - value: 2IN
+        description: "TODO(#7424): Update with definition."
+      - value: 2P1
+        description: "TODO(#7424): Update with definition."
+      - value: 2PV
+        description: "TODO(#7424): Update with definition."
+      - value: 3D3
+        description: "TODO(#7424): Update with definition."
+      - value: 3MA
+        description: "TODO(#7424): Update with definition."
+      - value: 3P2
+        description: "TODO(#7424): Update with definition."
+      - value: 3RE
+        description: "TODO(#7424): Update with definition."
+      - value: 4ME
+        description: "TODO(#7424): Update with definition."
+      - value: 4MI
+        description: "TODO(#7424): Update with definition."
+      - value: 4P3
+        description: "TODO(#7424): Update with definition."
+      - value: 4TR
+        description: "TODO(#7424): Update with definition."
+      - value: 6P1
+        description: "TODO(#7424): Update with definition."
+      - value: 6P2
+        description: "TODO(#7424): Update with definition."
+      - value: 6P3
+        description: "TODO(#7424): Update with definition."
+      - value: 6P4
+        description: "TODO(#7424): Update with definition."
+      - value: 9AB
+        description: "TODO(#7424): Update with definition."
+      - value: 9DP
+        description: "TODO(#7424): Update with definition."
+      - value: 9DT
+        description: "TODO(#7424): Update with definition."
+      - value: 9IC
+        description: "TODO(#7424): Update with definition."
+      - value: 9IS
+        description: "TODO(#7424): Update with definition."
+      - value: 9JS
+        description: "TODO(#7424): Update with definition."
+      - value: 9RT
+        description: "TODO(#7424): Update with definition."
+      - value: 9SD
+        description: "TODO(#7424): Update with definition."
+      - value: 9WR
+        description: "TODO(#7424): Update with definition."
+      - value: ABS
+        description: "TODO(#7424): Update with definition."
+      - value: DET
+        description: "TODO(#7424): Update with definition."
+      - value: ENH
+        description: "TODO(#7424): Update with definition."
+      - value: ICU
+        description: "TODO(#7424): Update with definition."
+      - value: IOT
+        description: "TODO(#7424): Update with definition."
+      - value: IPA
+        description: "TODO(#7424): Update with definition."
+      - value: IPR
+        description: "TODO(#7424): Update with definition."
+      - value: ISC
+        description: "TODO(#7424): Update with definition."
+      - value: JSS
+        description: "TODO(#7424): Update with definition."
+      - value: KG2
+        description: "TODO(#7424): Update with definition."
+      - value: KG3
+        description: "TODO(#7424): Update with definition."
+      - value: KGE
+        description: "TODO(#7424): Update with definition."
+      - value: KN2
+        description: "TODO(#7424): Update with definition."
+      - value: KN3
+        description: "TODO(#7424): Update with definition."
+      - value: KNE
+        description: "TODO(#7424): Update with definition."
+      - value: LOR
+        description: "TODO(#7424): Update with definition."
+      - value: MAX
+        description: "TODO(#7424): Update with definition."
+      - value: MED
+        description: "TODO(#7424): Update with definition."
+      - value: MIN
+        description: "TODO(#7424): Update with definition."
+      - value: MSD
+        description: "TODO(#7424): Update with definition."
+      - value: NIA
+        description: "TODO(#7424): Update with definition."
+      - value: QG2
+        description: "TODO(#7424): Update with definition."
+      - value: QG3
+        description: "TODO(#7424): Update with definition."
+      - value: QGE
+        description: "TODO(#7424): Update with definition."
+      - value: QN2
+        description: "TODO(#7424): Update with definition."
+      - value: QN3
+        description: "TODO(#7424): Update with definition."
+      - value: QNE
+        description: "TODO(#7424): Update with definition."
+      - value: RTP
+        description: "TODO(#7424): Update with definition."
+      - value: SDS
+        description: "TODO(#7424): Update with definition."
+      - value: VG2
+        description: "TODO(#7424): Update with definition."
+      - value: VG3
+        description: "TODO(#7424): Update with definition."
+      - value: VGE
+        description: "TODO(#7424): Update with definition."
+      - value: VN2
+        description: "TODO(#7424): Update with definition."
+      - value: VN3
+        description: "TODO(#7424): Update with definition."
+      - value: VNE
+        description: "TODO(#7424): Update with definition."
+      - value: WRB
+        description: "TODO(#7424): Update with definition."
+      - value: WRT
+        description: "TODO(#7424): Update with definition."
+      - value: XEN
+        description: "TODO(#7424): Update with definition."
+      - value: XG2
+        description: "TODO(#7424): Update with definition."
+      - value: XG3
+        description: "TODO(#7424): Update with definition."
+      - value: XGE
+        description: "TODO(#7424): Update with definition."
+      - value: XMD
+        description: "TODO(#7424): Update with definition."
+      - value: XMX
+        description: "TODO(#7424): Update with definition."
+      - value: XN2
+        description: "TODO(#7424): Update with definition."
+      - value: XN3
+        description: "TODO(#7424): Update with definition."
+      - value: XNE
+        description: "TODO(#7424): Update with definition."
+      - value: XPA
+        description: "TODO(#7424): Update with definition."
+      - value: XPR
+        description: "TODO(#7424): Update with definition."
   - name: StandardStartDate
     is_datetime: True
     description: |-
@@ -19,8 +170,47 @@ columns:
   - name: StandardType
     description: |-
       An abbreviation for available supervision standard type codes for a particular supervision standard.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: ARR
+        description: "TODO(#7424): Update with definition."
+      - value: BBN
+        description: "TODO(#7424): Update with definition."
+      - value: COL
+        description: "TODO(#7424): Update with definition."
+      - value: DRU
+        description: "TODO(#7424): Update with definition."
+      - value: EMP
+        description: "TODO(#7424): Update with definition."
+      - value: FAC
+        description: "TODO(#7424): Update with definition."
+      - value: FEE
+        description: "TODO(#7424): Update with definition."
+      - value: HOM
+        description: "TODO(#7424): Update with definition."
+      - value: ISC
+        description: "TODO(#7424): Update with definition."
+      - value: MAI
+        description: "TODO(#7424): Update with definition."
+      - value: OCP
+        description: "TODO(#7424): Update with definition."
+      - value: ORP
+        description: "TODO(#7424): Update with definition."
+      - value: POL
+        description: "TODO(#7424): Update with definition."
+      - value: RIS
+        description: "TODO(#7424): Update with definition."
+      - value: RSS
+        description: "TODO(#7424): Update with definition."
+      - value: SOR
+        description: "TODO(#7424): Update with definition."
+      - value: SOT
+        description: "TODO(#7424): Update with definition."
+      - value: SPE
+        description: "TODO(#7424): Update with definition."
+      - value: VAS
+        description: "TODO(#7424): Update with definition."
+      - value: VER
+        description: "TODO(#7424): Update with definition."
   - name: StandardFrequency
     description: |-
       The number of times supervision standard is required to be met.

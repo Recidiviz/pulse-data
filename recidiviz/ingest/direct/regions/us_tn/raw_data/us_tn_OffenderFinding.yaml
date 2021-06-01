@@ -1,5 +1,5 @@
 file_tag: OffenderFinding
-file_description: |- 
+file_description: |-
   This table contains one occurrence for each finding that is discovered about the offender. These findings include counselling, drug treatment, AA, etc.
 primary_key_cols: []
 columns:
@@ -13,8 +13,65 @@ columns:
   - name: FindingType
     description: |-
       The type of finding about an offender as observed by the arresting officer or TDOC staff.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: AL
+        description: "TODO(#7424): Update with definition."
+      - value: AP
+        description: "TODO(#7424): Update with definition."
+      - value: AS
+        description: "TODO(#7424): Update with definition."
+      - value: CC
+        description: "TODO(#7424): Update with definition."
+      - value: CF
+        description: "TODO(#7424): Update with definition."
+      - value: CP
+        description: "TODO(#7424): Update with definition."
+      - value: CS
+        description: "TODO(#7424): Update with definition."
+      - value: EI
+        description: "TODO(#7424): Update with definition."
+      - value: GP
+        description: "TODO(#7424): Update with definition."
+      - value: IP
+        description: "TODO(#7424): Update with definition."
+      - value: MP
+        description: "TODO(#7424): Update with definition."
+      - value: MS
+        description: "TODO(#7424): Update with definition."
+      - value: NA
+        description: "TODO(#7424): Update with definition."
+      - value: ON
+        description: "TODO(#7424): Update with definition."
+      - value: OR
+        description: "TODO(#7424): Update with definition."
+      - value: PC
+        description: "TODO(#7424): Update with definition."
+      - value: PI
+        description: "TODO(#7424): Update with definition."
+      - value: PM
+        description: "TODO(#7424): Update with definition."
+      - value: PP
+        description: "TODO(#7424): Update with definition."
+      - value: PS
+        description: "TODO(#7424): Update with definition."
+      - value: PT
+        description: "TODO(#7424): Update with definition."
+      - value: QQ
+        description: "TODO(#7424): Update with definition."
+      - value: SI
+        description: "TODO(#7424): Update with definition."
+      - value: SK
+        description: "TODO(#7424): Update with definition."
+      - value: SS
+        description: "TODO(#7424): Update with definition."
+      - value: TC
+        description: "TODO(#7424): Update with definition."
+      - value: TV
+        description: "TODO(#7424): Update with definition."
+      - value: WR
+        description: "TODO(#7424): Update with definition."
+      - value: WS
+        description: "TODO(#7424): Update with definition."
   - name: StaffID
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.

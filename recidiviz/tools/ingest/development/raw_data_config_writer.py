@@ -54,6 +54,9 @@ class RawDataConfigWriter:
         return known_values_string
 
     def _generate_individual_column_string(self, column: RawTableColumnInfo) -> str:
+        if column is None or column.name is None:
+            return ""
+
         column_string = f"  - name: {column.name}"
         if column.is_datetime:
             column_string += "\n    is_datetime: True"

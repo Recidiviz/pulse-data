@@ -1,5 +1,5 @@
 file_tag: Warrant
-file_description: |- 
+file_description: |-
   This table contains one occurrance of each warrant served on the offender.
 primary_key_cols:
   - OffenderID
@@ -22,18 +22,55 @@ columns:
   - name: WarrantType
     description: |-
       The type of warrant that is requested and/or issued for an offender.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: CCOV
+        description: "TODO(#7424): Update with definition."
+      - value: COMV
+        description: "TODO(#7424): Update with definition."
+      - value: PARV
+        description: "TODO(#7424): Update with definition."
+      - value: PROV
+        description: "TODO(#7424): Update with definition."
+      - value: PVRT
+        description: "TODO(#7424): Update with definition."
   - name: WarrantReason
     description: |-
       The reason specified for issuing a warrant for an offender.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: COMV
+        description: "TODO(#7424): Update with definition."
+      - value: CRAR
+        description: "TODO(#7424): Update with definition."
+      - value: CRAW
+        description: "TODO(#7424): Update with definition."
+      - value: CRNC
+        description: "TODO(#7424): Update with definition."
+      - value: CRRE
+        description: "TODO(#7424): Update with definition."
+      - value: CRVI
+        description: "TODO(#7424): Update with definition."
+      - value: CVTE
+        description: "TODO(#7424): Update with definition."
+      - value: PARV
+        description: "TODO(#7424): Update with definition."
+      - value: TVAB
+        description: "TODO(#7424): Update with definition."
+      - value: TVCV
+        description: "TODO(#7424): Update with definition."
+      - value: TVFV
+        description: "TODO(#7424): Update with definition."
+      - value: TVIO
+        description: "TODO(#7424): Update with definition."
+      - value: TVRE
+        description: "TODO(#7424): Update with definition."
   - name: BOPApprovedFlag
     description: |-
       The indicator for a warrant approved by Board of Paroles.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: PersonID
     description: |-
       This is a unique identifier assigned to a particular person. This database element will be displayed on screen and reports as either TOMIS-ID or STAFF-ID depending on the functional requirements.
@@ -43,8 +80,15 @@ columns:
   - name: WarrantStatus
     description: |-
       The status of a warrant that has been issued for an offender.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: D
+        description: "TODO(#7424): Update with definition."
+      - value: I
+        description: "TODO(#7424): Update with definition."
+      - value: P
+        description: "TODO(#7424): Update with definition."
+      - value: S
+        description: "TODO(#7424): Update with definition."
   - name: WarrantStatusDate
     is_datetime: True
     description: |-

@@ -1,5 +1,5 @@
 file_tag: Staff
-file_description: |- 
+file_description: |-
   This entity contains descriptive information about each employee in the Tennessee Department of Corrections or other agency utilizing the TOMIS system.
 primary_key_cols:
   - StaffID
@@ -13,8 +13,81 @@ columns:
   - name: UserClass
     description: |-
       The user class is a group of users with the same security access. A user class is made up of many users.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: AN
+        description: "TODO(#7424): Update with definition."
+      - value: BC
+        description: "TODO(#7424): Update with definition."
+      - value: BG
+        description: "TODO(#7424): Update with definition."
+      - value: BJ
+        description: "TODO(#7424): Update with definition."
+      - value: BK
+        description: "TODO(#7424): Update with definition."
+      - value: BV
+        description: "TODO(#7424): Update with definition."
+      - value: CA
+        description: "TODO(#7424): Update with definition."
+      - value: CB
+        description: "TODO(#7424): Update with definition."
+      - value: CC
+        description: "TODO(#7424): Update with definition."
+      - value: CD
+        description: "TODO(#7424): Update with definition."
+      - value: CE
+        description: "TODO(#7424): Update with definition."
+      - value: CF
+        description: "TODO(#7424): Update with definition."
+      - value: CG
+        description: "TODO(#7424): Update with definition."
+      - value: CH
+        description: "TODO(#7424): Update with definition."
+      - value: CI
+        description: "TODO(#7424): Update with definition."
+      - value: CJ
+        description: "TODO(#7424): Update with definition."
+      - value: CK
+        description: "TODO(#7424): Update with definition."
+      - value: CL
+        description: "TODO(#7424): Update with definition."
+      - value: CM
+        description: "TODO(#7424): Update with definition."
+      - value: CN
+        description: "TODO(#7424): Update with definition."
+      - value: CO
+        description: "TODO(#7424): Update with definition."
+      - value: CP
+        description: "TODO(#7424): Update with definition."
+      - value: CQ
+        description: "TODO(#7424): Update with definition."
+      - value: CR
+        description: "TODO(#7424): Update with definition."
+      - value: CS
+        description: "TODO(#7424): Update with definition."
+      - value: DA
+        description: "TODO(#7424): Update with definition."
+      - value: NULL
+        description: "TODO(#7424): Update with definition."
+      - value: X3
+        description: "TODO(#7424): Update with definition."
+      - value: X5
+        description: "TODO(#7424): Update with definition."
+      - value: X9
+        description: "TODO(#7424): Update with definition."
+      - value: XA
+        description: "TODO(#7424): Update with definition."
+      - value: XB
+        description: "TODO(#7424): Update with definition."
+      - value: YA
+        description: "TODO(#7424): Update with definition."
+      - value: YY
+        description: "TODO(#7424): Update with definition."
+      - value: YZ
+        description: "TODO(#7424): Update with definition."
+      - value: Z9
+        description: "TODO(#7424): Update with definition."
+      - value: ZZ
+        description: "TODO(#7424): Update with definition."
   - name: UserClassDate
     is_datetime: True
     description: |-
@@ -22,8 +95,15 @@ columns:
   - name: SecurityStatus
     description: |-
       This field describes the security status code for a user ID.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: A
+        description: "TODO(#7424): Update with definition."
+      - value: I
+        description: "TODO(#7424): Update with definition."
+      - value: NULL
+        description: "TODO(#7424): Update with definition."
+      - value: R
+        description: "TODO(#7424): Update with definition."
   - name: SecurityStatusDate
     is_datetime: True
     description: |-
@@ -40,13 +120,27 @@ columns:
   - name: Race
     description: |-
       The NCIC race code.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: A
+        description: "TODO(#7424): Update with definition."
+      - value: B
+        description: "TODO(#7424): Update with definition."
+      - value: H
+        description: "TODO(#7424): Update with definition."
+      - value: I
+        description: "TODO(#7424): Update with definition."
+      - value: W
+        description: "TODO(#7424): Update with definition."
   - name: Sex
     description: |-
       An abbreviation that identifies the sex of an offender.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: F
+        description: "TODO(#7424): Update with definition."
+      - value: M
+        description: "TODO(#7424): Update with definition."
+      - value: U
+        description: "TODO(#7424): Update with definition."
   - name: DriverLicenseNumber
     description: |-
       A unique identifier assigned to a driver's license by the state issuing the license.
@@ -63,8 +157,11 @@ columns:
   - name: Status
     description: |-
       The status of a staff person in the TOMIS system. This status will change over the career of the individual, and can be changed at any time.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: A
+        description: "TODO(#7424): Update with definition."
+      - value: I
+        description: "TODO(#7424): Update with definition."
   - name: StatusDate
     is_datetime: True
     description: |-

@@ -1,5 +1,5 @@
 file_tag: OffenderMovement
-file_description: |- 
+file_description: |-
   This table contains one occurrence for every arrivel and/or departure of an offender from an institution.
 primary_key_cols:
   - OffenderID
@@ -14,13 +14,359 @@ columns:
   - name: MovementType
     description: |-
       This is the general type of movement of the offender and incitates the "from" and "to" locations (e.g. facility).
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: ABCC
+        description: "TODO(#7424): Update with definition."
+      - value: ABPA
+        description: "TODO(#7424): Update with definition."
+      - value: ABPR
+        description: "TODO(#7424): Update with definition."
+      - value: BOFA
+        description: "TODO(#7424): Update with definition."
+      - value: CCAB
+        description: "TODO(#7424): Update with definition."
+      - value: CCCC
+        description: "TODO(#7424): Update with definition."
+      - value: CCDI
+        description: "TODO(#7424): Update with definition."
+      - value: CCFA
+        description: "TODO(#7424): Update with definition."
+      - value: CCNC
+        description: "TODO(#7424): Update with definition."
+      - value: CCOJ
+        description: "TODO(#7424): Update with definition."
+      - value: CCPA
+        description: "TODO(#7424): Update with definition."
+      - value: CCPR
+        description: "TODO(#7424): Update with definition."
+      - value: CTCC
+        description: "TODO(#7424): Update with definition."
+      - value: CTDV
+        description: "TODO(#7424): Update with definition."
+      - value: CTFA
+        description: "TODO(#7424): Update with definition."
+      - value: CTPR
+        description: "TODO(#7424): Update with definition."
+      - value: DIFA
+        description: "TODO(#7424): Update with definition."
+      - value: DVCT
+        description: "TODO(#7424): Update with definition."
+      - value: DVDI
+        description: "TODO(#7424): Update with definition."
+      - value: EIFA
+        description: "TODO(#7424): Update with definition."
+      - value: ESFA
+        description: "TODO(#7424): Update with definition."
+      - value: FABO
+        description: "TODO(#7424): Update with definition."
+      - value: FACC
+        description: "TODO(#7424): Update with definition."
+      - value: FACT
+        description: "TODO(#7424): Update with definition."
+      - value: FADI
+        description: "TODO(#7424): Update with definition."
+      - value: FAEI
+        description: "TODO(#7424): Update with definition."
+      - value: FAES
+        description: "TODO(#7424): Update with definition."
+      - value: FAFA
+        description: "TODO(#7424): Update with definition."
+      - value: FAFH
+        description: "TODO(#7424): Update with definition."
+      - value: FAFU
+        description: "TODO(#7424): Update with definition."
+      - value: FAOJ
+        description: "TODO(#7424): Update with definition."
+      - value: FAPA
+        description: "TODO(#7424): Update with definition."
+      - value: FAPR
+        description: "TODO(#7424): Update with definition."
+      - value: FAWR
+        description: "TODO(#7424): Update with definition."
+      - value: FHFA
+        description: "TODO(#7424): Update with definition."
+      - value: FUFA
+        description: "TODO(#7424): Update with definition."
+      - value: NCCC
+        description: "TODO(#7424): Update with definition."
+      - value: NCFA
+        description: "TODO(#7424): Update with definition."
+      - value: NCPR
+        description: "TODO(#7424): Update with definition."
+      - value: OJCC
+        description: "TODO(#7424): Update with definition."
+      - value: OJFA
+        description: "TODO(#7424): Update with definition."
+      - value: OJPA
+        description: "TODO(#7424): Update with definition."
+      - value: OJPR
+        description: "TODO(#7424): Update with definition."
+      - value: PAAB
+        description: "TODO(#7424): Update with definition."
+      - value: PADI
+        description: "TODO(#7424): Update with definition."
+      - value: PAFA
+        description: "TODO(#7424): Update with definition."
+      - value: PAOJ
+        description: "TODO(#7424): Update with definition."
+      - value: PAPA
+        description: "TODO(#7424): Update with definition."
+      - value: PRAB
+        description: "TODO(#7424): Update with definition."
+      - value: PRCC
+        description: "TODO(#7424): Update with definition."
+      - value: PRDI
+        description: "TODO(#7424): Update with definition."
+      - value: PRFA
+        description: "TODO(#7424): Update with definition."
+      - value: PRNC
+        description: "TODO(#7424): Update with definition."
+      - value: PROJ
+        description: "TODO(#7424): Update with definition."
+      - value: PRPA
+        description: "TODO(#7424): Update with definition."
+      - value: PRPR
+        description: "TODO(#7424): Update with definition."
+      - value: WRFA
+        description: "TODO(#7424): Update with definition."
   - name: MovementReason
     description: |-
       This is the description of the specific reason for the movement of the offender (e.g. parole revoked). The movement is temporary or permanent, based on the movement reasons.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: 1DAY
+        description: "TODO(#7424): Update with definition."
+      - value: 3DAY
+        description: "TODO(#7424): Update with definition."
+      - value: 61DAY
+        description: "TODO(#7424): Update with definition."
+      - value: ABSPA
+        description: "TODO(#7424): Update with definition."
+      - value: ABSTR
+        description: "TODO(#7424): Update with definition."
+      - value: ADMCO
+        description: "TODO(#7424): Update with definition."
+      - value: ADMDI
+        description: "TODO(#7424): Update with definition."
+      - value: ADMIN
+        description: "TODO(#7424): Update with definition."
+      - value: ADSEG
+        description: "TODO(#7424): Update with definition."
+      - value: APPDI
+        description: "TODO(#7424): Update with definition."
+      - value: BCDET
+        description: "TODO(#7424): Update with definition."
+      - value: BOND
+        description: "TODO(#7424): Update with definition."
+      - value: BONDR
+        description: "TODO(#7424): Update with definition."
+      - value: BOOTC
+        description: "TODO(#7424): Update with definition."
+      - value: CLASN
+        description: "TODO(#7424): Update with definition."
+      - value: CLASP
+        description: "TODO(#7424): Update with definition."
+      - value: CLAST
+        description: "TODO(#7424): Update with definition."
+      - value: CLINT
+        description: "TODO(#7424): Update with definition."
+      - value: COMMT
+        description: "TODO(#7424): Update with definition."
+      - value: CONIN
+        description: "TODO(#7424): Update with definition."
+      - value: COURT
+        description: "TODO(#7424): Update with definition."
+      - value: CUSTY
+        description: "TODO(#7424): Update with definition."
+      - value: CWORK
+        description: "TODO(#7424): Update with definition."
+      - value: DETAN
+        description: "TODO(#7424): Update with definition."
+      - value: DETDT
+        description: "TODO(#7424): Update with definition."
+      - value: DETRE
+        description: "TODO(#7424): Update with definition."
+      - value: DISCI
+        description: "TODO(#7424): Update with definition."
+      - value: EXPDE
+        description: "TODO(#7424): Update with definition."
+      - value: EXPIR
+        description: "TODO(#7424): Update with definition."
+      - value: FAILB
+        description: "TODO(#7424): Update with definition."
+      - value: FAILR
+        description: "TODO(#7424): Update with definition."
+      - value: FEDER
+        description: "TODO(#7424): Update with definition."
+      - value: FHOSP
+        description: "TODO(#7424): Update with definition."
+      - value: FRMIN
+        description: "TODO(#7424): Update with definition."
+      - value: FRSEC
+        description: "TODO(#7424): Update with definition."
+      - value: FURLO
+        description: "TODO(#7424): Update with definition."
+      - value: FURPA
+        description: "TODO(#7424): Update with definition."
+      - value: GTDAY
+        description: "TODO(#7424): Update with definition."
+      - value: IADDE
+        description: "TODO(#7424): Update with definition."
+      - value: INCIB
+        description: "TODO(#7424): Update with definition."
+      - value: INCIE
+        description: "TODO(#7424): Update with definition."
+      - value: INCOM
+        description: "TODO(#7424): Update with definition."
+      - value: INCVI
+        description: "TODO(#7424): Update with definition."
+      - value: INTER
+        description: "TODO(#7424): Update with definition."
+      - value: INTRS
+        description: "TODO(#7424): Update with definition."
+      - value: ISC
+        description: "TODO(#7424): Update with definition."
+      - value: JAILT
+        description: "TODO(#7424): Update with definition."
+      - value: JAORD
+        description: "TODO(#7424): Update with definition."
+      - value: JOBAS
+        description: "TODO(#7424): Update with definition."
+      - value: JOBTE
+        description: "TODO(#7424): Update with definition."
+      - value: JUDDE
+        description: "TODO(#7424): Update with definition."
+      - value: JUDRE
+        description: "TODO(#7424): Update with definition."
+      - value: LFSP
+        description: "TODO(#7424): Update with definition."
+      - value: MANDE
+        description: "TODO(#7424): Update with definition."
+      - value: MANPA
+        description: "TODO(#7424): Update with definition."
+      - value: MEDAD
+        description: "TODO(#7424): Update with definition."
+      - value: MEDOJ
+        description: "TODO(#7424): Update with definition."
+      - value: MEDRE
+        description: "TODO(#7424): Update with definition."
+      - value: MEDTE
+        description: "TODO(#7424): Update with definition."
+      - value: MIDIS
+        description: "TODO(#7424): Update with definition."
+      - value: MISPR
+        description: "TODO(#7424): Update with definition."
+      - value: MIVOK
+        description: "TODO(#7424): Update with definition."
+      - value: NELIG
+        description: "TODO(#7424): Update with definition."
+      - value: NEWAD
+        description: "TODO(#7424): Update with definition."
+      - value: NEWCH
+        description: "TODO(#7424): Update with definition."
+      - value: NEWCV
+        description: "TODO(#7424): Update with definition."
+      - value: OUTCT
+        description: "TODO(#7424): Update with definition."
+      - value: OUTNO
+        description: "TODO(#7424): Update with definition."
+      - value: OUTYS
+        description: "TODO(#7424): Update with definition."
+      - value: PANEL
+        description: "TODO(#7424): Update with definition."
+      - value: PARDO
+        description: "TODO(#7424): Update with definition."
+      - value: PASS
+        description: "TODO(#7424): Update with definition."
+      - value: PAVOK
+        description: "TODO(#7424): Update with definition."
+      - value: PBNPA
+        description: "TODO(#7424): Update with definition."
+      - value: PBPAD
+        description: "TODO(#7424): Update with definition."
+      - value: PGMCO
+        description: "TODO(#7424): Update with definition."
+      - value: POPMG
+        description: "TODO(#7424): Update with definition."
+      - value: PRVOK
+        description: "TODO(#7424): Update with definition."
+      - value: PTVOK
+        description: "TODO(#7424): Update with definition."
+      - value: RCPAR
+        description: "TODO(#7424): Update with definition."
+      - value: RECIS
+        description: "TODO(#7424): Update with definition."
+      - value: REGDE
+        description: "TODO(#7424): Update with definition."
+      - value: REGPA
+        description: "TODO(#7424): Update with definition."
+      - value: REGTR
+        description: "TODO(#7424): Update with definition."
+      - value: REINS
+        description: "TODO(#7424): Update with definition."
+      - value: RELED
+        description: "TODO(#7424): Update with definition."
+      - value: RELEL
+        description: "TODO(#7424): Update with definition."
+      - value: RESEG
+        description: "TODO(#7424): Update with definition."
+      - value: RETNO
+        description: "TODO(#7424): Update with definition."
+      - value: RETSP
+        description: "TODO(#7424): Update with definition."
+      - value: RETWK
+        description: "TODO(#7424): Update with definition."
+      - value: REVOK
+        description: "TODO(#7424): Update with definition."
+      - value: RTABS
+        description: "TODO(#7424): Update with definition."
+      - value: RTCHG
+        description: "TODO(#7424): Update with definition."
+      - value: RTCUS
+        description: "TODO(#7424): Update with definition."
+      - value: RTDET
+        description: "TODO(#7424): Update with definition."
+      - value: RTESC
+        description: "TODO(#7424): Update with definition."
+      - value: RTFED
+        description: "TODO(#7424): Update with definition."
+      - value: RTFUR
+        description: "TODO(#7424): Update with definition."
+      - value: RTIAD
+        description: "TODO(#7424): Update with definition."
+      - value: RTMED
+        description: "TODO(#7424): Update with definition."
+      - value: RTOUT
+        description: "TODO(#7424): Update with definition."
+      - value: RVIA
+        description: "TODO(#7424): Update with definition."
+      - value: SAFED
+        description: "TODO(#7424): Update with definition."
+      - value: SAFEV
+        description: "TODO(#7424): Update with definition."
+      - value: SAREC
+        description: "TODO(#7424): Update with definition."
+      - value: SARET
+        description: "TODO(#7424): Update with definition."
+      - value: SEXOF
+        description: "TODO(#7424): Update with definition."
+      - value: SICKB
+        description: "TODO(#7424): Update with definition."
+      - value: SPLIT
+        description: "TODO(#7424): Update with definition."
+      - value: SPLTD
+        description: "TODO(#7424): Update with definition."
+      - value: SPTER
+        description: "TODO(#7424): Update with definition."
+      - value: VIOLT
+        description: "TODO(#7424): Update with definition."
+      - value: VIOLW
+        description: "TODO(#7424): Update with definition."
+      - value: WKEND
+        description: "TODO(#7424): Update with definition."
+      - value: WKREL
+        description: "TODO(#7424): Update with definition."
+      - value: WKRET
+        description: "TODO(#7424): Update with definition."
   - name: FromLocationID
     description: |-
       This identifies an organizational/location entity. Location may include institutions, staff agencies, hospitals, etc. This is a database element.
@@ -30,8 +376,45 @@ columns:
   - name: ArrivalDepartureFlag
     description: |-
       This indicates that the user is entereing either an arrival or a departure.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: ","
+        description: "TODO(#7424): Update with definition."
+      - value: "."
+        description: "TODO(#7424): Update with definition."
+      - value: 0
+        description: "TODO(#7424): Update with definition."
+      - value: 1
+        description: "TODO(#7424): Update with definition."
+      - value: 3
+        description: "TODO(#7424): Update with definition."
+      - value: 6
+        description: "TODO(#7424): Update with definition."
+      - value: "@"
+        description: "TODO(#7424): Update with definition."
+      - value: A
+        description: "TODO(#7424): Update with definition."
+      - value: B
+        description: "TODO(#7424): Update with definition."
+      - value: D
+        description: "TODO(#7424): Update with definition."
+      - value: E
+        description: "TODO(#7424): Update with definition."
+      - value: F
+        description: "TODO(#7424): Update with definition."
+      - value: I
+        description: "TODO(#7424): Update with definition."
+      - value: M
+        description: "TODO(#7424): Update with definition."
+      - value: P
+        description: "TODO(#7424): Update with definition."
+      - value: Q
+        description: "TODO(#7424): Update with definition."
+      - value: S
+        description: "TODO(#7424): Update with definition."
+      - value: T
+        description: "TODO(#7424): Update with definition."
+      - value: "`"
+        description: "TODO(#7424): Update with definition."
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.

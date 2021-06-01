@@ -1,5 +1,5 @@
 file_tag: SentenceAction
-file_description: |- 
+file_description: |-
   This table contains one occurrence for sentence action that is posted for the specified sentence.
 primary_key_cols:
   - OffenderID
@@ -35,8 +35,119 @@ columns:
   - name: SentenceAction
     description: |-
       The actions that can occur to a sentence.  Sentence actions also include all things that can occur to the judgment order.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: AGCC
+        description: "TODO(#7424): Update with definition."
+      - value: ASIM
+        description: "TODO(#7424): Update with definition."
+      - value: BOPM
+        description: "TODO(#7424): Update with definition."
+      - value: CMTA
+        description: "TODO(#7424): Update with definition."
+      - value: CMTD
+        description: "TODO(#7424): Update with definition."
+      - value: CMTM
+        description: "TODO(#7424): Update with definition."
+      - value: CRLW
+        description: "TODO(#7424): Update with definition."
+      - value: CRWV
+        description: "TODO(#7424): Update with definition."
+      - value: CUSM
+        description: "TODO(#7424): Update with definition."
+      - value: CVBC
+        description: "TODO(#7424): Update with definition."
+      - value: CVDT
+        description: "TODO(#7424): Update with definition."
+      - value: CVNL
+        description: "TODO(#7424): Update with definition."
+      - value: CVPC
+        description: "TODO(#7424): Update with definition."
+      - value: CVPP
+        description: "TODO(#7424): Update with definition."
+      - value: DTRR
+        description: "TODO(#7424): Update with definition."
+      - value: JCAD
+        description: "TODO(#7424): Update with definition."
+      - value: JCDE
+        description: "TODO(#7424): Update with definition."
+      - value: JCMO
+        description: "TODO(#7424): Update with definition."
+      - value: JLTR
+        description: "TODO(#7424): Update with definition."
+      - value: JOAD
+        description: "TODO(#7424): Update with definition."
+      - value: JOAM
+        description: "TODO(#7424): Update with definition."
+      - value: JOCL
+        description: "TODO(#7424): Update with definition."
+      - value: JOCR
+        description: "TODO(#7424): Update with definition."
+      - value: JOFA
+        description: "TODO(#7424): Update with definition."
+      - value: JOII
+        description: "TODO(#7424): Update with definition."
+      - value: JOTL
+        description: "TODO(#7424): Update with definition."
+      - value: JPCR
+        description: "TODO(#7424): Update with definition."
+      - value: JRCC
+        description: "TODO(#7424): Update with definition."
+      - value: JRPR
+        description: "TODO(#7424): Update with definition."
+      - value: LSPR
+        description: "TODO(#7424): Update with definition."
+      - value: LSPY
+        description: "TODO(#7424): Update with definition."
+      - value: MDAD
+        description: "TODO(#7424): Update with definition."
+      - value: MDCR
+        description: "TODO(#7424): Update with definition."
+      - value: MDDE
+        description: "TODO(#7424): Update with definition."
+      - value: PARA
+        description: "TODO(#7424): Update with definition."
+      - value: PARM
+        description: "TODO(#7424): Update with definition."
+      - value: RLSA
+        description: "TODO(#7424): Update with definition."
+      - value: RLSD
+        description: "TODO(#7424): Update with definition."
+      - value: RLSM
+        description: "TODO(#7424): Update with definition."
+      - value: RSNE
+        description: "TODO(#7424): Update with definition."
+      - value: STAM
+        description: "TODO(#7424): Update with definition."
+      - value: STMA
+        description: "TODO(#7424): Update with definition."
+      - value: STMD
+        description: "TODO(#7424): Update with definition."
+      - value: STMM
+        description: "TODO(#7424): Update with definition."
+      - value: SVFL
+        description: "TODO(#7424): Update with definition."
+      - value: SXTA
+        description: "TODO(#7424): Update with definition."
+      - value: SXTD
+        description: "TODO(#7424): Update with definition."
+      - value: SXTM
+        description: "TODO(#7424): Update with definition."
+      - value: VAMJ
+        description: "TODO(#7424): Update with definition."
+      - value: VCOR
+        description: "TODO(#7424): Update with definition."
+      - value: VFAJ
+        description: "TODO(#7424): Update with definition."
+      - value: VOJO
+        description: "TODO(#7424): Update with definition."
+      - value: VPCR
+        description: "TODO(#7424): Update with definition."
+      - value: VPJO
+        description: "TODO(#7424): Update with definition."
+      - value: VRVC
+        description: "TODO(#7424): Update with definition."
+      - value: VRVP
+        description: "TODO(#7424): Update with definition."
   - name: StaffID
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.

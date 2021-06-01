@@ -1,5 +1,5 @@
 file_tag: InterestedPartyComment
-file_description: |- 
+file_description: |-
   This table contains one occurrence for each set of comments made by an interested party regarding an offender before his parole hearing.
 primary_key_cols:
   - OffenderID
@@ -35,13 +35,77 @@ columns:
   - name: NoteType
     description: |-
       A specific type of notification which an interested party requests about an offender.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: DEC
+        description: "TODO(#7424): Update with definition."
+      - value: DNN
+        description: "TODO(#7424): Update with definition."
+      - value: DRL
+        description: "TODO(#7424): Update with definition."
+      - value: EXP
+        description: "TODO(#7424): Update with definition."
+      - value: HDE
+        description: "TODO(#7424): Update with definition."
+      - value: HDR
+        description: "TODO(#7424): Update with definition."
+      - value: HRG
+        description: "TODO(#7424): Update with definition."
+      - value: HRL
+        description: "TODO(#7424): Update with definition."
+      - value: LTR
+        description: "TODO(#7424): Update with definition."
+      - value: REL
+        description: "TODO(#7424): Update with definition."
   - name: PartyType
     description: |-
       The type of party which would be interested in information concerning an offender's parole.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: AT
+        description: "TODO(#7424): Update with definition."
+      - value: CP
+        description: "TODO(#7424): Update with definition."
+      - value: DA
+        description: "TODO(#7424): Update with definition."
+      - value: DE
+        description: "TODO(#7424): Update with definition."
+      - value: DT
+        description: "TODO(#7424): Update with definition."
+      - value: GN
+        description: "TODO(#7424): Update with definition."
+      - value: HS
+        description: "TODO(#7424): Update with definition."
+      - value: JU
+        description: "TODO(#7424): Update with definition."
+      - value: LG
+        description: "TODO(#7424): Update with definition."
+      - value: OA
+        description: "TODO(#7424): Update with definition."
+      - value: OP
+        description: "TODO(#7424): Update with definition."
+      - value: PB
+        description: "TODO(#7424): Update with definition."
+      - value: PR
+        description: "TODO(#7424): Update with definition."
+      - value: PU
+        description: "TODO(#7424): Update with definition."
+      - value: RR
+        description: "TODO(#7424): Update with definition."
+      - value: SH
+        description: "TODO(#7424): Update with definition."
+      - value: SP
+        description: "TODO(#7424): Update with definition."
+      - value: VF
+        description: "TODO(#7424): Update with definition."
+      - value: VI
+        description: "TODO(#7424): Update with definition."
+      - value: VO
+        description: "TODO(#7424): Update with definition."
+      - value: VT
+        description: "TODO(#7424): Update with definition."
+      - value: VW
+        description: "TODO(#7424): Update with definition."
+      - value: WI
+        description: "TODO(#7424): Update with definition."
   - name: ParoleStatement
     description: |-
       Free form text submitted by an interested party to the Board of Parole regarding the parole of an offender.
@@ -55,8 +119,11 @@ columns:
   - name: NewLetterFlag
     description: |-
       This flag indicates a new victim letter is to be produced informing the victim or victim family member of VOICE information.
-    # TODO(#7424) - Populate with definitions.
-    known_values: []
+    known_values:
+      - value: N
+        description: "TODO(#7424): Update with definition."
+      - value: Y
+        description: "TODO(#7424): Update with definition."
   - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
