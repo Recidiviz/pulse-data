@@ -271,6 +271,7 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
                     product
                 )
                 expected_docs = """#TEST PRODUCT
+Test Product description
 ##SHIPPED STATES
   - [Test State](../../states/test_state.md)
 
