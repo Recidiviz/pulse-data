@@ -1,5 +1,4 @@
 # List of products with their required exports and statuses
-# TODO(#7063): Add product descriptions
 
 products:
   - name: Admin Panel
@@ -30,7 +29,7 @@ products:
       - state_code: US_ND
         environment: production
   - name: Justice Counts
-    description: TODO(#7063) - Add meaningful description
+    description: The Justice Counts Data Dashboards are designed to keep policymakers and other actors in the CJ arena informed of basic trends on the corrections systems in all fifty states.
     is_state_agnostic: True
     exports:
       - JUSTICE_COUNTS
@@ -55,7 +54,7 @@ products:
       - state_code: US_PA
         environment: staging
   - name: Public Dashboard
-    description: TODO(#7063) - Add meaningful description
+    description: The Public Dashboard (Spotlight) is a public data portal designed to make criminal justice data more accessible to public stakeholders. It accomplishes this through a series of interactive data visualizations on key metrics (such as populations or admission reasons) and holistic, data-driven narratives on what's happening in the system as a whole.
     exports:
       - PUBLIC_DASHBOARD
     states:
