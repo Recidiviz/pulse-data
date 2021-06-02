@@ -644,7 +644,6 @@ class CalculationDocumentationGenerator:
         """Returns a string containing all relevant information for a given product
         including name, views used, source tables, and required metrics."""
 
-        # TODO(#7063): Add product descriptions
         documentation = f"#{product.name.upper()}\n"
         documentation += product.description + "\n"
 
