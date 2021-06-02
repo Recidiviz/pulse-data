@@ -17,18 +17,17 @@
 """Tests for base_upload_state_files_to_ingest_bucket_controller.py"""
 import datetime
 import unittest
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.results import MultiRequestResult
-from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
-    PostgresDirectIngestRawFileMetadataManager,
-)
 from recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller import (
     UploadStateFilesToIngestBucketController,
 )
+from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
+    PostgresDirectIngestRawFileMetadataManager,
+)
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
-
 
 TODAY = datetime.datetime.today()
 
@@ -38,6 +37,11 @@ TODAY = datetime.datetime.today()
     PostgresDirectIngestRawFileMetadataManager,
     "has_raw_file_been_processed",
     lambda _, path: "skipped" in path.abs_path(),
+)
+@patch.object(
+    PostgresDirectIngestRawFileMetadataManager,
+    "has_raw_file_been_discovered",
+    lambda _, path: "discovered" in path.abs_path(),
 )
 class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
     """Tests for UploadStateFilesToIngestBucketController."""
@@ -194,7 +198,7 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
         ]
         self.assertListEqual(result, controller.get_paths_to_upload())
 
-    def test_skip_already_processed_files(
+    def test_skip_already_processed_or_discovered_files(
         self,
         mock_fs_factory: Mock,
     ) -> None:
@@ -211,11 +215,18 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
             ),
             local_path=None,
         )
-        # The file metadata manager method has been mocked to skip files with the
-        # phrase "skipped" in the name.
+
         mock_fs.test_add_path(
             path=GcsfsFilePath.from_bucket_and_blob_name(
-                "recidiviz-456-direct-ingest-state-us-xx", "raw_data/skipped.csv"
+                "recidiviz-456-direct-ingest-state-us-xx",
+                "raw_data/skipped.csv",
+            ),
+            local_path=None,
+        )
+        mock_fs.test_add_path(
+            path=GcsfsFilePath.from_bucket_and_blob_name(
+                "recidiviz-456-direct-ingest-state-us-xx",
+                "raw_data/discovered.csv",
             ),
             local_path=None,
         )
@@ -234,6 +245,10 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
                     "recidiviz-456-direct-ingest-state-us-xx/raw_data/skipped.csv",
                     TODAY,
                 ),
+                (
+                    "recidiviz-456-direct-ingest-state-us-xx/raw_data/discovered.csv",
+                    TODAY,
+                ),
             ],
             project_id="recidiviz-456",
             region="us_xx",
@@ -250,5 +265,6 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
             controller.skipped_files,
             [
                 "recidiviz-456-direct-ingest-state-us-xx/raw_data/skipped.csv",
+                "recidiviz-456-direct-ingest-state-us-xx/raw_data/discovered.csv",
             ],
         )

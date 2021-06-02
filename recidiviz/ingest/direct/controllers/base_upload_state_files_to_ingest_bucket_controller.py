@@ -21,26 +21,26 @@ import logging
 import os
 from mimetypes import guess_type
 from multiprocessing.pool import ThreadPool
-from typing import Optional, List, Tuple
+from typing import List, Optional, Tuple
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import (
+    GcsfsBucketPath,
     GcsfsDirectoryPath,
     GcsfsFilePath,
-    GcsfsBucketPath,
 )
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.results import MultiRequestResult
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
-    to_normalized_unprocessed_file_path,
     DirectIngestGCSFileSystem,
+    to_normalized_unprocessed_file_path,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    gcsfs_direct_ingest_bucket_for_region,
     GcsfsDirectIngestFileType,
+    gcsfs_direct_ingest_bucket_for_region,
 )
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
@@ -187,8 +187,14 @@ class UploadStateFilesToIngestBucketController(
         full_file_upload_path: GcsfsFilePath,
     ) -> None:
         """Moves a file within GCS to the appropriate bucket if it has not already been deemed
-        processed by the file metadata manager."""
-        if not self.postgres_direct_ingest_file_metadata_manager.has_raw_file_been_processed(
+        processed or discovered by the file metadata manager.
+
+        We check both processed and discovered because a file may be discovered and awaiting to be
+        ingested, so we will not re-upload. We check processed because a file may have already been
+        ingested, but has been deleted from the bucket."""
+        if not self.postgres_direct_ingest_file_metadata_manager.has_raw_file_been_discovered(
+            full_file_upload_path
+        ) and not self.postgres_direct_ingest_file_metadata_manager.has_raw_file_been_processed(
             full_file_upload_path
         ):
             try:
