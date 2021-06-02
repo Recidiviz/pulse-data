@@ -16,15 +16,15 @@
 # =============================================================================
 
 """Recidivism metrics we calculate."""
-
+import abc
 from datetime import date
 from typing import Optional
 
 import attr
 
 from recidiviz.calculator.pipeline.utils.metric_utils import (
-    RecidivizMetric,
     PersonLevelMetric,
+    RecidivizMetric,
     RecidivizMetricType,
 )
 
@@ -65,6 +65,11 @@ class ReincarcerationRecidivismMetric(
     # County of residence
     county_of_residence: Optional[str] = attr.ib(default=None)
 
+    @classmethod
+    @abc.abstractmethod
+    def get_description(cls) -> str:
+        """Should be implemented by metric subclasses to return a description of the metric."""
+
 
 @attr.s
 class ReincarcerationRecidivismCountMetric(ReincarcerationRecidivismMetric):
@@ -73,6 +78,10 @@ class ReincarcerationRecidivismCountMetric(ReincarcerationRecidivismMetric):
     A recidivism count metric contains the number of reincarceration returns in a given window, with a start and end
     date.
     """
+
+    @classmethod
+    def get_description(cls) -> str:
+        return "TODO(#7563): Add ReincarcerationRecidivismCountMetric description"
 
     # Required characteristics
 
@@ -100,6 +109,10 @@ class ReincarcerationRecidivismRateMetric(ReincarcerationRecidivismMetric):
     A recidivism rate metric contains a recidivism rate, including the numerator of total instances of recidivism and a
     denominator of total instances of release from incarceration.
     """
+
+    @classmethod
+    def get_description(cls) -> str:
+        return "TODO(#7563): Add ReincarcerationRecidivismRateMetric description"
 
     # Required characteristics
 

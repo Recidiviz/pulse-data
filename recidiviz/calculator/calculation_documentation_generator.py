@@ -111,6 +111,7 @@ This view may not be deployed to all environments yet.<br/>
 
 # TODO(#7563): Include more thorough documentation for each metric.
 METRIC_DOCS_TEMPLATE = """##{metric_name}
+{description}
 
 ####Metric attributes in Big Query
 
@@ -993,6 +994,7 @@ class CalculationDocumentationGenerator:
         writer = MarkdownTableWriter(
             headers=headers, value_matrix=table_matrix, margin=0
         )
+
         documentation = METRIC_DOCS_TEMPLATE.format(
             staging_link=BQ_LINK_TEMPLATE.format(
                 project="recidiviz-staging",
@@ -1005,6 +1007,7 @@ class CalculationDocumentationGenerator:
                 table_id=metric_table_id,
             ),
             metric_name=metric.__name__,
+            description=metric.get_description(),
             metrics_cadence_table=writer.dumps(),
             metric_table_id=metric_table_id,
         )

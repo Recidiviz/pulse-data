@@ -20,15 +20,15 @@ import tempfile
 import unittest
 from filecmp import dircmp
 
-from mock import patch, MagicMock
+from mock import MagicMock, patch
 
 import recidiviz
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import DagKey
 from recidiviz.calculator.calculation_documentation_generator import (
-    CalculationDocumentationGenerator,
     CALC_DOCS_PATH,
+    CalculationDocumentationGenerator,
     PipelineMetricInfo,
     StateMetricInfo,
     generate_calculation_documentation,
@@ -404,7 +404,9 @@ This view may not be deployed to all environments yet.<br/>
         docs = self.docs_generator._get_metric_information(  # pylint: disable=W0212
             IncarcerationAdmissionMetric
         )
-        expected_documentation_string = """##IncarcerationAdmissionMetric
+        description = IncarcerationAdmissionMetric.get_description()
+        expected_documentation_string = f"""##IncarcerationAdmissionMetric
+{description}
 
 ####Metric attributes in Big Query
 
