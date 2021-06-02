@@ -54,8 +54,8 @@ export const fetchDataFreshness = async (): Promise<Response> => {
 };
 
 export {
-  fetchETLViewIds,
   fetchEmailStateCodes,
+  fetchETLViewIds,
   generateCaseUpdatesExport,
   getPOFeedback,
   runCloudSQLImport,
@@ -68,9 +68,13 @@ export {
 } from "./DataDiscovery";
 export type { Message } from "./DataDiscovery";
 export {
+  acquireBQExportLock,
+  exportDatabaseToGCS,
   fetchIngestStateCodes,
   getIngestInstanceSummaries,
   getIngestQueuesState,
+  importDatabaseFromGCS,
+  releaseBQExportLock,
   startIngestRun,
   updateIngestQueuesState,
 } from "./IngestOperations";

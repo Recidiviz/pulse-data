@@ -20,27 +20,22 @@
 import abc
 import datetime
 import logging
-from typing import Optional, List
+from typing import List, Optional
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
-from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
-    GCSPseudoLockAlreadyExists,
-)
+from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsFilePath,
     GcsfsBucketPath,
     GcsfsDirectoryPath,
+    GcsfsFilePath,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.ingest_metadata import (
-    IngestMetadata,
-    SystemLevel,
-)
+from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
-    DirectIngestGCSFileSystem,
     SPLIT_FILE_SUFFIX,
+    DirectIngestGCSFileSystem,
     to_normalized_unprocessed_file_path,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_ingest_view_export_manager import (
@@ -49,11 +44,11 @@ from recidiviz.ingest.direct.controllers.direct_ingest_ingest_view_export_manage
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
-    DirectIngestRegionLockManager,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportManager,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
+    DirectIngestRegionLockManager,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
@@ -62,13 +57,13 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer imp
     GcsfsDirectIngestJobPrioritizer,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsIngestArgs,
-    filename_parts_from_path,
     GcsfsDirectIngestFileType,
+    GcsfsIngestArgs,
+    GcsfsIngestViewExportArgs,
+    GcsfsRawDataBQImportArgs,
+    filename_parts_from_path,
     gcsfs_direct_ingest_storage_directory_path_for_region,
     gcsfs_direct_ingest_temporary_output_directory_path,
-    GcsfsRawDataBQImportArgs,
-    GcsfsIngestViewExportArgs,
 )
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestFileMetadataManager,
@@ -83,15 +78,8 @@ from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorT
 from recidiviz.ingest.ingestor import Ingestor
 from recidiviz.ingest.models import ingest_info, serialization
 from recidiviz.persistence import persistence
-from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager import (
-    postgres_to_bq_lock_name_for_schema,
-)
-from recidiviz.persistence.database.schema_utils import (
-    SchemaType,
-)
-from recidiviz.persistence.database.sqlalchemy_database_key import (
-    SQLAlchemyDatabaseKey,
-)
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestIngestFileMetadata,
 )
@@ -107,12 +95,9 @@ class BaseDirectIngestController(Ingestor):
     def __init__(self, ingest_bucket_path: GcsfsBucketPath) -> None:
         """Initialize the controller."""
         self.cloud_task_manager = DirectIngestCloudTaskManagerImpl()
-        self.region_lock_manager = DirectIngestRegionLockManager(
-            self.region.region_code,
-            blocking_locks=[
-                postgres_to_bq_lock_name_for_schema(self.system_level.schema_type()),
-                postgres_to_bq_lock_name_for_schema(SchemaType.OPERATIONS),
-            ],
+        self.region_lock_manager = DirectIngestRegionLockManager.for_direct_ingest(
+            region_code=self.region.region_code,
+            schema_type=self.system_level.schema_type(),
         )
         self.ingest_instance = DirectIngestInstance.for_ingest_bucket(
             ingest_bucket_path
@@ -561,7 +546,7 @@ class BaseDirectIngestController(Ingestor):
         )
 
     def _job_tag(self, args: GcsfsIngestArgs) -> str:
-        """Returns a (short) string tag to identify an ingest run in logs. """
+        """Returns a (short) string tag to identify an ingest run in logs."""
         return (
             f"{self.region.region_code}/{args.file_path.file_name}:"
             f"{args.ingest_time}"
@@ -596,7 +581,7 @@ class BaseDirectIngestController(Ingestor):
     def _parse(
         self, args: GcsfsIngestArgs, contents_handle: GcsfsFileContentsHandle
     ) -> ingest_info.IngestInfo:
-        """Parses ingest view file contents into an IngestInfo object. """
+        """Parses ingest view file contents into an IngestInfo object."""
 
     def _do_cleanup(self, args: GcsfsIngestArgs) -> None:
         """Does necessary cleanup once file contents have been successfully persisted to

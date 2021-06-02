@@ -74,3 +74,45 @@ export const getIngestInstanceSummaries = async (
     }
   );
 };
+
+// Start CloudSQL export to GCS
+export const exportDatabaseToGCS = async (
+  stateCode: string,
+  ingestInstance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(`/api/ingest_operations/export_database_to_gcs`, {
+    stateCode,
+    ingestInstance,
+  });
+};
+
+// Start CloudSQL import from GCS
+export const importDatabaseFromGCS = async (
+  stateCode: string,
+  importToDatabaseVersion: DirectIngestInstance,
+  exportedDatabaseVersion: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(`/api/ingest_operations/import_database_from_gcs`, {
+    stateCode,
+    importToDatabaseVersion,
+    exportedDatabaseVersion,
+  });
+};
+
+// Acquire BQ Export lock for the STATE database
+export const acquireBQExportLock = async (
+  stateCode: string
+): Promise<Response> => {
+  return postWithURLAndBody(`/api/ingest_operations/acquire_ingest_lock`, {
+    stateCode,
+  });
+};
+
+// Release BQ Export lock for the STATE database
+export const releaseBQExportLock = async (
+  stateCode: string
+): Promise<Response> => {
+  return postWithURLAndBody(`/api/ingest_operations/release_ingest_lock`, {
+    stateCode,
+  });
+};

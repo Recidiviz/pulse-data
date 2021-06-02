@@ -37,19 +37,29 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
   handleOnClick,
 }) => {
   const baseBucketUrl = `https://console.cloud.google.com/storage/browser/`;
+
   return (
     <Card
       title={data.instance}
       extra={
-        <Button
-          onClick={() => {
-            handleOnClick(IngestActions.StartIngestRun, data.instance);
-          }}
-          type="primary"
-          block
-        >
-          {actionNames[IngestActions.StartIngestRun]}
-        </Button>
+        <>
+          <Button
+            style={{ marginRight: 5 }}
+            onClick={() =>
+              handleOnClick(IngestActions.ExportToGCS, data.instance)
+            }
+          >
+            {actionNames[IngestActions.ExportToGCS]}
+          </Button>
+          <Button
+            onClick={() => {
+              handleOnClick(IngestActions.StartIngestRun, data.instance);
+            }}
+            type="primary"
+          >
+            {actionNames[IngestActions.StartIngestRun]}
+          </Button>
+        </>
       }
     >
       <Descriptions bordered>
