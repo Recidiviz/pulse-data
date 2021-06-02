@@ -22,6 +22,7 @@ import {
   Col,
   Divider,
   Empty,
+  message,
   PageHeader,
   Row,
   Table,
@@ -29,14 +30,17 @@ import {
 import * as React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
-import ActionRegionConfirmationForm from "../Utilities/ActionRegionConfirmationForm";
 import {
+  exportDatabaseToGCS,
   fetchIngestStateCodes,
   getIngestInstanceSummaries,
   getIngestQueuesState,
   startIngestRun,
   updateIngestQueuesState,
 } from "../../AdminPanelAPI";
+import useFetchedData from "../../hooks";
+import ActionRegionConfirmationForm from "../Utilities/ActionRegionConfirmationForm";
+import StateSelector from "../Utilities/StateSelector";
 import {
   actionNames,
   DirectIngestInstance,
@@ -49,8 +53,6 @@ import {
 import IngestInstanceCard from "./IngestInstanceCard";
 import IngestLogsCard from "./IngestLogsCard";
 import IngestQueuesTable from "./IngestQueuesTable";
-import StateSelector from "../Utilities/StateSelector";
-import useFetchedData from "../../hooks";
 
 const IngestOperationsView = (): JSX.Element => {
   const env = window.RUNTIME_GCP_ENVIRONMENT || "unknown env";
@@ -139,15 +141,33 @@ const IngestOperationsView = (): JSX.Element => {
     setIsConfirmationModalVisible(false);
     if (stateCode) {
       setQueueStatesLoading(true);
-      if (
-        ingestActionToExecute === IngestActions.StartIngestRun &&
-        ingestInstance
-      ) {
-        await startIngestRun(stateCode, ingestInstance);
-      } else if (ingestActionToExecute === IngestActions.PauseIngestQueues) {
-        await updateIngestQueuesState(stateCode, QueueState.PAUSED);
-      } else if (ingestActionToExecute === IngestActions.ResumeIngestQueues) {
-        await updateIngestQueuesState(stateCode, QueueState.RUNNING);
+      const unsupportedIngestAction = "Unsupported ingest action";
+      switch (ingestActionToExecute) {
+        case IngestActions.StartIngestRun:
+          if (ingestInstance) {
+            await startIngestRun(stateCode, ingestInstance);
+          }
+          break;
+        case IngestActions.PauseIngestQueues:
+          await updateIngestQueuesState(stateCode, QueueState.PAUSED);
+          break;
+        case IngestActions.ResumeIngestQueues:
+          await updateIngestQueuesState(stateCode, QueueState.RUNNING);
+          break;
+        case IngestActions.ExportToGCS:
+          if (ingestInstance) {
+            message.info("Exporting database...");
+            const r = await exportDatabaseToGCS(stateCode, ingestInstance);
+            if (r.status >= 400) {
+              const text = await r.text();
+              message.error(`Export to GCS failed: ${text}`);
+            } else {
+              message.success("GCS Export succeeded!");
+            }
+          }
+          break;
+        default:
+          throw unsupportedIngestAction;
       }
       await fetchQueueStates(stateCode);
     }

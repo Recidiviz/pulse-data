@@ -19,11 +19,13 @@
 import enum
 from datetime import datetime
 from typing import Optional
+
 import attr
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_utils import (
+    DirectIngestSchemaType,
     SchemaType,
 )
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -35,7 +37,9 @@ class SystemLevel(enum.Enum):
     COUNTY = "COUNTY"
     STATE = "STATE"
 
-    def schema_type(self) -> SchemaType:
+    def schema_type(
+        self,
+    ) -> DirectIngestSchemaType:
         if self == SystemLevel.STATE:
             return SchemaType.STATE
         if self == SystemLevel.COUNTY:

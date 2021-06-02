@@ -15,14 +15,30 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines admin panel routes for ingest operations."""
+import logging
 from http import HTTPStatus
 from typing import Tuple
 
 from flask import Blueprint, jsonify, request
 
 from recidiviz.admin_panel.admin_stores import AdminStores
+from recidiviz.cloud_sql.cloud_sql_client import CloudSQLClientImpl
+from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
+    GCSPseudoLockAlreadyExists,
+    GCSPseudoLockDoesNotExist,
+)
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
+    DirectIngestRegionLockManager,
+)
+from recidiviz.persistence.database.sqlalchemy_database_key import (
+    SQLAlchemyDatabaseKey,
+    SQLAlchemyStateDatabaseVersion,
+)
+from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
+from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_gcp
 
 
 def _get_state_code_from_str(state_code_str: str) -> StateCode:
@@ -36,6 +52,9 @@ def _get_state_code_from_str(state_code_str: str) -> StateCode:
 
 def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     """Adds routes for ingest operations."""
+
+    project_id = GCP_PROJECT_STAGING if not in_gcp() else metadata.project_id()
+    STATE_INGEST_EXPORT_URI = f"gs://{project_id}-cloud-sql-exports"
 
     @bp.route("/api/ingest_operations/fetch_ingest_state_codes", methods=["POST"])
     @requires_gae_auth
@@ -98,3 +117,139 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
             )
         )
         return jsonify(ingest_instance_summaries), HTTPStatus.OK
+
+    @bp.route("/api/ingest_operations/export_database_to_gcs", methods=["POST"])
+    @requires_gae_auth
+    def _export_database_to_gcs() -> Tuple[str, HTTPStatus]:
+        try:
+            state_code = StateCode(request.json["stateCode"])
+            db_version = SQLAlchemyStateDatabaseVersion(
+                request.json["ingestInstance"].lower()
+            )
+        except ValueError:
+            return "invalid parameters provided", HTTPStatus.BAD_REQUEST
+
+        lock_manager = DirectIngestRegionLockManager.for_state_ingest(state_code)
+        if not lock_manager.can_proceed():
+            return (
+                "other locks blocking ingest have been acquired; aborting operation",
+                HTTPStatus.CONFLICT,
+            )
+
+        db_key = SQLAlchemyDatabaseKey.for_state_code(state_code, db_version)
+        cloud_sql_client = CloudSQLClientImpl(project_id=project_id)
+
+        operation_id = cloud_sql_client.export_to_gcs_sql(
+            db_key,
+            GcsfsFilePath.from_absolute_path(
+                f"{STATE_INGEST_EXPORT_URI}/{db_version.value}/{state_code.value}"
+            ),
+        )
+        if operation_id is None:
+            return (
+                "Cloud SQL export operation was not started successfully.",
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+
+        operation_succeeded = cloud_sql_client.wait_until_operation_completed(
+            operation_id, seconds_to_wait=60
+        )
+        if not operation_succeeded:
+            return (
+                "Cloud SQL import did not complete within 60 seconds",
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+
+        return operation_id, HTTPStatus.OK
+
+    @bp.route("/api/ingest_operations/import_database_from_gcs", methods=["POST"])
+    @requires_gae_auth
+    def _import_database_from_gcs() -> Tuple[str, HTTPStatus]:
+        try:
+            state_code = StateCode(request.json["stateCode"])
+            db_version = SQLAlchemyStateDatabaseVersion(
+                request.json["importToDatabaseVersion"].lower()
+            )
+            exported_db_version = SQLAlchemyStateDatabaseVersion(
+                request.json["exportedDatabaseVersion"].lower()
+            )
+        except ValueError:
+            return "invalid parameters provided", HTTPStatus.BAD_REQUEST
+
+        if db_version == SQLAlchemyStateDatabaseVersion.LEGACY:
+            return "ingestInstance cannot be LEGACY", HTTPStatus.BAD_REQUEST
+
+        lock_manager = DirectIngestRegionLockManager.for_state_ingest(state_code)
+        if not lock_manager.can_proceed():
+            return (
+                "other locks blocking ingest have been acquired; aborting operation",
+                HTTPStatus.CONFLICT,
+            )
+
+        db_key = SQLAlchemyDatabaseKey.for_state_code(state_code, db_version)
+        cloud_sql_client = CloudSQLClientImpl(project_id=project_id)
+
+        operation_id = cloud_sql_client.import_gcs_sql(
+            db_key,
+            GcsfsFilePath.from_absolute_path(
+                f"{STATE_INGEST_EXPORT_URI}/{exported_db_version.value}/{state_code.value}"
+            ),
+        )
+        if operation_id is None:
+            return (
+                "Cloud SQL import operation was not started successfully.",
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+
+        operation_succeeded = cloud_sql_client.wait_until_operation_completed(
+            operation_id, seconds_to_wait=60
+        )
+        if not operation_succeeded:
+            return (
+                "Cloud SQL import did not complete within 60 seconds",
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+
+        return operation_id, HTTPStatus.OK
+
+    @bp.route("/api/ingest_operations/acquire_ingest_lock", methods=["POST"])
+    @requires_gae_auth
+    def _acquire_ingest_lock() -> Tuple[str, HTTPStatus]:
+        try:
+            state_code = StateCode(request.json["stateCode"])
+        except ValueError:
+            return "invalid parameters provided", HTTPStatus.BAD_REQUEST
+
+        lock_manager = DirectIngestRegionLockManager.for_state_ingest(state_code)
+        try:
+            lock_manager.acquire_lock()
+        except GCSPseudoLockAlreadyExists:
+            return "lock already exists", HTTPStatus.CONFLICT
+
+        if not lock_manager.can_proceed():
+            try:
+                lock_manager.release_lock()
+            except Exception as e:
+                logging.exception(e)
+            return (
+                "other locks blocking ingest have been acquired; releasing lock",
+                HTTPStatus.CONFLICT,
+            )
+
+        return "", HTTPStatus.OK
+
+    @bp.route("/api/ingest_operations/release_ingest_lock", methods=["POST"])
+    @requires_gae_auth
+    def _release_ingest_lock() -> Tuple[str, HTTPStatus]:
+        try:
+            state_code = StateCode(request.json["stateCode"])
+        except ValueError:
+            return "invalid parameters provided", HTTPStatus.BAD_REQUEST
+
+        lock_manager = DirectIngestRegionLockManager.for_state_ingest(state_code)
+        try:
+            lock_manager.release_lock()
+        except GCSPseudoLockDoesNotExist:
+            return "lock does not exist", HTTPStatus.NOT_FOUND
+
+        return "", HTTPStatus.OK

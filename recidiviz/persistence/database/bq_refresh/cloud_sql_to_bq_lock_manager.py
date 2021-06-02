@@ -18,23 +18,17 @@
 import logging
 
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
-    GCSPseudoLockManager,
     GCSPseudoLockAlreadyExists,
     GCSPseudoLockDoesNotExist,
+    GCSPseudoLockManager,
+    postgres_to_bq_lock_name_for_schema,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX,
-    STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX,
     JAILS_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX,
+    STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
-
-
-POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME = "EXPORT_PROCESS_RUNNING_"
-
-
-def postgres_to_bq_lock_name_for_schema(schema: SchemaType) -> str:
-    return POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME + schema.value.upper()
 
 
 class CloudSqlToBQLockManager:

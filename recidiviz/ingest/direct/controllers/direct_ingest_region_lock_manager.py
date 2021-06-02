@@ -19,12 +19,17 @@ data to Postgres for a given region.
 """
 
 from contextlib import contextmanager
-from typing import List, Iterator
+from typing import Iterator, List
 
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockManager,
+    postgres_to_bq_lock_name_for_schema,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.database.schema_utils import (
+    DirectIngestSchemaType,
+    SchemaType,
+)
 
 GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX = "INGEST_PROCESS_RUNNING_"
 STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX = (
@@ -68,6 +73,14 @@ class DirectIngestRegionLockManager:
                 return False
         return True
 
+    def acquire_lock(self) -> None:
+        self.lock_manager.lock(self._ingest_lock_name_for_region_code(self.region_code))
+
+    def release_lock(self) -> None:
+        self.lock_manager.unlock(
+            self._ingest_lock_name_for_region_code(self.region_code)
+        )
+
     @contextmanager
     def using_region_lock(
         self,
@@ -83,6 +96,26 @@ class DirectIngestRegionLockManager:
             expiration_in_seconds=expiration_in_seconds,
         ):
             yield
+
+    @staticmethod
+    def for_state_ingest(state_code: StateCode) -> "DirectIngestRegionLockManager":
+        return DirectIngestRegionLockManager.for_direct_ingest(
+            region_code=state_code.value,
+            schema_type=SchemaType.STATE,
+        )
+
+    @staticmethod
+    def for_direct_ingest(
+        region_code: str,
+        schema_type: DirectIngestSchemaType,
+    ) -> "DirectIngestRegionLockManager":
+        return DirectIngestRegionLockManager(
+            region_code=region_code,
+            blocking_locks=[
+                postgres_to_bq_lock_name_for_schema(schema_type),
+                postgres_to_bq_lock_name_for_schema(SchemaType.OPERATIONS),
+            ],
+        )
 
     @staticmethod
     def _ingest_lock_name_for_region_code(region_code: str) -> str:
