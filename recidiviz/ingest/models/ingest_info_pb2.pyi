@@ -2072,6 +2072,7 @@ class StateCharge(google.protobuf.message.Message):
     CLASSIFICATION_SUBTYPE_FIELD_NUMBER: builtins.int
     OFFENSE_TYPE_FIELD_NUMBER: builtins.int
     IS_VIOLENT_FIELD_NUMBER: builtins.int
+    IS_SEX_OFFENSE_FIELD_NUMBER: builtins.int
     COUNTS_FIELD_NUMBER: builtins.int
     CHARGE_NOTES_FIELD_NUMBER: builtins.int
     IS_CONTROLLING_FIELD_NUMBER: builtins.int
@@ -2092,6 +2093,7 @@ class StateCharge(google.protobuf.message.Message):
     classification_subtype: typing.Text = ...
     offense_type: typing.Text = ...
     is_violent: typing.Text = ...
+    is_sex_offense: typing.Text = ...
     counts: typing.Text = ...
     charge_notes: typing.Text = ...
     is_controlling: typing.Text = ...
@@ -2115,6 +2117,7 @@ class StateCharge(google.protobuf.message.Message):
         classification_subtype: typing.Optional[typing.Text] = ...,
         offense_type: typing.Optional[typing.Text] = ...,
         is_violent: typing.Optional[typing.Text] = ...,
+        is_sex_offense: typing.Optional[typing.Text] = ...,
         counts: typing.Optional[typing.Text] = ...,
         charge_notes: typing.Optional[typing.Text] = ...,
         is_controlling: typing.Optional[typing.Text] = ...,
@@ -2145,6 +2148,8 @@ class StateCharge(google.protobuf.message.Message):
             b"description",
             "is_controlling",
             b"is_controlling",
+            "is_sex_offense",
+            b"is_sex_offense",
             "is_violent",
             b"is_violent",
             "ncic_code",
@@ -2190,6 +2195,8 @@ class StateCharge(google.protobuf.message.Message):
             b"description",
             "is_controlling",
             b"is_controlling",
+            "is_sex_offense",
+            b"is_sex_offense",
             "is_violent",
             b"is_violent",
             "ncic_code",

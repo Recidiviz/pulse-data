@@ -1297,6 +1297,7 @@ class StateCharge(IngestObject):
         classification_subtype=None,
         offense_type=None,
         is_violent=None,
+        is_sex_offense=None,
         counts=None,
         charge_notes=None,
         is_controlling=None,
@@ -1318,6 +1319,7 @@ class StateCharge(IngestObject):
         self.classification_subtype: Optional[str] = classification_subtype
         self.offense_type: Optional[str] = offense_type
         self.is_violent: Optional[str] = is_violent
+        self.is_sex_offense: Optional[str] = is_sex_offense
         self.counts: Optional[str] = counts
         self.charge_notes: Optional[str] = charge_notes
         self.is_controlling: Optional[str] = is_controlling
