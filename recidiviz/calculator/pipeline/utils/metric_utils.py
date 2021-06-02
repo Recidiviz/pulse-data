@@ -15,24 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Base class for metrics we calculate."""
-
+import abc
 import datetime
 from datetime import date
-from typing import Any, Dict, Optional, List, Generic, TypeVar, Type
 from enum import Enum
+from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 
 import attr
 from google.cloud import bigquery
 
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.attr_utils import (
-    is_enum,
-    is_list,
-    is_date,
-    is_str,
-    is_int,
-    is_float,
     is_bool,
+    is_date,
+    is_enum,
+    is_float,
+    is_int,
+    is_list,
+    is_str,
 )
 from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
@@ -114,6 +114,11 @@ class RecidivizMetric(Generic[RecidivizMetricTypeT], BuildableAttr):
             )
             for field, attribute in attr.fields_dict(cls).items()
         ]
+
+    @classmethod
+    @abc.abstractmethod
+    def get_description(cls) -> str:
+        """Should be implemented by metric subclasses to return a description of the metric."""
 
 
 @attr.s

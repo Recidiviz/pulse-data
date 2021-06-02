@@ -15,9 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Supervision metrics we calculate."""
-
+import abc
 from datetime import date
-from typing import Optional, List
+from typing import List, Optional
 
 import attr
 
@@ -26,10 +26,10 @@ from recidiviz.calculator.pipeline.utils.event_utils import (
     ViolationHistoryMixin,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import (
-    RecidivizMetric,
-    PersonLevelMetric,
-    RecidivizMetricType,
     AssessmentMetricMixin,
+    PersonLevelMetric,
+    RecidivizMetric,
+    RecidivizMetricType,
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
@@ -37,10 +37,10 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodTerminationReason,
-    StateSupervisionPeriodSupervisionType,
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
@@ -112,12 +112,21 @@ class SupervisionMetric(
     # The type of government entity that has responsibility for this period of supervision
     custodial_authority: Optional[StateCustodialAuthority] = attr.ib(default=None)
 
+    @classmethod
+    @abc.abstractmethod
+    def get_description(cls) -> str:
+        """Should be implemented by metric subclasses to return a description of the metric."""
+
 
 @attr.s
 class SupervisionPopulationMetric(
     SupervisionMetric, PersonLevelMetric, ViolationHistoryMixin, AssessmentMetricMixin
 ):
     """Subclass of SupervisionMetric that contains supervision population information."""
+
+    @classmethod
+    def get_description(cls) -> str:
+        return "TODO(#7563): Add SupervisionPopulationMetric description"
 
     # Required characteristics
 
@@ -144,6 +153,10 @@ class SupervisionOutOfStatePopulationMetric(SupervisionPopulationMetric):
     """Subclass of SupervisionPopulationMetric that contains supervision information for people who are serving their
     supervisions in another state."""
 
+    @classmethod
+    def get_description(cls) -> str:
+        return "TODO(#7563): Add SupervisionOutOfStatePopulationMetric description"
+
     # Required characteristics
 
     # The type of SupervisionMetric
@@ -159,6 +172,10 @@ class SupervisionRevocationMetric(
     SupervisionMetric, PersonLevelMetric, AssessmentMetricMixin, ViolationHistoryMixin
 ):
     """Subclass of SupervisionMetric that contains supervision revocation information."""
+
+    @classmethod
+    def get_description(cls) -> str:
+        return "TODO(#7563): Add SupervisionRevocationMetric description"
 
     # Required characteristics
 
@@ -203,6 +220,10 @@ class SupervisionRevocationMetric(
 class SupervisionSuccessMetric(SupervisionMetric, PersonLevelMetric):
     """Subclass of SupervisionMetric that contains supervision success and failure counts."""
 
+    @classmethod
+    def get_description(cls) -> str:
+        return "TODO(#7563): Add SupervisionSuccessMetric description"
+
     # Required characteristics
 
     # The type of SupervisionMetric
@@ -222,6 +243,12 @@ class SuccessfulSupervisionSentenceDaysServedMetric(
     sentences with projected completion dates in the month of the metric, where the person did not spend any time
     incarcerated in the duration of the sentence."""
 
+    @classmethod
+    def get_description(cls) -> str:
+        return (
+            "TODO(#7563): Add SuccessfulSupervisionSentenceDaysServedMetric description"
+        )
+
     # Required characteristics
 
     # The type of SupervisionMetric
@@ -240,6 +267,10 @@ class SupervisionTerminationMetric(
 ):
     """Subclass of SupervisionMetric that contains information about a supervision that has been terminated, the reason
     for the termination, and the change in assessment score between the last assessment and the first reassessment."""
+
+    @classmethod
+    def get_description(cls) -> str:
+        return "TODO(#7563): Add SupervisionTerminationMetric description"
 
     # Required characteristics
 
@@ -267,6 +298,10 @@ class SupervisionTerminationMetric(
 class SupervisionStartMetric(SupervisionMetric, PersonLevelMetric):
     """Subclass of SupervisionMetric that contains information about the start of supervision."""
 
+    @classmethod
+    def get_description(cls) -> str:
+        return "TODO(#7563): Add SupervisionStartMetric description"
+
     # Required characteristics
 
     # The type of SupervisionMetric
@@ -291,6 +326,10 @@ class SupervisionCaseComplianceMetric(SupervisionPopulationMetric):
     """Subclass of SupervisionPopulationMetric for people who are on supervision on a given day that records
     information regarding whether a supervision case is meeting compliance standards, as well as counts of
     compliance-related tasks that occurred in the month of the evaluation."""
+
+    @classmethod
+    def get_description(cls) -> str:
+        return "TODO(#7563): Add SupervisionCaseComplianceMetric description"
 
     # Required characteristics
 
@@ -344,6 +383,10 @@ class SupervisionDowngradeMetric(SupervisionMetric, PersonLevelMetric):
     Note: This metric only identifies supervision level downgrades for states where a new supervision period is created
     if the supervision level changes.
     """
+
+    @classmethod
+    def get_description(cls) -> str:
+        return "TODO(#7563): Add SupervisionDowngradeMetric description"
 
     # The type of SupervisionMetric
     metric_type: SupervisionMetricType = attr.ib(

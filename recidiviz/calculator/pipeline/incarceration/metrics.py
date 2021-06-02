@@ -15,9 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Incarceration metrics we calculate."""
-
+import abc
 from datetime import date
-from typing import Optional, List
+from typing import List, Optional
 
 import attr
 
@@ -26,10 +26,10 @@ from recidiviz.calculator.pipeline.utils.event_utils import (
     ViolationHistoryMixin,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import (
-    RecidivizMetric,
-    PersonLevelMetric,
-    RecidivizMetricType,
     AssessmentMetricMixin,
+    PersonLevelMetric,
+    RecidivizMetric,
+    RecidivizMetricType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -38,8 +38,8 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodSupervisionType,
     StateSupervisionLevel,
+    StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
@@ -85,10 +85,19 @@ class IncarcerationMetric(RecidivizMetric[IncarcerationMetricType], PersonLevelM
     # County of residence
     county_of_residence: Optional[str] = attr.ib(default=None)
 
+    @classmethod
+    @abc.abstractmethod
+    def get_description(cls) -> str:
+        """Should be implemented by metric subclasses to return a description of the metric."""
+
 
 @attr.s
 class IncarcerationPopulationMetric(IncarcerationMetric):
     """Subclass of IncarcerationMetric that contains incarceration population information on a given date."""
+
+    @classmethod
+    def get_description(cls) -> str:
+        return "TODO(#7563): Add IncarcerationPopulationMetric description"
 
     # Required characteristics
 
@@ -132,6 +141,10 @@ class IncarcerationPopulationMetric(IncarcerationMetric):
 class IncarcerationAdmissionMetric(IncarcerationMetric):
     """Subclass of IncarcerationMetric that contains admission information."""
 
+    @classmethod
+    def get_description(cls) -> str:
+        return "TODO(#7563): Add IncarcerationAdmissionMetric description"
+
     # Required characteristics
 
     # The type of IncarcerationMetric
@@ -169,6 +182,12 @@ class IncarcerationCommitmentFromSupervisionMetric(
     """Subclass of IncarcerationAdmissionMetric for admissions to incarceration that
     qualify as a commitment from supervision. Tracks information about the supervision
     that preceded the admission to incarceration."""
+
+    @classmethod
+    def get_description(cls) -> str:
+        return (
+            "TODO(#7563): Add IncarcerationCommitmentFromSupervisionMetric description"
+        )
 
     # The type of IncarcerationMetric
     metric_type: IncarcerationMetricType = attr.ib(
@@ -223,6 +242,10 @@ class IncarcerationCommitmentFromSupervisionMetric(
 @attr.s
 class IncarcerationReleaseMetric(IncarcerationMetric):
     """Subclass of IncarcerationMetric that contains release information."""
+
+    @classmethod
+    def get_description(cls) -> str:
+        return "TODO(#7563): Add IncarcerationReleaseMetric description"
 
     # Required characteristics
 
