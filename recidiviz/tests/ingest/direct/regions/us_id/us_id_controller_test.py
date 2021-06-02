@@ -331,6 +331,8 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                                             counts="1",
                                             statute="1-11",
                                             description="CRIME 1 + DESC",
+                                            offense_type="Murder & Man",
+                                            is_violent="True",
                                         )
                                     ],
                                 )
@@ -352,6 +354,10 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                                             counts="1",
                                             statute="2-22",
                                             description="CRIME 2 + DESC",
+                                            offense_date="2018-12-01",
+                                            offense_type="Assault",
+                                            is_violent="True",
+                                            is_sex_offense="True",
                                         )
                                     ],
                                 )
@@ -388,6 +394,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                                             counts="1",
                                             statute="3-33",
                                             description="CRIME 3 + DESC",
+                                            offense_type="Property",
                                         )
                                     ],
                                 )
@@ -435,6 +442,9 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                                             counts="2",
                                             statute="4-44",
                                             description="CRIME 4 + DESC",
+                                            offense_date="2018-12-01",
+                                            offense_type="Murder & Man",
+                                            is_violent="True",
                                         )
                                     ],
                                 )
@@ -470,6 +480,10 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                                             counts="2",
                                             statute="5-55",
                                             description="CRIME 5 + DESC",
+                                            offense_date="2008-12-14",
+                                            offense_type="Assault",
+                                            is_violent="True",
+                                            is_sex_offense="True",
                                         )
                                     ],
                                 )
@@ -504,6 +518,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                                             counts="2",
                                             statute="6-66",
                                             description="CRIME 6 + DESC",
+                                            offense_type="Property",
                                         )
                                     ],
                                 )
@@ -1585,6 +1600,8 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             statute="1-11",
             description="CRIME 1 + DESC",
+            offense_type="MURDER & MAN",
+            is_violent=True,
             incarceration_sentences=[is_1111_1],
             person=is_1111_1.person,
         )
@@ -1618,6 +1635,10 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             counts=1,
             statute="2-22",
             description="CRIME 2 + DESC",
+            offense_date=datetime.date(year=2018, month=12, day=1),
+            offense_type="ASSAULT",
+            is_violent=True,
+            is_sex_offense=True,
             incarceration_sentences=[is_1111_3],
             person=is_1111_3.person,
         )
@@ -1656,6 +1677,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             counts=1,
             statute="3-33",
             description="CRIME 3 + DESC",
+            offense_type="PROPERTY",
             incarceration_sentences=[is_2222_2],
             person=is_2222_2.person,
         )
@@ -1700,6 +1722,9 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             counts=2,
             statute="4-44",
             description="CRIME 4 + DESC",
+            offense_date=datetime.date(year=2018, month=12, day=1),
+            offense_type="MURDER & MAN",
+            is_violent=True,
             supervision_sentences=[ss_1111_2],
             person=ss_1111_2.person,
         )
@@ -1730,6 +1755,10 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             counts=2,
             statute="5-55",
             description="CRIME 5 + DESC",
+            offense_date=datetime.date(year=2008, month=12, day=14),
+            offense_type="ASSAULT",
+            is_violent=True,
+            is_sex_offense=True,
             supervision_sentences=[ss_2222_1],
             person=ss_2222_1.person,
         )
@@ -1765,6 +1794,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             counts=2,
             statute="6-66",
             description="CRIME 6 + DESC",
+            offense_type="PROPERTY",
             supervision_sentences=[ss_3333_1],
             person=ss_3333_1.person,
         )

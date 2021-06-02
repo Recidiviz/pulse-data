@@ -108,6 +108,14 @@ LEFT JOIN
     FROM {{offense}})
 USING
     (off_cat, off_cd, off_deg)
+LEFT JOIN
+    {{offense_crime_grp}}
+USING
+    (off_cat, off_cd, off_deg)
+LEFT JOIN
+    {{crime_grp_cd}}
+USING
+    (crm_grp_cd)
 """
 
 

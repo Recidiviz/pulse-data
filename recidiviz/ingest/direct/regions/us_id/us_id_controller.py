@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Direct ingest controller implementation for US_ID."""
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
@@ -72,13 +72,14 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import (
+    parse_date,
     safe_parse_days_from_duration_pieces,
     sorted_list_from_str,
 )
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import (
     CsvGcsfsDirectIngestController,
-    IngestRowPosthookCallable,
     IngestFilePostprocessorCallable,
+    IngestRowPosthookCallable,
 )
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     create_if_not_exists,
@@ -130,10 +131,10 @@ from recidiviz.ingest.direct.regions.us_id.us_id_enum_helpers import (
     supervision_termination_reason_mapper,
 )
 from recidiviz.ingest.direct.state_shared_row_posthooks import (
+    IngestGatingContext,
     copy_name_to_alias,
     gen_label_single_external_id_hook,
     gen_rationalize_race_and_ethnicity,
-    IngestGatingContext,
 )
 from recidiviz.ingest.models.ingest_info import (
     IngestObject,
@@ -187,12 +188,18 @@ class UsIdController(CsvGcsfsDirectIngestController):
             "mittimus_judge_sentence_offense_sentprob_incarceration_sentences": [
                 gen_label_single_external_id_hook(US_ID_DOC),
                 self._add_statute_to_charge,
+                self._set_is_violent,
+                self._set_is_sex_offense,
+                self._attempt_to_set_offense_date,
                 self._set_extra_sentence_fields,
                 self._set_generated_ids,
             ],
             "mittimus_judge_sentence_offense_sentprob_supervision_sentences": [
                 gen_label_single_external_id_hook(US_ID_DOC),
                 self._add_statute_to_charge,
+                self._set_is_violent,
+                self._set_is_sex_offense,
+                self._attempt_to_set_offense_date,
                 self._set_extra_sentence_fields,
                 self._set_generated_ids,
             ],
@@ -682,6 +689,69 @@ class UsIdController(CsvGcsfsDirectIngestController):
         for obj in extracted_objects:
             if isinstance(obj, StateCharge):
                 obj.statute = statute
+
+    @staticmethod
+    def _set_is_violent(
+        _gating_context: IngestGatingContext,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
+        violent_code = row.get("off_viol")
+        is_violent = violent_code and violent_code.upper() == "V"
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateCharge):
+                obj.is_violent = str(is_violent)
+
+    @staticmethod
+    def _set_is_sex_offense(
+        _gating_context: IngestGatingContext,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
+        sex_offense_code = row.get("off_sxo_flg")
+        is_sex_offense = sex_offense_code and sex_offense_code.upper() == "X"
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateCharge):
+                obj.is_sex_offense = str(is_sex_offense)
+
+    @staticmethod
+    def _attempt_to_set_offense_date(
+        _gating_context: IngestGatingContext,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
+        """Sets the charge date, if possible.
+
+        The sentence.off_dtd field from ID has various formats, most of which are
+        parseable by our parse_date logic. Some of these are not parseable, however,
+        and we are content to simply not set this field in those cases.
+
+        It's also possible that a small number of attempts will parse the date incorrectly,
+        e.g. "083094" does not parse to August 30, 1994 as expected, but rather to
+        September 4, 830.
+
+        As an precaution against this, we drop any dates that are parsed without error
+        but produce years that are not in the 20th or 21st centuries, which we assume to
+        be incorrect and unintended. This is imperfect, but we accept this small number
+        of errors in order to have a significant coverage of dates."""
+        offense_date_unparsed = row.get("off_dtd")
+        if not offense_date_unparsed:
+            return
+
+        try:
+            offense_date = parse_date(offense_date_unparsed)
+        except ValueError:
+            return
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateCharge):
+                if offense_date and 1900 <= offense_date.year <= 2100:
+                    obj.offense_date = str(offense_date)
 
     @staticmethod
     def _set_extra_sentence_fields(
