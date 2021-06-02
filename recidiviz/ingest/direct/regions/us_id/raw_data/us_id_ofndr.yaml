@@ -18,21 +18,21 @@ columns:
       Person's race
     known_values:
       - value: A
-        description: TODO(#7567) - populate with description
+        description: ASIAN
       - value: B
-        description: TODO(#7567) - populate with description
+        description: BLACK OR AFRICAN AMERICAN
       - value: H
-        description: TODO(#7567) - populate with description
+        description: HISPANIC OR LATINO
       - value: I
-        description: TODO(#7567) - populate with description
+        description: NATIVE AMERICAN OR ALASKA NATIVE
       - value: O
-        description: TODO(#7567) - populate with description
+        description: OTHER
       - value: P
-        description: TODO(#7567) - populate with description
+        description: NATIVE HAWAIIAN OR PACIFIC ISLANDER
       - value: U
-        description: TODO(#7567) - populate with description
+        description: UNKNOWN
       - value: W
-        description: TODO(#7567) - populate with description
+        description: WHITE
   - name: rlgn_cd
   - name: sex
   - name: ht_ft
