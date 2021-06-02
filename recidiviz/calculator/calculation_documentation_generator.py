@@ -645,6 +645,7 @@ class CalculationDocumentationGenerator:
 
         # TODO(#7063): Add product descriptions
         documentation = f"#{product.name.upper()}\n"
+        documentation += product.description + "\n"
 
         documentation += self._get_shipped_states_str(product)
 

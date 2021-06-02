@@ -44,6 +44,7 @@ class TestProductConfig(unittest.TestCase):
     def test_product_config_valid(self) -> None:
         _ = ProductConfig(
             name="Test Product",
+            description="Test Product description",
             exports=["EXPORT", "OTHER_EXPORT"],
             states=[
                 ProductStateConfig(state_code="US_XX", environment="production"),
@@ -57,6 +58,7 @@ class TestProductConfig(unittest.TestCase):
         with self.assertRaises(ValueError):
             _ = ProductConfig(
                 name="Test Product",
+                description="Test Product description",
                 exports=["EXPORT", "OTHER_EXPORT"],
                 states=[
                     ProductStateConfig(state_code="US_XX", environment="production"),
@@ -70,6 +72,7 @@ class TestProductConfig(unittest.TestCase):
         with self.assertRaises(ValueError):
             _ = ProductConfig(
                 name="Test Product",
+                description="Test Product description",
                 exports=["EXPORT", "OTHER_EXPORT"],
                 states=[
                     ProductStateConfig(state_code="US_XX", environment="production"),
@@ -82,6 +85,7 @@ class TestProductConfig(unittest.TestCase):
         with self.assertRaises(ValueError):
             _ = ProductConfig(
                 name="Test Product",
+                description="Test Product description",
                 exports=["EXPORT", "OTHER_EXPORT"],
                 states=None,
                 environment="production",
@@ -100,6 +104,7 @@ class TestProductConfigs(unittest.TestCase):
         expected_product_configs = [
             ProductConfig(
                 name="Test Product",
+                description="Test Product description",
                 exports=["EXPORT", "OTHER_EXPORT"],
                 states=[
                     ProductStateConfig(state_code="US_XX", environment="production"),
@@ -110,6 +115,7 @@ class TestProductConfigs(unittest.TestCase):
             ),
             ProductConfig(
                 name="Test State Agnostic Product",
+                description="Test State Agnostic Product description",
                 exports=["MOCK_EXPORT_NAME"],
                 states=None,
                 environment="staging",
@@ -117,6 +123,7 @@ class TestProductConfigs(unittest.TestCase):
             ),
             ProductConfig(
                 name="Test Product Without Exports",
+                description="Test Product Without Exports description",
                 exports=[],
                 states=[ProductStateConfig(state_code="US_XX", environment="staging")],
                 environment=None,

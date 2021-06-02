@@ -3,34 +3,40 @@
 
 products:
   - name: Admin Panel
+    description: The admin panel is a Recidiviz-internal surface from which we can observe things about the operation of our system and take diagnostic or corrective actions. The admin panel is not under the purview of any one team, so any and all should feel free to make contributions or fix issues as they arise!
     is_state_agnostic: True
     exports:
       - INGEST_METADATA
       - VALIDATION_METADATA
     environment: production
   - name: Case Triage
+    description: Case Triage is a web tool for parole and probation officers (line staff) to manage their caseloads by understanding client needs and acting on timely opportunities.
     exports:
       - CASE_TRIAGE
     states:
       - state_code: US_ID
         environment: production
   - name: COVID Dashboard
+    description: COVID dashboard aids corrections leadership in their COVID response. The web app models the spread of COVID through jails and prisons and the projected impact on COVID cases and community hospital resources. Scenario modeling enables users to understand the impact of their interventions on the projected spread.
     is_state_agnostic: True
     exports:
       - COVID_DASHBOARD
     environment: production
   - name: Core Dashboard
+    description: Core dashboard provides leadership with an understanding of community supervision and revocation trends.
     exports:
       - CORE
     states:
       - state_code: US_ND
         environment: production
   - name: Justice Counts
+    description: TODO(#7063) - Add meaningful description
     is_state_agnostic: True
     exports:
       - JUSTICE_COUNTS
     environment: production
   - name: Lantern Dashboard
+    description: Lantern is a dashboard for leadership and supervisors to understand the patterns and behaviors associated with revocations. Users can see over-time revocation trends, the violation history leading up to revocation, demographic and geographic breakdowns of revocations, and individual lists of people who were revoked.
     exports:
       - LANTERN
       - DASHBOARD_USER_RESTRICTIONS
@@ -40,6 +46,7 @@ products:
       - state_code: US_PA
         environment: production
   - name: PO Report
+    description: Monthly Email Reports are sent regularly to parole and probation officers (line staff) to track and motivate progress towards improving client outcomes.
     exports:
       - PO_MONTHLY
     states:
@@ -48,6 +55,7 @@ products:
       - state_code: US_PA
         environment: staging
   - name: Public Dashboard
+    description: TODO(#7063) - Add meaningful description
     exports:
       - PUBLIC_DASHBOARD
     states:
@@ -56,6 +64,7 @@ products:
       - state_code: US_ND
         environment: production
   - name: Vitals
+    description: Vitals provides a snapshot of agency performance on a set of key operational metrics, which can be drilled down by geographic region and officer. This helps community supervision leadership and supervisors proactively identify resource constraints as well as opportunities for improvement in both compliance and policy.
     exports:
       - VITALS
     states:
@@ -64,6 +73,7 @@ products:
       - state_code: US_ND
         environment: staging
   - name: Vitals Report
+    description: Vitals provides a snapshot of agency performance on a set of key operational metrics, which can be drilled down by geographic region and officer. This helps community supervision leadership and supervisors proactively identify resource constraints as well as opportunities for improvement in both compliance and policy.
     exports: []
     states:
       - state_code: US_ND

@@ -2,6 +2,7 @@
 
 products:
   - name: Test Product
+    description: Test Product description
     exports:
       - EXPORT
       - OTHER_EXPORT
@@ -11,12 +12,14 @@ products:
       - state_code: US_WW
         environment: staging
   - name: Test State Agnostic Product
+    description: Test State Agnostic Product description
     is_state_agnostic: True
     exports:
       - MOCK_EXPORT_NAME
     environment:
       staging
   - name: Test Product Without Exports
+    description: Test Product Without Exports description
     exports: []
     states:
       - state_code: US_XX
