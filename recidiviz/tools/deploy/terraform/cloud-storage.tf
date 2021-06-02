@@ -30,6 +30,13 @@ module "direct-ingest-state-storage-secondary" {
   name_suffix = "direct-ingest-state-storage-secondary"
 }
 
+module "direct-ingest-cloud-sql-exports" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "cloud-sql-exports"
+}
+
 module "dashboard-user-restrictions-bucket" {
   source = "./modules/cloud-storage-bucket"
 

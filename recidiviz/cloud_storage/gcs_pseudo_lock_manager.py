@@ -25,14 +25,22 @@ from typing import Any, Dict, Iterator, Optional
 import attr
 import dateutil.parser
 
-from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcs_file_system import GCSBlobDoesNotExistError
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.utils import metadata
 
 LOCK_TIME_KEY = "lock_time"
 CONTENTS_KEY = "contents"
 EXPIRATION_IN_SECONDS_KEY = "expiration_in_seconds"
+
+
+POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME = "EXPORT_PROCESS_RUNNING_"
+
+
+def postgres_to_bq_lock_name_for_schema(schema: SchemaType) -> str:
+    return POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME + schema.value.upper()
 
 
 @attr.s(auto_attribs=True, frozen=True)

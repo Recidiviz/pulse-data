@@ -23,6 +23,10 @@ from typing import List, Optional
 from googleapiclient import discovery
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.database.sqlalchemy_engine_manager import (
+    SQLAlchemyEngineManager,
+)
 from recidiviz.utils import metadata
 
 
@@ -45,6 +49,14 @@ class CloudSQLClient:
         """Triggers a Cloud SQL Export operation and returns the associated operation id or None if unsuccessful."""
 
     @abc.abstractmethod
+    def export_to_gcs_sql(
+        self,
+        database_key: SQLAlchemyDatabaseKey,
+        gcs_uri: GcsfsFilePath,
+    ) -> Optional[str]:
+        """Triggers a Cloud SQL Export operation and returns the associated operation id or None if unsuccessful."""
+
+    @abc.abstractmethod
     def import_gcs_csv(
         self,
         instance_name: str,
@@ -53,6 +65,14 @@ class CloudSQLClient:
         columns: List[str],
     ) -> Optional[str]:
         """Triggers a Cloud SQL Import operation and returns the associated operation id or None if unsuccessful."""
+
+    @abc.abstractmethod
+    def import_gcs_sql(
+        self,
+        database_key: SQLAlchemyDatabaseKey,
+        gcs_uri: GcsfsFilePath,
+    ) -> Optional[str]:
+        """Triggers a Cloud SQL Import operation and returns the associated operation id or None if unsuccesful."""
 
     @abc.abstractmethod
     def wait_until_operation_completed(
@@ -105,6 +125,30 @@ class CloudSQLClientImpl:
         resp = req.execute()
         return resp.get("name")
 
+    def export_to_gcs_sql(
+        self,
+        database_key: SQLAlchemyDatabaseKey,
+        gcs_uri: GcsfsFilePath,
+    ) -> Optional[str]:
+        logging.debug("Starting Cloud SQL export operation.")
+        instance_name = SQLAlchemyEngineManager.get_stripped_cloudsql_instance_id(
+            database_key.schema_type
+        )
+        req = self.service.instances().export(
+            project=self.project_id,
+            instance=instance_name,
+            body={
+                "exportContext": {
+                    "databases": [database_key.db_name],
+                    "fileType": "SQL",
+                    "uri": f"gs://{gcs_uri.abs_path()}",
+                    "offload": False,
+                },
+            },
+        )
+        resp = req.execute()
+        return resp.get("name")
+
     def import_gcs_csv(
         self,
         instance_name: str,
@@ -124,6 +168,29 @@ class CloudSQLClientImpl:
                     },
                     "database": "postgres",
                     "fileType": "CSV",
+                    "uri": f"gs://{gcs_uri.abs_path()}",
+                },
+            },
+        )
+        resp = req.execute()
+        return resp.get("name")
+
+    def import_gcs_sql(
+        self,
+        database_key: SQLAlchemyDatabaseKey,
+        gcs_uri: GcsfsFilePath,
+    ) -> Optional[str]:
+        logging.debug("Starting Cloud SQL import operation.")
+        instance_name = SQLAlchemyEngineManager.get_stripped_cloudsql_instance_id(
+            database_key.schema_type
+        )
+        req = self.service.instances().import_(
+            project=self.project_id,
+            instance=instance_name,
+            body={
+                "importContext": {
+                    "database": database_key.db_name,
+                    "fileType": "SQL",
                     "uri": f"gs://{gcs_uri.abs_path()}",
                 },
             },

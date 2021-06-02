@@ -19,20 +19,20 @@
 import enum
 import inspect
 import sys
-from types import ModuleType
-from typing import Iterator, Optional, Type, List, Any
-
 from functools import lru_cache
+from types import ModuleType
+from typing import Any, Iterator, List, Literal, Optional, Type, Union
+
 import sqlalchemy
-from sqlalchemy import Table, ForeignKeyConstraint
+from sqlalchemy import ForeignKeyConstraint, Table
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.persistence.database.base_schema import (
+    CaseTriageBase,
     JailsBase,
     JusticeCountsBase,
-    StateBase,
     OperationsBase,
-    CaseTriageBase,
+    StateBase,
 )
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.aggregate import schema as aggregate_schema
@@ -46,8 +46,8 @@ from recidiviz.persistence.database.schema.history_table_shared_columns_mixin im
 from recidiviz.persistence.database.schema.justice_counts import (
     schema as justice_counts_schema,
 )
-from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
+from recidiviz.persistence.database.schema.state import schema as state_schema
 
 _SCHEMA_MODULES: List[ModuleType] = [
     aggregate_schema,
@@ -216,6 +216,9 @@ class SchemaType(enum.Enum):
     OPERATIONS = "OPERATIONS"
     JUSTICE_COUNTS = "JUSTICE_COUNTS"
     CASE_TRIAGE = "CASE_TRIAGE"
+
+
+DirectIngestSchemaType = Union[Literal[SchemaType.JAILS], Literal[SchemaType.STATE]]
 
 
 def schema_type_for_schema_module(module: ModuleType) -> SchemaType:

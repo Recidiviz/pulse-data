@@ -18,12 +18,18 @@ export enum IngestActions {
   StartIngestRun = "start",
   PauseIngestQueues = "pause",
   ResumeIngestQueues = "resume",
+
+  ExportToGCS = "export",
+  ImportFromGCS = "import",
 }
 
 export const actionNames = {
   [IngestActions.StartIngestRun]: "Start Ingest Run",
   [IngestActions.PauseIngestQueues]: "Pause Queues",
   [IngestActions.ResumeIngestQueues]: "Resume Queues",
+
+  [IngestActions.ExportToGCS]: "Export to GCS",
+  [IngestActions.ImportFromGCS]: "Import from GCS",
 };
 
 export enum QueueState {
