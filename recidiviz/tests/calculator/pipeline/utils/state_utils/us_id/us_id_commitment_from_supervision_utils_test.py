@@ -178,7 +178,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
             admission_date=date(2017, 5, 17),
             admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             release_date=date(2017, 5, 29),
-            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
         )
 
@@ -189,7 +189,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 29),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
             release_date=date(2018, 5, 29),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
@@ -229,7 +229,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
             admission_date=date(2017, 5, 17),
             admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             release_date=date(2017, 5, 29),
-            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
         )
 
@@ -240,7 +240,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 29),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
             release_date=date(2018, 5, 29),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,

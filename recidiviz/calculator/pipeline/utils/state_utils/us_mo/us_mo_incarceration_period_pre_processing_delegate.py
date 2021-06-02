@@ -46,8 +46,3 @@ class UsMoIncarcerationPreProcessingDelegate(
         self,
     ) -> Set[StateIncarcerationPeriodAdmissionReason]:
         return self._default_admission_reasons_to_filter()
-
-    def should_collapse_transfers_different_purposes_for_incarceration(self) -> bool:
-        return (
-            self._default_should_collapse_transfers_different_purposes_for_incarceration()
-        )

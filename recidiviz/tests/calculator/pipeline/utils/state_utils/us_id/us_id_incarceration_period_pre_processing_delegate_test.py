@@ -33,10 +33,8 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodAdmissionReason as AdmissionReason,
-)
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodReleaseReason as ReleaseReason,
+    StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
 )
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
@@ -77,10 +75,10 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
-            release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+            release_date=date(2012, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -88,10 +86,10 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2012, 12, 4),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2014, 4, 14),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [
@@ -99,17 +97,25 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             second_incarceration_period,
         ]
 
-        for ip_order_combo in permutations(incarceration_periods):
-            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+        updated_periods = [
+            attr.evolve(
+                initial_incarceration_period,
+                release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
+            ),
+            attr.evolve(
+                second_incarceration_period,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
+            ),
+        ]
 
-            validated_incarceration_periods = (
-                self._pre_processed_incarceration_periods_for_calculations(
-                    incarceration_periods=ips_for_test,
-                    collapse_transfers=True,
-                )
+        validated_incarceration_periods = (
+            self._pre_processed_incarceration_periods_for_calculations(
+                incarceration_periods=incarceration_periods,
+                collapse_transfers=True,
             )
+        )
 
-            self.assertEqual(validated_incarceration_periods, incarceration_periods)
+        self.assertEqual(updated_periods, validated_incarceration_periods)
 
     def test_pre_processed_incarceration_periods_for_calculations_same_pfi_transfer(
         self,
@@ -124,10 +130,10 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -135,10 +141,10 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2012, 12, 4),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2014, 4, 14),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [

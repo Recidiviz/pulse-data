@@ -20,27 +20,32 @@ import abc
 import logging
 from copy import deepcopy
 from datetime import date
-
-from typing import List, Optional, Dict, Set
+from typing import Dict, List, Optional, Set
 
 import attr
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
-    standard_date_sort_for_incarceration_periods,
     ip_is_nested_in_previous_period,
+    period_edges_are_valid_transfer,
+    standard_date_sort_for_incarceration_periods,
 )
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
-    is_official_admission,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
+    StateIncarcerationPeriodStatus,
+    is_official_admission,
 )
 from recidiviz.persistence.entity.entity_utils import is_placeholder
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+
+ATTRIBUTES_TRIGGERING_STATUS_CHANGE = [
+    "custodial_authority",
+    "specialized_purpose_for_incarceration",
+]
 
 
 @attr.s(kw_only=True, frozen=True)
@@ -56,21 +61,6 @@ class PreProcessingConfiguration:
 class StateSpecificIncarcerationPreProcessingDelegate:
     """Interface for state-specific decisions involved in pre-processing
     incarceration periods for calculations."""
-
-    # TODO(#7523): This should be deleted when we make transfers between
-    #  two different specialized_purpose_for_incarceration values a STATUS_CHANGE
-    @abc.abstractmethod
-    def should_collapse_transfers_different_purposes_for_incarceration(self) -> bool:
-        """Whether or not to collapse chronologically adjacent periods that are
-        connected by a transfer release and transfer admission but have different
-        specialized_purpose_for_incarceration values.
-        """
-
-    @staticmethod
-    def _default_should_collapse_transfers_different_purposes_for_incarceration() -> bool:
-        """Default behavior of
-        should_collapse_transfers_different_purposes_for_incarceration function."""
-        return True
 
     @abc.abstractmethod
     def admission_reasons_to_filter(
@@ -163,6 +153,11 @@ class IncarcerationPreProcessingManager:
                     self._sort_and_infer_missing_dates_and_statuses(
                         mid_processing_periods
                     )
+                )
+
+                # Update transfers that should be status change edges
+                mid_processing_periods = self._update_transfers_to_status_changes(
+                    mid_processing_periods
                 )
 
                 # Drop certain periods entirely from the calculations
@@ -460,6 +455,62 @@ class IncarcerationPreProcessingManager:
 
         return updated_periods
 
+    @staticmethod
+    def _is_status_change_edge(
+        ip_1: StateIncarcerationPeriod, ip_2: StateIncarcerationPeriod
+    ) -> bool:
+        """Returns whether the release from ip_1 and the admission into ip_2 is a
+        transfer between two periods that qualifies as a STATUS_CHANGE."""
+        if period_edges_are_valid_transfer(
+            ip_1,
+            ip_2,
+        ):
+            # If the two IPs are valid transfers and they have different values for any
+            # of the attributes listed in ATTRIBUTES_TRIGGERING_STATUS_CHANGE, then they
+            # are a status change edge
+            for attribute in ATTRIBUTES_TRIGGERING_STATUS_CHANGE:
+                distinct_values = set()
+                distinct_values.add(getattr(ip_1, attribute))
+                distinct_values.add(getattr(ip_2, attribute))
+                if len(distinct_values) > 1:
+                    return True
+        return False
+
+    @staticmethod
+    def _update_transfers_to_status_changes(
+        incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> List[StateIncarcerationPeriod]:
+        """Updates the admission and release reasons on adjacent periods that qualify
+        as valid status-change transitions to be STATUS_CHANGE instead of TRANSFER.
+
+        It's possible that a person also changed facilities when one of their statuses
+        changed, but the STATUS_CHANGE edge takes precedence in these cases.
+        """
+        for index, _ in enumerate(incarceration_periods):
+            ip = incarceration_periods[index]
+            next_ip = (
+                incarceration_periods[index + 1]
+                if index < len(incarceration_periods) - 1
+                else None
+            )
+
+            if next_ip and IncarcerationPreProcessingManager._is_status_change_edge(
+                ip, next_ip
+            ):
+                # Update the release_reason on the IP to STATUS_CHANGE
+                incarceration_periods[index] = attr.evolve(
+                    ip,
+                    release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
+                )
+
+                # Update the admission_reason on the next IP to STATUS_CHANGE
+                incarceration_periods[index + 1] = attr.evolve(
+                    next_ip,
+                    admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
+                )
+
+        return incarceration_periods
+
     def _collapse_incarceration_period_transfers(
         self,
         incarceration_periods: List[StateIncarcerationPeriod],
@@ -496,23 +547,12 @@ class IncarcerationPreProcessingManager:
                     # period with the open transfer period.
                     start_period = new_incarceration_periods.pop(-1)
 
-                    if (
-                        not self.delegate.should_collapse_transfers_different_purposes_for_incarceration()
-                        and start_period.specialized_purpose_for_incarceration
-                        != incarceration_period.specialized_purpose_for_incarceration
-                    ):
-                        # If periods with different specialized_purpose_for_incarceration values should not be collapsed,
-                        # and this period has a different specialized_purpose_for_incarceration value than the one before
-                        # it, add the two period separately
-                        new_incarceration_periods.append(start_period)
-                        new_incarceration_periods.append(incarceration_period)
-                    else:
-                        combined_period = self._combine_incarceration_periods(
-                            start_period,
-                            incarceration_period,
-                            overwrite_facility_information=overwrite_facility_information_in_transfers,
-                        )
-                        new_incarceration_periods.append(combined_period)
+                    combined_period = self._combine_incarceration_periods(
+                        start_period,
+                        incarceration_period,
+                        overwrite_facility_information=overwrite_facility_information_in_transfers,
+                    )
+                    new_incarceration_periods.append(combined_period)
                 else:
                     # They weren't transferred here. Add this as a new
                     # incarceration period.

@@ -17,29 +17,26 @@
 """Identifies instances of admission and release from incarceration."""
 import logging
 from datetime import date
-from typing import List, Optional, Any, Dict, Set, Union, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
-    IncarcerationEvent,
     IncarcerationAdmissionEvent,
-    IncarcerationReleaseEvent,
-    IncarcerationStayEvent,
     IncarcerationCommitmentFromSupervisionAdmissionEvent,
+    IncarcerationEvent,
+    IncarcerationReleaseEvent,
     IncarcerationStandardAdmissionEvent,
+    IncarcerationStayEvent,
 )
 from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
-    get_commitment_from_supervision_details,
     default_violation_history_window_pre_commitment_from_supervision,
+    get_commitment_from_supervision_details,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
-    list_of_dicts_to_dict_with_keys,
     extract_county_of_residence_from_rows,
-)
-from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
-    PreProcessedIncarcerationPeriodIndex,
+    list_of_dicts_to_dict_with_keys,
 )
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
     IncarcerationPreProcessingManager,
@@ -47,53 +44,55 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_man
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_earliest_date_of_period_ending_in_death,
 )
+from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
+    PreProcessedIncarcerationPeriodIndex,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    get_pre_incarceration_supervision_type,
-    get_post_incarceration_supervision_type,
-    state_specific_incarceration_admission_reason_override,
-    state_specific_incarceration_release_reason_override,
-    state_specific_specialized_purpose_for_incarceration_override,
-    pre_commitment_supervision_period_if_commitment,
     filter_supervision_periods_for_commitment_from_supervision_identification,
-    include_decisions_on_follow_up_responses_for_most_severe_response,
     get_commitment_from_supervision_supervision_type,
-    state_specific_violation_history_window_pre_commitment_from_supervision,
-    state_specific_violation_responses_for_violation_history,
-    state_specific_violation_response_pre_processing_function,
+    get_post_incarceration_supervision_type,
+    get_pre_incarceration_supervision_type,
     get_state_specific_incarceration_period_pre_processing_delegate,
+    include_decisions_on_follow_up_responses_for_most_severe_response,
+    pre_commitment_supervision_period_if_commitment,
+    state_specific_incarceration_admission_reason_override,
+    state_specific_specialized_purpose_for_incarceration_override,
+    state_specific_violation_history_window_pre_commitment_from_supervision,
+    state_specific_violation_response_pre_processing_function,
+    state_specific_violation_responses_for_violation_history,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     get_supervision_periods_from_sentences,
 )
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
-    responses_on_most_recent_response_date,
     get_most_severe_response_decision,
-    violation_responses_in_window,
     prepare_violation_responses_for_calculations,
+    responses_on_most_recent_response_date,
+    violation_responses_in_window,
 )
 from recidiviz.calculator.pipeline.utils.violation_utils import (
     get_violation_and_response_history,
 )
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
     StateIncarcerationPeriodAdmissionReason,
-    StateSpecializedPurposeForIncarceration,
     StateIncarcerationPeriodReleaseReason,
+    StateIncarcerationPeriodStatus,
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.persistence.entity.entity_utils import get_single_state_code
 from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateSentenceGroup,
-    StateCharge,
-    StateIncarcerationSentence,
-    StateSupervisionSentence,
-    StateSupervisionPeriod,
     PeriodType,
     StateAssessment,
+    StateCharge,
+    StateIncarcerationPeriod,
+    StateIncarcerationSentence,
+    StateSentenceGroup,
+    StateSupervisionPeriod,
+    StateSupervisionSentence,
     StateSupervisionViolationResponse,
 )
 
@@ -529,16 +528,11 @@ def admission_event_for_period(
         incarceration_sentences, supervision_sentences, incarceration_period
     )
 
-    preceding_incarceration_period = (
-        incarceration_period_index.preceding_incarceration_period(incarceration_period)
-    )
-
     if admission_date and admission_reason:
         admission_reason = state_specific_incarceration_admission_reason_override(
             incarceration_period,
             admission_reason,
             supervision_type_at_admission,
-            preceding_incarceration_period,
         )
 
         specialized_purpose_for_incarceration: Optional[
@@ -760,16 +754,6 @@ def release_event_for_period(
             "Unexpected incarceration period without an incarceration_period_id."
         )
 
-    ip_index: int = incarceration_period_index.incarceration_periods.index(
-        incarceration_period
-    )
-
-    next_incarceration_period: Optional[StateIncarcerationPeriod] = None
-    if ip_index < len(incarceration_period_index.incarceration_periods) - 1:
-        next_incarceration_period = incarceration_period_index.incarceration_periods[
-            ip_index + 1
-        ]
-
     original_admission_reasons_by_period_id: Dict[
         int, Tuple[StateIncarcerationPeriodAdmissionReason, Optional[str]]
     ] = incarceration_period_index.original_admission_reasons_by_period_id
@@ -784,12 +768,6 @@ def release_event_for_period(
         )
 
     if release_date and release_reason:
-        release_reason = state_specific_incarceration_release_reason_override(
-            incarceration_period,
-            release_reason,
-            next_incarceration_period,
-        )
-
         supervision_type_at_release: Optional[
             StateSupervisionPeriodSupervisionType
         ] = get_post_incarceration_supervision_type(
