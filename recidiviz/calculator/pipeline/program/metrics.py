@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Program metrics we calculate."""
-
+import abc
 from datetime import date
 from typing import Optional
 
@@ -23,10 +23,10 @@ import attr
 
 from recidiviz.calculator.pipeline.utils.event_utils import SupervisionLocationMixin
 from recidiviz.calculator.pipeline.utils.metric_utils import (
-    RecidivizMetric,
-    PersonLevelMetric,
-    RecidivizMetricType,
     AssessmentMetricMixin,
+    PersonLevelMetric,
+    RecidivizMetric,
+    RecidivizMetricType,
 )
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
@@ -67,12 +67,21 @@ class ProgramMetric(RecidivizMetric[ProgramMetricType], PersonLevelMetric):
     # Program ID
     program_id: str = attr.ib(default=None)
 
+    @classmethod
+    @abc.abstractmethod
+    def get_description(cls) -> str:
+        """Should be implemented by metric subclasses to return a description of the metric."""
+
 
 @attr.s
 class ProgramReferralMetric(
     ProgramMetric, AssessmentMetricMixin, SupervisionLocationMixin
 ):
     """Subclass of ProgramMetric that contains program referral information."""
+
+    @classmethod
+    def get_description(cls) -> str:
+        return "TODO(#7563): Add ProgramReferralMetric description"
 
     # Required characteristics
 
@@ -102,6 +111,10 @@ class ProgramReferralMetric(
 @attr.s
 class ProgramParticipationMetric(ProgramMetric):
     """Subclass of ProgramMetric that contains program participation information."""
+
+    @classmethod
+    def get_description(cls) -> str:
+        return "TODO(#7563): Add ProgramParticipationMetric description"
 
     # Required characteristics
 

@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Metrics related to violations and their responses and decisions."""
+import abc
+
 import attr
 
 from recidiviz.calculator.pipeline.utils.event_utils import ViolationResponseMixin
@@ -57,10 +59,19 @@ class ViolationMetric(RecidivizMetric[ViolationMetricType], PersonLevelMetric):
     # Violation Id
     supervision_violation_id: int = attr.ib(default=None)
 
+    @classmethod
+    @abc.abstractmethod
+    def get_description(cls) -> str:
+        """Should be implemented by metric subclasses to return a description of the metric."""
+
 
 @attr.s
 class ViolationWithResponseMetric(ViolationMetric, ViolationResponseMixin):
     """Subclass of ViolationMetric that stores information about a violation and its response."""
+
+    @classmethod
+    def get_description(cls) -> str:
+        return "TODO(#7563): Add ViolationWithResponseMetric description"
 
     metric_type: ViolationMetricType = attr.ib(
         init=False, default=ViolationMetricType.VIOLATION

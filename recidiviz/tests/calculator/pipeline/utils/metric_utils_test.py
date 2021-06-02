@@ -16,42 +16,41 @@
 # =============================================================================
 """Tests the functions in the metric_utils file."""
 import unittest
+
 import pytest
 from google.cloud import bigquery
 from google.cloud.bigquery import SchemaField
 
-from recidiviz.calculator.dataflow_config import (
-    DATAFLOW_METRICS_TO_TABLES,
-)
+from recidiviz.calculator.dataflow_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.calculator.pipeline.incarceration.metrics import (
     IncarcerationAdmissionMetric,
+    IncarcerationCommitmentFromSupervisionMetric,
+    IncarcerationMetric,
     IncarcerationMetricType,
     IncarcerationPopulationMetric,
     IncarcerationReleaseMetric,
-    IncarcerationCommitmentFromSupervisionMetric,
-    IncarcerationMetric,
 )
 from recidiviz.calculator.pipeline.program.metrics import (
     ProgramMetricType,
-    ProgramReferralMetric,
     ProgramParticipationMetric,
+    ProgramReferralMetric,
 )
 from recidiviz.calculator.pipeline.recidivism.metrics import (
-    ReincarcerationRecidivismMetricType,
     ReincarcerationRecidivismCountMetric,
+    ReincarcerationRecidivismMetricType,
     ReincarcerationRecidivismRateMetric,
 )
 from recidiviz.calculator.pipeline.supervision.metrics import (
-    SupervisionMetricType,
-    SupervisionPopulationMetric,
-    SupervisionTerminationMetric,
-    SupervisionRevocationMetric,
-    SupervisionSuccessMetric,
     SuccessfulSupervisionSentenceDaysServedMetric,
     SupervisionCaseComplianceMetric,
     SupervisionDowngradeMetric,
-    SupervisionStartMetric,
+    SupervisionMetricType,
     SupervisionOutOfStatePopulationMetric,
+    SupervisionPopulationMetric,
+    SupervisionRevocationMetric,
+    SupervisionStartMetric,
+    SupervisionSuccessMetric,
+    SupervisionTerminationMetric,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import (
     json_serializable_metric_key,
@@ -217,9 +216,9 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
 class TestRecidivizMetricType(unittest.TestCase):
     """Tests required characteristics of various RecidivizMetricTypes."""
 
-    def test_unique_metric_type_values(self):
+    def test_unique_metric_type_values(self) -> None:
         all_metric_type_values = [
-            metric_class.build_from_dictionary(
+            metric_class.build_from_dictionary(  # type: ignore[union-attr]
                 {"job_id": "xxx", "state_code": "US_XX"}
             ).metric_type.value
             for metric_class in DATAFLOW_METRICS_TO_TABLES
@@ -227,3 +226,11 @@ class TestRecidivizMetricType(unittest.TestCase):
 
         # Assert that all metric type values are unique
         self.assertEqual(len(set(all_metric_type_values)), len(all_metric_type_values))
+
+    def test_unique_metric_descriptions(self) -> None:
+        all_metric_descriptions = [
+            metric.get_description() for metric in DATAFLOW_METRICS_TO_TABLES
+        ]
+        self.assertEqual(
+            len(set(all_metric_descriptions)), len(all_metric_descriptions)
+        )
