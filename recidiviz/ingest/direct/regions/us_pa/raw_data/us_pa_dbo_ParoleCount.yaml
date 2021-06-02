@@ -4,6 +4,7 @@ file_description: |-
   (PBPP) identification numbers to PA DOC inmate numbers.
 primary_key_cols:
   - ParoleNumber
+  - ParoleInstNumber
 columns:
   - name: ParoleNumber
     description: |-
