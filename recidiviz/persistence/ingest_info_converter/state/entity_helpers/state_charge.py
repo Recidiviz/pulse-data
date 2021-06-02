@@ -81,6 +81,7 @@ def copy_fields_to_builder(
     new.classification_subtype = fn(normalize, "classification_subtype", proto)
     new.offense_type = fn(normalize, "offense_type", proto)
     new.is_violent = fn(parse_bool, "is_violent", proto)
+    new.is_sex_offense = fn(parse_bool, "is_sex_offense", proto)
     new.counts = fn(parse_int, "counts", proto)
     new.charge_notes = fn(normalize, "charge_notes", proto)
     new.is_controlling = fn(parse_bool, "is_controlling", proto)

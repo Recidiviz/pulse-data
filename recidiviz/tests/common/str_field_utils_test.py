@@ -178,6 +178,36 @@ class TestStrFieldUtils(TestCase):
     def test_parseDate(self) -> None:
         assert parse_date("Jan 1, 2018") == datetime.date(year=2018, month=1, day=1)
 
+    def test_parseDate_slash_separators(self) -> None:
+        assert parse_date("05/12/2013") == datetime.date(year=2013, month=5, day=12)
+
+    def test_parseDate_slash_separators_no_date(self) -> None:
+        assert parse_date("11/2010") == datetime.date(year=2010, month=11, day=1)
+
+    def test_parseDate_slash_separators_two_digit_year(self) -> None:
+        assert parse_date("8/21/10") == datetime.date(year=2010, month=8, day=21)
+
+    def test_parseDate_dot_separators(self) -> None:
+        assert parse_date("12.25.2007") == datetime.date(year=2007, month=12, day=25)
+
+    def test_parseDate_dot_separators_part_string_part_number(self) -> None:
+        assert parse_date("APR.2012") == datetime.date(year=2012, month=4, day=1)
+
+    def test_parseDate_space_separators(self) -> None:
+        assert parse_date("01 14 2018") == datetime.date(year=2018, month=1, day=14)
+
+    def test_parseDate_space_separators_no_date(self) -> None:
+        assert parse_date("01 2018") == datetime.date(year=2018, month=1, day=1)
+
+    def test_parseDate_space_separators_part_string_part_number(self) -> None:
+        assert parse_date("MAY 2003") == datetime.date(year=2003, month=5, day=1)
+
+    def test_parseDate_no_separators(self) -> None:
+        assert parse_date("03122008") == datetime.date(year=2008, month=3, day=12)
+
+    def test_parseDate_no_separators_part_string_part_number(self) -> None:
+        assert parse_date("June2016") == datetime.date(year=2016, month=6, day=1)
+
     def test_parseDate_zero(self) -> None:
         assert parse_date("0") is None
 

@@ -11,6 +11,8 @@ columns:
     description: |-
       Table primary key
   - name: ucr
+    description: |-
+      Uniform Crime Reporting code - TODO(#7571): Figure out this pattern
   - name: off_cat
     description: |-
       Offense category code

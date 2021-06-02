@@ -1648,6 +1648,9 @@ class _StateChargeSharedColumns(_ReferencesStatePersonSharedColumns):
     is_violent = Column(
         Boolean, comment="Whether this charge was for a violent crime or not."
     )
+    is_sex_offense = Column(
+        Boolean, comment="Whether or not the violation involved a sex offense."
+    )
     counts = Column(
         Integer,
         comment="The number of counts of this charge which are being brought against the person.",

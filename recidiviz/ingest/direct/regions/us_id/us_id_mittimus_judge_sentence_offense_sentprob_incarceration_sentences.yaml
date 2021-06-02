@@ -18,6 +18,7 @@ child_key_mappings:
 
   off_cnt: state_charge.counts
   off_ldesc: state_charge.description
+  crm_grp_desc: state_charge.offense_type
 
 primary_key:
   docno: state_person.state_person_id
@@ -37,6 +38,9 @@ keys_to_ignore:
   - sent_max_mo         # Maximum months in sentence - Handled manually in the controller
   - sent_max_yr         # Maximum years in sentence - Handled manually in the controller
   - sent_no             # Sentence number - Handled manually in controller
+  - off_sxo_flg         # Offense sex offender - Handled manually in the controller
+  - off_viol            # Whether or not the offense was violent - Handled manually in the controller
+  - off_dtd             # Offense date - Handled manually in the controller
 
   - am_sent_no          # Unused - Amended sentence number.
   - caseno              # Unused - Case number, removed as part of #6564
@@ -71,7 +75,6 @@ keys_to_ignore:
   - off_cat             # Unused - Offense category - Used to find off_ldesc
   - off_cd              # Unused - Offense code - Used to find off_ldesc
   - off_deg             # Unused - Offense degree - Usedtofind off_ldesc
-  - off_dtd             # Unused - offense date. TODO(#3506): Handle different variations of this field.
   - off_rank1           # Unused - TODO(#3506): Get more info from ID.
   - off_rank2           # Unused - TODO(#3506): Get more info from ID.
   - off_rank3           # Unused - TODO(#3506): Get more info from ID.
@@ -80,12 +83,12 @@ keys_to_ignore:
   - off_stat_eff_dtd    # Unused - Date the statue become effective
   - off_stat_subsec     # Unused - Statute Subsection
   - off_stat_term_dtd   # Unused - TODO(#3506): Get more info from ID
-  - off_sxo_flg         # Unused - Offense sex offender? TODO(#3506): Get more info from ID.
-  - off_typ             # Unused - Offense type - TODO(#3506): Get more info from ID
-  - off_viol            # Unused - Whether or not the offense was violent. TODO(#3516): Consider adding this to charge
-                        #          schema.
-  - offvisxo_flg        # Unused - TODO(#3506): Get more info from ID
-  - off_visxo_flg       # Unused - TODO(#3507): Add raw import preprocessing to combine with offvisxo_flg above.
+  - off_typ             # Unused - Offense type - Always null
+  - offvisxo_flg        # Unused - Always null
+  - off_visxo_flg       # Unused - Always null
+  - crm_grp_cd          # Unused - Crime group code - only used in the ingest view for joins
+  - ofnse_crm_grp_id    # Unused - Offense crime group id - unnecessary
+  - ucr                 # Unused - Uniform Crime Reporting code TODO(#3506): Get more info from ID on this
   - plea                # Unused - Plea TODO(#2607): Add plea to StateCharge.
   - sent_eff_dtd        # Unused - Usually the same as sentence_dtd/sent_beg_dtd.
                         #          TODO(#3506): Understand when these differ.

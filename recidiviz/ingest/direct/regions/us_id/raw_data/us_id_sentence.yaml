@@ -31,8 +31,11 @@ columns:
       manual intervention occurs which means either a) deleting the oldest sentence or b) deleting the
       “least important” sentence
   - name: off_dtd
-    date of offense: |-
-      date of offense
+    is_datetime: True
+    description: |-
+      Date of offense - the values in this column have highly variable formats, some of which are not easy or possible
+      to parse as is, and some of which indicate date ranges that perhaps should not be reduced to a single date. As
+      such, our ingest of this field is somewhat spotty -- we make our best effort.
   - name: off_cat
     description: |-
       offense category - with off_cd and off_deg links to offense table
