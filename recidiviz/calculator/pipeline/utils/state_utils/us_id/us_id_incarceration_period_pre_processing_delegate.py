@@ -32,11 +32,7 @@ class UsIdIncarcerationPreProcessingDelegate(
     StateSpecificIncarcerationPreProcessingDelegate
 ):
     # Functions with state-specific overrides
-    def should_collapse_transfers_different_purposes_for_incarceration(self) -> bool:
-        """We need the dates of transfers from parole board holds and treatment custody
-        to identify revocations in US_ID.
-        """
-        return False
+    # No deviations from default logic for US_ID
 
     # Functions using default behavior
     def admission_reasons_to_filter(

@@ -109,7 +109,7 @@ def us_id_pre_commitment_supervision_period_if_commitment(
 
     elif (
         incarceration_period.admission_reason
-        == StateIncarcerationPeriodAdmissionReason.TRANSFER
+        == StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE
     ):
         if incarceration_period.specialized_purpose_for_incarceration in (
             PurposeForIncarceration.TREATMENT_IN_PRISON,
@@ -203,7 +203,7 @@ def _us_id_admission_is_commitment_from_supervision(
 
     if (
         incarceration_period.admission_reason
-        == StateIncarcerationPeriodAdmissionReason.TRANSFER
+        == StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE
         and purpose_for_incarceration
         in (
             PurposeForIncarceration.TREATMENT_IN_PRISON,
@@ -237,7 +237,7 @@ def _us_id_admission_is_commitment_from_supervision(
             # treatment in prison are commitments from supervision
             if (
                 preceding_incarceration_period.release_reason
-                == StateIncarcerationPeriodReleaseReason.TRANSFER
+                == StateIncarcerationPeriodReleaseReason.STATUS_CHANGE
                 and preceding_incarceration_period.specialized_purpose_for_incarceration
                 == PurposeForIncarceration.PAROLE_BOARD_HOLD
             ):

@@ -40,10 +40,5 @@ class UsNdIncarcerationPreProcessingDelegate(
         return {StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY}
 
     # Functions using default behavior
-    def should_collapse_transfers_different_purposes_for_incarceration(self) -> bool:
-        return (
-            self._default_should_collapse_transfers_different_purposes_for_incarceration()
-        )
-
     def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:
         return self._default_incarceration_types_to_filter()
