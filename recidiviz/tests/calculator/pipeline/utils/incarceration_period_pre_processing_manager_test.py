@@ -27,19 +27,17 @@ import attr
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
+    ATTRIBUTES_TRIGGERING_STATUS_CHANGE,
     IncarcerationPreProcessingManager,
 )
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
     StateIncarcerationFacilitySecurityLevel,
+    StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
+    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
-)
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodAdmissionReason as AdmissionReason,
-)
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodReleaseReason as ReleaseReason,
 )
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
@@ -76,9 +74,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         first_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -87,9 +85,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2011, 3, 4),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2014, 4, 14),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         second_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -98,9 +96,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2012, 2, 4),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2016, 4, 14),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [
@@ -130,9 +128,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             facility="A",
         )
 
@@ -142,9 +140,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2010, 12, 4),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2014, 4, 14),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             facility="B",
         )
 
@@ -154,7 +152,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2014, 4, 14),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2016, 9, 4),
             release_reason=None,
             facility="C",
@@ -180,9 +178,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2016, 9, 4),
-            release_reason=ReleaseReason.INTERNAL_UNKNOWN,
+            release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
             facility="C",
         )
 
@@ -198,7 +196,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             attr.evolve(ip_2),
             attr.evolve(
                 ip_3,
-                release_reason=ReleaseReason.INTERNAL_UNKNOWN,
+                release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
             ),
         ]
 
@@ -228,9 +226,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2004, 1, 3),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2008, 4, 14),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -242,7 +240,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_date=None,
             admission_reason=None,
             release_date=date(2010, 4, 14),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [
@@ -267,9 +265,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
                     status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                     state_code=state_code,
                     admission_date=date(2004, 1, 3),
-                    admission_reason=AdmissionReason.NEW_ADMISSION,
+                    admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                     release_date=date(2010, 4, 14),
-                    release_reason=ReleaseReason.SENTENCE_SERVED,
+                    release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
                 )
             ],
             validated_incarceration_periods,
@@ -286,9 +284,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             external_id="1",
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.ADMITTED_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             release_date=date(2009, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
         )
 
@@ -299,9 +297,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             external_id="1",
             state_code=state_code,
             admission_date=date(2009, 12, 4),
-            admission_reason=AdmissionReason.PAROLE_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             release_date=date(2009, 12, 4),
-            release_reason=ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
         )
 
         valid_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
@@ -311,9 +309,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             external_id="3",
             state_code=state_code,
             admission_date=date(2009, 12, 4),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2014, 12, 19),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [
@@ -346,9 +344,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             external_id="1",
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.ADMITTED_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             release_date=date(2009, 12, 4),
-            release_reason=ReleaseReason.DEATH,
+            release_reason=StateIncarcerationPeriodReleaseReason.DEATH,
         )
 
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
@@ -358,9 +356,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             external_id="1",
             state_code=state_code,
             admission_date=date(2009, 12, 4),
-            admission_reason=AdmissionReason.PAROLE_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             release_date=date(2009, 12, 5),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
@@ -370,7 +368,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             external_id="1",
             state_code=state_code,
             admission_date=date(2009, 12, 6),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
         )
 
         incarceration_periods = [
@@ -404,9 +402,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             external_id="1",
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2009, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         valid_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
@@ -416,9 +414,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             external_id="2",
             state_code=state_code,
             admission_date=date(2009, 12, 4),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2009, 12, 4),
-            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         )
 
         invalid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -428,9 +426,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             external_id="3",
             state_code=state_code,
             admission_date=date(2009, 12, 4),
-            admission_reason=AdmissionReason.ADMITTED_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             release_date=date(2009, 12, 4),
-            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         )
 
         incarceration_periods = [
@@ -454,9 +452,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             external_id="1",
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2009, 12, 4),
-            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         )
 
         self.assertEqual(
@@ -474,9 +472,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             state_code="US_XX",
             facility="PRISON3",
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2008, 11, 20),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         valid_period = StateIncarcerationPeriod.new_with_defaults(
@@ -486,9 +484,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             state_code="US_XX",
             facility="PRISON3",
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         zero_day_end_different_reason = StateIncarcerationPeriod.new_with_defaults(
@@ -498,9 +496,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             state_code="US_XX",
             facility="PRISON3",
             admission_date=date(2010, 12, 4),
-            admission_reason=AdmissionReason.EXTERNAL_UNKNOWN,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         )
 
         incarceration_periods = [
@@ -530,9 +528,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         first_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -541,9 +539,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2011, 3, 4),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2014, 4, 14),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         second_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -552,9 +550,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2012, 2, 4),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2016, 4, 14),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [
@@ -588,9 +586,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         first_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -599,9 +597,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2011, 3, 4),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2014, 4, 14),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         second_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -610,7 +608,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2012, 2, 4),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
 
         incarceration_periods = [
@@ -645,9 +643,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code=state_code,
                 admission_date=date(2008, 11, 20),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                 release_date=date(2008, 11, 20),
-                release_reason=ReleaseReason.SENTENCE_SERVED,
+                release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             )
         )
 
@@ -657,9 +655,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2014, 4, 14),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         third_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -668,7 +666,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2012, 2, 4),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
 
         incarceration_periods = [
@@ -702,9 +700,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.ADMITTED_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             release_date=date(2008, 11, 20),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -714,9 +712,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2008, 11, 20),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         third_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -726,9 +724,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2008, 12, 10),
-            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         )
 
         incarceration_periods = [
@@ -752,9 +750,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.ADMITTED_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             release_date=date(2008, 12, 10),
-            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         )
 
         self.assertEqual([updated_period], validated_incarceration_periods)
@@ -767,9 +765,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         first_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -778,9 +776,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2010, 12, 4),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2014, 4, 14),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [
@@ -822,9 +820,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2003, 1, 2),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2007, 4, 4),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         first_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -833,9 +831,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         second_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -846,7 +844,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_date=None,
             admission_reason=None,
             release_date=date(2014, 4, 14),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [
@@ -869,9 +867,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2014, 4, 14),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         self.assertEqual(
@@ -910,9 +908,9 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         first_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -920,9 +918,9 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2010, 12, 4),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2014, 4, 14),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [
@@ -959,9 +957,9 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         first_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -969,9 +967,9 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2010, 12, 4),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2014, 4, 14),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [
@@ -996,9 +994,9 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         first_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1006,9 +1004,9 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2011, 3, 2),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2012, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         second_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1016,9 +1014,9 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2012, 2, 4),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2014, 4, 14),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         third_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1026,9 +1024,9 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2016, 6, 2),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2017, 3, 1),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [
@@ -1068,9 +1066,9 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         first_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1078,9 +1076,9 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2011, 3, 2),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2012, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         second_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1088,9 +1086,9 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2012, 2, 4),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2014, 4, 14),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         third_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1098,9 +1096,9 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2016, 6, 2),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2017, 3, 1),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [
@@ -1150,9 +1148,9 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [only_incarceration_period]
@@ -1176,9 +1174,9 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         incarceration_periods = [only_incarceration_period]
@@ -1210,9 +1208,9 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         first_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1220,9 +1218,9 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2011, 3, 2),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2012, 12, 4),
-            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         )
 
         second_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1230,9 +1228,9 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2013, 12, 4),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2014, 4, 14),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [
@@ -1267,9 +1265,9 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         first_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1277,9 +1275,9 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2011, 3, 2),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2012, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         second_reincarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1287,9 +1285,9 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2012, 12, 4),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2014, 4, 14),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [
@@ -1330,10 +1328,10 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1341,10 +1339,10 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2012, 12, 4),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             release_date=date(2014, 4, 14),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [
@@ -1389,11 +1387,11 @@ class TestCombineIncarcerationPeriods(unittest.TestCase):
             facility="Green",
             housing_unit="House19",
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MEDIUM,
-            projected_release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         end_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1403,11 +1401,11 @@ class TestCombineIncarcerationPeriods(unittest.TestCase):
             facility="Jones",
             housing_unit="HouseUnit3",
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
-            projected_release_reason=ReleaseReason.SENTENCE_SERVED,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             admission_date=date(2010, 12, 4),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2012, 12, 10),
-            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         )
 
         combined_incarceration_period = (
@@ -1444,11 +1442,11 @@ class TestCombineIncarcerationPeriods(unittest.TestCase):
             facility="Green",
             housing_unit="House19",
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MEDIUM,
-            projected_release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         end_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1458,11 +1456,11 @@ class TestCombineIncarcerationPeriods(unittest.TestCase):
             facility="Jones",
             housing_unit="HouseUnit3",
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
-            projected_release_reason=ReleaseReason.SENTENCE_SERVED,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             admission_date=date(2010, 12, 4),
-            admission_reason=AdmissionReason.DUAL_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
             release_date=date(2012, 12, 10),
-            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         )
 
         combined_incarceration_period = (
@@ -1502,11 +1500,11 @@ class TestCombineIncarcerationPeriods(unittest.TestCase):
             housing_unit="House19",
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MEDIUM,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
-            projected_release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         end_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1517,11 +1515,11 @@ class TestCombineIncarcerationPeriods(unittest.TestCase):
             housing_unit="HouseUnit3",
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-            projected_release_reason=ReleaseReason.SENTENCE_SERVED,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             admission_date=date(2010, 12, 4),
-            admission_reason=AdmissionReason.DUAL_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
             release_date=date(2012, 12, 10),
-            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         )
 
         combined_incarceration_period = (
@@ -1562,11 +1560,11 @@ class TestCombineIncarcerationPeriods(unittest.TestCase):
             housing_unit="House19",
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MEDIUM,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
-            projected_release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2010, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         end_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1577,11 +1575,11 @@ class TestCombineIncarcerationPeriods(unittest.TestCase):
             housing_unit="HouseUnit3",
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
             specialized_purpose_for_incarceration=None,
-            projected_release_reason=ReleaseReason.SENTENCE_SERVED,
+            projected_release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             admission_date=date(2010, 12, 4),
-            admission_reason=AdmissionReason.DUAL_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
             release_date=date(2012, 12, 10),
-            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         )
 
         combined_incarceration_period = (
@@ -1634,9 +1632,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="1",
             state_code="US_XX",
             admission_date=date(2011, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2012, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         valid_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
@@ -1645,9 +1643,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="2",
             state_code="US_XX",
             admission_date=date(2012, 12, 4),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2012, 12, 24),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         valid_incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
@@ -1656,9 +1654,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="3",
             state_code="US_XX",
             admission_date=date(2012, 12, 24),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2012, 12, 30),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         # Invalid open period with same admission date as valid_incarceration_period_1
@@ -1668,7 +1666,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="0",
             state_code="US_XX",
             admission_date=date(2011, 11, 20),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
         )
 
         incarceration_periods = [
@@ -1684,10 +1682,10 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="0",
             state_code="US_XX",
             admission_date=date(2011, 11, 20),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             # Release date set to the admission date of valid_incarceration_period_1
             release_date=valid_incarceration_period_1.admission_date,
-            release_reason=ReleaseReason.INTERNAL_UNKNOWN,
+            release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
         )
 
         for ip_order_combo in permutations(incarceration_periods):
@@ -1714,9 +1712,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="3",
             state_code="US_XX",
             admission_date=date(2011, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2012, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         valid_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
@@ -1725,9 +1723,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="4",
             state_code="US_XX",
             admission_date=date(2012, 12, 4),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2012, 12, 24),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         valid_incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
@@ -1736,9 +1734,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="5",
             state_code="US_XX",
             admission_date=date(2012, 12, 24),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2012, 12, 30),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         # Valid open period
@@ -1748,7 +1746,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="6",
             state_code="US_XX",
             admission_date=date(2015, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
 
         incarceration_periods = [
@@ -1781,9 +1779,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="3",
             state_code="US_XX",
             admission_date=date(2011, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2012, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         nested_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1792,9 +1790,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="4",
             state_code="US_XX",
             admission_date=date(2012, 11, 29),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2012, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         incarceration_periods = [
@@ -1822,7 +1820,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             admission_date=date(2011, 11, 20),
             admission_reason=None,
             release_date=date(2012, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         valid_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
@@ -1831,9 +1829,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="4",
             state_code="US_XX",
             admission_date=date(2012, 12, 4),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2012, 12, 24),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         valid_incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
@@ -1842,7 +1840,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="5",
             state_code="US_XX",
             admission_date=date(2012, 12, 24),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2012, 12, 30),
             release_reason=None,
         )
@@ -1854,7 +1852,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="5",
             state_code="US_XX",
             admission_date=date(2015, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
 
         incarceration_periods = [
@@ -1871,9 +1869,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
                 external_id="3",
                 state_code="US_XX",
                 admission_date=date(2011, 11, 20),
-                admission_reason=AdmissionReason.INTERNAL_UNKNOWN,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
                 release_date=date(2012, 12, 4),
-                release_reason=ReleaseReason.TRANSFER,
+                release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             ),
             valid_incarceration_period_2,
             StateIncarcerationPeriod.new_with_defaults(
@@ -1882,9 +1880,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
                 external_id="5",
                 state_code="US_XX",
                 admission_date=date(2012, 12, 24),
-                admission_reason=AdmissionReason.TRANSFER,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
                 release_date=date(2012, 12, 30),
-                release_reason=ReleaseReason.INTERNAL_UNKNOWN,
+                release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
             ),
             valid_open_period,
         ]
@@ -1905,7 +1903,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="5",
             state_code="US_XX",
             admission_date=date(2015, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
 
         incarceration_periods = [valid_open_period]
@@ -1924,9 +1922,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="5",
             state_code="US_XX",
             admission_date=date(2015, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2015, 1, 1),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         incarceration_periods = [valid_open_period]
@@ -1948,9 +1946,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="5",
             state_code="US_XX",
             admission_date=date(2015, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2015, 1, 1),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         incarceration_periods = [invalid_period]
@@ -1972,9 +1970,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="5",
             state_code="US_XX",
             admission_date=date(1990, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2015, 1, 1),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         incarceration_periods = [invalid_period]
@@ -1989,7 +1987,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="5",
             state_code="US_XX",
             admission_date=date(1990, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=None,
             release_reason=None,
         )
@@ -2003,9 +2001,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="5",
             state_code="US_XX",
             admission_date=date(2015, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=None,
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [valid_open_period]
@@ -2020,9 +2018,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="5",
             state_code="US_XX",
             admission_date=date(2015, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2015, 11, 20),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         self.assertEqual([updated_period], updated_periods)
@@ -2034,7 +2032,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="5",
             state_code="US_XX",
             release_date=date(2015, 11, 20),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [closed_period]
@@ -2049,9 +2047,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="5",
             state_code="US_XX",
             admission_date=date(2015, 11, 20),
-            admission_reason=AdmissionReason.INTERNAL_UNKNOWN,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
             release_date=date(2015, 11, 20),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         self.assertEqual([updated_period], updated_periods)
@@ -2063,9 +2061,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="1",
             state_code="US_XX",
             admission_date=date(2011, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2012, 12, 4),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         valid_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
@@ -2074,9 +2072,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="2",
             state_code="US_XX",
             admission_date=date(2012, 12, 4),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2012, 12, 24),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         valid_incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
@@ -2085,9 +2083,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="3",
             state_code="US_XX",
             admission_date=date(2012, 12, 24),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2012, 12, 30),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         # Invalid period without an admission_date, where the release_date is the same as the release_date on
@@ -2098,7 +2096,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="0",
             state_code="US_XX",
             release_date=date(2012, 12, 30),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [
@@ -2114,9 +2112,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="0",
             state_code="US_XX",
             admission_date=valid_incarceration_period_3.release_date,
-            admission_reason=AdmissionReason.INTERNAL_UNKNOWN,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
             release_date=date(2012, 12, 30),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         for ip_order_combo in permutations(incarceration_periods):
@@ -2145,9 +2143,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="5-6",
             state_code="US_XX",
             admission_date=date(2015, 12, 3),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2016, 2, 11),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         # Invalid period without an admission_date, where the release_date is the same as the release_date on
@@ -2157,7 +2155,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="7",
             state_code="US_XX",
             release_date=date(2016, 2, 11),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         valid_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
@@ -2166,9 +2164,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="8-9",
             state_code="US_XX",
             admission_date=date(2016, 2, 11),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2016, 2, 11),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         valid_incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
@@ -2177,9 +2175,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="10-11",
             state_code="US_XX",
             admission_date=date(2016, 2, 11),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2016, 4, 5),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [
@@ -2195,9 +2193,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="7",
             state_code="US_XX",
             admission_date=valid_incarceration_period_1.release_date,
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2016, 2, 11),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         for ip_order_combo in permutations(incarceration_periods):
@@ -2225,7 +2223,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="0",
             state_code="US_XX",
             admission_date=date(2012, 12, 24),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
         )
 
         # Invalid period without an admission_date
@@ -2235,7 +2233,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="1",
             state_code="US_XX",
             release_date=date(2012, 12, 30),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [invalid_closed_period, invalid_open_period]
@@ -2246,9 +2244,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="0",
             state_code="US_XX",
             admission_date=date(2012, 12, 24),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2012, 12, 30),
-            release_reason=ReleaseReason.INTERNAL_UNKNOWN,
+            release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
         )
 
         updated_closed_period = StateIncarcerationPeriod.new_with_defaults(
@@ -2257,9 +2255,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="1",
             state_code="US_XX",
             admission_date=date(2012, 12, 30),
-            admission_reason=AdmissionReason.INTERNAL_UNKNOWN,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
             release_date=date(2012, 12, 30),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         for ip_order_combo in permutations(incarceration_periods):
@@ -2281,9 +2279,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="1",
             state_code="US_XX",
             admission_date=date(2011, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2011, 11, 20),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         # Invalid open period with same admission date as valid_incarceration_period_1
@@ -2293,7 +2291,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="0",
             state_code="US_XX",
             admission_date=date(2011, 11, 20),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
         )
 
         incarceration_periods = [valid_incarceration_period_1, valid_open_period]
@@ -2318,7 +2316,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="1",
             state_code="US_XX",
             admission_date=date(2001, 6, 11),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
         )
 
         open_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
@@ -2327,7 +2325,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="2",
             state_code="US_XX",
             admission_date=date(2001, 6, 19),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
         )
 
         closed_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -2336,7 +2334,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="3",
             state_code="US_XX",
             release_date=date(2001, 6, 19),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         closed_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
@@ -2345,7 +2343,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="4",
             state_code="US_XX",
             release_date=date(2001, 7, 17),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         incarceration_periods = [
@@ -2362,9 +2360,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
                 external_id="1",
                 state_code="US_XX",
                 admission_date=date(2001, 6, 11),
-                admission_reason=AdmissionReason.TRANSFER,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
                 release_date=date(2001, 6, 19),
-                release_reason=ReleaseReason.TRANSFER,
+                release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             )
         )
 
@@ -2375,23 +2373,21 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
                 external_id="2",
                 state_code="US_XX",
                 admission_date=date(2001, 6, 19),
-                admission_reason=AdmissionReason.TRANSFER,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
                 release_date=date(2001, 6, 19),
-                release_reason=ReleaseReason.INTERNAL_UNKNOWN,
+                release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
             )
         )
 
-        updated_closed_incarceration_period_1 = (
-            StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=3333,
-                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                external_id="3",
-                state_code="US_XX",
-                admission_date=date(2001, 6, 19),
-                admission_reason=AdmissionReason.INTERNAL_UNKNOWN,
-                release_date=date(2001, 6, 19),
-                release_reason=ReleaseReason.TRANSFER,
-            )
+        updated_closed_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=3333,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="3",
+            state_code="US_XX",
+            admission_date=date(2001, 6, 19),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            release_date=date(2001, 6, 19),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         updated_closed_incarceration_period_2 = (
@@ -2401,9 +2397,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
                 external_id="4",
                 state_code="US_XX",
                 admission_date=date(2001, 6, 19),
-                admission_reason=AdmissionReason.TRANSFER,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
                 release_date=date(2001, 7, 17),
-                release_reason=ReleaseReason.TRANSFER,
+                release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             )
         )
 
@@ -2431,7 +2427,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="1",
             state_code="US_XX",
             admission_date=date(2001, 6, 19),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
         )
 
         open_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
@@ -2440,7 +2436,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="2",
             state_code="US_XX",
             admission_date=date(2001, 6, 19),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
         )
 
         open_incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
@@ -2449,7 +2445,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="3",
             state_code="US_XX",
             admission_date=date(2001, 6, 19),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
         )
 
         incarceration_periods = [
@@ -2494,9 +2490,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2004, 1, 3),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2008, 4, 14),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -2507,7 +2503,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             admission_date=None,
             admission_reason=None,
             release_date=date(2010, 4, 14),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [
@@ -2522,9 +2518,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code="US_XX",
                 admission_date=date(2004, 1, 3),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                 release_date=date(2008, 4, 14),
-                release_reason=ReleaseReason.TRANSFER,
+                release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
             ),
             StateIncarcerationPeriod.new_with_defaults(
                 external_id="2",
@@ -2532,9 +2528,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code="US_XX",
                 admission_date=date(2008, 4, 14),
-                admission_reason=AdmissionReason.TRANSFER,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
                 release_date=date(2010, 4, 14),
-                release_reason=ReleaseReason.SENTENCE_SERVED,
+                release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
             ),
         ]
 
@@ -2556,9 +2552,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2004, 1, 3),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2008, 4, 14),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         incarceration_period_copy = StateIncarcerationPeriod.new_with_defaults(
@@ -2567,9 +2563,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2004, 1, 3),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2008, 4, 14),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         incarceration_periods = [incarceration_period, incarceration_period_copy]
@@ -2594,7 +2590,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2004, 1, 3),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
 
         second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -2603,7 +2599,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.EXTERNAL_UNKNOWN,
             state_code="US_XX",
             admission_date=date(2004, 1, 3),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
 
         incarceration_periods = [
@@ -2618,9 +2614,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 state_code="US_XX",
                 admission_date=date(2004, 1, 3),
-                admission_reason=AdmissionReason.NEW_ADMISSION,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                 release_date=date(2004, 1, 3),
-                release_reason=ReleaseReason.INTERNAL_UNKNOWN,
+                release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
             )
         )
 
@@ -2645,7 +2641,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             release_date=date(2004, 1, 3),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -2654,7 +2650,7 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             release_date=date(2004, 1, 10),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         incarceration_periods = [
@@ -2668,9 +2664,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2004, 1, 3),
-            admission_reason=AdmissionReason.INTERNAL_UNKNOWN,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
             release_date=date(2004, 1, 3),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -2679,9 +2675,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2004, 1, 3),
-            admission_reason=AdmissionReason.INTERNAL_UNKNOWN,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
             release_date=date(2004, 1, 10),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         expected_output = [
@@ -2705,9 +2701,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 2, 5),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2002, 9, 11),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         nested_ip = StateIncarcerationPeriod.new_with_defaults(
@@ -2716,9 +2712,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 3, 13),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2002, 3, 13),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         incarceration_periods = [outer_ip, nested_ip]
@@ -2741,9 +2737,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 2, 5),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2002, 9, 11),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         nested_ip_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -2752,9 +2748,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 2, 13),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2002, 2, 18),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         nested_ip_2 = StateIncarcerationPeriod.new_with_defaults(
@@ -2763,9 +2759,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 2, 18),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2002, 6, 20),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         nested_ip_3 = StateIncarcerationPeriod.new_with_defaults(
@@ -2774,9 +2770,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 6, 20),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2002, 6, 29),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         nested_ip_4 = StateIncarcerationPeriod.new_with_defaults(
@@ -2785,9 +2781,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 6, 29),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2002, 9, 11),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         incarceration_periods = [
@@ -2816,9 +2812,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 2, 5),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2002, 9, 11),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         ip_2 = StateIncarcerationPeriod.new_with_defaults(
@@ -2827,9 +2823,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
             admission_date=date(2002, 3, 13),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2002, 10, 22),
-            release_reason=ReleaseReason.TRANSFER,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         incarceration_periods = [ip_1, ip_2]
@@ -2852,9 +2848,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="1",
             state_code="US_XX",
             admission_date=date(2011, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2011, 11, 20),
-            release_reason=ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
         )
 
         valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -2863,9 +2859,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="2",
             state_code="US_XX",
             admission_date=date(2011, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2012, 12, 24),
-            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         )
 
         zero_day_period_end = StateIncarcerationPeriod.new_with_defaults(
@@ -2874,9 +2870,9 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
             external_id="3",
             state_code="US_XX",
             admission_date=date(2012, 12, 24),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2012, 12, 24),
-            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         )
 
         incarceration_periods = [
@@ -2915,9 +2911,9 @@ class TestIsZeroDayErroneousPeriod(unittest.TestCase):
             external_id="1",
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.PAROLE_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             release_date=date(2008, 11, 20),
-            release_reason=ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
         )
 
         self.assertTrue(
@@ -2935,10 +2931,10 @@ class TestIsZeroDayErroneousPeriod(unittest.TestCase):
             external_id="1",
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.PAROLE_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             # Don't drop a period if admission_date != release_date
             release_date=date(2008, 11, 21),
-            release_reason=ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
         )
 
         self.assertFalse(
@@ -2956,9 +2952,9 @@ class TestIsZeroDayErroneousPeriod(unittest.TestCase):
             external_id="1",
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.TRANSFER,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             release_date=date(2008, 11, 20),
-            release_reason=ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
         )
 
         self.assertFalse(
@@ -2976,9 +2972,9 @@ class TestIsZeroDayErroneousPeriod(unittest.TestCase):
             external_id="1",
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=AdmissionReason.PROBATION_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             release_date=date(2008, 11, 20),
-            release_reason=ReleaseReason.SENTENCE_SERVED,
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
         self.assertFalse(
@@ -2994,9 +2990,9 @@ class TestIsZeroDayErroneousPeriod(unittest.TestCase):
             external_id="1",
             state_code="US_XX",
             admission_date=date(2011, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2011, 11, 20),
-            release_reason=ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
         )
 
         valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -3005,9 +3001,9 @@ class TestIsZeroDayErroneousPeriod(unittest.TestCase):
             external_id="2",
             state_code="US_XX",
             admission_date=date(2011, 11, 20),
-            admission_reason=AdmissionReason.NEW_ADMISSION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2012, 12, 24),
-            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         )
 
         zero_day_period_end = StateIncarcerationPeriod.new_with_defaults(
@@ -3016,9 +3012,9 @@ class TestIsZeroDayErroneousPeriod(unittest.TestCase):
             external_id="3",
             state_code="US_XX",
             admission_date=date(2012, 12, 24),
-            admission_reason=AdmissionReason.EXTERNAL_UNKNOWN,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
             release_date=date(2012, 12, 24),
-            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
         )
 
         self.assertTrue(
@@ -3040,3 +3036,270 @@ class TestIsZeroDayErroneousPeriod(unittest.TestCase):
                 zero_day_period_end,
             )
         )
+
+
+class TestStatusChangeEdges(unittest.TestCase):
+    """Tests the various functionality related to setting accurate STATUS_CHANGE
+    edges on periods."""
+
+    def test_update_transfers_to_status_changes(self):
+        state_code = "US_XX"
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            facility="PRISON3",
+            admission_date=date(2013, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            release_date=date(2019, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            facility="PRISON3",
+            admission_date=date(2019, 12, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            release_date=date(2019, 12, 8),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+        )
+
+        incarceration_periods = [incarceration_period_1, incarceration_period_2]
+
+        updated_periods = (
+            IncarcerationPreProcessingManager._update_transfers_to_status_changes(
+                incarceration_periods
+            )
+        )
+
+        expected_updated_periods = [
+            attr.evolve(
+                incarceration_period_1,
+                release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
+            ),
+            attr.evolve(
+                incarceration_period_2,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
+            ),
+        ]
+
+        self.assertEqual(expected_updated_periods, updated_periods)
+
+    def test_update_transfers_to_status_changes_diff_custodial_authority(self):
+        state_code = "US_XX"
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            facility="PRISON3",
+            admission_date=date(2013, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+            release_date=date(2019, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            facility="PRISON3",
+            admission_date=date(2019, 12, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            release_date=date(2019, 12, 8),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        incarceration_periods = [incarceration_period_1, incarceration_period_2]
+
+        updated_periods = (
+            IncarcerationPreProcessingManager._update_transfers_to_status_changes(
+                incarceration_periods
+            )
+        )
+
+        expected_updated_periods = [
+            attr.evolve(
+                incarceration_period_1,
+                release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
+            ),
+            attr.evolve(
+                incarceration_period_2,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
+            ),
+        ]
+
+        self.assertEqual(expected_updated_periods, updated_periods)
+
+    def test_update_transfers_to_status_changes_not_status_change(self):
+        state_code = "US_XX"
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            facility="PRISON3",
+            admission_date=date(2013, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            release_date=date(2019, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            facility="PRISON3",
+            admission_date=date(2019, 12, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            release_date=date(2019, 12, 8),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+        )
+
+        ip_periods_copied = [
+            attr.evolve(
+                incarceration_period_1,
+            ),
+            attr.evolve(
+                incarceration_period_2,
+            ),
+        ]
+
+        incarceration_periods = [incarceration_period_1, incarceration_period_2]
+
+        updated_periods = (
+            IncarcerationPreProcessingManager._update_transfers_to_status_changes(
+                incarceration_periods
+            )
+        )
+
+        self.assertEqual(ip_periods_copied, updated_periods)
+
+    def test_update_transfers_to_status_changes_null_to_set(self):
+        state_code = "US_XX"
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            facility="PRISON3",
+            admission_date=date(2013, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=None,
+            release_date=date(2019, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            facility="PRISON3",
+            admission_date=date(2019, 12, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            release_date=date(2019, 12, 8),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+        )
+
+        expected_updated_periods = [
+            attr.evolve(
+                incarceration_period_1,
+                release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
+            ),
+            attr.evolve(
+                incarceration_period_2,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
+            ),
+        ]
+
+        incarceration_periods = [incarceration_period_1, incarceration_period_2]
+
+        updated_periods = (
+            IncarcerationPreProcessingManager._update_transfers_to_status_changes(
+                incarceration_periods
+            )
+        )
+
+        self.assertEqual(expected_updated_periods, updated_periods)
+
+    def test_update_transfers_to_status_changes_both_null(self):
+        state_code = "US_XX"
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            facility="PRISON3",
+            admission_date=date(2013, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=None,
+            release_date=date(2019, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            facility="PRISON3",
+            admission_date=date(2019, 12, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=None,
+            release_date=date(2019, 12, 8),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+        )
+
+        ip_periods_copied = [
+            attr.evolve(
+                incarceration_period_1,
+            ),
+            attr.evolve(
+                incarceration_period_2,
+            ),
+        ]
+
+        incarceration_periods = [incarceration_period_1, incarceration_period_2]
+
+        updated_periods = (
+            IncarcerationPreProcessingManager._update_transfers_to_status_changes(
+                incarceration_periods
+            )
+        )
+
+        self.assertEqual(ip_periods_copied, updated_periods)
+
+    def test_is_status_change_edge_valid_attributes(self):
+        """Tests that all attributes listed in ATTRIBUTES_TRIGGERING_STATUS_CHANGE
+        are valid attributes on the StateIncarcerationPeriod class."""
+        for attribute in ATTRIBUTES_TRIGGERING_STATUS_CHANGE:
+            if attribute not in StateIncarcerationPeriod.__dict__.get(
+                "__annotations__"
+            ):
+                raise ValueError(
+                    "Attribute in ATTRIBUTES_TRIGGERING_STATUS_CHANGE "
+                    "not valid attribute on the StateIncarcerationPeriod "
+                    "class."
+                )

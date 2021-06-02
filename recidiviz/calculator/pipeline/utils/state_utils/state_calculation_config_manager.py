@@ -15,31 +15,55 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Manages state-specific methodology decisions made throughout the calculation pipelines."""
+import logging
+
 # TODO(#2995): Make a state config file for every state and every one of these state-specific calculation methodologies
 import sys
 from datetime import date
-import logging
-from typing import List, Optional, Tuple, Callable, Union, Dict, Any
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
     NonRevocationReturnSupervisionTimeBucket,
     RevocationReturnSupervisionTimeBucket,
 )
 from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
-from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
-    PreProcessedIncarcerationPeriodIndex,
-)
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
     StateSpecificIncarcerationPreProcessingDelegate,
 )
-from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
-    period_edges_are_valid_transfer,
+from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
+    PreProcessedIncarcerationPeriodIndex,
+)
+from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
+    PreProcessedSupervisionPeriodIndex,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_commitment_from_supervision_utils import (
+    us_id_filter_sps_for_commitment_from_supervision_identification,
+    us_id_pre_commitment_supervision_period_if_commitment,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_period_pre_processing_delegate import (
     UsIdIncarcerationPreProcessingDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
+    UsIdSupervisionCaseCompliance,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_type_identification import (
+    us_id_get_post_incarceration_supervision_type,
+    us_id_get_pre_incarceration_supervision_type,
+    us_id_get_supervision_period_admission_override,
+    us_id_supervision_period_is_out_of_state,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo import us_mo_violation_utils
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_incarceration_period_pre_processing_delegate import (
     UsMoIncarcerationPreProcessingDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_type_identification import (
+    us_mo_get_month_supervision_type,
+    us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day,
+    us_mo_get_post_incarceration_supervision_type,
+    us_mo_get_pre_incarceration_supervision_type,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils import (
+    us_mo_filter_violation_responses,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd import us_nd_violation_utils
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_utils import (
@@ -49,46 +73,29 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_period_pre_processing_delegate import (
     UsNdIncarcerationPreProcessingDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_compliance import (
+    UsNdSupervisionCaseCompliance,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_type_identification import (
+    us_nd_get_post_incarceration_supervision_type,
+    us_nd_get_pre_commitment_supervision_type,
+    us_nd_infer_supervision_period_admission,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa import (
+    us_pa_commitment_from_supervision_utils,
+    us_pa_violation_utils,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from_supervision_utils import (
     us_pa_pre_commitment_supervision_period_if_commitment,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_period_pre_processing_delegate import (
     UsPaIncarcerationPreProcessingDelegate,
 )
-from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
-    StateSupervisionCaseComplianceManager,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_commitment_from_supervision_utils import (
-    us_id_filter_sps_for_commitment_from_supervision_identification,
-    us_id_pre_commitment_supervision_period_if_commitment,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
-    UsIdSupervisionCaseCompliance,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_type_identification import (
-    us_id_get_pre_incarceration_supervision_type,
-    us_id_get_post_incarceration_supervision_type,
-    us_id_get_supervision_period_admission_override,
-    us_id_supervision_period_is_out_of_state,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.us_mo import us_mo_violation_utils
-from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_compliance import (
-    UsNdSupervisionCaseCompliance,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_type_identification import (
-    us_nd_get_post_incarceration_supervision_type,
-    us_nd_infer_supervision_period_admission,
-    us_nd_get_pre_commitment_supervision_type,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.us_pa import (
-    us_pa_violation_utils,
-    us_pa_commitment_from_supervision_utils,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_compliance import (
     UsPaSupervisionCaseCompliance,
 )
-from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
-    PreProcessedSupervisionPeriodIndex,
+from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
+    StateSupervisionCaseComplianceManager,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     get_commitment_from_supervision_supervision_period,
@@ -98,29 +105,19 @@ from recidiviz.calculator.pipeline.utils.supervision_type_identification import 
     get_pre_incarceration_supervision_type_from_incarceration_period,
     get_pre_incarceration_supervision_type_from_supervision_period,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_type_identification import (
-    us_mo_get_month_supervision_type,
-    us_mo_get_pre_incarceration_supervision_type,
-    us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day,
-    us_mo_get_post_incarceration_supervision_type,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils import (
-    us_mo_filter_violation_responses,
-)
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     default_filtered_violation_responses_for_violation_history,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
-    is_commitment_from_supervision,
     StateIncarcerationPeriodAdmissionReason,
-    StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
+    is_commitment_from_supervision,
 )
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -128,14 +125,14 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.state.entities import (
-    StateSupervisionSentence,
-    StateIncarcerationSentence,
-    StateSupervisionPeriod,
-    StateIncarcerationPeriod,
-    StateSupervisionViolationResponse,
     StateAssessment,
+    StateIncarcerationPeriod,
+    StateIncarcerationSentence,
     StateSupervisionContact,
+    StateSupervisionPeriod,
+    StateSupervisionSentence,
     StateSupervisionViolation,
+    StateSupervisionViolationResponse,
 )
 
 
@@ -837,9 +834,8 @@ def state_specific_violation_response_pre_processing_function(
 #  allow mid-calculation admission_reason overrides
 def state_specific_incarceration_admission_reason_override(
     incarceration_period: StateIncarcerationPeriod,
-    admission_reason: StateIncarcerationPeriodAdmissionReason,
+    original_admission_reason: StateIncarcerationPeriodAdmissionReason,
     supervision_type_at_admission: Optional[StateSupervisionPeriodSupervisionType],
-    previous_incarceration_period: Optional[StateIncarcerationPeriod] = None,
 ) -> StateIncarcerationPeriodAdmissionReason:
     """Returns a (potentially) updated admission reason to be used in calculations, given the provided
     |incarceration_period|, |admission_reason|, |supervision_type_at_admission|, |previous_incarceration_period|
@@ -854,52 +850,7 @@ def state_specific_incarceration_admission_reason_override(
         ):
             return StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
 
-        # TODO(#7523): Use this logic for all states in IP pre-processing to set
-        #  STATUS_CHANGE reasons
-        # If a person's previous IP has a different specialized_purpose_for_incarceration
-        # than the current period, the correct admission reason is STATUS_CHANGE
-        if (
-            previous_incarceration_period
-            and period_edges_are_valid_transfer(
-                previous_incarceration_period,
-                incarceration_period,
-            )
-            and previous_incarceration_period.specialized_purpose_for_incarceration
-            and incarceration_period.specialized_purpose_for_incarceration
-            and previous_incarceration_period.specialized_purpose_for_incarceration
-            != incarceration_period.specialized_purpose_for_incarceration
-        ):
-            return StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE
-    return admission_reason
-
-
-# TODO(#7523): Use this logic for all states in IP pre-processing to set
-#  STATUS_CHANGE reasons
-def state_specific_incarceration_release_reason_override(
-    incarceration_period: StateIncarcerationPeriod,
-    release_reason: StateIncarcerationPeriodReleaseReason,
-    next_incarceration_period: Optional[StateIncarcerationPeriod] = None,
-) -> StateIncarcerationPeriodReleaseReason:
-    """Returns a (potentially) updated release reason to be used in calculations, given the provided
-    |incarceration_period|, and |next_incarceration_period|.
-    """
-    if incarceration_period.state_code == "US_ID":
-        # If the current purpose_for_incarceration is different from the
-        # next_incarceration_period's specialized_purpose_for_incarceration, then
-        # the release reason should be STATUS_CHANGE
-        if (
-            next_incarceration_period
-            and period_edges_are_valid_transfer(
-                incarceration_period,
-                next_incarceration_period,
-            )
-            and incarceration_period.specialized_purpose_for_incarceration
-            and next_incarceration_period.specialized_purpose_for_incarceration
-            and incarceration_period.specialized_purpose_for_incarceration
-            != next_incarceration_period.specialized_purpose_for_incarceration
-        ):
-            return StateIncarcerationPeriodReleaseReason.STATUS_CHANGE
-    return release_reason
+    return original_admission_reason
 
 
 def state_specific_specialized_purpose_for_incarceration_override(
