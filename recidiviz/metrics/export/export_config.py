@@ -97,6 +97,8 @@ class ProductConfig:
 
     # Product name
     name: ProductName = attr.ib(validator=attr_validators.is_non_empty_str)
+    # Product description
+    description: str = attr.ib(validator=attr_validators.is_non_empty_str)
     # List of export names required for this product
     exports: List[str] = attr.ib(validator=attr_validators.is_list)
     # Product launch environment, only for state agnostic products
@@ -218,6 +220,7 @@ class ProductConfigs:
         products = [
             ProductConfig(
                 name=product["name"],
+                description=product["description"],
                 exports=product["exports"],
                 states=[
                     ProductStateConfig(
