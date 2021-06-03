@@ -29,13 +29,13 @@ from recidiviz.calculator.pipeline.violation.metrics import (
 )
 from recidiviz.calculator.pipeline.violation.violation_event import (
     ViolationEvent,
-    ViolationWithResponseDecisionEvent,
+    ViolationWithResponseEvent,
 )
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 EVENT_TO_METRIC_CLASSES: Dict[
     Type[ViolationEvent], List[Type[RecidivizMetric[ViolationMetricType]]]
-] = {ViolationWithResponseDecisionEvent: [ViolationWithResponseMetric]}
+] = {ViolationWithResponseEvent: [ViolationWithResponseMetric]}
 
 
 def produce_violation_metrics(
@@ -86,7 +86,7 @@ def produce_violation_metrics(
         if not isinstance(metric, ViolationMetric):
             raise ValueError(
                 f"Unexpected metric type {type(metric)}."
-                f" All metrics should be ProgramMetrics."
+                f" All metrics should be ViolationMetrics."
             )
         violation_metrics.append(metric)
 

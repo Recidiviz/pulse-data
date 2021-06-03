@@ -22,11 +22,17 @@ from typing import List
 import pytest
 
 from recidiviz.calculator.pipeline.utils import violation_response_utils
+from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
+    state_specific_violation_responses_for_violation_history,
+)
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
-    violation_responses_in_window,
     default_filtered_violation_responses_for_violation_history,
+    identify_most_severe_response_decision,
+    prepare_violation_responses_for_calculations,
+    violation_responses_in_window,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.persistence.entity.state.entities import (
@@ -339,3 +345,83 @@ class TestViolationResponsesInWindow(unittest.TestCase):
         )
 
         self.assertEqual([], responses_in_window)
+
+
+class TestIdentifyMostSevereResponseDecision(unittest.TestCase):
+    """Tests the identify_most_severe_response_decision function."""
+
+    def test_identify_most_severe_response_decision(self):
+        decisions = [
+            StateSupervisionViolationResponseDecision.CONTINUANCE,
+            StateSupervisionViolationResponseDecision.REVOCATION,
+        ]
+
+        most_severe_decision = identify_most_severe_response_decision(decisions)
+
+        self.assertEqual(
+            most_severe_decision, StateSupervisionViolationResponseDecision.REVOCATION
+        )
+
+    def test_identify_most_severe_response_decision_test_all_types(self):
+        for decision in StateSupervisionViolationResponseDecision:
+            decisions = [decision]
+
+            most_severe_decision = identify_most_severe_response_decision(decisions)
+
+            self.assertEqual(most_severe_decision, decision)
+
+
+class TestPrepareViolationResponsesForCalculation(unittest.TestCase):
+    """Tests the prepare_violation_responses_for_calculation function."""
+
+    def test_prepare_violation_responses_for_calculation_preserves_order_post_filtering(
+        self,
+    ) -> None:
+        state_code = "US_XX"
+        first_response = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=state_code,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=datetime.date(2020, 1, 1),
+            is_draft=False,
+        )
+        second_response = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=state_code,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=datetime.date(2020, 1, 2),
+            is_draft=False,
+        )
+        third_response = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=state_code,
+            response_type=StateSupervisionViolationResponseType.CITATION,
+            response_date=datetime.date(2020, 1, 4),
+            is_draft=False,
+        )
+        filtered_response = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=state_code,
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+            response_date=datetime.date(2020, 1, 3),
+            is_draft=False,
+        )
+
+        violation_responses = [
+            filtered_response,
+            third_response,
+            first_response,
+            second_response,
+        ]
+
+        sorted_filtered_violations = (
+            state_specific_violation_responses_for_violation_history(
+                state_code=state_code,
+                violation_responses=prepare_violation_responses_for_calculations(
+                    violation_responses=violation_responses,
+                    pre_processing_function=None,
+                ),
+                include_follow_up_responses=False,
+            )
+        )
+
+        for index, violation_response in enumerate(
+            [first_response, second_response, third_response]
+        ):
+            self.assertEqual(sorted_filtered_violations[index], violation_response)

@@ -32,7 +32,7 @@ class ViolationEvent(IdentifierEventWithSingularDate):
 
 
 @attr.s(frozen=True)
-class ViolationWithResponseDecisionEvent(ViolationEvent, ViolationResponseMixin):
+class ViolationWithResponseEvent(ViolationEvent, ViolationResponseMixin):
     """Models violations that have responses.
 
     Describes a date in which a person incurred the first action related to a violation.
