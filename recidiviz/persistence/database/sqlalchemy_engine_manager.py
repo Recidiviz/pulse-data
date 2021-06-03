@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional, Set
 
 import sqlalchemy
 from opencensus.stats import aggregation, measure, view
-from sqlalchemy.engine import Engine, create_engine
+from sqlalchemy.engine import URL, Engine, create_engine
 
 from recidiviz.persistence.database.constants import (
     SQLALCHEMY_DB_HOST,
@@ -62,7 +62,7 @@ class SQLAlchemyEngineManager:
     def init_engine_for_postgres_instance(
         cls,
         database_key: SQLAlchemyDatabaseKey,
-        db_url: str,
+        db_url: URL,
     ) -> Engine:
         """Initializes a sqlalchemy Engine object for the given Postgres database /
         schema and caches it for future use."""
@@ -83,7 +83,7 @@ class SQLAlchemyEngineManager:
     def init_engine_for_db_instance(
         cls,
         database_key: SQLAlchemyDatabaseKey,
-        db_url: str,
+        db_url: URL,
         **dialect_specific_kwargs: Any,
     ) -> Engine:
         """Initializes a sqlalchemy Engine object for the given database / schema and
@@ -406,7 +406,7 @@ class SQLAlchemyEngineManager:
     @classmethod
     def get_server_postgres_instance_url(
         cls, *, database_key: SQLAlchemyDatabaseKey
-    ) -> str:
+    ) -> URL:
         schema_type = database_key.schema_type
         instance_id_key = cls._get_cloudsql_instance_id_key(schema_type)
         if instance_id_key is None:
@@ -418,17 +418,17 @@ class SQLAlchemyEngineManager:
         db_password = cls._get_db_password(database_key=database_key)
         db_name = database_key.db_name
         cloudsql_instance_id = secrets.get_secret(instance_id_key)
+        db_name = database_key.db_name
 
-        sqlalchemy_url = (
-            "postgresql://{db_user}:{db_password}@/{db_name}"
-            "?host=/cloudsql/{cloudsql_instance_id}"
-        ).format(
-            db_user=db_user,
-            db_password=db_password,
-            db_name=db_name,
-            cloudsql_instance_id=cloudsql_instance_id,
+        url = URL.create(
+            drivername="postgresql",
+            username=db_user,
+            password=db_password,
+            database=db_name,
+            query={"host": f"/cloudsql/{cloudsql_instance_id}"},
         )
-        return sqlalchemy_url
+
+        return url
 
     @classmethod
     @environment.local_only
@@ -440,8 +440,16 @@ class SQLAlchemyEngineManager:
         host_name = cls._get_db_host(database_key=database_key)
         db_name = database_key.db_name
 
+        url = URL.create(
+            drivername="postgresql",
+            username=db_user,
+            password=db_password,
+            host=host_name,
+            database=db_name,
+        )
+
         return create_engine(
-            f"postgresql://{db_user}:{db_password}@{host_name}/{db_name}",
+            url,
             connect_args={
                 "sslmode": "require",
                 "sslcert": os.path.join(ssl_cert_path, "client-cert.pem"),
