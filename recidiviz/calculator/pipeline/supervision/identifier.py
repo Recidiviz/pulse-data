@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Identifies time buckets of supervision and classifies them as either instances of revocation or not. Also classifies
-supervision sentences as successfully completed or not."""
+"""Identifies various events related to supervision."""
+import datetime
 import logging
 from collections import defaultdict
 from datetime import date
@@ -95,6 +95,7 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
     StateSupervisionPeriodSupervisionType,
@@ -238,6 +239,8 @@ def find_supervision_time_buckets(
 
     projected_supervision_completion_buckets = classify_supervision_success(
         supervision_sentences,
+        incarceration_sentences,
+        supervision_periods,
         incarceration_period_index,
         supervision_period_to_agent_associations,
         supervision_period_to_judicial_district_associations,
@@ -1087,59 +1090,114 @@ def find_revocation_return_buckets(
 
 def classify_supervision_success(
     supervision_sentences: List[StateSupervisionSentence],
+    incarceration_sentences: List[StateIncarcerationSentence],
+    supervision_periods: List[StateSupervisionPeriod],
     incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
     supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
     supervision_period_to_judicial_district_associations: Dict[int, Dict[Any, Any]],
 ) -> List[ProjectedSupervisionCompletionBucket]:
     """This classifies whether supervision projected to end in a given month was completed successfully.
 
-    For supervision sentences with a projected_completion_date, where that date is before or on today's date,
-    and the supervision sentence has a set completion_date, looks at all supervision periods that have terminated and
+    Will use both incarceration and supervision sentences in determining supervision success.
+
+    For supervision and incarceration sentence with a projected_completion_date, where that date is before or on today's date,
+    and the sentence has a set completion_date, looks at all supervision periods that have terminated and
     finds the one with the latest termination date. From that supervision period, classifies the termination as either
     successful or not successful.
     """
     projected_completion_buckets: List[ProjectedSupervisionCompletionBucket] = []
 
-    for supervision_sentence in supervision_sentences:
-        sentence_start_date = supervision_sentence.start_date
-        sentence_completion_date = supervision_sentence.completion_date
-        projected_completion_date = supervision_sentence.projected_completion_date
+    all_sentences: List[
+        Union[StateIncarcerationSentence, StateSupervisionSentence]
+    ] = []
+    all_sentences.extend(supervision_sentences)
+    all_sentences.extend(incarceration_sentences)
+
+    for sentence in all_sentences:
+        sentence_start_date = sentence.start_date
+        sentence_completion_date = sentence.completion_date
+
+        if isinstance(sentence, StateIncarcerationSentence):
+            if not sentence.max_length_days or not sentence_start_date:
+                continue
+
+            projected_completion_date = sentence_start_date + datetime.timedelta(
+                days=sentence.max_length_days
+            )
+            sentence_supervision_type: Optional[
+                StateSupervisionType
+            ] = StateSupervisionType.PAROLE
+        elif isinstance(sentence, StateSupervisionSentence):
+            if not sentence.projected_completion_date:
+                continue
+            projected_completion_date = sentence.projected_completion_date
+            sentence_supervision_type = sentence.supervision_type
+        else:
+            raise ValueError(
+                f"Sentence instance type does not match expected sentence types. "
+                f"Expected: StateIncarcerationSentence/StateSupervisionSentence, "
+                f"Actual: {type(sentence)}"
+            )
 
         # These fields must be set to be included in any supervision success metrics
-        if not sentence_start_date or not projected_completion_date:
+        # Only include sentences that were supposed to end by now, have ended, and have a completion status on them
+        if (
+            not sentence_start_date
+            or not projected_completion_date
+            or not sentence_completion_date
+            or projected_completion_date > date.today()
+        ):
             continue
 
-        # Only include sentences that were supposed to end by now, have ended, and have a completion status on them
-        if projected_completion_date <= date.today() and sentence_completion_date:
-            latest_supervision_period = None
+        latest_supervision_period = None
 
-            for supervision_period in supervision_sentence.supervision_periods:
-                termination_date = supervision_period.termination_date
+        for supervision_period in supervision_periods:
+            termination_date = supervision_period.termination_date
 
-                if termination_date:
-                    if (
-                        not latest_supervision_period
-                        or latest_supervision_period.termination_date < termination_date
-                    ):
-                        latest_supervision_period = supervision_period
+            # Skips supervision periods without termination dates or not within sentence bounds
+            if (
+                not termination_date
+                or not supervision_period.start_date
+                or sentence_start_date > supervision_period.start_date
+                or sentence_completion_date < termination_date
+            ):
+                continue
 
-            if latest_supervision_period:
-                completion_bucket = _get_projected_completion_bucket(
-                    supervision_sentence,
-                    latest_supervision_period,
-                    incarceration_period_index,
-                    supervision_period_to_agent_associations,
-                    supervision_period_to_judicial_district_associations,
-                )
+            # TODO(#2891): Remove logic that relies on the `supervision_period.supervision_type` field
+            # If there is a non-null sentence_supervision_type and the (deprecated) supervision_type
+            # field is set on the supervision_period, assert that they match
+            if (
+                supervision_period.supervision_type
+                and sentence_supervision_type
+                and supervision_period.supervision_type != sentence_supervision_type
+            ):
+                continue
 
-                if completion_bucket:
-                    projected_completion_buckets.append(completion_bucket)
+            if (
+                not latest_supervision_period
+                or latest_supervision_period.termination_date < termination_date
+            ):
+                latest_supervision_period = supervision_period
+
+        if latest_supervision_period:
+            completion_bucket = _get_projected_completion_bucket(
+                sentence,
+                projected_completion_date,
+                latest_supervision_period,
+                incarceration_period_index,
+                supervision_period_to_agent_associations,
+                supervision_period_to_judicial_district_associations,
+            )
+
+            if completion_bucket:
+                projected_completion_buckets.append(completion_bucket)
 
     return projected_completion_buckets
 
 
 def _get_projected_completion_bucket(
-    supervision_sentence: StateSupervisionSentence,
+    sentence: Union[StateSupervisionSentence, StateIncarcerationSentence],
+    projected_completion_date: date,
     supervision_period: StateSupervisionPeriod,
     incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
     supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
@@ -1153,32 +1211,33 @@ def _get_projected_completion_bucket(
     ):
         return None
 
-    start_date = supervision_sentence.start_date
-    completion_date = supervision_sentence.completion_date
-    projected_completion_date = supervision_sentence.projected_completion_date
-    if (
-        start_date is None
-        or completion_date is None
-        or projected_completion_date is None
-    ):
+    start_date = sentence.start_date
+    completion_date = sentence.completion_date
+    if start_date is None or completion_date is None:
         logging.warning(
-            "start_date, completion_date, and projected_completion_date must be non-None "
-            "for supervision sentence: %s",
-            supervision_sentence,
+            "start_date and completion_date must be non-None for sentence: %s",
+            sentence,
         )
         return None
 
     if completion_date < start_date:
         logging.warning(
-            "Supervision sentence completion date is before the start date: %s",
-            supervision_sentence,
+            "Sentence completion date is before the start date: %s",
+            sentence,
         )
         return None
 
+    supervision_sentences = (
+        [sentence] if isinstance(sentence, StateSupervisionSentence) else []
+    )
+    incarceration_sentences = (
+        [sentence] if isinstance(sentence, StateIncarcerationSentence) else []
+    )
+
     supervision_type = get_month_supervision_type(
         completion_date,
-        supervision_sentences=[supervision_sentence],
-        incarceration_sentences=[],
+        supervision_sentences=supervision_sentences,
+        incarceration_sentences=incarceration_sentences,
         supervision_period=supervision_period,
     )
 
