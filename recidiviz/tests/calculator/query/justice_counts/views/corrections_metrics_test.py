@@ -16,8 +16,9 @@
 # =============================================================================
 """Tests Corrections metrics functionality."""
 import datetime
-from mock import Mock, patch
+
 import pandas as pd
+from mock import Mock, patch
 from pandas.testing import assert_frame_equal
 from sqlalchemy.sql import sqltypes
 
@@ -27,14 +28,11 @@ from recidiviz.calculator.query.justice_counts.views import (
     metric_calculator,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
+from recidiviz.tests.big_query.view_test_util import BaseViewTest, MockTableSchema
 from recidiviz.tests.calculator.query.justice_counts.views.metric_calculator_test import (
     METRIC_CALCULATOR_SCHEMA,
     FakeState,
     row,
-)
-from recidiviz.tests.big_query.view_test_util import (
-    BaseViewTest,
-    MockTableSchema,
 )
 from recidiviz.tools.justice_counts import manual_upload
 
@@ -196,7 +194,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
             },
             output_name="POP",
         )
-        results = self.query_view(
+        results = self.query_view_for_builder(
             corrections_metrics.CorrectionsOutputViewBuilder(
                 dataset_id="fake-dataset",
                 metric_to_calculate=prison_population_metric,
@@ -395,7 +393,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
             },
             output_name="ADMISSIONS",
         )
-        results = self.query_view(
+        results = self.query_view_for_builder(
             corrections_metrics.CorrectionsOutputViewBuilder(
                 dataset_id="fake-dataset",
                 metric_to_calculate=parole_population,
@@ -675,12 +673,12 @@ class CorrectionsMetricsIntegrationTest(BaseViewTest):
             for view in view_collector.collect_view_builders():
                 self.create_view(view)
 
-            monthly_results = self.query_view(
+            monthly_results = self.query_view_for_builder(
                 view_collector.monthly_unified_builder,
                 data_types={"year": int, "month": int, "value": int},
                 dimensions=dimensions,
             )
-            annual_results = self.query_view(
+            annual_results = self.query_view_for_builder(
                 view_collector.annual_unified_builder,
                 data_types={"year": int, "month": int, "value": int},
                 dimensions=dimensions,

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests the PA external ids query functionality"""
-
+import datetime
 from typing import Any, List, Optional
 
 import attr
@@ -76,6 +76,9 @@ class ViewPersonExternalIdsTest(BaseViewTest):
         """Runs a test that executes the person_external_ids_v2 query given the provided
         input rows.
         """
+        run_time = datetime.datetime.now()
+        file_upload_time = run_time - datetime.timedelta(days=1)
+
         # Arrange
         raw_file_configs = get_region_raw_file_config(STATE_CODE).raw_file_configs
 
@@ -83,21 +86,23 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             STATE_CODE,
             raw_file_configs["dbo_ParoleCount"],
             [(ids.ParoleNumber, ids.ParoleInstNumber) for ids in dbo_parole_count_ids],
+            update_datetime=file_upload_time,
         )
         self.create_mock_raw_file(
             STATE_CODE,
             raw_file_configs["dbo_tblSearchInmateInfo"],
             [
-                tuple([ids.inmate_number, ids.control_number] + [None] * 80)
+                tuple([ids.inmate_number, ids.control_number] + [None] * 83)
                 for ids in dbo_tbl_search_inmate_info_ids
             ],
+            update_datetime=file_upload_time,
         )
 
         # Act
-        results = self.query_view(
+        results = self.query_raw_data_view_for_builder(
             self.view_builder,
-            data_types={},
             dimensions=self.expected_result_columns,
+            query_run_dt=run_time,
         )
 
         # Assert
@@ -373,6 +378,29 @@ class ViewPersonExternalIdsTest(BaseViewTest):
                     "12345678",  # control_numbers
                     "AB1234,CC4567",  # inmate_numbers
                     "0420X",  # parole_numbers
+                ]
+            ],
+        )
+
+    def test_view_person_external_ids_v2_multiple_control_linked_via_parole(
+        self,
+    ) -> None:
+        self.run_test(
+            dbo_parole_count_ids=[
+                ParoleCountIds(ParoleNumber="7890S", ParoleInstNumber="BB9876"),
+                ParoleCountIds(ParoleNumber="7890S", ParoleInstNumber="BT7654"),
+                ParoleCountIds(ParoleNumber="7890S", ParoleInstNumber="Z0000"),
+            ],
+            dbo_tbl_search_inmate_info_ids=[
+                TblSearchInmateInfoIds(inmate_number="BT7654", control_number="090909"),
+                TblSearchInmateInfoIds(inmate_number="BB9876", control_number="080808"),
+            ],
+            expected_output=[
+                [
+                    "RECIDIVIZ_MASTER_CONTROL_NUMBER_080808",
+                    "080808,090909",  # control_numbers
+                    "BB9876,BT7654",  # inmate_numbers
+                    "7890S",  # parole_numbers
                 ]
             ],
         )

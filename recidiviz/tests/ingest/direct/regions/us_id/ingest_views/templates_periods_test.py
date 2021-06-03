@@ -17,18 +17,19 @@
 """Tests the template period functionality"""
 
 from datetime import date
-from mock import Mock, patch
+
 import pandas as pd
+from mock import Mock, patch
 from pandas.testing import assert_frame_equal
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
-)
+from recidiviz.ingest.direct.query_utils import get_region_raw_file_config
 from recidiviz.ingest.direct.regions.us_id.ingest_views.templates_periods import (
     PeriodType,
     get_all_periods_query_fragment,
 )
-from recidiviz.ingest.direct.query_utils import get_region_raw_file_config
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
+)
 from recidiviz.tests.big_query.view_test_util import BaseViewTest
 
 
@@ -66,6 +67,7 @@ class TemplatesPeriodsTest(BaseViewTest):
                     "1",
                     "A",
                     None,
+                    None,
                 )
             ],
         )
@@ -76,7 +78,7 @@ class TemplatesPeriodsTest(BaseViewTest):
 
         # Act
         dimensions = ["docno", "incrno", "start_date", "end_date"]
-        results = self.query_view(
+        results = self.query_raw_data_view_for_builder(
             DirectIngestPreProcessedIngestViewBuilder(
                 region="us_id",
                 ingest_view_name="incarceration_periods",
@@ -86,7 +88,6 @@ class TemplatesPeriodsTest(BaseViewTest):
             """,
                 order_by_cols="docno, incrno, start_date, end_date",
             ),
-            data_types={},
             dimensions=dimensions,
         )
 
