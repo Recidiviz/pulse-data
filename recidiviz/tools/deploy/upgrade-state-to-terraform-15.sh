@@ -22,7 +22,7 @@ source ${BASH_SOURCE_DIR}/deploy_helpers.sh
 
 read -p "Project name: " PROJECT_NAME
 read -p "Git hash: " GIT_HASH
-read -p "Docker image tag: " DOCKER_IMAGE_TAG?
+read -p "Docker image tag: " DOCKER_IMAGE_TAG
 script_prompt "Running for ${PROJECT_NAME}, revision ${GIT_HASH} @ docker image ${DOCKER_IMAGE_TAG} Continue?"
 
 reconfigure_terraform_backend $PROJECT_NAME
