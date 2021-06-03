@@ -16,8 +16,7 @@
 # =============================================================================
 """Tests for calculator_utils.py."""
 import unittest
-from datetime import date
-from datetime import datetime
+from datetime import date, datetime
 
 import pytest
 
@@ -25,14 +24,11 @@ from recidiviz.calculator.pipeline.utils import calculator_utils
 from recidiviz.calculator.pipeline.utils.calculator_utils import person_characteristics
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.person_characteristics import Gender
-from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseDecision,
-)
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
-    StatePersonRace,
     StatePersonEthnicity,
     StatePersonExternalId,
+    StatePersonRace,
 )
 
 
@@ -199,32 +195,6 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
         )
 
         self.assertEqual(external_id, person_external_id_include.external_id)
-
-
-class TestIdentifyMostSevereResponseDecision(unittest.TestCase):
-    def test_identify_most_severe_response_decision(self):
-        decisions = [
-            StateSupervisionViolationResponseDecision.CONTINUANCE,
-            StateSupervisionViolationResponseDecision.REVOCATION,
-        ]
-
-        most_severe_decision = calculator_utils.identify_most_severe_response_decision(
-            decisions
-        )
-
-        self.assertEqual(
-            most_severe_decision, StateSupervisionViolationResponseDecision.REVOCATION
-        )
-
-    def test_identify_most_severe_response_decision_test_all_types(self):
-        for decision in StateSupervisionViolationResponseDecision:
-            decisions = [decision]
-
-            most_severe_decision = (
-                calculator_utils.identify_most_severe_response_decision(decisions)
-            )
-
-            self.assertEqual(most_severe_decision, decision)
 
 
 class TestAddPersonCharacteristics(unittest.TestCase):

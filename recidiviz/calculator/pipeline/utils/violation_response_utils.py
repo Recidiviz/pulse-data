@@ -18,19 +18,35 @@
 import datetime
 from collections import defaultdict
 from datetime import date
-from typing import List, Optional, Callable, Dict
+from typing import Callable, Dict, List, Optional
 
-from recidiviz.calculator.pipeline.utils.calculator_utils import (
-    identify_most_severe_response_decision,
-)
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
-
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
 )
+
+DECISION_SEVERITY_ORDER = [
+    StateSupervisionViolationResponseDecision.REVOCATION,
+    StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+    StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON,
+    StateSupervisionViolationResponseDecision.WARRANT_ISSUED,
+    StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
+    StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
+    StateSupervisionViolationResponseDecision.EXTENSION,
+    StateSupervisionViolationResponseDecision.SPECIALIZED_COURT,
+    StateSupervisionViolationResponseDecision.SUSPENSION,
+    StateSupervisionViolationResponseDecision.SERVICE_TERMINATION,
+    StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD,
+    StateSupervisionViolationResponseDecision.COMMUNITY_SERVICE,
+    StateSupervisionViolationResponseDecision.DELAYED_ACTION,
+    StateSupervisionViolationResponseDecision.OTHER,
+    StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN,
+    StateSupervisionViolationResponseDecision.WARNING,
+    StateSupervisionViolationResponseDecision.CONTINUANCE,
+]
 
 
 def prepare_violation_responses_for_calculations(
@@ -155,3 +171,14 @@ def violation_responses_in_window(
     ]
 
     return responses_in_window
+
+
+def identify_most_severe_response_decision(
+    decisions: List[StateSupervisionViolationResponseDecision],
+) -> Optional[StateSupervisionViolationResponseDecision]:
+    """Identifies the most severe decision on the responses according
+    to the static decision type ranking."""
+    return next(
+        (decision for decision in DECISION_SEVERITY_ORDER if decision in decisions),
+        None,
+    )
