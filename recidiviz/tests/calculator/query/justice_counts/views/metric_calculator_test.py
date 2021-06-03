@@ -60,7 +60,10 @@ def row(
     raw_source_categories: List[str],
     value: int,
     end_date_str: Optional[str] = None,
-) -> Tuple[int, str, List[int], object, _npd, _npd, _npd, str, str, List[str], int]:
+    measurement_type: Optional[str] = None,
+) -> Tuple[
+    int, str, List[int], object, str, _npd, _npd, _npd, str, str, List[str], int
+]:
     """Builds an expected output row for MetricByMonth.
 
     Makes a few assumptions that helps keep our tests from being even more verbose:
@@ -89,6 +92,7 @@ def row(
         "_",
         [source_and_report_id],
         publish_date,
+        measurement_type if measurement_type is not None else "INSTANT",
         _npd(
             date.first_day_of_next_month(
                 end_date - datetime.timedelta(days=1)
@@ -112,6 +116,7 @@ METRIC_CALCULATOR_SCHEMA = MockTableSchema(
         "report_type": sqltypes.String(255),
         "report_ids": sqltypes.ARRAY(sqltypes.Integer),
         "publish_date": sqltypes.Date(),
+        "measurement_type": sqltypes.String(255),
         "date_partition": sqltypes.Date(),
         "time_window_start": sqltypes.Date(),
         "time_window_end": sqltypes.Date(),
@@ -1353,6 +1358,163 @@ class MonthlyMetricViewTest(BaseViewTest):
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
 
+    def test_prefer_instant(self) -> None:
+        """Tests that instant measurements are preferred over ADP"""
+        # Arrange
+        self.create_mock_bq_table(
+            dataset_id="justice_counts",
+            table_id="source_materialized",
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_data=pd.DataFrame([[1, "XX"]], columns=["id", "name"]),
+        )
+        self.create_mock_bq_table(
+            dataset_id="justice_counts",
+            table_id="report_materialized",
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_data=pd.DataFrame(
+                [
+                    [
+                        1,
+                        1,
+                        "_",
+                        "All",
+                        "2021-01-01",
+                        "xx.gov",
+                        "MANUALLY_ENTERED",
+                        "John",
+                    ]
+                ],
+                columns=[
+                    "id",
+                    "source_id",
+                    "type",
+                    "instance",
+                    "publish_date",
+                    "url",
+                    "acquisition_method",
+                    "acquired_by",
+                ],
+            ),
+        )
+        self.create_mock_bq_table(
+            dataset_id="justice_counts",
+            table_id="report_table_definition_materialized",
+            mock_schema=MockTableSchema.from_sqlalchemy_table(
+                schema.ReportTableDefinition.__table__
+            ),
+            mock_data=pd.DataFrame(
+                [
+                    [
+                        1,
+                        "CORRECTIONS",
+                        "POPULATION",
+                        "INSTANT",
+                        ["global/location/state", "metric/population/type"],
+                        ["US_XX", "SUPERVISION"],
+                        [],
+                    ],
+                    [
+                        2,
+                        "CORRECTIONS",
+                        "POPULATION",
+                        "AVERAGE",
+                        ["global/location/state", "metric/population/type"],
+                        ["US_XX", "SUPERVISION"],
+                        [],
+                    ],
+                ],
+                columns=[
+                    "id",
+                    "system",
+                    "metric_type",
+                    "measurement_type",
+                    "filtered_dimensions",
+                    "filtered_dimension_values",
+                    "aggregated_dimensions",
+                ],
+            ),
+        )
+        self.create_mock_bq_table(
+            dataset_id="justice_counts",
+            table_id="report_table_instance_materialized",
+            mock_schema=MockTableSchema.from_sqlalchemy_table(
+                schema.ReportTableInstance.__table__
+            ),
+            mock_data=pd.DataFrame(
+                [
+                    [1, 1, 1, "2020-11-30", "2020-12-01", None],
+                    [2, 1, 1, "2020-12-31", "2021-01-01", None],
+                    [3, 1, 2, "2020-11-01", "2020-12-01", None],
+                    [4, 1, 2, "2020-12-01", "2021-01-01", None],
+                ],
+                columns=[
+                    "id",
+                    "report_id",
+                    "report_table_definition_id",
+                    "time_window_start",
+                    "time_window_end",
+                    "methodology",
+                ],
+            ),
+        )
+        self.create_mock_bq_table(
+            dataset_id="justice_counts",
+            table_id="cell_materialized",
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_data=pd.DataFrame(
+                [
+                    [1, 1, [], 450],
+                    [2, 2, [], 900],
+                    [3, 3, [], 1000],
+                    [4, 4, [], 2000],
+                ],
+                columns=[
+                    "id",
+                    "report_table_instance_id",
+                    "aggregated_dimension_values",
+                    "value",
+                ],
+            ),
+        )
+
+        # Act
+        dimensions = ["dimensions_string", "date_partition"]
+        parole_population = metric_calculator.CalculatedMetric(
+            system=schema.System.CORRECTIONS,
+            metric=schema.MetricType.POPULATION,
+            filtered_dimensions=[manual_upload.PopulationType.SUPERVISION],
+            aggregated_dimensions={
+                "state_code": metric_calculator.Aggregation(
+                    dimension=manual_upload.State, comprehensive=False
+                )
+            },
+            output_name="POP",
+        )
+        results = self.query_view_chain(
+            metric_calculator.calculate_metric_view_chain(
+                dataset_id="fake_dataset",
+                metric_to_calculate=parole_population,
+                time_aggregation=metric_calculator.TimeAggregation.MONTHLY,
+            ),
+            data_types={
+                "time_window_start": _npd,
+                "time_window_end": _npd,
+                "value": int,
+            },
+            dimensions=dimensions,
+        )
+
+        # Assert
+        expected = pd.DataFrame(
+            [
+                row(1, "2021-01-01", "2020-11-30", (FakeState("US_XX"),), [], 450),
+                row(1, "2021-01-01", "2020-12-31", (FakeState("US_XX"),), [], 900),
+            ],
+            columns=METRIC_CALCULATOR_SCHEMA.data_types.keys(),
+        )
+        expected = expected.set_index(dimensions)
+        assert_frame_equal(expected, results)
+
     def test_aggregate_with_nulls(self) -> None:
         """Tests that aggregations work correctly with null dimension values (mapped to empty string in BQ)"""
         # Arrange
@@ -1689,7 +1851,15 @@ class MonthlyMetricViewTest(BaseViewTest):
         # Assert
         expected = pd.DataFrame(
             [
-                row(1, "2021-01-02", "2020-11-01", (FakeState("US_XX"),), [], 3),
+                row(
+                    1,
+                    "2021-01-02",
+                    "2020-11-01",
+                    (FakeState("US_XX"),),
+                    [],
+                    3,
+                    measurement_type="DELTA",
+                ),
             ],
             columns=METRIC_CALCULATOR_SCHEMA.data_types.keys(),
         )
@@ -1846,7 +2016,7 @@ class MonthlyMetricViewTest(BaseViewTest):
         assert_frame_equal(expected, results)
 
     def test_average_less_than_month(self) -> None:
-        """Tests that for average metrics covering windows less than a month, the last one in each month is used"""
+        """Tests that average metrics covering windows less than a month are dropped"""
         # Arrange
         self.create_mock_bq_table(
             dataset_id="justice_counts",
@@ -1922,16 +2092,18 @@ class MonthlyMetricViewTest(BaseViewTest):
                 [
                     # November - split in halves
                     [1, 1, 1, "2020-11-01", "2020-11-15", None],
-                    [2, 1, 1, "2020-11-15", "2020-12-01", None],  # pick this
+                    [2, 1, 1, "2020-11-15", "2020-12-01", None],
                     # December - reports on Mondays
                     [3, 1, 1, "2020-11-29", "2020-12-06", None],
                     [4, 1, 1, "2020-12-06", "2020-12-13", None],
                     [5, 1, 1, "2020-12-13", "2020-12-20", None],
-                    [6, 1, 1, "2020-12-20", "2020-12-27", None],  # pick this
-                    [7, 1, 1, "2020-12-27", "2021-01-03", None],  # pick this
+                    [6, 1, 1, "2020-12-20", "2020-12-27", None],
+                    [7, 1, 1, "2020-12-27", "2021-01-03", None],
                     # February - overlapping
                     [8, 1, 1, "2021-02-01", "2021-02-21", None],
-                    [9, 1, 1, "2021-02-07", "2021-03-01", None],  # pick this
+                    [9, 1, 1, "2021-02-07", "2021-03-01", None],
+                    # March - okay
+                    [10, 1, 1, "2021-03-01", "2021-04-01", None],
                 ],
                 columns=[
                     "id",
@@ -1958,6 +2130,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                     [7, 7, [], 64],
                     [8, 8, [], 128],
                     [9, 9, [], 256],
+                    [10, 10, [], 512],
                 ],
                 columns=[
                     "id",
@@ -2001,38 +2174,12 @@ class MonthlyMetricViewTest(BaseViewTest):
                 row(
                     1,
                     "2021-01-01",
-                    "2020-11-15",
+                    "2021-03-01",
                     (FakeState("US_XX"),),
                     [],
-                    2,
-                    end_date_str="2020-12-01",
-                ),
-                row(
-                    1,
-                    "2021-01-01",
-                    "2020-12-20",
-                    (FakeState("US_XX"),),
-                    [],
-                    32,
-                    end_date_str="2020-12-27",
-                ),
-                row(
-                    1,
-                    "2021-01-01",
-                    "2020-12-27",
-                    (FakeState("US_XX"),),
-                    [],
-                    64,
-                    end_date_str="2021-01-03",
-                ),
-                row(
-                    1,
-                    "2021-01-01",
-                    "2021-02-07",
-                    (FakeState("US_XX"),),
-                    [],
-                    256,
-                    end_date_str="2021-03-01",
+                    512,
+                    end_date_str="2021-04-01",
+                    measurement_type="AVERAGE",
                 ),
             ],
             columns=METRIC_CALCULATOR_SCHEMA.data_types.keys(),
@@ -2042,7 +2189,7 @@ class MonthlyMetricViewTest(BaseViewTest):
         assert_frame_equal(expected, results)
 
     def test_average_more_than_month(self) -> None:
-        """Tests that average metrics covering windows more than a month are accounted to the month of their end date"""
+        """Tests that average metrics covering windows more than a month are dropped"""
         # Arrange
         self.create_mock_bq_table(
             dataset_id="justice_counts",
@@ -2183,58 +2330,7 @@ class MonthlyMetricViewTest(BaseViewTest):
         )
 
         # Assert
-        expected = pd.DataFrame(
-            [
-                row(
-                    1,
-                    "2021-01-01",
-                    "2019-01-01",
-                    (FakeState("US_XX"),),
-                    [],
-                    16,
-                    end_date_str="2020-01-01",
-                ),
-                row(
-                    1,
-                    "2021-01-01",
-                    "2020-01-01",
-                    (FakeState("US_XX"),),
-                    [],
-                    1,
-                    end_date_str="2020-04-01",
-                ),
-                row(
-                    1,
-                    "2021-01-01",
-                    "2020-04-01",
-                    (FakeState("US_XX"),),
-                    [],
-                    2,
-                    end_date_str="2020-07-01",
-                ),
-                row(
-                    1,
-                    "2021-01-01",
-                    "2020-07-01",
-                    (FakeState("US_XX"),),
-                    [],
-                    4,
-                    end_date_str="2020-10-01",
-                ),
-                row(
-                    1,
-                    "2021-01-01",
-                    "2020-10-01",
-                    (FakeState("US_XX"),),
-                    [],
-                    8,
-                    end_date_str="2021-01-01",
-                ),
-            ],
-            columns=METRIC_CALCULATOR_SCHEMA.data_types.keys(),
-        )
-        expected = expected.set_index(dimensions)
-        assert_frame_equal(expected, results)
+        self.assertTrue(results.empty)
 
     def test_collapsed_dimensions(self) -> None:
         # Arrange
@@ -2346,7 +2442,7 @@ class MonthlyMetricViewTest(BaseViewTest):
 
         # Act
         dimensions = ["dimensions_string", "date_partition"]
-        parole_population = metric_calculator.CalculatedMetric(
+        new_commitments = metric_calculator.CalculatedMetric(
             system=schema.System.CORRECTIONS,
             metric=schema.MetricType.ADMISSIONS,
             filtered_dimensions=[manual_upload.AdmissionType.NEW_COMMITMENT],
@@ -2360,7 +2456,7 @@ class MonthlyMetricViewTest(BaseViewTest):
         results = self.query_view_chain(
             metric_calculator.calculate_metric_view_chain(
                 dataset_id="fake_dataset",
-                metric_to_calculate=parole_population,
+                metric_to_calculate=new_commitments,
                 time_aggregation=metric_calculator.TimeAggregation.MONTHLY,
             ),
             data_types={
@@ -2381,6 +2477,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                     (FakeState("US_XX"),),
                     ["B", "D"],
                     10,
+                    measurement_type="DELTA",
                 ),
                 row(
                     1,
@@ -2389,6 +2486,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                     (FakeState("US_XX"),),
                     ["A", "B"],
                     5,
+                    measurement_type="DELTA",
                 ),
             ],
             columns=METRIC_CALCULATOR_SCHEMA.data_types.keys(),
@@ -2878,6 +2976,7 @@ class AnnualMetricViewTest(BaseViewTest):
                     [],
                     64,
                     end_date_str="2020-01-01",
+                    measurement_type="DELTA",
                 ),
                 row(
                     1,
@@ -2887,6 +2986,7 @@ class AnnualMetricViewTest(BaseViewTest):
                     [],
                     15,
                     end_date_str="2021-01-01",
+                    measurement_type="DELTA",
                 ),
             ],
             columns=METRIC_CALCULATOR_SCHEMA.data_types.keys(),
@@ -3285,6 +3385,7 @@ class AnnualMetricViewTest(BaseViewTest):
                     [],
                     12,
                     end_date_str="2021-01-01",
+                    measurement_type="DELTA",
                 ),
                 row(
                     1,
@@ -3294,6 +3395,7 @@ class AnnualMetricViewTest(BaseViewTest):
                     [],
                     12,
                     end_date_str="2023-01-01",
+                    measurement_type="DELTA",
                 ),
                 row(
                     1,
@@ -3303,6 +3405,7 @@ class AnnualMetricViewTest(BaseViewTest):
                     [],
                     22,
                     end_date_str="2025-01-01",
+                    measurement_type="DELTA",
                 ),
             ],
             columns=METRIC_CALCULATOR_SCHEMA.data_types.keys(),
