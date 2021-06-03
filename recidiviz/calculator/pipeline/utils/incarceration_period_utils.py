@@ -22,14 +22,13 @@ from typing import List, Optional
 from recidiviz.calculator.pipeline.utils.period_utils import (
     sort_periods_by_set_dates_and_statuses,
 )
-from recidiviz.common.date import DateRangeDiff
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateIncarcerationPeriodStatus,
 )
-
+from recidiviz.common.date import DateRangeDiff
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 VALID_TRANSFER_THRESHOLD_DAYS: int = 1
 
@@ -42,12 +41,16 @@ def _is_transfer_start(period: StateIncarcerationPeriod) -> bool:
     return period.admission_reason == StateIncarcerationPeriodAdmissionReason.TRANSFER
 
 
+def _is_transfer_end(period: StateIncarcerationPeriod) -> bool:
+    return period.release_reason == StateIncarcerationPeriodReleaseReason.TRANSFER
+
+
 def standard_date_sort_for_incarceration_periods(
     incarceration_periods: List[StateIncarcerationPeriod],
 ) -> List[StateIncarcerationPeriod]:
     """Sorts incarceration periods chronologically by dates and statuses."""
     sort_periods_by_set_dates_and_statuses(
-        incarceration_periods, _is_active_period, _is_transfer_start
+        incarceration_periods, _is_active_period, _is_transfer_start, _is_transfer_end
     )
 
     return incarceration_periods
