@@ -28,7 +28,7 @@ from recidiviz.calculator.pipeline.violation import metric_producer
 from recidiviz.calculator.pipeline.violation.metrics import ViolationMetricType
 from recidiviz.calculator.pipeline.violation.violation_event import (
     ViolationEvent,
-    ViolationWithResponseDecisionEvent,
+    ViolationWithResponseEvent,
 )
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.state_supervision_violation import (
@@ -77,7 +77,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
     @freeze_time("2030-11-02")
     def test_produce_violation_metrics(self) -> None:
         violation_events: List[ViolationEvent] = [
-            ViolationWithResponseDecisionEvent(
+            ViolationWithResponseEvent(
                 state_code=self.state_code,
                 supervision_violation_id=23456,
                 event_date=date(2019, 10, 10),
@@ -106,7 +106,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
 
     @freeze_time("2020-05-30")
     def test_produce_violation_metrics_calculation_month_count_1(self) -> None:
-        included_event = ViolationWithResponseDecisionEvent(
+        included_event = ViolationWithResponseEvent(
             state_code=self.state_code,
             supervision_violation_id=23456,
             event_date=date(2020, 5, 20),
@@ -119,7 +119,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
             is_sex_offense=False,
             most_severe_response_decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
         )
-        not_included_event = ViolationWithResponseDecisionEvent(
+        not_included_event = ViolationWithResponseEvent(
             state_code=self.state_code,
             supervision_violation_id=35467,
             event_date=date(2020, 4, 20),
@@ -152,7 +152,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
 
     @freeze_time("2020-05-30")
     def test_produce_violation_metrics_calculation_month_count_36(self) -> None:
-        included_event = ViolationWithResponseDecisionEvent(
+        included_event = ViolationWithResponseEvent(
             state_code=self.state_code,
             supervision_violation_id=23456,
             event_date=date(2019, 5, 20),
@@ -165,7 +165,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
             is_sex_offense=False,
             most_severe_response_decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
         )
-        not_included_event = ViolationWithResponseDecisionEvent(
+        not_included_event = ViolationWithResponseEvent(
             state_code=self.state_code,
             supervision_violation_id=35467,
             event_date=date(2017, 4, 20),

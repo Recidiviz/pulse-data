@@ -16,7 +16,7 @@
 # =============================================================================
 """Utils for the various calculation pipelines."""
 import datetime
-from typing import Optional, List, Any, Dict, Type, TypeVar
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 import attr
 from dateutil.relativedelta import relativedelta
@@ -26,8 +26,8 @@ from recidiviz.calculator.dataflow_config import (
     DATAFLOW_TABLES_TO_METRIC_TYPES,
 )
 from recidiviz.calculator.pipeline.utils.event_utils import (
-    IdentifierEventWithSingularDate,
     IdentifierEvent,
+    IdentifierEventWithSingularDate,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import (
     RecidivizMetric,
@@ -37,13 +37,10 @@ from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.state.external_id_types import (
     US_ID_DOC,
     US_MO_DOC,
-    US_PA_CONTROL,
-    US_PA_PBPP,
     US_ND_ELITE,
     US_ND_SID,
-)
-from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseDecision,
+    US_PA_CONTROL,
+    US_PA_PBPP,
 )
 from recidiviz.common.date import (
     first_day_of_month,
@@ -66,26 +63,6 @@ PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
         "US_ND": US_ND_SID,
     },
 }
-
-DECISION_SEVERITY_ORDER = [
-    StateSupervisionViolationResponseDecision.REVOCATION,
-    StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-    StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON,
-    StateSupervisionViolationResponseDecision.WARRANT_ISSUED,
-    StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
-    StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
-    StateSupervisionViolationResponseDecision.EXTENSION,
-    StateSupervisionViolationResponseDecision.SPECIALIZED_COURT,
-    StateSupervisionViolationResponseDecision.SUSPENSION,
-    StateSupervisionViolationResponseDecision.SERVICE_TERMINATION,
-    StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD,
-    StateSupervisionViolationResponseDecision.COMMUNITY_SERVICE,
-    StateSupervisionViolationResponseDecision.DELAYED_ACTION,
-    StateSupervisionViolationResponseDecision.OTHER,
-    StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN,
-    StateSupervisionViolationResponseDecision.WARNING,
-    StateSupervisionViolationResponseDecision.CONTINUANCE,
-]
 
 IdentifierEventT = TypeVar("IdentifierEventT", bound=IdentifierEvent)
 IdentifierEventWithSingularDateT = TypeVar(
@@ -172,17 +149,6 @@ def age_bucket(age: Optional[int]) -> Optional[str]:
     if age <= 39:
         return "35-39"
     return "40<"
-
-
-def identify_most_severe_response_decision(
-    decisions: List[StateSupervisionViolationResponseDecision],
-) -> Optional[StateSupervisionViolationResponseDecision]:
-    """Identifies the most severe decision on the responses according
-    to the static decision type ranking."""
-    return next(
-        (decision for decision in DECISION_SEVERITY_ORDER if decision in decisions),
-        None,
-    )
 
 
 def person_external_id_to_include(
