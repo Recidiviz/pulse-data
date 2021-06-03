@@ -158,6 +158,7 @@ SELECT {aggregated_dimension_columns},
        EXTRACT(YEAR from DATE_SUB(date_partition, INTERVAL 1 DAY)) as year,
        EXTRACT(MONTH from DATE_SUB(date_partition, INTERVAL 1 DAY)) as month,
        DATE_SUB(time_window_end, INTERVAL 1 DAY) as date_reported,
+       measurement_type as measurement_type,
        {value_column} as value,
        -- If there is no row at least a year back to compare to, the following columns will be NULL.
        EXTRACT(YEAR from DATE_SUB(compare_date_partition, INTERVAL 1 DAY)) as compared_to_year,
@@ -282,6 +283,9 @@ def get_jail_incarceration_rate_chain(
             "report_ids": metric_calculator.SpatialAggregationViewBuilder.ContextAggregation.ARRAY_CONCAT,
             "time_window_end": metric_calculator.SpatialAggregationViewBuilder.ContextAggregation.MAX,
             "publish_date": metric_calculator.SpatialAggregationViewBuilder.ContextAggregation.MAX,
+            # It is possible that there are different measurement types across counties, but for now they
+            # are all instant so we don't handle that case.
+            "measurement_type": metric_calculator.SpatialAggregationViewBuilder.ContextAggregation.ANY,
         },
         value_columns={"resident_population", "value"},
         collapse_dimensions_filter=f"dimension in ('{manual_upload.County.dimension_identifier()}')",

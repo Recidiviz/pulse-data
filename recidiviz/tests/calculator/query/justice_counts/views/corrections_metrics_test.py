@@ -125,6 +125,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                         (FakeState("US_XX"),),
                         ["A", "B", "A"],
                         3000,
+                        measurement_type="INSTANT",
                     )
                     + (None, None, "US_XX"),
                     row(
@@ -134,6 +135,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                         (FakeState("US_XX"),),
                         ["B", "B", "C"],
                         4000,
+                        measurement_type="INSTANT",
                     )
                     + (None, None, "US_XX"),
                     row(
@@ -143,6 +145,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                         (FakeState("US_YY"),),
                         ["A", "B", "A"],
                         1000,
+                        measurement_type="INSTANT",
                     )
                     + (None, None, "US_YY"),
                     row(
@@ -152,6 +155,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                         (FakeState("US_YY"),),
                         ["B", "B", "C"],
                         1020,
+                        measurement_type="INSTANT",
                     )
                     + (None, None, "US_YY"),
                     row(
@@ -161,6 +165,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                         (FakeState("US_ZZ"),),
                         ["A", "B", "A"],
                         400,
+                        measurement_type="INSTANT",
                     )
                     + (None, None, "US_ZZ"),
                     row(
@@ -170,6 +175,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                         (FakeState("US_ZZ"),),
                         ["C", "C", "B"],
                         500,
+                        measurement_type="INSTANT",
                     )
                     + (None, None, "US_ZZ"),
                 ],
@@ -218,6 +224,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "xx.gov",
                     "_",
                     datetime.date.fromisoformat("2021-01-01"),
+                    "INSTANT",
                     ["A", "B"],
                     3000,
                 ]
@@ -232,6 +239,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "xx.gov",
                     "_",
                     datetime.date.fromisoformat("2021-01-01"),
+                    "INSTANT",
                     ["B", "C"],
                     4000,
                 ]
@@ -246,6 +254,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "yy.gov",
                     "_",
                     datetime.date.fromisoformat("2021-01-02"),
+                    "INSTANT",
                     ["A", "B"],
                     1000,
                 ]
@@ -260,6 +269,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "yy.gov",
                     "_",
                     datetime.date.fromisoformat("2021-01-02"),
+                    "INSTANT",
                     ["B", "C"],
                     1020,
                 ]
@@ -274,6 +284,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "zz.gov",
                     "_",
                     datetime.date.fromisoformat("2021-01-02"),
+                    "INSTANT",
                     ["A", "B"],
                     400,
                 ]
@@ -288,6 +299,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "zz.gov",
                     "_",
                     datetime.date.fromisoformat("2021-01-02"),
+                    "INSTANT",
                     ["B", "C"],
                     500,
                 ]
@@ -303,6 +315,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                 "source_url",
                 "report_name",
                 "date_published",
+                "measurement_type",
                 "raw_source_categories",
                 "value",
                 "compared_to_year",
@@ -410,6 +423,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "xx.gov",
                     "_",
                     datetime.date.fromisoformat("2021-01-01"),
+                    "INSTANT",
                     [],
                     2,
                     None,
@@ -427,6 +441,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "xx.gov",
                     "_",
                     datetime.date.fromisoformat("2021-01-01"),
+                    "INSTANT",
                     [],
                     0,
                     2020,
@@ -445,6 +460,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                     "xx.gov",
                     "_",
                     datetime.date.fromisoformat("2021-01-01"),
+                    "INSTANT",
                     [],
                     3,
                     2021,
@@ -463,6 +479,7 @@ class CorrectionsOutputViewTest(BaseViewTest):
                 "source_url",
                 "report_name",
                 "date_published",
+                "measurement_type",
                 "raw_source_categories",
                 "value",
                 "compared_to_year",
@@ -682,6 +699,7 @@ class CorrectionsMetricsIntegrationTest(BaseViewTest):
                     "xx.gov",
                     "_",
                     datetime.date.fromisoformat("2021-01-01"),
+                    "INSTANT",
                     [],
                     3000,
                 ]
@@ -696,6 +714,7 @@ class CorrectionsMetricsIntegrationTest(BaseViewTest):
                     "xx.gov",
                     "_",
                     datetime.date.fromisoformat("2021-01-01"),
+                    "INSTANT",
                     [],
                     4000,
                 ]
@@ -710,6 +729,7 @@ class CorrectionsMetricsIntegrationTest(BaseViewTest):
                     "yy.gov",
                     "_",
                     datetime.date.fromisoformat("2021-01-02"),
+                    "INSTANT",
                     [],
                     1000,
                 ]
@@ -724,6 +744,7 @@ class CorrectionsMetricsIntegrationTest(BaseViewTest):
                     "yy.gov",
                     "_",
                     datetime.date.fromisoformat("2021-01-02"),
+                    "INSTANT",
                     [],
                     1020,
                 ]
@@ -738,6 +759,7 @@ class CorrectionsMetricsIntegrationTest(BaseViewTest):
                     "zz.gov",
                     "_",
                     datetime.date.fromisoformat("2021-01-02"),
+                    "INSTANT",
                     [],
                     400,
                 ]
@@ -752,6 +774,7 @@ class CorrectionsMetricsIntegrationTest(BaseViewTest):
                     "zz.gov",
                     "_",
                     datetime.date.fromisoformat("2021-01-02"),
+                    "INSTANT",
                     [],
                     500,
                 ]
@@ -767,6 +790,7 @@ class CorrectionsMetricsIntegrationTest(BaseViewTest):
                 "source_url",
                 "report_name",
                 "date_published",
+                "measurement_type",
                 "raw_source_categories",
                 "value",
                 "compared_to_year",
@@ -790,6 +814,7 @@ class CorrectionsMetricsIntegrationTest(BaseViewTest):
                     "xx.gov",
                     "_",
                     datetime.date.fromisoformat("2021-01-01"),
+                    "INSTANT",
                     [],
                     4000,
                 ]
@@ -804,6 +829,7 @@ class CorrectionsMetricsIntegrationTest(BaseViewTest):
                     "yy.gov",
                     "_",
                     datetime.date.fromisoformat("2021-01-02"),
+                    "INSTANT",
                     [],
                     1020,
                 ]
@@ -818,6 +844,7 @@ class CorrectionsMetricsIntegrationTest(BaseViewTest):
                     "zz.gov",
                     "_",
                     datetime.date.fromisoformat("2021-01-02"),
+                    "INSTANT",
                     [],
                     500,
                 ]
@@ -833,6 +860,7 @@ class CorrectionsMetricsIntegrationTest(BaseViewTest):
                 "source_url",
                 "report_name",
                 "date_published",
+                "measurement_type",
                 "raw_source_categories",
                 "value",
                 "compared_to_year",
