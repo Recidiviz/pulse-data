@@ -34,12 +34,10 @@ jobs:
         if: steps.pipenv-caching.outputs.cache-hit != 'true'
         run: pipenv sync --dev
       - uses: hashicorp/setup-terraform@v1
-        with:
-          terraform_version: 0.14.10
       - name: Validate terraform
         run: |
-          terraform init -backend=false ./recidiviz/tools/deploy/terraform
-          terraform validate ./recidiviz/tools/deploy/terraform
+          terraform -chdir=recidiviz/tools/deploy/terraform init -backend=false
+          terraform -chdir=recidiviz/tools/deploy/terraform validate
       - name: Fetch origin/master
         # Needed for origin/master object lookups to succeed.
         run: git fetch origin master
