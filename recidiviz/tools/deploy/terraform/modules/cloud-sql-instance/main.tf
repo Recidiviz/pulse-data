@@ -154,14 +154,10 @@ resource "google_sql_user" "postgres" {
 
 resource "google_sql_user" "readonly" {
   instance = google_sql_database_instance.data.name
-  name     = each.key
-  password = each.value
+  name     = length(data.google_secret_manager_secret_version.db_readonly_user) > 0 ? data.google_secret_manager_secret_version.db_readonly_user[0].secret_data : null
+  password = length(data.google_secret_manager_secret_version.db_readonly_password) > 0 ? data.google_secret_manager_secret_version.db_readonly_password[0].secret_data : null
 
-  # Do not create a readonly user if no secret is configured
-  for_each = zipmap(
-    data.google_secret_manager_secret_version.db_readonly_user[*].secret_data,
-    data.google_secret_manager_secret_version.db_readonly_password[*].secret_data
-  )
+  count = var.has_readonly_user ? 1 : 0
 }
 
 
@@ -224,4 +220,11 @@ resource "google_bigquery_connection" "default_db_bq_connection" {
       password = google_sql_user.postgres.password
     }
   }
+}
+
+output "dbusername" {
+  value = var.has_readonly_user ? data.google_secret_manager_secret_version.db_readonly_user[0].secret_data : null
+}
+output "dbuserpassword" {
+  value = var.has_readonly_user ? data.google_secret_manager_secret_version.db_readonly_password[0].secret_data : null
 }

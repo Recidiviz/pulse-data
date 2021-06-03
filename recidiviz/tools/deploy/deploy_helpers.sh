@@ -161,7 +161,7 @@ function check_terraform_installed {
 
     # Check that we're on at least the minimum version of Terraform
     TERRAFORM_VERSION=$(terraform --version | grep "^Terraform v" | cut -d ' ' -f 2 | sed 's/v//')
-    MIN_REQUIRED_TERRAFORM_VERSION="0.14.8"
+    MIN_REQUIRED_TERRAFORM_VERSION="0.15.5"
 
     if version_less_than ${TERRAFORM_VERSION} ${MIN_REQUIRED_TERRAFORM_VERSION}; then
       echo_error "Installed Terraform version [v$TERRAFORM_VERSION] must be at least [v$MIN_REQUIRED_TERRAFORM_VERSION]. "
@@ -250,7 +250,7 @@ function reconfigure_terraform_backend {
   PROJECT_ID=$1
   echo "Reconfiguring Terraform backend..."
   rm -rf .terraform/
-  run_cmd terraform init -backend-config "bucket=${PROJECT_ID}-tf-state" ${BASH_SOURCE_DIR}/terraform
+  run_cmd terraform -chdir=${BASH_SOURCE_DIR}/terraform init -backend-config "bucket=${PROJECT_ID}-tf-state"
 }
 
 
@@ -264,14 +264,14 @@ function deploy_terraform_infrastructure {
 
     while true
     do
-        run_cmd terraform plan -var="project_id=${PROJECT_ID}" -var="git_hash=${GIT_HASH}" -var="docker_image_tag=${DOCKER_IMAGE_TAG}" -out=tfplan ${BASH_SOURCE_DIR}/terraform
+        run_cmd terraform -chdir=${BASH_SOURCE_DIR}/terraform plan -var="project_id=${PROJECT_ID}" -var="git_hash=${GIT_HASH}" -var="docker_image_tag=${DOCKER_IMAGE_TAG}" -out=tfplan
         script_prompt "Does the generated terraform plan look correct? [You can inspect it with \`terraform show tfplan\`]"
 
         echo "Applying the terraform plan..."
         # not using run_cmd because we don't want to exit_on_fail
-        terraform apply tfplan | indent_output
+        terraform apply ./recidiviz/tools/deploy/terraform/tfplan | indent_output
         return_code=$?
-        rm ./tfplan
+        rm ./recidiviz/tools/deploy/terraform/tfplan
 
         if [[ $return_code -eq 0 ]]; then
             break

@@ -39,68 +39,57 @@ resource "google_bigquery_table" "validation_results" {
     {
         "name": "run_id",
         "type": "STRING",
-        "mode": "REQUIRED",
-        "description": ""
+        "mode": "REQUIRED"
     },
     {
         "name": "run_date",
         "type": "DATE",
-        "mode": "REQUIRED",
-        "description": ""
+        "mode": "REQUIRED"
     },
     {
         "name": "system_version",
         "type": "STRING",
-        "mode": "REQUIRED",
-        "description": ""
+        "mode": "REQUIRED"
     },
     {
         "name": "check_type",
         "type": "STRING",
-        "mode": "REQUIRED",
-        "description": ""
+        "mode": "REQUIRED"
     },
     {
         "name": "validation_name",
         "type": "STRING",
-        "mode": "REQUIRED",
-        "description": ""
+        "mode": "REQUIRED"
     },
     {
         "name": "region_code",
         "type": "STRING",
-        "mode": "REQUIRED",
-        "description": ""
+        "mode": "REQUIRED"
     },
     {
         "name": "did_run",
         "type": "BOOLEAN",
-        "mode": "REQUIRED",
-        "description": ""
+        "mode": "REQUIRED"
     },
     {
         "name": "was_successful",
         "type": "BOOLEAN",
-        "mode": "NULLABLE",
-        "description": ""
+        "mode": "NULLABLE"
     },
     {
         "name": "result_details_type",
         "type": "STRING",
-        "mode": "NULLABLE",
-        "description": ""
+        "mode": "NULLABLE"
     },
     {
         "name": "result_details",
         "type": "STRING",
-        "mode": "NULLABLE",
-        "description": ""
+        "mode": "NULLABLE"
     },
     {
         "name": "failure_description",
         "type": "STRING",
-        "mode": "NULLABLE",
-        "description": ""
+        "mode": "NULLABLE"
     }
 ]
 EOF

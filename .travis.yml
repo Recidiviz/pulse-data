@@ -43,8 +43,8 @@ script:
   - docker exec -it recidiviz pipenv run ./recidiviz/tools/travis/run_pylint.sh
 
   # Lint Terraform
-  - TF_INPUT=false terraform init -backend=false ./recidiviz/tools/deploy/terraform
-  - TF_INPUT=false terraform validate ./recidiviz/tools/deploy/terraform
+  - TF_INPUT=false terraform -chdir=recidiviz/tools/deploy/terraform init -backend=false
+  - TF_INPUT=false terraform -chdir=recidiviz/tools/deploy/terraform validate
 
   - docker exec -it recidiviz pipenv run pytest recidiviz -n auto --test-set parallel
   - docker exec -it recidiviz pipenv run pytest recidiviz --test-set not-parallel --with-emulator
