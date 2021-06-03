@@ -169,6 +169,595 @@ columns:
   - name: StaffTitle
     description: |-
       The professional/occupational designator for an individual.
+    known_values:
+      - value: ACCS
+        description: COST ACCOUNTANT
+      - value: ACCT
+        description: ACCOUNTANT
+      - value: ACLK
+        description: ACCOUNT CLERK
+      - value: ACMG
+        description: ACCOUNTING MANAGER
+      - value: ACOM
+        description: ASSISTANT COMMISSIONER
+      - value: ACTC
+        description: ACCOUNTING TECHNICIAN
+      - value: ADAD
+        description: ADMIN. ANALYSIS DIRECTOR
+      - value: ADAN
+        description: ADMINISTRATIVE ANALYST
+      - value: ADAS
+        description: CHIEF ADMINISTRATIVE OFF
+      - value: ADCI
+        description: ASST DA - CHIEF INVESTIGATOR
+      - value: ADMB
+        description: BOARD MEMBER
+      - value: ADS2
+        description: ADMIN SERVICES ASSISTANT 2
+      - value: ADS3
+        description: ADMIN SERVICES ASSISTANT 3
+      - value: ADS4
+        description: ADMIN SERVICES ASSISTANT 4
+      - value: ADS5
+        description: ADMIN SERVICES ASSISTANT 5
+      - value: ADSA
+        description: ADMIN. SERVICES ASSISTANT
+      - value: ADSC
+        description: ADMINISTRATIVE SECRETARY
+      - value: ADUI
+        description: GRAND JURY ADMINISTRATOR-D.U.I
+      - value: AFAO
+        description: AFFIRMATIVE ACTION OFFICER
+      - value: AGID
+        description: AGENT IN CHARGE IDENTIFICATION
+      - value: AGIN
+        description: AGENT IN CHARGE, INTELLIGENCE
+      - value: AIAS
+        description: CORRECTIONAL ACADEMY INSTRUCTR
+      - value: APDR
+        description: CORRECTIONAL PROGRAM DIRECTOR
+      - value: ASCS
+        description: ASSISTANT CHIEF OF SECURITY
+      - value: ASDA
+        description: ASST. DISTRICT ATTY.
+      - value: ASIG
+        description: ASSISTANT INSPECTOR GENERAL
+      - value: ASO2
+        description: ADMIN. SERVICES OFFICER 2
+      - value: ASO4
+        description: ADMIN. SERVICES OFFICER 4
+      - value: ATTY
+        description: ATTORNEY
+      - value: AUDR
+        description: AUDIT DIRECTOR
+      - value: AUDT
+        description: AUDITOR
+      - value: AWAR
+        description: ASSOCIATE WARDEN
+      - value: BANC
+        description: BUDGET ANALYST- CORRECTION
+      - value: BBDR
+        description: BATCH BOARD DECISION REPORT
+      - value: BMWK
+        description: BUILDING MAINTENANCE WORKER
+      - value: BOPR
+        description: BOILER OPERATOR
+      - value: CAPT
+        description: CORRECTIONAL CAPTAIN
+      - value: CARP
+        description: MAINTENANCE CARPENTER
+      - value: CASD
+        description: CASE DEVELOPER
+      - value: CASE
+        description: CASE OFFICER
+      - value: CASM
+        description: CASE OFFICER MANAGER
+      - value: CCCR
+        description: CORR CLASS COORD-ADULT SRVICES
+      - value: CCMG
+        description: CORRECTIONAL COUNSELING MANAGR
+      - value: CCOF
+        description: CORRECTIONAL CLERICAL OFFICER
+      - value: CDEP
+        description: CHIEF DEPUTY
+      - value: CEAD
+        description: FACIL CONSTR ENGINEER ASST DIR
+      - value: CEDR
+        description: FACIL CONSTR ENGINEER DIRECTOR
+      - value: CESP
+        description: FACIL CONSTR ENGINEER SPCLST
+      - value: CFAD
+        description: CORRECTNL FARMS ASST DIRECTOR
+      - value: CFCL
+        description: CORRECTIONAL FARM CREW LEADER
+      - value: CFMG
+        description: CORRECTIONAL FARM MANAGER
+      - value: CHAD
+        description: CORRECTIONAL HEALTH ADMIN
+      - value: CHAP
+        description: CHAPLAIN
+      - value: CHDR
+        description: CORRECTIONAL HEALTH DIRECTOR
+      - value: CHIJ
+        description: CHIEF JAILER
+      - value: CHMG
+        description: CORRECTIONAL HEALTH MANAGER
+      - value: CHPO
+        description: CHIEF OF POLICE
+      - value: CHSS
+        description: CHILD SUPPORT SPECIALIST
+      - value: CIAD
+        description: CORR INTERNAL AFFAIRS DIRECTOR
+      - value: CIDR
+        description: CID RECORDS
+      - value: CISR
+        description: CORR INDUSTRIES SALES REP
+      - value: CISV
+        description: CORRECTIONAL INDUSTRIES SUPERV
+      - value: CIUM
+        description: CIU MANAGER
+      - value: CJCO
+        description: CRIMINAL JUSTICE COORDINATOR
+      - value: CLED
+        description: CLINICAL EDUCATOR
+      - value: CLEX
+        description: CLAIMS EXAMINER
+      - value: CLOF
+        description: CLASSIFICATIONS OFFICER
+      - value: CLRK
+        description: CLERK
+      - value: CMCO
+        description: COMPLIANCE COORDINATOR
+      - value: CNSK
+        description: CORRECTIONAL COUNSELOR
+      - value: COAN
+        description: COMPUTER ANALYST
+      - value: COCO
+        description: CORRESPONDENT COORDINATOR
+      - value: COCS
+        description: COMPUTR OPERTNS CNTRL SUPERVSR
+      - value: COFF
+        description: CORRECTIONAL OFFICER
+      - value: COLI
+        description: CORRECTIONAL LIEUTENANT
+      - value: COMG
+        description: COMPUTER OPERATIONS MANAGER
+      - value: COML
+        description: COMMISSIONER'S LIAISON
+      - value: COMM
+        description: COMMISSIONER
+      - value: CONT
+        description: CONTRACTOR
+      - value: COOK
+        description: COOK
+      - value: COPR
+        description: CENTRAL OFFICE PAYROLL RELEASE
+      - value: CORP
+        description: CORRECTIONAL CORPORAL
+      - value: COSV
+        description: COMPUTER OPERATIONS SUPERVISOR
+      - value: CPAU
+        description: CORRECTIONAL PROGRAM AUDITOR
+      - value: CPCC
+        description: CHF PRIN CT CLK-MITTIMUS
+      - value: CPLD
+        description: CORRECTIONAL PLANNING DIRECTOR
+      - value: CPMG
+        description: CORRECTIONAL PROGRAM MANAGER
+      - value: CPRN
+        description: CORRECTIONAL PRINCIPAL
+      - value: CPSA
+        description: CORR PROG SUPPORT ADMINISTRATR
+      - value: CPSP
+        description: CORRECTIONAL PROG SPECIALIST
+      - value: CRAD
+        description: CORRECTIONAL REGIONAL ADMINSTR
+      - value: CRIN
+        description: CRIMINAL INVESTIGATOR
+      - value: CROM
+        description: CORRECTIONAL OPERATIONS MGR
+      - value: CSCA
+        description: COMMUNTY SUPRVSN CORRCTL ADMIN
+      - value: CSEC
+        description: CHIEF OF SECURITY
+      - value: CSGT
+        description: CORRECTIONAL SERGEANT
+      - value: CTAD
+        description: COURT ADMINISTRATOR
+      - value: CTCH
+        description: CORRECTIONAL TEACHER
+      - value: CTCS
+        description: CORR TEACHER SUPERVISOR
+      - value: CTYP
+        description: CLERK TYPIST
+      - value: CUMG
+        description: CORRECTIONAL UNIT MANAGER
+      - value: CWKR
+        description: CUSTODIAL WORKER
+      - value: CWKS
+        description: CUSTODIAL WORKER SUPERVISOR
+      - value: DADC
+        description: DEPUTY ASS. DIRECTOR CET
+      - value: DAST
+        description: DENTAL ASSISTANT
+      - value: DCCC
+        description: DEPUTY CRIMINAL COURT CLERK
+      - value: DCCM
+        description: DEPT.CT.CLK-MITTIMUS
+      - value: DCOP
+        description: DISTRIBUTED COMPUTER OPERATOR
+      - value: DEAT
+        description: DEFENSE ATTORNEY
+      - value: DENT
+        description: DENTIST
+      - value: DEOP
+        description: DATA ENTRY OPERATOR
+      - value: DEOS
+        description: DATA ENTRY OPERATIONS SUPERVSR
+      - value: DESH
+        description: DEPUTY SHERIFF
+      - value: DETE
+        description: DETECTIVE
+      - value: DETL
+        description: DETECTIVE LIEUTENANT
+      - value: DETO
+        description: DETENTION OFFICER
+      - value: DEWA
+        description: DEPUTY WARDEN
+      - value: DHYG
+        description: DENTAL HYGIENIST
+      - value: DINC
+        description: DIRECTOR OF INVESTIGATIONS & C
+      - value: DIRA
+        description: DIRECTOR OF ACCREDITATION
+      - value: DIRC
+        description: DIRECTOR OF CLASSIFICATION
+      - value: DIRE
+        description: DIRECTOR
+      - value: DISA
+        description: DISTRICT ATTORNEY
+      - value: DJAI
+        description: DEPUTY JAILER
+      - value: DOSE
+        description: DOCKET SECRETARY
+      - value: DPAN
+        description: DISTRIBUTED PROGRAMMER/ANALYST
+      - value: DPAS
+        description: DIST PROGRAMMER/ANA SUPERVISOR
+      - value: DPCK
+        description: DEPUTY COURT CLERK
+      - value: DPDA
+        description: DEPUTY DISTRICT ATTY.
+      - value: DPDR
+        description: DEPUTY DIRECTOR
+      - value: DPOP
+        description: DATA PROCESSING OPERATOR
+      - value: DVTT
+        description: DEVELOPMENTAL TRAIN TECHNICIAN
+      - value: EDCN
+        description: EDUCATION CONSULTANT
+      - value: EDCO
+        description: EDUC DIR CEN. OFFICE
+      - value: EDSP
+        description: EDUC SPECIALIST - PSYCHOLOGY
+      - value: ELEC
+        description: ELECTRONICS TECHNICIAN
+      - value: EMOF
+        description: ELECT MONITORING OFFICER
+      - value: ENGT
+        description: ENGINEERING TECHNICIAN
+      - value: EQMC
+        description: EQUIPMENT MECHANIC
+      - value: EXAA
+        description: EXECUTIVE ADMIN ASSISTANT
+      - value: EXSC
+        description: EXECUTIVE SECRETARY
+      - value: FCMG
+        description: FACILITIES MANAGER
+      - value: FCSV
+        description: FACILITIES SUPERVISOR
+      - value: FISD
+        description: FISCAL DIRECTOR
+      - value: FSAM
+        description: FOOD SERVICE ASSISTANT MANAGER
+      - value: FSIN
+        description: FIRE SAFETY INSPECTOR
+      - value: FSMG
+        description: FOOD SERVICE MANAGER
+      - value: FSWK
+        description: FOOD SERVICE WORKER
+      - value: GOVN
+        description: GOVERNOR
+      - value: GRNT
+        description: GRANT EMPLOYEE
+      - value: GTAN
+        description: GRANT ANALYST
+      - value: GTDR
+        description: GRANTS PROGRAM DIRECTOR
+      - value: GTMG
+        description: GRANTS PROGRAM MANAGER
+      - value: HRMC
+        description: HEATING AND REFRIGERATION MECH
+      - value: HSDI
+        description: HEALTH SERVICES
+      - value: INAN
+        description: "TODO(#7424): Update with definition."
+      - value: INFO
+        description: INFORMATION OFFICER
+      - value: INJ2
+        description: INMATE JOBS COORDINATOR
+      - value: INJC
+        description: INMATE JOBS COORDINATOR
+      - value: INRC
+        description: INMATE RELATIONS COORDINATOR
+      - value: INRS
+        description: INFO RESOURCE SPECIALIST
+      - value: INSP
+        description: INTELLIGENCE SPECIALIST
+      - value: INTE
+        description: INTERN
+      - value: INVE
+        description: INVESTIGATOR
+      - value: IPPO
+        description: "TODO(#7424): Update with definition."
+      - value: ISCC
+        description: ISC COORDINATOR
+      - value: JADM
+        description: JAIL ADMINISTRATOR
+      - value: JAIL
+        description: JAILER
+      - value: JUEX
+        description: JUDICIAL EXPENSE
+      - value: KCLO
+        description: KCSD LIAISON OFFICER
+      - value: LAUM
+        description: LAUNDRY MANAGER
+      - value: LAUS
+        description: LAUNDRY SUPERVISOR
+      - value: LAUW
+        description: LAUNDRY WORKER
+      - value: LDHL
+        description: LONG DISTANCE HAULER
+      - value: LEGA
+        description: LEGAL ASSISTANT
+      - value: LEIC
+        description: LAW ENFORCEMENT INFO. COOR.
+      - value: LIBR
+        description: LIBRARIAN
+      - value: LIEU
+        description: CORRECTIONAL LIEUTENANT
+      - value: LPNU
+        description: LICENSED PRACTICAL NURSE
+      - value: LSDR
+        description: LEGAL SERVICES DIRECTOR
+      - value: MANG
+        description: MANAGER
+      - value: MCLK
+        description: MAIL CLERK
+      - value: MDRA
+        description: MEDICAL RECORDS ASSISTANT
+      - value: MDRC
+        description: MEDICAL RECORDS CLERK
+      - value: MDSE
+        description: MEDICAL SECRETARY
+      - value: MELC
+        description: MAINTENANCE ELECTRICIAN
+      - value: MGRA
+        description: MGR A-DIRECTOR OPERATIONS
+      - value: MHPD
+        description: MENTAL HEALTH PROGRAM DIRECTOR
+      - value: MHPS
+        description: MENTAL HEALTH PROG SPECIALIST
+      - value: MPLU
+        description: MAINTENANCE PLUMBER
+      - value: NUCL
+        description: NURSE CLINICIAN
+      - value: NURA
+        description: NURSE ASSISTANT
+      - value: OFFS
+        description: OFFICE SUPERVISOR
+      - value: PABC
+        description: PAROLE BOARD CHAIRMAN
+      - value: PABM
+        description: PAROLE BOARD MEMBER
+      - value: PAED
+        description: PAROLE BOARD EXEC. DIRECTOR
+      - value: PAHD
+        description: PAROLE HEARING DIRECTOR
+      - value: PAHO
+        description: PAROLE HEARING OFFICER
+      - value: PAOS
+        description: PAROLE OFFICER SUPERVISOR
+      - value: PARA
+        description: PARALEGAL
+      - value: PARD
+        description: PAROLE DIRECTOR
+      - value: PARO
+        description: PAROLE OFFICER
+      - value: PASB
+        description: PAS B-FINANCE
+      - value: PASD
+        description: COLLECTIONS
+      - value: PDVO
+        description: PRETRIAL DIVERSION OFFICER
+      - value: PER3
+        description: PERSONNEL TECHNICIAN 3
+      - value: PERA
+        description: PERSONNEL ANALYST
+      - value: PERD
+        description: PERSONNEL DIRECTOR
+      - value: PERM
+        description: PERSONNEL MANAGER
+      - value: PERT
+        description: PERSONNEL TECHNICIAN
+      - value: PHAR
+        description: PHARMACIST
+      - value: PHAT
+        description: PHARMACY TECHNICIAN
+      - value: PHYA
+        description: PHYSICIAN'S ASSISTANT
+      - value: PHYS
+        description: PHYSICIAN
+      - value: PLCO
+        description: PARALEGAL COURT OFFICER
+      - value: POLC
+        description: POLICE OFFICER
+      - value: PPSP
+        description: PAROLE PROGRAM SPECIALIST
+      - value: PRAD
+        description: PAROLE ASSISTANT DIRECTOR
+      - value: PRBM
+        description: PROBATION MANAGER
+      - value: PRBO
+        description: PROBATION OFFICER
+      - value: PRBP
+        description: PROBATION/PAROLE OFFICER
+      - value: PRMG
+        description: PROGRAM MANAGER
+      - value: PROC
+        description: PROCUREMENT OFFICER
+      - value: PROP
+        description: PROPERTY OFFICER
+      - value: PRSD
+        description: PRE-RELESASE SERVICES DIRECTOR
+      - value: PSCO
+        description: PROGRAM SUPPORT COORDINATOR
+      - value: PSEX
+        description: PSYCHOLOGICAL EXAMINER
+      - value: PSWK
+        description: PSYCHIATRIC SOCIAL WORKER
+      - value: PSYC
+        description: PSYCHOLOGIST
+      - value: PTO1
+        description: PRETRIAL OFFICER 1
+      - value: PTO2
+        description: PRETRIAL OFFICER 2
+      - value: PUHN
+        description: PUBLIC HEALTH NURSE
+      - value: RECA
+        description: RECREATION ASSISTANT
+      - value: RECS
+        description: RECREATION SPECIALIST
+      - value: REDR
+        description: REGIONAL DIRECTOR
+      - value: REGA
+        description: CORR REGIONAL ADMINISTRATOR
+      - value: REGN
+        description: REGISTERED NURSE
+      - value: RRCL
+        description: RECORD ROOM CLERK
+      - value: SASP
+        description: STATISTICAL ANALYST SUPERVISOR
+      - value: SCLK
+        description: STORES CLERK
+      - value: SCOL
+        description: SUPERVISOR OF COLLECTIONS
+      - value: SECR
+        description: SECRETARY
+      - value: SERG
+        description: SERGEANT
+      - value: SGRD
+        description: SECURITY GUARD
+      - value: SGSD
+        description: SUPV. GENERAL SESSION DIVISION
+      - value: SHER
+        description: SHERIFF
+      - value: SITE
+        description: SITE COORDINATOR
+      - value: SMGR
+        description: STORES MANAGER
+      - value: SNAN
+        description: SENTENCE ANALYST
+      - value: SNMS
+        description: SENTENCE MANAGEMENT SUPERVISOR
+      - value: SNTC
+        description: SENTENCING COMMISSION
+      - value: SPAG
+        description: SPECIAL AGENT
+      - value: SPCO
+        description: SPECIAL COUNSEL
+      - value: SPRA
+        description: SUPERVISOR-A CORRECTIONAL CNT
+      - value: SSCO
+        description: SSA-SYSTEMS COORDINATOR
+      - value: SSCR
+        description: SSA-CLAIMS REPRESENTATIVE
+      - value: SSOS
+        description: SSA-OPERATIONS SUPVISOR
+      - value: SSSR
+        description: SSA-SERVICE REPRESENTATIVE
+      - value: SSUP
+        description: SHIFT SUPERVISOR
+      - value: STA3
+        description: STATISTICAL ANALYST 3
+      - value: STAN
+        description: STATISTICAL ANALYST
+      - value: STAS
+        description: STUDENT ASSISTANT
+      - value: STC3
+        description: STENOGRAPHER CLERK 3
+      - value: STCS
+        description: SENTENCE TECHNICIAN SUPERVISOR
+      - value: STEC
+        description: SENTENCE TECHNICIAN
+      - value: STEW
+        description: FOOD SERVICE STEWARD
+      - value: STKP
+        description: STOREKEEPER
+      - value: SUPR
+        description: SUPERINTENDENT
+      - value: SYA2
+        description: INFORMATION SYSTEMS ANALYST 2
+      - value: SYA3
+        description: INFORMATION SYSTEMS ANALYST 3
+      - value: SYA4
+        description: INFORMATION SYSTEMS ANALYST 4
+      - value: SYAN
+        description: INFORMATION SYSTEMS ANALYST
+      - value: SYCO
+        description: INFO. SYSTEMS CONSULTANT
+      - value: SYD2
+        description: INFORMATION SYSTEMS DIR 2
+      - value: SYDR
+        description: INFORMATION SYSTEMS DIRECTOR
+      - value: SYM2
+        description: INFORMATION SYSTEMS MGR 2
+      - value: SYMG
+        description: INFORMATION SYSTEMS MANAGER
+      - value: SYSV
+        description: INFO SYSTMS ANALYST SUPERVISOR
+      - value: TASP
+        description: TRAINING ACADEMY SUPERINTENDNT
+      - value: TCHA
+        description: TEACHER'S ASSISTANT - CORR
+      - value: TCRD
+        description: TRAINING & CURRICULUM DIRECTOR
+      - value: TGSP
+        description: TRAINING SPECIALIST
+      - value: TOFF
+        description: TRAINING OFFICER
+      - value: TOPR
+        description: TELEPHONE OPERATOR
+      - value: TRPL
+        description: TREATMENT PLANT OPERATOR
+      - value: UNEM
+        description: UNEMPLOYMENT PRGM SPECIALIST
+      - value: VLSC
+        description: VOLUNTEER SERVICES COORDINATOR
+      - value: VOCI
+        description: VOCATIONAL INSTRUCTOR
+      - value: VOLU
+        description: VOLUNTEER WORKER
+      - value: VWCO
+        description: VICTIM/WITNESS COOR.
+      - value: WARD
+        description: WARDEN
+      - value: WKPC
+        description: WORK PROJECT COORDINATOR
+      - value: XRAY
+        description: X-RAY TECHNICIAN
+      - value: YIAO
+        description: YOUTH INTERNAL AFFAIRS
   - name: CertificationDate
     is_datetime: True
     description: |-
