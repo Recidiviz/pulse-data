@@ -20,23 +20,24 @@ import pwd
 import shutil
 import subprocess
 import tempfile
-from typing import Callable, Optional, Dict
+from typing import Callable, Dict, Optional
 
+from sqlalchemy.engine import URL
 from sqlalchemy.orm.session import close_all_sessions
 
-from recidiviz.persistence.database.constants import (
-    SQLALCHEMY_DB_NAME,
-    SQLALCHEMY_DB_HOST,
-    SQLALCHEMY_USE_SSL,
-    SQLALCHEMY_DB_USER,
-    SQLALCHEMY_DB_PASSWORD,
-)
 from recidiviz.persistence.database.base_schema import (
-    OperationsBase,
-    StateBase,
+    CaseTriageBase,
     JailsBase,
     JusticeCountsBase,
-    CaseTriageBase,
+    OperationsBase,
+    StateBase,
+)
+from recidiviz.persistence.database.constants import (
+    SQLALCHEMY_DB_HOST,
+    SQLALCHEMY_DB_NAME,
+    SQLALCHEMY_DB_PASSWORD,
+    SQLALCHEMY_DB_USER,
+    SQLALCHEMY_USE_SSL,
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -122,24 +123,24 @@ def _run_command(
     stdout. If the command fails and `assert_success` is set, raises an error.
     """
     # pylint: disable=subprocess-popen-preexec-fn
-    proc = subprocess.Popen(
+    with subprocess.Popen(
         command,
         shell=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
         preexec_fn=_get_run_as_user_fn(as_user) if as_user else None,
-    )
-    try:
-        out, err = proc.communicate(timeout=15)
-    except subprocess.TimeoutExpired as e:
-        proc.kill()
-        out, err = proc.communicate()
-        raise RuntimeError(f"Command timed out: `{command}`\n{err}\n{out}") from e
+    ) as proc:
+        try:
+            out, err = proc.communicate(timeout=15)
+        except subprocess.TimeoutExpired as e:
+            proc.kill()
+            out, err = proc.communicate()
+            raise RuntimeError(f"Command timed out: `{command}`\n{err}\n{out}") from e
 
-    if assert_success and proc.returncode != 0:
-        raise RuntimeError(f"Command failed: `{command}`\n{err}\n{out}")
-    return out
+        if assert_success and proc.returncode != 0:
+            raise RuntimeError(f"Command failed: `{command}`\n{err}\n{out}")
+        return out
 
 
 @environment.local_only
@@ -286,15 +287,23 @@ def use_on_disk_postgresql_database(database_key: SQLAlchemyDatabaseKey) -> None
 
 
 @environment.local_only
-def on_disk_postgres_db_url() -> str:
-    return f"postgresql://{TEST_POSTGRES_USER_NAME}:@localhost:5432/{TEST_POSTGRES_DB_NAME}"
+def on_disk_postgres_db_url() -> URL:
+    return URL.create(
+        drivername="postgresql",
+        username=TEST_POSTGRES_USER_NAME,
+        host="localhost",
+        database=TEST_POSTGRES_DB_NAME,
+    )
 
 
 @environment.local_only
-def postgres_db_url_from_env_vars() -> str:
-    return (
-        f"postgresql://{os.getenv(SQLALCHEMY_DB_USER)}:{os.getenv(SQLALCHEMY_DB_PASSWORD)}@"
-        + f"{os.getenv(SQLALCHEMY_DB_HOST)}:5432/{os.getenv(SQLALCHEMY_DB_NAME)}"
+def postgres_db_url_from_env_vars() -> URL:
+    return URL.create(
+        drivername="postgresql",
+        username=os.getenv(SQLALCHEMY_DB_USER),
+        password=os.getenv(SQLALCHEMY_DB_PASSWORD),
+        host=os.getenv(SQLALCHEMY_DB_HOST),
+        database=os.getenv(SQLALCHEMY_DB_NAME),
     )
 
 

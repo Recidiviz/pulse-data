@@ -34,12 +34,10 @@ from recidiviz.case_triage.analytics import (
     segment_user_id_for_email,
 )
 from recidiviz.case_triage.api_routes import create_api_blueprint
-from recidiviz.case_triage.authorization import AuthorizationStore, KNOWN_EXPERIMENTS
+from recidiviz.case_triage.authorization import KNOWN_EXPERIMENTS, AuthorizationStore
 from recidiviz.case_triage.e2e_routes import e2e_blueprint
 from recidiviz.case_triage.error_handlers import register_error_handlers
-from recidiviz.case_triage.exceptions import (
-    CaseTriageAuthorizationError,
-)
+from recidiviz.case_triage.exceptions import CaseTriageAuthorizationError
 from recidiviz.case_triage.querier.querier import CaseTriageQuerier
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
 from recidiviz.case_triage.util import get_local_secret
@@ -51,8 +49,8 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.auth.auth0 import (
     Auth0Config,
-    get_userinfo,
     build_auth0_authorization_decorator,
+    get_userinfo,
 )
 from recidiviz.utils.environment import in_development, in_test
 from recidiviz.utils.timer import RepeatedTimer

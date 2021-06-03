@@ -20,7 +20,7 @@ This helper is also useful when setting up test flask apps for testing.
 """
 from flask import Flask
 from flask_sqlalchemy_session import flask_scoped_session
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import URL, Engine
 from sqlalchemy.orm import sessionmaker
 
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -30,7 +30,7 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 )
 
 
-def setup_scoped_sessions(app: Flask, db_url: str) -> Engine:
+def setup_scoped_sessions(app: Flask, db_url: URL) -> Engine:
     engine = SQLAlchemyEngineManager.init_engine_for_postgres_instance(
         database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE),
         db_url=db_url,

@@ -17,8 +17,10 @@
 """Tests for sqlalchemy_engine_manager.py"""
 from unittest import mock
 from unittest.case import TestCase
-from mock import call, patch
+
 import sqlalchemy
+from mock import call, patch
+from sqlalchemy.engine import URL
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database import schema_utils, sqlalchemy_database_key
@@ -66,72 +68,125 @@ class SQLAlchemyEngineManagerTest(TestCase):
             mock_create_engine.call_args_list,
             [
                 call(
-                    "postgresql://sqlalchemy_db_user_value:sqlalchemy_db_password_value@/postgres"
-                    "?host=/cloudsql/sqlalchemy_cloudsql_instance_id_value",
+                    URL.create(
+                        drivername="postgresql",
+                        username="sqlalchemy_db_user_value",
+                        password="sqlalchemy_db_password_value",
+                        database="postgres",
+                        query={
+                            "host": "/cloudsql/sqlalchemy_cloudsql_instance_id_value"
+                        },
+                    ),
                     isolation_level=None,
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://state_db_user_value:state_db_password_value@/postgres"
-                    "?host=/cloudsql/state_cloudsql_instance_id_value",
+                    URL.create(
+                        drivername="postgresql",
+                        username="state_db_user_value",
+                        password="state_db_password_value",
+                        database="postgres",
+                        query={"host": "/cloudsql/state_cloudsql_instance_id_value"},
+                    ),
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://operations_db_user_value:operations_db_password_value@/postgres"
-                    "?host=/cloudsql/operations_cloudsql_instance_id_value",
+                    URL.create(
+                        drivername="postgresql",
+                        username="operations_db_user_value",
+                        password="operations_db_password_value",
+                        database="postgres",
+                        query={
+                            "host": "/cloudsql/operations_cloudsql_instance_id_value"
+                        },
+                    ),
                     isolation_level=None,
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://justice_counts_db_user_value:justice_counts_db_password_value@/"
-                    "postgres?host=/cloudsql/justice_counts_cloudsql_instance_id_value",
+                    URL.create(
+                        drivername="postgresql",
+                        username="justice_counts_db_user_value",
+                        password="justice_counts_db_password_value",
+                        database="postgres",
+                        query={
+                            "host": "/cloudsql/justice_counts_cloudsql_instance_id_value"
+                        },
+                    ),
                     isolation_level="SERIALIZABLE",
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://case_triage_db_user_value:case_triage_db_password_value@/"
-                    "postgres?host=/cloudsql/case_triage_cloudsql_instance_id_value",
+                    URL.create(
+                        drivername="postgresql",
+                        username="case_triage_db_user_value",
+                        password="case_triage_db_password_value",
+                        database="postgres",
+                        query={
+                            "host": "/cloudsql/case_triage_cloudsql_instance_id_value"
+                        },
+                    ),
                     isolation_level=None,
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://state_db_user_value:state_db_password_value@/us_xx_primary"
-                    "?host=/cloudsql/state_cloudsql_instance_id_value",
+                    URL.create(
+                        drivername="postgresql",
+                        username="state_db_user_value",
+                        password="state_db_password_value",
+                        database="us_xx_primary",
+                        query={"host": "/cloudsql/state_cloudsql_instance_id_value"},
+                    ),
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://state_db_user_value:state_db_password_value@/us_ww_primary"
-                    "?host=/cloudsql/state_cloudsql_instance_id_value",
+                    URL.create(
+                        drivername="postgresql",
+                        username="state_db_user_value",
+                        password="state_db_password_value",
+                        database="us_ww_primary",
+                        query={"host": "/cloudsql/state_cloudsql_instance_id_value"},
+                    ),
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://state_db_user_value:state_db_password_value@/us_xx_secondary"
-                    "?host=/cloudsql/state_cloudsql_instance_id_value",
+                    URL.create(
+                        drivername="postgresql",
+                        username="state_db_user_value",
+                        password="state_db_password_value",
+                        database="us_xx_secondary",
+                        query={"host": "/cloudsql/state_cloudsql_instance_id_value"},
+                    ),
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://state_db_user_value:state_db_password_value@/us_ww_secondary"
-                    "?host=/cloudsql/state_cloudsql_instance_id_value",
+                    URL.create(
+                        drivername="postgresql",
+                        username="state_db_user_value",
+                        password="state_db_password_value",
+                        database="us_ww_secondary",
+                        query={"host": "/cloudsql/state_cloudsql_instance_id_value"},
+                    ),
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
                     echo_pool=True,
@@ -173,72 +228,125 @@ class SQLAlchemyEngineManagerTest(TestCase):
             mock_create_engine.call_args_list,
             [
                 call(
-                    "postgresql://sqlalchemy_db_user_value:sqlalchemy_db_password_value@/postgres"
-                    "?host=/cloudsql/sqlalchemy_cloudsql_instance_id_value",
+                    URL.create(
+                        drivername="postgresql",
+                        username="sqlalchemy_db_user_value",
+                        password="sqlalchemy_db_password_value",
+                        database="postgres",
+                        query={
+                            "host": "/cloudsql/sqlalchemy_cloudsql_instance_id_value"
+                        },
+                    ),
                     isolation_level=None,
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://state_db_user_value:state_db_password_value@/postgres"
-                    "?host=/cloudsql/state_cloudsql_instance_id_value",
+                    URL.create(
+                        drivername="postgresql",
+                        username="state_db_user_value",
+                        password="state_db_password_value",
+                        database="postgres",
+                        query={"host": "/cloudsql/state_cloudsql_instance_id_value"},
+                    ),
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://operations_db_user_value:operations_db_password_value@/postgres"
-                    "?host=/cloudsql/operations_cloudsql_instance_id_value",
+                    URL.create(
+                        drivername="postgresql",
+                        username="operations_db_user_value",
+                        password="operations_db_password_value",
+                        database="postgres",
+                        query={
+                            "host": "/cloudsql/operations_cloudsql_instance_id_value"
+                        },
+                    ),
                     isolation_level=None,
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://justice_counts_db_user_value:justice_counts_db_password_value@/"
-                    "postgres?host=/cloudsql/justice_counts_cloudsql_instance_id_value",
+                    URL.create(
+                        drivername="postgresql",
+                        username="justice_counts_db_user_value",
+                        password="justice_counts_db_password_value",
+                        database="postgres",
+                        query={
+                            "host": "/cloudsql/justice_counts_cloudsql_instance_id_value"
+                        },
+                    ),
                     isolation_level="SERIALIZABLE",
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://case_triage_db_user_value:case_triage_db_password_value@/"
-                    "postgres?host=/cloudsql/case_triage_cloudsql_instance_id_value",
+                    URL.create(
+                        drivername="postgresql",
+                        username="case_triage_db_user_value",
+                        password="case_triage_db_password_value",
+                        database="postgres",
+                        query={
+                            "host": "/cloudsql/case_triage_cloudsql_instance_id_value"
+                        },
+                    ),
                     isolation_level=None,
                     poolclass=None,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://state_db_user_value:state_db_password_value@/us_xx_primary"
-                    "?host=/cloudsql/state_cloudsql_instance_id_value",
+                    URL.create(
+                        drivername="postgresql",
+                        username="state_db_user_value",
+                        password="state_db_password_value",
+                        database="us_xx_primary",
+                        query={"host": "/cloudsql/state_cloudsql_instance_id_value"},
+                    ),
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://state_db_user_value:state_db_password_value@/us_ww_primary"
-                    "?host=/cloudsql/state_cloudsql_instance_id_value",
+                    URL.create(
+                        drivername="postgresql",
+                        username="state_db_user_value",
+                        password="state_db_password_value",
+                        database="us_ww_primary",
+                        query={"host": "/cloudsql/state_cloudsql_instance_id_value"},
+                    ),
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://state_db_user_value:state_db_password_value@/us_xx_secondary"
-                    "?host=/cloudsql/state_cloudsql_instance_id_value",
+                    URL.create(
+                        drivername="postgresql",
+                        username="state_db_user_value",
+                        password="state_db_password_value",
+                        database="us_xx_secondary",
+                        query={"host": "/cloudsql/state_cloudsql_instance_id_value"},
+                    ),
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
                 call(
-                    "postgresql://state_db_user_value:state_db_password_value@/us_ww_secondary"
-                    "?host=/cloudsql/state_cloudsql_instance_id_value",
+                    URL.create(
+                        drivername="postgresql",
+                        username="state_db_user_value",
+                        password="state_db_password_value",
+                        database="us_ww_secondary",
+                        query={"host": "/cloudsql/state_cloudsql_instance_id_value"},
+                    ),
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
                     echo_pool=True,
