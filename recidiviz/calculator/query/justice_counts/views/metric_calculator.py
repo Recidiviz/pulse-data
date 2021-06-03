@@ -584,7 +584,8 @@ WITH joined_data as (
     input.dimensions_string,
     input.num_original_dimensions,
     input.collapsed_dimension_values,
-    input.value
+    input.value,
+    DATE_DIFF(time_window_end, time_window_start, DAY) AS time_window_days
   FROM `{project_id}.{input_dataset}.{input_table}` input
   JOIN `{project_id}.{base_dataset}.report_table_instance_materialized` instance
     ON input.instance_id = instance.id
@@ -598,11 +599,13 @@ WITH joined_data as (
 --  - DELTA: Sum them
 --  - INSTANT: Pick one
 combined_periods_data as (
-  -- TODO(#5517): ensure non-overlapping, contiguous blocks (e.g. four weeks of a month)
   SELECT
     source_id, report_type, ARRAY_AGG(DISTINCT report_id) as report_ids, MAX(publish_date) as publish_date,
     definition_id, ANY_VALUE(measurement_type) as measurement_type,
-    end_date_partition as date_partition, MIN(time_window_start) as time_window_start, MAX(time_window_end) as time_window_end,
+    end_date_partition as date_partition,
+    MIN(time_window_start) as time_window_start,
+    MAX(time_window_end) as time_window_end,
+    SUM(time_window_days) as time_window_days,
     -- Since BQ won't allow us to group by dimensions, we are grouping by dimensions_string and just pick any dimensions
     -- since they are all the same for a single dimensions_string.
     ANY_VALUE(dimensions) as dimensions,
@@ -612,23 +615,32 @@ combined_periods_data as (
     ARRAY_CONCAT_AGG(collapsed_dimension_values) as collapsed_dimension_values,
     SUM(value) as value
   FROM (
-    -- TODO(#5517): order by how much of the month it covers, then time_window_end, then publish date?
-    -- Prioritize data that is the most recent for a month (time_window_end), then data that was published most recently
-    -- (publish_date), then data from definitions with the fewest dimensions as that will help us accidentally avoid
-    -- missing categories (num_original_dimensions)
-    SELECT *, ROW_NUMBER()
-      OVER(PARTITION BY source_id, report_type, definition_id, end_date_partition, dimensions_string
-           ORDER BY time_window_end DESC, publish_date DESC, num_original_dimensions ASC) as ordinal
+    -- Prioritize data that covers the largest part of the partition (time_window_days),
+    -- is the most recent (time_window_end), then data that was published most recently
+    -- (publish_date), then data from definitions with the fewest dimensions as that
+    -- will help us accidentally avoid missing categories (num_original_dimensions)
+    SELECT
+      *,
+      ROW_NUMBER() OVER(period_partition) as ordinal,
+      SUM(time_window_days) OVER(period_partition) as time_window_days_running_total
     FROM joined_data
     -- TODO(#7455): We currently let averages not cover the whole time range and just
     -- pick the most recent one in the range since we can't combine them. We should
     -- probably just only let an average through if it matches the partition exactly,
     -- otherwise it can be a bit misleading for annual?
     WHERE measurement_type = 'AVERAGE' OR start_date_partition = end_date_partition
+    WINDOW period_partition AS (
+      PARTITION BY source_id, report_type, definition_id, end_date_partition, dimensions_string
+      ORDER BY time_window_days DESC, time_window_end DESC, publish_date DESC, num_original_dimensions ASC
+    )
   ) as partitioned
   -- If it is DELTA then sum them, otherwise just pick one
   -- Note: For AVERAGE we could do a weighted average instead, but for now dropping is okay
-  WHERE measurement_type = 'DELTA' OR partitioned.ordinal = 1
+  WHERE
+    partitioned.ordinal = 1
+    OR (measurement_type = 'DELTA'
+      -- Only allow periods to be combined up to the size of the partition to avoid double counting days.
+      AND time_window_days_running_total <= DATE_DIFF(end_date_partition, DATE_SUB(end_date_partition, INTERVAL 1 {partition_part}), DAY))
   GROUP BY source_id, report_type, definition_id, end_date_partition, dimensions_string
 )
 
@@ -643,21 +655,26 @@ combined_periods_data as (
 SELECT source_id, report_type, report_ids, publish_date, date_partition, time_window_start, time_window_end,
        dimensions, dimensions_string, collapsed_dimension_values, value
 FROM (
-  -- TODO(#5517): order by how much of the month it covers, then time_window_end, then publish date?
-  SELECT *, ROW_NUMBER()
-    OVER(PARTITION BY dimensions_string, date_partition
-         ORDER BY time_window_end DESC, publish_date DESC, num_original_dimensions ASC) as ordinal
+  SELECT
+    *,
+    ROW_NUMBER() OVER(
+      PARTITION BY dimensions_string, date_partition
+      ORDER BY time_window_days DESC, time_window_end DESC, publish_date DESC, num_original_dimensions ASC
+    ) as ordinal
   FROM (
     SELECT * FROM combined_periods_data
     WHERE
       -- Filter out any DELTA points that don't cover the same number of days as the month
-      (measurement_type != 'DELTA' OR DATE_DIFF(time_window_end, time_window_start, DAY) = DATE_DIFF(date_partition, DATE_SUB(date_partition, INTERVAL 1 {partition_part}), DAY))
+      (measurement_type != 'DELTA' OR (
+        -- Both the difference between the min start and max end of the combined periods
+        -- and the sum of the actual number of days covered by the combined periods must
+        -- match the number of days as are in the partition.
+        DATE_DIFF(time_window_end, time_window_start, DAY) = DATE_DIFF(date_partition, DATE_SUB(date_partition, INTERVAL 1 {partition_part}), DAY)
+        AND time_window_days = DATE_DIFF(date_partition, DATE_SUB(date_partition, INTERVAL 1 {partition_part}), DAY)))
       -- Filter out any points that don't cover the last month of the partition. This is
       -- important to prevent pulling instant measurements forward more than a month.
       AND DATE_ADD(DATE_TRUNC(DATE_SUB(time_window_end, INTERVAL 1 DAY), MONTH), INTERVAL 1 MONTH) = date_partition
   ) as filtered_to_month
--- TODO(#5517): If this covers more than just that month, do we want to drop more as well? Or are we okay with window
--- being quarter but output period being month? Same question for if it covers less?
 ) as partitioned
 WHERE partitioned.ordinal = 1
 """
