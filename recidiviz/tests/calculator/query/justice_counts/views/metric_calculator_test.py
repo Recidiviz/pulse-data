@@ -1617,11 +1617,11 @@ class MonthlyMetricViewTest(BaseViewTest):
                     [6, 1, 1, "2020-12-20", "2020-12-27", None],
                     # January - doesn't cover month, also skipped
                     [7, 1, 1, "2020-12-27", "2021-01-03", None],
-                    # February - overlapping, all still get counted
+                    # February - overlapping, skipped
                     [8, 1, 1, "2021-02-01", "2021-02-21", None],
                     [9, 1, 1, "2021-02-07", "2021-03-01", None],
                     # different source should not be summed
-                    [10, 2, 1, "2021-02-07", "2021-03-01", None],
+                    [10, 2, 1, "2021-02-21", "2021-03-01", None],
                 ],
                 columns=[
                     "id",
@@ -1690,7 +1690,6 @@ class MonthlyMetricViewTest(BaseViewTest):
         expected = pd.DataFrame(
             [
                 row(1, "2021-01-02", "2020-11-01", (FakeState("US_XX"),), [], 3),
-                row(1, "2021-01-02", "2021-02-01", (FakeState("US_XX"),), [], 384),
             ],
             columns=METRIC_CALCULATOR_SCHEMA.data_types.keys(),
         )
@@ -3075,6 +3074,241 @@ class AnnualMetricViewTest(BaseViewTest):
                 row(2, "2021-01-02", "2021-01-31", (FakeState("US_YY"),), [], 1040),
             ],
             columns=METRIC_CALCULATOR_SCHEMA.data_types.keys(),
+        )
+        expected = expected.set_index(dimensions)
+        assert_frame_equal(expected, results)
+
+    def test_delta_overlapping(self) -> None:
+        """Tests that delta metrics with overlapping windows (e.g. YTD) are not summed."""
+        # Arrange
+        self.create_mock_bq_table(
+            dataset_id="justice_counts",
+            table_id="source_materialized",
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_data=pd.DataFrame([[1, "XX"]], columns=["id", "name"]),
+        )
+        self.create_mock_bq_table(
+            dataset_id="justice_counts",
+            table_id="report_materialized",
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_data=pd.DataFrame(
+                [
+                    [
+                        1,
+                        1,
+                        "_",
+                        "All",
+                        "2021-01-02",
+                        "xx.gov",
+                        "MANUALLY_ENTERED",
+                        "John",
+                    ]
+                ],
+                columns=[
+                    "id",
+                    "source_id",
+                    "type",
+                    "instance",
+                    "publish_date",
+                    "url",
+                    "acquisition_method",
+                    "acquired_by",
+                ],
+            ),
+        )
+        self.create_mock_bq_table(
+            dataset_id="justice_counts",
+            table_id="report_table_definition_materialized",
+            mock_schema=MockTableSchema.from_sqlalchemy_table(
+                schema.ReportTableDefinition.__table__
+            ),
+            mock_data=pd.DataFrame(
+                [
+                    [
+                        1,
+                        "CORRECTIONS",
+                        "ADMISSIONS",
+                        "DELTA",
+                        ["global/location/state"],
+                        ["US_XX"],
+                        [],
+                    ]
+                ],
+                columns=[
+                    "id",
+                    "system",
+                    "metric_type",
+                    "measurement_type",
+                    "filtered_dimensions",
+                    "filtered_dimension_values",
+                    "aggregated_dimensions",
+                ],
+            ),
+        )
+        self.create_mock_bq_table(
+            dataset_id="justice_counts",
+            table_id="report_table_instance_materialized",
+            mock_schema=MockTableSchema.from_sqlalchemy_table(
+                schema.ReportTableInstance.__table__
+            ),
+            mock_data=pd.DataFrame(
+                [
+                    # 2020: YTD each month for full year
+                    [1, 1, 1, "2020-01-01", "2020-02-01", None],
+                    [2, 1, 1, "2020-01-01", "2020-03-01", None],
+                    [3, 1, 1, "2020-01-01", "2020-04-01", None],
+                    [4, 1, 1, "2020-01-01", "2020-05-01", None],
+                    [5, 1, 1, "2020-01-01", "2020-06-01", None],
+                    [6, 1, 1, "2020-01-01", "2020-07-01", None],
+                    [7, 1, 1, "2020-01-01", "2020-08-01", None],
+                    [8, 1, 1, "2020-01-01", "2020-09-01", None],
+                    [9, 1, 1, "2020-01-01", "2020-10-01", None],
+                    [10, 1, 1, "2020-01-01", "2020-11-01", None],
+                    [11, 1, 1, "2020-01-01", "2020-12-01", None],
+                    [12, 1, 1, "2020-01-01", "2021-01-01", None],
+                    # 2021: YTD each month for partial year
+                    [13, 1, 1, "2021-01-01", "2021-02-01", None],
+                    [14, 1, 1, "2021-01-01", "2021-03-01", None],
+                    [15, 1, 1, "2021-01-01", "2021-04-01", None],
+                    [16, 1, 1, "2021-01-01", "2021-05-01", None],
+                    # 2022: Ignore monthly
+                    [17, 1, 1, "2022-01-01", "2022-07-01", None],
+                    [18, 1, 1, "2022-07-01", "2023-01-01", None],
+                    [19, 1, 1, "2022-01-01", "2022-02-01", None],
+                    # 2023: Unhandled: largest window fails bin packing (fails but
+                    # should succeed)
+                    [20, 1, 1, "2023-01-01", "2023-07-01", None],
+                    [21, 1, 1, "2023-07-01", "2024-01-01", None],
+                    [22, 1, 1, "2023-01-01", "2023-08-01", None],
+                    # 2024: Unhandled: overlapping but has correct min, max, and number
+                    # of days (succeeds but should fail)
+                    [23, 1, 1, "2024-01-01", "2024-11-01", None],
+                    [24, 1, 1, "2024-04-01", "2024-05-01", None],
+                    [25, 1, 1, "2024-12-01", "2025-01-01", None],
+                ],
+                columns=[
+                    "id",
+                    "report_id",
+                    "report_table_definition_id",
+                    "time_window_start",
+                    "time_window_end",
+                    "methodology",
+                ],
+            ),
+        )
+        self.create_mock_bq_table(
+            dataset_id="justice_counts",
+            table_id="cell_materialized",
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_data=pd.DataFrame(
+                [
+                    # 2020: YTD each month for full year
+                    [1, 1, [], 1],
+                    [2, 2, [], 2],
+                    [3, 3, [], 3],
+                    [4, 4, [], 4],
+                    [5, 5, [], 5],
+                    [6, 6, [], 6],
+                    [7, 7, [], 7],
+                    [8, 8, [], 8],
+                    [9, 9, [], 9],
+                    [10, 10, [], 10],
+                    [11, 11, [], 11],
+                    [12, 12, [], 12],
+                    # 2021
+                    [13, 13, [], 1],
+                    [14, 14, [], 2],
+                    [15, 15, [], 3],
+                    [16, 16, [], 4],
+                    # 2022
+                    [17, 17, [], 6],
+                    [18, 18, [], 6],
+                    [19, 19, [], 1],
+                    # 2023
+                    [20, 20, [], 6],
+                    [21, 21, [], 6],
+                    [22, 22, [], 7],
+                    # 2024
+                    [23, 23, [], 1],
+                    [24, 24, [], 20],
+                    [25, 25, [], 1],
+                ],
+                columns=[
+                    "id",
+                    "report_table_instance_id",
+                    "aggregated_dimension_values",
+                    "value",
+                ],
+            ),
+        )
+
+        # Act
+        dimensions = ["dimensions_string", "date_partition"]
+        parole_population = metric_calculator.CalculatedMetric(
+            system=schema.System.CORRECTIONS,
+            metric=schema.MetricType.ADMISSIONS,
+            filtered_dimensions=[],
+            aggregated_dimensions={
+                "state_code": metric_calculator.Aggregation(
+                    dimension=manual_upload.State, comprehensive=False
+                )
+            },
+            output_name="ADMISSIONS",
+        )
+        results = self.query_view_chain(
+            metric_calculator.calculate_metric_view_chain(
+                dataset_id="fake_dataset",
+                metric_to_calculate=parole_population,
+                time_aggregation=metric_calculator.TimeAggregation.ANNUAL,
+                date_partition_table=self.create_date_partitions(
+                    {
+                        ("US_XX",): datetime.date(2021, 1, 1),
+                    }
+                ),
+            ),
+            data_types={
+                "time_window_start": _npd,
+                "time_window_end": _npd,
+                "value": int,
+            },
+            dimensions=dimensions,
+        )
+
+        # Assert
+        expected = pd.DataFrame(
+            [
+                row(
+                    1,
+                    "2021-01-02",
+                    "2020-01-01",
+                    (FakeState("US_XX"),),
+                    [],
+                    12,
+                    end_date_str="2021-01-01",
+                ),
+                row(
+                    1,
+                    "2021-01-02",
+                    "2022-01-01",
+                    (FakeState("US_XX"),),
+                    [],
+                    12,
+                    end_date_str="2023-01-01",
+                ),
+                row(
+                    1,
+                    "2021-01-02",
+                    "2024-01-01",
+                    (FakeState("US_XX"),),
+                    [],
+                    22,
+                    end_date_str="2025-01-01",
+                ),
+            ],
+            columns=METRIC_CALCULATOR_SCHEMA.data_types.keys(),
+        )
+        expected = expected.astype(
+            {"time_window_start": _npd, "time_window_end": _npd, "value": int}
         )
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
