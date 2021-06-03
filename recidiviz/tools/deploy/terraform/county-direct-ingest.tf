@@ -19,7 +19,7 @@ module "county_direct_ingest_buckets" {
   for_each = toset(local.direct_ingest_county_codes)
   source   = "./modules/county-direct-ingest-resources"
 
-  county_code       = each.key
-  region            = "us-east1"
-  project_id       = var.project_id
+  county_code = each.key
+  region      = "us-east1"
+  project_id  = var.project_id
 }
