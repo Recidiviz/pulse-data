@@ -14,10 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Shared utils for dealing with PeriodType entities (StateIncarcerationPeriod and StateSupervisionPeriod)."""
+"""Shared utils for dealing with PeriodType entities (StateIncarcerationPeriod and
+StateSupervisionPeriod)."""
 from datetime import date
 from functools import cmp_to_key
-from typing import List, Callable, Optional
+from typing import Callable, List, Optional
 
 from dateutil.relativedelta import relativedelta
 
@@ -47,6 +48,7 @@ def sort_periods_by_set_dates_and_statuses(
     periods: List[PeriodType],
     is_active_period_function: Callable[[PeriodType], int],
     is_transfer_start_function: Callable[[PeriodType], int],
+    is_transfer_end_function: Callable[[PeriodType], int],
 ) -> None:
     """Sorts periods chronologically by the start and end dates according to this logic:
     - Sorts by start_date_inclusive, if set, else by end_date_exclusive
@@ -55,20 +57,56 @@ def sort_periods_by_set_dates_and_statuses(
         - Else, sorts by end_date_exclusive, with unset end_date_exclusives before set end_date_exclusives
     """
 
-    def _sort_by_transfer_start(period_a: PeriodType, period_b: PeriodType) -> int:
-        period_a_transfer = is_transfer_start_function(period_a)
-        period_b_transfer = is_transfer_start_function(period_b)
+    def _sort_period_by_external_id(p_a: PeriodType, p_b: PeriodType) -> int:
+        """Sorts two periods alphabetically by external_id. This is not a reliable
+        way to sort periods chronologically, but is used to sort periods
+        deterministically when we cannot determine the chronological order of the
+        two."""
+        if p_a.external_id is None or p_b.external_id is None:
+            raise ValueError("Expect no placeholder periods in this function.")
 
-        # Sort by whether the period was started because of a transfer. Order periods
-        # that were started because of a transfer after periods that were not started
-        # because of a transfer.
-        if period_a_transfer == period_b_transfer:
-            # Either both or neither periods were started because of a transfer.
-            return 0
+        # Alphabetic sort by external_id
+        return -1 if p_a.external_id < p_b.external_id else 1
 
-        if period_a_transfer:
+    def _sort_by_transfer_end(period_a: PeriodType, period_b: PeriodType) -> int:
+        """Sorts two periods with the same start and end dates that both started with a
+        transfer."""
+        period_a_transfer_end = is_transfer_end_function(period_a)
+        period_b_transfer_end = is_transfer_end_function(period_b)
+
+        if period_a_transfer_end == period_b_transfer_end:
+            # Either both or neither periods were ended because of a transfer. Sort
+            # by external_id
+            return _sort_period_by_external_id(period_a, period_b)
+
+        if period_a_transfer_end:
+            return -1
+        if period_b_transfer_end:
             return 1
-        if period_b_transfer:
+        raise ValueError("One period should have a transfer start at this point")
+
+    def _sort_by_transfer_start(period_a: PeriodType, period_b: PeriodType) -> int:
+        if not (
+            period_a.start_date_inclusive == period_b.start_date_inclusive
+            and period_a.end_date_exclusive == period_b.end_date_exclusive
+        ):
+            raise ValueError("Expected equal start and end dates.")
+
+        period_a_transfer_start = is_transfer_start_function(period_a)
+        period_b_transfer_start = is_transfer_start_function(period_b)
+
+        if period_a_transfer_start and period_b_transfer_start:
+            # Both periods were started because of a transfer. Sort by transfer end
+            # edges.
+            return _sort_by_transfer_end(period_a, period_b)
+
+        if period_a_transfer_start == period_b_transfer_start:
+            # Neither periods were started because of a transfer. Sort by external_id.
+            return _sort_period_by_external_id(period_a, period_b)
+
+        if period_a_transfer_start:
+            return 1
+        if period_b_transfer_start:
             return -1
         raise ValueError("One period should have a transfer start at this point")
 
@@ -87,7 +125,8 @@ def sort_periods_by_set_dates_and_statuses(
 
         if period_a_active == period_b_active:
             return sort_period_by_external_id(period_a, period_b)
-        # Sort by status of the period. Order periods that are active (no end date) after periods that have ended.
+        # Sort by status of the period. Order periods that are active (no end date)
+        # after periods that have ended.
         if period_a_active:
             return 1
         if period_b_active:
