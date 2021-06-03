@@ -18,7 +18,7 @@
 import re
 import string
 from enum import Enum, auto
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
 
 import attr
 
@@ -29,7 +29,6 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager i
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.query_utils import get_region_raw_file_config
-
 
 UPDATE_DATETIME_PARAM_NAME = "update_timestamp"
 
@@ -268,8 +267,8 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
         if not raw_file_config.datetime_cols:
             return "*"
 
-        datetime_col_str = ", ".join(raw_file_config.datetime_cols)
-        return f"* EXCEPT ({datetime_col_str}), " + (
+        non_datetime_col_str = ", ".join(raw_file_config.non_datetime_cols)
+        return f"{non_datetime_col_str}, update_datetime, " + (
             ", ".join(
                 [
                     DATETIME_COL_NORMALIZATION_TEMPLATE.format(col_name=col_name)
