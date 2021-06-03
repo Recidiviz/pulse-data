@@ -597,7 +597,7 @@ WITH joined_data as (
 
 -- Aggregate values for the same (source, report type, table definition, end_date_partition)
 --  - DELTA: Sum them
---  - INSTANT: Pick one
+--  - INSTANT/AVERAGE/PERSON_BASED_DELTA: Pick one
 combined_periods_data as (
   SELECT
     source_id, report_type, ARRAY_AGG(DISTINCT report_id) as report_ids, MAX(publish_date) as publish_date,
@@ -624,11 +624,7 @@ combined_periods_data as (
       ROW_NUMBER() OVER(period_partition) as ordinal,
       SUM(time_window_days) OVER(period_partition) as time_window_days_running_total
     FROM joined_data
-    -- TODO(#7455): We currently let averages not cover the whole time range and just
-    -- pick the most recent one in the range since we can't combine them. We should
-    -- probably just only let an average through if it matches the partition exactly,
-    -- otherwise it can be a bit misleading for annual?
-    WHERE measurement_type = 'AVERAGE' OR start_date_partition = end_date_partition
+    WHERE start_date_partition = end_date_partition
     WINDOW period_partition AS (
       PARTITION BY source_id, report_type, definition_id, end_date_partition, dimensions_string
       ORDER BY time_window_days DESC, time_window_end DESC, publish_date DESC, num_original_dimensions ASC
@@ -652,28 +648,36 @@ combined_periods_data as (
 -- bring in cells to do the spatial aggregation. Or we could split this off, group by non comprehensive dimensions and
 -- aggregate comprehensive dimensions, and take into account the coverage of dimension values when deciding which to
 -- use (e.g. one source reports on more race categories than another).
-SELECT source_id, report_type, report_ids, publish_date, date_partition, time_window_start, time_window_end,
-       dimensions, dimensions_string, collapsed_dimension_values, value
+SELECT
+  source_id, report_type, report_ids, publish_date, measurement_type,
+  date_partition, time_window_start, time_window_end,
+  dimensions, dimensions_string, collapsed_dimension_values, value
 FROM (
   SELECT
     *,
     ROW_NUMBER() OVER(
       PARTITION BY dimensions_string, date_partition
-      ORDER BY time_window_days DESC, time_window_end DESC, publish_date DESC, num_original_dimensions ASC
+      ORDER BY
+        -- Prefer instant measurements over ADP
+        IF(measurement_type = 'INSTANT', 0, 1) ASC,
+        time_window_end DESC, publish_date DESC, num_original_dimensions ASC,
+        -- Tie breakers to make it deterministic
+        source_id ASC, report_type ASC, measurement_type ASC
     ) as ordinal
   FROM (
     SELECT * FROM combined_periods_data
     WHERE
-      -- Filter out any DELTA points that don't cover the same number of days as the month
-      (measurement_type != 'DELTA' OR (
+      -- Only keep instant points that have data in the last month of the partition. This
+      -- is important to prevent pulling instant measurements forward more than a month.
+      (measurement_type = 'INSTANT'
+        AND DATE_ADD(DATE_TRUNC(DATE_SUB(time_window_end, INTERVAL 1 DAY), MONTH), INTERVAL 1 MONTH) = date_partition)
+      -- All other points must fully cover the partition.
+      OR (
         -- Both the difference between the min start and max end of the combined periods
         -- and the sum of the actual number of days covered by the combined periods must
         -- match the number of days as are in the partition.
         DATE_DIFF(time_window_end, time_window_start, DAY) = DATE_DIFF(date_partition, DATE_SUB(date_partition, INTERVAL 1 {partition_part}), DAY)
-        AND time_window_days = DATE_DIFF(date_partition, DATE_SUB(date_partition, INTERVAL 1 {partition_part}), DAY)))
-      -- Filter out any points that don't cover the last month of the partition. This is
-      -- important to prevent pulling instant measurements forward more than a month.
-      AND DATE_ADD(DATE_TRUNC(DATE_SUB(time_window_end, INTERVAL 1 DAY), MONTH), INTERVAL 1 MONTH) = date_partition
+        AND time_window_days = DATE_DIFF(date_partition, DATE_SUB(date_partition, INTERVAL 1 {partition_part}), DAY))
   ) as filtered_to_month
 ) as partitioned
 WHERE partitioned.ordinal = 1

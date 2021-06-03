@@ -74,6 +74,7 @@ class JailsOutputViewTest(BaseViewTest):
                         (FakeState("US_XX"), manual_upload.County("US_XX_ALPHA")),
                         [],
                         3000,
+                        measurement_type="INSTANT",
                     )
                     + (None, None, "US_XX", "US_XX_ALPHA", None, None),
                     row(
@@ -83,6 +84,7 @@ class JailsOutputViewTest(BaseViewTest):
                         (FakeState("US_XX"), manual_upload.County("US_XX_BETA")),
                         [],
                         1000,
+                        measurement_type="INSTANT",
                     )
                     + (None, None, "US_XX", "US_XX_BETA", None, None),
                     row(
@@ -92,6 +94,7 @@ class JailsOutputViewTest(BaseViewTest):
                         (FakeState("US_XX"), manual_upload.County("US_XX_ALPHA")),
                         [],
                         4000,
+                        measurement_type="INSTANT",
                     )
                     + (None, None, "US_XX", "US_XX_ALPHA", None, None),
                     row(
@@ -101,6 +104,7 @@ class JailsOutputViewTest(BaseViewTest):
                         (FakeState("US_XX"), manual_upload.County("US_XX_BETA")),
                         [],
                         1500,
+                        measurement_type="INSTANT",
                     )
                     + (None, None, "US_XX", "US_XX_BETA", None, None),
                     row(
@@ -110,6 +114,7 @@ class JailsOutputViewTest(BaseViewTest):
                         (FakeState("US_YY"),),
                         ["US_YY_ALPHA", "US_YY_BETA"],
                         12000,
+                        measurement_type="INSTANT",
                     )
                     + (None, None, "US_YY", "", 0.12, 0.5),
                     row(
@@ -119,6 +124,7 @@ class JailsOutputViewTest(BaseViewTest):
                         (FakeState("US_YY"),),
                         ["US_YY_ALPHA", "US_YY_BETA"],
                         13000,
+                        measurement_type="INSTANT",
                     )
                     + (None, None, "US_YY", "", 0.12, 0.5),
                 ],
@@ -162,6 +168,7 @@ class JailsOutputViewTest(BaseViewTest):
                     2020,
                     11,
                     datetime.date.fromisoformat("2020-11-30"),
+                    "INSTANT",
                     3000,
                 ]
                 + [None] * 6
@@ -173,6 +180,7 @@ class JailsOutputViewTest(BaseViewTest):
                     2020,
                     12,
                     datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
                     4000,
                 ]
                 + [None] * 6
@@ -184,6 +192,7 @@ class JailsOutputViewTest(BaseViewTest):
                     2020,
                     11,
                     datetime.date.fromisoformat("2020-11-30"),
+                    "INSTANT",
                     1000,
                 ]
                 + [None] * 6
@@ -195,6 +204,7 @@ class JailsOutputViewTest(BaseViewTest):
                     2020,
                     12,
                     datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
                     1500,
                 ]
                 + [None] * 6
@@ -206,6 +216,7 @@ class JailsOutputViewTest(BaseViewTest):
                     2020,
                     11,
                     datetime.date.fromisoformat("2020-11-30"),
+                    "INSTANT",
                     12000,
                 ]
                 + [None] * 4
@@ -218,6 +229,7 @@ class JailsOutputViewTest(BaseViewTest):
                     2020,
                     12,
                     datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
                     13000,
                 ]
                 + [None] * 4
@@ -231,6 +243,7 @@ class JailsOutputViewTest(BaseViewTest):
                 "year",
                 "month",
                 "date_reported",
+                "measurement_type",
                 "value",
                 "compared_to_year",
                 "compared_to_month",
@@ -249,18 +262,6 @@ class JailsOutputViewTest(BaseViewTest):
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
 class JailsMetricsIntegrationTest(BaseViewTest):
     """Tests the Jails output view."""
-
-    INPUT_SCHEMA = MockTableSchema(
-        {
-            **METRIC_CALCULATOR_SCHEMA.data_types,
-            "compare_start_of_month": sqltypes.Date(),
-            "compare_value": sqltypes.Numeric(),
-            "state_code": sqltypes.String(255),
-            "county_code": sqltypes.String(255),
-            "percentage_covered_county": sqltypes.Float(),
-            "percentage_covered_population": sqltypes.Float(),
-        }
-    )
 
     def test_county_population(self) -> None:
         """Tests the basic use case of calculating county population"""
@@ -434,6 +435,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     2020,
                     11,
                     datetime.date.fromisoformat("2020-11-30"),
+                    "INSTANT",
                     375,
                 ]
                 + [None] * 6
@@ -445,6 +447,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     2020,
                     12,
                     datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
                     500,
                 ]
                 + [None] * 6
@@ -456,6 +459,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     2020,
                     11,
                     datetime.date.fromisoformat("2020-11-30"),
+                    "INSTANT",
                     3000,
                 ]
                 + [None] * 6
@@ -467,6 +471,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     2020,
                     12,
                     datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
                     4000,
                 ]
                 + [None] * 6
@@ -478,6 +483,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     2020,
                     11,
                     datetime.date.fromisoformat("2020-11-30"),
+                    "INSTANT",
                     200,
                 ]
                 + [None] * 6
@@ -489,6 +495,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     2020,
                     12,
                     datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
                     300,
                 ]
                 + [None] * 6
@@ -500,6 +507,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     2020,
                     11,
                     datetime.date.fromisoformat("2020-11-30"),
+                    "INSTANT",
                     1000,
                 ]
                 + [None] * 6
@@ -511,6 +519,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     2020,
                     12,
                     datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
                     1500,
                 ]
                 + [None] * 6
@@ -522,6 +531,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     2020,
                     11,
                     datetime.date.fromisoformat("2020-11-30"),
+                    "INSTANT",
                     307,
                 ]
                 + [None] * 6
@@ -533,6 +543,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     2020,
                     12,
                     datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
                     423,
                 ]
                 + [None] * 6
@@ -544,6 +555,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     2020,
                     11,
                     datetime.date.fromisoformat("2020-11-30"),
+                    "INSTANT",
                     833,
                 ]
                 + [None] * 6
@@ -555,6 +567,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     2020,
                     12,
                     datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
                     1000,
                 ]
                 + [None] * 6
@@ -566,6 +579,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     2020,
                     11,
                     datetime.date.fromisoformat("2020-11-30"),
+                    "INSTANT",
                     10000,
                 ]
                 + [None] * 6
@@ -577,6 +591,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     2020,
                     12,
                     datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
                     12000,
                 ]
                 + [None] * 6
@@ -588,6 +603,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     2020,
                     11,
                     datetime.date.fromisoformat("2020-11-30"),
+                    "INSTANT",
                     833,
                 ]
                 + [None] * 6
@@ -599,6 +615,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     2020,
                     12,
                     datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
                     1000,
                 ]
                 + [None] * 6
@@ -610,6 +627,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     2020,
                     11,
                     datetime.date.fromisoformat("2020-11-30"),
+                    "INSTANT",
                     909,
                 ]
                 + [None] * 6
@@ -621,6 +639,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     2020,
                     12,
                     datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
                     1000,
                 ]
                 + [None] * 6
@@ -632,6 +651,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     2020,
                     11,
                     datetime.date.fromisoformat("2020-11-30"),
+                    "INSTANT",
                     20000,
                 ]
                 + [None] * 6
@@ -643,6 +663,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     2020,
                     12,
                     datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
                     22000,
                 ]
                 + [None] * 6
@@ -654,6 +675,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     2020,
                     11,
                     datetime.date.fromisoformat("2020-11-30"),
+                    "INSTANT",
                     909,
                 ]
                 + [None] * 6
@@ -665,6 +687,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     2020,
                     12,
                     datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
                     1000,
                 ]
                 + [None] * 6
@@ -677,6 +700,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                 "year",
                 "month",
                 "date_reported",
+                "measurement_type",
                 "value",
                 "compared_to_year",
                 "compared_to_month",

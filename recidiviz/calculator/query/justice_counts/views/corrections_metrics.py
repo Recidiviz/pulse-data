@@ -296,6 +296,7 @@ SELECT {aggregated_dimension_columns},
        report.url as source_url,
        report_type as report_name,
        report.publish_date as date_published,
+       measurement_type as measurement_type,
        ARRAY(
          SELECT DISTINCT(collapsed_dimension_value)
          FROM UNNEST(collapsed_dimension_values) as collapsed_dimension_value
