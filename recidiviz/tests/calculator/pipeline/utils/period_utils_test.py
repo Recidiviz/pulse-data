@@ -18,27 +18,36 @@
 """Tests for period_utils.py."""
 import unittest
 from datetime import date
+from itertools import permutations
 
+import attr
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.calculator.pipeline.utils import (
+    incarceration_period_utils,
+    supervision_period_utils,
+)
 from recidiviz.calculator.pipeline.utils.period_utils import (
-    find_last_terminated_period_before_date,
     find_earliest_date_of_period_ending_in_death,
+    find_last_terminated_period_before_date,
+    sort_periods_by_set_dates_and_statuses,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
 )
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
+    StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
+    StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodStatus,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import (
-    StateSupervisionPeriod,
     StateIncarcerationPeriod,
+    StateSupervisionPeriod,
 )
 
 
@@ -529,3 +538,376 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
         )
 
         self.assertIsNone(earliest_period_ending_in_death)
+
+
+# pylint: disable=protected-access
+class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
+    """Tests the sort_periods_by_set_dates_and_statuses function."""
+
+    def test_sort_periods_by_set_dates_and_statuses_sps(self):
+        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_XX",
+            start_date=date(2000, 1, 1),
+            termination_date=date(2010, 8, 30),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_XX",
+            start_date=date(2006, 3, 1),
+            termination_date=date(2010, 9, 1),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_XX",
+            start_date=date(2012, 12, 1),
+            termination_date=date(2018, 2, 4),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        periods = [supervision_period_1, supervision_period_2, supervision_period_3]
+
+        for sp_order_combo in permutations(periods):
+            sps_for_test = [attr.evolve(sp) for sp in sp_order_combo]
+
+            sort_periods_by_set_dates_and_statuses(
+                sps_for_test,
+                supervision_period_utils._is_active_period,
+                supervision_period_utils._is_transfer_start,
+                supervision_period_utils._is_transfer_end,
+            )
+
+            self.assertEqual(
+                [supervision_period_1, supervision_period_2, supervision_period_3],
+                sps_for_test,
+            )
+
+    def test_sort_periods_by_set_dates_and_statuses_ips(self):
+        state_code = "US_XX"
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2010, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2011, 3, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2014, 4, 14),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        ip_3 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=3333,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2012, 2, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2016, 4, 14),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        incarceration_periods = [
+            ip_1,
+            ip_3,
+            ip_2,
+        ]
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+
+            sort_periods_by_set_dates_and_statuses(
+                ips_for_test,
+                incarceration_period_utils._is_active_period,
+                incarceration_period_utils._is_transfer_start,
+                incarceration_period_utils._is_transfer_end,
+            )
+
+            self.assertEqual(
+                [ip_1, ip_2, ip_3],
+                ips_for_test,
+            )
+
+    def test_sort_periods_by_set_dates_and_statuses_ips_empty_release_dates(self):
+        state_code = "US_XX"
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2010, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2011, 3, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2014, 4, 14),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        ip_3 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=3333,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2012, 2, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+        )
+
+        incarceration_periods = [
+            ip_1,
+            ip_3,
+            ip_2,
+        ]
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+
+            sort_periods_by_set_dates_and_statuses(
+                ips_for_test,
+                incarceration_period_utils._is_active_period,
+                incarceration_period_utils._is_transfer_start,
+                incarceration_period_utils._is_transfer_end,
+            )
+
+            self.assertEqual(
+                [ip_1, ip_2, ip_3],
+                ips_for_test,
+            )
+
+    def test_sort_periods_by_set_dates_and_statuses_ips_two_admissions_same_day(self):
+        state_code = "US_XX"
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2008, 11, 20),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2014, 4, 14),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        ip_3 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=3333,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2012, 2, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+        )
+
+        incarceration_periods = [ip_1, ip_2, ip_3]
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+
+            sort_periods_by_set_dates_and_statuses(
+                ips_for_test,
+                incarceration_period_utils._is_active_period,
+                incarceration_period_utils._is_transfer_start,
+                incarceration_period_utils._is_transfer_end,
+            )
+
+            self.assertEqual(
+                [ip_1, ip_2, ip_3],
+                ips_for_test,
+            )
+
+    def test_sort_periods_by_set_dates_and_statuses_ips_two_same_day_zero_day_periods(
+        self,
+    ):
+        state_code = "US_XX"
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="XXX-9",
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+            release_date=date(2008, 11, 20),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="XXX-10",
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            release_date=date(2008, 11, 20),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        ip_3 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="XXX-11",
+            incarceration_period_id=3333,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            release_date=date(2008, 12, 10),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        )
+
+        incarceration_periods = [ip_1, ip_2, ip_3]
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+
+            sort_periods_by_set_dates_and_statuses(
+                ips_for_test,
+                incarceration_period_utils._is_active_period,
+                incarceration_period_utils._is_transfer_start,
+                incarceration_period_utils._is_transfer_end,
+            )
+
+            self.assertEqual(
+                [ip_1, ip_2, ip_3],
+                ips_for_test,
+            )
+
+    def test_sort_periods_by_set_dates_and_statuses_ips_two_same_day_zero_day_periods_release(
+        self,
+    ):
+        state_code = "US_XX"
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="X",
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+            release_date=date(2009, 1, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="Z",
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2009, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            release_date=date(2009, 1, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        ip_3 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="Y",
+            incarceration_period_id=3333,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2009, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            release_date=date(2009, 1, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        )
+
+        incarceration_periods = [ip_1, ip_2, ip_3]
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+
+            sort_periods_by_set_dates_and_statuses(
+                ips_for_test,
+                incarceration_period_utils._is_active_period,
+                incarceration_period_utils._is_transfer_start,
+                incarceration_period_utils._is_transfer_end,
+            )
+
+            self.assertEqual(
+                [ip_1, ip_2, ip_3],
+                ips_for_test,
+            )
+
+    def test_sort_periods_by_set_dates_and_statuses_ips_sort_by_external_id(self):
+        state_code = "US_XX"
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="X",
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2009, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            release_date=date(2009, 1, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="Y",
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2009, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            release_date=date(2009, 1, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        ip_3 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="Z",
+            incarceration_period_id=3333,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2009, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            release_date=date(2009, 1, 1),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        incarceration_periods = [ip_1, ip_2, ip_3]
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+
+            sort_periods_by_set_dates_and_statuses(
+                ips_for_test,
+                incarceration_period_utils._is_active_period,
+                incarceration_period_utils._is_transfer_start,
+                incarceration_period_utils._is_transfer_end,
+            )
+
+            self.assertEqual(
+                [ip_1, ip_2, ip_3],
+                ips_for_test,
+            )

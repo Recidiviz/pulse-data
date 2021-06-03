@@ -15,28 +15,27 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for validating and manipulating supervision periods for use in calculations."""
+import datetime
 import itertools
 import logging
-import datetime
 from typing import List, Optional, Set
 
 from recidiviz.calculator.pipeline.utils.period_utils import (
-    sort_periods_by_set_dates_and_statuses,
     find_last_terminated_period_before_date,
     sort_period_by_external_id,
+    sort_periods_by_set_dates_and_statuses,
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodStatus,
-    StateSupervisionPeriodAdmissionReason as AdmissionReason,
-    StateSupervisionPeriodTerminationReason as TerminationReason,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity.state.entities import (
-    StateSupervisionPeriod,
     StateIncarcerationSentence,
+    StateSupervisionPeriod,
     StateSupervisionSentence,
 )
 
@@ -94,7 +93,17 @@ def _is_active_period(period: StateSupervisionPeriod) -> bool:
 
 
 def _is_transfer_start(period: StateSupervisionPeriod) -> bool:
-    return period.admission_reason == AdmissionReason.TRANSFER_WITHIN_STATE
+    return (
+        period.admission_reason
+        == StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
+    )
+
+
+def _is_transfer_end(period: StateSupervisionPeriod) -> bool:
+    return (
+        period.termination_reason
+        == StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
+    )
 
 
 def standard_date_sort_for_supervision_periods(
@@ -102,7 +111,7 @@ def standard_date_sort_for_supervision_periods(
 ) -> List[StateSupervisionPeriod]:
     """Sorts supervision periods chronologically by dates and statuses."""
     sort_periods_by_set_dates_and_statuses(
-        supervision_periods, _is_active_period, _is_transfer_start
+        supervision_periods, _is_active_period, _is_transfer_start, _is_transfer_end
     )
 
     return supervision_periods
@@ -123,7 +132,9 @@ def _infer_missing_dates_and_statuses(
             if sp.status != StateSupervisionPeriodStatus.UNDER_SUPERVISION:
                 # If the person is not under supervision on this period, set the termination date to the start date.
                 sp.termination_date = sp.start_date
-                sp.termination_reason = TerminationReason.INTERNAL_UNKNOWN
+                sp.termination_reason = (
+                    StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN
+                )
             elif sp.termination_reason or sp.termination_reason_raw_text:
                 # There is no termination date on this period, but the set termination_reason indicates that the person
                 # is no longer in custody. Set the termination date to the start date.
@@ -156,10 +167,12 @@ def _infer_missing_dates_and_statuses(
 
         if sp.admission_reason is None:
             # We have no idea what this admission reason was. Set as INTERNAL_UNKNOWN.
-            sp.admission_reason = AdmissionReason.INTERNAL_UNKNOWN
+            sp.admission_reason = StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN
         if sp.termination_date is not None and sp.termination_reason is None:
             # We have no idea what this termination reason was. Set as INTERNAL_UNKNOWN.
-            sp.termination_reason = TerminationReason.INTERNAL_UNKNOWN
+            sp.termination_reason = (
+                StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN
+            )
 
         if sp.start_date and sp.termination_date:
             if sp.termination_date < sp.start_date:
