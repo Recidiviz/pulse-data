@@ -16,27 +16,25 @@
 # =============================================================================
 """Tests for types defined in direct_ingest_big_query_view_types_test.py"""
 import unittest
-import attr
 
+import attr
 from mock import patch
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestRawDataTableLatestView,
-    DirectIngestRawDataTableUpToDateView,
-    DirectIngestPreProcessedIngestView,
-    RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE,
-    RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE,
-    RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE,
-    RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE,
-)
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DestinationTableType,
-    RawTableViewType,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
     RawTableColumnInfo,
+)
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE,
+    RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE,
+    RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE,
+    RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE,
+    DestinationTableType,
+    DirectIngestPreProcessedIngestView,
+    DirectIngestRawDataTableLatestView,
+    DirectIngestRawDataTableUpToDateView,
+    RawTableViewType,
 )
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 
@@ -217,7 +215,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             raw_table_dataset_id="us_xx_raw_data",
             raw_table_name="table_name",
             columns_clause="col1, col2",
-            normalized_columns=f"* EXCEPT (col2, undocumented_column), {expected_datetime_cols_clause}",
+            normalized_columns=f"col1, update_datetime, {expected_datetime_cols_clause}",
             supplemental_order_by_clause="",
         )
 
@@ -267,16 +265,14 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             col2
         ) AS col2"""
 
-        expected_view_query = (
-            RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE.format(
-                project_id=self.PROJECT_ID,
-                raw_table_primary_key_str="col1",
-                raw_table_dataset_id="us_xx_raw_data",
-                raw_table_name="table_name",
-                columns_clause="col1, col2",
-                normalized_columns=f"* EXCEPT (col2), {expected_datetime_cols_clause}",
-                supplemental_order_by_clause="",
-            )
+        expected_view_query = RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE.format(
+            project_id=self.PROJECT_ID,
+            raw_table_primary_key_str="col1",
+            raw_table_dataset_id="us_xx_raw_data",
+            raw_table_name="table_name",
+            columns_clause="col1, col2",
+            normalized_columns=f"col1, update_datetime, {expected_datetime_cols_clause}",
+            supplemental_order_by_clause="",
         )
 
         self.assertEqual(expected_view_query, view.view_query)

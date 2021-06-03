@@ -15,28 +15,35 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utility class for testing BQ views against Postgres"""
-
+import datetime
 import logging
 import re
-from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple, Type
 import unittest
+from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple, Type
 
 import attr
-from google.cloud import bigquery
 import pandas as pd
 import pytest
 import sqlalchemy
-from sqlalchemy.engine import create_engine, Engine
+from google.cloud import bigquery
+from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.orm.session import close_all_sessions
 from sqlalchemy.sql import sqltypes
 
 from recidiviz.big_query.big_query_view import (
+    BigQueryAddress,
     BigQueryView,
     BigQueryViewBuilder,
-    BigQueryAddress,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
+    augment_raw_data_df_with_metadata_columns,
+)
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    UPDATE_DATETIME_PARAM_NAME,
+    DirectIngestPreProcessedIngestView,
+    DirectIngestPreProcessedIngestViewBuilder,
+    RawTableViewType,
 )
 from recidiviz.persistence.database.session import Session
 from recidiviz.tools.postgres import local_postgres_helpers
@@ -75,7 +82,7 @@ class MockTableSchema:
                 # column (and table) names. We lowercase all the column names so that
                 # a query like "SELECT MyCol FROM table;" finds the column "mycol".
                 column.name.lower(): sqltypes.String
-                for column in config.available_columns
+                for column in config.columns
             }
         )
 
@@ -153,6 +160,9 @@ DROP FUNCTION cond(boolean, anyelement, anyelement)
 """
 
 MAX_POSTGRES_TABLE_NAME_LENGTH = 63
+
+DEFAULT_FILE_UPDATE_DATETIME = datetime.datetime(2021, 4, 14, 0, 0, 0)
+DEFAULT_QUERY_RUN_DATETIME = datetime.datetime(2021, 4, 15, 0, 0, 0)
 
 
 @pytest.mark.uses_db
@@ -254,13 +264,20 @@ class BaseViewTest(unittest.TestCase):
         region_code: str,
         file_config: DirectIngestRawFileConfig,
         mock_data: List[Tuple[Any, ...]],
+        update_datetime: datetime.datetime = DEFAULT_FILE_UPDATE_DATETIME,
     ) -> None:
         mock_schema = MockTableSchema.from_raw_file_config(file_config)
 
+        raw_data_df = augment_raw_data_df_with_metadata_columns(
+            raw_data_df=pd.DataFrame(mock_data, columns=mock_schema.data_types.keys()),
+            file_id=0,
+            utc_upload_datetime=update_datetime,
+        )
+
         # For the raw data tables we make the table name `us_xx_file_tag`. It would be
         # closer to the actual produced query to make it something like
-        # `us_xx_raw_data_up_to_date_views_file_tag_latest`, but that very easily gets
-        # us closer to the 63 character hard limit imposed by Postgres.
+        # `us_xx_raw_data_file_tag`, but that more easily gets us closer to the 63
+        # character hard limit imposed by Postgres.
         self.create_mock_bq_table(
             dataset_id=region_code.lower(),
             # Postgres does case-sensitive lowercase search on all non-quoted
@@ -268,16 +285,48 @@ class BaseViewTest(unittest.TestCase):
             # a query like "SELECT my_col FROM MyTable;" finds the table "mytable".
             table_id=file_config.file_tag.lower(),
             mock_schema=mock_schema,
-            mock_data=pd.DataFrame(mock_data, columns=mock_schema.data_types.keys()),
+            mock_data=raw_data_df,
         )
 
-    def query_view(
+    def query_raw_data_view_for_builder(
+        self,
+        view_builder: DirectIngestPreProcessedIngestViewBuilder,
+        dimensions: List[str],
+        query_run_dt: datetime.datetime = DEFAULT_QUERY_RUN_DATETIME,
+    ) -> pd.DataFrame:
+        view_query = view_builder.build().expanded_view_query(
+            DirectIngestPreProcessedIngestView.QueryStructureConfig(
+                raw_table_view_type=RawTableViewType.PARAMETERIZED
+            )
+        )
+        view_query = view_query.replace(
+            f"@{UPDATE_DATETIME_PARAM_NAME}",
+            f"TIMESTAMP '{query_run_dt.isoformat()}'",
+        )
+
+        return self.query_view(view_query, data_types={}, dimensions=dimensions)
+
+    def query_view_for_builder(
         self,
         view_builder: BigQueryViewBuilder,
         data_types: Dict[str, Type],
         dimensions: List[str],
     ) -> pd.DataFrame:
-        view_query = self._rewrite_sql(view_builder.build().view_query)
+        if isinstance(view_builder, DirectIngestPreProcessedIngestViewBuilder):
+            raise ValueError(
+                f"Found view builder type [{type(view_builder)}] - use "
+                f"query_raw_data_view_for_builder() for this type instead."
+            )
+
+        return self.query_view(view_builder.build().view_query, data_types, dimensions)
+
+    def query_view(
+        self,
+        view_query: str,
+        data_types: Dict[str, Type],
+        dimensions: List[str],
+    ) -> pd.DataFrame:
+        view_query = self._rewrite_sql(view_query)
         # TODO(#5533): Instead of using read_sql_query, we can use
         # `create_view` and `read_sql_table`. That can take a schema which will
         # solve some of the issues. As part of adding `dimensions` to builders
@@ -298,7 +347,7 @@ class BaseViewTest(unittest.TestCase):
     ) -> pd.DataFrame:
         for view_builder in view_builders[:-1]:
             self.create_view(view_builder)
-        return self.query_view(view_builders[-1], data_types, dimensions)
+        return self.query_view_for_builder(view_builders[-1], data_types, dimensions)
 
     def create_view(self, view_builder: BigQueryViewBuilder) -> None:
         view: BigQueryView = view_builder.build()
@@ -361,6 +410,11 @@ class BaseViewTest(unittest.TestCase):
 
         # Replace '#' comments with '--'
         query = _replace_iter(query, r"#", "--")
+
+        # Update % signs in format args to be double escaped
+        query = _replace_iter(
+            query, r"(?P<first_char>[^\%])\%(?P<fmt>[A-Za-z])", "{first_char}%%{fmt}"
+        )
 
         # Must index the array directly, instead of using OFFSET or ORDINAL
         query = _replace_iter(query, r"\[OFFSET\((?P<offset>.+?)\)\]", "[{offset}]")
@@ -463,6 +517,21 @@ class BaseViewTest(unittest.TestCase):
 
         query = _replace_iter(query, r"SAFE_CAST", "CAST", flags=re.IGNORECASE)
 
+        # Date/time parsing functions are different in Postgres
+        query = _replace_iter(
+            query,
+            r"(SAFE\.)?PARSE_TIMESTAMP\((?P<fmt>.+?), (?P<col>.+?)\)",
+            "TO_TIMESTAMP({col}, {fmt})",
+            flags=re.IGNORECASE,
+        )
+
+        query = _replace_iter(
+            query,
+            r"(SAFE\.)?PARSE_DATE\((?P<fmt>.+?), (?P<col>.+?)\)",
+            "TO_DATE({col}, {fmt})",
+            flags=re.IGNORECASE,
+        )
+
         # String type does not exist in Postgres
         query = _replace_iter(
             query,
@@ -473,7 +542,14 @@ class BaseViewTest(unittest.TestCase):
         query = _replace_iter(query, r"IFNULL", "COALESCE", flags=re.IGNORECASE)
         query = _replace_iter(query, r"(^| )IF\s*\(", " COND(", flags=re.IGNORECASE)
 
-        query = _replace_iter(query, r"datetime", "timestamp", flags=re.IGNORECASE)
+        # Replace DATETIME type with TIMESTAMP, attempting to not pick up the term
+        # 'datetime' when used in a variable.
+        query = _replace_iter(
+            query,
+            r"(?P<first_char>[^_])datetime",
+            "{first_char}timestamp",
+            flags=re.IGNORECASE,
+        )
         query = _replace_iter(query, r"int64", "integer", flags=re.IGNORECASE)
 
         # Postgres doesn't support the '* EXCEPT(...)' construct. There is really no
@@ -492,21 +568,15 @@ class BaseViewTest(unittest.TestCase):
         for match in re.finditer(table_reference_regex, query):
             table_reference = match.group()
             dataset_id, table_id = match.groups()
-            dataset_match = re.match(
-                r"(us_[a-z]{2})_raw_data_up_to_date_views", dataset_id
-            )
+            dataset_match = re.match(r"(us_[a-z]{2})_raw_data", dataset_id)
             if dataset_match:
                 dataset_id = dataset_match.group(1)  # region_code
-
-                table_match = re.search("_latest", table_id)
-                if not table_match:
-                    raise ValueError(f"Unexpected table name [{table_id}]")
-                table_id = table_id[: -len("_latest")].lower()
+                table_id = table_id.lower()
 
             location = BigQueryAddress(dataset_id=dataset_id, table_id=table_id)
             if location not in self.mock_bq_to_postgres_tables:
                 raise KeyError(
-                    f"BigQuery location [{location}] not properly registered - must be"
+                    f"BigQuery location [{location}] not properly registered - must be "
                     f"created via create_mock_bq_table."
                 )
             query = query.replace(

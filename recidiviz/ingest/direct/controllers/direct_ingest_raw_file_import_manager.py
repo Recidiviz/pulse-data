@@ -16,12 +16,13 @@
 # =============================================================================
 """Classes for performing direct ingest raw file imports to BigQuery."""
 import csv
+import datetime
 import logging
 import os
 import string
 import time
 from types import ModuleType
-from typing import List, Dict, Any, Set, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import attr
 import gcsfs
@@ -33,11 +34,16 @@ from more_itertools import one
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
+from recidiviz.cloud_storage.gcsfs_path import (
+    GcsfsBucketPath,
+    GcsfsDirectoryPath,
+    GcsfsFilePath,
+)
 from recidiviz.common import attr_validators
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.controllers.direct_ingest_constants import (
-    UPDATE_DATETIME_COL_NAME,
     FILE_ID_COL_NAME,
+    UPDATE_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
@@ -45,23 +51,18 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration_collector import (
     DirectIngestRawTableMigrationCollector,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    filename_parts_from_path,
-    GcsfsDirectIngestFileType,
-)
-from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsFilePath,
-    GcsfsDirectoryPath,
-    GcsfsBucketPath,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import (
-    GcsfsCsvReader,
     COMMON_RAW_FILE_ENCODINGS,
     UTF_8_ENCODING,
+    GcsfsCsvReader,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader_delegates import (
     ReadOneGcsfsCsvReaderDelegate,
     SplittingGcsfsCsvReaderDelegate,
+)
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    GcsfsDirectIngestFileType,
+    filename_parts_from_path,
 )
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
 from recidiviz.utils import metadata
@@ -184,6 +185,10 @@ class DirectIngestRawFileConfig:
         Currently just excludes undocumented columns.
         """
         return [column for column in self.columns if column.description]
+
+    @property
+    def non_datetime_cols(self) -> List[str]:
+        return [column.name for column in self.columns if not column.is_datetime]
 
     @property
     def datetime_cols(self) -> List[str]:
@@ -804,12 +809,24 @@ class DirectIngestRawDataSplittingGcsfsCsvReaderDelegate(
 
         parts = filename_parts_from_path(path)
 
-        logging.info(
-            "Adding extra columns with file_id [%s] and update_datetime [%s]",
-            file_metadata.file_id,
-            parts.utc_upload_datetime,
+        return augment_raw_data_df_with_metadata_columns(
+            raw_data_df=raw_data_df,
+            file_id=file_metadata.file_id,
+            utc_upload_datetime=parts.utc_upload_datetime,
         )
-        raw_data_df[FILE_ID_COL_NAME] = file_metadata.file_id
-        raw_data_df[UPDATE_DATETIME_COL_NAME] = parts.utc_upload_datetime
 
-        return raw_data_df
+
+def augment_raw_data_df_with_metadata_columns(
+    raw_data_df: pd.DataFrame,
+    file_id: int,
+    utc_upload_datetime: datetime.datetime,
+) -> pd.DataFrame:
+    logging.info(
+        "Adding extra columns with file_id [%s] and update_datetime [%s]",
+        file_id,
+        utc_upload_datetime,
+    )
+    raw_data_df[FILE_ID_COL_NAME] = file_id
+    raw_data_df[UPDATE_DATETIME_COL_NAME] = utc_upload_datetime
+
+    return raw_data_df

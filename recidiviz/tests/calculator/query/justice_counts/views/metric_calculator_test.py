@@ -20,9 +20,9 @@ import datetime
 from typing import Dict, List, Optional, Tuple
 
 import attr
-from mock import Mock, patch
 import numpy as np
 import pandas as pd
+from mock import Mock, patch
 from pandas.testing import assert_frame_equal
 from sqlalchemy.sql import sqltypes
 
@@ -30,13 +30,10 @@ from recidiviz.big_query.big_query_view import (
     BigQueryAddress,
     SimpleBigQueryViewBuilder,
 )
+from recidiviz.calculator.query.justice_counts.views import metric_calculator
 from recidiviz.common import date
 from recidiviz.persistence.database.schema.justice_counts import schema
-from recidiviz.calculator.query.justice_counts.views import metric_calculator
-from recidiviz.tests.big_query.view_test_util import (
-    BaseViewTest,
-    MockTableSchema,
-)
+from recidiviz.tests.big_query.view_test_util import BaseViewTest, MockTableSchema
 from recidiviz.tools.justice_counts import manual_upload
 
 _npd = np.datetime64
@@ -2561,7 +2558,7 @@ class MonthlyMetricViewTest(BaseViewTest):
 
         # Act
         dimensions = ["dimensions_string", "date_partition"]
-        results = self.query_view(
+        results = self.query_view_for_builder(
             metric_calculator.CompareToPriorYearViewBuilder(
                 dataset_id="fake_dataset",
                 metric_name="ADMISSIONS",
