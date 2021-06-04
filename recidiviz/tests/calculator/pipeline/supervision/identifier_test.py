@@ -18,11 +18,10 @@
 
 """Tests for supervision/identifier.py."""
 import datetime
+import unittest
 from collections import defaultdict
 from datetime import date
-
-import unittest
-from typing import Optional, List, Dict
+from typing import Dict, List, Optional
 from unittest import mock
 
 import attr
@@ -34,24 +33,27 @@ import recidiviz.calculator.pipeline.utils.violation_response_utils
 import recidiviz.calculator.pipeline.utils.violation_utils
 from recidiviz.calculator.pipeline.supervision import identifier
 from recidiviz.calculator.pipeline.supervision.identifier import _get_projected_end_date
+from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
+)
+from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
+    NonRevocationReturnSupervisionTimeBucket,
+    ProjectedSupervisionCompletionBucket,
+    RevocationReturnSupervisionTimeBucket,
+    SupervisionStartBucket,
+    SupervisionTerminationBucket,
+    SupervisionTimeBucket,
 )
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
 )
-from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricType
-from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
-    NonRevocationReturnSupervisionTimeBucket,
-    RevocationReturnSupervisionTimeBucket,
-    ProjectedSupervisionCompletionBucket,
-    SupervisionTerminationBucket,
-    SupervisionStartBucket,
-    SupervisionTimeBucket,
+from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
+    PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    get_supervising_officer_and_location_info_from_supervision_period,
     get_state_specific_case_compliance_manager,
+    get_supervising_officer_and_location_info_from_supervision_period,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
     SupervisionTypeSpan,
@@ -60,72 +62,75 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from
     PURPOSE_FOR_INCARCERATION_PVC,
     SHOCK_INCARCERATION_9_MONTHS,
 )
-
 from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
 )
-
-from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
-    PreProcessedSupervisionPeriodIndex,
-)
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_assessment import (
-    StateAssessmentType,
     StateAssessmentLevel,
+    StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason as AdmissionReason,
-    StateIncarcerationPeriodReleaseReason as ReleaseReason,
-    StateIncarcerationPeriodStatus,
-    StateSpecializedPurposeForIncarceration,
-    StateIncarcerationPeriodAdmissionReason,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
 )
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodReleaseReason as ReleaseReason,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodStatus,
+    StateSpecializedPurposeForIncarceration,
+)
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactStatus,
     StateSupervisionContactType,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
-    StateSupervisionPeriodTerminationReason,
-    StateSupervisionPeriodSupervisionType,
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodStatus,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseRevocationType,
-    StateSupervisionViolationResponseDecision,
-    StateSupervisionViolationResponseType,
     StateSupervisionViolationResponseDecidingBodyType,
+    StateSupervisionViolationResponseDecision,
+    StateSupervisionViolationResponseRevocationType,
+    StateSupervisionViolationResponseType,
 )
 from recidiviz.common.date import last_day_of_month
 from recidiviz.persistence.entity.state.entities import (
-    StateSupervisionPeriod,
-    StateIncarcerationPeriod,
-    StateSupervisionViolationResponse,
-    StateSupervisionViolation,
-    StateSupervisionViolationTypeEntry,
-    StateSupervisionViolationResponseDecisionEntry,
-    StateSupervisionSentence,
     StateAssessment,
-    StateSupervisionCaseTypeEntry,
-    StateSupervisionViolatedConditionEntry,
+    StateIncarcerationPeriod,
     StateIncarcerationSentence,
+    StateSupervisionCaseTypeEntry,
     StateSupervisionContact,
+    StateSupervisionPeriod,
+    StateSupervisionSentence,
+    StateSupervisionViolatedConditionEntry,
+    StateSupervisionViolation,
+    StateSupervisionViolationResponse,
+    StateSupervisionViolationResponseDecisionEntry,
+    StateSupervisionViolationTypeEntry,
 )
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
 from recidiviz.tests.calculator.pipeline.utils.us_mo_fakes import (
-    FakeUsMoSupervisionSentence,
     FakeUsMoIncarcerationSentence,
+    FakeUsMoSupervisionSentence,
 )
 
 _DEFAULT_SUPERVISION_PERIOD_ID = 999
@@ -10146,6 +10151,122 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             ],
             projected_completion_buckets,
         )
+
+    def test_classify_supervision_success_with_incarceration_sentence_future_start_date(
+        self,
+    ):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_XX",
+            start_date=date.today() + datetime.timedelta(days=10),
+            termination_date=date.today() + datetime.timedelta(days=1000),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionType.PAROLE,
+        )
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            state_code="US_XX",
+            incarceration_sentence_id=111,
+            start_date=date.today() + datetime.timedelta(days=10),
+            external_id="is1",
+            status=StateSentenceStatus.COMPLETED,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            max_length_days=1000,
+            completion_date=date.today() + datetime.timedelta(days=1000),
+            supervision_periods=[supervision_period],
+        )
+
+        incarceration_sentences = [incarceration_sentence]
+
+        projected_completion_buckets = identifier.classify_supervision_success(
+            [],
+            incarceration_sentences,
+            [supervision_period],
+            PreProcessedIncarcerationPeriodIndex([]),
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            self.default_supervision_period_to_judicial_district_associations,
+        )
+
+        self.assertEqual(0, len(projected_completion_buckets))
+
+    def test_classify_supervision_success_with_incarceration_sentence_without_max_length_day(
+        self,
+    ):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_XX",
+            start_date=date(2018, 1, 5),
+            termination_date=date(2018, 12, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionType.PAROLE,
+        )
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            state_code="US_XX",
+            incarceration_sentence_id=111,
+            start_date=date(2017, 1, 1),
+            external_id="is1",
+            status=StateSentenceStatus.COMPLETED,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            completion_date=date(2018, 12, 25),
+            supervision_periods=[supervision_period],
+        )
+
+        incarceration_sentences = [incarceration_sentence]
+
+        projected_completion_buckets = identifier.classify_supervision_success(
+            [],
+            incarceration_sentences,
+            [supervision_period],
+            PreProcessedIncarcerationPeriodIndex([]),
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            self.default_supervision_period_to_judicial_district_associations,
+        )
+
+        self.assertEqual(0, len(projected_completion_buckets))
+
+    def test_classify_supervision_success_with_large_max_length_date_incarceration_sentence(
+        self,
+    ):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_XX",
+            start_date=date(2018, 1, 5),
+            termination_date=date(2018, 12, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_type=StateSupervisionType.PAROLE,
+        )
+
+        incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            state_code="US_XX",
+            incarceration_sentence_id=111,
+            start_date=date(2017, 1, 1),
+            external_id="is1",
+            status=StateSentenceStatus.COMPLETED,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            max_length_days=100000000,
+            completion_date=date(2018, 12, 25),
+            supervision_periods=[supervision_period],
+        )
+
+        incarceration_sentences = [incarceration_sentence]
+
+        projected_completion_buckets = identifier.classify_supervision_success(
+            [],
+            incarceration_sentences,
+            [supervision_period],
+            PreProcessedIncarcerationPeriodIndex([]),
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            self.default_supervision_period_to_judicial_district_associations,
+        )
+
+        self.assertEqual(0, len(projected_completion_buckets))
 
     def test_classify_supervision_success_with_incarceration_and_supervision_sentences(
         self,

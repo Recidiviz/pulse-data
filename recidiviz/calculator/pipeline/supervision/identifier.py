@@ -19,7 +19,7 @@ import datetime
 import logging
 from collections import defaultdict
 from datetime import date
-from typing import List, Dict, Tuple, Optional, Any, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 import attr
 from dateutil.relativedelta import relativedelta
@@ -29,90 +29,90 @@ from recidiviz.calculator.pipeline.supervision.supervision_case_compliance impor
     SupervisionCaseCompliance,
 )
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
-    SupervisionTimeBucket,
-    RevocationReturnSupervisionTimeBucket,
     NonRevocationReturnSupervisionTimeBucket,
     ProjectedSupervisionCompletionBucket,
-    SupervisionTerminationBucket,
+    RevocationReturnSupervisionTimeBucket,
     SupervisionStartBucket,
+    SupervisionTerminationBucket,
+    SupervisionTimeBucket,
 )
 from recidiviz.calculator.pipeline.utils import assessment_utils
+from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
+    default_violation_history_window_pre_commitment_from_supervision,
+    get_commitment_from_supervision_details,
+)
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     list_of_dicts_to_dict_with_keys,
 )
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
     IncarcerationPreProcessingManager,
 )
-from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
-    PreProcessedIncarcerationPeriodIndex,
-)
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_earliest_date_of_period_ending_in_death,
 )
-from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
-    get_commitment_from_supervision_details,
-    default_violation_history_window_pre_commitment_from_supervision,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    supervision_types_mutually_exclusive_for_state,
-    get_month_supervision_type,
-    terminating_supervision_period_supervision_type,
-    supervision_period_counts_towards_supervision_population_in_date_range_state_specific,
-    filter_supervision_periods_for_commitment_from_supervision_identification,
-    get_commitment_from_supervision_supervision_type,
-    should_produce_supervision_time_bucket_for_period,
-    get_state_specific_case_compliance_manager,
-    include_decisions_on_follow_up_responses_for_most_severe_response,
-    second_assessment_on_supervision_is_more_reliable,
-    get_supervising_officer_and_location_info_from_supervision_period,
-    pre_commitment_supervision_period_if_commitment,
-    state_specific_violation_response_pre_processing_function,
-    state_specific_supervision_admission_reason_override,
-    filter_out_federal_and_other_country_supervision_periods,
-    state_specific_violation_responses_for_violation_history,
-    state_specific_violation_history_window_pre_commitment_from_supervision,
-    get_state_specific_incarceration_period_pre_processing_delegate,
+from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
+    PreProcessedIncarcerationPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
+    filter_out_federal_and_other_country_supervision_periods,
+    filter_supervision_periods_for_commitment_from_supervision_identification,
+    get_commitment_from_supervision_supervision_type,
+    get_month_supervision_type,
+    get_state_specific_case_compliance_manager,
+    get_state_specific_incarceration_period_pre_processing_delegate,
+    get_supervising_officer_and_location_info_from_supervision_period,
+    include_decisions_on_follow_up_responses_for_most_severe_response,
+    pre_commitment_supervision_period_if_commitment,
+    second_assessment_on_supervision_is_more_reliable,
+    should_produce_supervision_time_bucket_for_period,
+    state_specific_supervision_admission_reason_override,
+    state_specific_violation_history_window_pre_commitment_from_supervision,
+    state_specific_violation_response_pre_processing_function,
+    state_specific_violation_responses_for_violation_history,
+    supervision_period_counts_towards_supervision_population_in_date_range_state_specific,
+    supervision_types_mutually_exclusive_for_state,
+    terminating_supervision_period_supervision_type,
+)
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
-    prepare_supervision_periods_for_calculations,
     identify_most_severe_case_type,
+    prepare_supervision_periods_for_calculations,
+)
+from recidiviz.calculator.pipeline.utils.violation_response_utils import (
+    get_most_severe_response_decision,
+    prepare_violation_responses_for_calculations,
+    responses_on_most_recent_response_date,
+    violation_responses_in_window,
 )
 from recidiviz.calculator.pipeline.utils.violation_utils import (
     get_violation_and_response_history,
 )
-from recidiviz.calculator.pipeline.utils.violation_response_utils import (
-    prepare_violation_responses_for_calculations,
-    responses_on_most_recent_response_date,
-    get_most_severe_response_decision,
-    violation_responses_in_window,
-)
 from recidiviz.common.constants.state.state_assessment import (
+    StateAssessmentClass,
     StateAssessmentLevel,
     StateAssessmentType,
-    StateAssessmentClass,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodTerminationReason,
-    StateSupervisionPeriodSupervisionType,
     StateSupervisionLevel,
     StateSupervisionPeriodStatus,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.date import DateRange, DateRangeDiff, last_day_of_month
 from recidiviz.persistence.entity.entity_utils import get_single_state_code
 from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateSupervisionPeriod,
-    StateSupervisionSentence,
+    PeriodType,
     StateAssessment,
-    StateSupervisionViolationResponse,
+    StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StateSupervisionContact,
-    PeriodType,
+    StateSupervisionPeriod,
+    StateSupervisionSentence,
+    StateSupervisionViolationResponse,
 )
 
 
@@ -1117,13 +1117,27 @@ def classify_supervision_success(
         sentence_start_date = sentence.start_date
         sentence_completion_date = sentence.completion_date
 
+        # These fields must be set to be included in any supervision success metrics
+        # Ignore sentences with erroneous start_dates in the future
+        if (
+            not sentence_start_date
+            or not sentence_completion_date
+            or sentence_start_date > date.today()
+        ):
+            continue
+
         if isinstance(sentence, StateIncarcerationSentence):
-            if not sentence.max_length_days or not sentence_start_date:
+            # This handles max_length_days that would otherwise cause a null or overflow error
+            if (
+                not sentence.max_length_days
+                or sentence.max_length_days > 547500  # 1500 years
+            ):
                 continue
 
             projected_completion_date = sentence_start_date + datetime.timedelta(
                 days=sentence.max_length_days
             )
+
             sentence_supervision_type: Optional[
                 StateSupervisionType
             ] = StateSupervisionType.PAROLE
@@ -1139,14 +1153,8 @@ def classify_supervision_success(
                 f"Actual: {type(sentence)}"
             )
 
-        # These fields must be set to be included in any supervision success metrics
-        # Only include sentences that were supposed to end by now, have ended, and have a completion status on them
-        if (
-            not sentence_start_date
-            or not projected_completion_date
-            or not sentence_completion_date
-            or projected_completion_date > date.today()
-        ):
+        # Only include sentences that are projected to have already ended
+        if not projected_completion_date or projected_completion_date > date.today():
             continue
 
         latest_supervision_period = None
