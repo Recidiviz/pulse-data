@@ -31,9 +31,10 @@ resource "google_bigquery_dataset" "external_reference" {
 module "county_resident_adult_populations_table" {
   source = "./modules/reference-table"
 
-  project_id  = var.project_id
-  bucket_name = module.external_reference_tables_bucket.name
-  dataset_id  = google_bigquery_dataset.external_reference.dataset_id
+  project_id     = var.project_id
+  bucket_name    = module.external_reference_tables_bucket.name
+  dataset_id     = google_bigquery_dataset.external_reference.dataset_id
+  recidiviz_root = local.recidiviz_root
 
   table_name = "county_resident_adult_populations"
   schema     = <<EOF
@@ -60,9 +61,10 @@ EOF
 module "county_resident_populations_table" {
   source = "./modules/reference-table"
 
-  project_id  = var.project_id
-  bucket_name = module.external_reference_tables_bucket.name
-  dataset_id  = google_bigquery_dataset.external_reference.dataset_id
+  project_id     = var.project_id
+  bucket_name    = module.external_reference_tables_bucket.name
+  dataset_id     = google_bigquery_dataset.external_reference.dataset_id
+  recidiviz_root = local.recidiviz_root
 
   table_name = "county_resident_populations"
   schema     = <<EOF
@@ -89,9 +91,10 @@ EOF
 module "county_fips_table" {
   source = "./modules/reference-table"
 
-  project_id  = var.project_id
-  bucket_name = module.external_reference_tables_bucket.name
-  dataset_id  = google_bigquery_dataset.external_reference.dataset_id
+  project_id     = var.project_id
+  bucket_name    = module.external_reference_tables_bucket.name
+  dataset_id     = google_bigquery_dataset.external_reference.dataset_id
+  recidiviz_root = local.recidiviz_root
 
   table_name = "county_fips"
   schema     = <<EOF
