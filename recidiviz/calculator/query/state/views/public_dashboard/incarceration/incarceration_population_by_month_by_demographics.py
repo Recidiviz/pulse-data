@@ -17,12 +17,12 @@
 """First of the month incarceration population counts broken down by demographics."""
 # pylint: disable=trailing-whitespace
 
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
 )
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -47,6 +47,7 @@ INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
         `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_materialized`
       WHERE date_of_stay = DATE(year, month, 1)
         AND {state_specific_facility_exclusion}
+        AND {facility_type_filter}
         -- 20 years worth of monthly population metrics --
         AND date_of_stay >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH), INTERVAL 239 MONTH)
     )
@@ -95,6 +96,9 @@ INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryV
         "prioritized_race_or_ethnicity"
     ),
     state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion(),
+    facility_type_filter=state_specific_query_strings.spotlight_state_specific_facility_filter(
+        facility_type=state_specific_query_strings.SpotlightFacilityType.PRISON
+    ),
 )
 
 if __name__ == "__main__":

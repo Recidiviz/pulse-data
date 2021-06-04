@@ -17,7 +17,9 @@
 """Functions that return state-specific logic used in BigQuery queries."""
 # pylint: disable=anomalous-backslash-in-string
 
-from typing import List, Optional, Dict
+from enum import Enum
+from typing import Dict, List, Optional
+
 from recidiviz.common.constants.states import StateCode
 
 # The states in the vitals reports that will be grouping by level 1 supervision locations.
@@ -203,7 +205,7 @@ def state_specific_supervision_type_inclusion_filter() -> str:
 
 
 def state_specific_admission_type_inclusion_filter() -> str:
-    """State-specific admission_type inclusions """
+    """State-specific admission_type inclusions"""
     return """
     -- US_MO only includes Legal Revocation admissions
     (state_code != 'US_MO' OR revocation_type = 'GENERAL')
@@ -297,9 +299,36 @@ def vitals_state_specific_district_display_name(
     """
 
 
+class SpotlightFacilityType(Enum):
+    PRISON = "prison"
+    COMMUNITY = "community"
+
+
+# 3-digit codes 1xx, 2xx, 3xx denote Community Correction Centers
+PA_COMMUNITY_CORRECTIONS_MATCH = """REGEXP_CONTAINS(facility, r"^[123]\d\d\D*")"""
+
+
+def spotlight_state_specific_facility_filter(
+    facility_type: SpotlightFacilityType,
+) -> str:
+    """State-specific logic to identify community correctional facilities."""
+    if facility_type is SpotlightFacilityType.COMMUNITY:
+        match = "true"
+    else:
+        match = "false"
+
+    return f"""
+        CASE
+            WHEN state_code = "US_PA" THEN
+                {PA_COMMUNITY_CORRECTIONS_MATCH}
+            ELSE false
+        END = {match}
+    """
+
+
 def spotlight_state_specific_facility() -> str:
     """State-specific logic to normalize facility identifiers for Spotlight."""
-    return """
+    return f"""
         CASE
             WHEN state_code = 'US_PA' THEN
                 (CASE
@@ -329,8 +358,7 @@ def spotlight_state_specific_facility() -> str:
                         "SMI",
                         "WAM"
                     ) THEN facility
-                    -- 3-digit codes 1xx, 2xx, 3xx denote Community Correction Centers
-                    WHEN REGEXP_CONTAINS(facility, r"^[123]\d{{2}}\D*") THEN 'CCC'
+                    WHEN {PA_COMMUNITY_CORRECTIONS_MATCH} THEN facility
                     -- includes out-of-state placements and misc others
                     ELSE 'OTHER'
                 END)
