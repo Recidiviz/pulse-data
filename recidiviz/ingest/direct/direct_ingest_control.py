@@ -25,13 +25,16 @@ from typing import Optional, Tuple
 
 import pytz
 from flask import Blueprint, request
-from opencensus.stats import measure, view, aggregation
+from opencensus.stats import aggregation, measure, view
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath, GcsfsPath
 from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller import (
+    UploadStateFilesToIngestBucketController,
+)
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
     DirectIngestControllerFactory,
 )
@@ -47,26 +50,20 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_vie
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_update_cloud_task_manager import (
     DirectIngestRawUpdateCloudTaskManager,
 )
+from recidiviz.ingest.direct.controllers.direct_ingest_types import CloudTaskArgs
 from recidiviz.ingest.direct.controllers.download_files_from_sftp import (
     DownloadFilesFromSftpController,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsRawDataBQImportArgs,
-    GcsfsIngestViewExportArgs,
     GcsfsDirectIngestFileType,
-    gcsfs_direct_ingest_bucket_for_region,
     GcsfsIngestArgs,
-)
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsPath
-from recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller import (
-    UploadStateFilesToIngestBucketController,
+    GcsfsIngestViewExportArgs,
+    GcsfsRawDataBQImportArgs,
+    gcsfs_direct_ingest_bucket_for_region,
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManager,
     DirectIngestCloudTaskManagerImpl,
-)
-from recidiviz.ingest.direct.controllers.direct_ingest_types import (
-    CloudTaskArgs,
 )
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_existing_region_dir_names,
@@ -76,14 +73,11 @@ from recidiviz.ingest.direct.errors import (
     DirectIngestErrorType,
     DirectIngestInstanceError,
 )
-from recidiviz.utils import regions, monitoring, metadata
+from recidiviz.utils import metadata, monitoring, regions
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.monitoring import TagKey
-from recidiviz.utils.params import get_str_param_value, get_bool_param_value
-from recidiviz.utils.regions import (
-    Region,
-    get_supported_direct_ingest_region_codes,
-)
+from recidiviz.utils.params import get_bool_param_value, get_str_param_value
+from recidiviz.utils.regions import Region, get_supported_direct_ingest_region_codes
 
 m_sftp_attempts = measure.MeasureInt(
     "ingest/sftp/attempts",
@@ -600,12 +594,13 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
         )
 
         if download_result.successes:
-            upload_result = UploadStateFilesToIngestBucketController(
+            upload_controller = UploadStateFilesToIngestBucketController(
                 paths_with_timestamps=download_result.successes,
                 project_id=metadata.project_id(),
                 region=region_code,
                 gcs_destination_path=gcs_destination_path,
-            ).do_upload()
+            )
+            upload_result = upload_controller.do_upload()
 
             with monitoring.measurements(
                 {TagKey.SFTP_TASK_TYPE: "upload"}
@@ -625,16 +620,35 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
                 if upload_result.failures
                 else ""
             )
-            if not upload_result.successes:
+            skipped_text = (
+                f"Skipped uploading the following files: {upload_controller.skipped_files}"
+                if upload_controller.skipped_files
+                else ""
+            )
+            if not upload_result.successes and not upload_controller.skipped_files:
                 return (
                     f"{unable_to_download_text}"
-                    f" All files failed to upload. {unable_to_upload_text}",
+                    f" All files failed to upload. {unable_to_upload_text}"
+                    f"{skipped_text}",
                     HTTPStatus.BAD_REQUEST,
                 )
 
             if download_result.failures or upload_result.failures:
                 return (
-                    f"{unable_to_download_text}" f" {unable_to_upload_text}",
+                    f"{unable_to_download_text}"
+                    f" {unable_to_upload_text}"
+                    f"{skipped_text}",
+                    HTTPStatus.MULTI_STATUS,
+                )
+
+            if not upload_result.successes and upload_controller.skipped_files:
+                return f"All files skipped. {skipped_text}", HTTPStatus.OK
+
+            if upload_controller.skipped_files:
+                return (
+                    f"{unable_to_download_text}"
+                    f" {unable_to_upload_text}"
+                    f"{skipped_text}",
                     HTTPStatus.MULTI_STATUS,
                 )
         elif download_result.failures:
