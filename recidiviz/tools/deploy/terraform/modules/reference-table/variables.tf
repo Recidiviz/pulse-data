@@ -42,6 +42,7 @@ variable "schema" {
   type = string
 }
 
-locals {
-  recidiviz_root = dirname(dirname(dirname(dirname(dirname(path.module)))))
+# Path to the root of the recidiviz repo
+variable "recidiviz_root" {
+  type = string
 }

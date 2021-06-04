@@ -249,7 +249,7 @@ function verify_can_deploy {
 function reconfigure_terraform_backend {
   PROJECT_ID=$1
   echo "Reconfiguring Terraform backend..."
-  rm -rf .terraform/
+  rm -rf ${BASH_SOURCE_DIR}/.terraform/
   run_cmd terraform -chdir=${BASH_SOURCE_DIR}/terraform init -backend-config "bucket=${PROJECT_ID}-tf-state"
 }
 
@@ -260,16 +260,16 @@ function deploy_terraform_infrastructure {
     DOCKER_IMAGE_TAG=$3
 
     echo "Starting terraform deployment..."
-    reconfigure_terraform_backend $PROJECT_ID
 
     while true
     do
+        reconfigure_terraform_backend $PROJECT_ID
         run_cmd terraform -chdir=${BASH_SOURCE_DIR}/terraform plan -var="project_id=${PROJECT_ID}" -var="git_hash=${GIT_HASH}" -var="docker_image_tag=${DOCKER_IMAGE_TAG}" -out=tfplan
         script_prompt "Does the generated terraform plan look correct? [You can inspect it with \`terraform show tfplan\`]"
 
         echo "Applying the terraform plan..."
         # not using run_cmd because we don't want to exit_on_fail
-        terraform apply ./recidiviz/tools/deploy/terraform/tfplan | indent_output
+        terraform -chdir=./recidiviz/tools/deploy/terraform apply tfplan | indent_output
         return_code=$?
         rm ./recidiviz/tools/deploy/terraform/tfplan
 
