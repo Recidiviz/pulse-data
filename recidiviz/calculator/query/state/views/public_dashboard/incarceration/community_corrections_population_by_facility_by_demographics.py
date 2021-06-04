@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Most recent daily incarceration population count with facility and demographic breakdowns."""
+"""Most recent daily community corrections population count with facility and demographic breakdowns."""
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     SpotlightFacilityType,
 )
@@ -24,18 +24,18 @@ from recidiviz.calculator.query.state.views.public_dashboard.incarceration.popul
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_NAME = (
-    "incarceration_population_by_facility_by_demographics"
+COMMUNITY_CORRECTIONS_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_NAME = (
+    "community_corrections_population_by_facility_by_demographics"
 )
 
-INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = """Most recent daily incarceration population count with facility and demographic breakdowns."""
+COMMUNITY_CORRECTIONS_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = """Most recent daily community corrections population count with facility and demographic breakdowns."""
 
-INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_BUILDER = get_view_builder(
-    view_id=INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_NAME,
-    description=INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
-    facility_type=SpotlightFacilityType.PRISON,
+COMMUNITY_CORRECTIONS_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_BUILDER = get_view_builder(
+    view_id=COMMUNITY_CORRECTIONS_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_NAME,
+    description=COMMUNITY_CORRECTIONS_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
+    facility_type=SpotlightFacilityType.COMMUNITY,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_BUILDER.build_and_print()
+        COMMUNITY_CORRECTIONS_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_BUILDER.build_and_print()
