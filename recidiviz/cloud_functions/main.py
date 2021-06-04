@@ -22,7 +22,14 @@ from base64 import b64decode
 from http import HTTPStatus
 from typing import Any, Dict, Tuple, TypeVar
 
-from flask import Request
+from cloud_function_utils import (  # type: ignore[import]
+    GCP_PROJECT_ID_KEY,
+    IAP_CLIENT_ID,
+    build_query_param_string,
+    get_dataflow_template_bucket,
+    make_iap_request,
+    trigger_dataflow_job_from_template,
+)
 
 # Mypy errors "Cannot find implementation or library stub for module named 'xxxx'" ignored here because cloud functions
 # require that imports are declared relative to the cloud functions package itself. In general, we should avoid shipping
@@ -31,15 +38,7 @@ from flask import Request
 from direct_ingest_bucket_name_utils import (  # type: ignore[import]
     get_region_code_from_direct_ingest_bucket,
 )
-from cloud_function_utils import (  # type: ignore[import]
-    IAP_CLIENT_ID,
-    GCP_PROJECT_ID_KEY,
-    make_iap_request,
-    get_dataflow_template_bucket,
-    trigger_dataflow_job_from_template,
-    build_query_param_string,
-)
-
+from flask import Request
 
 # A stand-in type for google.cloud.functions.Context for which no apparent type is available
 ContextType = TypeVar("ContextType", bound=Any)
@@ -437,6 +436,10 @@ def handle_deliver_emails_for_batch_email_reporting(
     following keys:
         batch_id: (required) Identifier for this batch
         state_code: (required) State code needed for this batch to be triggered
+        # TODO(#7746): Remove review_year and review_month when we have a better
+        # way to access them.
+        review_year: (required) The year that the report is for
+        review_month: (required) The month that the report is for
         redirect_address: (optional) An email address to which all emails should
         be sent instead of to their actual recipients.
         cc_address: (optional) List of email addresses to include in the CC field.
@@ -467,6 +470,10 @@ def handle_deliver_emails_for_batch_email_reporting(
         [
             "batch_id",
             "state_code",
+            # TODO(#7746): Remove review_year and review_month when we have a better
+            # way to access them.
+            "review_year",
+            "review_month",
             "redirect_address",
             "cc_address",
             "subject_override",
