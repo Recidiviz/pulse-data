@@ -24,21 +24,28 @@ from http import HTTPStatus
 from typing import Any, Tuple
 from unittest import mock
 
-from pysftp import CnOpts
 from flask import Flask
-from mock import patch, create_autospec, Mock, call
+from mock import Mock, call, create_autospec, patch
+from pysftp import CnOpts
 
 from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
     get_region_code_from_direct_ingest_bucket,
     is_primary_ingest_bucket,
 )
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.results import MultiRequestResult
 from recidiviz.ingest.direct import direct_ingest_control
 from recidiviz.ingest.direct.base_sftp_download_delegate import BaseSftpDownloadDelegate
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
+)
+from recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller import (
+    UploadStateFilesToIngestBucketController,
+)
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
-    to_normalized_unprocessed_file_path,
     DirectIngestGCSFileSystem,
+    to_normalized_unprocessed_file_path,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
@@ -53,19 +60,12 @@ from recidiviz.ingest.direct.controllers.download_files_from_sftp import (
     DownloadFilesFromSftpController,
     SftpAuth,
 )
-from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
-    BaseDirectIngestController,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsRawDataBQImportArgs,
     GcsfsDirectIngestFileType,
-    GcsfsIngestViewExportArgs,
     GcsfsIngestArgs,
+    GcsfsIngestViewExportArgs,
+    GcsfsRawDataBQImportArgs,
     gcsfs_direct_ingest_bucket_for_region,
-)
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsBucketPath
-from recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller import (
-    UploadStateFilesToIngestBucketController,
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManager,
@@ -1292,6 +1292,8 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_upload_controller.do_upload().assert_not_called()
         mock_download_controller.clean_up().assert_not_called()
         self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    # TODO(#7770): Write unit test for all skipped files
 
     @patch.object(
         DirectIngestCloudTaskManagerImpl,
