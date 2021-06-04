@@ -16,20 +16,20 @@
 # =============================================================================
 """Export data from Cloud SQL and load it into BigQuery."""
 import logging
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
 
 from sqlalchemy import Table
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view import (
-    BigQueryViewBuilder,
-    BigQueryView,
     BigQueryAddress,
+    BigQueryView,
+    BigQueryViewBuilder,
 )
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.big_query.view_update_manager import (
-    create_dataset_and_deploy_views_for_view_builders,
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
+    create_dataset_and_deploy_views_for_view_builders,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
@@ -45,10 +45,7 @@ from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_table_big_que
     StateSegmentedSchemaFederatedBigQueryViewCollector,
     UnsegmentedSchemaFederatedBigQueryViewCollector,
 )
-
-from recidiviz.persistence.database.schema_utils import (
-    SchemaType,
-)
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
@@ -207,20 +204,12 @@ class UnionedStateSegmentsViewBuilder(BigQueryViewBuilder[BigQueryView]):
     def _build(
         self, *, dataset_overrides: Optional[Dict[str, str]] = None
     ) -> BigQueryView:
-        state_select_queries = []
-        kwargs = {}
-        for state_code in self.state_codes:
-            address = self.config.materialized_address_for_segment_table(
-                table=self.table, state_code=state_code
-            )
-            dataset_key = f"{state_code.value.lower()}_specific_dataset"
-            table_key = f"{state_code.value.lower()}_specific_table_id"
-            kwargs[dataset_key] = address.dataset_id
-            kwargs[table_key] = address.table_id
-            state_select_queries.append(
-                f"SELECT * FROM `{{project_id}}.{{{dataset_key}}}.{address.table_id}`"
-            )
-        table_union_query = "\nUNION ALL\n".join(state_select_queries)
+        (
+            table_union_query_fmt,
+            kwargs,
+        ) = self.config.get_unioned_table_view_query_format_string(
+            self.state_codes, self.table
+        )
 
         return BigQueryView(
             dataset_id=self.dataset_id,
@@ -229,7 +218,7 @@ class UnionedStateSegmentsViewBuilder(BigQueryViewBuilder[BigQueryView]):
             dataset_overrides=dataset_overrides,
             description=f"A view that unions the contents of the [{self.table.name}] "
             f"across all state segments.",
-            view_query_template=table_union_query,
+            view_query_template=table_union_query_fmt,
             should_materialize=True,
             **kwargs,
         )
@@ -265,10 +254,40 @@ def _hydrate_unioned_regional_dataset_for_schema(
         raise ValueError(f"Unexpected schema_type [{config.schema_type}].")
 
     state_codes = get_existing_direct_ingest_states()
-    source_table_datasets = {
+
+    refreshed_source_table_datasets = {
         config.materialized_dataset_for_segment(state_code)
         for state_code in state_codes
+        if state_code.value not in config.region_codes_to_exclude
     }
+
+    stale_schema_datasets = {
+        config.materialized_dataset_for_segment(state_code)
+        for state_code in state_codes
+        if state_code.value in config.region_codes_to_exclude
+    }
+    source_table_datasets = refreshed_source_table_datasets | stale_schema_datasets
+
+    if stale_schema_datasets and refreshed_source_table_datasets:
+        # We need to make sure the schemas match those that are refreshed.
+        #
+        # DISCLAIMER: if a column were renamed in a Postgres migration, that migration
+        # would not be properly reflected with this schema update - the data in the new
+        # column would be wiped for the new schemas. This code is meant to handle pure
+        # column/table additions and deletions.
+        reference_dataset_id = next(iter(refreshed_source_table_datasets))
+        if dataset_override_prefix:
+            reference_dataset_id = f"{dataset_override_prefix}_{reference_dataset_id}"
+            stale_schema_datasets = {
+                f"{dataset_override_prefix}_{dataset_id}"
+                for dataset_id in stale_schema_datasets
+            }
+
+        bq_client = BigQueryClientImpl(region_override=bq_region_override)
+        bq_client.update_datasets_to_match_reference_schema(
+            reference_dataset_id, list(stale_schema_datasets)
+        )
+
     view_builders = [
         UnionedStateSegmentsViewBuilder(config=config, table=t, state_codes=state_codes)
         for t in config.get_tables_to_export()
