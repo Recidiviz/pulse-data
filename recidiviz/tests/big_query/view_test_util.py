@@ -56,6 +56,9 @@ def _replace_iter(query: str, regex: str, replacement: str, flags: int = 0) -> s
     return query
 
 
+DEBUG = True
+
+
 @attr.s(frozen=True)
 class MockTableSchema:
     """Defines the table schema to be used when mocking this table in Postgres"""
@@ -294,7 +297,8 @@ class BaseViewTest(unittest.TestCase):
         dimensions: List[str],
         query_run_dt: datetime.datetime = DEFAULT_QUERY_RUN_DATETIME,
     ) -> pd.DataFrame:
-        view_query = view_builder.build().expanded_view_query(
+        view: BigQueryView = view_builder.build()
+        view_query = view.expanded_view_query(
             DirectIngestPreProcessedIngestView.QueryStructureConfig(
                 raw_table_view_type=RawTableViewType.PARAMETERIZED
             )
@@ -304,7 +308,9 @@ class BaseViewTest(unittest.TestCase):
             f"TIMESTAMP '{query_run_dt.isoformat()}'",
         )
 
-        return self.query_view(view_query, data_types={}, dimensions=dimensions)
+        return self.query_view(
+            view.table_for_query, view_query, data_types={}, dimensions=dimensions
+        )
 
     def query_view_for_builder(
         self,
@@ -318,10 +324,14 @@ class BaseViewTest(unittest.TestCase):
                 f"query_raw_data_view_for_builder() for this type instead."
             )
 
-        return self.query_view(view_builder.build().view_query, data_types, dimensions)
+        view: BigQueryView = view_builder.build()
+        return self.query_view(
+            view.table_for_query, view.view_query, data_types, dimensions
+        )
 
     def query_view(
         self,
+        table_address: BigQueryAddress,
         view_query: str,
         data_types: Dict[str, Type],
         dimensions: List[str],
@@ -337,7 +347,12 @@ class BaseViewTest(unittest.TestCase):
         # `MetricBigQueryViewBuilder`, then we can reuse that here instead of forcing the caller to specify them
         # manually.
         results = results.set_index(dimensions)
-        return results.sort_index()
+        results = results.sort_index()
+
+        # Log results to debug log level, to see them pass --log-level DEBUG to pytest
+        logging.debug("Results for `%s`:\n%s", table_address, results.to_string())
+
+        return results
 
     def query_view_chain(
         self,
@@ -360,6 +375,13 @@ class BaseViewTest(unittest.TestCase):
         )
         query = self._rewrite_sql(query)
         self._execute_statement(query)
+
+        # Log results to debug log level, to see them pass --log-level DEBUG to pytest
+        results = pd.read_sql_query(
+            f"SELECT * FROM {self.mock_bq_to_postgres_tables[table_location]}",
+            con=self.postgres_engine,
+        )
+        logging.debug("Results for `%s`:\n%s", table_location, results.to_string())
 
     def register_bq_address(self, address: BigQueryAddress) -> str:
         """Registers a BigQueryAddress in the map of address -> Postgres tables. Returns
