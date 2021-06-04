@@ -73,7 +73,7 @@ class CloudSqlToBQLockManager:
 
         if not self.is_locked(schema_type):
             raise GCSPseudoLockDoesNotExist(
-                f"Must acquire the lock for [{schema_type}] befor checking if can proceed"
+                f"Must acquire the lock for [{schema_type}] before checking if can proceed"
             )
 
         if schema_type not in (
