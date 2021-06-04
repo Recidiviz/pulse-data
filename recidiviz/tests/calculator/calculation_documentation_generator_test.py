@@ -474,7 +474,6 @@ If you are interested in what views rely on this metric, please run the followin
             # The calculation specification template is an existing doc that provides a
             # template for recording a detailed breakdown of the metric logic and process.
             # It is separate from calc doc generation and may eventually be deprecated.
-            self.assertEqual(len(diff_file_names), 1)
-            self.assertEqual(
-                diff_file_names[0], "calculation_specification_template.md"
+            self.assertListEqual(
+                diff_file_names, ["calculation_specification_template.md"]
             )
