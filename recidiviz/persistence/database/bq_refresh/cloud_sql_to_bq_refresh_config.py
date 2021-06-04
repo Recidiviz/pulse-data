@@ -32,12 +32,12 @@ county_columns_to_exclude:
   <map with tables as keys>:
     - <list of columns for those tables to exclude>
 """
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import yaml
 from sqlalchemy import Table
-from recidiviz.big_query.big_query_view import BigQueryAddress
 
+from recidiviz.big_query.big_query_view import BigQueryAddress
 from recidiviz.calculator.query.county.dataset_config import (
     COUNTY_BASE_DATASET,
     COUNTY_BASE_REGIONAL_DATASET,
@@ -58,45 +58,41 @@ from recidiviz.case_triage.views.dataset_config import (
     CASE_TRIAGE_FEDERATED_DATASET,
     CASE_TRIAGE_FEDERATED_REGIONAL_DATASET,
 )
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
-
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
+from recidiviz.persistence.database import base_schema
 
 # TODO(#4302): Remove unused schema module imports
 # These imports are needed to ensure that the SQL Alchemy table metadata is loaded for the
 # metadata_base in this class. We would like to eventually have a better
 # way to achieve this and have the tables loaded alongside the DeclarativeMeta base class.
 # pylint:disable=unused-import
-from recidiviz.persistence.database.schema.operations import schema as operations_schema
-from recidiviz.persistence.database.schema.county import schema as county_schema
-from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema.aggregate import schema as aggregate_schema
+from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.justice_counts import (
     schema as justice_counts_schema,
 )
-from recidiviz.persistence.database.sqlalchemy_database_key import (
-    SQLAlchemyDatabaseKey,
+from recidiviz.persistence.database.schema.operations import schema as operations_schema
+from recidiviz.persistence.database.schema.state import schema as state_schema
+from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
+    BigQuerySchemaTableRegionFilteredQueryBuilder,
+    FederatedSchemaTableRegionFilteredQueryBuilder,
 )
+from recidiviz.persistence.database.schema_utils import (
+    SchemaType,
+    get_table_class_by_name,
+    schema_type_to_schema_base,
+)
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-
-from recidiviz.utils import environment
-from recidiviz.persistence.database import base_schema
-from recidiviz.utils import metadata
-from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.persistence.database.schema_utils import (
-    get_table_class_by_name,
-    SchemaType,
-    schema_type_to_schema_base,
-)
-from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
-    FederatedSchemaTableRegionFilteredQueryBuilder,
-)
+from recidiviz.utils import environment, metadata
 
 
 class CloudSqlToBQConfig:
@@ -354,6 +350,41 @@ class CloudSqlToBQConfig:
             region_codes_to_exclude=[],
         )
         return query_builder.full_query()
+
+    def get_unioned_table_view_query_format_string(
+        self, state_codes: List[StateCode], table: Table
+    ) -> Tuple[str, Dict[str, str]]:
+        """Returns a tuple (query format string, kwargs) for a view query that unions
+        table data from each of the state-segmented datasets into a single table.
+        """
+
+        state_select_queries = []
+        kwargs = {}
+        for state_code in state_codes:
+            address = self.materialized_address_for_segment_table(
+                table=table, state_code=state_code
+            )
+            dataset_key = f"{state_code.value.lower()}_specific_dataset"
+            table_key = f"{state_code.value.lower()}_specific_table_id"
+            kwargs[dataset_key] = address.dataset_id
+            kwargs[table_key] = address.table_id
+
+            bq_query_builder = BigQuerySchemaTableRegionFilteredQueryBuilder(
+                project_id=metadata.project_id(),
+                dataset_id=address.dataset_id,
+                table=table,
+                metadata_base=self.metadata_base,
+                columns_to_include=self._get_table_columns_to_export(table),
+                region_codes_to_include=[state_code.value.upper()],
+                region_codes_to_exclude=None,
+            )
+
+            state_select_queries.append(
+                f"{bq_query_builder.select_clause()} "
+                f"FROM `{{project_id}}.{{{dataset_key}}}.{address.table_id}` {address.table_id}"
+            )
+        table_union_query = "\nUNION ALL\n".join(state_select_queries)
+        return table_union_query, kwargs
 
     def get_tables_to_export(self) -> List[Table]:
         """Return List of table classes to include in export"""

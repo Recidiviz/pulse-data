@@ -24,17 +24,17 @@ import logging
 import time
 from collections import defaultdict
 from concurrent import futures
-from typing import List, Optional, Iterator, Callable, Dict, Any, Sequence
+from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence
 
 import pytz
 from google.api_core.future.polling import PollingFuture
 from google.cloud import bigquery, exceptions
 from google.cloud.bigquery_datatransfer import (
-    StartManualTransferRunsRequest,
-    ScheduleOptions,
-    TransferState,
-    TransferConfig,
     DataTransferServiceClient,
+    ScheduleOptions,
+    StartManualTransferRunsRequest,
+    TransferConfig,
+    TransferState,
 )
 from google.protobuf import timestamp_pb2
 from more_itertools import one
@@ -657,6 +657,18 @@ class BigQueryClient:
         """Creates a backup of all tables (but NOT views) in |dataset_id| in a new
         dataset with the format `my_dataset_backup_yyyy_mm_dd`. For example, the dataset
         `state` might backup to `state_backup_2021_05_06`.
+        """
+
+    def update_datasets_to_match_reference_schema(
+        self, reference_dataset_id: str, stale_schema_dataset_ids: List[str]
+    ) -> None:
+        """Updates the schemas of the datasets in |stale_schema_dataset_ids| to match
+        the schema of the reference dataset. This means:
+          - Adding tables that exist in the reference but not in the stale schema dataset
+          - Deleting tables that do not exist in the reference dataset
+          - Updating the schemas of matching tables to be equal
+
+        Disclaimer: Use with caution! This will delete data.
         """
 
     def wait_for_big_query_jobs(self, jobs: Sequence[PollingFuture]) -> List[Any]:
@@ -1628,3 +1640,41 @@ class BigQueryClientImpl(BigQueryClient):
             logging.info("Deleting transfer config [%s]", transfer_config.name)
             transfer_client.delete_transfer_config(name=transfer_config.name)
             logging.info("Finished deleting transfer config [%s]", transfer_config.name)
+
+    def update_datasets_to_match_reference_schema(
+        self, reference_dataset_id: str, stale_schema_dataset_ids: List[str]
+    ) -> None:
+        reference_dataset_ref = self.dataset_ref_for_id(reference_dataset_id)
+        reference_tables = self.list_tables(reference_dataset_id)
+        reference_table_schemas = {
+            t.table_id: self.get_table(reference_dataset_ref, t.table_id).schema
+            for t in reference_tables
+        }
+
+        for stale_schema_dataset_id in stale_schema_dataset_ids:
+            stale_dataset_ref = self.dataset_ref_for_id(stale_schema_dataset_id)
+            stale_schema_tables = self.list_tables(stale_schema_dataset_id)
+            stale_table_schemas = {
+                t.table_id: self.get_table(stale_dataset_ref, t.table_id).schema
+                for t in stale_schema_tables
+            }
+
+            for table_id, reference_schema in reference_table_schemas.items():
+                if table_id not in stale_table_schemas:
+                    self.create_table_with_schema(
+                        stale_schema_dataset_id, table_id, reference_schema
+                    )
+
+            for table_id, stale_table_schema in stale_table_schemas.items():
+                if table_id not in reference_table_schemas:
+                    self.delete_table(stale_schema_dataset_id, table_id)
+                    continue
+
+                if reference_table_schemas[table_id] == stale_table_schema:
+                    continue
+
+                self.update_schema(
+                    stale_schema_dataset_id,
+                    table_id,
+                    desired_schema_fields=reference_table_schemas[table_id],
+                )
