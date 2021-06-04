@@ -14,17 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Generator to grab all dataflow_metrics views and join them to
-most_recent_job_id_by_metric_and_state_code_materialized"""
-from typing import List, Dict
+"""Generator to grab all dataflow_metrics views and keep only the rows corresponding to
+a most recent [job id, state, metric_type, year, month] combo."""
+from typing import Dict, List
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.dataflow_config import (
-    DATAFLOW_METRICS_TO_TABLES,
-)
+from recidiviz.calculator.dataflow_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.calculator.query.state.dataset_config import (
-    DATAFLOW_METRICS_MATERIALIZED_DATASET,
     DATAFLOW_METRICS_DATASET,
+    DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -35,15 +33,34 @@ METRIC_TABLES_JOIN_OVERRIDES: Dict[str, str] = {
     "recidivism_rate_metrics": "job_id, state_code, metric_type",
 }
 
+DEFAULT_JOB_RECENCY_PRIMARY_KEYS: str = "job_id, year, month, state_code, metric_type"
+
+
+JOB_RECENCY_PRIMARY_KEY_OVERRIDES: Dict[str, str] = {
+    "recidivism_rate_metrics": "job_id, NULL AS year, NULL AS month, state_code, metric_type"
+}
+
 METRICS_VIEWS_TO_MATERIALIZE: List[str] = list(DATAFLOW_METRICS_TO_TABLES.values())
 
 MOST_RECENT_JOBS_TEMPLATE: str = """
     /*{description}*/
+    WITH job_recency as (
+        SELECT
+            *,
+            ROW_NUMBER() OVER (PARTITION BY state_code, year, month, metric_type ORDER BY job_id DESC) AS recency_rank,
+        FROM (
+             SELECT DISTINCT {job_recency_primary_keys}
+            FROM `{project_id}.{metrics_dataset}.{metric_table}`
+        )
+    )    
     SELECT *
-    FROM `{project_id}.{metrics_dataset}.{metric_view}`
-    JOIN
-        `{project_id}.{materialized_metrics_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
-        USING ({join_indices})
+    FROM `{project_id}.{metrics_dataset}.{metric_table}`
+    JOIN (
+        SELECT metric_type, state_code, year, month, job_id
+        FROM job_recency
+        WHERE recency_rank = 1
+    )
+    USING ({join_indices})
     """
 
 
@@ -53,25 +70,29 @@ def _make_most_recent_metric_view_builder(
     description = f"{metric_name} for the most recent job run"
     view_id = f"most_recent_{metric_name}"
     join_indices = METRIC_TABLES_JOIN_OVERRIDES.get(metric_name, DEFAULT_JOIN_INDICES)
+    job_recency_primary_keys = JOB_RECENCY_PRIMARY_KEY_OVERRIDES.get(
+        metric_name, DEFAULT_JOB_RECENCY_PRIMARY_KEYS
+    )
     return SimpleBigQueryViewBuilder(
         dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
         view_id=view_id,
         view_query_template=MOST_RECENT_JOBS_TEMPLATE,
         description=description,
         join_indices=join_indices,
+        job_recency_primary_keys=job_recency_primary_keys,
         metrics_dataset=DATAFLOW_METRICS_DATASET,
-        metric_view=metric_name,
+        metric_table=metric_name,
         materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
         should_materialize=True,
     )
 
 
 def generate_most_recent_metrics_view_builders(
-    metric_views: List[str],
+    metric_tables: List[str],
 ) -> List[SimpleBigQueryViewBuilder]:
     return [
-        _make_most_recent_metric_view_builder(metric_view)
-        for metric_view in metric_views
+        _make_most_recent_metric_view_builder(metric_table)
+        for metric_table in metric_tables
     ]
 
 
