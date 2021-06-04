@@ -31,14 +31,11 @@ import datetime
 import logging
 import os
 import threading
-from typing import Optional, List, Tuple
+from typing import List, Optional, Tuple
 
 from progress.bar import Bar
 
-from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsFilePath,
-    GcsfsBucketPath,
-)
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller import (
     BaseUploadStateFilesToIngestBucketController,
 )
@@ -178,7 +175,7 @@ def main() -> None:
     parser.add_argument(
         "--destination-bucket",
         type=str,
-        default=True,
+        default=None,
         help="Override destination bucket for the upload. Can be used to upload files "
         "to an arbitrary testing bucket with normalized names.",
     )
