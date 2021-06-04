@@ -259,8 +259,20 @@ class JailsOutputViewTest(BaseViewTest):
 class JailsMetricsIntegrationTest(BaseViewTest):
     """Tests the Jails output view."""
 
-    def test_county_population(self) -> None:
-        """Tests the basic use case of calculating county population"""
+    INPUT_SCHEMA = MockTableSchema(
+        {
+            **METRIC_CALCULATOR_SCHEMA.data_types,
+            "compare_start_of_month": sqltypes.Date(),
+            "compare_value": sqltypes.Numeric(),
+            "state_code": sqltypes.String(255),
+            "county_code": sqltypes.String(255),
+            "percentage_covered_county": sqltypes.Float(),
+            "percentage_covered_population": sqltypes.Float(),
+        }
+    )
+
+    def test_metrics(self) -> None:
+        """Tests the basic use case of calculating population and incarceration rate"""
         self.create_mock_bq_table(
             dataset_id="justice_counts",
             table_id="report_materialized",
@@ -545,6 +557,30 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                 + [None] * 6
                 + [datetime.date.fromisoformat("2021-01-01")],
                 [
+                    "US_XX",
+                    np.nan,
+                    "POPULATION_JAIL",
+                    2020,
+                    11,
+                    datetime.date.fromisoformat("2020-11-30"),
+                    "INSTANT",
+                    4000,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_XX",
+                    np.nan,
+                    "POPULATION_JAIL",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
+                    5500,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
                     "US_YY",
                     "US_YY_ALPHA",
                     "INCARCERATION_RATE_JAIL",
@@ -613,6 +649,30 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     datetime.date.fromisoformat("2020-12-31"),
                     "INSTANT",
                     1000,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-02")],
+                [
+                    "US_YY",
+                    np.nan,
+                    "POPULATION_JAIL",
+                    2020,
+                    11,
+                    datetime.date.fromisoformat("2020-11-30"),
+                    "INSTANT",
+                    10000,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-02")],
+                [
+                    "US_YY",
+                    np.nan,
+                    "POPULATION_JAIL",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
+                    12000,
                 ]
                 + [None] * 6
                 + [datetime.date.fromisoformat("2021-01-02")],
@@ -688,6 +748,30 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                 ]
                 + [None] * 6
                 + [datetime.date.fromisoformat("2021-01-02")],
+                [
+                    "US_ZZ",
+                    np.nan,
+                    "POPULATION_JAIL",
+                    2020,
+                    11,
+                    datetime.date.fromisoformat("2020-11-30"),
+                    "INSTANT",
+                    20000,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-02")],
+                [
+                    "US_ZZ",
+                    np.nan,
+                    "POPULATION_JAIL",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
+                    22000,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-02")],
             ],
             columns=[
                 "state_code",
@@ -709,3 +793,594 @@ class JailsMetricsIntegrationTest(BaseViewTest):
         )
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
+
+    def test_metrics_with_state_comparison(self) -> None:
+        """Tests with historical data to allow creation of state level jail pop comparisons"""
+        self.create_mock_bq_table(
+            dataset_id="justice_counts",
+            table_id="report_materialized",
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_data=pd.DataFrame(
+                [
+                    [
+                        1,
+                        1,
+                        "_",
+                        "All",
+                        "2021-01-01",
+                        "xx.gov",
+                        "MANUALLY_ENTERED",
+                        "John",
+                    ],
+                    [
+                        2,
+                        2,
+                        "_",
+                        "All",
+                        "2021-01-01",
+                        "yy.gov",
+                        "MANUALLY_ENTERED",
+                        "Jane",
+                    ],
+                ],
+                columns=[
+                    "id",
+                    "source_id",
+                    "type",
+                    "instance",
+                    "publish_date",
+                    "url",
+                    "acquisition_method",
+                    "acquired_by",
+                ],
+            ),
+        )
+        self.create_mock_bq_table(
+            dataset_id="justice_counts",
+            table_id="report_table_definition_materialized",
+            mock_schema=MockTableSchema.from_sqlalchemy_table(
+                schema.ReportTableDefinition.__table__
+            ),
+            mock_data=pd.DataFrame(
+                [
+                    [
+                        1,
+                        "CORRECTIONS",
+                        "POPULATION",
+                        "INSTANT",
+                        ["metric/population/type"],
+                        ["JAIL"],
+                        [
+                            "global/location/state",
+                            "global/location/county",
+                            "global/location/county-fips",
+                        ],
+                    ],
+                ],
+                columns=[
+                    "id",
+                    "system",
+                    "metric_type",
+                    "measurement_type",
+                    "filtered_dimensions",
+                    "filtered_dimension_values",
+                    "aggregated_dimensions",
+                ],
+            ),
+        )
+        self.create_mock_bq_table(
+            dataset_id="justice_counts",
+            table_id="report_table_instance_materialized",
+            mock_schema=MockTableSchema.from_sqlalchemy_table(
+                schema.ReportTableInstance.__table__
+            ),
+            mock_data=pd.DataFrame(
+                [
+                    [1, 1, 1, "2019-12-31", "2020-01-01", None],
+                    [2, 1, 1, "2020-12-31", "2021-01-01", None],
+                ],
+                columns=[
+                    "id",
+                    "report_id",
+                    "report_table_definition_id",
+                    "time_window_start",
+                    "time_window_end",
+                    "methodology",
+                ],
+            ),
+        )
+        self.create_mock_bq_table(
+            dataset_id="justice_counts",
+            table_id="cell_materialized",
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_data=pd.DataFrame(
+                [
+                    [1, 1, ["US_XX", "US_XX_ALPHA", "00001"], 3000],
+                    # US_XX_BETA not in prior report
+                    [2, 1, ["US_YY", "US_YY_ALPHA", "01001"], 10000],
+                    [3, 1, ["US_YY", "US_YY_BETA", "01002"], 10001],
+                    [4, 1, ["US_ZZ", "US_ZZ_ALPHA", "02001"], 20000],
+                    [5, 2, ["US_XX", "US_XX_ALPHA", "00001"], 4000],
+                    [6, 2, ["US_XX", "US_XX_BETA", "00002"], 1500],
+                    [7, 2, ["US_YY", "US_YY_ALPHA", "01001"], 12000],
+                    [8, 2, ["US_YY", "US_YY_BETA", "01002"], 12001],
+                    [9, 2, ["US_ZZ", "US_ZZ_ALPHA", "02001"], 22000],
+                ],
+                columns=[
+                    "id",
+                    "report_table_instance_id",
+                    "aggregated_dimension_values",
+                    "value",
+                ],
+            ),
+        )
+        self.create_mock_bq_table(
+            dataset_id="external_reference",
+            table_id="county_resident_populations",
+            mock_schema=MockTableSchema(
+                data_types={
+                    "fips": sqltypes.String(255),
+                    "year": sqltypes.Integer,
+                    "population": sqltypes.Integer,
+                }
+            ),
+            mock_data=pd.DataFrame(
+                [
+                    ["00001", 2020, 800_000],
+                    ["00002", 2020, 500_000],
+                    ["01001", 2020, 1_200_000],
+                    ["01002", 2020, 1_300_000],
+                    ["02001", 2020, 2_200_000],
+                ],
+                columns=["fips", "year", "population"],
+            ),
+        )
+
+        # Act
+        dimensions = ["state_code", "county_code", "metric", "year", "month"]
+        results = self.query_view_chain(
+            jails_metrics.JailsMetricsBigQueryViewCollector().collect_view_builders(),
+            data_types={"year": int, "month": int, "value": int},
+            dimensions=dimensions,
+        )
+
+        # Assert
+        expected = pd.DataFrame(
+            [
+                [
+                    "US_XX",
+                    "US_XX_ALPHA",
+                    "INCARCERATION_RATE_JAIL",
+                    2019,
+                    12,
+                    datetime.date.fromisoformat("2019-12-31"),
+                    "INSTANT",
+                    375,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_XX",
+                    "US_XX_ALPHA",
+                    "INCARCERATION_RATE_JAIL",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
+                    500,
+                    2019,
+                    12,
+                    125,
+                    0.333,
+                ]
+                + [None] * 2
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_XX",
+                    "US_XX_ALPHA",
+                    "POPULATION_JAIL",
+                    2019,
+                    12,
+                    datetime.date.fromisoformat("2019-12-31"),
+                    "INSTANT",
+                    3000,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_XX",
+                    "US_XX_ALPHA",
+                    "POPULATION_JAIL",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
+                    4000,
+                    2019,
+                    12,
+                    1000,
+                    0.333,
+                ]
+                + [None] * 2
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_XX",
+                    "US_XX_BETA",
+                    "INCARCERATION_RATE_JAIL",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
+                    300,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_XX",
+                    "US_XX_BETA",
+                    "POPULATION_JAIL",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
+                    1500,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_XX",
+                    np.nan,
+                    "INCARCERATION_RATE_JAIL",
+                    2019,
+                    12,
+                    datetime.date.fromisoformat("2019-12-31"),
+                    "INSTANT",
+                    375,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_XX",
+                    np.nan,
+                    "INCARCERATION_RATE_JAIL",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
+                    423,
+                    2019,
+                    12,
+                    48.076,
+                    0.128,
+                ]
+                + [None] * 2
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_XX",
+                    np.nan,
+                    "POPULATION_JAIL",
+                    2019,
+                    12,
+                    datetime.date.fromisoformat("2019-12-31"),
+                    "INSTANT",
+                    3000,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_XX",
+                    np.nan,
+                    "POPULATION_JAIL",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
+                    4000,
+                    2019,
+                    12,
+                    1000,
+                    0.333,
+                ]
+                + [None] * 2
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_YY",
+                    "US_YY_ALPHA",
+                    "INCARCERATION_RATE_JAIL",
+                    2019,
+                    12,
+                    datetime.date.fromisoformat("2019-12-31"),
+                    "INSTANT",
+                    833,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_YY",
+                    "US_YY_ALPHA",
+                    "INCARCERATION_RATE_JAIL",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
+                    1000,
+                    2019,
+                    12,
+                    166.66,
+                    0.2,
+                ]
+                + [None] * 2
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_YY",
+                    "US_YY_ALPHA",
+                    "POPULATION_JAIL",
+                    2019,
+                    12,
+                    datetime.date.fromisoformat("2019-12-31"),
+                    "INSTANT",
+                    10000,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_YY",
+                    "US_YY_ALPHA",
+                    "POPULATION_JAIL",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
+                    12000,
+                    2019,
+                    12,
+                    2000,
+                    0.2,
+                ]
+                + [None] * 2
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_YY",
+                    "US_YY_BETA",
+                    "INCARCERATION_RATE_JAIL",
+                    2019,
+                    12,
+                    datetime.date.fromisoformat("2019-12-31"),
+                    "INSTANT",
+                    769,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_YY",
+                    "US_YY_BETA",
+                    "INCARCERATION_RATE_JAIL",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
+                    923,
+                    2019,
+                    12,
+                    153.84,
+                    0.200,
+                ]
+                + [None] * 2
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_YY",
+                    "US_YY_BETA",
+                    "POPULATION_JAIL",
+                    2019,
+                    12,
+                    datetime.date.fromisoformat("2019-12-31"),
+                    "INSTANT",
+                    10001,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_YY",
+                    "US_YY_BETA",
+                    "POPULATION_JAIL",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
+                    12001,
+                    2019,
+                    12,
+                    2000,
+                    0.200,
+                ]
+                + [None] * 2
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_YY",
+                    np.nan,
+                    "INCARCERATION_RATE_JAIL",
+                    2019,
+                    12,
+                    datetime.date.fromisoformat("2019-12-31"),
+                    "INSTANT",
+                    800,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_YY",
+                    np.nan,
+                    "INCARCERATION_RATE_JAIL",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
+                    960,
+                    2019,
+                    12,
+                    160,
+                    0.200,
+                ]
+                + [None] * 2
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_YY",
+                    np.nan,
+                    "POPULATION_JAIL",
+                    2019,
+                    12,
+                    datetime.date.fromisoformat("2019-12-31"),
+                    "INSTANT",
+                    20001,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_YY",
+                    np.nan,
+                    "POPULATION_JAIL",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
+                    24001,
+                    2019,
+                    12,
+                    4000,
+                    0.200,
+                ]
+                + [None] * 2
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_ZZ",
+                    "US_ZZ_ALPHA",
+                    "INCARCERATION_RATE_JAIL",
+                    2019,
+                    12,
+                    datetime.date.fromisoformat("2019-12-31"),
+                    "INSTANT",
+                    909,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_ZZ",
+                    "US_ZZ_ALPHA",
+                    "INCARCERATION_RATE_JAIL",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
+                    1000,
+                    2019,
+                    12,
+                    90.909,
+                    0.1,
+                ]
+                + [None] * 2
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_ZZ",
+                    "US_ZZ_ALPHA",
+                    "POPULATION_JAIL",
+                    2019,
+                    12,
+                    datetime.date.fromisoformat("2019-12-31"),
+                    "INSTANT",
+                    20000,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_ZZ",
+                    "US_ZZ_ALPHA",
+                    "POPULATION_JAIL",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
+                    22000,
+                    2019,
+                    12,
+                    2000,
+                    0.1,
+                ]
+                + [None] * 2
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_ZZ",
+                    np.nan,
+                    "INCARCERATION_RATE_JAIL",
+                    2019,
+                    12,
+                    datetime.date.fromisoformat("2019-12-31"),
+                    "INSTANT",
+                    909,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_ZZ",
+                    np.nan,
+                    "INCARCERATION_RATE_JAIL",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
+                    1000,
+                    2019,
+                    12,
+                    90.909,
+                    0.1,
+                ]
+                + [None] * 2
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_ZZ",
+                    np.nan,
+                    "POPULATION_JAIL",
+                    2019,
+                    12,
+                    datetime.date.fromisoformat("2019-12-31"),
+                    "INSTANT",
+                    20000,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_ZZ",
+                    np.nan,
+                    "POPULATION_JAIL",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    "INSTANT",
+                    22000,
+                    2019,
+                    12,
+                    2000,
+                    0.1,
+                ]
+                + [None] * 2
+                + [datetime.date.fromisoformat("2021-01-01")],
+            ],
+            columns=[
+                "state_code",
+                "county_code",
+                "metric",
+                "year",
+                "month",
+                "date_reported",
+                "measurement_type",
+                "value",
+                "compared_to_year",
+                "compared_to_month",
+                "value_change",
+                "percentage_change",
+                "percentage_covered_county",
+                "percentage_covered_population",
+                "date_published",
+            ],
+        )
+        expected = expected.set_index(dimensions)
+        assert_frame_equal(expected, results, check_less_precise=True)
