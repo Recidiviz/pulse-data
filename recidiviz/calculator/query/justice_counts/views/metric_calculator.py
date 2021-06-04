@@ -30,7 +30,6 @@ from recidiviz.calculator.query.justice_counts import dataset_config
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.tools.justice_counts import manual_upload
 
-
 FETCH_AND_FILTER_METRIC_VIEW_TEMPLATE = """
 /*{description}*/
 
@@ -909,8 +908,11 @@ class CompareToPriorYearViewBuilder(SimpleBigQueryViewBuilder):
         dataset_id: str,
         metric_name: str,
         input_view: BigQueryViewBuilder,
+        compare_view: Optional[BigQueryViewBuilder] = None,
         value_column: str = "value",
     ):
+        if compare_view is None:
+            compare_view = input_view
 
         super().__init__(
             dataset_id=dataset_id,
@@ -921,8 +923,8 @@ class CompareToPriorYearViewBuilder(SimpleBigQueryViewBuilder):
             base_dataset=dataset_config.JUSTICE_COUNTS_BASE_DATASET,
             input_dataset=input_view.dataset_id,
             input_table=input_view.view_id,
-            compare_dataset=input_view.dataset_id,
-            compare_table=input_view.view_id,
+            compare_dataset=compare_view.dataset_id,
+            compare_table=compare_view.view_id,
             value_column=value_column,
         )
 
@@ -961,7 +963,7 @@ class DimensionsToColumnsViewBuilder(SimpleBigQueryViewBuilder):
         dataset_id: str,
         metric_name: str,
         aggregations: Dict[str, "Aggregation"],
-        input_view: BigQueryViewBuilder,
+        input_view: SimpleBigQueryViewBuilder,
     ):
         aggregated_dimensions_to_columns_clause = ", ".join(
             [
@@ -978,8 +980,8 @@ class DimensionsToColumnsViewBuilder(SimpleBigQueryViewBuilder):
             # Query Format Arguments
             description=f"{metric_name} with dimensions",
             base_dataset=dataset_config.JUSTICE_COUNTS_BASE_DATASET,
-            input_dataset=input_view.dataset_id,
-            input_table=input_view.view_id,
+            input_dataset=input_view.table_for_query.dataset_id,
+            input_table=input_view.table_for_query.table_id,
             aggregated_dimensions_to_columns_clause=aggregated_dimensions_to_columns_clause,
         )
 
