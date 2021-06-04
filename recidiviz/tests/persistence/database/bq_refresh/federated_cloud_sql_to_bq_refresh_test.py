@@ -34,8 +34,8 @@ from recidiviz.common.constants import states
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.base_schema import JailsBase, StateBase
 from recidiviz.persistence.database.bq_refresh import (
-    federated_cloud_sql_to_bq_refresh,
     federated_cloud_sql_table_big_query_view_collector,
+    federated_cloud_sql_to_bq_refresh,
 )
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
@@ -49,7 +49,6 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
-
 
 FEDERATED_REFRESH_PACKAGE_NAME = federated_cloud_sql_to_bq_refresh.__name__
 FEDERATED_REFRESH_COLLECTOR_PACKAGE_NAME = (
@@ -131,16 +130,26 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
         view_builder = UnionedStateSegmentsViewBuilder(
             config=config,
-            table=StateBase.metadata.tables["state_person"],
+            table=StateBase.metadata.tables["state_person_external_id"],
             state_codes=[StateCode.US_XX, StateCode.US_WW],
         )
         view = view_builder.build()
-        expected_query = """SELECT * FROM `recidiviz-staging.us_xx_state_regional.state_person`
-UNION ALL
-SELECT * FROM `recidiviz-staging.us_ww_state_regional.state_person`"""
+        expected_query = (
+            "SELECT state_person_external_id.external_id,state_person_external_id.state_code,"
+            "state_person_external_id.id_type,state_person_external_id.person_external_id_id,"
+            "state_person_external_id.person_id FROM "
+            "`recidiviz-staging.us_xx_state_regional.state_person_external_id` state_person_external_id\n"
+            "UNION ALL\n"
+            "SELECT state_person_external_id.external_id,state_person_external_id.state_code,"
+            "state_person_external_id.id_type,state_person_external_id.person_external_id_id,"
+            "state_person_external_id.person_id FROM "
+            "`recidiviz-staging.us_ww_state_regional.state_person_external_id` state_person_external_id"
+        )
         self.assertEqual(expected_query, view.view_query)
         self.assertEqual(
-            BigQueryAddress(dataset_id="state_regional", table_id="state_person"),
+            BigQueryAddress(
+                dataset_id="state_regional", table_id="state_person_external_id"
+            ),
             view.materialized_address,
         )
 
@@ -148,7 +157,7 @@ SELECT * FROM `recidiviz-staging.us_ww_state_regional.state_person`"""
         config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
         view_builder = UnionedStateSegmentsViewBuilder(
             config=config,
-            table=StateBase.metadata.tables["state_person"],
+            table=StateBase.metadata.tables["state_person_external_id"],
             state_codes=[StateCode.US_XX, StateCode.US_WW],
         )
         view = view_builder.build(
@@ -158,13 +167,22 @@ SELECT * FROM `recidiviz-staging.us_ww_state_regional.state_person`"""
                 "us_ww_state_regional": "my_prefix_us_ww_state_regional",
             }
         )
-        expected_query = """SELECT * FROM `recidiviz-staging.my_prefix_us_xx_state_regional.state_person`
-UNION ALL
-SELECT * FROM `recidiviz-staging.my_prefix_us_ww_state_regional.state_person`"""
+        expected_query = (
+            "SELECT state_person_external_id.external_id,state_person_external_id.state_code,"
+            "state_person_external_id.id_type,state_person_external_id.person_external_id_id,"
+            "state_person_external_id.person_id FROM "
+            "`recidiviz-staging.my_prefix_us_xx_state_regional.state_person_external_id` state_person_external_id\n"
+            "UNION ALL\n"
+            "SELECT state_person_external_id.external_id,state_person_external_id.state_code,"
+            "state_person_external_id.id_type,state_person_external_id.person_external_id_id,"
+            "state_person_external_id.person_id FROM "
+            "`recidiviz-staging.my_prefix_us_ww_state_regional.state_person_external_id` state_person_external_id"
+        )
         self.assertEqual(expected_query, view.view_query)
         self.assertEqual(
             BigQueryAddress(
-                dataset_id="my_prefix_state_regional", table_id="state_person"
+                dataset_id="my_prefix_state_regional",
+                table_id="state_person_external_id",
             ),
             view.materialized_address,
         )
