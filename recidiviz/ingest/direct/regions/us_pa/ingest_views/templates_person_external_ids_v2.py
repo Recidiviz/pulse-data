@@ -46,7 +46,7 @@ end up with master_control_number C1.
 """
 
 EXPLORE_GRAPH_BY_COLUMN_TEMPLATE = """SELECT
-        control_number, inmate_number, parole_number,
+        control_number, inmate_number, parole_number, pseudo_linking_id,
         IF(new_master_control_number_candidate IS NULL OR master_control_number < new_master_control_number_candidate,
            CAST(master_control_number AS STRING),
            -- Cast here only necessary for view to play nicely with Postgres tests
@@ -54,13 +54,13 @@ EXPLORE_GRAPH_BY_COLUMN_TEMPLATE = """SELECT
         ) AS master_control_number
       FROM (
         SELECT 
-          control_number, inmate_number, parole_number, master_control_number,
+          control_number, inmate_number, parole_number, pseudo_linking_id, master_control_number,
           MIN(new_row_master_control_number_candidate) OVER (
             PARTITION BY COALESCE(master_control_number, new_row_master_control_number_candidate)
           ) AS new_master_control_number_candidate
         FROM (
           SELECT 
-            primary_table.control_number, primary_table.inmate_number, primary_table.parole_number, primary_table.master_control_number,
+            primary_table.control_number, primary_table.inmate_number, primary_table.parole_number, primary_table.pseudo_linking_id, primary_table.master_control_number,
             MIN(control_joins.master_control_number) AS new_row_master_control_number_candidate
           FROM 
             {base_table_name} primary_table
@@ -71,7 +71,7 @@ EXPLORE_GRAPH_BY_COLUMN_TEMPLATE = """SELECT
                 (primary_table.master_control_number IS NULL AND control_joins.master_control_number IS NOT NULL) 
                 OR primary_table.master_control_number > control_joins.master_control_number
             )
-          GROUP BY primary_table.control_number, primary_table.inmate_number, primary_table.parole_number, primary_table.master_control_number
+          GROUP BY primary_table.control_number, primary_table.inmate_number, primary_table.parole_number, primary_table.pseudo_linking_id, primary_table.master_control_number
         ) a
       ) b"""
 
@@ -107,17 +107,30 @@ recidiviz_master_person_ids AS (
             ) AS inmate_number
         FROM {{dbo_ParoleCount}}
     ),
+    control_number_to_pseudo_linking_id AS (
+        SELECT DISTINCT pseudo_linking_id, UPPER(control_number) AS control_number
+        FROM {{RECIDIVIZ_REFERENCE_control_number_linking_ids}}
+    ),
     base_table AS (
         SELECT
             control_number,
             inmate_number, parole_number,
-            control_number AS master_control_number
+            control_number AS master_control_number,
+            pseudo_linking_id
         FROM 
-        distinct_control_to_inmate
+            distinct_control_to_inmate
         FULL OUTER JOIN
-        inmate_to_parole_number_edges
+            inmate_to_parole_number_edges
         USING (inmate_number)
-        GROUP BY control_number, inmate_number, parole_number, master_control_number
+        FULL OUTER JOIN
+            control_number_to_pseudo_linking_id
+        USING (control_number)
+        GROUP BY 
+            control_number,
+            inmate_number,
+            parole_number,
+            master_control_number,
+            pseudo_linking_id
     ),
     explore_control_number AS (
         {explore_graph_by_column_query(base_table_name='base_table',
@@ -131,12 +144,13 @@ recidiviz_master_person_ids AS (
         {explore_graph_by_column_query(base_table_name='explore_inmate_number',
                                        join_col_name='parole_number')}
     ),
-    explore_inmate_number2 AS (
+    explore_pseudo_linking_id AS (
         {explore_graph_by_column_query(base_table_name='explore_parole_number',
-                                       join_col_name='inmate_number')}),
+                                       join_col_name='pseudo_linking_id')}
+    ),
     master_control_numbers AS (
         SELECT control_number, inmate_number, parole_number, master_control_number
-        FROM explore_inmate_number2
+        FROM explore_pseudo_linking_id
         GROUP BY control_number, inmate_number, parole_number, master_control_number
     )
     SELECT
