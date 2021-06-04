@@ -19,14 +19,13 @@ and perform actions on each of them in some order."""
 import logging
 import re
 from concurrent import futures
-from typing import Callable, Dict, List, Set, Tuple, TypeVar, Optional
+from typing import Callable, Dict, List, Optional, Set, Tuple, TypeVar
 
 import attr
 
-from recidiviz.big_query.big_query_view import BigQueryView, BigQueryAddress
+from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryView
 from recidiviz.utils import structured_logging
 from recidiviz.view_registry.deployed_views import NOISY_DEPENDENCY_VIEW_BUILDERS
-
 
 # We set this to 10 because urllib3 (used by the Google BigQuery client) has an default limit of 10 connections and
 # we were seeing "urllib3.connectionpool:Connection pool is full, discarding connection" errors when this number
@@ -308,7 +307,7 @@ class BigQueryViewDagWalker:
         representations of those dependency trees. If |view_source_table_datasets| are
         specified, we stop searching for parent nodes when we hit a source dataset.
         """
-        # TODO(#7049): refactor most_recent_job_id_by_metric_and_state_code dependencies
+        # TODO(#7749): refactor most_recent_daily_job_id_by_metric_and_state_code dependencies
         noisy_dependency_keys = [
             DagKey(
                 view_address=BigQueryAddress(

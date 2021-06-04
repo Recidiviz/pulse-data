@@ -15,11 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Manages the storage of data produced by calculations."""
-import logging
 import datetime
+import logging
 from collections import defaultdict
 from http import HTTPStatus
-from typing import Tuple, Dict
+from typing import Dict, Tuple
 
 import flask
 from google.cloud.bigquery import WriteDisposition
@@ -28,12 +28,11 @@ from more_itertools import peekable
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator import dataflow_config
-from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
-
+from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.yaml_dict import YAMLDict
 
 # Datasets must be at least 12 hours old to be deleted
@@ -141,8 +140,7 @@ def _get_month_range_for_metric_and_state() -> Dict[str, Dict[str, int]]:
 SOURCE_DATA_JOIN_CLAUSE_STANDARD_TEMPLATE = """LEFT JOIN
             (-- Job_ids that are the most recent for the given metric/state_code
             SELECT DISTINCT job_id as keep_job_id FROM
-                `{project_id}.{materialized_metrics_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
-            WHERE metric_type = '{metric_type}'
+                `{project_id}.{materialized_metrics_dataset}.most_recent_{table_id}`
             )
         ON job_id = keep_job_id
         LEFT JOIN 
@@ -180,9 +178,8 @@ SOURCE_DATA_JOIN_CLAUSE_WITH_MONTH_LIMIT_TEMPLATE = """LEFT JOIN
             SELECT DISTINCT job_id as keep_job_id FROM
                 months_in_range
             LEFT JOIN
-                `{project_id}.{materialized_metrics_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
+                `{project_id}.{materialized_metrics_dataset}.most_recent_{table_id}`
             USING (state_code, year, month)
-            WHERE metric_type = '{metric_type}'
             )
         ON job_id = keep_job_id
         LEFT JOIN 
@@ -219,8 +216,6 @@ def move_old_dataflow_metrics_to_cold_storage() -> None:
             _decommission_dataflow_metric_table(bq_client, table_ref)
             continue
 
-        metric_type = dataflow_config.DATAFLOW_TABLES_TO_METRIC_TYPES[table_id].value
-
         is_unbounded_date_pipeline = any(
             pipeline in table_id
             for pipeline in dataflow_config.ALWAYS_UNBOUNDED_DATE_PIPELINES
@@ -239,7 +234,6 @@ def move_old_dataflow_metrics_to_cold_storage() -> None:
                 materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
                 table_id=table_id,
                 day_count_limit=dataflow_config.MAX_DAYS_IN_DATAFLOW_METRICS_TABLE,
-                metric_type=metric_type,
             )
         else:
             month_limit_by_state = "\nUNION ALL\n".join(
@@ -259,7 +253,6 @@ def move_old_dataflow_metrics_to_cold_storage() -> None:
                     table_id=table_id,
                     day_count_limit=dataflow_config.MAX_DAYS_IN_DATAFLOW_METRICS_TABLE,
                     month_limit_by_state=month_limit_by_state,
-                    metric_type=metric_type,
                 )
             )
 
