@@ -25,6 +25,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
     ANALYST_VIEWS_DATASET,
+    PO_REPORT_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -63,7 +64,7 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
           --match main events on page with POs
           SELECT recipients.state_code
                 , EXTRACT(DATE FROM metrics.timestamp) AS date
-                , recipients.district
+                , district.district
                 , recipients.officer_external_id
                 , metrics.user_id AS segment_id
                 , CASE WHEN COUNT(DISTINCT page.timestamp) > 0 THEN 1 ELSE 0 END AS page_count
@@ -71,18 +72,23 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
                 , COUNT(DISTINCT scrolled.timestamp) AS scrolled_to_bottom_events
                 , COUNT(DISTINCT updated.timestamp) AS case_updated_events
           FROM `{case_triage_metrics_project}.{case_triage_segment}.tracks` metrics
-          INNER JOIN `{project_id}.{static_reference_tables_dataset}.po_report_recipients` recipients
-                ON metrics.user_id = TO_BASE64(SHA256(recipients.email_address)) 
-          LEFT JOIN `{case_triage_metrics_project}.{case_triage_segment}.pages` page
-                ON page.user_id = TO_BASE64(SHA256(recipients.email_address)) 
-          LEFT JOIN `{case_triage_metrics_project}.{case_triage_segment}.frontend_person_selected` selected 
-                ON selected.user_id = TO_BASE64(SHA256(recipients.email_address)) 
+          INNER JOIN `{project_id}.{static_reference_tables_dataset}.case_triage_users` recipients
+                ON metrics.user_id = recipients.segment_id
+          LEFT JOIN `{project_id}.{po_report_dataset}.officer_supervision_district_association_materialized` district
+                ON district.officer_external_id = recipients.officer_external_id
+                AND district.state_code = recipients.state_code 
+                AND EXTRACT(MONTH FROM metrics.timestamp) = district.month
+                AND EXTRACT(YEAR FROM metrics.timestamp) = district.year
+           LEFT JOIN `{case_triage_metrics_project}.{case_triage_segment}.pages` page
+                ON page.user_id = recipients.segment_id
+           LEFT JOIN `{case_triage_metrics_project}.{case_triage_segment}.frontend_person_selected` selected 
+                ON selected.user_id = recipients.segment_id
                 AND EXTRACT(DATE FROM selected.timestamp) = EXTRACT(DATE FROM metrics.timestamp)
           LEFT JOIN `{case_triage_metrics_project}.{case_triage_segment}.frontend_scrolled_to_bottom` scrolled
-                ON scrolled.user_id = TO_BASE64(SHA256(recipients.email_address))
+                ON scrolled.user_id = recipients.segment_id
                 AND EXTRACT(DATE FROM scrolled.timestamp) = EXTRACT(DATE FROM metrics.timestamp)
           LEFT JOIN `{case_triage_metrics_project}.{case_triage_segment}.frontend_person_case_updated` updated
-                ON updated.user_id = TO_BASE64(SHA256(recipients.email_address))
+                ON updated.user_id = recipients.segment_id
                 AND EXTRACT(DATE FROM updated.timestamp) = EXTRACT(DATE FROM metrics.timestamp)
     
           GROUP BY state_code, date, district, officer_external_id, segment_id
@@ -124,7 +130,7 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
                   , start_date
                   , end_date
                   , date_of_supervision 
-            FROM `{project_id}.analyst_data.supervision_level_sessions_materialized` AS level, 
+            FROM `{project_id}.{analyst_dataset}.supervision_level_sessions_materialized` AS level, 
             UNNEST(GENERATE_DATE_ARRAY(start_date, COALESCE(end_date, CURRENT_DATE()))) AS date_of_supervision 
       ),
       
@@ -135,7 +141,7 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
             , start_date
             , end_date
             , date_of_supervision
-        FROM `{project_id}.analyst_data.supervision_officer_sessions_materialized` AS officer,
+        FROM `{project_id}.{analyst_dataset}.supervision_officer_sessions_materialized` AS officer,
         UNNEST(GENERATE_DATE_ARRAY(start_date, COALESCE(end_date, CURRENT_DATE()))) AS date_of_supervision 
       ),
 
@@ -339,7 +345,7 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
             , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_level, "MEDIUM")) > 0 AS INT64)) AS persons_updated_given_medium_supervision
             , SUM(CAST(ARRAY_LENGTH(REGEXP_EXTRACT_ALL(supervision_level, "MINIMUM")) > 0 AS INT64)) AS persons_updated_given_low_supervision
         FROM client_narrow_update
-        GROUP BY user_id,  date_measurement
+        GROUP BY user_id, date_measurement
       )
       
       --combine base user data, aggregated PO caseload, click events, update events, 
@@ -406,6 +412,7 @@ CASE_TRIAGE_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=CASE_TRIAGE_EVENTS_VIEW_DESCRIPTION,
     dataflow_metrics_materialized_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     static_reference_tables_dataset=STATIC_REFERENCE_TABLES_DATASET,
+    po_report_dataset=PO_REPORT_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     case_triage_segment=CASE_TRIAGE_SEGMENT_DATASET,
     case_triage_metrics_project=GCP_PROJECT_PRODUCTION,
