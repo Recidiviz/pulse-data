@@ -10,11 +10,12 @@ products:
     environment: production
   - name: Case Triage
     description: Case Triage is a web tool for parole and probation officers (line staff) to manage their caseloads by understanding client needs and acting on timely opportunities.
+    # TODO(#7758): Case Triage isn't a state-agnostic product, but its view exports are state
+    # agnostic. This distinction should be clarified in the products.yaml spec.
+    is_state_agnostic: True
     exports:
       - CASE_TRIAGE
-    states:
-      - state_code: US_ID
-        environment: production
+    environment: production
   - name: COVID Dashboard
     description: COVID dashboard aids corrections leadership in their COVID response. The web app models the spread of COVID through jails and prisons and the projected impact on COVID cases and community hospital resources. Scenario modeling enables users to understand the impact of their interventions on the projected spread.
     is_state_agnostic: True
