@@ -18,7 +18,7 @@
 resource "google_storage_bucket_object" "table_data" {
   name   = "${var.table_name}.csv"
   bucket = var.bucket_name
-  source = "${local.recidiviz_root}/datasets/static_data/${var.table_name}.csv"
+  source = "${var.recidiviz_root}/datasets/static_data/${var.table_name}.csv"
 }
 
 resource "google_bigquery_table" "table" {
@@ -33,7 +33,7 @@ resource "google_bigquery_job" "load" {
   # reloaded when the data changes.
   # Note: Whenever this resource is changed, the `vX` fragment below must be incremented
   # to ensure the new resource can be created without conflict.
-  job_id = "${var.table_name}_load_v0_${md5(google_storage_bucket_object.table_data.crc32c)}"
+  job_id = "${var.table_name}_load_v1_${md5(google_storage_bucket_object.table_data.crc32c)}"
 
   load {
     source_uris = [
