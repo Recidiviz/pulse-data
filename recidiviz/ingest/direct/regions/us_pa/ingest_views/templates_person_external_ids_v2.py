@@ -107,10 +107,6 @@ recidiviz_master_person_ids AS (
             ) AS inmate_number
         FROM {{dbo_ParoleCount}}
     ),
-    control_number_to_pseudo_linking_id AS (
-        SELECT DISTINCT pseudo_linking_id, UPPER(control_number) AS control_number
-        FROM {{RECIDIVIZ_REFERENCE_control_number_linking_ids}}
-    ),
     base_table AS (
         SELECT
             control_number,
@@ -123,7 +119,7 @@ recidiviz_master_person_ids AS (
             inmate_to_parole_number_edges
         USING (inmate_number)
         FULL OUTER JOIN
-            control_number_to_pseudo_linking_id
+            {{RECIDIVIZ_REFERENCE_control_number_linking_ids}}
         USING (control_number)
         GROUP BY 
             control_number,
