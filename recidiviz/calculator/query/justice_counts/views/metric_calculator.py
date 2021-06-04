@@ -909,11 +909,8 @@ class CompareToPriorYearViewBuilder(SimpleBigQueryViewBuilder):
         dataset_id: str,
         metric_name: str,
         input_view: BigQueryViewBuilder,
-        compare_view: Optional[BigQueryViewBuilder] = None,
         value_column: str = "value",
     ):
-        if compare_view is None:
-            compare_view = input_view
 
         super().__init__(
             dataset_id=dataset_id,
@@ -924,8 +921,8 @@ class CompareToPriorYearViewBuilder(SimpleBigQueryViewBuilder):
             base_dataset=dataset_config.JUSTICE_COUNTS_BASE_DATASET,
             input_dataset=input_view.dataset_id,
             input_table=input_view.view_id,
-            compare_dataset=compare_view.dataset_id,
-            compare_table=compare_view.view_id,
+            compare_dataset=input_view.dataset_id,
+            compare_table=input_view.view_id,
             value_column=value_column,
         )
 
