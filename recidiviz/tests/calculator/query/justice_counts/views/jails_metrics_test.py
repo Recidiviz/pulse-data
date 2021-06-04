@@ -402,6 +402,27 @@ class JailsMetricsIntegrationTest(BaseViewTest):
         )
         self.create_mock_bq_table(
             dataset_id="external_reference",
+            table_id="county_fips",
+            mock_schema=MockTableSchema(
+                data_types={
+                    "fips": sqltypes.String(255),
+                    "state_code": sqltypes.String(255),
+                    "county_code": sqltypes.String(255),
+                    "county_name": sqltypes.String(255),
+                }
+            ),
+            mock_data=pd.DataFrame(
+                [
+                    ["00001", "US_XX", "US_XX_ALPHA", "Alpha County"],
+                    ["00002", "US_XX", "US_XX_BETA", "Beta County"],
+                    ["01001", "US_YY", "US_YY_ALPHA", "Alpha County"],
+                    ["02001", "US_ZZ", "US_ZZ_ALPHA", "Alpha County"],
+                ],
+                columns=["fips", "state_code", "county_code", "county_name"],
+            ),
+        )
+        self.create_mock_bq_table(
+            dataset_id="external_reference",
             table_id="county_resident_populations",
             mock_schema=MockTableSchema(
                 data_types={
@@ -429,7 +450,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
         dimensions = ["state_code", "county_code", "metric", "year", "month"]
         results = self.query_view_chain(
             jails_metrics.JailsMetricsBigQueryViewCollector().collect_view_builders(),
-            data_types={"year": int, "month": int, "value": int},
+            data_types={"year": int, "month": int, "value": float},
             dimensions=dimensions,
         )
 
@@ -540,10 +561,10 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     11,
                     datetime.date.fromisoformat("2020-11-30"),
                     "INSTANT",
-                    307,
+                    307.692,
                 ]
-                + [None] * 6
-                + [datetime.date.fromisoformat("2021-01-01")],
+                + [None] * 4
+                + [1.0, 1.0, datetime.date.fromisoformat("2021-01-01")],
                 [
                     "US_XX",
                     np.nan,
@@ -552,7 +573,31 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     12,
                     datetime.date.fromisoformat("2020-12-31"),
                     "INSTANT",
-                    423,
+                    423.077,
+                ]
+                + [None] * 4
+                + [1.0, 1.0, datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_XX",
+                    np.nan,
+                    "PERCENTAGE_COVERED_COUNTY",
+                    2020,
+                    11,
+                    datetime.date.fromisoformat("2020-11-30"),
+                    None,
+                    1.0,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_XX",
+                    np.nan,
+                    "PERCENTAGE_COVERED_COUNTY",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    None,
+                    1.0,
                 ]
                 + [None] * 6
                 + [datetime.date.fromisoformat("2021-01-01")],
@@ -566,8 +611,8 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     "INSTANT",
                     4000,
                 ]
-                + [None] * 6
-                + [datetime.date.fromisoformat("2021-01-01")],
+                + [None] * 4
+                + [1.0, 1.0, datetime.date.fromisoformat("2021-01-01")],
                 [
                     "US_XX",
                     np.nan,
@@ -578,8 +623,8 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     "INSTANT",
                     5500,
                 ]
-                + [None] * 6
-                + [datetime.date.fromisoformat("2021-01-01")],
+                + [None] * 4
+                + [1.0, 1.0, datetime.date.fromisoformat("2021-01-01")],
                 [
                     "US_YY",
                     "US_YY_ALPHA",
@@ -588,7 +633,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     11,
                     datetime.date.fromisoformat("2020-11-30"),
                     "INSTANT",
-                    833,
+                    833.333,
                 ]
                 + [None] * 6
                 + [datetime.date.fromisoformat("2021-01-02")],
@@ -636,10 +681,10 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     11,
                     datetime.date.fromisoformat("2020-11-30"),
                     "INSTANT",
-                    833,
+                    833.333,
                 ]
-                + [None] * 6
-                + [datetime.date.fromisoformat("2021-01-02")],
+                + [None] * 4
+                + [1.0, 1.0, datetime.date.fromisoformat("2021-01-02")],
                 [
                     "US_YY",
                     np.nan,
@@ -649,6 +694,30 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     datetime.date.fromisoformat("2020-12-31"),
                     "INSTANT",
                     1000,
+                ]
+                + [None] * 4
+                + [1.0, 1.0, datetime.date.fromisoformat("2021-01-02")],
+                [
+                    "US_YY",
+                    np.nan,
+                    "PERCENTAGE_COVERED_COUNTY",
+                    2020,
+                    11,
+                    datetime.date.fromisoformat("2020-11-30"),
+                    None,
+                    1.0,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-02")],
+                [
+                    "US_YY",
+                    np.nan,
+                    "PERCENTAGE_COVERED_COUNTY",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    None,
+                    1.0,
                 ]
                 + [None] * 6
                 + [datetime.date.fromisoformat("2021-01-02")],
@@ -662,8 +731,8 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     "INSTANT",
                     10000,
                 ]
-                + [None] * 6
-                + [datetime.date.fromisoformat("2021-01-02")],
+                + [None] * 4
+                + [1.0, 1.0, datetime.date.fromisoformat("2021-01-02")],
                 [
                     "US_YY",
                     np.nan,
@@ -674,8 +743,8 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     "INSTANT",
                     12000,
                 ]
-                + [None] * 6
-                + [datetime.date.fromisoformat("2021-01-02")],
+                + [None] * 4
+                + [1.0, 1.0, datetime.date.fromisoformat("2021-01-02")],
                 [
                     "US_ZZ",
                     "US_ZZ_ALPHA",
@@ -684,7 +753,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     11,
                     datetime.date.fromisoformat("2020-11-30"),
                     "INSTANT",
-                    909,
+                    909.091,
                 ]
                 + [None] * 6
                 + [datetime.date.fromisoformat("2021-01-02")],
@@ -732,10 +801,10 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     11,
                     datetime.date.fromisoformat("2020-11-30"),
                     "INSTANT",
-                    909,
+                    909.091,
                 ]
-                + [None] * 6
-                + [datetime.date.fromisoformat("2021-01-02")],
+                + [None] * 4
+                + [1.0, 1.0, datetime.date.fromisoformat("2021-01-02")],
                 [
                     "US_ZZ",
                     np.nan,
@@ -745,6 +814,30 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     datetime.date.fromisoformat("2020-12-31"),
                     "INSTANT",
                     1000,
+                ]
+                + [None] * 4
+                + [1.0, 1.0, datetime.date.fromisoformat("2021-01-02")],
+                [
+                    "US_ZZ",
+                    np.nan,
+                    "PERCENTAGE_COVERED_COUNTY",
+                    2020,
+                    11,
+                    datetime.date.fromisoformat("2020-11-30"),
+                    None,
+                    1.0,
+                ]
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-02")],
+                [
+                    "US_ZZ",
+                    np.nan,
+                    "PERCENTAGE_COVERED_COUNTY",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    None,
+                    1.0,
                 ]
                 + [None] * 6
                 + [datetime.date.fromisoformat("2021-01-02")],
@@ -758,8 +851,8 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     "INSTANT",
                     20000,
                 ]
-                + [None] * 6
-                + [datetime.date.fromisoformat("2021-01-02")],
+                + [None] * 4
+                + [1.0, 1.0, datetime.date.fromisoformat("2021-01-02")],
                 [
                     "US_ZZ",
                     np.nan,
@@ -770,8 +863,8 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     "INSTANT",
                     22000,
                 ]
-                + [None] * 6
-                + [datetime.date.fromisoformat("2021-01-02")],
+                + [None] * 4
+                + [1.0, 1.0, datetime.date.fromisoformat("2021-01-02")],
             ],
             columns=[
                 "state_code",
@@ -916,6 +1009,28 @@ class JailsMetricsIntegrationTest(BaseViewTest):
         )
         self.create_mock_bq_table(
             dataset_id="external_reference",
+            table_id="county_fips",
+            mock_schema=MockTableSchema(
+                data_types={
+                    "fips": sqltypes.String(255),
+                    "state_code": sqltypes.String(255),
+                    "county_code": sqltypes.String(255),
+                    "county_name": sqltypes.String(255),
+                }
+            ),
+            mock_data=pd.DataFrame(
+                [
+                    ["00001", "US_XX", "US_XX_ALPHA", "Alpha County"],
+                    ["00002", "US_XX", "US_XX_BETA", "Beta County"],
+                    ["01001", "US_YY", "US_YY_ALPHA", "Alpha County"],
+                    ["01002", "US_YY", "US_YY_BETA", "Beta County"],
+                    ["02001", "US_ZZ", "US_ZZ_ALPHA", "Alpha County"],
+                ],
+                columns=["fips", "state_code", "county_code", "county_name"],
+            ),
+        )
+        self.create_mock_bq_table(
+            dataset_id="external_reference",
             table_id="county_resident_populations",
             mock_schema=MockTableSchema(
                 data_types={
@@ -940,7 +1055,7 @@ class JailsMetricsIntegrationTest(BaseViewTest):
         dimensions = ["state_code", "county_code", "metric", "year", "month"]
         results = self.query_view_chain(
             jails_metrics.JailsMetricsBigQueryViewCollector().collect_view_builders(),
-            data_types={"year": int, "month": int, "value": int},
+            data_types={"year": int, "month": int, "value": float},
             dimensions=dimensions,
         )
 
@@ -1037,8 +1152,8 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     "INSTANT",
                     375,
                 ]
-                + [None] * 6
-                + [datetime.date.fromisoformat("2021-01-01")],
+                + [None] * 4
+                + [0.5, 0.615, datetime.date.fromisoformat("2021-01-01")],
                 [
                     "US_XX",
                     np.nan,
@@ -1052,8 +1167,33 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     12,
                     48.076,
                     0.128,
+                    1.0,
+                    1.0,
+                    datetime.date.fromisoformat("2021-01-01"),
+                ],
+                [
+                    "US_XX",
+                    np.nan,
+                    "PERCENTAGE_COVERED_COUNTY",
+                    2019,
+                    12,
+                    datetime.date.fromisoformat("2019-12-31"),
+                    None,
+                    0.5,
                 ]
-                + [None] * 2
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_XX",
+                    np.nan,
+                    "PERCENTAGE_COVERED_COUNTY",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    None,
+                    1,
+                ]
+                + [None] * 6
                 + [datetime.date.fromisoformat("2021-01-01")],
                 [
                     "US_XX",
@@ -1065,8 +1205,8 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     "INSTANT",
                     3000,
                 ]
-                + [None] * 6
-                + [datetime.date.fromisoformat("2021-01-01")],
+                + [None] * 4
+                + [0.5, 0.615, datetime.date.fromisoformat("2021-01-01")],
                 [
                     "US_XX",
                     np.nan,
@@ -1080,9 +1220,10 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     12,
                     1000,
                     0.333,
-                ]
-                + [None] * 2
-                + [datetime.date.fromisoformat("2021-01-01")],
+                    0.5,
+                    0.615,
+                    datetime.date.fromisoformat("2021-01-01"),
+                ],
                 [
                     "US_YY",
                     "US_YY_ALPHA",
@@ -1205,8 +1346,8 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     "INSTANT",
                     800,
                 ]
-                + [None] * 6
-                + [datetime.date.fromisoformat("2021-01-01")],
+                + [None] * 4
+                + [1.0, 1.0, datetime.date.fromisoformat("2021-01-01")],
                 [
                     "US_YY",
                     np.nan,
@@ -1220,8 +1361,33 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     12,
                     160,
                     0.200,
+                    1.0,
+                    1.0,
+                    datetime.date.fromisoformat("2021-01-01"),
+                ],
+                [
+                    "US_YY",
+                    np.nan,
+                    "PERCENTAGE_COVERED_COUNTY",
+                    2019,
+                    12,
+                    datetime.date.fromisoformat("2019-12-31"),
+                    None,
+                    1,
                 ]
-                + [None] * 2
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_YY",
+                    np.nan,
+                    "PERCENTAGE_COVERED_COUNTY",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    None,
+                    1,
+                ]
+                + [None] * 6
                 + [datetime.date.fromisoformat("2021-01-01")],
                 [
                     "US_YY",
@@ -1233,8 +1399,8 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     "INSTANT",
                     20001,
                 ]
-                + [None] * 6
-                + [datetime.date.fromisoformat("2021-01-01")],
+                + [None] * 4
+                + [1.0, 1.0, datetime.date.fromisoformat("2021-01-01")],
                 [
                     "US_YY",
                     np.nan,
@@ -1248,9 +1414,10 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     12,
                     4000,
                     0.200,
-                ]
-                + [None] * 2
-                + [datetime.date.fromisoformat("2021-01-01")],
+                    1.0,
+                    1.0,
+                    datetime.date.fromisoformat("2021-01-01"),
+                ],
                 [
                     "US_ZZ",
                     "US_ZZ_ALPHA",
@@ -1317,8 +1484,8 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     "INSTANT",
                     909,
                 ]
-                + [None] * 6
-                + [datetime.date.fromisoformat("2021-01-01")],
+                + [None] * 4
+                + [1.0, 1.0, datetime.date.fromisoformat("2021-01-01")],
                 [
                     "US_ZZ",
                     np.nan,
@@ -1332,8 +1499,33 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     12,
                     90.909,
                     0.1,
+                    1.0,
+                    1.0,
+                    datetime.date.fromisoformat("2021-01-01"),
+                ],
+                [
+                    "US_ZZ",
+                    np.nan,
+                    "PERCENTAGE_COVERED_COUNTY",
+                    2019,
+                    12,
+                    datetime.date.fromisoformat("2019-12-31"),
+                    None,
+                    1,
                 ]
-                + [None] * 2
+                + [None] * 6
+                + [datetime.date.fromisoformat("2021-01-01")],
+                [
+                    "US_ZZ",
+                    np.nan,
+                    "PERCENTAGE_COVERED_COUNTY",
+                    2020,
+                    12,
+                    datetime.date.fromisoformat("2020-12-31"),
+                    None,
+                    1,
+                ]
+                + [None] * 6
                 + [datetime.date.fromisoformat("2021-01-01")],
                 [
                     "US_ZZ",
@@ -1345,8 +1537,8 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     "INSTANT",
                     20000,
                 ]
-                + [None] * 6
-                + [datetime.date.fromisoformat("2021-01-01")],
+                + [None] * 4
+                + [1.0, 1.0, datetime.date.fromisoformat("2021-01-01")],
                 [
                     "US_ZZ",
                     np.nan,
@@ -1360,9 +1552,10 @@ class JailsMetricsIntegrationTest(BaseViewTest):
                     12,
                     2000,
                     0.1,
-                ]
-                + [None] * 2
-                + [datetime.date.fromisoformat("2021-01-01")],
+                    1.0,
+                    1.0,
+                    datetime.date.fromisoformat("2021-01-01"),
+                ],
             ],
             columns=[
                 "state_code",
