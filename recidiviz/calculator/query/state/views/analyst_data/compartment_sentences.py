@@ -19,8 +19,8 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
-    STATE_BASE_DATASET,
     ANALYST_VIEWS_DATASET,
+    STATE_BASE_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -180,7 +180,7 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
         AND sessions.start_date < COALESCE(sentences.projected_completion_date_max, '9999-01-01')
         -- Sentence start date (or date imposed for ID) must be before the session end date
         AND estimated_start_date < COALESCE(sessions.end_date, '9999-01-01')
-        AND sessions.compartment_level_1 in ('INCARCERATION','SUPERVISION') 
+        AND REGEXP_CONTAINS(sessions.compartment_level_1, '(INCARCERATION|SUPERVISION)')
     ORDER by session_id ASC, date_proximity_rank ASC
     )
     ,
