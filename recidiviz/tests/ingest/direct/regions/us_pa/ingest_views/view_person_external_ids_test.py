@@ -47,6 +47,12 @@ class TblSearchInmateInfoIds:
     control_number: Optional[str] = attr.ib()
 
 
+@attr.s(kw_only=True, frozen=True)
+class RecidivizReferenceLinkingIds:
+    pseudo_linking_id: str = attr.ib()
+    control_number: str = attr.ib()
+
+
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
 class ViewPersonExternalIdsTest(BaseViewTest):
     """Tests the PA external ids query functionality"""
@@ -71,6 +77,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
         self,
         dbo_parole_count_ids: List[ParoleCountIds],
         dbo_tbl_search_inmate_info_ids: List[TblSearchInmateInfoIds],
+        recidiviz_reference_linking_ids: List[RecidivizReferenceLinkingIds],
         expected_output: List[List[Any]],
     ) -> None:
         """Runs a test that executes the person_external_ids_v2 query given the provided
@@ -97,6 +104,15 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             ],
             update_datetime=file_upload_time,
         )
+        self.create_mock_raw_file(
+            STATE_CODE,
+            raw_file_configs["RECIDIVIZ_REFERENCE_control_number_linking_ids"],
+            [
+                (ids.control_number, ids.pseudo_linking_id)
+                for ids in recidiviz_reference_linking_ids
+            ],
+            update_datetime=file_upload_time,
+        )
 
         # Act
         results = self.query_raw_data_view_for_builder(
@@ -116,6 +132,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
         self.run_test(
             dbo_parole_count_ids=[],
             dbo_tbl_search_inmate_info_ids=[],
+            recidiviz_reference_linking_ids=[],
             expected_output=[],
         )
 
@@ -129,6 +146,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
                     inmate_number="AB1234", control_number="12345678"
                 )
             ],
+            recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
                     "RECIDIVIZ_MASTER_CONTROL_NUMBER_12345678",
@@ -153,6 +171,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
                     inmate_number="CD4567", control_number="12345678"
                 ),
             ],
+            recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
                     "RECIDIVIZ_MASTER_CONTROL_NUMBER_12345678",
@@ -171,6 +190,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
                     inmate_number="AB1234", control_number="12345678"
                 ),
             ],
+            recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
                     "RECIDIVIZ_MASTER_CONTROL_NUMBER_12345678",
@@ -187,6 +207,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
                 ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="AB1234"),
             ],
             dbo_tbl_search_inmate_info_ids=[],
+            recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
                     "RECIDIVIZ_MASTER_PAROLE_NUMBER_0420X",
@@ -205,6 +226,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             dbo_tbl_search_inmate_info_ids=[
                 TblSearchInmateInfoIds(inmate_number=None, control_number="12345678")
             ],
+            recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
                     "RECIDIVIZ_MASTER_CONTROL_NUMBER_12345678",
@@ -233,6 +255,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
                 ParoleCountIds(ParoleNumber="2171K", ParoleInstNumber="JBADJ"),
             ],
             dbo_tbl_search_inmate_info_ids=[],
+            recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
                     "RECIDIVIZ_MASTER_PAROLE_NUMBER_0420X",
@@ -272,6 +295,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
                     inmate_number="FG6789", control_number="12345678"
                 ),
             ],
+            recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
                     "RECIDIVIZ_MASTER_CONTROL_NUMBER_12345678",
@@ -304,6 +328,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
                     inmate_number="II4444", control_number="20000000"
                 ),
             ],
+            recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
                     "RECIDIVIZ_MASTER_CONTROL_NUMBER_10000000",
@@ -325,6 +350,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
                     inmate_number="AB1234", control_number="12345678"
                 ),
             ],
+            recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
                     "RECIDIVIZ_MASTER_CONTROL_NUMBER_12345678",
@@ -345,6 +371,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             dbo_tbl_search_inmate_info_ids=[
                 TblSearchInmateInfoIds(inmate_number="KS0000", control_number="280123"),
             ],
+            recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
                     "RECIDIVIZ_MASTER_CONTROL_NUMBER_280123",
@@ -372,6 +399,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
                     inmate_number="Ab1234", control_number="12345678"
                 ),
             ],
+            recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
                     "RECIDIVIZ_MASTER_CONTROL_NUMBER_12345678",
@@ -395,12 +423,71 @@ class ViewPersonExternalIdsTest(BaseViewTest):
                 TblSearchInmateInfoIds(inmate_number="BT7654", control_number="090909"),
                 TblSearchInmateInfoIds(inmate_number="BB9876", control_number="080808"),
             ],
+            recidiviz_reference_linking_ids=[],
             expected_output=[
                 [
                     "RECIDIVIZ_MASTER_CONTROL_NUMBER_080808",
                     "080808,090909",  # control_numbers
                     "BB9876,BT7654",  # inmate_numbers
                     "7890S",  # parole_numbers
+                ]
+            ],
+        )
+
+    def test_view_person_external_ids_v2_link_via_pseudo_id(self) -> None:
+        self.run_test(
+            dbo_parole_count_ids=[],
+            dbo_tbl_search_inmate_info_ids=[
+                TblSearchInmateInfoIds(inmate_number="OA3333", control_number="080808"),
+                TblSearchInmateInfoIds(inmate_number="OD6666", control_number="121212"),
+            ],
+            recidiviz_reference_linking_ids=[
+                RecidivizReferenceLinkingIds(
+                    pseudo_linking_id="74ebaf23-ed14-4d76-8d29-c86140e5ac40",
+                    control_number="080808",
+                ),
+                RecidivizReferenceLinkingIds(
+                    pseudo_linking_id="74ebaf23-ed14-4d76-8d29-c86140e5ac40",
+                    control_number="121212",
+                ),
+            ],
+            expected_output=[
+                [
+                    "RECIDIVIZ_MASTER_CONTROL_NUMBER_080808",
+                    "080808,121212",  # control_numbers
+                    "OA3333,OD6666",  # inmate_numbers
+                    None,  # parole_numbers
+                ]
+            ],
+        )
+
+    def test_view_person_external_ids_v2_link_via_pseudo_id_one_parole_link(
+        self,
+    ) -> None:
+        self.run_test(
+            dbo_parole_count_ids=[
+                ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="OD6666"),
+            ],
+            dbo_tbl_search_inmate_info_ids=[
+                TblSearchInmateInfoIds(inmate_number="OA3333", control_number="080808"),
+                TblSearchInmateInfoIds(inmate_number="OD6666", control_number="121212"),
+            ],
+            recidiviz_reference_linking_ids=[
+                RecidivizReferenceLinkingIds(
+                    pseudo_linking_id="74ebaf23-ed14-4d76-8d29-c86140e5ac40",
+                    control_number="080808",
+                ),
+                RecidivizReferenceLinkingIds(
+                    pseudo_linking_id="74ebaf23-ed14-4d76-8d29-c86140e5ac40",
+                    control_number="121212",
+                ),
+            ],
+            expected_output=[
+                [
+                    "RECIDIVIZ_MASTER_CONTROL_NUMBER_080808",
+                    "080808,121212",  # control_numbers
+                    "OA3333,OD6666",  # inmate_numbers
+                    "0420X",  # parole_numbers
                 ]
             ],
         )
