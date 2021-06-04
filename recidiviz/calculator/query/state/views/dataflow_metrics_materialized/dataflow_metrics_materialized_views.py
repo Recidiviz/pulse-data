@@ -29,9 +29,6 @@ from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_r
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_daily_supervision_population import (
     MOST_RECENT_DAILY_SUPERVISION_POPULATION_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_job_id_by_metric_and_state_code import (
-    MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
     MOST_RECENT_METRICS_VIEW_BUILDERS,
 )
@@ -39,7 +36,6 @@ from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_r
 # NOTE: These views must be listed in order of dependency. For example, if reference view Y depends on reference view X,
 # then view X should appear in the list before view Y.
 DATAFLOW_METRICS_MATERIALIZED_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
-    MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER,
     MOST_RECENT_DAILY_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER,
     MOST_RECENT_DAILY_INCARCERATION_POPULATION_VIEW_BUILDER,
     MOST_RECENT_DAILY_SUPERVISION_POPULATION_VIEW_BUILDER,
