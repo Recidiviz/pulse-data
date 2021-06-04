@@ -44,6 +44,7 @@ _COUNTY_FIPS_AGGREGATION = metric_calculator.Aggregation(
 
 POPULATION_METRIC_NAME = "POPULATION_JAIL"
 RATE_METRIC_NAME = "INCARCERATION_RATE_JAIL"
+COUNTY_COVERAGE_METRIC_NAME = "PERCENTAGE_COVERED_COUNTY"
 
 OUTPUT_DIMENSIONS = {
     "state_code": _STATE_CODE_AGGREGATION,
@@ -95,7 +96,7 @@ class AddResidentPopulationViewBuilder(SimpleBigQueryViewBuilder):
 
 INCARCERATION_RATE_VIEW_TEMPLATE = """
 SELECT
-    * EXCEPT(value, resident_population),
+    * EXCEPT(value),
     -- Calculates the incarceration rate as number of incarcerated individuals per 100k residents
     (value / resident_population) * 100000 as incarceration_rate_value
 FROM `{project_id}.{input_dataset}.{input_table}`
@@ -123,10 +124,40 @@ class IncarcerationRateViewBuilder(SimpleBigQueryViewBuilder):
         )
 
 
-# TODO(#6020): Implement percentage coverage
 PERCENTAGE_COVERED_VIEW_TEMPLATE = """
-SELECT *, NULL as percentage_covered_county, NULL as percentage_covered_population
-FROM `{project_id}.{input_dataset}.{input_table}`
+WITH state_populations AS (
+  SELECT
+    state_code,
+    COUNT(*) AS num_counties,
+    SUM(resident.population) as total_population
+  FROM (
+    SELECT
+      *,
+      -- This just picks the most recent population that we have for each county.
+      ROW_NUMBER() OVER (PARTITION BY fips ORDER BY year DESC) AS rn
+    FROM
+      `{project_id}.{reference_dataset}.{population_reference_table}` ) resident
+  JOIN
+    `{project_id}.{reference_dataset}.{county_reference_table}` county
+  ON
+    resident.fips = county.fips
+  WHERE
+    rn = 1
+  GROUP BY state_code
+)
+
+SELECT
+  input.*,
+  IF(input.county_code IS NULL,
+     CAST(ARRAY_LENGTH(input.collapsed_dimension_values) AS FLOAT) / state_info.num_counties,
+     NULL) as percentage_covered_county,
+  IF(input.county_code IS NULL,
+     CAST(input.resident_population AS FLOAT) / state_info.total_population,
+     NULL) as percentage_covered_population
+FROM
+  `{project_id}.{input_dataset}.{input_table}` input
+JOIN state_populations state_info USING (state_code)
+
 """
 
 
@@ -149,6 +180,9 @@ class PercentageCoveredViewBuilder(SimpleBigQueryViewBuilder):
             description=f"{metric_name} percentage covered",
             input_dataset=input_view.dataset_id,
             input_table=input_view.view_id,
+            reference_dataset=EXTERNAL_REFERENCE_DATASET,
+            population_reference_table="county_resident_populations",
+            county_reference_table="county_fips",
         )
 
 
@@ -260,29 +294,29 @@ class FilteredForComparisonViewBuilder(SimpleBigQueryViewBuilder):
 def transform_results_view_chain(
     metric_name: str, value_column: str, view_builder: SimpleBigQueryViewBuilder
 ) -> List[SimpleBigQueryViewBuilder]:
-    percentage_covered_view_builder = PercentageCoveredViewBuilder(
-        dataset_id=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
-        metric_name=metric_name,
-        input_view=view_builder,
-    )
     dimensions_to_columns_view_builder = (
         metric_calculator.DimensionsToColumnsViewBuilder(
             dataset_id=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
             metric_name=metric_name,
             aggregations=OUTPUT_DIMENSIONS,
-            input_view=percentage_covered_view_builder,
+            input_view=view_builder,
         )
+    )
+    percentage_covered_view_builder = PercentageCoveredViewBuilder(
+        dataset_id=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
+        metric_name=metric_name,
+        input_view=dimensions_to_columns_view_builder,
     )
     output_view_builder = JailOutputViewBuilder(
         dataset_id=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
         metric_name=metric_name,
         aggregations=OUTPUT_DIMENSIONS,
         value_column=value_column,
-        input_view=dimensions_to_columns_view_builder,
+        input_view=percentage_covered_view_builder,
     )
     return [
-        percentage_covered_view_builder,
         dimensions_to_columns_view_builder,
+        percentage_covered_view_builder,
         output_view_builder,
     ]
 
@@ -575,31 +609,67 @@ class JailsMetricsBigQueryViewCollector(
         self.metric_builders.extend(jail_pop_chain)
         jail_pop_builder = jail_pop_chain[-1]
 
-        # Split into two branches to calculate each metric:
+        # Split into branches to calculate each metric:
         # 1. Calculate state wide jail populations alongside existing county populations
         state_jail_pop_chain = get_jail_population_with_state_chain(jail_pop_builder)
+        state_jail_pop_chain.extend(
+            transform_results_view_chain(
+                POPULATION_METRIC_NAME, "value", state_jail_pop_chain[-1]
+            )
+        )
         self.metric_builders.extend(state_jail_pop_chain)
-        union_jail_pop_builder = state_jail_pop_chain[-1]
 
         # 2. Calculate incarceration rates (both county and state wide)
         jail_rate_chain = get_jail_incarceration_rate_chain(jail_pop_builder)
+        jail_rate_chain.extend(
+            transform_results_view_chain(
+                RATE_METRIC_NAME, "incarceration_rate_value", jail_rate_chain[-1]
+            )
+        )
         self.metric_builders.extend(jail_rate_chain)
-        jail_rate_builder = jail_rate_chain[-1]
 
-        # Perform the common logic on both metric branches
-        unified_query_select_clauses = []
-        for metric_name, value_column, view_builder in [
-            (POPULATION_METRIC_NAME, "value", union_jail_pop_builder),
-            (RATE_METRIC_NAME, "incarceration_rate_value", jail_rate_builder),
-        ]:
-            transform_view_chain = transform_results_view_chain(
-                metric_name, value_column, view_builder
-            )
-            self.metric_builders.extend(transform_view_chain)
+        # 3. Add separate metric county coverage of statewide incarceration rate
+        county_coverage_view = SimpleBigQueryViewBuilder(
+            dataset_id=dataset_config.JUSTICE_COUNTS_JAILS_DATASET,
+            view_id=metric_calculator.view_prefix_for_metric_name(
+                COUNTY_COVERAGE_METRIC_NAME
+            ),
+            description="Pulls the county coverage for statewide incarceration rates "
+            "into its own metric.",
+            view_query_template="""
+            SELECT
+                state_code,
+                county_code,
+                '{metric_name}' as metric,
+                year,
+                month,
+                date_reported,
+                NULL as measurement_type,
+                percentage_covered_county as value,
+                CAST(NULL as INTEGER) as compared_to_year,
+                CAST(NULL as INTEGER) as compared_to_month,
+                CAST(NULL as NUMERIC) as value_change,
+                CAST(NULL as FLOAT) as percentage_change,
+                CAST(NULL as FLOAT) as percentage_covered_county,
+                CAST(NULL as FLOAT) as percentage_covered_population,
+                date_published
+            FROM `{project_id}.{input_dataset}.{input_table}`
+            WHERE county_code IS NULL
+            """,
+            input_dataset=jail_rate_chain[-1].table_for_query.dataset_id,
+            input_table=jail_rate_chain[-1].table_for_query.table_id,
+            metric_name=COUNTY_COVERAGE_METRIC_NAME,
+        )
+        self.metric_builders.append(county_coverage_view)
 
-            unified_query_select_clauses.append(
-                f"SELECT * FROM `{{project_id}}.{{calculation_dataset}}.{transform_view_chain[-1].view_id}_materialized`"
-            )
+        unified_query_select_clauses = [
+            f"SELECT * FROM `{{project_id}}.{{calculation_dataset}}.{view.table_for_query.table_id}`"
+            for view in [
+                state_jail_pop_chain[-1],
+                jail_rate_chain[-1],
+                county_coverage_view,
+            ]
+        ]
 
         self.unified_builder = SimpleBigQueryViewBuilder(
             dataset_id=dataset_config.JUSTICE_COUNTS_DASHBOARD_DATASET,
