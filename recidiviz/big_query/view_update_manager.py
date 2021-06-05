@@ -16,23 +16,24 @@
 # =============================================================================
 """Provides utilities for updating views within a live BigQuery instance."""
 import logging
-from typing import Dict, List, Sequence, Optional, Set
+from typing import Dict, List, Optional, Sequence, Set
 
 from google.cloud import exceptions
-from opencensus.stats import measure, view as opencensus_view, aggregation
+from opencensus.stats import aggregation, measure
+from opencensus.stats import view as opencensus_view
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl, BigQueryClient
+from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.big_query.big_query_view import (
     BigQueryView,
     BigQueryViewBuilder,
     BigQueryViewBuilderShouldNotBuildError,
 )
-from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestViewBuilder,
 )
 from recidiviz.utils import monitoring
+from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 m_failed_view_update = measure.MeasureInt(
     "bigquery/view_update_manager/view_update_all_failure",
@@ -144,10 +145,11 @@ def create_dataset_and_deploy_views_for_view_builders(
     view_builders_to_update: Sequence[BigQueryViewBuilder],
     dataset_overrides: Optional[Dict[str, str]] = None,
     bq_region_override: Optional[str] = None,
+    force_materialize: bool = False,
 ) -> None:
     """Creates or updates all the views in the provided list with the view query in the provided view builder list. If
-    any materialized view has been updated (or if an ancestor view has been updated), the view will be re-materialized
-    to ensure the schemas remain consistent.
+    any materialized view has been updated (or if an ancestor view has been updated) or the force_materialize flag
+    is set, the view will be re-materialized to ensure the schemas remain consistent.
 
     Should only be called if we expect the views to have changed (either the view query or schema from querying
     underlying tables), e.g. at deploy time.
@@ -168,6 +170,7 @@ def create_dataset_and_deploy_views_for_view_builders(
         _create_dataset_and_deploy_views(
             views_to_update,
             bq_region_override,
+            force_materialize,
             set_default_table_expiration_for_new_datasets,
         )
     except Exception as e:
@@ -251,6 +254,7 @@ def _create_all_datasets_if_necessary(
 def _create_dataset_and_deploy_views(
     views_to_update: List[BigQueryView],
     bq_region_override: Optional[str],
+    force_materialize: bool,
     set_temp_dataset_table_expiration: bool = False,
 ) -> None:
     """Create and update the given views and their parent datasets.
@@ -277,7 +281,7 @@ def _create_dataset_and_deploy_views(
     def process_fn(v: BigQueryView, parent_results: Dict[BigQueryView, bool]) -> bool:
         """Returns True if this view or any of its parents were updated."""
         return _create_or_update_view_and_materialize_if_necessary(
-            bq_client, v, parent_results
+            bq_client, v, parent_results, force_materialize
         )
 
     dag_walker.process_dag(process_fn)
@@ -287,6 +291,7 @@ def _create_or_update_view_and_materialize_if_necessary(
     bq_client: BigQueryClient,
     view: BigQueryView,
     parent_results: Dict[BigQueryView, bool],
+    force_materialize: bool,
 ) -> bool:
     """Creates or updates the provided view in BigQuery and materializes that view into a table when appropriate.
     Returns True if this view or any views in its parent chain have been updated from the version that was saved in
@@ -326,6 +331,7 @@ def _create_or_update_view_and_materialize_if_necessary(
             or not bq_client.table_exists(
                 materialized_view_dataset_ref, view.materialized_address.table_id
             )
+            or force_materialize
         ):
             bq_client.materialize_view_to_table(view)
         else:
@@ -334,4 +340,4 @@ def _create_or_update_view_and_materialize_if_necessary(
                 view.dataset_id,
                 view.view_id,
             )
-    return view_changed or parent_changed
+    return view_changed or parent_changed or force_materialize
