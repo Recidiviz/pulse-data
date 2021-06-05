@@ -117,6 +117,7 @@ def _federated_bq_regional_dataset_refresh(
         view_builders_to_update=view_builders,
         dataset_overrides=dataset_overrides,
         bq_region_override=bq_region_override,
+        force_materialize=True,
     )
 
     if config.is_state_segmented_refresh_schema():
@@ -307,4 +308,5 @@ def _hydrate_unioned_regional_dataset_for_schema(
         view_builders_to_update=view_builders,
         dataset_overrides=dataset_overrides,
         bq_region_override=bq_region_override,
+        force_materialize=True,
     )

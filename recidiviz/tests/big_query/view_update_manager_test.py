@@ -18,7 +18,7 @@
 """Tests for view_update_manager.py."""
 
 import unittest
-from typing import Tuple, Set
+from typing import Set, Tuple
 from unittest import mock
 from unittest.mock import patch
 
@@ -27,23 +27,19 @@ from google.cloud import bigquery
 from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import (
+    BigQueryAddress,
     BigQueryView,
     SimpleBigQueryViewBuilder,
-    BigQueryAddress,
+)
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
 )
 from recidiviz.view_registry.dataset_overrides import (
     dataset_overrides_for_view_builders,
 )
-from recidiviz.view_registry.deployed_views import (
-    DEPLOYED_VIEW_BUILDERS,
-)
+from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
+from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
 from recidiviz.view_registry.namespaces import BigQueryViewNamespace
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
-)
-from recidiviz.view_registry.datasets import (
-    VIEW_SOURCE_TABLE_DATASETS,
-)
 
 _PROJECT_ID = "fake-recidiviz-project"
 _DATASET_NAME = "my_views_dataset"
@@ -518,7 +514,7 @@ class ViewManagerTest(unittest.TestCase):
 
         # pylint: disable=protected-access
         view_update_manager._create_dataset_and_deploy_views(
-            mock_views, bq_region_override="us-east1"
+            mock_views, bq_region_override="us-east1", force_materialize=False
         )
 
         self.mock_client_constructor.assert_called_with(region_override="us-east1")
