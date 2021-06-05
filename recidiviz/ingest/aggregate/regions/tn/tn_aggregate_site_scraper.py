@@ -17,15 +17,20 @@
 
 """Scrapes the texas aggregate site and finds pdfs to download."""
 from typing import Set
-from lxml import html
-import requests
 
+import requests
+from lxml import html
 
 STATE_AGGREGATE_URL = (
     "https://www.tn.gov/correction/"
     "statistics-and-information/jail-summary-reports.html"
 )
 STATE_BASE_URL = "https://www.tn.gov"
+
+IGNORED_URLS = (
+    "/content/dam/tn/correction/documents/VisitationGuidelines.pdf",
+    "/content/dam/tn/correction/documents/TDOCInmatesCOVID19.pdf",
+)
 
 
 def get_urls_to_download() -> Set[str]:
@@ -36,6 +41,6 @@ def get_urls_to_download() -> Set[str]:
 
     aggregate_report_urls = set()
     for link in links:
-        if link.endswith(".pdf"):
+        if link.endswith(".pdf") and not link in IGNORED_URLS:
             aggregate_report_urls.add(STATE_BASE_URL + link)
     return aggregate_report_urls
