@@ -17,6 +17,7 @@
 
 """Abstract base class that encapsulates report-specific context."""
 
+import os
 from abc import ABC, abstractmethod
 from typing import List
 
@@ -41,7 +42,7 @@ class ReportContext(ABC):
 
     @abstractmethod
     def get_required_recipient_data_fields(self) -> List[str]:
-        """ Specifies keys that must exist within `recipient` in order for the class to be instantiated """
+        """Specifies keys that must exist within `recipient` in order for the class to be instantiated"""
 
     def _validate_recipient_has_expected_fields(self, recipient: Recipient) -> None:
         missing_keys = [
@@ -63,9 +64,10 @@ class ReportContext(ABC):
     def get_properties_filepath(self) -> str:
         """Returns the filepath to the context's properties.json file"""
 
+    @property
     @abstractmethod
-    def get_html_template_filepath(self) -> str:
-        """Returns the filepath to the context's html template"""
+    def html_template(self) -> Template:
+        """Returns the context's html template"""
 
     def get_batch_id(self) -> str:
         """Returns the batch_id for the report context"""
@@ -91,10 +93,7 @@ class ReportContext(ABC):
         """Interpolates the report's prepared data into the template
         Returns: Interpolated template"""
         prepared_data = self.get_prepared_data()
-
-        with open(self.get_html_template_filepath()) as html_template:
-            template = Template(html_template.read())
-            return template.render(prepared_data)
+        return self.html_template.render(prepared_data)
 
     @abstractmethod
     def prepare_for_generation(self) -> dict:
@@ -104,3 +103,6 @@ class ReportContext(ABC):
         rebuild this instance's prepared data, i.e. it executes regardless of whether it has been invoked previously.
         NOTE: Implementors of this function must set self.prepared_data to the final results of invocation.
         """
+
+    def _get_context_templates_folder(self) -> str:
+        return os.path.join(os.path.dirname(__file__), "templates")
