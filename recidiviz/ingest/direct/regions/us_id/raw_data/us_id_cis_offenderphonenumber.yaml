@@ -1,0 +1,51 @@
+file_tag: cis_offenderphonenumber
+file_description: |-
+  Contains useful metadata about phone number information for people on supervision.
+primary_key_cols:
+  - id
+columns:
+  - name: id
+    description: |-
+      Primary key for the table, can be joined with `cis_personphonenumber.id`
+  - name: insuser
+    description: |-
+      The user who inserted the record
+  - name: insdate
+    is_datetime: True
+    description: |-
+      When the record was inserted
+  - name: upduser
+    description: |-
+      The user who last updated the record
+  - name: upddate
+    is_datetime: True
+    description: |-
+      When the record was last updated
+  - name: comment
+    description: |-
+      Free text comment about the entry
+  - name: codestatusid
+    description: |-
+      Can be joined against `cis_codestatus` to determine whether the phone number is current
+  - name: startdate
+    is_datetime: True
+    description: |-
+      When the phone number started being associated with this person
+  - name: verifyuser
+    description: |-
+      The user who verified the phone number information was correct
+  - name: verifydate
+    is_datetime: True
+    description: |-
+      When the information was last verified
+  - name: verifyresult
+    known_values:
+      - value: T
+        description: verified
+      - value: F
+        description: unverified
+    description: |-
+      Whether it was verified successfully
+  - name: codeverifymethodid
+    description: |-
+      Can be joined against `cis_codeverifymethod` to determine how the number was verified
