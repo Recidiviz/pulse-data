@@ -26,11 +26,14 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
 )
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
 class UsMoIncarcerationPreProcessingDelegate(
     StateSpecificIncarcerationPreProcessingDelegate
 ):
+    """US_MO implementation of the StateSpecificIncarcerationPreProcessingDelegate."""
+
     # Functions with state-specific overrides
     def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:
         """US_MO drops all incarceration periods that aren't in a STATE_PRISON from
@@ -40,6 +43,19 @@ class UsMoIncarcerationPreProcessingDelegate(
             for t in StateIncarcerationType
             if t != StateIncarcerationType.STATE_PRISON
         }
+
+    def period_is_parole_board_hold(
+        self, incarceration_period: StateIncarcerationPeriod
+    ) -> bool:
+        """In US_MO, we can infer that an incarceration period with an admission_reason
+        of TEMPORARY_CUSTODY is a parole board hold if the period has no other set
+        specialized_purpose_for_incarceration value.
+        """
+        return (
+            incarceration_period.admission_reason
+            == StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
+            and incarceration_period.specialized_purpose_for_incarceration is None
+        )
 
     # Functions using default behavior
     def admission_reasons_to_filter(

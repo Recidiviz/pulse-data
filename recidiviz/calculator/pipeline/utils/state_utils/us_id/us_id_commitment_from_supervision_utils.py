@@ -16,8 +16,7 @@
 # =============================================================================
 """Utils for state-specific logic related to incarceration commitments from supervision
 in US_ID."""
-from typing import List, Tuple, Optional
-
+from typing import List, Optional, Tuple
 
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_last_terminated_period_before_date,
@@ -29,9 +28,10 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateSpecializedPurposeForIncarceration as PurposeForIncarceration,
     StateIncarcerationPeriodAdmissionReason,
-    StateIncarcerationPeriodReleaseReason,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateSpecializedPurposeForIncarceration as PurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
@@ -232,15 +232,11 @@ def _us_id_admission_is_commitment_from_supervision(
         if (
             preceding_incarceration_period.release_date
             == incarceration_period.admission_date
+            and preceding_incarceration_period.specialized_purpose_for_incarceration
+            == PurposeForIncarceration.PAROLE_BOARD_HOLD
         ):
             # Transfers from parole board holds to general incarceration or
             # treatment in prison are commitments from supervision
-            if (
-                preceding_incarceration_period.release_reason
-                == StateIncarcerationPeriodReleaseReason.STATUS_CHANGE
-                and preceding_incarceration_period.specialized_purpose_for_incarceration
-                == PurposeForIncarceration.PAROLE_BOARD_HOLD
-            ):
-                return True
+            return True
 
     return False
