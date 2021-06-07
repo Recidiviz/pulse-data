@@ -21,8 +21,6 @@ import os
 from unittest import TestCase
 from unittest.mock import patch
 
-from jinja2 import Template
-
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.reporting.context.po_monthly_report.context import PoMonthlyReportContext
 from recidiviz.reporting.email_generation import generate
@@ -68,12 +66,11 @@ class EmailGenerationTests(TestCase):
     def test_generate(self) -> None:
         """Test that the prepared html is added to Google Cloud Storage with the correct bucket name, filepath,
         and prepared html template for the report context."""
-        template_path = self.report_context.get_html_template_filepath()
-        with open(template_path) as html_file:
-            prepared_data = self.report_context.get_prepared_data()
-            html_template = Template(html_file.read())
-            prepared_html = html_template.render(prepared_data)
+        html_template = self.report_context.html_template
+        prepared_data = self.report_context.get_prepared_data()
+        prepared_html = html_template.render(prepared_data)
         generate(self.report_context)
+
         bucket_name = "recidiviz-test-report-html"
         bucket_filepath = f"{self.state_code}/{self.mock_batch_id}/html/{self.recipient.email_address}.html"
         path = GcsfsFilePath.from_absolute_path(f"gs://{bucket_name}/{bucket_filepath}")

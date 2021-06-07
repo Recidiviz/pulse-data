@@ -20,6 +20,10 @@
 The PO Monthly Report is a report for parole and probation officers with feedback on measures they have taken to
 improve individual outcomes. It aims to promote and increase the usage of measures such as early discharges, and
 decrease the usage of measures such as revocations.
+
+To generate a sample output for the PO Monthly Report email template, just run:
+
+python -m recidiviz.reporting.context.po_monthly_report.context
 """
 
 import copy
@@ -27,7 +31,7 @@ import json
 import os
 from typing import Dict, List
 
-from jinja2 import Template
+from jinja2 import Environment, FileSystemLoader, Template
 
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.reporting.context.context_utils import (
@@ -65,14 +69,17 @@ class PoMonthlyReportContext(ReportContext):
         )
         super().__init__(state_code, recipient)
         self.recipient_data = recipient.data
+
+        self.jinja_env = Environment(
+            loader=FileSystemLoader(self._get_context_templates_folder())
+        )
+
         with open(self.get_properties_filepath()) as properties_file:
             self.properties = json.loads(properties_file.read())
 
-        with open(self.get_attachment_filepath()) as attachment_file:
-            self.attachment_template = Template(attachment_file.read())
-
-    def get_attachment_filepath(self) -> str:
-        return os.path.join(os.path.dirname(__file__), "attachment.txt.jinja2")
+    @property
+    def attachment_template(self) -> Template:
+        return self.jinja_env.get_template("po_monthly_report/attachment.txt.jinja2")
 
     def get_required_recipient_data_fields(self) -> List[str]:
         return self.metrics_delegate.required_recipient_data_fields
@@ -84,9 +91,9 @@ class PoMonthlyReportContext(ReportContext):
         """Returns path to the properties.json, assumes it is in the same directory as the context."""
         return os.path.join(os.path.dirname(__file__), "properties.json")
 
-    def get_html_template_filepath(self) -> str:
-        """Returns path to the template.html file, assumes it is in the same directory as the context."""
-        return os.path.join(os.path.dirname(__file__), "template.html.jinja2")
+    @property
+    def html_template(self) -> Template:
+        return self.jinja_env.get_template("po_monthly_report/email.html.jinja2")
 
     def prepare_for_generation(self) -> dict:
         """Executes PO Monthly Report data preparation."""
@@ -494,3 +501,20 @@ class PoMonthlyReportContext(ReportContext):
                 for clients_key, clients in self._prepare_attachment_clients_tables().items()
             },
         }
+
+
+if __name__ == "__main__":
+    jinja_env = Environment(
+        loader=FileSystemLoader(
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
+        )
+    )
+
+    template = jinja_env.get_template("po_monthly_report/email.html.jinja2")
+    print(
+        template.render(
+            greeting="Hi Clementine,",
+            message_body="This is an example message body.",
+            static_image_path="./recidiviz/reporting/context/static",
+        )
+    )
