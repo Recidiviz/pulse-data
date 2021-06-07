@@ -1,0 +1,41 @@
+file_tag: cis_personphonenumber
+file_description: |-
+  Relates people on supervision to their phone numbers
+primary_key_cols:
+  - id
+columns:
+  - name: personid
+    description: |-
+      Id of this person (`cis_offender.id`)
+  - name: phonenumberid
+    description: |-
+      Id of the phone number (`cis_phonenumber.id`)
+  - name: codephonenumbertypeid
+    description: |-
+      Can join against `cis_codephonenumbertype.id` to get the phone number type
+  - name: version
+  - name: insuser
+    description: |-
+      The user who inserted the record
+  - name: insdate
+    is_datetime: True
+    description: |-
+      When the record was inserted
+  - name: upduser
+    description: |-
+      User who last updated the record
+  - name: upddate
+    is_datetime: True
+    description: |-
+      When the record was last updated
+  - name: id
+    description: |-
+      Id of the record, can be joined with `cis_offenderphonenumber.id`
+  - name: primaryphone
+    known_values:
+      - value: T
+        description: primary phone number
+      - value: F
+        description: other phone number
+    description: |-
+      Whether this is the person's primary phone number
