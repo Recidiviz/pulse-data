@@ -37,7 +37,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateIncarcerationPeriodStatus,
+    StateSpecializedPurposeForIncarceration,
     is_official_admission,
+    release_reason_overrides_released_from_temporary_custody,
 )
 from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
@@ -89,6 +91,24 @@ class StateSpecificIncarcerationPreProcessingDelegate:
     def _default_incarceration_types_to_filter() -> Set[StateIncarcerationType]:
         """Default behavior of incarceration_types_to_filter function."""
         return set()
+
+    @abc.abstractmethod
+    def period_is_parole_board_hold(
+        self, incarceration_period: StateIncarcerationPeriod
+    ) -> bool:
+        """State-specific implementations of this class should return True if the
+        |incarceration_period| represents a period of time spent in a parole board hold.
+        """
+
+    @staticmethod
+    def _default_period_is_parole_board_hold(
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> bool:
+        """Default behavior of period_is_parole_board_hold function."""
+        return (
+            incarceration_period.specialized_purpose_for_incarceration
+            == StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
+        )
 
 
 class IncarcerationPreProcessingManager:
@@ -157,6 +177,12 @@ class IncarcerationPreProcessingManager:
 
                 # Update transfers that should be status change edges
                 mid_processing_periods = self._update_transfers_to_status_changes(
+                    mid_processing_periods
+                )
+
+                # Update period attributes to match standardized parole board hold
+                # values
+                mid_processing_periods = self._standardize_parole_board_holds(
                     mid_processing_periods
                 )
 
@@ -510,6 +536,41 @@ class IncarcerationPreProcessingManager:
                 )
 
         return incarceration_periods
+
+    def _standardize_parole_board_holds(
+        self,
+        incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> List[StateIncarcerationPeriod]:
+        """Ensures that all periods representing time in a parole board hold have the
+        expected admission_reason and specialized_purpose_for_incarceration values.
+        In some cases, overrides the set release_reason to be
+        RELEASED_FROM_TEMPORARY_CUSTODY."""
+        updated_periods: List[StateIncarcerationPeriod] = []
+
+        for ip in incarceration_periods:
+            if self.delegate.period_is_parole_board_hold(ip):
+                updated_release_reason = None
+                if (
+                    ip.release_reason
+                    and not release_reason_overrides_released_from_temporary_custody(
+                        ip.release_reason
+                    )
+                ):
+                    updated_release_reason = (
+                        StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY
+                    )
+
+                updated_ip = attr.evolve(
+                    ip,
+                    admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+                    # Override the release_reason if there's a set updated_release_reason
+                    release_reason=(updated_release_reason or ip.release_reason),
+                )
+                updated_periods.append(updated_ip)
+            else:
+                updated_periods.append(ip)
+        return updated_periods
 
     def _collapse_incarceration_period_transfers(
         self,

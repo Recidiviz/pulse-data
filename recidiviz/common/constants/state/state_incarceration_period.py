@@ -308,6 +308,55 @@ def is_official_release(
     )
 
 
+def release_reason_overrides_released_from_temporary_custody(
+    release_reason: Optional[StateIncarcerationPeriodReleaseReason],
+) -> bool:
+    """RELEASED_FROM_TEMPORARY_CUSTODY is the expected release_reason for all periods of
+    incarceration for which the admission_reason is TEMPORARY_CUSTODY. In certain
+    cases, the release_reason contains more specific information about why the person
+    was released from the period of temporary custody. This function returns whether
+    we want to prioritize the existing release_reason over the standard
+    RELEASED_FROM_TEMPORARY_CUSTODY.
+    """
+    # We want to prioritize these release reasons over RELEASED_FROM_TEMPORARY_CUSTODY
+    prioritized_release_types = [
+        StateIncarcerationPeriodReleaseReason.COMMUTED,
+        StateIncarcerationPeriodReleaseReason.COURT_ORDER,
+        StateIncarcerationPeriodReleaseReason.COMPASSIONATE,
+        StateIncarcerationPeriodReleaseReason.DEATH,
+        StateIncarcerationPeriodReleaseReason.ESCAPE,
+        StateIncarcerationPeriodReleaseReason.EXECUTION,
+        StateIncarcerationPeriodReleaseReason.PARDONED,
+        StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        StateIncarcerationPeriodReleaseReason.TRANSFER_OUT_OF_STATE,
+        StateIncarcerationPeriodReleaseReason.VACATED,
+    ]
+
+    # If someone is being released from a period of TEMPORARY_CUSTODY or
+    # PAROLE_BOARD_HOLD, we'd rather have the RELEASED_FROM_TEMPORARY_CUSTODY
+    # release_reason over the following values
+    non_prioritized_release_types = [
+        StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN,
+        StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
+        StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR,
+        StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
+        StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
+        StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
+        StateIncarcerationPeriodReleaseReason.TRANSFER,
+    ]
+
+    if release_reason in prioritized_release_types:
+        return True
+    if release_reason in non_prioritized_release_types:
+        return False
+
+    raise ValueError(
+        f"Unsupported StateSupervisionPeriodReleaseReason value: {release_reason}"
+    )
+
+
 _STATE_INCARCERATION_FACILITY_SECURITY_LEVEL_MAP = {
     "MAXIMUM": StateIncarcerationFacilitySecurityLevel.MAXIMUM,
     "MAX": StateIncarcerationFacilitySecurityLevel.MAXIMUM,

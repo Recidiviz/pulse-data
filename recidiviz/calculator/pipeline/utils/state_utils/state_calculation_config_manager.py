@@ -853,26 +853,6 @@ def state_specific_incarceration_admission_reason_override(
     return original_admission_reason
 
 
-def state_specific_specialized_purpose_for_incarceration_override(
-    incarceration_period: StateIncarcerationPeriod,
-    admission_reason: StateIncarcerationPeriodAdmissionReason,
-) -> Optional[StateSpecializedPurposeForIncarceration]:
-    """Returns a (potentially) updated specialized_purpose_for_incarceration to be used in calculations, given an
-    |incarceration_period}| and |admission_reason|."""
-    # TODO(#7442): This US_MO logic should be obsolete once we are setting this
-    #  PAROLE_BOARD_HOLD specialized_purpose_for_incarceration on board holds in ingest
-    if incarceration_period.state_code == "US_MO":
-        if (
-            admission_reason
-            == StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
-            and incarceration_period.specialized_purpose_for_incarceration is None
-        ):
-            # In US_MO, we can infer that an admission with an `admission_reason` of `TEMPORARY_CUSTODY` is an
-            # admission to a parole board hold if the period has no other set `specialized_purpose_for_incarceration`.
-            return StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
-    return incarceration_period.specialized_purpose_for_incarceration
-
-
 def supervision_period_is_out_of_state(
     supervision_time_bucket: Union[
         NonRevocationReturnSupervisionTimeBucket, RevocationReturnSupervisionTimeBucket
