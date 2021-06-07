@@ -43,6 +43,9 @@ from recidiviz.validation.views.state.ftr_referrals_comparison import (
 from recidiviz.validation.views.state.incarceration_admission_after_open_period import (
     INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.prod_staging_comparison.incarceration_admission_external_prod_staging_comparison import (
+    INCARCERATION_ADMISSION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.incarceration_admission_nulls import (
     INCARCERATION_ADMISSION_NULLS_VIEW_BUILDER,
 )
@@ -67,11 +70,17 @@ from recidiviz.validation.views.state.incarceration_population_by_facility_exter
 from recidiviz.validation.views.state.incarceration_population_by_prioritized_race_and_ethnicity_by_period_internal_consistency import (
     INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.prod_staging_comparison.incarceration_population_external_prod_staging_comparison import (
+    INCARCERATION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.incarceration_population_person_level_external_comparison import (
     INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.incarceration_population_person_level_external_comparison_matching_people import (
     INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.prod_staging_comparison.incarceration_release_external_prod_staging_comparison import (
+    INCARCERATION_RELEASE_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.incarceration_release_person_level_external_comparison import (
     INCARCERATION_RELEASE_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
@@ -142,10 +151,11 @@ from recidiviz.validation.views.state.sentence_type_by_district_by_demographics_
 from recidiviz.validation.views.state.supervision_population_by_district_by_demographics_internal_consistency import (
     SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
-
-
 from recidiviz.validation.views.state.supervision_population_by_prioritized_race_and_ethnicity_by_period_internal_consistency import (
     SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.prod_staging_comparison.supervision_population_external_prod_staging_comparison import (
+    SUPERVISION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.supervision_population_person_level_external_comparison import (
     SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
@@ -155,6 +165,9 @@ from recidiviz.validation.views.state.supervision_population_person_level_extern
 )
 from recidiviz.validation.views.state.supervision_revocations_by_period_by_type_by_demographics_internal_consistency import (
     SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.prod_staging_comparison.supervision_start_external_prod_staging_comparison import (
+    SUPERVISION_START_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.supervision_start_person_level_external_comparison import (
     SUPERVISION_START_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
@@ -167,6 +180,9 @@ from recidiviz.validation.views.state.supervision_success_by_period_by_demograph
 )
 from recidiviz.validation.views.state.supervision_success_by_period_dashboard_comparison import (
     SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.prod_staging_comparison.supervision_termination_external_prod_staging_comparison import (
+    SUPERVISION_TERMINATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.supervision_termination_person_level_external_comparison import (
     SUPERVISION_TERMINATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
@@ -245,6 +261,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
     CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER,
     FTR_REFERRALS_COMPARISON_VIEW_BUILDER,
     INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_BUILDER,
+    INCARCERATION_ADMISSION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
     INCARCERATION_ADMISSION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
     INCARCERATION_ADMISSION_NULLS_VIEW_BUILDER,
     INCARCERATION_RELEASE_REASON_NO_DATE_VIEW_BUILDER,
@@ -254,7 +271,9 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
     INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER,
     INCARCERATION_POPULATION_BY_STATE_BY_DATE_JUSTICE_COUNTS_COMPARISON_VIEW_BUILDER,
     INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER,
+    INCARCERATION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
     INCARCERATION_POPULATION_BY_DEMOGRAPHIC_INTERNAL_COMPARISON_VIEW_BUILDER,
+    INCARCERATION_RELEASE_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
     INCARCERATION_RELEASE_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
     INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_BUILDER,
     INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_VIEW_BUILDER,
@@ -277,12 +296,15 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
     SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
     SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
     SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER,
+    SUPERVISION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
     SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
     SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
+    SUPERVISION_START_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
     SUPERVISION_START_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
     SUPERVISION_SUCCESS_BY_MONTH_DASHBOARD_COMPARISON_VIEW_BUILDER,
     SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER,
     SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
+    SUPERVISION_TERMINATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
     SUPERVISION_TERMINATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
     SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW_BUILDER,
     SUPERVISION_TERMINATION_REASON_NO_DATE_VIEW_BUILDER,
