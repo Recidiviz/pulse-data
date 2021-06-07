@@ -25,6 +25,7 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
 )
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
 class UsXxIncarcerationPreProcessingDelegate(
@@ -44,3 +45,8 @@ class UsXxIncarcerationPreProcessingDelegate(
         self,
     ) -> Set[StateIncarcerationPeriodAdmissionReason]:
         return self._default_admission_reasons_to_filter()
+
+    def period_is_parole_board_hold(
+        self, incarceration_period: StateIncarcerationPeriod
+    ) -> bool:
+        return self._default_period_is_parole_board_hold(incarceration_period)

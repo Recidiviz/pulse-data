@@ -25,7 +25,9 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_man
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
+    StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
 class UsNdIncarcerationPreProcessingDelegate(
@@ -38,6 +40,22 @@ class UsNdIncarcerationPreProcessingDelegate(
         """US_ND drops all admissions to temporary custody periods from the
         calculations."""
         return {StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY}
+
+    def period_is_parole_board_hold(
+        self, incarceration_period: StateIncarcerationPeriod
+    ) -> bool:
+        """There are no parole board hold incarceration periods in US_ND."""
+        if (
+            incarceration_period.specialized_purpose_for_incarceration
+            == StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
+        ):
+            raise ValueError(
+                "Unexpected "
+                "StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD "
+                "value in US_ND. We do not expect any parole board hold "
+                "periods for this state."
+            )
+        return False
 
     # Functions using default behavior
     def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:

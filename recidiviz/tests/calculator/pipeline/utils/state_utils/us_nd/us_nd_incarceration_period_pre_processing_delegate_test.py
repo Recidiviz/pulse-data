@@ -21,22 +21,23 @@ from itertools import permutations
 from typing import List, Optional
 
 import attr
-from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_period_pre_processing_delegate import (
-    UsNdIncarcerationPreProcessingDelegate,
-)
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
     IncarcerationPreProcessingManager,
 )
-from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_period_pre_processing_delegate import (
+    UsNdIncarcerationPreProcessingDelegate,
 )
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason as AdmissionReason,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason as ReleaseReason,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodStatus,
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
@@ -253,4 +254,27 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
             self.assertEqual(
                 validated_incarceration_periods, [valid_incarceration_period]
+            )
+
+    def test_pre_processed_incarceration_periods_for_calculations_invalid_board_hold(
+        self,
+    ):
+        state_code = "US_ND"
+        invalid_board_hold = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="1",
+            state_code=state_code,
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_date=date(2009, 12, 4),
+            release_reason=ReleaseReason.SENTENCE_SERVED,
+        )
+
+        incarceration_periods = [invalid_board_hold]
+
+        with self.assertRaises(ValueError):
+            self._pre_processed_incarceration_periods_for_calculations(
+                incarceration_periods=incarceration_periods,
             )
