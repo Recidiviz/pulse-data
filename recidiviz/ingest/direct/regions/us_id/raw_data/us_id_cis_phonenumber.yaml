@@ -1,0 +1,30 @@
+file_tag: cis_phonenumber
+file_description: |-
+  Actual phone numbers for people tracked by Idaho
+primary_key_cols:
+  - id
+columns:
+  - name: id
+    description: |-
+      Id of the row
+  - name: insuser
+    description: |-
+      The user who inserted the record
+  - name: insdate
+    is_datetime: True
+    description: |-
+      When the record was inserted
+  - name: upduser
+    description: |-
+      User who last updated the record
+  - name: upddate
+    is_datetime: True
+    description: |-
+      When the record was last updated
+  - name: phonenumber
+    description: |-
+      Phone number
+  - name: extension
+    description: |-
+      Phone number extension
+  - name: version
