@@ -16,7 +16,7 @@
 # =============================================================================
 """Tests for state_entity_matcher.py."""
 import datetime
-from typing import Any, List
+from typing import Any, List, Tuple
 
 import attr
 from mock import patch
@@ -70,7 +70,10 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
 )
 from recidiviz.persistence.entity_matching import entity_matching
-from recidiviz.persistence.entity_matching.state import state_matching_utils
+from recidiviz.persistence.entity_matching.state import (
+    state_entity_matcher,
+    state_matching_utils,
+)
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
     BaseStateMatchingDelegate,
 )
@@ -3737,8 +3740,12 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             [expected_person], matched_entities.people, session
         )
 
-    def test_mergeMultiParentEntitiesMismatchedTreeShape(self) -> None:
-        # Arrange 1 - Match
+    def get_mismatched_tree_shape_input_and_expected(
+        self,
+    ) -> Tuple[List[StatePerson], List[StatePerson]]:
+        """Returns a tuple of input_people, expected_matched_people where the input
+        people have mismatched tree shapes.
+        """
         charge_merged = StateCharge.new_with_defaults(
             charge_id=_ID,
             external_id=_EXTERNAL_ID,
@@ -3799,11 +3806,18 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         expected_person = attr.evolve(person, sentence_groups=[expected_sentence_group])
         expected_other_person = attr.evolve(other_person)
 
+        return [other_person, person], [expected_other_person, expected_person]
+
+    def test_mergeMultiParentEntitiesMismatchedTreeShape(self) -> None:
+        # Arrange 1 - Match
+        (
+            input_people,
+            expected_people,
+        ) = self.get_mismatched_tree_shape_input_and_expected()
+
         # Arrange 1 - Match
         session = self._session()
-        matched_entities = entity_matching.match(
-            session, _STATE_CODE, [other_person, person]
-        )
+        matched_entities = entity_matching.match(session, _STATE_CODE, input_people)
 
         # Assert 1 - Match
         sentence_group = matched_entities.people[0].sentence_groups[0]
@@ -3812,7 +3826,90 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         found_charge_3 = sentence_group.incarceration_sentences[2].charges[0]
         self.assertEqual(id(found_charge), id(found_charge_2), id(found_charge_3))
         self.assert_people_match_pre_and_post_commit(
-            [expected_other_person, expected_person],
+            expected_people,
+            matched_entities.people,
+            session,
+        )
+
+    @patch(
+        f"{state_entity_matcher.__name__}.NUM_TREES_TO_SEARCH_FOR_NON_PLACEHOLDER_TYPES",
+        1,
+    )
+    def test_mergeMultiParentEntitiesMismatchedTreeShapeSmallerSearch(self) -> None:
+        # Arrange 1 - Match
+        (
+            input_people,
+            _,
+        ) = self.get_mismatched_tree_shape_input_and_expected()
+
+        # Arrange 1 - Match
+        session = self._session()
+        with self.assertRaises(ValueError) as e:
+            _ = entity_matching.match(session, _STATE_CODE, input_people)
+        self.assertTrue(
+            str(e.exception).startswith(
+                "Failed to identify one of the non-placeholder ingest types: "
+                "[StateSentenceGroup]."
+            )
+        )
+
+    @patch(
+        f"{state_entity_matcher.__name__}.NUM_TREES_TO_SEARCH_FOR_NON_PLACEHOLDER_TYPES",
+        1,
+    )
+    def test_mismatchedTreeShapeEnumTypesOnly(self) -> None:
+        # Arrange 1 - Match
+        db_external_id = generate_external_id(
+            person_external_id_id=_ID, external_id=_EXTERNAL_ID, id_type=_ID_TYPE
+        )
+        entity_external_id = self.to_entity(db_external_id)
+        db_external_id_2 = generate_external_id(
+            person_external_id_id=_ID_2,
+            external_id=_EXTERNAL_ID,
+            id_type=_ID_TYPE_ANOTHER,
+        )
+        entity_external_id_2 = self.to_entity(db_external_id_2)
+        db_person = generate_person(
+            person_id=_ID,
+            full_name=_FULL_NAME,
+            external_ids=[db_external_id, db_external_id_2],
+            state_code=_STATE_CODE,
+        )
+        entity_person = self.to_entity(db_person)
+        self._commit_to_db(db_person)
+        external_id = attr.evolve(entity_external_id, person_external_id_id=None)
+        person = attr.evolve(
+            entity_person,
+            person_id=None,
+            external_ids=[external_id],
+        )
+        race = StatePersonRace.new_with_defaults(
+            state_code=_STATE_CODE, race=Race.OTHER
+        )
+        external_id_2 = attr.evolve(entity_external_id_2, person_external_id_id=None)
+        person_dup = attr.evolve(
+            person, races=[race], external_ids=[attr.evolve(external_id_2)]
+        )
+
+        expected_external_id = attr.evolve(external_id, person_external_id_id=_ID)
+        expected_external_id_2 = attr.evolve(external_id_2, person_external_id_id=_ID_2)
+        expected_race = attr.evolve(race)
+        expected_person = attr.evolve(
+            person,
+            person_id=_ID,
+            races=[expected_race],
+            external_ids=[expected_external_id, expected_external_id_2],
+        )
+
+        # Arrange 1 - Match
+        session = self._session()
+        matched_entities = entity_matching.match(
+            session, _STATE_CODE, [person, person_dup]
+        )
+
+        # Assert 1 - Match
+        self.assert_people_match_pre_and_post_commit(
+            [expected_person],
             matched_entities.people,
             session,
         )
