@@ -78,7 +78,7 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }) => {
           <H3 as="div">{client.name}</H3>
 
           {ellipsisDropdown}
-          <CloseButton onClick={() => clientsStore.view()}>
+          <CloseButton onClick={() => clientsStore.setShowClientCard(false)}>
             <Icon kind={IconSVG.Close} />
           </CloseButton>
         </ClientNameRow>

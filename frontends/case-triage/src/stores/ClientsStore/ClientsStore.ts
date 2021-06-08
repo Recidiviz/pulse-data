@@ -44,6 +44,8 @@ class ClientsStore {
 
   activeClientOffset: number;
 
+  private showClientCardIfVisible = false;
+
   clientSearchString: string;
 
   clientPendingView: DecoratedClient | null;
@@ -195,11 +197,25 @@ class ClientsStore {
     this.clientPendingView = client;
   }
 
+  get showClientCard(): boolean {
+    let showCard = this.showClientCardIfVisible;
+    if (showCard && this.activeClient) {
+      showCard = this.isVisible(this.activeClient);
+    }
+    return showCard;
+  }
+
+  setShowClientCard(show: boolean): void {
+    this.showClientCardIfVisible = show;
+  }
+
   view(client: DecoratedClient | undefined = undefined, offset = 0): void {
     this.activeClient =
       this.clientPendingView !== null && !client
         ? this.clientPendingView
         : client;
+
+    this.setShowClientCard(Boolean(client));
 
     this.activeClientOffset = offset;
 

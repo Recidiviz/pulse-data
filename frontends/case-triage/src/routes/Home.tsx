@@ -31,6 +31,7 @@ import { observer } from "mobx-react-lite";
 import useBreakpoint from "@w11r/use-breakpoint";
 import AuthWall from "../components/AuthWall";
 import CaseCard, {
+  CaseCardDrawer,
   CaseCardModal,
   CaseCardPopout,
 } from "../components/CaseCard";
@@ -42,6 +43,7 @@ import {
   trackSearchBarFocused,
 } from "../analytics";
 import { device } from "../components/styles";
+import { KNOWN_EXPERIMENTS } from "../stores/UserStore";
 
 const Container = styled.div`
   display: flex;
@@ -72,6 +74,8 @@ const Home = (props: RouteComponentProps): ReactElement => {
   const { clientsStore, userStore } = useRootStore();
 
   const isDesktop = useBreakpoint(true, ["tablet-", false]);
+
+  const showNewLayout = userStore.isInExperiment(KNOWN_EXPERIMENTS.NewLayout);
 
   const ClientCard =
     clientsStore.activeClient &&
@@ -104,18 +108,24 @@ const Home = (props: RouteComponentProps): ReactElement => {
         right={<UserSection />}
       />
       <Container>
-        <Left>
-          <ClientList />
-        </Left>
-        {isDesktop && (
-          <Right>
-            {ClientCard && <CaseCardPopout>{ClientCard}</CaseCardPopout>}
-          </Right>
-        )}
-        {!isDesktop && (
-          <CaseCardModal isOpen={Boolean(ClientCard)}>
-            {ClientCard}
-          </CaseCardModal>
+        {showNewLayout ? (
+          <>
+            <ClientList />
+            <CaseCardDrawer>{ClientCard}</CaseCardDrawer>
+          </>
+        ) : (
+          <>
+            <Left>
+              <ClientList />
+            </Left>
+            {isDesktop ? (
+              <Right>
+                <CaseCardPopout>{ClientCard}</CaseCardPopout>
+              </Right>
+            ) : (
+              <CaseCardModal>{ClientCard}</CaseCardModal>
+            )}
+          </>
         )}
       </Container>
       <Modal

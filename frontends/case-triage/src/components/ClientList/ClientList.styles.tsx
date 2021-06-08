@@ -152,6 +152,8 @@ export const ClientListContainerElement = styled.div`
   // The ClientListContainer needs to be the ClientCard's _offsetParent_ so that we can correctly calculate the
   // CaseCard margin-top
   position: relative;
+
+  width: 100%;
 `;
 
 export const IN_PROGRESS_INDICATOR_SIZE = 8;
