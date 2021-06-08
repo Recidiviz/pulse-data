@@ -26,10 +26,13 @@ from flask_wtf.csrf import generate_csrf
 from recidiviz.case_triage.analytics import CaseTriageSegmentClient
 from recidiviz.case_triage.api_schemas import (
     CaseUpdateSchema,
+    CreateNoteSchema,
     DeferOpportunitySchema,
     PolicyRequirementsSchema,
     PreferredContactMethodSchema,
     PreferredNameSchema,
+    ResolveNoteSchema,
+    UpdateNoteSchema,
     requires_api_schema,
 )
 from recidiviz.case_triage.case_updates.interface import (
@@ -43,7 +46,15 @@ from recidiviz.case_triage.client_info.interface import (
     DemoClientInfoInterface,
 )
 from recidiviz.case_triage.demo_helpers import DEMO_FROZEN_DATE, DEMO_FROZEN_DATETIME
-from recidiviz.case_triage.exceptions import CaseTriageBadRequestException
+from recidiviz.case_triage.exceptions import (
+    CaseTriageBadRequestException,
+    CaseTriagePersonNotOnCaseloadException,
+)
+from recidiviz.case_triage.officer_notes.interface import (
+    DemoOfficerNotesInterface,
+    OfficerNoteDoesNotExistError,
+    OfficerNotesInterface,
+)
 from recidiviz.case_triage.opportunities.interface import (
     DemoOpportunitiesInterface,
     OpportunitiesInterface,
@@ -53,6 +64,7 @@ from recidiviz.case_triage.opportunities.types import (
     OpportunityDeferralType,
     OpportunityDoesNotExistError,
 )
+from recidiviz.case_triage.permissions_checker import PermissionsChecker
 from recidiviz.case_triage.querier.case_update_presenter import CaseUpdatePresenter
 from recidiviz.case_triage.querier.querier import (
     CaseTriageQuerier,
@@ -78,10 +90,7 @@ def load_client(person_external_id: str) -> ETLClient:
             current_session, g.current_user, person_external_id
         )
     except PersonDoesNotExistError as e:
-        raise CaseTriageBadRequestException(
-            code="bad_request",
-            description={"personExternalId": ["does not correspond to a known person"]},
-        ) from e
+        raise CaseTriagePersonNotOnCaseloadException from e
 
 
 def create_api_blueprint(segment_client: CaseTriageSegmentClient) -> Blueprint:
@@ -290,13 +299,8 @@ def create_api_blueprint(segment_client: CaseTriageSegmentClient) -> Blueprint:
                 current_session, g.email, etl_client, g.api_data["name"]
             )
         else:
-            if g.current_user.external_id != etl_client.supervising_officer_external_id:
-                raise CaseTriageBadRequestException(
-                    code="bad_request",
-                    description={
-                        "personExternalId": ["does not correspond to a known person"]
-                    },
-                )
+            if not PermissionsChecker.is_on_caseload(etl_client, g.current_user):
+                raise CaseTriagePersonNotOnCaseloadException
             ClientInfoInterface.set_preferred_name(
                 current_session, etl_client, g.api_data["name"]
             )
@@ -313,17 +317,73 @@ def create_api_blueprint(segment_client: CaseTriageSegmentClient) -> Blueprint:
                 current_session, g.email, etl_client, g.api_data["contact_method"]
             )
         else:
-            if g.current_user.external_id != etl_client.supervising_officer_external_id:
-                raise CaseTriageBadRequestException(
-                    code="bad_request",
-                    description={
-                        "personExternalId": ["does not correspond to a known person"]
-                    },
-                )
+            if not PermissionsChecker.is_on_caseload(etl_client, g.current_user):
+                raise CaseTriagePersonNotOnCaseloadException
             ClientInfoInterface.set_preferred_contact_method(
                 current_session, etl_client, g.api_data["contact_method"]
             )
 
         return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+
+    @api.route("/create_note", methods=["POST"])
+    @requires_api_schema(CreateNoteSchema)
+    def _create_note() -> Response:
+        etl_client = load_client(g.api_data["person_external_id"])
+
+        if _should_see_demo():
+            officer_note = DemoOfficerNotesInterface.create_note(
+                current_session, g.email, etl_client, g.api_data["text"]
+            )
+        else:
+            if not PermissionsChecker.is_on_caseload(etl_client, g.current_user):
+                raise CaseTriagePersonNotOnCaseloadException
+            officer_note = OfficerNotesInterface.create_note(
+                current_session, g.current_user, etl_client, g.api_data["text"]
+            )
+
+        return jsonify(officer_note.to_json())
+
+    @api.route("/resolve_note", methods=["POST"])
+    @requires_api_schema(ResolveNoteSchema)
+    def _resolve_note() -> Response:
+        try:
+            if _should_see_demo():
+                DemoOfficerNotesInterface.resolve_note(
+                    current_session, g.email, g.api_data["note_id"]
+                )
+            else:
+                OfficerNotesInterface.resolve_note(
+                    current_session, g.current_user, g.api_data["note_id"]
+                )
+        except OfficerNoteDoesNotExistError as e:
+            raise CaseTriageBadRequestException(
+                "not_found",
+                f"OfficerNote with id {g.api_data['note_id']} does not exist",
+            ) from e
+
+        return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+
+    @api.route("/update_note", methods=["POST"])
+    @requires_api_schema(UpdateNoteSchema)
+    def _update_note() -> Response:
+        try:
+            if _should_see_demo():
+                officer_note = DemoOfficerNotesInterface.update_note(
+                    current_session, g.email, g.api_data["note_id"], g.api_data["text"]
+                )
+            else:
+                officer_note = OfficerNotesInterface.update_note(
+                    current_session,
+                    g.current_user,
+                    g.api_data["note_id"],
+                    g.api_data["text"],
+                )
+        except OfficerNoteDoesNotExistError as e:
+            raise CaseTriageBadRequestException(
+                "not_found",
+                f"OfficerNote with id {g.api_data['note_id']} does not exist",
+            ) from e
+
+        return jsonify(officer_note.to_json())
 
     return api

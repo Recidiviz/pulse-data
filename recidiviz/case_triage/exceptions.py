@@ -16,7 +16,7 @@
 # =============================================================================
 """Contains the list of custom exceptions used by Case Triage."""
 from http import HTTPStatus
-from typing import Union, Dict, List
+from typing import Dict, List, Union
 
 from recidiviz.utils.flask_exception import FlaskException
 
@@ -55,4 +55,15 @@ class CaseTriageSecretForbiddenException(FlaskException):
             "not_found",
             "The attempted request failed because the resource was not found.",
             HTTPStatus.NOT_FOUND,
+        )
+
+
+class CaseTriagePersonNotOnCaseloadException(CaseTriageBadRequestException):
+    """Exception for when the person that is being acted upon exists, but does not belong
+    to the actor's caseload, so we do not want to let any action take place."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "not_found",
+            {"personExternalId": ["does not correspond to a known person"]},
         )

@@ -82,7 +82,7 @@ class ETLClient(CaseTriageBase):
         "CaseUpdate",
         uselist=True,
         foreign_keys=[state_code, person_external_id, supervising_officer_external_id],
-        overlaps="client_info",
+        overlaps="client_info,notes",
         primaryjoin="and_("
         "   ETLClient.state_code == CaseUpdate.state_code,"
         "   ETLClient.person_external_id == CaseUpdate.person_external_id,"
@@ -94,22 +94,10 @@ class ETLClient(CaseTriageBase):
         "ClientInfo",
         uselist=False,
         foreign_keys=[state_code, person_external_id],
-        overlaps="case_updates,client_officer_association",
+        overlaps="case_updates,notes",
         primaryjoin="and_("
         "   ETLClient.state_code == ClientInfo.state_code,"
         "   ETLClient.person_external_id == ClientInfo.person_external_id,"
-        ")",
-    )
-
-    client_officer_association = relationship(
-        "ClientOfficerAssociation",
-        uselist=False,
-        foreign_keys=[state_code, person_external_id, supervising_officer_external_id],
-        overlaps="case_updates,client_info",
-        primaryjoin="and_("
-        "   ETLClient.state_code == ClientOfficerAssociation.state_code,"
-        "   ETLClient.person_external_id == ClientOfficerAssociation.person_external_id,"
-        "   ETLClient.supervising_officer_external_id == ClientOfficerAssociation.supervising_officer_external_id,"
         ")",
     )
 
@@ -119,6 +107,18 @@ class ETLClient(CaseTriageBase):
         primaryjoin="and_("
         "   foreign(ETLOfficer.state_code) == ETLClient.state_code,"
         "   foreign(ETLOfficer.external_id) == ETLClient.supervising_officer_external_id,"
+        ")",
+    )
+
+    notes = relationship(
+        "OfficerNote",
+        uselist=True,
+        foreign_keys=[state_code, person_external_id, supervising_officer_external_id],
+        overlaps="client_info,case_updates",
+        primaryjoin="and_("
+        "   ETLClient.state_code == OfficerNote.state_code,"
+        "   ETLClient.person_external_id == OfficerNote.person_external_id,"
+        "   ETLClient.supervising_officer_external_id == OfficerNote.officer_external_id,"
         ")",
     )
 
@@ -286,42 +286,31 @@ class ClientInfo(CaseTriageBase):
     )
 
 
-class ClientOfficerAssociation(CaseTriageBase):
-    """This table contains all information that is associated jointly with a client and
-    officer. This information should not "travel", so if a client changes POs, this info stays
-    put."""
+class OfficerNote(CaseTriageBase):
+    """This table contains notes left by officers about people on their caseload."""
 
-    __tablename__ = "client_officer_associations"
-    __table_args__ = (
-        UniqueConstraint(
-            "state_code",
-            "person_external_id",
-            "supervising_officer_external_id",
-            name="unique_person_officer_pair",
-        ),
-    )
+    __tablename__ = "officer_notes"
 
-    client_officer_association_id = Column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    note_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     state_code = Column(String(255), nullable=False, index=True)
-    supervising_officer_external_id = Column(String(255), nullable=False, index=True)
+    officer_external_id = Column(String(255), nullable=False, index=True)
     person_external_id = Column(String(255), nullable=False, index=True)
 
-    # The notes show up as an array of strings.
-    notes = Column(JSONB)
+    text = Column(Text, nullable=False)
 
-    etl_client = relationship(
-        "ETLClient",
-        foreign_keys=[state_code, person_external_id, supervising_officer_external_id],
-        viewonly=True,
-        primaryjoin="and_("
-        "   ETLClient.state_code == ClientOfficerAssociation.state_code,"
-        "   ETLClient.person_external_id == ClientOfficerAssociation.person_external_id,"
-        "   ETLClient.supervising_officer_external_id == ClientOfficerAssociation.supervising_officer_external_id,"
-        ")",
-    )
+    created_datetime = Column(DateTime, nullable=False, server_default=func.now())
+    updated_datetime = Column(DateTime, nullable=False, server_default=func.now())
+    resolved_datetime = Column(DateTime)
+
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            "noteId": self.note_id,
+            "text": self.text,
+            "createdDatetime": self.created_datetime,
+            "updatedDatetime": self.updated_datetime,
+            "resolved": self.resolved_datetime is not None,
+        }
 
 
 class OpportunityDeferral(CaseTriageBase):

@@ -241,3 +241,29 @@ class TestDemoUser(TestCase):
                 },
             )
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+
+    def test_notes(self) -> None:
+        with self.helpers.as_demo_user():
+            client = self.demo_clients[0]
+
+            client_info = self.helpers.find_client_in_api_response(
+                client.person_external_id
+            )
+            self.assertEqual(client_info["notes"], [])
+
+            note_id = self.helpers.create_note(
+                client.person_external_id, "Demo user note."
+            )
+
+            # If this fetch doesn't crash, the note was created successfully.
+            _ = self.helpers.find_note_for_person(client.person_external_id, note_id)
+
+            # Check that updates work
+            self.helpers.update_note(note_id, "New text")
+            note = self.helpers.find_note_for_person(client.person_external_id, note_id)
+            self.assertEqual(note["text"], "New text")
+
+            # Check that updates work
+            self.helpers.resolve_note(note_id)
+            note = self.helpers.find_note_for_person(client.person_external_id, note_id)
+            self.assertTrue(note["resolved"])
