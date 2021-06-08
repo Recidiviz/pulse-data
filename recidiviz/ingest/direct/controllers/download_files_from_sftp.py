@@ -19,24 +19,32 @@ import datetime
 import logging
 import os
 from functools import partial
-from typing import Optional, List, Tuple
+from typing import List, Optional, Tuple
 
 import pysftp
 import pytz
-from pysftp import CnOpts
 from paramiko import SFTPAttributes, SSHException
 from paramiko.hostkeys import HostKeyEntry
+from pysftp import CnOpts
 
 from recidiviz.cloud_storage.gcs_file_system import GcsfsSftpFileContentsHandle
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.common.results import MultiRequestResult
+from recidiviz.common.results import MultiRequestResultWithSkipped
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
+    to_normalized_unprocessed_file_path,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    GcsfsDirectIngestFileType,
     gcsfs_sftp_download_bucket_path_for_region,
+)
+from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
+    PostgresDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
@@ -119,6 +127,7 @@ class DownloadFilesFromSftpController:
 
         self.unable_to_download_items: List[str] = []
         self.downloaded_items: List[Tuple[str, datetime.datetime]] = []
+        self.skipped_files: List[str] = []
 
         self.lower_bound_update_datetime = lower_bound_update_datetime
         self.bucket = (
@@ -130,6 +139,13 @@ class DownloadFilesFromSftpController:
         )
         self.download_dir = GcsfsDirectoryPath.from_dir_and_subdir(
             dir_path=self.bucket, subdir=RAW_INGEST_DIRECTORY
+        )
+
+        self.postgres_direct_ingest_file_metadata_manager = (
+            PostgresDirectIngestRawFileMetadataManager(
+                region,
+                DirectIngestInstance.PRIMARY.database_version(SystemLevel.STATE).name,
+            )
         )
 
     def _is_after_update_bound(self, sftp_attr: SFTPAttributes) -> bool:
@@ -148,30 +164,56 @@ class DownloadFilesFromSftpController:
     ) -> None:
         """Fetches data files from the SFTP, tracking which items downloaded and failed to download."""
         normalized_sftp_path = os.path.normpath(file_path)
-        logging.info("Downloading %s into %s", normalized_sftp_path, self.download_dir)
-        try:
-            path = GcsfsFilePath.from_directory_and_file_name(
-                dir_path=self.download_dir, file_name=normalized_sftp_path
-            )
-            self.gcsfs.upload_from_contents_handle_stream(
-                path=path,
-                contents_handle=GcsfsSftpFileContentsHandle(
-                    sftp_connection=connection, local_file_path=file_path
-                ),
-                content_type=BYTES_CONTENT_TYPE,
-            )
-            logging.info("Post processing %s", path.uri())
-            self.downloaded_items.append(
-                (self.delegate.post_process_downloads(path, self.gcsfs), file_timestamp)
-            )
-        except IOError as e:
+        normalized_upload_path = GcsfsFilePath.from_directory_and_file_name(
+            dir_path=self.download_dir,
+            file_name=os.path.basename(
+                to_normalized_unprocessed_file_path(
+                    normalized_sftp_path,
+                    file_type=GcsfsDirectIngestFileType.RAW_DATA,
+                    dt=file_timestamp,
+                )
+            ),
+        )
+        if not self.postgres_direct_ingest_file_metadata_manager.has_raw_file_been_discovered(
+            normalized_upload_path
+        ) and not self.postgres_direct_ingest_file_metadata_manager.has_raw_file_been_processed(
+            normalized_upload_path
+        ):
             logging.info(
-                "Could not download %s into %s: %s",
-                normalized_sftp_path,
-                self.download_dir,
-                e.args,
+                "Downloading %s into %s", normalized_sftp_path, self.download_dir
             )
-            self.unable_to_download_items.append(file_path)
+            try:
+                path = GcsfsFilePath.from_directory_and_file_name(
+                    dir_path=self.download_dir, file_name=normalized_sftp_path
+                )
+                self.gcsfs.upload_from_contents_handle_stream(
+                    path=path,
+                    contents_handle=GcsfsSftpFileContentsHandle(
+                        sftp_connection=connection, local_file_path=file_path
+                    ),
+                    content_type=BYTES_CONTENT_TYPE,
+                )
+                logging.info("Post processing %s", path.uri())
+                self.downloaded_items.append(
+                    (
+                        self.delegate.post_process_downloads(path, self.gcsfs),
+                        file_timestamp,
+                    )
+                )
+            except IOError as e:
+                logging.info(
+                    "Could not download %s into %s: %s",
+                    normalized_sftp_path,
+                    self.download_dir,
+                    e.args,
+                )
+                self.unable_to_download_items.append(file_path)
+        else:
+            logging.info(
+                "Skipping downloading %s because it has already been previously downloaded for ingest.",
+                normalized_sftp_path,
+            )
+            self.skipped_files.append(file_path)
 
     def get_paths_to_download(self) -> List[Tuple[str, datetime.datetime]]:
         """Opens a connection to SFTP and based on the delegate, find and recursively list items
@@ -250,7 +292,9 @@ class DownloadFilesFromSftpController:
             for file_path, file_timestamp in files_to_download_with_timestamps:
                 self._fetch(connection, file_path, file_timestamp)
 
-    def do_fetch(self) -> MultiRequestResult[Tuple[str, datetime.datetime], str]:
+    def do_fetch(
+        self,
+    ) -> MultiRequestResultWithSkipped[Tuple[str, datetime.datetime], str, str]:
         """Attempts to open an SFTP connection and download items, returning the corresponding paths
         and the timestamp associated, and also any unable to be downloaded."""
         logging.info(
@@ -272,11 +316,14 @@ class DownloadFilesFromSftpController:
 
         logging.info(
             "Download complete, successfully downloaded %s files to ingest bucket [%s] "
-            "could not download %s files",
+            "could not download %s files and skipped %s files",
             len(self.downloaded_items),
             self.download_dir.uri(),
             len(self.unable_to_download_items),
+            len(self.skipped_files),
         )
-        return MultiRequestResult(
-            successes=self.downloaded_items, failures=self.unable_to_download_items
+        return MultiRequestResultWithSkipped(
+            successes=self.downloaded_items,
+            failures=self.unable_to_download_items,
+            skipped=self.skipped_files,
         )

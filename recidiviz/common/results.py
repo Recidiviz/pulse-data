@@ -15,12 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A series of classes to better encapsulate request results."""
-from typing import TypeVar, List, Generic
+from typing import Generic, List, TypeVar
 
 import attr
 
 Success = TypeVar("Success")
 Failure = TypeVar("Failure")
+Skipped = TypeVar("Skipped")
 
 
 @attr.s
@@ -30,3 +31,13 @@ class MultiRequestResult(Generic[Success, Failure]):
 
     successes: List[Success] = attr.ib()
     failures: List[Failure] = attr.ib()
+
+
+@attr.s
+class MultiRequestResultWithSkipped(Generic[Success, Failure, Skipped]):
+    """An augmented version of MultiRequestResult, but with the option of having some of the results
+    be skipped."""
+
+    successes: List[Success] = attr.ib()
+    failures: List[Failure] = attr.ib()
+    skipped: List[Skipped] = attr.ib(default=list)
