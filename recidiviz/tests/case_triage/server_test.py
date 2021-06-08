@@ -18,7 +18,7 @@
 from datetime import date, datetime, timedelta
 from http import HTTPStatus
 from typing import Optional
-from unittest import mock, TestCase
+from unittest import TestCase, mock
 from unittest.mock import MagicMock
 
 import pytest
@@ -40,20 +40,16 @@ from recidiviz.case_triage.opportunities.types import (
 )
 from recidiviz.case_triage.querier.case_update_presenter import CaseUpdateStatus
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
-from recidiviz.persistence.database.schema.case_triage.schema import (
-    OpportunityDeferral,
-)
+from recidiviz.persistence.database.schema.case_triage.schema import OpportunityDeferral
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.tests.case_triage.api_test_helpers import (
-    CaseTriageTestHelpers,
-)
+from recidiviz.tests.case_triage.api_test_helpers import CaseTriageTestHelpers
 from recidiviz.tests.case_triage.case_triage_helpers import (
+    generate_fake_case_update,
     generate_fake_client,
     generate_fake_client_info,
     generate_fake_officer,
     generate_fake_opportunity,
-    generate_fake_case_update,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.flask_exception import FlaskException
@@ -229,7 +225,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             )
 
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
-            self.assertEqual(response.get_json()["code"], "bad_request")
+            self.assertEqual(response.get_json()["code"], "not_found")
             self.assertIn(
                 "does not correspond to a known person",
                 response.get_json()["description"]["personExternalId"],
@@ -282,7 +278,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             )
 
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
-            self.assertEqual(response.get_json()["code"], "bad_request")
+            self.assertEqual(response.get_json()["code"], "not_found")
             self.assertIn(
                 "does not correspond to a known person",
                 response.get_json()["description"]["personExternalId"],
@@ -446,6 +442,106 @@ class TestCaseTriageAPIRoutes(TestCase):
                 },
             )
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+
+    def test_create_note(self) -> None:
+        with self.helpers.as_officer(self.officer):
+            client_info = self.helpers.find_client_in_api_response(
+                self.client_1.person_external_id
+            )
+            self.assertEqual(client_info["notes"], [])
+
+            # Test note creation
+            note_id = self.helpers.create_note(
+                self.client_1.person_external_id, "Demo user note."
+            )
+
+            client_info = self.helpers.find_client_in_api_response(
+                self.client_1.person_external_id
+            )
+            self.assertEqual(len(client_info["notes"]), 1)
+            self.assertEqual(client_info["notes"][0]["noteId"], note_id)
+
+    def test_resolve_note(self) -> None:
+        with self.helpers.as_officer(self.officer):
+            note_id = self.helpers.create_note(
+                self.client_1.person_external_id, "Demo user note."
+            )
+
+            # Not resolved initially
+            note = self.helpers.find_note_for_person(
+                self.client_1.person_external_id, note_id
+            )
+            self.assertFalse(note["resolved"])
+
+            # Becomes resolved
+            self.helpers.resolve_note(note_id)
+            note = self.helpers.find_note_for_person(
+                self.client_1.person_external_id, note_id
+            )
+            self.assertTrue(note["resolved"])
+
+    def test_update_note(self) -> None:
+        with self.helpers.as_officer(self.officer):
+            note_id = self.helpers.create_note(
+                self.client_1.person_external_id, "Demo user note."
+            )
+
+            # Has initial text
+            note = self.helpers.find_note_for_person(
+                self.client_1.person_external_id, note_id
+            )
+            self.assertEqual(note["text"], "Demo user note.")
+
+            # Text is updated
+            self.helpers.update_note(note_id, "Updated!")
+            note = self.helpers.find_note_for_person(
+                self.client_1.person_external_id, note_id
+            )
+            self.assertEqual(note["text"], "Updated!")
+
+    def test_no_empty_notes(self) -> None:
+        with self.helpers.as_officer(self.officer):
+            # Check that creating an empty note fails
+            response = self.test_client.post(
+                "/create_note",
+                json={
+                    "personExternalId": self.officer.external_id,
+                    "text": "",
+                },
+            )
+            self.assertEqual(
+                response.status_code, HTTPStatus.BAD_REQUEST, response.get_json()
+            )
+
+            # Check that updating to empty fails
+            note_id = self.helpers.create_note(
+                self.client_1.person_external_id, "Demo user note."
+            )
+
+            response = self.test_client.post(
+                "/update_note",
+                json={
+                    "noteId": note_id,
+                    "text": "",
+                },
+            )
+            self.assertEqual(
+                response.status_code, HTTPStatus.BAD_REQUEST, response.get_json()
+            )
+
+    def test_notes_sql_injection_gut_check(self) -> None:
+        with self.helpers.as_officer(self.officer):
+            attempted_injection = "foo'; DROP TABLE officer_notes; SELECT * FROM etl_clients WHERE state_code != 'foo"
+            note_id = self.helpers.create_note(
+                self.client_1.person_external_id,
+                attempted_injection,
+            )
+
+            # Make sure we can still access the raw note
+            note = self.helpers.find_note_for_person(
+                self.client_1.person_external_id, note_id
+            )
+            self.assertEqual(note["text"], attempted_injection)
 
 
 class TestUserImpersonation(TestCase):

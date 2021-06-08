@@ -15,10 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """ Contains Marshmallow schemas for our API """
 from functools import wraps
-from typing import Type, List, Any, Dict, Callable
+from typing import Any, Callable, Dict, List, Type
 
-from flask import request, g
-from marshmallow import fields, validate, Schema
+from flask import g, request
+from marshmallow import Schema, ValidationError, fields, validate
 from marshmallow.fields import Field
 from marshmallow_enum import EnumField
 
@@ -33,6 +33,11 @@ from recidiviz.case_triage.opportunities.types import (
 def camelcase(s: str) -> str:
     parts = iter(s.split("_"))
     return next(parts) + "".join(i.title() for i in parts)
+
+
+def non_empty_string(data: str) -> None:
+    if not data:
+        raise ValidationError("Field must be non-empty.")
 
 
 class CamelCaseSchema(Schema):
@@ -70,6 +75,20 @@ class PreferredContactMethodSchema(CamelCaseSchema):
 class PreferredNameSchema(CamelCaseSchema):
     person_external_id = fields.Str(required=True)
     name = fields.Str(required=True, allow_none=True)
+
+
+class CreateNoteSchema(CamelCaseSchema):
+    person_external_id = fields.Str(required=True)
+    text = fields.Str(required=True, validate=non_empty_string)
+
+
+class ResolveNoteSchema(CamelCaseSchema):
+    note_id = fields.Str(required=True)
+
+
+class UpdateNoteSchema(CamelCaseSchema):
+    note_id = fields.Str(required=True)
+    text = fields.Str(required=True, validate=non_empty_string)
 
 
 def requires_api_schema(api_schema: Type[Schema]) -> Callable:

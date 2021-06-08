@@ -16,6 +16,7 @@
 # =============================================================================
 """Implements tests for the CasePresenter class."""
 import json
+import uuid
 from datetime import date, timedelta
 from unittest.case import TestCase
 
@@ -27,11 +28,11 @@ from recidiviz.case_triage.querier.case_presenter import (
     CasePresenter,
     _json_map_dates_to_strings,
 )
+from recidiviz.persistence.database.schema.case_triage.schema import OfficerNote
 from recidiviz.tests.case_triage.case_triage_helpers import (
     generate_fake_case_update,
     generate_fake_client,
     generate_fake_client_info,
-    generate_fake_client_officer_association,
     generate_fake_officer,
 )
 
@@ -48,7 +49,6 @@ class TestCasePresenter(TestCase):
             last_face_to_face_date=date(2021, 1, 15),
             last_home_visit_date=date(2020, 5, 3),
         )
-        self.mock_client.case_updates = []
 
     @freeze_time("2020-01-01 00:00")
     def test_no_case_update_no_additional_client_info(self) -> None:
@@ -87,6 +87,7 @@ class TestCasePresenter(TestCase):
                         "homeVisitContact": True,
                         "assessment": True,
                     },
+                    "notes": [],
                 },
                 None,
             ),
@@ -99,13 +100,15 @@ class TestCasePresenter(TestCase):
             preferred_name="Alex",
             preferred_contact_method=PreferredContactMethod.Text,
         )
-        client_officer_association = generate_fake_client_officer_association(
-            client=self.mock_client,
-            officer_external_id=self.mock_officer.external_id,
-            notes=["No notes!"],
-        )
         self.mock_client.client_info = client_info
-        self.mock_client.client_officer_association = client_officer_association
+        officer_note = OfficerNote(
+            note_id=uuid.uuid4(),
+            state_code=self.mock_client.state_code,
+            officer_external_id=self.mock_client.supervising_officer_external_id,
+            person_external_id=self.mock_client.person_external_id,
+            text="Simple note!",
+        )
+        self.mock_client.notes = [officer_note]
         case_presenter = CasePresenter(self.mock_client, [])
 
         self.assertEqual(
@@ -143,7 +146,7 @@ class TestCasePresenter(TestCase):
                     },
                     "preferredName": client_info.preferred_name,
                     "preferredContactMethod": client_info.preferred_contact_method,
-                    "notes": client_officer_association.notes,
+                    "notes": [officer_note.to_json()],
                 },
                 None,
             ),

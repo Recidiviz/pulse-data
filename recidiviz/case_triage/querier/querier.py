@@ -28,18 +28,17 @@ from recidiviz.case_triage.demo_helpers import (
     get_fixture_clients,
     get_fixture_opportunities,
 )
-from recidiviz.case_triage.opportunities.interface import (
-    OpportunityType,
-)
+from recidiviz.case_triage.opportunities.interface import OpportunityType
 from recidiviz.case_triage.opportunities.types import OpportunityDoesNotExistError
 from recidiviz.case_triage.querier.case_presenter import CasePresenter
 from recidiviz.case_triage.querier.opportunity_presenter import OpportunityPresenter
 from recidiviz.persistence.database.schema.case_triage.schema import (
+    CaseUpdate,
     ClientInfo,
     ETLClient,
     ETLOfficer,
     ETLOpportunity,
-    CaseUpdate,
+    OfficerNote,
     OpportunityDeferral,
 )
 
@@ -175,6 +174,8 @@ class DemoCaseTriageQuerier:
         session: Session, user_email_address: str
     ) -> List[CasePresenter]:
         """Retrieves the list of clients for demo users and associates related objects."""
+
+        # Organize CaseUpdates
         case_updates = (
             session.query(CaseUpdate)
             .filter(
@@ -195,6 +196,7 @@ class DemoCaseTriageQuerier:
                 user_email_address, client.person_external_id
             )
 
+        # Organize ClientInfo structs
         client_infos = (
             session.query(ClientInfo)
             .filter(
@@ -208,9 +210,20 @@ class DemoCaseTriageQuerier:
         for client_info in client_infos:
             client_ids_to_client_info[client_info.person_external_id] = client_info
 
+        # Organize OfficerNotes
+        notes = session.query(OfficerNote).filter(
+            OfficerNote.person_external_id.in_(
+                (client.person_external_id for client in clients)
+            )
+        )
+        client_ids_to_notes = defaultdict(list)
+        for note in notes:
+            client_ids_to_notes[note.person_external_id].append(note)
+
         for client in clients:
             if client_info := client_ids_to_client_info.get(client.person_external_id):
                 client.client_info = client_info
+            client.notes = client_ids_to_notes[client.person_external_id]
 
         return [
             CasePresenter(client, client_ids_to_case_updates[client.person_external_id])
