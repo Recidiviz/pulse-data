@@ -592,6 +592,11 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
             if download_result.failures
             else ""
         )
+        skipped_download_text = (
+            f"Skipped downloading the following files: {download_result.skipped}"
+            if download_result.skipped
+            else ""
+        )
 
         if download_result.successes:
             upload_controller = UploadStateFilesToIngestBucketController(
@@ -622,10 +627,10 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
             )
             skipped_text = (
                 f"Skipped uploading the following files: {upload_controller.skipped_files}"
-                if upload_controller.skipped_files
+                if upload_result.skipped
                 else ""
             )
-            if not upload_result.successes and not upload_controller.skipped_files:
+            if not upload_result.successes and not upload_result.skipped:
                 return (
                     f"{unable_to_download_text}"
                     f" All files failed to upload. {unable_to_upload_text}"
@@ -641,10 +646,10 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
                     HTTPStatus.MULTI_STATUS,
                 )
 
-            if not upload_result.successes and upload_controller.skipped_files:
+            if not upload_result.successes and upload_result.skipped:
                 return f"All files skipped. {skipped_text}", HTTPStatus.OK
 
-            if upload_controller.skipped_files:
+            if upload_result.skipped:
                 return (
                     f"{unable_to_download_text}"
                     f" {unable_to_upload_text}"
@@ -656,8 +661,10 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
                 f"All files failed to download. {unable_to_download_text}",
                 HTTPStatus.BAD_REQUEST,
             )
-        elif not download_result.successes and not download_result.failures:
+        elif not download_result.skipped:
             return f"No items to download for {region_code}", HTTPStatus.BAD_REQUEST
+        else:
+            return f"All files skipped. {skipped_download_text}", HTTPStatus.OK
     return "", HTTPStatus.OK
 
 

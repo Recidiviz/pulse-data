@@ -20,7 +20,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
-from recidiviz.common.results import MultiRequestResult
+from recidiviz.common.results import MultiRequestResultWithSkipped
 from recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller import (
     UploadStateFilesToIngestBucketController,
 )
@@ -72,7 +72,7 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
         expected_result = [
             "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt"
         ]
-        result: MultiRequestResult[str, str] = controller.do_upload()
+        result: MultiRequestResultWithSkipped[str, str, str] = controller.do_upload()
         self.assertEqual(result.successes, expected_result)
         self.assertEqual(len(result.failures), 0)
         self.assertEqual(len(controller.skipped_files), 0)
@@ -103,7 +103,7 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
             project_id="recidiviz-456",
             region="us_xx",
         )
-        result: MultiRequestResult[str, str] = controller.do_upload()
+        result: MultiRequestResultWithSkipped[str, str, str] = controller.do_upload()
         self.assertEqual(
             result.successes,
             ["recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt"],
@@ -146,7 +146,7 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
             project_id="recidiviz-456",
             region="us_xx",
         )
-        result: MultiRequestResult[str, str] = controller.do_upload()
+        result: MultiRequestResultWithSkipped[str, str, str] = controller.do_upload()
         self.assertListEqual(
             result.successes,
             [
@@ -253,7 +253,7 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
             project_id="recidiviz-456",
             region="us_xx",
         )
-        result: MultiRequestResult[str, str] = controller.do_upload()
+        result: MultiRequestResultWithSkipped[str, str, str] = controller.do_upload()
         self.assertListEqual(
             result.successes,
             [
@@ -262,7 +262,7 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
             ],
         )
         self.assertListEqual(
-            controller.skipped_files,
+            result.skipped,
             [
                 "recidiviz-456-direct-ingest-state-us-xx/raw_data/skipped.csv",
                 "recidiviz-456-direct-ingest-state-us-xx/raw_data/discovered.csv",
