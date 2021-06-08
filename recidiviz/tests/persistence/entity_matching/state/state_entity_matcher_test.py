@@ -23,22 +23,22 @@ from mock import patch
 
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
-from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
+from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
     StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_parole_decision import (
     StateParoleDecisionOutcome,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodStatus,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -50,24 +50,24 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.state.entities import (
-    StatePersonAlias,
-    StatePersonExternalId,
-    StatePersonRace,
-    StatePersonEthnicity,
-    StatePerson,
-    StateCourtCase,
+    StateAgent,
     StateCharge,
+    StateCourtCase,
     StateFine,
     StateIncarcerationIncident,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
+    StatePerson,
+    StatePersonAlias,
+    StatePersonEthnicity,
+    StatePersonExternalId,
+    StatePersonRace,
     StateSentenceGroup,
-    StateAgent,
-    StateSupervisionViolation,
-    StateSupervisionViolationResponse,
+    StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
     StateSupervisionSentence,
-    StateSupervisionCaseTypeEntry,
+    StateSupervisionViolation,
+    StateSupervisionViolationResponse,
 )
 from recidiviz.persistence.entity_matching import entity_matching
 from recidiviz.persistence.entity_matching.state import state_matching_utils
@@ -75,30 +75,30 @@ from recidiviz.persistence.entity_matching.state.base_state_matching_delegate im
     BaseStateMatchingDelegate,
 )
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
-    generate_person,
-    generate_external_id,
-    generate_court_case,
-    generate_charge,
-    generate_fine,
-    generate_incarceration_sentence,
-    generate_sentence_group,
-    generate_race,
-    generate_alias,
-    generate_ethnicity,
-    generate_bond,
-    generate_assessment,
     generate_agent,
+    generate_alias,
+    generate_assessment,
+    generate_bond,
+    generate_charge,
+    generate_court_case,
+    generate_ethnicity,
+    generate_external_id,
+    generate_fine,
     generate_incarceration_incident,
-    generate_parole_decision,
     generate_incarceration_period,
-    generate_supervision_violation_response,
-    generate_supervision_violation,
+    generate_incarceration_sentence,
+    generate_parole_decision,
+    generate_person,
+    generate_race,
+    generate_sentence_group,
+    generate_supervision_case_type_entry,
     generate_supervision_period,
     generate_supervision_sentence,
+    generate_supervision_violated_condition_entry,
+    generate_supervision_violation,
+    generate_supervision_violation_response,
     generate_supervision_violation_response_decision_entry,
     generate_supervision_violation_type_entry,
-    generate_supervision_violated_condition_entry,
-    generate_supervision_case_type_entry,
 )
 from recidiviz.tests.persistence.entity_matching.state.base_state_entity_matcher_test_classes import (
     BaseStateEntityMatcherTest,
@@ -3737,6 +3737,86 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             [expected_person], matched_entities.people, session
         )
 
+    def test_mergeMultiParentEntitiesMismatchedTreeShape(self) -> None:
+        # Arrange 1 - Match
+        charge_merged = StateCharge.new_with_defaults(
+            charge_id=_ID,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+        )
+        charge_unmerged = attr.evolve(charge_merged, charge_id=None)
+        charge_duplicate_unmerged = attr.evolve(charge_unmerged)
+        sentence = StateIncarcerationSentence.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            charges=[charge_unmerged],
+        )
+        sentence_2 = StateIncarcerationSentence.new_with_defaults(
+            external_id=_EXTERNAL_ID_2,
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            charges=[charge_duplicate_unmerged],
+        )
+        sentence_3 = StateIncarcerationSentence.new_with_defaults(
+            external_id=_EXTERNAL_ID_3,
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            charges=[charge_merged],
+        )
+        sentence_group = StateSentenceGroup.new_with_defaults(
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_sentences=[sentence, sentence_2, sentence_3],
+        )
+        person = StatePerson.new_with_defaults(
+            sentence_groups=[sentence_group], state_code=_STATE_CODE
+        )
+
+        other_person = StatePerson.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_ids=[
+                StatePersonExternalId.new_with_defaults(
+                    state_code=_STATE_CODE, external_id=_EXTERNAL_ID, id_type=_ID_TYPE
+                )
+            ],
+        )
+
+        expected_charge = attr.evolve(charge_merged)
+        expected_sentence = attr.evolve(sentence, charges=[expected_charge])
+        expected_sentence_2 = attr.evolve(sentence_2, charges=[expected_charge])
+        expected_sentence_3 = attr.evolve(sentence_3, charges=[expected_charge])
+        expected_sentence_group = attr.evolve(
+            sentence_group,
+            incarceration_sentences=[
+                expected_sentence,
+                expected_sentence_2,
+                expected_sentence_3,
+            ],
+        )
+        expected_person = attr.evolve(person, sentence_groups=[expected_sentence_group])
+        expected_other_person = attr.evolve(other_person)
+
+        # Arrange 1 - Match
+        session = self._session()
+        matched_entities = entity_matching.match(
+            session, _STATE_CODE, [other_person, person]
+        )
+
+        # Assert 1 - Match
+        sentence_group = matched_entities.people[0].sentence_groups[0]
+        found_charge = sentence_group.incarceration_sentences[0].charges[0]
+        found_charge_2 = sentence_group.incarceration_sentences[1].charges[0]
+        found_charge_3 = sentence_group.incarceration_sentences[2].charges[0]
+        self.assertEqual(id(found_charge), id(found_charge_2), id(found_charge_3))
+        self.assert_people_match_pre_and_post_commit(
+            [expected_other_person, expected_person],
+            matched_entities.people,
+            session,
+        )
+
     def test_parentChildLinkAtRootDiscoveredAfterBothWritten(self) -> None:
         # Arrange 1 - Match
         db_sentence_group = generate_sentence_group(
@@ -3818,7 +3898,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         db_external_id = generate_external_id(
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID, id_type=_ID_TYPE
         )
-        entity_external_id = self.to_entity(db_external_id)
         db_sentence_group = generate_sentence_group(
             person=db_person,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
@@ -3835,9 +3914,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         entity_incarceration_sentence = self.to_entity(db_incarceration_sentence)
         db_placeholder_sentence_group = generate_sentence_group(
             person=db_person, incarceration_sentences=[db_incarceration_sentence]
-        )
-        entity_placeholder_sentence_group = self.to_entity(
-            db_placeholder_sentence_group
         )
         db_person.external_ids = [db_external_id]
         db_person.sentence_groups = [db_sentence_group, db_placeholder_sentence_group]
@@ -4040,7 +4116,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         db_external_id = generate_external_id(
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID, id_type=_ID_TYPE
         )
-        entity_external_id = self.to_entity(db_external_id)
         db_person.external_ids = [db_external_id]
         db_person.sentence_groups = [db_sentence_group]
         entity_person = self.to_entity(db_person)

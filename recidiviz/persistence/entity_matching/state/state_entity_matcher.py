@@ -21,63 +21,61 @@ ingested entities.
 import datetime
 import logging
 from collections import defaultdict
-
-from typing import List, Dict, Tuple, Optional, Type, Set, cast, Sequence
+from typing import Dict, List, Optional, Sequence, Set, Tuple, Type, cast
 
 from more_itertools import one
 
 from recidiviz.common.common_utils import check_all_objs_have_type
 from recidiviz.persistence.database.database_entity import DatabaseEntity
+from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema.state.dao import check_not_dirty
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
     convert_entity_people_to_schema_people,
 )
 from recidiviz.persistence.database.session import Session
-from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.entity.entity_utils import (
+    get_all_core_entity_field_names,
+    get_all_db_objs_from_tree,
+    get_all_db_objs_from_trees,
+    get_set_entity_field_names,
+    is_placeholder,
+    is_standalone_class,
+    is_standalone_entity,
+    log_entity_count,
+)
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity_matching import entity_matching_utils
 from recidiviz.persistence.entity_matching.base_entity_matcher import (
     BaseEntityMatcher,
     increment_error,
 )
+from recidiviz.persistence.entity_matching.entity_matching_types import (
+    EntityTree,
+    IndividualMatchResult,
+    MatchedEntities,
+    MatchResults,
+)
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
     BaseStateMatchingDelegate,
 )
 from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     EntityFieldType,
-    generate_child_entity_trees,
-    remove_child_from_entity,
     add_child_to_entity,
-    is_match,
+    convert_to_placeholder,
+    db_id_or_object_id,
+    generate_child_entity_trees,
+    get_all_entity_trees_of_cls,
+    get_external_id_keys_from_multiple_id_entity,
+    get_external_ids_from_entity,
+    get_multiparent_classes,
+    get_multiple_id_classes,
     get_root_entity_cls,
     get_total_entities_of_cls,
-    get_all_entity_trees_of_cls,
-    get_external_ids_from_entity,
-    convert_to_placeholder,
+    is_match,
     is_multiple_id_entity,
-    get_external_id_keys_from_multiple_id_entity,
-    get_multiple_id_classes,
     read_db_entity_trees_of_cls_to_merge,
-    get_multiparent_classes,
-    db_id_or_object_id,
+    remove_child_from_entity,
 )
-from recidiviz.persistence.entity.entity_utils import (
-    is_placeholder,
-    get_set_entity_field_names,
-    get_all_core_entity_field_names,
-    get_all_db_objs_from_tree,
-    get_all_db_objs_from_trees,
-    is_standalone_class,
-    is_standalone_entity,
-    log_entity_count,
-)
-from recidiviz.persistence.entity_matching.entity_matching_types import (
-    EntityTree,
-    IndividualMatchResult,
-    MatchResults,
-    MatchedEntities,
-)
-
 from recidiviz.persistence.errors import (
     EntityMatchingError,
     MatchedMultipleIngestedEntitiesError,
@@ -158,7 +156,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             )
         return self.session
 
-    def set_root_entity_cache(self, db_persons: List[schema.StatePerson]):
+    def set_root_entity_cache(self, db_persons: List[schema.StatePerson]) -> None:
         if not db_persons:
             return
 
@@ -168,17 +166,39 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             for external_id in external_ids:
                 self.root_entity_cache[external_id].append(tree)
 
+    def _is_placeholder(self, entity: DatabaseEntity) -> bool:
+        """Entity matching-specific wrapper around is_placeholder() that checks that
+        we didn't fail to add any types to the non_placeholder_ingest_types set.
+        """
+        entity_is_placeholder = is_placeholder(entity)
+        if (
+            not entity_is_placeholder
+            # If the primary key is set, this is an entity that has been committed to
+            # the DB already and is not an ingested entity.
+            and entity.get_primary_key() is None
+            and not type(entity) in self.non_placeholder_ingest_types
+        ):
+            raise ValueError(
+                f"Failed to identify one of the non-placeholder ingest types: "
+                f"[{type(entity)}]. Entity: [{entity}]"
+            )
+        return entity_is_placeholder
+
     def get_non_placeholder_ingest_types(
         self, ingested_db_persons: List[schema.StatePerson]
-    ):
+    ) -> Set[Type[DatabaseEntity]]:
         """Returns set of class types in the ingested persons that are not
         placeholders.
 
-        NOTE: This assumes that all ingested trees take the same form
+        NOTE: This assumes that ingested trees are largely similar and all
+        non-placeholder types will show up in the first 10 person trees.
         """
         non_placeholder_ingest_types: Set[Type[DatabaseEntity]] = set()
-        if ingested_db_persons:
-            ingested_person = ingested_db_persons[0]
+        # We search through the first 10 trees to find all applicable non-placeholder
+        # types. If the first 10 do not surface all types, we will crash later in
+        # the _is_placeholder() helper.
+        for i in range(0, min(10, len(ingested_db_persons))):
+            ingested_person = ingested_db_persons[i]
             for obj in get_all_db_objs_from_tree(ingested_person):
                 if not is_placeholder(obj):
                     non_placeholder_ingest_types.add(type(obj))
@@ -232,7 +252,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
     def log_found_ingest_obj_info_for_person(
         self, person_id: int, found_objs: Set[DatabaseEntity]
-    ):
+    ) -> None:
         logging.warning("For person [%s]:", str(person_id))
         logging.warning("  Found:")
         for found_obj in found_objs:
@@ -251,7 +271,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         return intersection
 
     @staticmethod
-    def describe_db_entity(entity):
+    def describe_db_entity(entity) -> str:
         external_id = (
             entity.get_external_id() if hasattr(entity, "external_id") else "N/A"
         )
@@ -532,7 +552,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         second is the tree to merge onto.
         """
         a_ancestor_tree = a.generate_parent_tree()
-        if is_placeholder(a_ancestor_tree.entity):
+        if self._is_placeholder(a_ancestor_tree.entity):
             return a, b
         return b, a
 
@@ -562,7 +582,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             a_ancestor_tree = a_ancestor_tree.generate_parent_tree()
             b_ancestor_tree = b_ancestor_tree.generate_parent_tree()
             # ignore placeholders in the chain.
-            if is_placeholder(a_ancestor_tree.entity) or is_placeholder(
+            if self._is_placeholder(a_ancestor_tree.entity) or self._is_placeholder(
                 b_ancestor_tree.entity
             ):
                 pass
@@ -747,7 +767,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                     "state_person",
                 )
 
-            if is_placeholder(db_person):
+            if self._is_placeholder(db_person):
                 updated_persons.append(db_person)
 
         self._populate_person_backedges(updated_persons)
@@ -859,7 +879,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         Returns the results of matching as an IndividualMatchResult.
         """
 
-        if is_placeholder(ingested_entity_tree.entity):
+        if self._is_placeholder(ingested_entity_tree.entity):
             return self._match_placeholder_tree(
                 ingested_placeholder_tree=ingested_entity_tree,
                 db_entity_trees=db_entity_trees,
@@ -1031,7 +1051,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         """
 
         db_placeholder_trees = [
-            tree for tree in db_entity_trees if is_placeholder(tree.entity)
+            tree for tree in db_entity_trees if self._is_placeholder(tree.entity)
         ]
 
         error_count = 0
@@ -1303,7 +1323,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
         ingested_matches.append(ingested_entity)
         # It's ok for a DB object to match multiple ingested placeholders.
-        if all(is_placeholder(im) for im in ingested_matches):
+        if all(self._is_placeholder(im) for im in ingested_matches):
             return
 
         # Entities with multiple external ids can be matched multiple times.
