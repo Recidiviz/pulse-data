@@ -34,7 +34,7 @@ POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
         gender,
         age_bucket
       FROM
-        `{project_id}.{materialized_metrics_dataset}.most_recent_daily_incarceration_population_materialized`
+        `{project_id}.{reference_views_dataset}.single_day_incarceration_population_for_spotlight_materialized`
       LEFT JOIN
         `{project_id}.{static_reference_dataset}.state_incarceration_facility_capacity`
       USING (state_code, facility)
@@ -98,7 +98,7 @@ def get_view_builder(
             "age_bucket",
         ),
         static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
-        materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+        reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
         unnested_race_or_ethnicity_dimension=bq_utils.unnest_column(
             "race_or_ethnicity", "race_or_ethnicity"
         ),

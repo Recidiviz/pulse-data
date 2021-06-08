@@ -25,7 +25,6 @@ import attr
 
 from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryView
 from recidiviz.utils import structured_logging
-from recidiviz.view_registry.deployed_views import NOISY_DEPENDENCY_VIEW_BUILDERS
 
 # We set this to 10 because urllib3 (used by the Google BigQuery client) has an default limit of 10 connections and
 # we were seeing "urllib3.connectionpool:Connection pool is full, discarding connection" errors when this number
@@ -307,15 +306,6 @@ class BigQueryViewDagWalker:
         representations of those dependency trees. If |view_source_table_datasets| are
         specified, we stop searching for parent nodes when we hit a source dataset.
         """
-        # TODO(#7749): refactor most_recent_daily_job_id_by_metric_and_state_code dependencies
-        noisy_dependency_keys = [
-            DagKey(
-                view_address=BigQueryAddress(
-                    dataset_id=builder.dataset_id, table_id=builder.view_id
-                )
-            )
-            for builder in NOISY_DEPENDENCY_VIEW_BUILDERS
-        ]
 
         def _get_one_way_dependencies(
             descendants: bool = False,
@@ -368,18 +358,16 @@ class BigQueryViewDagWalker:
                         reverse=descendants,
                     ):
                         full_dependencies.add(related_key)
-                        # Stop if we hit a noisy dependency
-                        if related_key not in noisy_dependency_keys:
-                            stack.append(
-                                (
-                                    related_key,
-                                    # We don't add a tab if we are skipping a view
-                                    tabs
-                                    if datasets_to_skip
-                                    and dag_key.dataset_id in datasets_to_skip
-                                    else tabs + 1,
-                                )
+                        stack.append(
+                            (
+                                related_key,
+                                # We don't add a tab if we are skipping a view
+                                tabs
+                                if datasets_to_skip
+                                and dag_key.dataset_id in datasets_to_skip
+                                else tabs + 1,
                             )
+                        )
             return full_dependencies, tree
 
         full_parentage, parent_tree = _get_one_way_dependencies()

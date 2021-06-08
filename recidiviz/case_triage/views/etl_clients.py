@@ -58,7 +58,7 @@ latest_contacts AS (
     MAX(most_recent_face_to_face_date) AS most_recent_face_to_face_date,
     MAX(most_recent_home_visit_date) AS most_recent_home_visit_date
   FROM
-    `{project_id}.{dataflow_metrics_materialized_dataset}.most_recent_supervision_case_compliance_metrics_materialized`
+    `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics_materialized`
   WHERE
     person_external_id IS NOT NULL
   GROUP BY person_id, state_code
@@ -93,7 +93,7 @@ ideal_query AS (
 SELECT
     {columns}
 FROM
-  `{project_id}.{dataflow_metrics_materialized_dataset}.most_recent_daily_supervision_population_materialized`
+  `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_supervision_population_metrics_materialized`
 LEFT JOIN
   `{project_id}.state.state_person`
 USING (person_id, gender, state_code)
@@ -167,7 +167,7 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     view_query_template=CLIENT_LIST_QUERY_TEMPLATE,
     analyst_views_dataset=ANALYST_VIEWS_DATASET,
     case_triage_dataset=VIEWS_DATASET,
-    dataflow_metrics_materialized_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     static_reference_tables_dataset=STATIC_REFERENCE_TABLES_DATASET,
     columns=[
         "state_code",
