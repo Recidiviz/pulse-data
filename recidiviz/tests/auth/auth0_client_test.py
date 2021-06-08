@@ -17,7 +17,8 @@
 """Tests for the wrapper class Auth0Client"""
 from unittest import TestCase
 from unittest.mock import patch
-from recidiviz.auth.auth0_client import Auth0Client, Auth0AppMetadata
+
+from recidiviz.auth.auth0_client import Auth0AppMetadata, Auth0Client
 
 
 class Auth0ClientTest(TestCase):
@@ -71,8 +72,7 @@ class Auth0ClientTest(TestCase):
         )
 
         self.mock_client.users.list.assert_called_with(
-            page=0,
-            per_page=50,
+            per_page=25,
             fields=["user_id", "email", "app_metadata"],
             q='email: "one@test.gov" or email: "two@test.gov"',
         )
