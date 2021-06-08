@@ -36,8 +36,6 @@ class ReportContext(ABC):
         self.recipient = recipient
         self.prepared_data: dict = {}
 
-        self.properties: dict = {}
-
         self._validate_recipient_has_expected_fields(recipient)
 
     @abstractmethod
@@ -59,10 +57,6 @@ class ReportContext(ABC):
     @abstractmethod
     def get_report_type(self) -> str:
         """Returns the report type for this report."""
-
-    @abstractmethod
-    def get_properties_filepath(self) -> str:
-        """Returns the filepath to the context's properties.json file"""
 
     @property
     @abstractmethod
