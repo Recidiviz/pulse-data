@@ -15,13 +15,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Unit and integration tests for US_TN direct ingest."""
+import datetime
 from typing import Type
 
+from recidiviz.common.constants.person_characteristics import Gender, Race
+from recidiviz.common.constants.state.external_id_types import US_TN_DOC
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.regions.us_tn.us_tn_controller import UsTnController
+from recidiviz.ingest.models.ingest_info import (
+    IngestInfo,
+    StatePerson,
+    StatePersonExternalId,
+    StatePersonRace,
+)
 from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import (
     BaseDirectIngestControllerTests,
 )
@@ -43,3 +53,130 @@ class TestUsTnController(BaseDirectIngestControllerTests):
     @classmethod
     def schema_type(cls) -> SchemaType:
         return SchemaType.STATE
+
+    def test_populate_data_OffenderAndAssociatedStaff(self) -> None:
+        expected = IngestInfo(
+            state_people=[
+                StatePerson(
+                    state_person_id="00000001",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="00000001", id_type=US_TN_DOC
+                        )
+                    ],
+                    given_names="FIRST1",
+                    middle_names="MIDDLE1",
+                    surname="LAST1",
+                    state_person_races=[StatePersonRace(race="W")],
+                    gender="F",
+                    birthdate="1985-03-07 00:00:00",
+                ),
+                StatePerson(
+                    state_person_id="00000002",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="00000002", id_type=US_TN_DOC
+                        )
+                    ],
+                    given_names="FIRST2",
+                    middle_names="MIDDLE2",
+                    surname="LAST2",
+                    state_person_races=[StatePersonRace(race="B")],
+                    gender="M",
+                    birthdate="1969-02-01 00:00:00",
+                ),
+                StatePerson(
+                    state_person_id="00000003",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="00000003", id_type=US_TN_DOC
+                        )
+                    ],
+                    given_names="FIRST3",
+                    middle_names="MIDDLE3",
+                    surname="LAST3",
+                    state_person_races=[StatePersonRace(race="A")],
+                    gender="F",
+                    birthdate="1947-01-11 00:00:00",
+                ),
+            ]
+        )
+
+        self.run_parse_file_test(expected, "OffenderName")
+
+    def test_run_full_ingest_all_files_specific_order(self) -> None:
+        self.maxDiff = None
+        ######################################
+        # OffenderName
+        ######################################
+        # Arrange
+        person_1 = entities.StatePerson.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            full_name='{"given_names": "FIRST1", "middle_names": "MIDDLE1", "surname": "LAST1"}',
+            gender=Gender.FEMALE,
+            gender_raw_text="F",
+            birthdate=datetime.date(year=1985, month=3, day=7),
+            birthdate_inferred_from_age=False,
+        )
+        _add_external_id_to_person(person_1, "00000001")
+        _add_race_to_person(person_1, race_raw_text="W", race=Race.WHITE)
+
+        person_2 = entities.StatePerson.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            full_name='{"given_names": "FIRST2", "middle_names": "MIDDLE2", "surname": "LAST2"}',
+            gender=Gender.MALE,
+            gender_raw_text="M",
+            birthdate=datetime.date(year=1969, month=2, day=1),
+            birthdate_inferred_from_age=False,
+        )
+        _add_external_id_to_person(person_2, "00000002")
+        _add_race_to_person(person_2, race_raw_text="B", race=Race.BLACK)
+
+        person_3 = entities.StatePerson.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            full_name='{"given_names": "FIRST3", "middle_names": "MIDDLE3", "surname": "LAST3"}',
+            gender=Gender.FEMALE,
+            gender_raw_text="F",
+            birthdate=datetime.date(year=1947, month=1, day=11),
+            birthdate_inferred_from_age=False,
+        )
+        _add_external_id_to_person(person_3, "00000003")
+        _add_race_to_person(person_3, race_raw_text="A", race=Race.ASIAN)
+
+        expected_people = [
+            person_1,
+            person_2,
+            person_3,
+        ]
+
+        # Act
+        self._run_ingest_job_for_filename("OffenderName")
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+
+def _add_race_to_person(
+    person: entities.StatePerson, race_raw_text: str, race: entities.Race
+) -> None:
+    """Append race to the person (updates the person entity in place)."""
+    race_to_add: entities.StatePersonRace = entities.StatePersonRace.new_with_defaults(
+        state_code=_STATE_CODE_UPPER,
+        race=race,
+        race_raw_text=race_raw_text,
+        person=person,
+    )
+    person.races.append(race_to_add)
+
+
+def _add_external_id_to_person(person: entities.StatePerson, external_id: str) -> None:
+    """Append external id to the person (updates the person entity in place)."""
+    external_id_to_add: entities.StatePersonExternalId = (
+        entities.StatePersonExternalId.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id=external_id,
+            id_type=US_TN_DOC,
+            person=person,
+        )
+    )
+    person.external_ids.append(external_id_to_add)

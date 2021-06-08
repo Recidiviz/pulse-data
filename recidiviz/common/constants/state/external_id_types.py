@@ -45,3 +45,5 @@ US_PA_PBPP = "US_PA_PBPP"
 US_PA_INMATE = "US_PA_INMATE"
 # Legacy type for un-hashed state ID values.
 US_PA_SID = "US_PA_SID"
+
+US_TN_DOC = "US_TN_DOC"
