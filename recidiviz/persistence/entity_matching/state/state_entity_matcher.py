@@ -81,6 +81,9 @@ from recidiviz.persistence.errors import (
     MatchedMultipleIngestedEntitiesError,
 )
 
+# How many person trees to search to fill the non_placeholder_ingest_types set.
+NUM_TREES_TO_SEARCH_FOR_NON_PLACEHOLDER_TYPES = 10
+
 
 class _ParentInfo:
     """
@@ -171,17 +174,29 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         we didn't fail to add any types to the non_placeholder_ingest_types set.
         """
         entity_is_placeholder = is_placeholder(entity)
+        entity_cls = type(entity)
         if (
             not entity_is_placeholder
             # If the primary key is set, this is an entity that has been committed to
             # the DB already and is not an ingested entity.
             and entity.get_primary_key() is None
-            and not type(entity) in self.non_placeholder_ingest_types
+            and entity_cls not in self.non_placeholder_ingest_types
         ):
-            raise ValueError(
+            error_message = (
                 f"Failed to identify one of the non-placeholder ingest types: "
-                f"[{type(entity)}]. Entity: [{entity}]"
+                f"[{entity_cls.__name__}]. Entity: [{entity}]"
             )
+            if hasattr(entity, "external_id") or isinstance(entity, schema.StatePerson):
+                raise ValueError(error_message)
+            # This is an enum-like entity that we will not do any interesting
+            # post-processing to. Downgrade to a warning and continue.
+            logging.warning(
+                "%s. Adding non-external_id class [%s] to set now.",
+                error_message,
+                entity_cls,
+            )
+            self.non_placeholder_ingest_types.add(entity_cls)
+
         return entity_is_placeholder
 
     def get_non_placeholder_ingest_types(
@@ -197,7 +212,13 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         # We search through the first 10 trees to find all applicable non-placeholder
         # types. If the first 10 do not surface all types, we will crash later in
         # the _is_placeholder() helper.
-        for i in range(0, min(10, len(ingested_db_persons))):
+        for i in range(
+            0,
+            min(
+                NUM_TREES_TO_SEARCH_FOR_NON_PLACEHOLDER_TYPES,
+                len(ingested_db_persons),
+            ),
+        ):
             ingested_person = ingested_db_persons[i]
             for obj in get_all_db_objs_from_tree(ingested_person):
                 if not is_placeholder(obj):
