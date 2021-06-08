@@ -16,8 +16,9 @@
 // =============================================================================
 
 import { Card, Modal } from "@recidiviz/design-system";
-import { action, autorun } from "mobx";
+import { autorun } from "mobx";
 import { observer } from "mobx-react-lite";
+import { rem } from "polished";
 import React, { useEffect, useState } from "react";
 import styled from "styled-components/macro";
 import { useRootStore } from "../../stores";
@@ -33,23 +34,47 @@ const UnpaddedModal = styled(Modal)`
   }
 `;
 
-export const CaseCardModal: React.FC<{ isOpen: boolean }> = ({
-  children,
-  isOpen,
-}) => {
+const DRAWER_MARGIN = 24;
+const DRAWER_WIDTH = 555;
+
+const DrawerModal = styled(UnpaddedModal)`
+  /* need extra specificity to override base */
+  && .ReactModal__Content {
+    height: calc(100vh - ${rem(DRAWER_MARGIN * 2)});
+    max-height: unset;
+    max-width: calc(100vw - ${rem(DRAWER_MARGIN * 2)});
+    width: ${rem(DRAWER_WIDTH)};
+
+    /* transition: slide out from side instead of zooming from center */
+    left: unset;
+    right: ${rem(DRAWER_MARGIN)};
+    transform: translate(${rem(DRAWER_WIDTH)}, -50%) !important;
+
+    &.ReactModal__Content--after-open {
+      transform: translate(0, -50%) !important;
+    }
+
+    &.ReactModal__Content--before-close {
+      transform: translate(${rem(DRAWER_WIDTH)}, -50%) !important;
+    }
+  }
+`;
+
+export const CaseCardModal: React.FC = observer(({ children }) => {
   const { clientsStore } = useRootStore();
 
   return (
     <UnpaddedModal
-      isOpen={isOpen}
-      onRequestClose={action("close client modal", () => {
-        clientsStore.activeClient = undefined;
-      })}
+      isOpen={clientsStore.showClientCard}
+      onRequestClose={() => clientsStore.setShowClientCard(false)}
+      onAfterClose={() => {
+        clientsStore.view();
+      }}
     >
       {children}
     </UnpaddedModal>
   );
-};
+});
 
 const PopoutWrapper = styled(Card).attrs({ stacked: true })`
   position: relative;
@@ -100,6 +125,17 @@ export const CaseCardPopout: React.FC = observer(({ children }) => {
     });
   });
 
+  // clean up client state when popover closes
+  useEffect(() =>
+    autorun(() => {
+      if (!clientsStore.showClientCard) {
+        clientsStore.view();
+      }
+    })
+  );
+
+  if (!clientsStore.showClientCard) return null;
+
   return (
     <PopoutWrapper
       style={{
@@ -109,5 +145,21 @@ export const CaseCardPopout: React.FC = observer(({ children }) => {
     >
       {children}
     </PopoutWrapper>
+  );
+});
+
+export const CaseCardDrawer: React.FC = observer(({ children }) => {
+  const { clientsStore } = useRootStore();
+
+  return (
+    <DrawerModal
+      isOpen={clientsStore.showClientCard}
+      onRequestClose={() => clientsStore.setShowClientCard(false)}
+      onAfterClose={() => {
+        clientsStore.view();
+      }}
+    >
+      {children}
+    </DrawerModal>
   );
 });
