@@ -20,7 +20,7 @@ taken to give us a unified view of a person on supervision."""
 import json
 import logging
 from datetime import date, timedelta
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -44,8 +44,8 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
 from recidiviz.persistence.database.schema.case_triage.schema import (
-    ETLClient,
     CaseUpdate,
+    ETLClient,
 )
 
 
@@ -101,6 +101,7 @@ class CasePresenter:
                 ).to_json()
                 for case_update in self.case_updates
             },
+            "notes": [note.to_json() for note in self.etl_client.notes],
         }
 
         # TODO(#5769): We're doing this quickly here and being intentional about the debt we're taking
@@ -147,11 +148,6 @@ class CasePresenter:
                 base_dict[
                     "preferredContactMethod"
                 ] = client_info.preferred_contact_method
-        if (
-            client_officer_association := self.etl_client.client_officer_association
-        ) is not None:
-            if client_officer_association.notes is not None:
-                base_dict["notes"] = client_officer_association.notes
 
         return _json_map_dates_to_strings(base_dict, timedelta_shift)
 

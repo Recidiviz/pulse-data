@@ -18,7 +18,7 @@
 import contextlib
 from datetime import datetime, timedelta
 from http import HTTPStatus
-from typing import List, Dict, Any, Generator, Optional
+from typing import Any, Dict, Generator, List, Optional
 from unittest import TestCase
 
 import attr
@@ -84,6 +84,20 @@ class CaseTriageTestHelpers:
         self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
         self.test.assertIsNotNone(response.get_json()["updateId"])
 
+    def create_note(self, person_external_id: str, text: str) -> str:
+        response = self.test_client.post(
+            "/create_note",
+            json={
+                "personExternalId": person_external_id,
+                "text": text,
+            },
+        )
+
+        self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+        note_id = response.get_json()["noteId"]
+        self.test.assertIsNotNone(note_id)
+        return note_id
+
     def defer_opportunity(
         self,
         person_external_id: str,
@@ -119,6 +133,27 @@ class CaseTriageTestHelpers:
 
         raise ValueError(f"Could not find client {person_external_id} in response")
 
+    def find_note_for_person(
+        self, person_external_id: str, note_id: str
+    ) -> Dict[str, Any]:
+        client = self.find_client_in_api_response(person_external_id)
+
+        for note in client["notes"]:
+            if note["noteId"] == note_id:
+                return note
+
+        raise ValueError(f"Could not find {note_id=} for {person_external_id=}")
+
+    def resolve_note(self, note_id: str) -> None:
+        response = self.test_client.post(
+            "/resolve_note",
+            json={
+                "noteId": note_id,
+            },
+        )
+
+        self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+
     def set_preferred_contact_method(
         self, person_external_id: str, contact_method: PreferredContactMethod
     ) -> None:
@@ -138,6 +173,17 @@ class CaseTriageTestHelpers:
             json={
                 "personExternalId": person_external_id,
                 "name": name,
+            },
+        )
+
+        self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+
+    def update_note(self, note_id: str, text: str) -> None:
+        response = self.test_client.post(
+            "/update_note",
+            json={
+                "noteId": note_id,
+                "text": text,
             },
         )
 

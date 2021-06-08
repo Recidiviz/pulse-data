@@ -27,7 +27,6 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLOpportunity,
 )
 
-
 DEMO_FROZEN_DATETIME = datetime(
     year=2021,
     month=3,
@@ -35,6 +34,9 @@ DEMO_FROZEN_DATETIME = datetime(
     tzinfo=pytz.UTC,
 )
 DEMO_FROZEN_DATE = DEMO_FROZEN_DATETIME.date()
+
+# This is what we've been using for all demo data
+DEMO_STATE_CODE = "US_ID"
 
 _FIXTURE_PATH = os.path.abspath(
     os.path.join(
