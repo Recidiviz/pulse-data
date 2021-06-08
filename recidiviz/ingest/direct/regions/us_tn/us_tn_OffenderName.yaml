@@ -1,0 +1,20 @@
+# This file associates the columns outputted from the query in `view_docstars_OffenderName` to corresponding
+# Ingest Object fields.
+
+key_mappings:
+  OffenderID: state_person.state_person_id
+  FirstName: state_person.given_names
+  MiddleName: state_person.middle_names
+  LastName: state_person.surname
+  Sex: state_person.gender
+  BirthDate: state_person.birthdate
+
+child_key_mappings:
+  Race: state_person_race.race
+  OffenderID: state_person_external_id.state_person_external_id_id
+
+primary_key:
+  OffenderID: state_person.state_person_id
+
+keys_to_ignore:
+  - OffenderStatus #  Not used for now -- needs further investigation.
