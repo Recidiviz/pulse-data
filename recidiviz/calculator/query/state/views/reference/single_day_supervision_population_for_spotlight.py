@@ -21,28 +21,17 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-MOST_RECENT_DAILY_SUPERVISION_POPULATION_VIEW_NAME = (
-    "most_recent_daily_supervision_population"
+SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_NAME = (
+    "single_day_supervision_population_for_spotlight"
 )
 
-MOST_RECENT_DAILY_SUPERVISION_POPULATION_DESCRIPTION = (
+SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_DESCRIPTION = (
     """Event based supervision population for the most recent date of supervision."""
 )
 
 
-# TODO(#5461): Move most_recent_daily joins to dataflow_metrics_materialized
-MOST_RECENT_DAILY_SUPERVISION_POPULATION_QUERY_TEMPLATE = """
+SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_QUERY_TEMPLATE = """
     /*{description}*/
-    WITH most_recent_job_id AS (
-      SELECT
-        state_code,
-        metric_date as date_of_supervision,
-        job_id,
-        metric_type
-      FROM
-        `{project_id}.{materialized_metrics_dataset}.most_recent_daily_job_id_by_metric_and_state_code_materialized`
-    )
-
     SELECT
       state_code,
       person_id,
@@ -59,21 +48,18 @@ MOST_RECENT_DAILY_SUPERVISION_POPULATION_QUERY_TEMPLATE = """
       IFNULL(supervision_level, 'EXTERNAL_UNKNOWN') as supervision_level,
       date_of_supervision
     FROM
-      `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
-    INNER JOIN
-      most_recent_job_id
-    USING (state_code, job_id, date_of_supervision, metric_type)
+      `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_supervision_population_metrics_materialized`
     """
 
-MOST_RECENT_DAILY_SUPERVISION_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    view_id=MOST_RECENT_DAILY_SUPERVISION_POPULATION_VIEW_NAME,
+SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+    dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
+    view_id=SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_NAME,
     should_materialize=True,
-    view_query_template=MOST_RECENT_DAILY_SUPERVISION_POPULATION_QUERY_TEMPLATE,
-    description=MOST_RECENT_DAILY_SUPERVISION_POPULATION_DESCRIPTION,
+    view_query_template=SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_QUERY_TEMPLATE,
+    description=SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        MOST_RECENT_DAILY_SUPERVISION_POPULATION_VIEW_BUILDER.build_and_print()
+        SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER.build_and_print()

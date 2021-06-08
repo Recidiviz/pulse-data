@@ -15,13 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Most recent daily supervision population counts broken down by district and demographic categories."""
-# pylint: disable=trailing-whitespace
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
 )
+
+# pylint: disable=trailing-whitespace
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -42,7 +43,7 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
           gender,
           age_bucket,
           district,
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_daily_supervision_population_materialized`,
+        FROM `{project_id}.{reference_views_dataset}.single_day_supervision_population_for_spotlight_materialized`,
           {district_dimension}
     )
 
@@ -85,7 +86,7 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQuery
         "age_bucket",
     ),
     description=SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
-    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column(
         "race_or_ethnicity", "race_or_ethnicity"
     ),
