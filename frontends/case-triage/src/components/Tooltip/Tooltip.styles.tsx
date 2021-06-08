@@ -16,7 +16,7 @@
 // =============================================================================
 import { rem } from "polished";
 import styled from "styled-components/macro";
-import { palette, spacing } from "@recidiviz/design-system";
+import { palette, spacing, zindex } from "@recidiviz/design-system";
 
 const StateStyles = {
   entering: `opacity: 1;`,
@@ -38,6 +38,7 @@ const TooltipElement = styled.div<{
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.3s ease-in-out;
+  z-index: ${zindex.modal.content + 1};
 
   ${(props) => props.state && StateStyles[props.state]}
 `;
