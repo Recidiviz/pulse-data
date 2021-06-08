@@ -44,7 +44,7 @@ INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_QUERY_TEMPLATE = """
         admission_reason,
         {state_specific_race_or_ethnicity_groupings}
       FROM
-        `{project_id}.{materialized_metrics_dataset}.most_recent_daily_incarceration_population_materialized`
+        `{project_id}.{reference_views_dataset}.single_day_incarceration_population_for_spotlight_materialized`
       WHERE {facility_type_filter}
     )
     
@@ -84,7 +84,7 @@ INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_BUILDER = MetricBigQueryViewBu
         "age_bucket",
     ),
     description=INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_DESCRIPTION,
-    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column(
         "race_or_ethnicity", "race_or_ethnicity"
     ),

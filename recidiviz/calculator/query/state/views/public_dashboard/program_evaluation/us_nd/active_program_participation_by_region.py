@@ -15,13 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Active FTR participation counts by the region of the program location."""
-# pylint: disable=trailing-whitespace
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
 )
+
+# pylint: disable=trailing-whitespace
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -35,15 +36,7 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_DESCRIPTION = (
 
 ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = """
     /*{description}*/
-     WITH most_recent_job_id AS (
-      SELECT
-        state_code,
-        metric_date as date_of_participation,
-        job_id,
-        metric_type
-      FROM
-        `{project_id}.{materialized_metrics_dataset}.most_recent_daily_job_id_by_metric_and_state_code_materialized`
-    ), participants_with_race_or_ethnicity AS (
+     WITH participants_with_race_or_ethnicity AS (
       SELECT
         state_code,
         supervision_type,
@@ -51,10 +44,7 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = """
         person_id,
         {state_specific_race_or_ethnicity_groupings},
       FROM
-        `{project_id}.{materialized_metrics_dataset}.most_recent_program_participation_metrics_materialized`
-      INNER JOIN
-        most_recent_job_id
-      USING (state_code, job_id, date_of_participation, metric_type)
+        `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_program_participation_metrics_materialized`
       LEFT JOIN
         `{project_id}.{static_reference_dataset}.program_locations`
       USING (state_code, program_location_id)

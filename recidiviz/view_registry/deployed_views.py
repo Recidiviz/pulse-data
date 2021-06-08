@@ -30,9 +30,6 @@ from recidiviz.calculator.query.justice_counts.view_config import (
 from recidiviz.calculator.query.state.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as STATE_VIEW_BUILDERS,
 )
-from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_daily_job_id_by_metric_and_state_code import (
-    MOST_RECENT_DAILY_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER,
-)
 from recidiviz.case_triage.views.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as CASE_TRIAGE_VIEW_BUILDERS,
 )
@@ -70,8 +67,3 @@ DEPLOYED_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     for builder_list in DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.values()
     for builder in builder_list
 ]
-
-# TODO(#7749): refactor most_recent_daily_job_id_by_metric_and_state_code dependencies
-NOISY_DEPENDENCY_VIEW_BUILDERS = {
-    MOST_RECENT_DAILY_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER,
-}

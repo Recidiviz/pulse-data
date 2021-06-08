@@ -18,13 +18,13 @@
 # pylint: disable=trailing-whitespace,line-too-long
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.bq_utils import generate_district_id_from_district_name
+from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS,
-    vitals_state_specific_po_name,
     vitals_state_specific_district_display_name,
+    vitals_state_specific_po_name,
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -49,9 +49,9 @@ def generate_entity_summary_query(field: str, vitals_table: str) -> str:
     SELECT
       state_code,
       most_recent_date_of_supervision,
-      MAX(IF(date_of_supervision = most_recent_job_id.most_recent_date_of_supervision, {field}, null)) as most_recent_{field},
-      MAX(IF(date_of_supervision = DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 30 DAY), {field}, null)) as {field}_30_days_before,
-      MAX(IF(date_of_supervision = DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 90 DAY), {field}, null)) as {field}_90_days_before,
+      MAX(IF(date_of_supervision = most_recent_supervision_dates_per_state.most_recent_date_of_supervision, {field}, null)) as most_recent_{field},
+      MAX(IF(date_of_supervision = DATE_SUB(most_recent_supervision_dates_per_state.most_recent_date_of_supervision, INTERVAL 30 DAY), {field}, null)) as {field}_30_days_before,
+      MAX(IF(date_of_supervision = DATE_SUB(most_recent_supervision_dates_per_state.most_recent_date_of_supervision, INTERVAL 90 DAY), {field}, null)) as {field}_90_days_before,
       CASE
         WHEN {po_condition} THEN {bq_utils.clean_up_supervising_officer_external_id()}
         WHEN {district_condition} THEN {generate_district_id_from_district_name('district_name')}
@@ -71,13 +71,13 @@ def generate_entity_summary_query(field: str, vitals_table: str) -> str:
     FROM
      `{{project_id}}.{{vitals_report_dataset}}.{vitals_table}` metric_table
     INNER JOIN
-        most_recent_job_id
+        most_recent_supervision_dates_per_state
     USING (state_code)
     WHERE (supervising_officer_external_id = 'ALL' OR district_id != 'ALL')
       AND date_of_supervision IN (
-        most_recent_job_id.most_recent_date_of_supervision,
-        DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 30 DAY),
-        DATE_SUB(most_recent_job_id.most_recent_date_of_supervision, INTERVAL 90 DAY))
+        most_recent_supervision_dates_per_state.most_recent_date_of_supervision,
+        DATE_SUB(most_recent_supervision_dates_per_state.most_recent_date_of_supervision, INTERVAL 30 DAY),
+        DATE_SUB(most_recent_supervision_dates_per_state.most_recent_date_of_supervision, INTERVAL 90 DAY))
       AND state_code = 'US_ND'
     GROUP BY state_code, most_recent_date_of_supervision, entity_id, entity_name, parent_entity_id, supervising_officer_external_id, district_id
     """
@@ -85,15 +85,12 @@ def generate_entity_summary_query(field: str, vitals_table: str) -> str:
 
 VITALS_SUMMARIES_QUERY_TEMPLATE = f"""
     /*{{description}}*/
-    WITH most_recent_job_id AS (
-    SELECT
+    WITH most_recent_supervision_dates_per_state AS (
+    SELECT DISTINCT
         state_code,
-        metric_date as most_recent_date_of_supervision,
-        job_id,
-        metric_type
+        date_of_supervision as most_recent_date_of_supervision,
       FROM
-        `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_daily_job_id_by_metric_and_state_code_materialized`
-      WHERE metric_type = "SUPERVISION_POPULATION"
+        `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_single_day_supervision_population_metrics_materialized`
     ), 
     timely_discharge AS (
      {generate_entity_summary_query('timely_discharge', 'supervision_population_due_for_release_by_po_by_day')}
