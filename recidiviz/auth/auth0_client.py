@@ -16,8 +16,8 @@
 # =============================================================================
 """Wrapper around the Auth0 Client
 """
-import math
-from typing import List, Dict, TypedDict, Optional
+from typing import Dict, List, Optional, TypedDict
+
 from auth0.v3.authentication import GetToken
 from auth0.v3.management import Auth0
 
@@ -34,6 +34,9 @@ Auth0AppMetadata = TypedDict(
 Auth0User = TypedDict(
     "Auth0User", {"email": str, "user_id": str, "app_metadata": Auth0AppMetadata}
 )
+
+# The max results the API allows per page is 50, but the lucene query can become too long, so we limit it by 25.
+MAX_RESULTS_PER_PAGE = 25
 
 
 class Auth0Client:
@@ -78,15 +81,15 @@ class Auth0Client:
         self, email_addresses: List[str]
     ) -> List[Auth0User]:
         """Given a list of email addresses, it returns a list of Auth0 users with the user_id and email address for each
-        user. The max results the API allows per page is 50, so this collects all of the users per page."""
+        user."""
         all_users = []
-        max_results_per_page = 50
-        num_pages = math.ceil(len(email_addresses) / max_results_per_page)
-        lucene_query = self._create_search_users_by_email_query(email_addresses)
-        for page in range(num_pages):
+        email_addresses_copy = email_addresses.copy()
+        while email_addresses_copy:
+            emails_to_query = email_addresses_copy[0:MAX_RESULTS_PER_PAGE]
+            del email_addresses_copy[0:MAX_RESULTS_PER_PAGE]
+            lucene_query = self._create_search_users_by_email_query(emails_to_query)
             response = self.client.users.list(
-                page=page,
-                per_page=max_results_per_page,
+                per_page=MAX_RESULTS_PER_PAGE,
                 fields=["user_id", "email", "app_metadata"],
                 q=lucene_query,
             )
