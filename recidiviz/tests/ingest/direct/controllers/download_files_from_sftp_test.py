@@ -21,14 +21,13 @@ import os
 import stat
 import unittest
 from base64 import decodebytes
-from typing import List, Callable
-
-from mock import patch, Mock, MagicMock
+from typing import Callable, List
 
 import pysftp
 import pytz
+from mock import MagicMock, Mock, patch
+from paramiko import HostKeys, RSAKey, SFTPAttributes
 from pysftp import CnOpts
-from paramiko import SFTPAttributes, HostKeys, RSAKey
 
 from recidiviz.cloud_storage.content_types import (
     FileContentsHandle,
@@ -36,12 +35,15 @@ from recidiviz.cloud_storage.content_types import (
     IoType,
 )
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.ingest.direct.base_sftp_download_delegate import BaseSftpDownloadDelegate
 from recidiviz.ingest.direct.controllers.download_files_from_sftp import (
-    SftpAuth,
-    DownloadFilesFromSftpController,
     RAW_INGEST_DIRECTORY,
+    DownloadFilesFromSftpController,
+    SftpAuth,
+)
+from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
+    PostgresDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
@@ -64,6 +66,8 @@ INNER_FILE_TREE = [
     "subdir2",
     "subdir3",
     "subdir1/file1.txt",
+    "already_processed.csv",
+    "discovered.csv",
 ]
 
 
@@ -106,7 +110,7 @@ def create_sftp_attrs() -> List[SFTPAttributes]:
 def mock_stat(path: str) -> SFTPAttributes:
     sftp_attr = SFTPAttributes()
     sftp_attr.filename = path
-    if ".txt" not in path:
+    if ".txt" not in path and ".csv" not in path:
         sftp_attr.st_mode = stat.S_IFDIR
     else:
         sftp_attr.st_mode = stat.S_IFREG
@@ -124,7 +128,7 @@ def mock_listdir_attr(_: str = ".") -> List[SFTPAttributes]:
 
 
 def mock_isdir(remotepath: str) -> bool:
-    return ".txt" not in remotepath
+    return ".txt" not in remotepath and ".csv" not in remotepath
 
 
 def mock_init_connection_options(self: CnOpts) -> None:
@@ -264,6 +268,16 @@ class TestSftpAuth(unittest.TestCase):
     return_value=SftpAuth("testhost.ftp", "username", "password", CnOpts()),
 )
 @patch("recidiviz.ingest.direct.direct_ingest_control.GcsfsFactory.build")
+@patch.object(
+    PostgresDirectIngestRawFileMetadataManager,
+    "has_raw_file_been_processed",
+    lambda _, path: "already_processed" in path.abs_path(),
+)
+@patch.object(
+    PostgresDirectIngestRawFileMetadataManager,
+    "has_raw_file_been_discovered",
+    lambda _, path: "discovered" in path.abs_path(),
+)
 class TestDownloadFilesFromSftpController(unittest.TestCase):
     """Tests for DownloadFilesFromSftpController."""
 
@@ -304,6 +318,8 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         expected = [
             ("testToday/file1.txt", TODAY.astimezone(pytz.UTC)),
             ("testToday/subdir1/file1.txt", TODAY.astimezone(pytz.UTC)),
+            ("testToday/already_processed.csv", TODAY.astimezone(pytz.UTC)),
+            ("testToday/discovered.csv", TODAY.astimezone(pytz.UTC)),
         ]
         self.assertListEqual(files_with_timestamps, expected)
 
@@ -527,6 +543,40 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                     TODAY.astimezone(pytz.UTC),
                 )
             ],
+        )
+        self.assertEqual(len(mock_fs.files), len(result.successes))
+
+    @patch.object(
+        target=pysftp,
+        attribute="Connection",
+        autospec=True,
+        return_value=Mock(
+            spec=pysftp.Connection,
+            __enter__=lambda self: self,
+            __exit__=lambda *args: None,
+            listdir=mock_listdir,
+            listdir_attr=mock_listdir_attr,
+            isdir=mock_isdir,
+            walktree=mock_walktree,
+        ),
+    )
+    def test_do_fetch_skips_already_discovered_or_processed_files(
+        self,
+        _mock_connection: Mock,
+        mock_fs_factory: Mock,
+        _mock_auth: Mock,
+        _mock_download: Mock,
+    ) -> None:
+        mock_fs = FakeGCSFileSystem()
+        mock_fs_factory.return_value = mock_fs
+
+        controller = DownloadFilesFromSftpController(
+            self.project_id, self.region, self.lower_bound_date
+        )
+        result = controller.do_fetch()
+        self.assertListEqual(
+            result.skipped,
+            ["testToday/already_processed.csv", "testToday/discovered.csv"],
         )
         self.assertEqual(len(mock_fs.files), len(result.successes))
 
