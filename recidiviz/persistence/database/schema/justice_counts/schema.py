@@ -57,6 +57,7 @@ class MetricType(enum.Enum):
     POPULATION = "POPULATION"
     REVOCATIONS = "REVOCATIONS"
     RELEASES = "RELEASES"
+    SUPERVISION_STARTS = "SUPERVISION_STARTS"
 
 
 class MeasurementType(enum.Enum):

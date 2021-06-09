@@ -25,7 +25,6 @@ python -m recidiviz.tools.justice_counts.manual_upload \
     --project-id recidiviz-staging \
     --app-url http://127.0.0.1:5000
 """
-from abc import abstractmethod, ABCMeta
 import argparse
 import datetime
 import decimal
@@ -33,60 +32,61 @@ import enum
 import logging
 import os
 import sys
-from collections import defaultdict, Counter
+import typing
+import webbrowser
+from abc import ABCMeta, abstractmethod
+from collections import Counter, defaultdict
 from typing import (
     Callable,
     Dict,
     Iterable,
     List,
     Optional,
+    Set,
     Tuple,
     Type,
     TypeVar,
     Union,
-    Set,
 )
 from urllib import parse
-import webbrowser
 
-import typing
 import attr
-from more_itertools import peekable
 import pandas
+from more_itertools import peekable
 from sqlalchemy import cast
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql.schema import UniqueConstraint
-import recidiviz.common.constants.person_characteristics as person_characteristics
-from recidiviz.common import fips
 
-from recidiviz.common.constants import states
-from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.entity_enum import (
-    EntityEnum,
-    EntityEnumMeta,
-    EnumParsingError,
-    EntityEnumT,
-)
-from recidiviz.common.date import (
-    first_day_of_month,
-    last_day_of_month,
-    DateRange,
-    NonNegativeDateRange,
-)
-from recidiviz.common.str_field_utils import to_snake_case
-from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+import recidiviz.common.constants.person_characteristics as person_characteristics
 from recidiviz.cloud_storage.gcs_file_system import (
     GCSFileSystem,
     GcsfsFileContentsHandle,
 )
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.common import fips
+from recidiviz.common.constants import states
+from recidiviz.common.constants.entity_enum import (
+    EntityEnum,
+    EntityEnumMeta,
+    EntityEnumT,
+    EnumParsingError,
+)
+from recidiviz.common.constants.enum_overrides import EnumOverrides
+from recidiviz.common.date import (
+    DateRange,
+    NonNegativeDateRange,
+    first_day_of_month,
+    last_day_of_month,
+)
+from recidiviz.common.str_field_utils import to_snake_case
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.utils.yaml_dict import YAMLDict
 from recidiviz.utils import metadata
+from recidiviz.utils.yaml_dict import YAMLDict
 
 DimensionT = TypeVar("DimensionT", bound="Dimension")
 
@@ -1234,6 +1234,39 @@ class Admissions(Metric):
         return []
 
 
+# TODO(#7775): This can be merged with the Admissions metric if we allow for a dimension
+# to be used multiple times on a single metric, so we can use SupervisionType for both
+# the type of Supervision admitted to for supervsion starts, and type of supervsion
+# admitted from for prison admissions.
+@attr.s(frozen=True)
+class SupervisionStarts(Metric):
+    """Metric for recording supervision starts."""
+
+    measurement_type: schema.MeasurementType = attr.ib(converter=schema.MeasurementType)
+
+    supervision_type: Optional[SupervisionType] = attr.ib(
+        converter=_convert_optional_supervision_type, default=None
+    )
+
+    def get_measurement_type(self) -> schema.MeasurementType:
+        return self.measurement_type
+
+    @classmethod
+    def get_metric_type(cls) -> schema.MetricType:
+        return schema.MetricType.SUPERVISION_STARTS
+
+    @property
+    def filters(self) -> List[Dimension]:
+        filters: List[Dimension] = []
+        if self.supervision_type is not None:
+            filters.append(self.supervision_type)
+        return filters
+
+    @property
+    def required_aggregated_dimensions(self) -> List[Type[Dimension]]:
+        return [SupervisionType] if self.supervision_type is None else []
+
+
 class DateRangeProducer:
     """Produces DateRanges for a given table, splitting the table as needed."""
 
@@ -2038,9 +2071,11 @@ def _parse_metric(metric_input: YAMLDict) -> Metric:
             return Admissions(**metric_args)
         if metric_type == "releases":
             return Releases(**metric_args)
+        if metric_type == "supervision_starts":
+            return SupervisionStarts(**metric_args)
     raise ValueError(
         f"Invalid metric, expected a dictionary with a single key that is one of ('admissions', "
-        f"'population') but received: {repr(metric_input)}"
+        f"'population', 'releases', 'supervision_starts') but received: {repr(metric_input)}"
     )
 
 

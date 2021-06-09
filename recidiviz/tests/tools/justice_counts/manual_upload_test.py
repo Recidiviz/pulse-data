@@ -20,7 +20,7 @@ import datetime
 import decimal
 import os
 import unittest
-from typing import Dict, Optional, List, Type
+from typing import Dict, List, Optional, Tuple, Type
 
 import pytest
 from dateutil.relativedelta import relativedelta
@@ -1186,6 +1186,46 @@ class ManualUploadTest(unittest.TestCase):
             ("OTHER", "Other"): 27,
         }
         self.assertEqual(expected_totals, raw_type_values)
+
+        session.close()
+
+    def test_supervisionStartsMetric_isPersisted(self) -> None:
+        # Act
+        manual_upload.ingest(
+            self.fs,
+            test_utils.prepare_files(
+                self.fs, manifest_filepath("report_supervision_starts")
+            ),
+        )
+
+        # Assert
+        session = SessionFactory.for_database(self.database_key)
+
+        type_definition: schema.ReportTableDefinition
+        [type_definition] = session.query(schema.ReportTableDefinition).all()
+        self.assertEqual(
+            ["global/location/state", "metric/supervision/type"],
+            type_definition.filtered_dimensions,
+        )
+        self.assertEqual(
+            ["US_AL", "PROBATION"], type_definition.filtered_dimension_values
+        )
+
+        self.assertEqual(schema.MeasurementType.DELTA, type_definition.measurement_type)
+
+        [type_table] = session.query(schema.ReportTableInstance).all()
+
+        values = {
+            tuple(cell.aggregated_dimension_values): int(cell.value)
+            for cell in session.query(schema.Cell)
+            .filter(schema.Cell.report_table_instance == type_table)
+            .all()
+        }
+
+        expected: Dict[Tuple[str, ...], int] = {
+            tuple(): 125,
+        }
+        self.assertEqual(expected, values)
 
         session.close()
 

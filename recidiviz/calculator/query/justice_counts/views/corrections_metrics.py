@@ -135,6 +135,14 @@ METRICS = [
         aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
         output_name="ADMISSIONS_FROM_ALL_SUPERVISION_TECHNICAL",
     ),
+    # Supervision Starts
+    metric_calculator.CalculatedMetric(
+        system=schema.System.CORRECTIONS,
+        metric=schema.MetricType.SUPERVISION_STARTS,
+        filtered_dimensions=[manual_upload.SupervisionType.PROBATION],
+        aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
+        output_name="SUPERVISION_STARTS_PROBATION",
+    ),
     # Population Metrics
     metric_calculator.CalculatedMetric(
         system=schema.System.CORRECTIONS,
