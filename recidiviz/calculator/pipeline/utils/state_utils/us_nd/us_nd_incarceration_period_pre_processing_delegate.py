@@ -33,6 +33,8 @@ from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 class UsNdIncarcerationPreProcessingDelegate(
     StateSpecificIncarcerationPreProcessingDelegate
 ):
+    """US_ND implementation of the StateSpecificIncarcerationPreProcessingDelegate."""
+
     # Functions with state-specific overrides
     def admission_reasons_to_filter(
         self,
@@ -56,6 +58,11 @@ class UsNdIncarcerationPreProcessingDelegate(
                 "periods for this state."
             )
         return False
+
+    def pre_processing_relies_on_supervision_periods(self) -> bool:
+        # TODO(#7441): Return True once we implement the US_ND IP pre-processing that
+        #  relies on supervision periods
+        return self._default_pre_processing_relies_on_supervision_periods()
 
     # Functions using default behavior
     def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:

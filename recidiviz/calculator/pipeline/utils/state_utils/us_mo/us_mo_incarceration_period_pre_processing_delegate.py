@@ -57,6 +57,11 @@ class UsMoIncarcerationPreProcessingDelegate(
             and incarceration_period.specialized_purpose_for_incarceration is None
         )
 
+    def pre_processing_relies_on_supervision_periods(self) -> bool:
+        """IP pre-processing for US_MO does not rely on StateSupervisionPeriod
+        entities."""
+        return False
+
     # Functions using default behavior
     def admission_reasons_to_filter(
         self,

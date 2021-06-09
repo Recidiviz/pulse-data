@@ -25,6 +25,9 @@ import attr
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
     IncarcerationPreProcessingManager,
 )
+from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
+    PreProcessedSupervisionPeriodIndex,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_incarceration_period_pre_processing_delegate import (
     UsMoIncarcerationPreProcessingDelegate,
 )
@@ -51,9 +54,15 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         earliest_death_date: Optional[date] = None,
     ) -> List[StateIncarcerationPeriod]:
 
+        # TODO(#7442): Bring in supervision periods for relevant tests
+        sp_index = PreProcessedSupervisionPeriodIndex(
+            supervision_periods=[],
+        )
+
         ip_pre_processing_manager = IncarcerationPreProcessingManager(
             incarceration_periods=incarceration_periods,
             delegate=UsMoIncarcerationPreProcessingDelegate(),
+            pre_processed_supervision_period_index=sp_index,
             earliest_death_date=earliest_death_date,
         )
 

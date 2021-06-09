@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,30 +23,20 @@ into instances of recidivism or non-recidivism as appropriate.
 
 
 """
-from datetime import date
-from typing import Dict, List, Optional, Any
-
 from collections import defaultdict
+from datetime import date
+from typing import Any, Dict, List, Optional
 
 from recidiviz.calculator.pipeline.recidivism.release_event import (
-    ReleaseEvent,
-    RecidivismReleaseEvent,
     NonRecidivismReleaseEvent,
+    RecidivismReleaseEvent,
+    ReleaseEvent,
+)
+from recidiviz.calculator.pipeline.utils.entity_pre_processing_utils import (
+    pre_processing_managers_for_calculations,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     extract_county_of_residence_from_rows,
-)
-from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
-    IncarcerationPreProcessingManager,
-)
-from recidiviz.calculator.pipeline.utils.period_utils import (
-    find_earliest_date_of_period_ending_in_death,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    get_state_specific_incarceration_period_pre_processing_delegate,
-)
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason as AdmissionReason,
@@ -54,11 +44,12 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason as ReleaseReason,
 )
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodStatus,
+)
 from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.entity_utils import get_single_state_code
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-)
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
 def find_release_events_by_cohort_year(
@@ -100,22 +91,17 @@ def find_release_events_by_cohort_year(
 
     state_code = get_single_state_code(incarceration_periods)
 
-    state_ip_pre_processing_manager_delegate = (
-        get_state_specific_incarceration_period_pre_processing_delegate(state_code)
+    (ip_pre_processing_manager, _,) = pre_processing_managers_for_calculations(
+        state_code=state_code,
+        incarceration_periods=incarceration_periods,
+        # TODO(#7797): Upgrade this pipeline to bring in StateSupervisionPeriods so that
+        #  we can support states that require StateSupervisionPeriods for IP
+        #  pre-processing
+        supervision_periods=None,
     )
 
-    # The IP pre-processing function needs to know if this person has any periods that
-    # ended because of death to handle any open periods or periods that extend past
-    # their death date accordingly.
-    earliest_death_date: Optional[date] = find_earliest_date_of_period_ending_in_death(
-        periods=incarceration_periods
-    )
-
-    ip_pre_processing_manager = IncarcerationPreProcessingManager(
-        incarceration_periods,
-        state_ip_pre_processing_manager_delegate,
-        earliest_death_date,
-    )
+    if not ip_pre_processing_manager:
+        raise ValueError("Expected pre-processed SPs for this pipeline.")
 
     incarceration_periods = ip_pre_processing_manager.pre_processed_incarceration_period_index_for_calculations(
         collapse_transfers=True,
