@@ -32,6 +32,8 @@ from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 class UsIdIncarcerationPreProcessingDelegate(
     StateSpecificIncarcerationPreProcessingDelegate
 ):
+    """US_ID implementation of the StateSpecificIncarcerationPreProcessingDelegate."""
+
     # Functions with state-specific overrides
     # No deviations from default logic for US_ID
 
@@ -48,3 +50,8 @@ class UsIdIncarcerationPreProcessingDelegate(
         self, incarceration_period: StateIncarcerationPeriod
     ) -> bool:
         return self._default_period_is_parole_board_hold(incarceration_period)
+
+    def pre_processing_relies_on_supervision_periods(self) -> bool:
+        # TODO(#7441): Return True once we implement the US_ID IP pre-processing that
+        #  relies on supervision periods
+        return self._default_pre_processing_relies_on_supervision_periods()

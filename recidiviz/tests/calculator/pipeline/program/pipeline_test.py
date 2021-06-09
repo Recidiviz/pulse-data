@@ -18,31 +18,29 @@
 
 """Tests for program/pipeline.py"""
 import unittest
+from datetime import date
 from typing import Optional, Set
 from unittest import mock
 
 import apache_beam as beam
-from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
-
-from datetime import date
-
+from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.program import pipeline
 from recidiviz.calculator.pipeline.program.metrics import (
     ProgramMetric,
     ProgramMetricType,
-    ProgramReferralMetric,
     ProgramParticipationMetric,
+    ProgramReferralMetric,
 )
 from recidiviz.calculator.pipeline.program.program_event import (
-    ProgramReferralEvent,
     ProgramParticipationEvent,
+    ProgramReferralEvent,
 )
 from recidiviz.calculator.pipeline.utils.person_utils import (
-    PersonMetadata,
     ExtractPersonEventsMetadata,
+    PersonMetadata,
 )
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_program_assignment import (
@@ -56,26 +54,28 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import (
+    Ethnicity,
     Gender,
     Race,
     ResidencyStatus,
-    Ethnicity,
     StatePerson,
 )
-
 from recidiviz.tests.calculator.calculator_test_utils import (
     normalized_database_base_dict,
     normalized_database_base_dict_list,
 )
 from recidiviz.tests.calculator.pipeline.fake_bigquery import (
-    FakeReadFromBigQueryFactory,
     DataTablesDict,
-    FakeWriteToBigQueryFactory,
+    FakeReadFromBigQueryFactory,
     FakeWriteToBigQuery,
+    FakeWriteToBigQueryFactory,
 )
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
     run_test_pipeline,
     test_pipeline_options,
+)
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
+    UsXxIncarcerationPreProcessingDelegate,
 )
 from recidiviz.tests.persistence.database import database_test_utils
 
@@ -95,8 +95,17 @@ class TestProgramPipeline(unittest.TestCase):
         self.mock_assessment_types = self.assessment_types_patcher.start()
         self.mock_assessment_types.return_value = [StateAssessmentType.ORAS]
 
+        self.pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_incarceration_period_pre_processing_delegate"
+        )
+        self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
+        self.mock_pre_processing_delegate.return_value = (
+            UsXxIncarcerationPreProcessingDelegate()
+        )
+
     def tearDown(self) -> None:
         self.assessment_types_patcher.stop()
+        self.pre_processing_delegate_patcher.stop()
 
     @staticmethod
     def build_data_dict(fake_person_id: int, fake_supervision_period_id: int):
@@ -416,8 +425,17 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         self.mock_assessment_types = self.assessment_types_patcher.start()
         self.mock_assessment_types.return_value = [StateAssessmentType.ORAS]
 
+        self.pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_incarceration_period_pre_processing_delegate"
+        )
+        self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
+        self.mock_pre_processing_delegate.return_value = (
+            UsXxIncarcerationPreProcessingDelegate()
+        )
+
     def tearDown(self) -> None:
         self.assessment_types_patcher.stop()
+        self.pre_processing_delegate_patcher.stop()
 
     @freeze_time("2009-10-19")
     def testClassifyProgramAssignments(self):

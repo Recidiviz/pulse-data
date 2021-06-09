@@ -133,7 +133,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
     def setUp(self) -> None:
         self.pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_incarceration_period_pre_processing_delegate"
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_incarceration_period_pre_processing_delegate"
         )
         self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
         self.mock_pre_processing_delegate.return_value = (

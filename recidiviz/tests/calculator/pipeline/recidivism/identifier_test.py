@@ -18,28 +18,27 @@
 # pylint: disable=unused-import,wrong-import-order
 
 """Tests for recidivism/identifier.py."""
-from unittest import mock
-
-import pytest
 import unittest
 from datetime import date
 from typing import Dict, List
+from unittest import mock
+
+import pytest
 
 from recidiviz.calculator.pipeline.recidivism import identifier
 from recidiviz.calculator.pipeline.recidivism.release_event import (
-    RecidivismReleaseEvent,
     NonRecidivismReleaseEvent,
+    RecidivismReleaseEvent,
 )
-
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
-)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason as AdmissionReason,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason as ReleaseReason,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodStatus,
 )
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
@@ -61,8 +60,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
     def setUp(self) -> None:
         self.pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.recidivism.identifier"
-            ".get_state_specific_incarceration_period_pre_processing_delegate"
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_incarceration_period_pre_processing_delegate"
         )
         self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
         self.mock_pre_processing_delegate.return_value = (

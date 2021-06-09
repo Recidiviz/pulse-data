@@ -17,7 +17,6 @@
 """Utils for validating and manipulating supervision periods for use in calculations."""
 import datetime
 import itertools
-import logging
 from typing import List, Optional, Set
 
 from recidiviz.calculator.pipeline.utils.period_utils import (
@@ -25,14 +24,12 @@ from recidiviz.calculator.pipeline.utils.period_utils import (
     sort_period_by_external_id,
     sort_periods_by_set_dates_and_statuses,
 )
-from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodStatus,
     StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationSentence,
     StateSupervisionPeriod,
@@ -57,35 +54,6 @@ CASE_TYPE_SEVERITY_ORDER = [
 # from supervision in which we look for the associated terminated supervision
 # period
 SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT = 24
-
-
-def prepare_supervision_periods_for_calculations(
-    supervision_periods: List[StateSupervisionPeriod],
-    drop_federal_and_other_country_supervision_periods: bool,
-    earliest_death_date: Optional[datetime.date] = None,
-) -> List[StateSupervisionPeriod]:
-    supervision_periods = _drop_placeholder_periods(supervision_periods)
-
-    if drop_federal_and_other_country_supervision_periods:
-        supervision_periods = _drop_other_country_and_federal_supervision_periods(
-            supervision_periods
-        )
-
-    supervision_periods = _infer_missing_dates_and_statuses(supervision_periods)
-
-    if earliest_death_date:
-        supervision_periods = _drop_and_close_open_supervision_periods_for_deceased(
-            supervision_periods, earliest_death_date
-        )
-
-    return supervision_periods
-
-
-def _drop_placeholder_periods(
-    supervision_periods: List[StateSupervisionPeriod],
-) -> List[StateSupervisionPeriod]:
-    """Drops all placeholder supervision periods."""
-    return [period for period in supervision_periods if not is_placeholder(period)]
 
 
 def _is_active_period(period: StateSupervisionPeriod) -> bool:
@@ -115,88 +83,6 @@ def standard_date_sort_for_supervision_periods(
     )
 
     return supervision_periods
-
-
-def _infer_missing_dates_and_statuses(
-    supervision_periods: List[StateSupervisionPeriod],
-) -> List[StateSupervisionPeriod]:
-    """First, sorts the supervision_periods in chronological order of the start and termination dates. Then, for any
-    periods missing dates and statuses, infers this information given the other supervision periods.
-    """
-    standard_date_sort_for_supervision_periods(supervision_periods)
-
-    updated_periods: List[StateSupervisionPeriod] = []
-
-    for sp in supervision_periods:
-        if sp.termination_date is None:
-            if sp.status != StateSupervisionPeriodStatus.UNDER_SUPERVISION:
-                # If the person is not under supervision on this period, set the termination date to the start date.
-                sp.termination_date = sp.start_date
-                sp.termination_reason = (
-                    StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN
-                )
-            elif sp.termination_reason or sp.termination_reason_raw_text:
-                # There is no termination date on this period, but the set termination_reason indicates that the person
-                # is no longer in custody. Set the termination date to the start date.
-                sp.termination_date = sp.start_date
-                sp.status = StateSupervisionPeriodStatus.TERMINATED
-
-                logging.warning(
-                    "No termination_date for supervision period (%d) with nonnull termination_reason (%s) "
-                    "or termination_reason_raw_text (%s)",
-                    sp.supervision_period_id,
-                    sp.termination_reason,
-                    sp.termination_reason_raw_text,
-                )
-
-        elif sp.termination_date > datetime.date.today():
-            # This is an erroneous termination_date in the future. For the purpose of calculations, clear the
-            # termination_date and the termination_reason.
-            sp.termination_date = None
-            sp.termination_reason = None
-            sp.status = StateSupervisionPeriodStatus.UNDER_SUPERVISION
-
-        if sp.start_date is None:
-            logging.info("Dropping supervision period without start_date: [%s]", sp)
-            continue
-        if sp.start_date > datetime.date.today():
-            logging.info(
-                "Dropping supervision period with start_date in the future: [%s]", sp
-            )
-            continue
-
-        if sp.admission_reason is None:
-            # We have no idea what this admission reason was. Set as INTERNAL_UNKNOWN.
-            sp.admission_reason = StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN
-        if sp.termination_date is not None and sp.termination_reason is None:
-            # We have no idea what this termination reason was. Set as INTERNAL_UNKNOWN.
-            sp.termination_reason = (
-                StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN
-            )
-
-        if sp.start_date and sp.termination_date:
-            if sp.termination_date < sp.start_date:
-                logging.info(
-                    "Dropping supervision period with termination before admission: [%s]",
-                    sp,
-                )
-                continue
-
-        updated_periods.append(sp)
-
-    return updated_periods
-
-
-def _drop_other_country_and_federal_supervision_periods(
-    supervision_periods: List[StateSupervisionPeriod],
-) -> List[StateSupervisionPeriod]:
-    """Drop all supervision periods whose custodial authority excludes it from the state's supervision metrics."""
-    return [
-        period
-        for period in supervision_periods
-        if period.custodial_authority
-        not in (StateCustodialAuthority.FEDERAL, StateCustodialAuthority.OTHER_COUNTRY)
-    ]
 
 
 def get_commitment_from_supervision_supervision_period(
@@ -292,40 +178,6 @@ def supervision_periods_overlapping_with_date(
     ]
 
     return overlapping_periods
-
-
-def _drop_and_close_open_supervision_periods_for_deceased(
-    supervision_periods: List[StateSupervisionPeriod],
-    earliest_death_date: datetime.date,
-) -> List[StateSupervisionPeriod]:
-    """Updates supervision periods for people who are deceased by
-    - Dropping open supervision periods that start after the |earliest_death_date|
-    - Setting supervision periods with termination dates after the |earliest_death_date| to have a termination
-      date of |earliest_death_date| and a termination reason of DEATH
-    - Closing any open supervision period that start before the |earliest_death_date| to have a termination date
-      of |earliest_death_date| and a termination reason of DEATH"""
-
-    updated_periods: List[StateSupervisionPeriod] = []
-
-    for sp in supervision_periods:
-        if not sp.start_date:
-            raise ValueError(f"Period cannot have unset start dates: {sp}")
-
-        if sp.start_date >= earliest_death_date:
-            # Drop open supervision periods that start after the person's death
-            continue
-
-        if (sp.termination_date is None) or (earliest_death_date < sp.termination_date):
-            # If the supervision period is open, or if the termination_date is after
-            # the earliest_death_date, set the termination_date to the
-            # earliest_death_date and update the termination_reason and status
-            sp.termination_date = earliest_death_date
-            sp.termination_reason = StateSupervisionPeriodTerminationReason.DEATH
-            sp.status = StateSupervisionPeriodStatus.TERMINATED
-
-        updated_periods.append(sp)
-
-    return updated_periods
 
 
 def get_supervision_periods_from_sentences(

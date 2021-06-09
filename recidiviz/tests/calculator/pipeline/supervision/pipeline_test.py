@@ -18,41 +18,38 @@
 
 """Tests for supervision/pipeline.py"""
 import unittest
-
-from dateutil.relativedelta import relativedelta
-from more_itertools import one
-from typing import Set, Optional, Dict, List, Any, Collection
+from datetime import date
+from typing import Any, Collection, Dict, List, Optional, Set
 from unittest import mock
 
 import apache_beam as beam
-from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
-from apache_beam.testing.test_pipeline import TestPipeline
-
-from datetime import date
-
 import attr
+from apache_beam.testing.test_pipeline import TestPipeline
+from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
+from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 from mock import patch
+from more_itertools import one
 
 from recidiviz.calculator.pipeline.supervision import pipeline
 from recidiviz.calculator.pipeline.supervision.metrics import (
-    SupervisionMetricType,
     SupervisionMetric,
+    SupervisionMetricType,
 )
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
 )
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
     NonRevocationReturnSupervisionTimeBucket,
-    RevocationReturnSupervisionTimeBucket,
     ProjectedSupervisionCompletionBucket,
+    RevocationReturnSupervisionTimeBucket,
     SupervisionTerminationBucket,
     SupervisionTimeBucket,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetricType
 from recidiviz.calculator.pipeline.utils.person_utils import (
-    PersonMetadata,
     ExtractPersonEventsMetadata,
+    PersonMetadata,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
     SupervisionTypeSpan,
@@ -62,52 +59,58 @@ from recidiviz.common.constants.state.state_assessment import StateAssessmentTyp
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
+    StateIncarcerationFacilitySecurityLevel,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationFacilitySecurityLevel,
+    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodTerminationReason,
-    StateSupervisionPeriodSupervisionType,
     StateSupervisionLevel,
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodStatus,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
+)
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType as ViolationType,
-    StateSupervisionViolationType,
+)
+from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseRevocationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseRevocationType as RevocationType,
-    StateSupervisionViolationResponseRevocationType,
+)
+from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseType,
 )
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
     Gender,
     ResidencyStatus,
-    StateSupervisionSentence,
     StateAssessment,
-    StateSupervisionViolationResponse,
-    StateSupervisionViolation,
-    StateSupervisionViolationTypeEntry,
+    StateIncarcerationPeriod,
     StateIncarcerationSentence,
+    StatePerson,
+    StateSupervisionSentence,
+    StateSupervisionViolation,
+    StateSupervisionViolationResponse,
+    StateSupervisionViolationTypeEntry,
 )
-from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.calculator.calculator_test_utils import (
     normalized_database_base_dict,
 )
 from recidiviz.tests.calculator.pipeline.fake_bigquery import (
-    FakeReadFromBigQueryFactory,
-    FakeWriteToBigQueryFactory,
-    FakeWriteToBigQuery,
     DataTablesDict,
+    FakeReadFromBigQueryFactory,
+    FakeWriteToBigQuery,
+    FakeWriteToBigQueryFactory,
 )
 from recidiviz.tests.calculator.pipeline.supervision import identifier_test
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
@@ -149,7 +152,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         ]
 
         self.pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.supervision.identifier"
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
             ".get_state_specific_incarceration_period_pre_processing_delegate"
         )
         self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
@@ -1621,7 +1624,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ]
 
         self.pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.supervision.identifier"
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
             ".get_state_specific_incarceration_period_pre_processing_delegate"
         )
         self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()

@@ -18,80 +18,77 @@
 
 """Tests for incarceration/pipeline.py"""
 import unittest
+from datetime import date
+from typing import Any, Dict, List, Optional, Set
 from unittest import mock
-
-from freezegun import freeze_time
-from typing import Optional, Set, List, Dict, Any
 
 import apache_beam as beam
 from apache_beam.pvalue import AsDict
-from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
-
-from datetime import date
-
+from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
+from freezegun import freeze_time
 from mock import patch
 
 from recidiviz.calculator.pipeline.incarceration import pipeline
 from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
     IncarcerationAdmissionEvent,
-    IncarcerationReleaseEvent,
-    IncarcerationStayEvent,
     IncarcerationCommitmentFromSupervisionAdmissionEvent,
+    IncarcerationReleaseEvent,
     IncarcerationStandardAdmissionEvent,
+    IncarcerationStayEvent,
 )
 from recidiviz.calculator.pipeline.incarceration.metrics import (
+    IncarcerationAdmissionMetric,
     IncarcerationMetric,
     IncarcerationMetricType,
-    IncarcerationAdmissionMetric,
     IncarcerationPopulationMetric,
     IncarcerationReleaseMetric,
 )
 from recidiviz.calculator.pipeline.utils.person_utils import (
-    PersonMetadata,
     ExtractPersonEventsMetadata,
+    PersonMetadata,
 )
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
     StateIncarcerationFacilitySecurityLevel,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
+    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodSupervisionType,
-    StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodTerminationReason,
     StateSupervisionLevel,
+    StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodStatus,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import (
+    Ethnicity,
     Gender,
     Race,
     ResidencyStatus,
-    Ethnicity,
-    StatePerson,
+    StateCharge,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
+    StatePerson,
     StateSentenceGroup,
-    StateCharge,
     StateSupervisionPeriod,
 )
-from recidiviz.persistence.database.schema.state import schema
 from recidiviz.tests.calculator.calculator_test_utils import (
     normalized_database_base_dict,
     normalized_database_base_dict_list,
 )
 from recidiviz.tests.calculator.pipeline.fake_bigquery import (
     FakeReadFromBigQueryFactory,
-    FakeWriteToBigQueryFactory,
     FakeWriteToBigQuery,
+    FakeWriteToBigQueryFactory,
 )
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
     run_test_pipeline,
@@ -130,7 +127,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
         self.fake_bq_sink_factory = FakeWriteToBigQueryFactory(FakeWriteToBigQuery)
 
         self.pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_incarceration_period_pre_processing_delegate"
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_incarceration_period_pre_processing_delegate"
         )
         self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
         self.mock_pre_processing_delegate.return_value = (
@@ -702,7 +699,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
 
     def setUp(self) -> None:
         self.pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_incarceration_period_pre_processing_delegate"
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_incarceration_period_pre_processing_delegate"
         )
         self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
         self.mock_pre_processing_delegate.return_value = (

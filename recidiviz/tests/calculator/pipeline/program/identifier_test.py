@@ -17,9 +17,8 @@
 # pylint: disable=unused-import,wrong-import-order,protected-access
 """Tests for program/identifier.py."""
 
-from datetime import date
-
 import unittest
+from datetime import date
 from unittest import mock
 
 from dateutil.relativedelta import relativedelta
@@ -27,8 +26,8 @@ from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.program import identifier
 from recidiviz.calculator.pipeline.program.program_event import (
-    ProgramReferralEvent,
     ProgramParticipationEvent,
+    ProgramReferralEvent,
 )
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_program_assignment import (
@@ -40,9 +39,12 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import (
-    StateProgramAssignment,
     StateAssessment,
+    StateProgramAssignment,
     StateSupervisionPeriod,
+)
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
+    UsXxIncarcerationPreProcessingDelegate,
 )
 
 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS = {
@@ -65,8 +67,17 @@ class TestFindProgramEvents(unittest.TestCase):
         self.mock_assessment_types = self.assessment_types_patcher.start()
         self.mock_assessment_types.return_value = [StateAssessmentType.ORAS]
 
+        self.pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_incarceration_period_pre_processing_delegate"
+        )
+        self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
+        self.mock_pre_processing_delegate.return_value = (
+            UsXxIncarcerationPreProcessingDelegate()
+        )
+
     def tearDown(self) -> None:
         self.assessment_types_patcher.stop()
+        self.pre_processing_delegate_patcher.stop()
 
     @freeze_time("2020-01-02")
     def test_find_program_events(self):

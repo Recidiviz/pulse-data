@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,13 +18,10 @@
 
 from collections import defaultdict
 from datetime import date
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
-    standard_date_sort_for_supervision_periods,
-)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
@@ -39,9 +36,7 @@ class PreProcessedSupervisionPeriodIndex:
     for use in the calculation pipelines.
     """
 
-    supervision_periods: List[StateSupervisionPeriod] = attr.ib(
-        converter=standard_date_sort_for_supervision_periods
-    )
+    supervision_periods: List[StateSupervisionPeriod] = attr.ib()
 
     # A dictionary mapping supervision_period_id values to the date on which the person started serving the
     # supervision represented by that period. For parole, this is the date the person started parole after being

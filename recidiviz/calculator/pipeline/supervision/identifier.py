@@ -41,14 +41,11 @@ from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils impor
     default_violation_history_window_pre_commitment_from_supervision,
     get_commitment_from_supervision_details,
 )
+from recidiviz.calculator.pipeline.utils.entity_pre_processing_utils import (
+    pre_processing_managers_for_calculations,
+)
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     list_of_dicts_to_dict_with_keys,
-)
-from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
-    IncarcerationPreProcessingManager,
-)
-from recidiviz.calculator.pipeline.utils.period_utils import (
-    find_earliest_date_of_period_ending_in_death,
 )
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
@@ -57,12 +54,10 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
     PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    filter_out_federal_and_other_country_supervision_periods,
     filter_supervision_periods_for_commitment_from_supervision_identification,
     get_commitment_from_supervision_supervision_type,
     get_month_supervision_type,
     get_state_specific_case_compliance_manager,
-    get_state_specific_incarceration_period_pre_processing_delegate,
     get_supervising_officer_and_location_info_from_supervision_period,
     include_decisions_on_follow_up_responses_for_most_severe_response,
     pre_commitment_supervision_period_if_commitment,
@@ -78,7 +73,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     identify_most_severe_case_type,
-    prepare_supervision_periods_for_calculations,
 )
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     get_most_severe_response_decision,
@@ -183,43 +177,25 @@ def find_supervision_time_buckets(
 
     supervision_time_buckets: List[SupervisionTimeBucket] = []
 
-    should_drop_federal_and_other_country = (
-        filter_out_federal_and_other_country_supervision_periods(state_code)
+    (
+        ip_pre_processing_manager,
+        sp_pre_processing_manager,
+    ) = pre_processing_managers_for_calculations(
+        state_code=state_code,
+        incarceration_periods=incarceration_periods,
+        supervision_periods=supervision_periods,
     )
 
-    all_periods: List[Union[StateIncarcerationPeriod, StateSupervisionPeriod]] = []
-    all_periods.extend(supervision_periods)
-    all_periods.extend(incarceration_periods)
-
-    # The SP pre-processing function needs to know if this person has any periods that
-    # ended because of death to handle any open periods or periods that extend past their death date accordingly.
-    earliest_death_date: Optional[date] = find_earliest_date_of_period_ending_in_death(
-        periods=all_periods
-    )
-
-    pre_processed_sps_for_calculations = prepare_supervision_periods_for_calculations(
-        supervision_periods,
-        should_drop_federal_and_other_country,
-        earliest_death_date,
-    )
-
-    state_ip_pre_processing_manager_delegate = (
-        get_state_specific_incarceration_period_pre_processing_delegate(state_code)
-    )
-
-    ip_pre_processing_manager = IncarcerationPreProcessingManager(
-        incarceration_periods,
-        state_ip_pre_processing_manager_delegate,
-        earliest_death_date,
-    )
+    if not ip_pre_processing_manager or not sp_pre_processing_manager:
+        raise ValueError("Expected both pre-processed IPs and SPs for this pipeline.")
 
     incarceration_period_index = ip_pre_processing_manager.pre_processed_incarceration_period_index_for_calculations(
         collapse_transfers=True,
         overwrite_facility_information_in_transfers=True,
     )
 
-    supervision_period_index = PreProcessedSupervisionPeriodIndex(
-        supervision_periods=pre_processed_sps_for_calculations
+    supervision_period_index = (
+        sp_pre_processing_manager.pre_processed_supervision_period_index_for_calculations()
     )
 
     sorted_violation_responses = prepare_violation_responses_for_calculations(

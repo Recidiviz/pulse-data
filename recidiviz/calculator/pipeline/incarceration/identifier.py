@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,15 +34,15 @@ from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils impor
     default_violation_history_window_pre_commitment_from_supervision,
     get_commitment_from_supervision_details,
 )
+from recidiviz.calculator.pipeline.utils.entity_pre_processing_utils import (
+    pre_processing_managers_for_calculations,
+)
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     extract_county_of_residence_from_rows,
     list_of_dicts_to_dict_with_keys,
 )
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
     IncarcerationPreProcessingManager,
-)
-from recidiviz.calculator.pipeline.utils.period_utils import (
-    find_earliest_date_of_period_ending_in_death,
 )
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
@@ -52,7 +52,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     get_commitment_from_supervision_supervision_type,
     get_post_incarceration_supervision_type,
     get_pre_incarceration_supervision_type,
-    get_state_specific_incarceration_period_pre_processing_delegate,
     include_decisions_on_follow_up_responses_for_most_severe_response,
     pre_commitment_supervision_period_if_commitment,
     state_specific_incarceration_admission_reason_override,
@@ -60,8 +59,8 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     state_specific_violation_response_pre_processing_function,
     state_specific_violation_responses_for_violation_history,
 )
-from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
-    get_supervision_periods_from_sentences,
+from recidiviz.calculator.pipeline.utils.supervision_period_pre_processing_manager import (
+    SupervisionPreProcessingManager,
 )
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     get_most_severe_response_decision,
@@ -130,23 +129,14 @@ def find_incarceration_events(
     if not incarceration_periods:
         return incarceration_events
 
-    all_periods: List[Union[StateIncarcerationPeriod, StateSupervisionPeriod]] = []
-    all_periods.extend(supervision_periods)
-    all_periods.extend(incarceration_periods)
-
-    # The IP pre-processing function needs to know if this person has any periods that
-    # ended because of death to handle any open periods or periods that extend past their death date accordingly.
-    earliest_death_date: Optional[date] = find_earliest_date_of_period_ending_in_death(
-        periods=all_periods
-    )
-
     county_of_residence: Optional[str] = extract_county_of_residence_from_rows(
         persons_to_recent_county_of_residence
     )
 
     state_code: str = get_single_state_code(incarceration_periods)
 
-    # Convert the list of dictionaries into one dictionary where the keys are the incarceration_period_id values
+    # Convert the list of dictionaries into one dictionary where the keys are the
+    # incarceration_period_id values
     incarceration_period_to_judicial_district: Dict[
         Any, Dict[str, Any]
     ] = list_of_dicts_to_dict_with_keys(
@@ -159,15 +149,17 @@ def find_incarceration_events(
         StateSupervisionPeriod.get_class_id_name(),
     )
 
-    state_ip_pre_processing_manager_delegate = (
-        get_state_specific_incarceration_period_pre_processing_delegate(state_code)
+    (
+        ip_pre_processing_manager,
+        sp_pre_processing_manager,
+    ) = pre_processing_managers_for_calculations(
+        state_code=state_code,
+        incarceration_periods=incarceration_periods,
+        supervision_periods=supervision_periods,
     )
 
-    ip_pre_processing_manager = IncarcerationPreProcessingManager(
-        incarceration_periods,
-        state_ip_pre_processing_manager_delegate,
-        earliest_death_date,
-    )
+    if not ip_pre_processing_manager or not sp_pre_processing_manager:
+        raise ValueError("Expected both pre-processed IPs and SPs for this pipeline.")
 
     incarceration_events.extend(
         find_all_stay_events(
@@ -185,6 +177,7 @@ def find_incarceration_events(
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
             ip_pre_processing_manager=ip_pre_processing_manager,
+            sp_pre_processing_manager=sp_pre_processing_manager,
             assessments=assessments,
             violation_responses=violation_responses,
             supervision_period_to_agent_associations=supervision_period_to_agent_associations,
@@ -200,6 +193,7 @@ def find_all_admission_release_events(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
     ip_pre_processing_manager: IncarcerationPreProcessingManager,
+    sp_pre_processing_manager: SupervisionPreProcessingManager,
     assessments: List[StateAssessment],
     violation_responses: List[StateSupervisionViolationResponse],
     supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
@@ -217,8 +211,8 @@ def find_all_admission_release_events(
         overwrite_facility_information_in_transfers=False,
     )
 
-    supervision_periods = get_supervision_periods_from_sentences(
-        incarceration_sentences, supervision_sentences
+    supervision_periods_for_calculations = (
+        sp_pre_processing_manager.pre_processed_supervision_period_index_for_calculations().supervision_periods
     )
 
     sorted_violation_responses = prepare_violation_responses_for_calculations(
@@ -236,7 +230,7 @@ def find_all_admission_release_events(
             supervision_sentences=supervision_sentences,
             incarceration_period=incarceration_period,
             incarceration_period_index=incarceration_period_index_for_admissions,
-            supervision_periods=supervision_periods,
+            supervision_periods=supervision_periods_for_calculations,
             assessments=assessments,
             sorted_violation_responses=sorted_violation_responses,
             supervision_period_to_agent_associations=supervision_period_to_agent_associations,
