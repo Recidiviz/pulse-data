@@ -205,6 +205,7 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         mock_states_fn_other.return_value = state_codes
 
         self.mock_bq_client.dataset_ref_for_id = mock_dataset_ref_for_id
+        self.mock_bq_client.dataset_exists.return_value = True
 
         # Act
         federated_bq_schema_refresh(SchemaType.OPERATIONS)
@@ -237,6 +238,7 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
             ],
         )
 
+        self.mock_bq_client.list_tables.assert_called_with(dataset_id="operations")
         self.mock_bq_client.backup_dataset_tables_if_dataset_exists.assert_called_with(
             dataset_id="operations"
         )
@@ -246,11 +248,6 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         )
         self.mock_bq_client.delete_dataset.assert_has_calls(
             [
-                mock.call(
-                    DatasetReference("recidiviz-staging", "operations"),
-                    delete_contents=True,
-                    not_found_ok=True,
-                ),
                 mock.call(
                     self.mock_bq_client.backup_dataset_tables_if_dataset_exists.return_value,
                     delete_contents=True,
@@ -277,6 +274,15 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         mock_states_fn_other.return_value = state_codes
 
         self.mock_bq_client.dataset_ref_for_id = mock_dataset_ref_for_id
+        self.mock_bq_client.dataset_exists.return_value = True
+        self.mock_bq_client.list_tables.return_value = [
+            bigquery.TableReference(
+                mock_dataset_ref_for_id("my_prefix_operations"), "table_1"
+            ),
+            bigquery.TableReference(
+                mock_dataset_ref_for_id("my_prefix_operations"), "table_2"
+            ),
+        ]
 
         # Act
         federated_bq_schema_refresh(
@@ -322,17 +328,21 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         self.mock_bq_client.backup_dataset_tables_if_dataset_exists.assert_called_with(
             dataset_id="my_prefix_operations"
         )
+        self.mock_bq_client.list_tables.assert_called_with(
+            dataset_id="my_prefix_operations"
+        )
+        self.mock_bq_client.delete_table.assert_has_calls(
+            [
+                mock.call("my_prefix_operations", "table_1"),
+                mock.call("my_prefix_operations", "table_2"),
+            ]
+        )
         self.mock_bq_client.copy_dataset_tables_across_regions.assert_called_with(
             source_dataset_id="my_prefix_operations_regional",
             destination_dataset_id="my_prefix_operations",
         )
         self.mock_bq_client.delete_dataset.assert_has_calls(
             [
-                mock.call(
-                    DatasetReference("recidiviz-staging", "my_prefix_operations"),
-                    delete_contents=True,
-                    not_found_ok=True,
-                ),
                 mock.call(
                     self.mock_bq_client.backup_dataset_tables_if_dataset_exists.return_value,
                     delete_contents=True,
