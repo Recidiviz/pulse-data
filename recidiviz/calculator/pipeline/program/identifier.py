@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,40 +17,39 @@
 """Identifies instances of interaction with a program."""
 import logging
 from datetime import date
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.program.program_event import (
-    ProgramReferralEvent,
     ProgramEvent,
     ProgramParticipationEvent,
+    ProgramReferralEvent,
 )
 from recidiviz.calculator.pipeline.utils import assessment_utils
+from recidiviz.calculator.pipeline.utils.entity_pre_processing_utils import (
+    pre_processing_managers_for_calculations,
+)
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     list_of_dicts_to_dict_with_keys,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    filter_out_federal_and_other_country_supervision_periods,
     get_supervising_officer_and_location_info_from_supervision_period,
 )
-from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
-    prepare_supervision_periods_for_calculations,
-)
 from recidiviz.common.constants.state.state_assessment import (
-    StateAssessmentType,
     StateAssessmentClass,
+    StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.persistence.entity.entity_utils import (
-    is_placeholder,
     get_single_state_code,
+    is_placeholder,
 )
 from recidiviz.persistence.entity.state.entities import (
-    StateProgramAssignment,
     StateAssessment,
+    StateProgramAssignment,
     StateSupervisionPeriod,
 )
 
@@ -84,34 +83,40 @@ def find_program_events(
     if not program_assignments:
         return program_events
 
+    state_code = get_single_state_code(program_assignments)
+
     supervision_period_to_agent_associations = list_of_dicts_to_dict_with_keys(
         supervision_period_to_agent_association,
         StateSupervisionPeriod.get_class_id_name(),
     )
 
-    state_code = get_single_state_code(program_assignments)
-
-    should_drop_federal_and_other_country = (
-        filter_out_federal_and_other_country_supervision_periods(state_code)
+    (_, sp_pre_processing_manager,) = pre_processing_managers_for_calculations(
+        state_code=state_code,
+        # SP pre-processing doesn't rely on StateIncarcerationPeriod entities,
+        # and this pipeline doesn't require StateIncarcerationPeriods
+        incarceration_periods=None,
+        supervision_periods=supervision_periods,
     )
 
-    supervision_periods = prepare_supervision_periods_for_calculations(
-        supervision_periods,
-        drop_federal_and_other_country_supervision_periods=should_drop_federal_and_other_country,
+    if not sp_pre_processing_manager:
+        raise ValueError("Expected pre-processed SPs for this pipeline.")
+
+    supervision_periods_for_calculations = (
+        sp_pre_processing_manager.pre_processed_supervision_period_index_for_calculations().supervision_periods
     )
 
     for program_assignment in program_assignments:
         program_referrals = find_program_referrals(
             program_assignment,
             assessments,
-            supervision_periods,
+            supervision_periods_for_calculations,
             supervision_period_to_agent_associations,
         )
 
         program_events.extend(program_referrals)
 
         program_participation_events = find_program_participation_events(
-            program_assignment, supervision_periods
+            program_assignment, supervision_periods_for_calculations
         )
 
         program_events.extend(program_participation_events)

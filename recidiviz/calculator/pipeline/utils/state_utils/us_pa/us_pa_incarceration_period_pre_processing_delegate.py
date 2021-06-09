@@ -48,3 +48,8 @@ class UsPaIncarcerationPreProcessingDelegate(
         self, incarceration_period: StateIncarcerationPeriod
     ) -> bool:
         return self._default_period_is_parole_board_hold(incarceration_period)
+
+    def pre_processing_relies_on_supervision_periods(self) -> bool:
+        # TODO(#7441): Return True once we implement the US_PA IP pre-processing that
+        #  relies on supervision periods
+        return self._default_pre_processing_relies_on_supervision_periods()

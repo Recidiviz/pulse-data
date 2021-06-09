@@ -18,49 +18,51 @@
 # pylint: disable=unused-import,wrong-import-order
 
 """Tests for recidivism/pipeline.py."""
+import datetime
 import unittest
+from datetime import date
+from enum import Enum
 from typing import Optional, Set
 from unittest import mock
 
 import apache_beam as beam
-from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
-
-import datetime
-from datetime import date
+from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from dateutil.relativedelta import relativedelta
-from enum import Enum
-
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.recidivism import pipeline
 from recidiviz.calculator.pipeline.recidivism.metrics import (
-    ReincarcerationRecidivismMetric,
-    ReincarcerationRecidivismRateMetric,
-    ReincarcerationRecidivismMetricType,
     ReincarcerationRecidivismCountMetric,
+    ReincarcerationRecidivismMetric,
+)
+from recidiviz.calculator.pipeline.recidivism.metrics import (
+    ReincarcerationRecidivismMetricType,
 )
 from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismMetricType as MetricType,
 )
-from recidiviz.calculator.pipeline.utils.beam_utils import RecidivizMetricWritableDict
-from recidiviz.calculator.pipeline.recidivism.release_event import (
-    RecidivismReleaseEvent,
-    NonRecidivismReleaseEvent,
+from recidiviz.calculator.pipeline.recidivism.metrics import (
+    ReincarcerationRecidivismRateMetric,
 )
+from recidiviz.calculator.pipeline.recidivism.release_event import (
+    NonRecidivismReleaseEvent,
+    RecidivismReleaseEvent,
+)
+from recidiviz.calculator.pipeline.utils.beam_utils import RecidivizMetricWritableDict
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.person_characteristics import (
     Ethnicity,
-    ResidencyStatus,
     Gender,
     Race,
+    ResidencyStatus,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
+    StateIncarcerationFacilitySecurityLevel,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationFacilitySecurityLevel,
+    StateIncarcerationPeriodStatus,
 )
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
@@ -69,10 +71,10 @@ from recidiviz.tests.calculator.calculator_test_utils import (
     normalized_database_base_dict_list,
 )
 from recidiviz.tests.calculator.pipeline.fake_bigquery import (
+    DataTablesDict,
     FakeReadFromBigQueryFactory,
     FakeWriteToBigQuery,
     FakeWriteToBigQueryFactory,
-    DataTablesDict,
 )
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
     run_test_pipeline,
@@ -99,8 +101,7 @@ class TestRecidivismPipeline(unittest.TestCase):
         self.fake_bq_sink_factory = FakeWriteToBigQueryFactory(FakeWriteToBigQuery)
 
         self.pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.recidivism.identifier"
-            ".get_state_specific_incarceration_period_pre_processing_delegate"
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_incarceration_period_pre_processing_delegate"
         )
         self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
         self.mock_pre_processing_delegate.return_value = (
@@ -502,8 +503,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
     def setUp(self) -> None:
         self.pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.recidivism.identifier"
-            ".get_state_specific_incarceration_period_pre_processing_delegate"
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_incarceration_period_pre_processing_delegate"
         )
         self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
         self.mock_pre_processing_delegate.return_value = (

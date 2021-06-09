@@ -30,6 +30,9 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_man
     ATTRIBUTES_TRIGGERING_STATUS_CHANGE,
     IncarcerationPreProcessingManager,
 )
+from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
+    PreProcessedSupervisionPeriodIndex,
+)
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -55,9 +58,16 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         overwrite_facility_information_in_transfers: bool,
         earliest_death_date: Optional[date] = None,
     ) -> List[StateIncarcerationPeriod]:
+
+        # TODO(#7440): Bring in supervision periods for relevant tests
+        sp_index = PreProcessedSupervisionPeriodIndex(
+            supervision_periods=[],
+        )
+
         ip_pre_processing_manager = IncarcerationPreProcessingManager(
             incarceration_periods=incarceration_periods,
             delegate=UsXxIncarcerationPreProcessingDelegate(),
+            pre_processed_supervision_period_index=sp_index,
             earliest_death_date=earliest_death_date,
         )
 
@@ -261,9 +271,14 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         stored_raw_copies = [attr.evolve(ip_1), attr.evolve(ip_2), attr.evolve(ip_3)]
 
+        sp_index = PreProcessedSupervisionPeriodIndex(
+            supervision_periods=[],
+        )
+
         ip_pre_processing_manager = IncarcerationPreProcessingManager(
             incarceration_periods=incarceration_periods,
             delegate=UsXxIncarcerationPreProcessingDelegate(),
+            pre_processed_supervision_period_index=sp_index,
         )
 
         collapsed_incarceration_periods = ip_pre_processing_manager.pre_processed_incarceration_period_index_for_calculations(
@@ -749,9 +764,16 @@ class TestCollapseIncarcerationPeriods(unittest.TestCase):
         incarceration_periods: List[StateIncarcerationPeriod],
         overwrite_facility_information_in_transfers: bool = False,
     ):
+        # None of these tests rely on the influence of supervision periods in
+        # IP pre-processing
+        sp_index = PreProcessedSupervisionPeriodIndex(
+            supervision_periods=[],
+        )
+
         ip_pre_processing_manager = IncarcerationPreProcessingManager(
             incarceration_periods=incarceration_periods,
             delegate=UsXxIncarcerationPreProcessingDelegate(),
+            pre_processed_supervision_period_index=sp_index,
             earliest_death_date=None,
         )
 
@@ -1422,9 +1444,16 @@ class TestSortAndInferMissingDatesAndStatuses(unittest.TestCase):
     def _sort_and_infer_missing_dates_and_statuses(
         incarceration_periods: List[StateIncarcerationPeriod],
     ):
+        # None of these tests rely on the influence of supervision periods in
+        # IP pre-processing
+        sp_index = PreProcessedSupervisionPeriodIndex(
+            supervision_periods=[],
+        )
+
         ip_pre_processing_manager = IncarcerationPreProcessingManager(
             incarceration_periods=incarceration_periods,
             delegate=UsXxIncarcerationPreProcessingDelegate(),
+            pre_processed_supervision_period_index=sp_index,
             earliest_death_date=None,
         )
 

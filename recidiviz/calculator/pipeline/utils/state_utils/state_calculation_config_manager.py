@@ -161,17 +161,6 @@ def investigation_periods_in_supervision_population(_state_code: str) -> bool:
     return False
 
 
-def filter_out_federal_and_other_country_supervision_periods(_state_code: str) -> bool:
-    """Whether or not only to filter supervision periods whose custodial authority is out of the country or in federal
-    prison.
-        - US_ID: False
-        - US_MO: False
-        - US_ND: False
-        - US_PA: False
-    """
-    return False
-
-
 def include_decisions_on_follow_up_responses_for_most_severe_response(
     state_code: str,
 ) -> bool:

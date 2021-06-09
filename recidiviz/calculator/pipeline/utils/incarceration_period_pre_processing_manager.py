@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,6 +31,9 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
 )
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
+)
+from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
+    PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -110,6 +113,17 @@ class StateSpecificIncarcerationPreProcessingDelegate:
             == StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
         )
 
+    @abc.abstractmethod
+    def pre_processing_relies_on_supervision_periods(self) -> bool:
+        """State-specific implementations of this class should return whether the IP
+        pre-processing logic for the state relies on information in
+        StateSupervisionPeriod entities"""
+
+    @staticmethod
+    def _default_pre_processing_relies_on_supervision_periods() -> bool:
+        """Default behavior of pre_processing_relies_on_supervision_periods function."""
+        return False
+
 
 class IncarcerationPreProcessingManager:
     """Interface for generalized and state-specific pre-processing of
@@ -119,6 +133,9 @@ class IncarcerationPreProcessingManager:
         self,
         incarceration_periods: List[StateIncarcerationPeriod],
         delegate: StateSpecificIncarcerationPreProcessingDelegate,
+        pre_processed_supervision_period_index: Optional[
+            PreProcessedSupervisionPeriodIndex
+        ],
         earliest_death_date: Optional[date] = None,
     ):
         self._incarceration_periods = deepcopy(incarceration_periods)
@@ -126,6 +143,16 @@ class IncarcerationPreProcessingManager:
         self._pre_processed_incarceration_period_index_for_calculations: Dict[
             PreProcessingConfiguration, PreProcessedIncarcerationPeriodIndex
         ] = {}
+        # Only store the PreProcessedSupervisionPeriodIndex if StateSupervisionPeriod
+        # entities are required for this state's StateIncarcerationPeriod
+        # pre-processing
+        self._pre_processed_supervision_period_index: Optional[
+            PreProcessedSupervisionPeriodIndex
+        ] = (
+            pre_processed_supervision_period_index
+            if self.delegate.pre_processing_relies_on_supervision_periods()
+            else None
+        )
 
         # The end date of the earliest incarceration or supervision period ending in
         # death. None if no periods end in death.

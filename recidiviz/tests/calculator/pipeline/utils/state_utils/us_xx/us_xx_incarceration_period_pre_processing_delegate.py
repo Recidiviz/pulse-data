@@ -50,3 +50,6 @@ class UsXxIncarcerationPreProcessingDelegate(
         self, incarceration_period: StateIncarcerationPeriod
     ) -> bool:
         return self._default_period_is_parole_board_hold(incarceration_period)
+
+    def pre_processing_relies_on_supervision_periods(self):
+        return self._default_pre_processing_relies_on_supervision_periods()

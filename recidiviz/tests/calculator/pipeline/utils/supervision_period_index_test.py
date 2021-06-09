@@ -22,140 +22,16 @@ from datetime import date
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
 )
+from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
+    standard_date_sort_for_supervision_periods,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodTerminationReason,
-    StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodStatus,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
-
-
-class TestSupervisionPeriodIndexSupervisionPeriodsConverter(unittest.TestCase):
-    """Tests the sorting logic in the _supervision_periods_converter."""
-
-    def test_supervision_periods_converter(self):
-        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
-            state_code="US_XX",
-            supervision_period_id=111,
-            start_date=date(2000, 1, 1),
-            termination_date=date(2000, 10, 1),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
-            state_code="US_XX",
-            supervision_period_id=222,
-            start_date=date(2000, 10, 1),
-            termination_date=date(2003, 3, 1),
-            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        supervision_periods = [supervision_period_2, supervision_period_1]
-
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=supervision_periods
-        )
-
-        sorted_supervision_periods = [supervision_period_1, supervision_period_2]
-
-        self.assertEqual(
-            sorted_supervision_periods, supervision_period_index.supervision_periods
-        )
-
-    def test_supervision_periods_converter_empty_termination_date(self):
-        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
-            state_code="US_XX",
-            supervision_period_id=111,
-            start_date=date(2000, 1, 1),
-            termination_date=date(2000, 1, 1),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
-            state_code="US_XX",
-            supervision_period_id=222,
-            start_date=date(2000, 1, 1),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        supervision_periods = [supervision_period_2, supervision_period_1]
-
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=supervision_periods
-        )
-
-        sorted_supervision_periods = [supervision_period_1, supervision_period_2]
-
-        self.assertEqual(
-            sorted_supervision_periods, supervision_period_index.supervision_periods
-        )
-
-    def test_supervision_periods_converter_sort_by_admission_reason_court(self):
-        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
-            state_code="US_XX",
-            supervision_period_id=111,
-            start_date=date(2000, 1, 1),
-            termination_date=date(2000, 1, 1),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
-            state_code="US_XX",
-            supervision_period_id=222,
-            start_date=date(2000, 1, 1),
-            termination_date=date(2000, 1, 1),
-            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        supervision_periods = [supervision_period_2, supervision_period_1]
-
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=supervision_periods
-        )
-
-        sorted_supervision_periods = [supervision_period_1, supervision_period_2]
-
-        self.assertEqual(
-            sorted_supervision_periods, supervision_period_index.supervision_periods
-        )
-
-    def test_supervision_periods_converter_sort_by_admission_reason_conditional_release(
-        self,
-    ):
-        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
-            state_code="US_XX",
-            supervision_period_id=111,
-            start_date=date(2000, 1, 1),
-            termination_date=date(2000, 1, 1),
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
-            state_code="US_XX",
-            supervision_period_id=222,
-            start_date=date(2000, 1, 1),
-            termination_date=date(2000, 1, 1),
-            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        supervision_periods = [supervision_period_2, supervision_period_1]
-
-        supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=supervision_periods
-        )
-
-        sorted_supervision_periods = [supervision_period_1, supervision_period_2]
-
-        self.assertEqual(
-            sorted_supervision_periods, supervision_period_index.supervision_periods
-        )
 
 
 class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
@@ -183,7 +59,9 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         supervision_periods = [supervision_period_2, supervision_period_1]
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=supervision_periods
+            supervision_periods=standard_date_sort_for_supervision_periods(
+                supervision_periods
+            )
         )
 
         expected_output = {
@@ -245,7 +123,9 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         ]
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=supervision_periods
+            supervision_periods=standard_date_sort_for_supervision_periods(
+                supervision_periods
+            )
         )
 
         expected_output = {
@@ -309,7 +189,9 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         ]
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=supervision_periods
+            supervision_periods=standard_date_sort_for_supervision_periods(
+                supervision_periods
+            )
         )
 
         expected_output = {
@@ -347,7 +229,9 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         supervision_periods = [supervision_period_2, supervision_period_1]
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=supervision_periods
+            supervision_periods=standard_date_sort_for_supervision_periods(
+                supervision_periods
+            )
         )
 
         expected_output = {
@@ -404,7 +288,9 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         ]
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=supervision_periods
+            supervision_periods=standard_date_sort_for_supervision_periods(
+                supervision_periods
+            )
         )
 
         expected_output = {
@@ -462,7 +348,9 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         ]
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=supervision_periods
+            supervision_periods=standard_date_sort_for_supervision_periods(
+                supervision_periods
+            )
         )
 
         expected_output = {
@@ -518,7 +406,9 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         ]
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=supervision_periods
+            supervision_periods=standard_date_sort_for_supervision_periods(
+                supervision_periods
+            )
         )
 
         expected_output = {
@@ -576,7 +466,9 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         ]
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=supervision_periods
+            supervision_periods=standard_date_sort_for_supervision_periods(
+                supervision_periods
+            )
         )
 
         expected_output = {
@@ -616,7 +508,9 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
         supervision_periods = [supervision_period_2, supervision_period_1]
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=supervision_periods
+            supervision_periods=standard_date_sort_for_supervision_periods(
+                supervision_periods
+            )
         )
 
         expected_output = {2000: {10: [supervision_period_1, supervision_period_2]}}
@@ -648,7 +542,9 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
         supervision_periods = [supervision_period_2, supervision_period_1]
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=supervision_periods
+            supervision_periods=standard_date_sort_for_supervision_periods(
+                supervision_periods
+            )
         )
 
         expected_output = {
@@ -682,7 +578,9 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
         supervision_periods = [supervision_period_2, supervision_period_1]
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=supervision_periods
+            supervision_periods=standard_date_sort_for_supervision_periods(
+                supervision_periods
+            )
         )
 
         expected_output = {
@@ -720,7 +618,9 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
         supervision_periods = [supervision_period_1, supervision_period_2]
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=supervision_periods
+            supervision_periods=standard_date_sort_for_supervision_periods(
+                supervision_periods
+            )
         )
 
         self.assertEqual(
@@ -751,7 +651,9 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
         supervision_periods = [supervision_period_1, supervision_period_2]
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=supervision_periods
+            supervision_periods=standard_date_sort_for_supervision_periods(
+                supervision_periods
+            )
         )
 
         self.assertIsNone(
@@ -773,7 +675,9 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
         supervision_periods = [supervision_period]
 
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
-            supervision_periods=supervision_periods
+            supervision_periods=standard_date_sort_for_supervision_periods(
+                supervision_periods
+            )
         )
 
         self.assertIsNone(
