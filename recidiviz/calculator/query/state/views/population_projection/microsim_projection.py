@@ -33,11 +33,13 @@ MICROSIM_PROJECTION_VIEW_DESCRIPTION = (
     """"The projected population for the simulated policy and the baseline"""
 )
 
-MICROSIM_PROJECTION_VIEW_EXCLUDED_TYPES = [
-    StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
-    StateSpecializedPurposeForIncarceration.EXTERNAL_UNKNOWN,
-    StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN,
-    StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+MICROSIM_PROJECTION_VIEW_INCLUDED_TYPES = [
+    StateSupervisionPeriodSupervisionType.DUAL,
+    StateSupervisionPeriodSupervisionType.PAROLE,
+    StateSupervisionPeriodSupervisionType.PROBATION,
+    StateSpecializedPurposeForIncarceration.GENERAL,
+    StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+    StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
 ]
 
 MICROSIM_PROJECTION_QUERY_TEMPLATE = """
@@ -68,7 +70,7 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
         AND ((compartment_level_1 = 'SUPERVISION' AND metric_source = 'SUPERVISION_POPULATION')
             OR (compartment_level_1 = 'INCARCERATION' AND sessions.state_code = 'US_ND')
         )
-        AND compartment_level_2 NOT IN ('{excluded_types}')
+        AND compartment_level_2 IN ('{included_types}')
       GROUP BY state_code, date, compartment, legal_status, simulation_group
     ),
     historical_incarceration_population_output AS (
@@ -87,7 +89,7 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
       UNNEST(['ALL', gender]) AS simulation_group
       WHERE state_code = 'US_ID'
         AND gender IN ('FEMALE', 'MALE')
-        AND compartment_level_2 NOT IN ('{excluded_types}')
+        AND compartment_level_2 IN ('{included_types}')
       GROUP BY state_code, date, compartment, legal_status, simulation_group
     ),
     most_recent_results AS (
@@ -161,8 +163,8 @@ MICROSIM_PROJECTION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
     population_projection_output_dataset=dataset_config.POPULATION_PROJECTION_OUTPUT_DATASET,
-    excluded_types="', '".join(
-        [status.name for status in MICROSIM_PROJECTION_VIEW_EXCLUDED_TYPES]
+    included_types="', '".join(
+        [status.name for status in MICROSIM_PROJECTION_VIEW_INCLUDED_TYPES]
     ),
     should_materialize=False,
 )
