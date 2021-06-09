@@ -34,6 +34,66 @@ from recidiviz.validation.views.state.active_in_population_after_death_date impo
 from recidiviz.validation.views.state.active_program_participation_by_region_internal_consistency import (
     ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.analyst_data_validation.reincarcerations_from_dataflow_to_dataflow import (
+    REINCARCERATIONS_FROM_DATAFLOW_TO_DATAFLOW_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.analyst_data_validation.reincarcerations_from_dataflow_to_dataflow_disaggregated import (
+    REINCARCERATIONS_FROM_DATAFLOW_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.analyst_data_validation.reincarcerations_from_sessions_to_dataflow import (
+    REINCARCERATIONS_FROM_SESSIONS_TO_DATAFLOW_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.analyst_data_validation.reincarcerations_from_sessions_to_dataflow_disaggregated import (
+    REINCARCERATIONS_FROM_SESSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.analyst_data_validation.revocation_sessions_to_dataflow import (
+    REVOCATION_SESSIONS_TO_DATAFLOW_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.analyst_data_validation.revocation_sessions_to_dataflow_disaggregated import (
+    REVOCATION_SESSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.analyst_data_validation.session_incarceration_admissions_to_dataflow import (
+    SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.analyst_data_validation.session_incarceration_admissions_to_dataflow_disaggregated import (
+    SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
+)
+from recidiviz.validation.views.state.analyst_data_validation.session_incarceration_population_to_dataflow import (
+    SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.analyst_data_validation.session_incarceration_population_to_dataflow_disaggregated import (
+    SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
+)
+from recidiviz.validation.views.state.analyst_data_validation.session_incarceration_releases_to_dataflow import (
+    SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.analyst_data_validation.session_incarceration_releases_to_dataflow_disaggregated import (
+    SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
+)
+from recidiviz.validation.views.state.analyst_data_validation.session_supervision_out_of_state_population_to_dataflow import (
+    SESSION_SUPERVISION_OUT_OF_STATE_POPULATION_TO_DATAFLOW_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.analyst_data_validation.session_supervision_out_of_state_population_to_dataflow_disaggregated import (
+    SESSION_SUPERVISION_OUT_OF_STATE_POPULATION_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
+)
+from recidiviz.validation.views.state.analyst_data_validation.session_supervision_population_to_dataflow import (
+    SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.analyst_data_validation.session_supervision_population_to_dataflow_disaggregated import (
+    SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
+)
+from recidiviz.validation.views.state.analyst_data_validation.session_supervision_starts_to_dataflow import (
+    SESSION_SUPERVISION_STARTS_TO_DATAFLOW_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.analyst_data_validation.session_supervision_starts_to_dataflow_disaggregated import (
+    SESSION_SUPERVISION_STARTS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
+)
+from recidiviz.validation.views.state.analyst_data_validation.session_supervision_terminations_to_dataflow import (
+    SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.analyst_data_validation.session_supervision_terminations_to_dataflow_disaggregated import (
+    SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
+)
 from recidiviz.validation.views.state.case_termination_by_type_comparison import (
     CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER,
 )
@@ -118,11 +178,14 @@ from recidiviz.validation.views.state.po_report_missing_fields import (
 from recidiviz.validation.views.state.population_projection_data_validation.population_projection_data_validation_view_config import (
     POPULATION_PROJECTION_DATA_VALIDATION_VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
 )
+from recidiviz.validation.views.state.recidivism_person_level_external_comparison_matching_people import (
+    RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.recidivism_release_cohort_person_level_external_comparison import (
     RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.recidivism_person_level_external_comparison_matching_people import (
-    RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
+from recidiviz.validation.views.state.revocation_matrix_comparison_by_month import (
+    REVOCATION_MATRIX_COMPARISON_BY_MONTH_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_cell_vs_caseload import (
     REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER,
@@ -193,67 +256,6 @@ from recidiviz.validation.views.state.supervision_termination_prior_to_start imp
 from recidiviz.validation.views.state.supervision_termination_reason_no_date import (
     SUPERVISION_TERMINATION_REASON_NO_DATE_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.analyst_data_validation.session_incarceration_population_to_dataflow import (
-    SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.analyst_data_validation.session_incarceration_population_to_dataflow_disaggregated import (
-    SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
-)
-from recidiviz.validation.views.state.analyst_data_validation.session_supervision_population_to_dataflow import (
-    SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.analyst_data_validation.session_supervision_population_to_dataflow_disaggregated import (
-    SESSION_SUPERVISION_POPULATION_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
-)
-from recidiviz.validation.views.state.analyst_data_validation.session_supervision_out_of_state_population_to_dataflow import (
-    SESSION_SUPERVISION_OUT_OF_STATE_POPULATION_TO_DATAFLOW_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.analyst_data_validation.session_supervision_out_of_state_population_to_dataflow_disaggregated import (
-    SESSION_SUPERVISION_OUT_OF_STATE_POPULATION_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
-)
-from recidiviz.validation.views.state.analyst_data_validation.session_incarceration_admissions_to_dataflow import (
-    SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.analyst_data_validation.session_incarceration_admissions_to_dataflow_disaggregated import (
-    SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
-)
-from recidiviz.validation.views.state.analyst_data_validation.session_supervision_starts_to_dataflow import (
-    SESSION_SUPERVISION_STARTS_TO_DATAFLOW_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.analyst_data_validation.session_supervision_starts_to_dataflow_disaggregated import (
-    SESSION_SUPERVISION_STARTS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
-)
-from recidiviz.validation.views.state.analyst_data_validation.session_incarceration_releases_to_dataflow import (
-    SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.analyst_data_validation.session_incarceration_releases_to_dataflow_disaggregated import (
-    SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
-)
-from recidiviz.validation.views.state.analyst_data_validation.session_supervision_terminations_to_dataflow import (
-    SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.analyst_data_validation.session_supervision_terminations_to_dataflow_disaggregated import (
-    SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
-)
-from recidiviz.validation.views.state.analyst_data_validation.reincarcerations_from_dataflow_to_dataflow_disaggregated import (
-    REINCARCERATIONS_FROM_DATAFLOW_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.analyst_data_validation.reincarcerations_from_dataflow_to_dataflow import (
-    REINCARCERATIONS_FROM_DATAFLOW_TO_DATAFLOW_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.analyst_data_validation.reincarcerations_from_sessions_to_dataflow_disaggregated import (
-    REINCARCERATIONS_FROM_SESSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.analyst_data_validation.reincarcerations_from_sessions_to_dataflow import (
-    REINCARCERATIONS_FROM_SESSIONS_TO_DATAFLOW_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.analyst_data_validation.revocation_sessions_to_dataflow_disaggregated import (
-    REVOCATION_SESSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.analyst_data_validation.revocation_sessions_to_dataflow import (
-    REVOCATION_SESSIONS_TO_DATAFLOW_VIEW_BUILDER,
-)
-
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
     ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_VIEW_BUILDER,
@@ -287,7 +289,9 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
     RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
     RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
     REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER,
+    # TODO(#1124) Remove revocation_matrix_comparison_revocation_cell_vs_month validation once FE no longer use revocations_matrix_by_month
     REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW_BUILDER,
+    REVOCATION_MATRIX_COMPARISON_BY_MONTH_VIEW_BUILDER,
     REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_VIEW_BUILDER,
     REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_BUILDER,
     REVOCATION_MATRIX_DISTRIBUTION_BY_GENDER_COMPARISON_VIEW_BUILDER,

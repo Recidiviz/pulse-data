@@ -16,9 +16,10 @@
 # =============================================================================
 """Revocations Matrix by month."""
 # pylint: disable=trailing-whitespace
+# TODO(#1124) Remove revocations_matrix_by_month view once FE no longer uses it
 
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
