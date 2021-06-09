@@ -66,7 +66,21 @@ class SQLAlchemyEngineManager:
     ) -> Engine:
         """Initializes a sqlalchemy Engine object for the given Postgres database /
         schema and caches it for future use."""
-
+        if database_key.pool_configuration:
+            return cls.init_engine_for_db_instance(
+                database_key=database_key,
+                db_url=db_url,
+                pool_size=database_key.pool_configuration["pool_size"],
+                max_overflow=database_key.pool_configuration["max_overflow"],
+                pool_timeout=database_key.pool_configuration["pool_timeout"],
+                # Log information about how connections are being reused.
+                echo_pool=True,
+                # Only reuse connections for up to 10 minutes to avoid failures due
+                # to stale connections. Cloud SQL will close connections that have
+                # been stale for 10 minutes.
+                # https://cloud.google.com/sql/docs/postgres/diagnose-issues#compute-engine
+                pool_recycle=600,
+            )
         return cls.init_engine_for_db_instance(
             database_key=database_key,
             db_url=db_url,

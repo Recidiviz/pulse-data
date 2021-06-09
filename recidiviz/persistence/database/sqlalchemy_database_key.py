@@ -20,7 +20,7 @@ is managed by SQLAlchemy.
 
 import os
 from enum import Enum
-from typing import Optional, List, Type
+from typing import Dict, List, Optional, Type
 
 import attr
 import sqlalchemy
@@ -33,8 +33,8 @@ from recidiviz.ingest.direct.direct_ingest_region_utils import (
 )
 from recidiviz.persistence.database import migrations
 from recidiviz.persistence.database.schema_utils import (
-    schema_type_to_schema_base,
     SchemaType,
+    schema_type_to_schema_base,
 )
 from recidiviz.utils import environment
 
@@ -126,6 +126,12 @@ class SQLAlchemyDatabaseKey:
         # each request using a State database has to setup its own connection.
         if self.schema_type is SchemaType.STATE:
             return sqlalchemy.pool.NullPool
+        return None
+
+    @property
+    def pool_configuration(self) -> Optional[Dict[str, int]]:
+        if self.schema_type is SchemaType.OPERATIONS:
+            return {"pool_size": 2, "max_overflow": 5, "pool_timeout": 15}
         return None
 
     @classmethod
