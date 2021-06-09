@@ -1475,6 +1475,7 @@ class ManualUploadTest(unittest.TestCase):
                 schema.System.CORRECTIONS,
                 "MSP Population by Race",
                 "Unknown",
+                "test table",
                 manual_upload.State("US_CO"),
                 [manual_upload.Facility("MSP")],
                 dimensions=[manual_upload.Race, manual_upload.PopulationType],
