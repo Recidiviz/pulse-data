@@ -65,7 +65,7 @@ def _configure_logging(level: int) -> None:
     root.setLevel(level)
 
 
-def _cleanup_run(tmp_postgres_db_dir: str, clean_up_db: bool) -> None:
+def cleanup_run(tmp_postgres_db_dir: str, clean_up_db: bool) -> None:
     if clean_up_db:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
             tmp_postgres_db_dir
@@ -83,12 +83,7 @@ def _cleanup_run(tmp_postgres_db_dir: str, clean_up_db: bool) -> None:
         )
 
 
-if __name__ == "__main__":
-    arg_parser = _create_parser()
-    arguments = arg_parser.parse_args()
-
-    _configure_logging(arguments.log)
-
+def run_justice_counts_ingest_locally(manifest_file: str, clean_up_db: bool) -> None:
     tmp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
     local_postgres_helpers.use_on_disk_postgresql_database(
         SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
@@ -96,6 +91,15 @@ if __name__ == "__main__":
 
     fs = FakeGCSFileSystem()
     try:
-        manual_upload.ingest(fs, test_utils.prepare_files(fs, arguments.manifest_file))
+        manual_upload.ingest(fs, test_utils.prepare_files(fs, manifest_file))
     finally:
-        _cleanup_run(tmp_db_dir, arguments.clean_up_db)
+        cleanup_run(tmp_db_dir, clean_up_db)
+
+
+if __name__ == "__main__":
+    arg_parser = _create_parser()
+    arguments = arg_parser.parse_args()
+
+    _configure_logging(arguments.log)
+
+    run_justice_counts_ingest_locally(arguments.manifest_file, arguments.clean_up_db)

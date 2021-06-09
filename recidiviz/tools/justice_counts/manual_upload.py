@@ -15,6 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utilities for ingesting a report (as CSVs) into the Justice Counts database.
+Will use service file if you have environment variable GOOGLE_APPLICATION_CREDENTIALS set,
+allowing for automatic ingest instead of opening a web browser and having the user verify that the ingest was successful
+
+To setup GOOGLE_APPLICATION_CREDENTIALS environment variable, got to IAM & Admin in Google Cloud,
+and under Service Accounts go to the action manage keys for "App Engine default service account".
+There you can create a new key to save in a secure location.
+Point the environment variable "GOOGLE_APPLICATION_CREDENTIALS" to the file path of the credentials.
+You can then use the script as normal, and it will automatically ingest instead of opening the browser.
 
 Example usage:
 python -m recidiviz.tools.justice_counts.manual_upload \
@@ -31,7 +39,6 @@ import decimal
 import enum
 import logging
 import os
-import sys
 import typing
 import webbrowser
 from abc import ABCMeta, abstractmethod
@@ -58,6 +65,10 @@ from sqlalchemy.orm.session import Session
 from sqlalchemy.sql.schema import UniqueConstraint
 
 import recidiviz.common.constants.person_characteristics as person_characteristics
+from recidiviz.cloud_functions.cloud_function_utils import (
+    IAP_CLIENT_ID,
+    make_iap_request,
+)
 from recidiviz.cloud_storage.gcs_file_system import (
     GCSFileSystem,
     GcsfsFileContentsHandle,
@@ -1574,6 +1585,7 @@ class Table:
     metric: Metric = attr.ib()
     system: schema.System = attr.ib(converter=schema.System)
     label: Optional[str] = attr.ib()
+    filename: Optional[str] = attr.ib()
     methodology: str = attr.ib()
 
     # These are dimensions that apply to all data points in this table
@@ -1705,6 +1717,7 @@ class Table:
         date_range: DateRange,
         table_converter: TableConverter,
         label: Optional[str],
+        filename: Optional[str],
         metric: Metric,
         system: str,
         methodology: str,
@@ -1717,6 +1730,7 @@ class Table:
             metric=metric,
             system=system,
             label=label,
+            filename=filename,
             methodology=methodology,
             dimensions=table_converter.dimension_classes_for_columns(df.columns.values),
             data_points=table_converter.table_to_data_points(df),
@@ -1732,11 +1746,15 @@ class Table:
         metric: Metric,
         system: str,
         label: Optional[str],
+        filename: Optional[str],
         methodology: str,
         location: Optional[Location],
         additional_filters: List[Dimension],
         df: pandas.DataFrame,
     ) -> List["Table"]:
+        """
+        Returns list of tables split across date_range dataframes
+        """
         tables = []
         for date_range, df_date in date_range_producer.split_dataframe(df):
             tables.append(
@@ -1746,6 +1764,7 @@ class Table:
                     metric=metric,
                     system=system,
                     label=label,
+                    filename=filename,
                     methodology=methodology,
                     location=location,
                     additional_filters=additional_filters,
@@ -2144,11 +2163,11 @@ def _parse_tables(
             # it is from multiple sources. To support that we first look for a table named with the data source, e.g.
             # 'AL_A', but otherwise we fall back to the generic version, e.g. 'AL_Data'.
             try:
-                spreadsheet_prefix = spreadsheet_name.split("_")[0]
+                spreadsheet_name = f"{spreadsheet_name.split('_')[0]}_Data"
                 table_handle = open_table_file(
                     gcs,
                     directory_path,
-                    f"{spreadsheet_prefix}_Data",
+                    spreadsheet_name,
                     table_name,
                     table_filename,
                 )
@@ -2174,6 +2193,7 @@ def _parse_tables(
                 metric=metric,
                 system=table_input.pop("system", str),
                 label=table_input.pop_optional("label", str),
+                filename=name,
                 methodology=table_input.pop("methodology", str),
                 location=location_dimension,
                 additional_filters=filter_dimensions,
@@ -2379,7 +2399,10 @@ def _persist_report(report: Report, report_metadata: Metadata) -> None:
         session.close()
 
 
-def ingest(gcs: GCSFileSystem, manifest_filepath: GcsfsFilePath) -> None:
+def ingest(gcs: GCSFileSystem, manifest_filepath: GcsfsFilePath) -> Set[str]:
+    """
+    ingests manifest file locally and returns the table names that were ingested
+    """
     logging.info("Fetching report for ingest...")
     report, acquirer = _get_report_and_acquirer(gcs, manifest_filepath)
     logging.info("Ingesting report...")
@@ -2391,6 +2414,13 @@ def ingest(gcs: GCSFileSystem, manifest_filepath: GcsfsFilePath) -> None:
         ),
     )
     logging.info("Report ingested.")
+
+    ingested_file_names: Set[str] = set()
+    for table in report.tables:
+        if table.filename:
+            ingested_file_names.add(table.filename)
+
+    return ingested_file_names
 
 
 # TODO(#4127): Everything above should be refactored out of the tools directory so only the script below is left.
@@ -2503,10 +2533,27 @@ def upload_table(
 
 
 def trigger_ingest(gcs_path: GcsfsFilePath, app_url: Optional[str]) -> None:
+    """
+    Triggers ingest by checking to see if service account credentials environment variable is set and using it,
+    or by triggering ingest via a web browser.
+    """
     app_url = app_url or f"https://{metadata.project_id()}.appspot.com"
-    webbrowser.open(
-        url=f"{app_url}/justice_counts/ingest?{parse.urlencode({'manifest_path': gcs_path.uri()})}"
-    )
+    url = f"{app_url}/justice_counts/ingest?{parse.urlencode({'manifest_path': gcs_path.uri()})}"
+
+    if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+        client_id = IAP_CLIENT_ID[metadata.project_id()]
+        response = make_iap_request(url, client_id)
+
+        # May return 200 status code with an error in the response
+        if response.text != "":
+            raise ValueError(response.text)
+    else:
+        logging.info("Opening browser to trigger ingest...")
+        webbrowser.open(url=url)
+        # Ask the user if the browser request was successful or displayed an error.
+        i = input("Was the ingest successful? [Y/n]: ")
+        if i and i.strip().lower() != "y":
+            raise ValueError("Ingest failed")
 
 
 def main(manifest_path: str, app_url: Optional[str]) -> None:
@@ -2515,13 +2562,9 @@ def main(manifest_path: str, app_url: Optional[str]) -> None:
 
     # We can't hit the endpoint on the app directly from the python script as we don't have IAP credentials. Instead we
     # launch the browser to hit the app and allow the user to auth in browser.
-    logging.info("Opening browser to trigger ingest...")
+
     trigger_ingest(gcs_path, app_url)
-    # Then we ask the user if the browser request was successful or displayed an error.
-    i = input("Was the ingest successful? [Y/n]: ")
-    if i and i.strip().lower() != "y":
-        logging.error("Ingest failed.")
-        sys.exit(1)
+
     logging.info("Report ingested.")
 
 
