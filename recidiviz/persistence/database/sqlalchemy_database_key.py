@@ -20,7 +20,7 @@ is managed by SQLAlchemy.
 
 import os
 from enum import Enum
-from typing import Dict, List, Optional, Type
+from typing import List, Optional, Type
 
 import attr
 import sqlalchemy
@@ -57,6 +57,21 @@ class SQLAlchemyStateDatabaseVersion(Enum):
     # For state US_XX, references the us_xx_secondary DB within the state CloudSQL
     # instance for a given project.
     SECONDARY = "secondary"
+
+
+@attr.s
+class SQLAlchemyPoolConfiguration:
+    """Contains the settings for a SQLAlchemy connection pool. These settings are for QueuePools, which are the
+    default connection pool types for a database."""
+
+    # The number of persistent connections to be kept in the pool.
+    pool_size: int = attr.ib(default=5)
+
+    # The maximum number of overflow connections for the pool, once pool_size is used up.
+    max_overflow: int = attr.ib(default=10)
+
+    # The number of seconds to wait before giving up on returning a connection.
+    pool_timeout: int = attr.ib(default=30)
 
 
 @attr.s(frozen=True)
@@ -129,9 +144,17 @@ class SQLAlchemyDatabaseKey:
         return None
 
     @property
-    def pool_configuration(self) -> Optional[Dict[str, int]]:
+    def pool_configuration(self) -> Optional[SQLAlchemyPoolConfiguration]:
         if self.schema_type is SchemaType.OPERATIONS:
-            return {"pool_size": 2, "max_overflow": 5, "pool_timeout": 15}
+            # The operations database has many concurrent / distributed connections from various
+            # endpoints. In addition, for pre-ingest, (N~100) database operations are performed
+            # in serial in order to prevent unnecessary I/O. Given this read/write pattern, we
+            # will lower the pool size and max overflow to ensure that connections get properly
+            # closed / recycled. In addition, decreasing the timeout prevents long-held connections
+            # during these synchronous operations.
+            return SQLAlchemyPoolConfiguration(
+                pool_size=2, max_overflow=5, pool_timeout=15
+            )
         return None
 
     @classmethod
