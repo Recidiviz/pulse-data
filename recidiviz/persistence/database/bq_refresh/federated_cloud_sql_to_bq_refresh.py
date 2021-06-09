@@ -147,9 +147,10 @@ def _copy_regional_dataset_to_multi_region(
     )
 
     try:
-        bq_client.delete_dataset(
-            destination_dataset, delete_contents=True, not_found_ok=True
-        )
+        if bq_client.dataset_exists(destination_dataset):
+            tables = bq_client.list_tables(destination_dataset_id)
+            for table in tables:
+                bq_client.delete_table(table.dataset_id, table.table_id)
 
         bq_client.create_dataset_if_necessary(
             destination_dataset,
