@@ -17,39 +17,35 @@
 
 """Contains configured data validations to perform."""
 import os
-from typing import List, Dict, Tuple
+from typing import Dict, List, Tuple
 
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.utils import regions
 from recidiviz.validation import config
-from recidiviz.validation.config import regions as validation_regions
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
 from recidiviz.validation.checks.sameness_check import (
     SamenessDataValidationCheck,
     SamenessDataValidationCheckType,
 )
-from recidiviz.validation.validation_models import DataValidationCheck
+from recidiviz.validation.config import regions as validation_regions
 from recidiviz.validation.validation_config import (
-    ValidationRegionConfig,
     ValidationGlobalConfig,
+    ValidationRegionConfig,
+)
+from recidiviz.validation.validation_models import DataValidationCheck
+from recidiviz.validation.views.justice_counts.incarceration_population_by_state_by_date_justice_counts_comparison import (
+    INCARCERATION_POPULATION_BY_STATE_BY_DATE_JUSTICE_COUNTS_COMPARISON_VIEW_BUILDER,
 )
 
 # pylint: disable=line-too-long
 from recidiviz.validation.views.state.active_in_population_after_death_date import (
     ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_VIEW_BUILDER,
 )
-from recidiviz.validation.views.justice_counts.incarceration_population_by_state_by_date_justice_counts_comparison import (
-    INCARCERATION_POPULATION_BY_STATE_BY_DATE_JUSTICE_COUNTS_COMPARISON_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.active_program_participation_by_region_internal_consistency import (
     ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.case_termination_by_type_comparison import (
     CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.population_projection_data_validation.county_jail_population_person_level_external_comparison import (
-    COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
-    COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.ftr_referrals_comparison import (
     FTR_REFERRALS_COMPARISON_VIEW_BUILDER,
@@ -115,17 +111,24 @@ from recidiviz.validation.views.state.po_report_distinct_by_officer_month import
     PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.po_report_missing_fields import (
-    PO_REPORT_MISSING_FIELDS_VIEW_BUILDER,
     PO_REPORT_COMPARISON_COLUMNS,
+    PO_REPORT_MISSING_FIELDS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.population_projection_data_validation.county_jail_population_person_level_external_comparison import (
+    COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
+    COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.population_projection_data_validation.population_projection_monthly_population_external_comparison import (
     POPULATION_PROJECTION_MONTHLY_POPULATION_EXTERNAL_COMPARISON_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.recidivism_person_level_external_comparison_matching_people import (
+    RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.recidivism_release_cohort_person_level_external_comparison import (
     RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.recidivism_person_level_external_comparison_matching_people import (
-    RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
+from recidiviz.validation.views.state.revocation_matrix_comparison_by_month import (
+    REVOCATION_MATRIX_COMPARISON_BY_MONTH_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_cell_vs_caseload import (
     REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER,
@@ -301,6 +304,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         SamenessDataValidationCheck(
             view=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW_BUILDER.build(),
             comparison_columns=["cell_sum", "month_sum"],
+        ),
+        SamenessDataValidationCheck(
+            view=REVOCATION_MATRIX_COMPARISON_BY_MONTH_VIEW_BUILDER.build(),
+            comparison_columns=["reference_sum", "month_sum"],
         ),
         SamenessDataValidationCheck(
             view=REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_BUILDER.build(),
