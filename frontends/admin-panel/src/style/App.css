@@ -54,3 +54,13 @@ tr.metadata-table-row > td.ant-table-cell > div {
   color: #ffffff;
   background-color: #389e0d;
 }
+
+.failed {
+  color: #ffffff;
+  background-color: #faad14;
+}
+
+.broken {
+  color: #ffffff;
+  background-color: #f5222d;
+}

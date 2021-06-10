@@ -15,16 +15,16 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-// Ingest Metadata Column Counts
-interface MetadataAPIResult {
-  [name: string]: {
-    [stateCode: string]: MetadataCount;
+interface MetadataRecord<T> {
+  name: string;
+  resultsByState: {
+    [stateCode: string]: T;
   };
 }
 
-interface MetadataRecord {
-  name: string;
-  resultsByState: {
+// Ingest Metadata Column Counts
+interface MetadataAPIResult {
+  [name: string]: {
     [stateCode: string]: MetadataCount;
   };
 }
@@ -39,6 +39,25 @@ interface DataFreshnessResult {
   state: string;
   date: string;
   ingestPaused: boolean;
+}
+
+// Validation Status
+interface ValidationStatusResults {
+  runId: string;
+  runDate: string;
+  systemVersion: string;
+
+  results: {
+    [validationName: string]: {
+      [stateCode: string]: ValidationStatus;
+    };
+  };
+}
+interface ValidationStatus {
+  didRun: boolean;
+  wasSuccessful?: boolean;
+  hasData?: boolean;
+  errorAmount?: string;
 }
 
 // PO Feedback responses
