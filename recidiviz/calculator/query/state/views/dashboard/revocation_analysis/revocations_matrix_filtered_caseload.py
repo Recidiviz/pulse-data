@@ -16,11 +16,11 @@
 # =============================================================================
 """Revocations Matrix Filtered Caseload."""
 # pylint: disable=trailing-whitespace
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
 )
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -36,6 +36,7 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = """
     SELECT
       state_code,
       person_external_id,
+      person_id AS internal_person_id,
       officer,
       officer_recommendation,
       violation_record,
@@ -54,6 +55,7 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = """
       reported_violations,
       metric_period_months,
       admission_type,
+      admission_history_description,
       ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_external_id
                            -- We only want to include an ALL value if that person has no other set values
                            -- for the dimension
@@ -71,6 +73,7 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = """
         state_code,
         -- We use UNKNOWN instead of EXTERNAL_UNKNOWN here because this value is seen on the FE --
         IFNULL(person_external_id, 'UNKNOWN') AS state_id,
+        internal_person_id,
         officer,
         officer_recommendation,
         violation_record,
@@ -104,6 +107,7 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = """
              WHEN admission_type = 'ALL' THEN 'EXTERNAL_UNKNOWN'
              ELSE admission_type
              END AS admission_type,
+        admission_history_description,
         risk_level,
         violation_type,
         reported_violations,

@@ -130,6 +130,9 @@ from recidiviz.validation.views.state.recidivism_release_cohort_person_level_ext
 from recidiviz.validation.views.state.revocation_matrix_comparison_by_month import (
     REVOCATION_MATRIX_COMPARISON_BY_MONTH_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.revocation_matrix_caseload_admission_history import (
+    REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_cell_vs_caseload import (
     REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER,
 )
@@ -296,6 +299,13 @@ def get_all_validations() -> List[DataValidationCheck]:
         SamenessDataValidationCheck(
             view=PO_REPORT_MISSING_FIELDS_VIEW_BUILDER.build(),
             comparison_columns=PO_REPORT_COMPARISON_COLUMNS,
+        ),
+        SamenessDataValidationCheck(
+            view=REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_VIEW_BUILDER.build(),
+            comparison_columns=[
+                "total_revocation_admissions",
+                "total_caseload_admissions",
+            ],
         ),
         SamenessDataValidationCheck(
             view=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER.build(),

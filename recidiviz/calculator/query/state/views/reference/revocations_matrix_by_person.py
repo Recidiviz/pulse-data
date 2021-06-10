@@ -69,6 +69,14 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
         {metric_period_dimension}
         WHERE {metric_period_condition}
         AND {state_specific_supervision_type_inclusion_filter}
+    ), admission_type_history AS (
+        SELECT 
+            state_code,
+            metric_period_months,
+            person_id,
+            {state_specific_admission_history_description}
+        FROM revocations
+        GROUP BY state_code, metric_period_months, person_id
     ), person_based_unnested AS (
         SELECT
             state_code,
@@ -109,6 +117,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
         state_code,
         metric_period_months,
         admission_type,
+        admission_history_description,
         revocation_admission_date,
         violation_type,
         reported_violations,
@@ -129,6 +138,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
         violation_record,
         violation_type_frequency_counter
     FROM person_based_unnested
+    LEFT JOIN admission_type_history USING (state_code, metric_period_months, person_id)
     WHERE supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
       AND {state_specific_supervision_location_optimization_filter}
       AND {state_specific_dimension_filter}
@@ -158,6 +168,7 @@ REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     reported_violations_dimension=bq_utils.unnest_reported_violations(),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
+    state_specific_admission_history_description=state_specific_query_strings.state_specific_admission_history_description(),
     state_specific_assessment_bucket=state_specific_query_strings.state_specific_assessment_bucket(
         output_column_name="risk_level"
     ),
