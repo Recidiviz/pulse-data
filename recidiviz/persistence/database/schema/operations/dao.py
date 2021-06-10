@@ -16,7 +16,7 @@
 # =============================================================================
 """Data Access Object (DAO) with logic for accessing operations DB information from a SQL Database."""
 import datetime
-from typing import Optional, List
+from typing import List, Optional
 
 from more_itertools import one
 
@@ -59,7 +59,7 @@ def get_ingest_file_metadata_row_for_path(
     results = (
         session.query(schema.DirectIngestIngestFileMetadata)
         .filter_by(
-            region_code=region_code,
+            region_code=region_code.upper(),
             is_invalidated=False,
             normalized_file_name=path.file_name,
             ingest_database_name=ingest_database_name,
@@ -90,7 +90,7 @@ def get_raw_file_metadata_row_for_path(
         raise ValueError(f"Unexpected file type [{parts.file_type}]")
     results = (
         session.query(schema.DirectIngestRawFileMetadata)
-        .filter_by(region_code=region_code, normalized_file_name=path.file_name)
+        .filter_by(region_code=region_code.upper(), normalized_file_name=path.file_name)
         .all()
     )
 
@@ -116,7 +116,7 @@ def get_ingest_view_metadata_for_export_job(
     results = (
         session.query(schema.DirectIngestIngestFileMetadata)
         .filter_by(
-            region_code=region_code,
+            region_code=region_code.upper(),
             file_tag=file_tag,
             is_invalidated=False,
             is_file_split=False,
@@ -145,7 +145,7 @@ def get_ingest_view_metadata_for_most_recent_valid_job(
     results = (
         session.query(schema.DirectIngestIngestFileMetadata)
         .filter_by(
-            region_code=region_code,
+            region_code=region_code.upper(),
             is_invalidated=False,
             is_file_split=False,
             file_tag=file_tag,
@@ -170,7 +170,7 @@ def get_ingest_view_metadata_pending_export(
     return (
         session.query(schema.DirectIngestIngestFileMetadata)
         .filter_by(
-            region_code=region_code,
+            region_code=region_code.upper(),
             is_invalidated=False,
             is_file_split=False,
             export_time=None,
@@ -189,7 +189,7 @@ def get_metadata_for_raw_files_discovered_after_datetime(
     """Returns metadata for all raw files with a given tag that have been updated after the provided date."""
 
     query = session.query(schema.DirectIngestRawFileMetadata).filter_by(
-        region_code=region_code, file_tag=raw_file_tag
+        region_code=region_code.upper(), file_tag=raw_file_tag
     )
     if discovery_time_lower_bound_exclusive:
         query = query.filter(
@@ -207,7 +207,7 @@ def get_date_sorted_unprocessed_raw_files_for_region(
     """Returns metadata for all raw files that do not have a processed_time from earliest to latest"""
     return (
         session.query(schema.DirectIngestRawFileMetadata)
-        .filter_by(region_code=region_code, processed_time=None)
+        .filter_by(region_code=region_code.upper(), processed_time=None)
         .order_by(
             schema.DirectIngestRawFileMetadata.datetimes_contained_upper_bound_inclusive.asc()
         )
@@ -224,7 +224,7 @@ def get_date_sorted_unprocessed_ingest_view_files_for_region(
     return (
         session.query(schema.DirectIngestIngestFileMetadata)
         .filter_by(
-            region_code=region_code,
+            region_code=region_code.upper(),
             processed_time=None,
             ingest_database_name=ingest_database_name,
             is_invalidated=False,
