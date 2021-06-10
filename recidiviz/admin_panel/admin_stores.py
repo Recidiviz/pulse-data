@@ -16,6 +16,7 @@
 # =============================================================================
 """Store used to maintain all admin panel related stores"""
 
+from recidiviz.admin_panel.validation_metadata_store import ValidationStatusStore
 from recidiviz.admin_panel.dataset_metadata_store import DatasetMetadataCountsStore
 from recidiviz.admin_panel.ingest_metadata_store import IngestDataFreshnessStore
 from recidiviz.admin_panel.ingest_operations_store import IngestOperationsStore
@@ -56,6 +57,8 @@ class AdminStores:
 
         self.ingest_operations_store = IngestOperationsStore()
 
+        self.validation_status_store = ValidationStatusStore()
+
     def start_timers(self) -> None:
         """Starts store refresh timers for all stores that are a subclass of the AdminPanelStore class."""
         if in_gcp() or in_development():
@@ -63,6 +66,7 @@ class AdminStores:
                 self.ingest_metadata_store,
                 self.validation_metadata_store,
                 self.ingest_data_freshness_store,
+                self.validation_status_store,
             ]
 
             for store in stores_with_timers:

@@ -24,14 +24,15 @@ import attr
 import cattr
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_view import BigQueryAddress
 from recidiviz.common import serialization
+from recidiviz.utils import environment
 from recidiviz.validation.validation_models import (
     DataValidationJob,
     DataValidationJobResult,
     DataValidationJobResultDetails,
     ValidationCheckType,
 )
-from recidiviz.utils import environment
 
 
 @attr.s(frozen=True, kw_only=True)
@@ -103,6 +104,11 @@ class ValidationResultForStorage:
         return unstructured
 
 
+VALIDATION_RESULTS_BIGQUERY_ADDRESS = BigQueryAddress(
+    dataset_id="validation_results", table_id="validation_results"
+)
+
+
 def store_validation_results(
     validation_results: List[ValidationResultForStorage],
 ) -> None:
@@ -115,7 +121,7 @@ def store_validation_results(
 
     bq_client = BigQueryClientImpl()
     bq_client.insert_into_table(
-        bq_client.dataset_ref_for_id("validation_results"),
-        "validation_results",
+        bq_client.dataset_ref_for_id(VALIDATION_RESULTS_BIGQUERY_ADDRESS.dataset_id),
+        VALIDATION_RESULTS_BIGQUERY_ADDRESS.table_id,
         [result.to_serializable() for result in validation_results],
     )

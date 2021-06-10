@@ -129,6 +129,17 @@ def fetch_ingest_data_freshness() -> Tuple[str, HTTPStatus]:
     )
 
 
+# Validation status
+@admin_panel.route("api/validation_metadata/status", methods=["POST"])
+@requires_gae_auth
+def fetch_validation_metadata_status() -> Tuple[str, HTTPStatus]:
+    results = admin_stores.validation_status_store.get_most_recent_validation_results()
+    return (
+        jsonify(results.to_serializable()),
+        HTTPStatus.OK,
+    )
+
+
 # Frontend configuration
 @admin_panel.route("/runtime_env_vars.js")
 @requires_gae_auth

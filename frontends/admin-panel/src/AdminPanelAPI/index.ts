@@ -53,6 +53,11 @@ export const fetchDataFreshness = async (): Promise<Response> => {
   return postWithURLAndBody("/api/ingest_metadata/data_freshness");
 };
 
+// Fetch validation status
+export const fetchValidationStatus = async (): Promise<Response> => {
+  return postWithURLAndBody("/api/validation_metadata/status");
+};
+
 export {
   fetchEmailStateCodes,
   fetchETLViewIds,
