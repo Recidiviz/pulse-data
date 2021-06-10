@@ -32,6 +32,7 @@ import DataFreshnessView from "./DataFreshnessView";
 import DatasetView from "./DatasetView";
 import IngestOperationsView from "./IngestOperationsView";
 import TableView from "./TableView";
+import ValidationStatusView from "./ValidationStatusView";
 
 const App = (): JSX.Element => {
   const location = useLocation();
@@ -70,6 +71,11 @@ const App = (): JSX.Element => {
             </Menu.Item>
           </Menu.ItemGroup>
           <Menu.ItemGroup title="Validation Metadata">
+            <Menu.Item key={DatasetMetadata.VALIDATION_STATUS_ROUTE}>
+              <Link to={DatasetMetadata.VALIDATION_STATUS_ROUTE}>
+                Validation Status
+              </Link>
+            </Menu.Item>
             <Menu.Item
               key={DatasetMetadata.routeForMetadataDataset(
                 MetadataDataset.VALIDATION
@@ -137,6 +143,10 @@ const App = (): JSX.Element => {
             component={DataDiscoveryView}
           />
           <Route
+            path={DatasetMetadata.VALIDATION_STATUS_ROUTE}
+            component={ValidationStatusView}
+          />
+          <Route
             exact
             path={IngestOperations.INGEST_ACTIONS_ROUTE}
             component={IngestOperationsView}
@@ -186,6 +196,9 @@ function selectedMenuKeys(pathname: string): string[] {
   }
   if (pathname.startsWith(DatasetMetadata.DATA_FRESHNESS_ROUTE)) {
     return [DatasetMetadata.DATA_FRESHNESS_ROUTE];
+  }
+  if (pathname.startsWith(DatasetMetadata.VALIDATION_STATUS_ROUTE)) {
+    return [DatasetMetadata.VALIDATION_STATUS_ROUTE];
   }
   if (pathname.startsWith(IngestOperations.INGEST_ACTIONS_ROUTE)) {
     return [IngestOperations.INGEST_ACTIONS_ROUTE];

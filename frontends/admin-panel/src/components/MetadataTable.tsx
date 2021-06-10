@@ -20,18 +20,19 @@ import { Checkbox, Empty, Table } from "antd";
 import { CheckboxChangeEvent } from "antd/es/checkbox";
 import { ColumnsType } from "antd/es/table";
 import { Link } from "react-router-dom";
+import uniqueStates from "./Utilities/UniqueStates";
 
 const emptyCell = <div className="center">N/A</div>;
 
 const stateColumnsForBreakdown = (
   states: string[],
   nonplaceholdersOnly: boolean
-): ColumnsType<MetadataRecord> => {
+): ColumnsType<MetadataRecord<MetadataCount>> => {
   return states.map((s) => {
     return {
       title: s,
       key: s,
-      render: (_: string, record: MetadataRecord) => {
+      render: (_: string, record: MetadataRecord<MetadataCount>) => {
         const countedRecord = record.resultsByState[s];
         if (countedRecord === undefined) {
           return emptyCell;
@@ -65,7 +66,7 @@ const MetadataTable = (props: MetadataTableProps): JSX.Element => {
   }
   const metadataRecords = Object.keys(data)
     .sort()
-    .map((name: string): MetadataRecord => {
+    .map((name: string): MetadataRecord<MetadataCount> => {
       return {
         name,
         resultsByState: data[name],
@@ -75,20 +76,14 @@ const MetadataTable = (props: MetadataTableProps): JSX.Element => {
     return <Empty className="buffer" />;
   }
 
-  const statesMap: { [state: string]: true } = {};
-  metadataRecords.forEach((record) => {
-    Object.keys(record.resultsByState).forEach((stateCode) => {
-      statesMap[stateCode] = true;
-    });
-  });
-  const states = Object.keys(statesMap).sort();
+  const states = uniqueStates(metadataRecords);
 
-  const initialColumns: ColumnsType<MetadataRecord> = [
+  const initialColumns: ColumnsType<MetadataRecord<MetadataCount>> = [
     {
       title: initialColumnTitle,
       key: "name",
       fixed: "left",
-      render: (_: string, record: MetadataRecord) => {
+      render: (_: string, record: MetadataRecord<MetadataCount>) => {
         if (initialColumnLink === undefined) {
           return record.name;
         }
