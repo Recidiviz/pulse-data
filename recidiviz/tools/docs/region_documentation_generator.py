@@ -21,28 +21,26 @@ Can be run on-demand via:
     $ pipenv run python -m recidiviz.tools.docs.region_documentation_generator
 """
 
+import argparse
 import logging
 import os
 import subprocess
 import sys
-
-import argparse
 from os import listdir
-from os.path import isdir, join, isfile
+from os.path import isdir, isfile, join
 from typing import List, Optional, Sequence, Set
 
 import recidiviz
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions as regions_module
 from recidiviz.ingest.direct.direct_ingest_documentation_generator import (
-    DirectIngestDocumentationGenerator,
     STATE_RAW_DATA_FILE_HEADER_PATH,
+    DirectIngestDocumentationGenerator,
 )
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
 from recidiviz.tools.docs.utils import persist_file_contents
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
 
 _INGEST_CATALOG_ROOT = "docs/ingest"
 
