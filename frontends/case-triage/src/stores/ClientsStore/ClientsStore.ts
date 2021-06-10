@@ -18,9 +18,15 @@ import { action, autorun, makeAutoObservable, runInAction } from "mobx";
 import { parse } from "query-string";
 import PolicyStore from "../PolicyStore";
 import UserStore from "../UserStore";
-import { Client, decorateClient, DecoratedClient } from "./Client";
+import {
+  Client,
+  decorateClient,
+  DecoratedClient,
+  Note,
+  PENDING_ID,
+} from "./Client";
 
-import API from "../API";
+import API, { isErrorResponse } from "../API";
 import { caseInsensitiveIncludes } from "../../utils";
 import { CLIENT_LIST_KIND, ClientListBuilder } from "./ClientListBuilder";
 
@@ -220,6 +226,71 @@ class ClientsStore {
     this.activeClientOffset = offset;
 
     this.clientPendingView = null;
+  }
+
+  /**
+   * Creates the specified note via API request. If the request succeeds,
+   * the resulting `Note` object will be appended to `client.notes`
+   */
+  async createNoteForClient({
+    client,
+    text,
+  }: {
+    client: Client;
+    text: string;
+  }): Promise<void> {
+    const newNote: Note = {
+      createdDatetime: "",
+      noteId: PENDING_ID,
+      resolved: false,
+      text,
+      updatedDatetime: "",
+    };
+
+    // eslint-disable-next-line no-param-reassign
+    client.notes = client.notes ?? [];
+    const { notes } = client;
+    notes.push(newNote);
+
+    const response = await this.api.post<Note>("/api/create_note", {
+      personExternalId: client.personExternalId,
+      text,
+    });
+
+    if (!isErrorResponse(response)) {
+      Object.assign(newNote, response);
+    } else {
+      notes.splice(notes.indexOf(newNote), 1);
+    }
+  }
+
+  /**
+   * Marks the provided note with specified resolution and updates
+   * the backend via API request. Will make local updates optimistically
+   * and revert on API failure.
+   */
+  async setNoteResolution({
+    note,
+    isResolved,
+  }: {
+    note: Note;
+    isResolved: boolean;
+  }): Promise<void> {
+    /* eslint-disable no-param-reassign */
+    note.resolved = isResolved;
+
+    const response = await this.api.post<{ status: string }>(
+      "/api/resolve_note",
+      {
+        noteId: note.noteId,
+        isResolved,
+      }
+    );
+
+    if (isErrorResponse(response)) {
+      note.resolved = !isResolved;
+    }
+    /* eslint-enable no-param-reassign */
   }
 }
 

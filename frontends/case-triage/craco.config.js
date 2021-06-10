@@ -14,4 +14,7 @@ module.exports = {
       },
     };
   },
+  jest: {
+    setupFilesAfterEnv: ["src/setupTests.ts"],
+  },
 };

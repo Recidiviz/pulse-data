@@ -33,6 +33,16 @@ interface BootstrapResponse {
   knownExperiments: FeatureVariants;
 }
 
+type ErrorResponse = {
+  code: string;
+  description: string;
+};
+export function isErrorResponse(x: {
+  [key: string]: unknown;
+}): x is ErrorResponse {
+  return typeof x.code === "string" && typeof x.description === "string";
+}
+
 const BOOTSTRAP_ROUTE = "/api/bootstrap";
 
 class API {
@@ -111,7 +121,10 @@ class API {
     return this.request({ path, method: "GET" });
   }
 
-  async post<T>(path: string, body: Record<string, unknown>): Promise<T> {
+  async post<T>(
+    path: string,
+    body: Record<string, unknown>
+  ): Promise<T | ErrorResponse> {
     return this.request({ path, body, method: "POST" });
   }
 }
