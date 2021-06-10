@@ -16,7 +16,7 @@
 # =============================================================================
 
 """Tests for validation/checks/sameness_check.py."""
-from typing import List, Dict
+from typing import Dict, List
 from unittest import TestCase
 
 from mock import patch
@@ -24,16 +24,17 @@ from mock import patch
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.validation.checks.sameness_check import (
     ResultRow,
+    SamenessDataValidationCheck,
+    SamenessDataValidationCheckType,
     SamenessNumbersValidationResultDetails,
     SamenessStringsValidationResultDetails,
     SamenessValidationChecker,
-    SamenessDataValidationCheck,
-    SamenessDataValidationCheckType,
 )
 from recidiviz.validation.validation_models import (
-    ValidationCheckType,
     DataValidationJob,
     DataValidationJobResult,
+    ValidationCategory,
+    ValidationCheckType,
 )
 
 
@@ -68,6 +69,7 @@ class TestSamenessValidationChecker(TestCase):
     def test_samneness_check_no_comparison_columns(self) -> None:
         with self.assertRaises(ValueError) as e:
             _ = SamenessDataValidationCheck(
+                validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 validation_type=ValidationCheckType.SAMENESS,
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
                 view=BigQueryView(
@@ -84,6 +86,7 @@ class TestSamenessValidationChecker(TestCase):
     def test_samneness_check_bad_max_error(self) -> None:
         with self.assertRaises(ValueError) as e:
             _ = SamenessDataValidationCheck(
+                validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 validation_type=ValidationCheckType.SAMENESS,
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
                 comparison_columns=["a", "b", "c"],
@@ -102,6 +105,7 @@ class TestSamenessValidationChecker(TestCase):
 
     def test_sameness_check_validation_name(self) -> None:
         check = SamenessDataValidationCheck(
+            validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
             validation_type=ValidationCheckType.SAMENESS,
             sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
             comparison_columns=["a", "b", "c"],
@@ -115,6 +119,7 @@ class TestSamenessValidationChecker(TestCase):
         self.assertEqual(check.validation_name, "test_view")
 
         check_with_name_suffix = SamenessDataValidationCheck(
+            validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
             validation_type=ValidationCheckType.SAMENESS,
             sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
             validation_name_suffix="b_c_only",
@@ -134,6 +139,7 @@ class TestSamenessValidationChecker(TestCase):
         job = DataValidationJob(
             region_code="US_XX",
             validation=SamenessDataValidationCheck(
+                validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
@@ -163,6 +169,7 @@ class TestSamenessValidationChecker(TestCase):
         job = DataValidationJob(
             region_code="US_XX",
             validation=SamenessDataValidationCheck(
+                validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
@@ -198,6 +205,7 @@ class TestSamenessValidationChecker(TestCase):
         job = DataValidationJob(
             region_code="US_XX",
             validation=SamenessDataValidationCheck(
+                validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
@@ -228,6 +236,7 @@ class TestSamenessValidationChecker(TestCase):
         job = DataValidationJob(
             region_code="US_XX",
             validation=SamenessDataValidationCheck(
+                validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
@@ -267,6 +276,7 @@ class TestSamenessValidationChecker(TestCase):
         job = DataValidationJob(
             region_code="US_XX",
             validation=SamenessDataValidationCheck(
+                validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
@@ -313,6 +323,7 @@ class TestSamenessValidationChecker(TestCase):
         job = DataValidationJob(
             region_code="US_XX",
             validation=SamenessDataValidationCheck(
+                validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 partition_columns=[],
@@ -350,6 +361,7 @@ class TestSamenessValidationChecker(TestCase):
         job = DataValidationJob(
             region_code="US_XX",
             validation=SamenessDataValidationCheck(
+                validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 partition_columns=[],
@@ -387,6 +399,7 @@ class TestSamenessValidationChecker(TestCase):
         job = DataValidationJob(
             region_code="US_XX",
             validation=SamenessDataValidationCheck(
+                validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
@@ -413,6 +426,7 @@ class TestSamenessValidationChecker(TestCase):
         job = DataValidationJob(
             region_code="US_XX",
             validation=SamenessDataValidationCheck(
+                validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
@@ -439,6 +453,7 @@ class TestSamenessValidationChecker(TestCase):
         job = DataValidationJob(
             region_code="US_XX",
             validation=SamenessDataValidationCheck(
+                validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 partition_columns=[],
@@ -476,6 +491,7 @@ class TestSamenessValidationChecker(TestCase):
         job = DataValidationJob(
             region_code="US_XX",
             validation=SamenessDataValidationCheck(
+                validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 partition_columns=[],
@@ -515,6 +531,7 @@ class TestSamenessValidationChecker(TestCase):
         job = DataValidationJob(
             region_code="US_XX",
             validation=SamenessDataValidationCheck(
+                validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 partition_columns=[],
@@ -546,6 +563,7 @@ class TestSamenessValidationChecker(TestCase):
         job = DataValidationJob(
             region_code="US_XX",
             validation=SamenessDataValidationCheck(
+                validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 partition_columns=[],
@@ -586,6 +604,7 @@ class TestSamenessValidationChecker(TestCase):
         job = DataValidationJob(
             region_code="US_XX",
             validation=SamenessDataValidationCheck(
+                validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 partition_columns=[],
@@ -632,6 +651,7 @@ class TestSamenessValidationChecker(TestCase):
         job = DataValidationJob(
             region_code="US_XX",
             validation=SamenessDataValidationCheck(
+                validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b"],
                 partition_columns=["region", "date"],

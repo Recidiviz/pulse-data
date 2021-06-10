@@ -17,6 +17,7 @@
 """Tests for validation_result_storage"""
 import datetime
 import unittest
+
 from mock import MagicMock, patch
 
 from recidiviz.big_query import big_query_client
@@ -31,6 +32,7 @@ from recidiviz.validation.checks.sameness_check import (
 from recidiviz.validation.validation_models import (
     DataValidationJob,
     DataValidationJobResult,
+    ValidationCategory,
     ValidationCheckType,
 )
 from recidiviz.validation.validation_result_storage import (
@@ -55,6 +57,7 @@ class TestValidationResultStorage(unittest.TestCase):
             validation_job=DataValidationJob(
                 region_code="US_XX",
                 validation=SamenessDataValidationCheck(
+                    validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                     validation_type=ValidationCheckType.SAMENESS,
                     comparison_columns=["a", "b", "c"],
                     sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
@@ -126,6 +129,7 @@ class TestValidationResultStorage(unittest.TestCase):
             validation_job=DataValidationJob(
                 region_code="US_XX",
                 validation=SamenessDataValidationCheck(
+                    validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                     validation_type=ValidationCheckType.SAMENESS,
                     comparison_columns=["internal", "external"],
                     partition_columns=["state_code", "date"],
@@ -192,6 +196,7 @@ class TestValidationResultStorage(unittest.TestCase):
             validation_job=DataValidationJob(
                 region_code="US_XX",
                 validation=SamenessDataValidationCheck(
+                    validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                     validation_type=ValidationCheckType.SAMENESS,
                     comparison_columns=["a", "b", "c"],
                     sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
@@ -254,6 +259,7 @@ class TestValidationResultStorage(unittest.TestCase):
         validation_job = DataValidationJob(
             region_code="US_XX",
             validation=SamenessDataValidationCheck(
+                validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
