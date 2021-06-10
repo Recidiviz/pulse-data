@@ -19,31 +19,31 @@
 
 import json
 import re
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import (
-    EnumOverrides,
-    EnumMapper,
     EnumIgnorePredicate,
+    EnumMapper,
+    EnumOverrides,
 )
-from recidiviz.common.constants.person_characteristics import Race, Gender, Ethnicity
+from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.standard_enum_overrides import (
     get_standard_enum_overrides,
 )
 from recidiviz.common.constants.state.external_id_types import (
     US_PA_CONTROL,
+    US_PA_INMATE,
     US_PA_PBPP,
     US_PA_SID,
-    US_PA_INMATE,
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
-    StateAssessmentType,
     StateAssessmentClass,
     StateAssessmentLevel,
+    StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import (
@@ -57,54 +57,54 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodTerminationReason,
-    StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodSupervisionType,
-    StateSupervisionLevel,
-)
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactStatus,
     StateSupervisionContactType,
 )
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+    StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseRevocationType,
     StateSupervisionViolationResponseType,
-    StateSupervisionViolationResponseDecidingBodyType,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import (
     CsvGcsfsDirectIngestController,
-    IngestRowPosthookCallable,
+    IngestAncestorChainOverridesCallable,
     IngestFilePostprocessorCallable,
     IngestPrimaryKeyOverrideCallable,
-    IngestAncestorChainOverridesCallable,
+    IngestRowPosthookCallable,
 )
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
-    update_overrides_from_maps,
     create_if_not_exists,
+    update_overrides_from_maps,
 )
 from recidiviz.ingest.direct.regions.us_pa.us_pa_assessment_level_reference import (
     set_date_specific_lsir_fields,
 )
 from recidiviz.ingest.direct.regions.us_pa.us_pa_enum_helpers import (
-    incarceration_period_release_reason_mapper,
-    concatenate_sci_incarceration_period_end_codes,
-    incarceration_period_purpose_mapper,
-    concatenate_sci_incarceration_period_purpose_codes,
-    incarceration_period_admission_reason_mapper,
-    concatenate_sci_incarceration_period_start_codes,
-    revocation_type_mapper,
     assessment_level_mapper,
-    concatenate_ccis_incarceration_period_start_codes,
-    concatenate_ccis_incarceration_period_purpose_codes,
     concatenate_ccis_incarceration_period_end_codes,
+    concatenate_ccis_incarceration_period_purpose_codes,
+    concatenate_ccis_incarceration_period_start_codes,
+    concatenate_sci_incarceration_period_end_codes,
+    concatenate_sci_incarceration_period_purpose_codes,
+    concatenate_sci_incarceration_period_start_codes,
+    incarceration_period_admission_reason_mapper,
+    incarceration_period_purpose_mapper,
+    incarceration_period_release_reason_mapper,
+    revocation_type_mapper,
     supervision_contact_location_mapper,
     supervision_contact_type_mapper,
     supervision_period_supervision_type_mapper,
@@ -113,29 +113,27 @@ from recidiviz.ingest.direct.regions.us_pa.us_pa_violation_type_reference import
     violated_condition,
 )
 from recidiviz.ingest.direct.state_shared_row_posthooks import (
+    IngestGatingContext,
     copy_name_to_alias,
+    gen_convert_person_ids_to_external_id_objects,
     gen_label_single_external_id_hook,
     gen_rationalize_race_and_ethnicity,
-    gen_convert_person_ids_to_external_id_objects,
-    IngestGatingContext,
 )
-from recidiviz.ingest.extractor.csv_data_extractor import (
-    IngestFieldCoordinates,
-)
+from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import (
     IngestObject,
-    StatePerson,
-    StatePersonExternalId,
     StateAssessment,
-    StateIncarcerationSentence,
     StateCharge,
-    StateSentenceGroup,
-    StateIncarcerationPeriod,
     StateIncarcerationIncident,
     StateIncarcerationIncidentOutcome,
-    StateSupervisionPeriod,
+    StateIncarcerationPeriod,
+    StateIncarcerationSentence,
+    StatePerson,
+    StatePersonExternalId,
     StatePersonRace,
+    StateSentenceGroup,
     StateSupervisionContact,
+    StateSupervisionPeriod,
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
 )
@@ -598,6 +596,8 @@ class UsPaController(CsvGcsfsDirectIngestController):
             "GCON",
             "GARR",
             "SAVE",  # Placement in SAVE
+            # TODO(#3312): Ask what this new sanction code value means.
+            "SPB3",  # Unknown, new as of 2021-05-10
             "ARRT",  # Arrest
             "H03",
             "CON1",  # Administrative Conference 1
