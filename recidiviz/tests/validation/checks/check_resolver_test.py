@@ -23,11 +23,12 @@ from mock import patch
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.validation.checks import check_resolver
 from recidiviz.validation.checks.existence_check import (
-    ExistenceValidationChecker,
     ExistenceDataValidationCheck,
+    ExistenceValidationChecker,
 )
 from recidiviz.validation.validation_models import (
     DataValidationJob,
+    ValidationCategory,
     ValidationCheckType,
 )
 
@@ -47,6 +48,7 @@ class ValidationCheckResolverTest(unittest.TestCase):
         job = DataValidationJob(
             region_code="US_VA",
             validation=ExistenceDataValidationCheck(
+                validation_category=ValidationCategory.INVARIANT,
                 validation_type=ValidationCheckType.EXISTENCE,
                 view=BigQueryView(
                     dataset_id="my_dataset",

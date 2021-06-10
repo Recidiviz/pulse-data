@@ -20,11 +20,11 @@ import unittest
 from recidiviz.tests.ingest import fixtures
 from recidiviz.validation.configured_validations import get_validation_global_config
 from recidiviz.validation.validation_config import (
-    ValidationRegionConfig,
     ValidationExclusion,
     ValidationExclusionType,
     ValidationMaxAllowedErrorOverride,
     ValidationNumAllowedRowsOverride,
+    ValidationRegionConfig,
 )
 
 
