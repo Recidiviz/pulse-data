@@ -228,6 +228,15 @@ def state_specific_admission_type() -> str:
         END AS admission_type"""
 
 
+def state_specific_admission_history_description() -> str:
+    """State-specific logic for aggregating admissions type history."""
+    return """CASE
+            -- US_MO only includes Legal Revocation admissions, so we display the number of admissions instead
+            WHEN state_code = 'US_MO' THEN CAST(COUNT(admission_type) AS STRING)
+            ELSE STRING_AGG(admission_type ORDER BY revocation_admission_date)
+            END AS admission_history_description"""
+
+
 def vitals_state_specific_district_id(table: str) -> str:
     """State-specific logic for pulling in the right district ID for vitals."""
     return f"""CASE
