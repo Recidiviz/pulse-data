@@ -18,7 +18,7 @@
 import datetime
 from typing import Type
 
-from recidiviz.common.constants.person_characteristics import Gender, Race
+from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.external_id_types import US_TN_DOC
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
@@ -27,6 +27,7 @@ from recidiviz.ingest.direct.regions.us_tn.us_tn_controller import UsTnControlle
 from recidiviz.ingest.models.ingest_info import (
     IngestInfo,
     StatePerson,
+    StatePersonEthnicity,
     StatePersonExternalId,
     StatePersonRace,
 )
@@ -68,6 +69,9 @@ class TestUsTnController(BaseDirectIngestControllerTests):
                     middle_names="MIDDLE1",
                     surname="LAST1",
                     state_person_races=[StatePersonRace(race="W")],
+                    state_person_ethnicities=[
+                        StatePersonEthnicity(ethnicity="NOT_HISPANIC")
+                    ],
                     gender="F",
                     birthdate="1985-03-07 00:00:00",
                 ),
@@ -82,6 +86,9 @@ class TestUsTnController(BaseDirectIngestControllerTests):
                     middle_names="MIDDLE2",
                     surname="LAST2",
                     state_person_races=[StatePersonRace(race="B")],
+                    state_person_ethnicities=[
+                        StatePersonEthnicity(ethnicity="NOT_HISPANIC")
+                    ],
                     gender="M",
                     birthdate="1969-02-01 00:00:00",
                 ),
@@ -96,6 +103,9 @@ class TestUsTnController(BaseDirectIngestControllerTests):
                     middle_names="MIDDLE3",
                     surname="LAST3",
                     state_person_races=[StatePersonRace(race="A")],
+                    state_person_ethnicities=[
+                        StatePersonEthnicity(ethnicity="NOT_HISPANIC")
+                    ],
                     gender="F",
                     birthdate="1947-01-11 00:00:00",
                 ),
@@ -120,6 +130,11 @@ class TestUsTnController(BaseDirectIngestControllerTests):
         )
         _add_external_id_to_person(person_1, "00000001")
         _add_race_to_person(person_1, race_raw_text="W", race=Race.WHITE)
+        _add_ethnicity_to_person(
+            person_1,
+            ethnicity_raw_text="NOT_HISPANIC",
+            ethnicity=Ethnicity.NOT_HISPANIC,
+        )
 
         person_2 = entities.StatePerson.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -131,6 +146,11 @@ class TestUsTnController(BaseDirectIngestControllerTests):
         )
         _add_external_id_to_person(person_2, "00000002")
         _add_race_to_person(person_2, race_raw_text="B", race=Race.BLACK)
+        _add_ethnicity_to_person(
+            person_2,
+            ethnicity_raw_text="NOT_HISPANIC",
+            ethnicity=Ethnicity.NOT_HISPANIC,
+        )
 
         person_3 = entities.StatePerson.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -142,6 +162,11 @@ class TestUsTnController(BaseDirectIngestControllerTests):
         )
         _add_external_id_to_person(person_3, "00000003")
         _add_race_to_person(person_3, race_raw_text="A", race=Race.ASIAN)
+        _add_ethnicity_to_person(
+            person_3,
+            ethnicity_raw_text="NOT_HISPANIC",
+            ethnicity=Ethnicity.NOT_HISPANIC,
+        )
 
         expected_people = [
             person_1,
@@ -167,6 +192,23 @@ def _add_race_to_person(
         person=person,
     )
     person.races.append(race_to_add)
+
+
+def _add_ethnicity_to_person(
+    person: entities.StatePerson,
+    ethnicity_raw_text: str,
+    ethnicity: entities.Ethnicity,
+) -> None:
+    """Append ethnicity to the person (updates the person entity in place)."""
+    ethnicity_to_add: entities.StatePersonEthnicity = (
+        entities.StatePersonEthnicity.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            ethnicity=ethnicity,
+            ethnicity_raw_text=ethnicity_raw_text,
+            person=person,
+        )
+    )
+    person.ethnicities.append(ethnicity_to_add)
 
 
 def _add_external_id_to_person(person: entities.StatePerson, external_id: str) -> None:
