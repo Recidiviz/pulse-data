@@ -18,7 +18,7 @@
 """Models representing data validation."""
 import abc
 from enum import Enum
-from typing import Optional, TypeVar, Generic
+from typing import Generic, Optional, TypeVar
 
 import attr
 
@@ -32,6 +32,13 @@ class ValidationCheckType(Enum):
     SAMENESS = "SAMENESS"
 
 
+class ValidationCategory(Enum):
+    EXTERNAL_AGGREGATE = "EXTERNAL_AGGREGATE"
+    EXTERNAL_INDIVIDUAL = "EXTERNAL_INDIVIDUAL"
+    CONSISTENCY = "CONSISTENCY"
+    INVARIANT = "INVARIANT"
+
+
 @attr.s(frozen=True)
 class DataValidationCheck(BuildableAttr):
     """Models a type of validation check that can be performed."""
@@ -41,6 +48,9 @@ class DataValidationCheck(BuildableAttr):
 
     # The type of validation to be performed for this type of check
     validation_type: ValidationCheckType = attr.ib()
+
+    # The category that the validation check falls into
+    validation_category: ValidationCategory = attr.ib()
 
     # A suffix to add to the end of the view name to generate the validation_name.
     validation_name_suffix: Optional[str] = attr.ib(default=None)
