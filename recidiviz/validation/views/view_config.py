@@ -103,9 +103,6 @@ from recidiviz.validation.views.state.ftr_referrals_comparison import (
 from recidiviz.validation.views.state.incarceration_admission_after_open_period import (
     INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.prod_staging_comparison.incarceration_admission_external_prod_staging_comparison import (
-    INCARCERATION_ADMISSION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.incarceration_admission_nulls import (
     INCARCERATION_ADMISSION_NULLS_VIEW_BUILDER,
 )
@@ -130,17 +127,11 @@ from recidiviz.validation.views.state.incarceration_population_by_facility_exter
 from recidiviz.validation.views.state.incarceration_population_by_prioritized_race_and_ethnicity_by_period_internal_consistency import (
     INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.prod_staging_comparison.incarceration_population_external_prod_staging_comparison import (
-    INCARCERATION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.incarceration_population_person_level_external_comparison import (
     INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.incarceration_population_person_level_external_comparison_matching_people import (
     INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.prod_staging_comparison.incarceration_release_external_prod_staging_comparison import (
-    INCARCERATION_RELEASE_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.incarceration_release_person_level_external_comparison import (
     INCARCERATION_RELEASE_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
@@ -181,11 +172,32 @@ from recidiviz.validation.views.state.population_projection_data_validation.popu
 from recidiviz.validation.views.state.recidivism_person_level_external_comparison_matching_people import (
     RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.recidivism_release_cohort_person_level_external_comparison import (
-    RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
+from recidiviz.validation.views.state.prod_staging_comparison.incarceration_admission_external_prod_staging_comparison import (
+    INCARCERATION_ADMISSION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.prod_staging_comparison.incarceration_population_external_prod_staging_comparison import (
+    INCARCERATION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.prod_staging_comparison.incarceration_release_external_prod_staging_comparison import (
+    INCARCERATION_RELEASE_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.prod_staging_comparison.supervision_population_external_prod_staging_comparison import (
+    SUPERVISION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.prod_staging_comparison.supervision_start_external_prod_staging_comparison import (
+    SUPERVISION_START_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.prod_staging_comparison.supervision_termination_external_prod_staging_comparison import (
+    SUPERVISION_TERMINATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.revocation_matrix_comparison_by_month import (
     REVOCATION_MATRIX_COMPARISON_BY_MONTH_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.recidivism_release_cohort_person_level_external_comparison import (
+    RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.revocation_matrix_caseload_admission_history import (
+    REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_cell_vs_caseload import (
     REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER,
@@ -217,9 +229,6 @@ from recidiviz.validation.views.state.supervision_population_by_district_by_demo
 from recidiviz.validation.views.state.supervision_population_by_prioritized_race_and_ethnicity_by_period_internal_consistency import (
     SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.prod_staging_comparison.supervision_population_external_prod_staging_comparison import (
-    SUPERVISION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.supervision_population_person_level_external_comparison import (
     SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
 )
@@ -228,9 +237,6 @@ from recidiviz.validation.views.state.supervision_population_person_level_extern
 )
 from recidiviz.validation.views.state.supervision_revocations_by_period_by_type_by_demographics_internal_consistency import (
     SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.prod_staging_comparison.supervision_start_external_prod_staging_comparison import (
-    SUPERVISION_START_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.supervision_start_person_level_external_comparison import (
     SUPERVISION_START_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
@@ -243,9 +249,6 @@ from recidiviz.validation.views.state.supervision_success_by_period_by_demograph
 )
 from recidiviz.validation.views.state.supervision_success_by_period_dashboard_comparison import (
     SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.prod_staging_comparison.supervision_termination_external_prod_staging_comparison import (
-    SUPERVISION_TERMINATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.supervision_termination_person_level_external_comparison import (
     SUPERVISION_TERMINATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
@@ -288,6 +291,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
     PO_REPORT_CLIENTS_VIEW_BUILDER,
     RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
     RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
+    REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_VIEW_BUILDER,
     REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER,
     # TODO(#1124) Remove revocation_matrix_comparison_revocation_cell_vs_month validation once FE no longer use revocations_matrix_by_month
     REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW_BUILDER,
