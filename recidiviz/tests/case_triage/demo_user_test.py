@@ -263,7 +263,10 @@ class TestDemoUser(TestCase):
             note = self.helpers.find_note_for_person(client.person_external_id, note_id)
             self.assertEqual(note["text"], "New text")
 
-            # Check that updates work
-            self.helpers.resolve_note(note_id)
+            # Check that resolutions work
+            self.helpers.resolve_note(note_id, True)
             note = self.helpers.find_note_for_person(client.person_external_id, note_id)
             self.assertTrue(note["resolved"])
+            self.helpers.resolve_note(note_id, False)
+            note = self.helpers.find_note_for_person(client.person_external_id, note_id)
+            self.assertFalse(note["resolved"])

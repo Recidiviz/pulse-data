@@ -474,11 +474,18 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.assertFalse(note["resolved"])
 
             # Becomes resolved
-            self.helpers.resolve_note(note_id)
+            self.helpers.resolve_note(note_id, True)
             note = self.helpers.find_note_for_person(
                 self.client_1.person_external_id, note_id
             )
             self.assertTrue(note["resolved"])
+
+            # Un-resolve it
+            self.helpers.resolve_note(note_id, False)
+            note = self.helpers.find_note_for_person(
+                self.client_1.person_external_id, note_id
+            )
+            self.assertFalse(note["resolved"])
 
     def test_update_note(self) -> None:
         with self.helpers.as_officer(self.officer):

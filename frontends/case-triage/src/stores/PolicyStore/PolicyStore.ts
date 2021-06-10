@@ -22,7 +22,7 @@ import {
   ScoreMinMaxBySupervisionLevel,
   SupervisionContactFrequency,
 } from "./Policy";
-import API from "../API";
+import API, { isErrorResponse } from "../API";
 import { Gender } from "../ClientsStore/Client";
 
 interface PolicyStoreProps {
@@ -61,13 +61,18 @@ class PolicyStore {
     this.isLoading = true;
 
     try {
-      runInAction(async () => {
-        this.isLoading = false;
-        this.policies = await this.api.post<Policy>(
-          "/api/policy_requirements_for_state",
-          { state: "US_ID" }
-        );
-      });
+      const response = await this.api.post<Policy>(
+        "/api/policy_requirements_for_state",
+        { state: "US_ID" }
+      );
+      if (isErrorResponse(response)) {
+        throw new Error(`${response.description} (code: ${response.code})`);
+      } else {
+        runInAction(async () => {
+          this.isLoading = false;
+          this.policies = response;
+        });
+      }
     } catch (error) {
       runInAction(() => {
         this.isLoading = false;

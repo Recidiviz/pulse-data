@@ -60,6 +60,16 @@ export enum PreferredContactMethod {
   Text = "TEXT",
 }
 
+export const PENDING_ID = "PENDING";
+
+export type Note = {
+  createdDatetime: APIDate;
+  noteId: string;
+  resolved: boolean;
+  text: string;
+  updatedDatetime: APIDate;
+};
+
 export interface Client {
   assessmentScore: number | null;
   caseType: CaseType;
@@ -83,7 +93,7 @@ export interface Client {
   nextHomeVisitDate: APIDate;
   preferredName?: string;
   preferredContactMethod?: PreferredContactMethod;
-  notes?: string[];
+  notes?: Note[];
 }
 
 export interface DecoratedClient extends Client {

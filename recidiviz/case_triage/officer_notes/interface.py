@@ -62,7 +62,7 @@ def _create_note(
 
 
 def _resolve_note(
-    session: Session, officer_id: str, state_code: str, note_id: str
+    session: Session, officer_id: str, state_code: str, note_id: str, is_resolved: bool
 ) -> None:
     try:
         note = session.query(OfficerNote).filter(OfficerNote.note_id == note_id).one()
@@ -72,7 +72,7 @@ def _resolve_note(
     if note.officer_external_id != officer_id or note.state_code != state_code:
         raise OfficerNoteDoesNotExistError
 
-    note.resolved_datetime = datetime.now(tz=pytz.UTC)
+    note.resolved_datetime = datetime.now(tz=pytz.UTC) if is_resolved else None
     session.commit()
 
 
@@ -107,8 +107,12 @@ class OfficerNotesInterface:
         )
 
     @staticmethod
-    def resolve_note(session: Session, officer: ETLOfficer, note_id: str) -> None:
-        _resolve_note(session, officer.external_id, officer.state_code, note_id)
+    def resolve_note(
+        session: Session, officer: ETLOfficer, note_id: str, is_resolved: bool
+    ) -> None:
+        _resolve_note(
+            session, officer.external_id, officer.state_code, note_id, is_resolved
+        )
 
     @staticmethod
     def update_note(
@@ -133,9 +137,15 @@ class DemoOfficerNotesInterface:
         )
 
     @staticmethod
-    def resolve_note(session: Session, user_email: str, note_id: str) -> None:
+    def resolve_note(
+        session: Session, user_email: str, note_id: str, is_resolved: bool
+    ) -> None:
         _resolve_note(
-            session, fake_officer_id_for_demo_user(user_email), DEMO_STATE_CODE, note_id
+            session,
+            fake_officer_id_for_demo_user(user_email),
+            DEMO_STATE_CODE,
+            note_id,
+            is_resolved,
         )
 
     @staticmethod
