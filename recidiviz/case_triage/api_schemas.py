@@ -84,6 +84,7 @@ class CreateNoteSchema(CamelCaseSchema):
 
 class ResolveNoteSchema(CamelCaseSchema):
     note_id = fields.Str(required=True)
+    is_resolved = fields.Bool(required=True)
 
 
 class UpdateNoteSchema(CamelCaseSchema):

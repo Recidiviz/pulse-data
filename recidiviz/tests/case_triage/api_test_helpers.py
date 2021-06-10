@@ -144,12 +144,10 @@ class CaseTriageTestHelpers:
 
         raise ValueError(f"Could not find {note_id=} for {person_external_id=}")
 
-    def resolve_note(self, note_id: str) -> None:
+    def resolve_note(self, note_id: str, is_resolved: bool) -> None:
         response = self.test_client.post(
             "/resolve_note",
-            json={
-                "noteId": note_id,
-            },
+            json={"noteId": note_id, "isResolved": is_resolved},
         )
 
         self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())

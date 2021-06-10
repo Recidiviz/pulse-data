@@ -349,11 +349,17 @@ def create_api_blueprint(segment_client: CaseTriageSegmentClient) -> Blueprint:
         try:
             if _should_see_demo():
                 DemoOfficerNotesInterface.resolve_note(
-                    current_session, g.email, g.api_data["note_id"]
+                    current_session,
+                    g.email,
+                    g.api_data["note_id"],
+                    g.api_data["is_resolved"],
                 )
             else:
                 OfficerNotesInterface.resolve_note(
-                    current_session, g.current_user, g.api_data["note_id"]
+                    current_session,
+                    g.current_user,
+                    g.api_data["note_id"],
+                    g.api_data["is_resolved"],
                 )
         except OfficerNoteDoesNotExistError as e:
             raise CaseTriageBadRequestException(

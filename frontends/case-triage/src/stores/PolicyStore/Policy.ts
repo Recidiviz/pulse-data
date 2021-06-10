@@ -51,7 +51,7 @@ export type SupervisionHomeVisitFrequencies = Record<
 
 export type SupervisionLevelNames = Record<SupervisionLevel, string>;
 
-export interface Policy {
+export type Policy = {
   assessmentScoreCutoffs: AssessmentScoreCutoffs;
   docShortName: string;
   omsName: string;
@@ -59,4 +59,4 @@ export interface Policy {
   supervisionContactFrequencies: SupervisionContactFrequencies;
   supervisionLevelNames: SupervisionLevelNames;
   supervisionHomeVisitFrequencies: SupervisionHomeVisitFrequencies;
-}
+};
