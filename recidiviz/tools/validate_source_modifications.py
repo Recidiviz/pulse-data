@@ -185,29 +185,27 @@ MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
         )
     ],
     # aggregate schema
+    # This check should not be symmetric because both the county and aggregate schemas add migrations to jails_versions.
     AGGREGATE_KEY: [
-        RequiredModificationSets.for_symmetric_check(
-            frozenset(
-                {
-                    os.path.relpath(aggregate_schema.__file__),  # aggregate schema
-                    os.path.relpath(
-                        jails_versions.__file__[: -len("__init__.py")]
-                    ),  # versions
-                }
-            )
+        RequiredModificationSets(
+            if_modified_files=frozenset(
+                {os.path.relpath(aggregate_schema.__file__)}
+            ),  # aggregate schema
+            then_modified_files=frozenset(
+                {os.path.relpath(jails_versions.__file__[: -len("__init__.py")])}
+            ),  # versions
         )
     ],
     # county schema
+    # This check should not be symmetric because both the county and aggregate schemas add migrations to jails_versions.
     COUNTY_KEY: [
-        RequiredModificationSets.for_symmetric_check(
-            frozenset(
-                {
-                    os.path.relpath(county_schema.__file__),  # county schema
-                    os.path.relpath(
-                        jails_versions.__file__[: -len("__init__.py")]
-                    ),  # versions
-                }
-            )
+        RequiredModificationSets(
+            if_modified_files=frozenset(
+                {os.path.relpath(county_schema.__file__)}
+            ),  # county schema
+            then_modified_files=frozenset(
+                {os.path.relpath(jails_versions.__file__[: -len("__init__.py")])}
+            ),  # versions
         )
     ],
     # operations schema
