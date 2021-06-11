@@ -534,7 +534,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
             read_from_bq_constructor,
         ):
             run_test_pipeline(
-                pipeline_module=pipeline,
+                pipeline=pipeline.IncarcerationPipeline(),
                 state_code=state_code,
                 dataset=dataset,
                 read_from_bq_constructor=read_from_bq_constructor,

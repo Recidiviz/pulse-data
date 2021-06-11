@@ -18,42 +18,42 @@
 """
 from __future__ import absolute_import
 
+import importlib
+import pkgutil
 from typing import List
 
-from recidiviz.calculator.pipeline.incarceration import (
-    pipeline as incarceration_pipeline,
-)
-from recidiviz.calculator.pipeline.program import pipeline as program_pipeline
-from recidiviz.calculator.pipeline.recidivism import pipeline as recidivism_pipeline
-from recidiviz.calculator.pipeline.supervision import pipeline as supervision_pipeline
+from recidiviz.calculator import pipeline as pipeline_top_level
+from recidiviz.calculator.pipeline.base_pipeline import BasePipeline
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import (
     get_apache_beam_pipeline_options_from_args,
 )
 
 
-PIPELINE_MODULES = {
-    "incarceration": incarceration_pipeline,
-    "recidivism": recidivism_pipeline,
-    "supervision": supervision_pipeline,
-    "program": program_pipeline,
-}
+def load_all_pipelines() -> None:
+    """Loads all subclasses of BasePipeline."""
+    for _, name, _ in pkgutil.walk_packages(pipeline_top_level.__path__):  # type: ignore
+        full_name = f"{pipeline_top_level.__name__}.{name}.pipeline"
+        try:
+            importlib.import_module(full_name)
+        except ModuleNotFoundError:
+            continue
 
 
-def get_pipeline_module(pipeline: str):  # type: ignore
+def get_pipeline(pipeline: str) -> BasePipeline:
     """Returns the calculation pipeline module corresponding to the given pipeline type."""
-    pipeline_module = PIPELINE_MODULES.get(pipeline)
-
-    if pipeline_module:
-        return pipeline_module
+    for subclass in BasePipeline.__subclasses__():
+        instance = subclass()  # type: ignore
+        if instance.name == pipeline.lower():
+            return instance
 
     raise ValueError(f"Unexpected pipeline {pipeline}")
 
 
-def run_pipeline(pipeline_module, argv: List[str]) -> None:  # type: ignore
+def run_pipeline(pipeline: BasePipeline, argv: List[str]) -> None:
     """Runs the given pipeline_module with the arguments contained in argv."""
-    known_args, remaining_args = pipeline_module.get_arg_parser().parse_known_args(argv)
+    known_args, remaining_args = pipeline.get_arg_parser().parse_known_args(argv)
     apache_beam_pipeline_options = get_apache_beam_pipeline_options_from_args(
         remaining_args
     )
 
-    pipeline_module.run(apache_beam_pipeline_options, **vars(known_args))
+    pipeline.run(apache_beam_pipeline_options, **vars(known_args))

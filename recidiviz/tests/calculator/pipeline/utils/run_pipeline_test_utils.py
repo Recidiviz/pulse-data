@@ -16,14 +16,13 @@
 # =============================================================================
 """Helper that runs a test version of the pipeline in the provided module."""
 import datetime
-from types import ModuleType
-from typing import Optional, Set, Callable, Dict
+from typing import Any, Callable, Dict, Optional, Set
 
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.testing.test_pipeline import TestPipeline
 from mock import patch
 
-
+from recidiviz.calculator.pipeline.base_pipeline import BasePipeline
 from recidiviz.tests.calculator.pipeline.fake_bigquery import (
     FakeReadFromBigQuery,
     FakeWriteToBigQuery,
@@ -41,7 +40,7 @@ def test_pipeline_options() -> Dict[str, str]:
 
 
 def run_test_pipeline(
-    pipeline_module: ModuleType,
+    pipeline: BasePipeline,
     state_code: str,
     dataset: str,
     read_from_bq_constructor: Callable[[str], FakeReadFromBigQuery],
@@ -68,9 +67,7 @@ def run_test_pipeline(
             )
         return TestPipeline()
 
-    pipeline_package_name = pipeline_module.__name__
-
-    calculation_limit_args = {}
+    calculation_limit_args: Dict[str, Any] = {}
     if include_calculation_limit_args:
         calculation_limit_args = {
             "calculation_end_month": None,
@@ -86,11 +83,12 @@ def run_test_pipeline(
             read_from_bq_constructor,
         ):
             with patch(
-                f"{pipeline_package_name}.WriteAppendToBigQuery",
+                "recidiviz.calculator.pipeline.base_pipeline.WriteAppendToBigQuery",
                 write_to_bq_constructor,
             ):
                 with patch(
-                    f"{pipeline_package_name}.beam.Pipeline", pipeline_constructor
+                    "recidiviz.calculator.pipeline.base_pipeline.beam.Pipeline",
+                    pipeline_constructor,
                 ):
                     metric_types = (
                         list(metric_types_filter) if metric_types_filter else ["ALL"]
@@ -100,7 +98,7 @@ def run_test_pipeline(
                         if unifying_id_field_filter_set
                         else None
                     )
-                    pipeline_module.run(  # type: ignore[attr-defined]
+                    pipeline.run(  # type: ignore[attr-defined]
                         apache_beam_pipeline_options=PipelineOptions(
                             project=project_id
                         ),

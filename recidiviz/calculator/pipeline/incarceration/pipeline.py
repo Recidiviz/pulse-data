@@ -20,62 +20,46 @@ for details on how to launch a local run.
 
 from __future__ import absolute_import
 
-import argparse
-import logging
-
-from typing import Any, Dict, List, Tuple, Set, Optional, cast, Generator, Iterable
 import datetime
-
-from apache_beam.pvalue import AsList
+import logging
+from typing import Any, Dict, Generator, Iterable, List, Optional, Set, Tuple, cast
 
 import apache_beam as beam
-from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
+from apache_beam.pvalue import AsList
 from apache_beam.typehints import with_input_types, with_output_types
 
-from recidiviz.calculator.dataflow_config import (
-    DATAFLOW_METRICS_TO_TABLES,
-)
+from recidiviz.calculator.pipeline.base_pipeline import BasePipeline, job_id
 from recidiviz.calculator.pipeline.incarceration import identifier, metric_producer
 from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
     IncarcerationEvent,
 )
 from recidiviz.calculator.pipeline.incarceration.metrics import (
     IncarcerationMetric,
-    IncarcerationAdmissionMetric,
-    IncarcerationReleaseMetric,
-    IncarcerationPopulationMetric,
     IncarcerationMetricType,
-    IncarcerationCommitmentFromSupervisionMetric,
 )
 from recidiviz.calculator.pipeline.utils.beam_utils import (
     ConvertDictToKVTuple,
-    RecidivizMetricWritableDict,
-    ImportTableAsKVTuples,
     ImportTable,
+    ImportTableAsKVTuples,
 )
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import (
-    SetSentencesOnSentenceGroup,
     ConvertSentencesToStateSpecificType,
+    SetSentencesOnSentenceGroup,
     SetViolationOnViolationsResponse,
 )
 from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.calculator.pipeline.utils.execution_utils import (
-    get_job_id,
     person_and_kwargs_for_identifier,
     select_all_by_person_query,
 )
 from recidiviz.calculator.pipeline.utils.extractor_utils import (
     BuildRootEntity,
-    WriteAppendToBigQuery,
     ReadFromBigQuery,
 )
 from recidiviz.calculator.pipeline.utils.person_utils import (
-    PersonMetadata,
     BuildPersonMetadata,
     ExtractPersonEventsMetadata,
-)
-from recidiviz.calculator.pipeline.utils.pipeline_args_utils import (
-    add_shared_pipeline_arguments,
+    PersonMetadata,
 )
 from recidiviz.calculator.query.state.views.reference.incarceration_period_judicial_district_association import (
     INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
@@ -89,26 +73,8 @@ from recidiviz.calculator.query.state.views.reference.supervision_period_to_agen
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
     US_MO_SENTENCE_STATUSES_VIEW_NAME,
 )
-from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import StatePerson
-from recidiviz.utils import environment
-
-# Cached job_id value
-_job_id = None
-
-
-def job_id(pipeline_options: Dict[str, str]) -> str:
-    global _job_id
-    if not _job_id:
-        _job_id = get_job_id(pipeline_options)
-    return _job_id
-
-
-@environment.test_only
-def clear_job_id() -> None:
-    global _job_id
-    _job_id = None
 
 
 @with_input_types(
@@ -264,73 +230,29 @@ class ProduceIncarcerationMetrics(beam.DoFn):
         pass  # Passing unused abstract method.
 
 
-def get_arg_parser() -> argparse.ArgumentParser:
-    """Returns the parser for the command-line arguments for this pipeline."""
-    parser = argparse.ArgumentParser()
+class IncarcerationPipeline(BasePipeline):
+    """Defines the incarceration calculation pipeline."""
 
-    # Parse arguments
-    add_shared_pipeline_arguments(parser, include_calculation_limit_args=True)
+    def __init__(self) -> None:
+        self.name = "incarceration"
+        self.metric_type_class = IncarcerationMetricType  # type: ignore
+        self.metric_class = IncarcerationMetric  # type: ignore
+        self.include_calculation_limit_args = True
 
-    metric_type_options: List[str] = [
-        metric_type.value for metric_type in IncarcerationMetricType
-    ]
-
-    metric_type_options.append("ALL")
-
-    parser.add_argument(
-        "--metric_types",
-        dest="metric_types",
-        type=str,
-        nargs="+",
-        choices=metric_type_options,
-        help="A list of the types of metric to calculate.",
-        default={"ALL"},
-    )
-
-    return parser
-
-
-def run(
-    apache_beam_pipeline_options: PipelineOptions,
-    data_input: str,
-    reference_view_input: str,
-    static_reference_input: str,
-    output: str,
-    calculation_month_count: int,
-    metric_types: List[str],
-    state_code: str,
-    calculation_end_month: Optional[str],
-    person_filter_ids: Optional[List[int]],
-) -> None:
-    """Runs the incarceration calculation pipeline."""
-
-    # Workaround to load SQLAlchemy objects at start of pipeline. This is necessary because the BuildRootEntity
-    # function tries to access attributes of relationship properties on the SQLAlchemy room_schema_class before they
-    # have been loaded. However, if *any* SQLAlchemy objects have been instantiated, then the relationship properties
-    # are loaded and their attributes can be successfully accessed.
-    _ = schema.StatePerson()
-
-    apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = True
-
-    # Get pipeline job details
-    all_pipeline_options = apache_beam_pipeline_options.get_all_options()
-    project_id = all_pipeline_options["project"]
-
-    if project_id is None:
-        raise ValueError(f"No project set in pipeline options: {all_pipeline_options}")
-
-    if state_code is None:
-        raise ValueError("No state_code set for pipeline")
-
-    input_dataset = project_id + "." + data_input
-    reference_dataset = project_id + "." + reference_view_input
-    static_reference_dataset = project_id + "." + static_reference_input
-
-    person_id_filter_set = set(person_filter_ids) if person_filter_ids else None
-
-    with beam.Pipeline(options=apache_beam_pipeline_options) as p:
-        # Get StatePersons
-        persons = p | "Load StatePersons" >> BuildRootEntity(
+    def execute_pipeline(
+        self,
+        pipeline: beam.Pipeline,
+        all_pipeline_options: Dict[str, Any],
+        state_code: str,
+        input_dataset: str,
+        reference_dataset: str,
+        static_reference_dataset: str,
+        metric_types: List[str],
+        person_id_filter_set: Optional[Set[int]],
+        calculation_month_count: int = -1,
+        calculation_end_month: Optional[str] = None,
+    ) -> beam.Pipeline:
+        persons = pipeline | "Load StatePersons" >> BuildRootEntity(
             dataset=input_dataset,
             root_entity_class=entities.StatePerson,
             unifying_id_field=entities.StatePerson.get_class_id_name(),
@@ -340,7 +262,7 @@ def run(
         )
 
         # Get StateSentenceGroups
-        sentence_groups = p | "Load StateSentenceGroups" >> BuildRootEntity(
+        sentence_groups = pipeline | "Load StateSentenceGroups" >> BuildRootEntity(
             dataset=input_dataset,
             root_entity_class=entities.StateSentenceGroup,
             unifying_id_field=entities.StatePerson.get_class_id_name(),
@@ -351,7 +273,7 @@ def run(
 
         # Get StateIncarcerationSentences
         incarceration_sentences = (
-            p
+            pipeline
             | "Load StateIncarcerationSentences"
             >> BuildRootEntity(
                 dataset=input_dataset,
@@ -364,17 +286,21 @@ def run(
         )
 
         # Get StateSupervisionSentences
-        supervision_sentences = p | "Load StateSupervisionSentences" >> BuildRootEntity(
-            dataset=input_dataset,
-            root_entity_class=entities.StateSupervisionSentence,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=True,
-            unifying_id_field_filter_set=person_id_filter_set,
-            state_code=state_code,
+        supervision_sentences = (
+            pipeline
+            | "Load StateSupervisionSentences"
+            >> BuildRootEntity(
+                dataset=input_dataset,
+                root_entity_class=entities.StateSupervisionSentence,
+                unifying_id_field=entities.StatePerson.get_class_id_name(),
+                build_related_entities=True,
+                unifying_id_field_filter_set=person_id_filter_set,
+                state_code=state_code,
+            )
         )
 
         # Get StateAssessments
-        assessments = p | "Load Assessments" >> BuildRootEntity(
+        assessments = pipeline | "Load Assessments" >> BuildRootEntity(
             dataset=input_dataset,
             root_entity_class=entities.StateAssessment,
             unifying_id_field=entities.StatePerson.get_class_id_name(),
@@ -384,18 +310,22 @@ def run(
         )
 
         # Get StateSupervisionViolations
-        supervision_violations = p | "Load SupervisionViolations" >> BuildRootEntity(
-            dataset=input_dataset,
-            root_entity_class=entities.StateSupervisionViolation,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=True,
-            unifying_id_field_filter_set=person_id_filter_set,
-            state_code=state_code,
+        supervision_violations = (
+            pipeline
+            | "Load SupervisionViolations"
+            >> BuildRootEntity(
+                dataset=input_dataset,
+                root_entity_class=entities.StateSupervisionViolation,
+                unifying_id_field=entities.StatePerson.get_class_id_name(),
+                build_related_entities=True,
+                unifying_id_field_filter_set=person_id_filter_set,
+                state_code=state_code,
+            )
         )
 
         # Get StateSupervisionViolationResponses
         supervision_violation_responses = (
-            p
+            pipeline
             | "Load SupervisionViolationResponses"
             >> BuildRootEntity(
                 dataset=input_dataset,
@@ -417,13 +347,13 @@ def run(
             )
 
             us_mo_sentence_statuses = (
-                p
+                pipeline
                 | "Read MO sentence status table from BigQuery"
                 >> ReadFromBigQuery(query=us_mo_sentence_status_query)
             )
         else:
             us_mo_sentence_statuses = (
-                p
+                pipeline
                 | f"Generate empty MO statuses list for non-MO state run: {state_code} "
                 >> beam.Create([])
             )
@@ -467,7 +397,7 @@ def run(
 
         # Bring in the table that associates people and their county of residence
         person_id_to_county_kv = (
-            p
+            pipeline
             | "Load person_id_to_county_kv"
             >> ImportTableAsKVTuples(
                 dataset_id=reference_dataset,
@@ -479,7 +409,7 @@ def run(
         )
 
         ip_to_judicial_district_kv = (
-            p
+            pipeline
             | "Load ip_to_judicial_district_kv"
             >> ImportTableAsKVTuples(
                 dataset_id=reference_dataset,
@@ -491,7 +421,7 @@ def run(
         )
 
         supervision_period_to_agent_associations_as_kv = (
-            p
+            pipeline
             | "Load supervision_period_to_agent_associations_as_kv"
             >> ImportTableAsKVTuples(
                 dataset_id=reference_dataset,
@@ -503,7 +433,7 @@ def run(
         )
 
         state_race_ethnicity_population_counts = (
-            p
+            pipeline
             | "Load state_race_ethnicity_population_counts"
             >> ImportTable(
                 dataset_id=static_reference_dataset,
@@ -569,9 +499,6 @@ def run(
             >> beam.ParDo(ExtractPersonEventsMetadata())
         )
 
-        # Get pipeline job details for accessing job_id
-        all_pipeline_options = apache_beam_pipeline_options.get_all_options()
-
         # Add timestamp for local jobs
         job_timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S.%f")
         all_pipeline_options["job_timestamp"] = job_timestamp
@@ -591,60 +518,4 @@ def run(
             )
         )
 
-        if person_id_filter_set:
-            logging.warning(
-                "Non-empty person filter set - returning before writing metrics."
-            )
-            return
-
-        # Convert the metrics into a format that's writable to BQ
-        writable_metrics = (
-            incarceration_metrics
-            | "Convert to dict to be written to BQ"
-            >> beam.ParDo(RecidivizMetricWritableDict()).with_outputs(
-                IncarcerationMetricType.INCARCERATION_ADMISSION.value,
-                IncarcerationMetricType.INCARCERATION_COMMITMENT_FROM_SUPERVISION.value,
-                IncarcerationMetricType.INCARCERATION_POPULATION.value,
-                IncarcerationMetricType.INCARCERATION_RELEASE.value,
-            )
-        )
-
-        # Write the metrics to the output tables in BigQuery
-        admissions_table_id = DATAFLOW_METRICS_TO_TABLES[IncarcerationAdmissionMetric]
-        commitment_from_supervision_table_id = DATAFLOW_METRICS_TO_TABLES[
-            IncarcerationCommitmentFromSupervisionMetric
-        ]
-        population_table_id = DATAFLOW_METRICS_TO_TABLES[IncarcerationPopulationMetric]
-        releases_table_id = DATAFLOW_METRICS_TO_TABLES[IncarcerationReleaseMetric]
-
-        _ = (
-            writable_metrics.INCARCERATION_ADMISSION
-            | f"Write admission metrics to BQ table: {admissions_table_id}"
-            >> WriteAppendToBigQuery(
-                output_table=admissions_table_id,
-                output_dataset=output,
-            )
-        )
-
-        _ = writable_metrics.INCARCERATION_COMMITMENT_FROM_SUPERVISION | f"Write commitment from supervision metrics to BQ table: {commitment_from_supervision_table_id}" >> WriteAppendToBigQuery(
-            output_table=commitment_from_supervision_table_id,
-            output_dataset=output,
-        )
-
-        _ = (
-            writable_metrics.INCARCERATION_POPULATION
-            | f"Write population metrics to BQ table: {population_table_id}"
-            >> WriteAppendToBigQuery(
-                output_table=population_table_id,
-                output_dataset=output,
-            )
-        )
-
-        _ = (
-            writable_metrics.INCARCERATION_RELEASE
-            | f"Write release metrics to BQ table: {releases_table_id}"
-            >> WriteAppendToBigQuery(
-                output_table=releases_table_id,
-                output_dataset=output,
-            )
-        )
+        return incarceration_metrics

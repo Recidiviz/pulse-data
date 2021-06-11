@@ -18,9 +18,7 @@
 import unittest
 from argparse import Namespace
 
-from recidiviz.calculator.pipeline.incarceration import (
-    pipeline as incarceration_pipeline,
-)
+from recidiviz.calculator.pipeline.incarceration.pipeline import IncarcerationPipeline
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import (
     get_apache_beam_pipeline_options_from_args,
 )
@@ -58,6 +56,8 @@ class TestPipelineArgsUtils(unittest.TestCase):
         "disk_size_gb": 50,
     }
 
+    TEST_PIPELINE = IncarcerationPipeline()
+
     def test_minimal_incarceration_pipeline_args(self):
         # Arrange
         argv = [
@@ -71,7 +71,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
         (
             incarceration_pipeline_args,
             apache_beam_args,
-        ) = incarceration_pipeline.get_arg_parser().parse_known_args(argv)
+        ) = self.TEST_PIPELINE.get_arg_parser().parse_known_args(argv)
         pipeline_options = get_apache_beam_pipeline_options_from_args(apache_beam_args)
 
         # Assert
@@ -96,7 +96,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
         (
             incarceration_pipeline_args,
             apache_beam_args,
-        ) = incarceration_pipeline.get_arg_parser().parse_known_args(argv)
+        ) = self.TEST_PIPELINE.get_arg_parser().parse_known_args(argv)
         pipeline_options = get_apache_beam_pipeline_options_from_args(apache_beam_args)
 
         # Assert
@@ -145,7 +145,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
         (
             incarceration_pipeline_args,
             apache_beam_args,
-        ) = incarceration_pipeline.get_arg_parser().parse_known_args(argv)
+        ) = self.TEST_PIPELINE.get_arg_parser().parse_known_args(argv)
         pipeline_options = get_apache_beam_pipeline_options_from_args(apache_beam_args)
 
         # Assert
@@ -208,7 +208,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
         (
             incarceration_pipeline_args,
             apache_beam_args,
-        ) = incarceration_pipeline.get_arg_parser().parse_known_args(argv)
+        ) = self.TEST_PIPELINE.get_arg_parser().parse_known_args(argv)
         pipeline_options = get_apache_beam_pipeline_options_from_args(apache_beam_args)
 
         # Assert
@@ -256,7 +256,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
         (
             _incarceration_pipeline_args,
             apache_beam_args,
-        ) = incarceration_pipeline.get_arg_parser().parse_known_args(argv)
+        ) = self.TEST_PIPELINE.get_arg_parser().parse_known_args(argv)
 
         with self.assertRaises(SystemExit) as e:
             _ = get_apache_beam_pipeline_options_from_args(apache_beam_args)
@@ -290,7 +290,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
         (
             _incarceration_pipeline_args,
             apache_beam_args,
-        ) = incarceration_pipeline.get_arg_parser().parse_known_args(argv)
+        ) = self.TEST_PIPELINE.get_arg_parser().parse_known_args(argv)
 
         with self.assertRaises(SystemExit) as e:
             _ = get_apache_beam_pipeline_options_from_args(apache_beam_args)

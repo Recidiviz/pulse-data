@@ -39,7 +39,7 @@ usage: python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
           ..and any other pipeline-specific args
 
 Examples:
-    python -m recidiviz.tools.run_sandbox_calculation_pipeline --pipeline incarceration \
+    python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline --pipeline incarceration \
      --job_name incarceration-example --sandbox_output_dataset username_dataflow_metrics \
      --calculation_month_count 36
 
@@ -50,12 +50,13 @@ from __future__ import absolute_import
 import argparse
 import logging
 import sys
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
+from recidiviz.calculator.pipeline.base_pipeline import BasePipeline
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.tools.pipeline_launch_util import (
-    PIPELINE_MODULES,
-    get_pipeline_module,
+    get_pipeline,
+    load_all_pipelines,
     run_pipeline,
 )
 
@@ -68,7 +69,7 @@ def parse_run_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]
         "--pipeline",
         dest="pipeline",
         type=str,
-        choices=PIPELINE_MODULES.keys(),
+        choices=[subclass().name for subclass in BasePipeline.__subclasses__()],  # type: ignore
         help="The type of pipeline that should be run.",
         required=True,
     )
@@ -167,13 +168,14 @@ def pipeline_module_name_and_arguments(arguments: List[str]) -> Tuple[str, List[
 
 def run_sandbox_calculation_pipeline() -> None:
     """Runs the pipeline designated by the given --pipeline argument."""
+    load_all_pipelines()
     pipeline_module_name, pipeline_arguments = pipeline_module_name_and_arguments(
         sys.argv
     )
 
-    pipeline_module = get_pipeline_module(pipeline_module_name)
+    pipeline_to_run = get_pipeline(pipeline_module_name)
 
-    run_pipeline(pipeline_module, pipeline_arguments)
+    run_pipeline(pipeline_to_run, pipeline_arguments)
 
 
 if __name__ == "__main__":

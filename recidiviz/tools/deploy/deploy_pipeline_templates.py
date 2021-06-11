@@ -34,8 +34,9 @@ from recidiviz.calculator.dataflow_config import (
     STAGING_ONLY_TEMPLATES_PATH,
 )
 from recidiviz.tools.pipeline_launch_util import (
+    get_pipeline,
+    load_all_pipelines,
     run_pipeline,
-    get_pipeline_module,
 )
 
 TEMPLATE_PATHS = {
@@ -76,8 +77,9 @@ def deploy_pipeline_templates(template_yaml_path: str, project_id: str) -> None:
                     else:
                         argv.extend([f"--{key}", f"{value}"])
 
-                pipeline_module = get_pipeline_module(pipeline_type)
-                run_pipeline(pipeline_module, argv)
+                load_all_pipelines()
+                pipeline = get_pipeline(pipeline_type)
+                run_pipeline(pipeline, argv)
         else:
             logging.info("Empty pipeline yaml dict at: %s", yaml_file)
 
