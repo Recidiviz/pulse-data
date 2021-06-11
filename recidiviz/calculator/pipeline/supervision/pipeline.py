@@ -17,67 +17,45 @@
 """The supervision calculation pipeline. See recidiviz/tools/run_sandbox_calculation_pipeline.py
 for details on how to launch a local run.
 """
-import argparse
 import datetime
 import logging
-from typing import Dict, Any, List, Tuple, Set, Optional, cast, Iterable, Generator
+from typing import Any, Dict, Generator, Iterable, List, Optional, Set, Tuple, cast
 
 import apache_beam as beam
-from apache_beam.options.pipeline_options import (
-    SetupOptions,
-    PipelineOptions,
-)
 from apache_beam.pvalue import AsList
 from apache_beam.typehints import with_input_types, with_output_types
 
-from recidiviz.calculator.dataflow_config import (
-    DATAFLOW_METRICS_TO_TABLES,
-)
+from recidiviz.calculator.pipeline.base_pipeline import BasePipeline, job_id
 from recidiviz.calculator.pipeline.supervision import identifier, metric_producer
 from recidiviz.calculator.pipeline.supervision.metrics import (
     SupervisionMetric,
-    SupervisionPopulationMetric,
-    SupervisionOutOfStatePopulationMetric,
-    SupervisionRevocationMetric,
-    SupervisionSuccessMetric,
-    SuccessfulSupervisionSentenceDaysServedMetric,
-    SupervisionCaseComplianceMetric,
-    SupervisionTerminationMetric,
-    SupervisionStartMetric,
-    SupervisionDowngradeMetric,
+    SupervisionMetricType,
 )
-from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
     SupervisionTimeBucket,
 )
 from recidiviz.calculator.pipeline.utils.beam_utils import (
     ConvertDictToKVTuple,
-    RecidivizMetricWritableDict,
-    ImportTableAsKVTuples,
     ImportTable,
+    ImportTableAsKVTuples,
 )
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import (
-    SetViolationOnViolationsResponse,
     ConvertSentencesToStateSpecificType,
+    SetViolationOnViolationsResponse,
 )
 from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.calculator.pipeline.utils.execution_utils import (
-    get_job_id,
     person_and_kwargs_for_identifier,
     select_all_by_person_query,
 )
 from recidiviz.calculator.pipeline.utils.extractor_utils import (
     BuildRootEntity,
-    WriteAppendToBigQuery,
     ReadFromBigQuery,
 )
 from recidiviz.calculator.pipeline.utils.person_utils import (
-    PersonMetadata,
     BuildPersonMetadata,
     ExtractPersonEventsMetadata,
-)
-from recidiviz.calculator.pipeline.utils.pipeline_args_utils import (
-    add_shared_pipeline_arguments,
+    PersonMetadata,
 )
 from recidiviz.calculator.query.state.views.reference.supervision_period_judicial_district_association import (
     SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
@@ -88,26 +66,8 @@ from recidiviz.calculator.query.state.views.reference.supervision_period_to_agen
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
     US_MO_SENTENCE_STATUSES_VIEW_NAME,
 )
-from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import StatePerson
-from recidiviz.utils import environment
-
-# Cached job_id value
-_job_id = None
-
-
-def job_id(pipeline_options: Dict[str, str]) -> str:
-    global _job_id
-    if not _job_id:
-        _job_id = get_job_id(pipeline_options)
-    return _job_id
-
-
-@environment.test_only
-def clear_job_id() -> None:
-    global _job_id
-    _job_id = None
 
 
 @with_input_types(
@@ -268,73 +228,30 @@ class ProduceSupervisionMetrics(beam.DoFn):
         pass  # Passing unused abstract method.
 
 
-def get_arg_parser() -> argparse.ArgumentParser:
-    """Returns the parser for the command-line arguments for this pipeline."""
-    parser = argparse.ArgumentParser()
+class SupervisionPipeline(BasePipeline):
+    """Defines the supervision calculation pipeline."""
 
-    # Parse arguments
-    add_shared_pipeline_arguments(parser, include_calculation_limit_args=True)
+    def __init__(self) -> None:
+        self.name = "supervision"
+        self.metric_type_class = SupervisionMetricType  # type: ignore
+        self.metric_class = SupervisionMetric  # type: ignore
+        self.include_calculation_limit_args = True
 
-    metric_type_options: List[str] = [
-        metric_type.value for metric_type in SupervisionMetricType
-    ]
-
-    metric_type_options.append("ALL")
-
-    parser.add_argument(
-        "--metric_types",
-        dest="metric_types",
-        type=str,
-        nargs="+",
-        choices=metric_type_options,
-        help="A list of the types of metric to calculate.",
-        default={"ALL"},
-    )
-
-    return parser
-
-
-def run(
-    apache_beam_pipeline_options: PipelineOptions,
-    data_input: str,
-    reference_view_input: str,
-    static_reference_input: str,
-    output: str,
-    calculation_month_count: int,
-    metric_types: List[str],
-    state_code: str,
-    calculation_end_month: Optional[str],
-    person_filter_ids: Optional[List[int]],
-) -> None:
-    """Runs the supervision calculation pipeline."""
-
-    # Workaround to load SQLAlchemy objects at start of pipeline. This is necessary because the BuildRootEntity
-    # function tries to access attributes of relationship properties on the SQLAlchemy room_schema_class before they
-    # have been loaded. However, if *any* SQLAlchemy objects have been instantiated, then the relationship properties
-    # are loaded and their attributes can be successfully accessed.
-    _ = schema.StatePerson()
-
-    apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = True
-
-    # Get pipeline job details
-    all_pipeline_options = apache_beam_pipeline_options.get_all_options()
-    project_id = all_pipeline_options["project"]
-
-    if project_id is None:
-        raise ValueError(f"No project set in pipeline options: {all_pipeline_options}")
-
-    if state_code is None:
-        raise ValueError("No state_code set for pipeline")
-
-    input_dataset = project_id + "." + data_input
-    reference_dataset = project_id + "." + reference_view_input
-    static_reference_dataset = project_id + "." + static_reference_input
-
-    person_id_filter_set = set(person_filter_ids) if person_filter_ids else None
-
-    with beam.Pipeline(options=apache_beam_pipeline_options) as p:
+    def execute_pipeline(
+        self,
+        pipeline: beam.Pipeline,
+        all_pipeline_options: Dict[str, Any],
+        state_code: str,
+        input_dataset: str,
+        reference_dataset: str,
+        static_reference_dataset: str,
+        metric_types: List[str],
+        person_id_filter_set: Optional[Set[int]],
+        calculation_month_count: int = -1,
+        calculation_end_month: Optional[str] = None,
+    ) -> beam.Pipeline:
         # Get StatePersons
-        persons = p | "Load Persons" >> BuildRootEntity(
+        persons = pipeline | "Load Persons" >> BuildRootEntity(
             dataset=input_dataset,
             root_entity_class=entities.StatePerson,
             unifying_id_field=entities.StatePerson.get_class_id_name(),
@@ -344,29 +261,37 @@ def run(
         )
 
         # Get StateIncarcerationPeriods
-        incarceration_periods = p | "Load IncarcerationPeriods" >> BuildRootEntity(
-            dataset=input_dataset,
-            root_entity_class=entities.StateIncarcerationPeriod,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=True,
-            unifying_id_field_filter_set=person_id_filter_set,
-            state_code=state_code,
+        incarceration_periods = (
+            pipeline
+            | "Load IncarcerationPeriods"
+            >> BuildRootEntity(
+                dataset=input_dataset,
+                root_entity_class=entities.StateIncarcerationPeriod,
+                unifying_id_field=entities.StatePerson.get_class_id_name(),
+                build_related_entities=True,
+                unifying_id_field_filter_set=person_id_filter_set,
+                state_code=state_code,
+            )
         )
 
         # Get StateSupervisionViolations
-        supervision_violations = p | "Load SupervisionViolations" >> BuildRootEntity(
-            dataset=input_dataset,
-            root_entity_class=entities.StateSupervisionViolation,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=True,
-            unifying_id_field_filter_set=person_id_filter_set,
-            state_code=state_code,
+        supervision_violations = (
+            pipeline
+            | "Load SupervisionViolations"
+            >> BuildRootEntity(
+                dataset=input_dataset,
+                root_entity_class=entities.StateSupervisionViolation,
+                unifying_id_field=entities.StatePerson.get_class_id_name(),
+                build_related_entities=True,
+                unifying_id_field_filter_set=person_id_filter_set,
+                state_code=state_code,
+            )
         )
 
         # TODO(#2769): Don't bring this in as a root entity
         # Get StateSupervisionViolationResponses
         supervision_violation_responses = (
-            p
+            pipeline
             | "Load SupervisionViolationResponses"
             >> BuildRootEntity(
                 dataset=input_dataset,
@@ -379,27 +304,35 @@ def run(
         )
 
         # Get StateSupervisionSentences
-        supervision_sentences = p | "Load SupervisionSentences" >> BuildRootEntity(
-            dataset=input_dataset,
-            root_entity_class=entities.StateSupervisionSentence,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=True,
-            unifying_id_field_filter_set=person_id_filter_set,
-            state_code=state_code,
+        supervision_sentences = (
+            pipeline
+            | "Load SupervisionSentences"
+            >> BuildRootEntity(
+                dataset=input_dataset,
+                root_entity_class=entities.StateSupervisionSentence,
+                unifying_id_field=entities.StatePerson.get_class_id_name(),
+                build_related_entities=True,
+                unifying_id_field_filter_set=person_id_filter_set,
+                state_code=state_code,
+            )
         )
 
         # Get StateIncarcerationSentences
-        incarceration_sentences = p | "Load IncarcerationSentences" >> BuildRootEntity(
-            dataset=input_dataset,
-            root_entity_class=entities.StateIncarcerationSentence,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=True,
-            unifying_id_field_filter_set=person_id_filter_set,
-            state_code=state_code,
+        incarceration_sentences = (
+            pipeline
+            | "Load IncarcerationSentences"
+            >> BuildRootEntity(
+                dataset=input_dataset,
+                root_entity_class=entities.StateIncarcerationSentence,
+                unifying_id_field=entities.StatePerson.get_class_id_name(),
+                build_related_entities=True,
+                unifying_id_field_filter_set=person_id_filter_set,
+                state_code=state_code,
+            )
         )
 
         # Get StateSupervisionPeriods
-        supervision_periods = p | "Load SupervisionPeriods" >> BuildRootEntity(
+        supervision_periods = pipeline | "Load SupervisionPeriods" >> BuildRootEntity(
             dataset=input_dataset,
             root_entity_class=entities.StateSupervisionPeriod,
             unifying_id_field=entities.StatePerson.get_class_id_name(),
@@ -409,7 +342,7 @@ def run(
         )
 
         # Get StateAssessments
-        assessments = p | "Load Assessments" >> BuildRootEntity(
+        assessments = pipeline | "Load Assessments" >> BuildRootEntity(
             dataset=input_dataset,
             root_entity_class=entities.StateAssessment,
             unifying_id_field=entities.StatePerson.get_class_id_name(),
@@ -418,17 +351,21 @@ def run(
             state_code=state_code,
         )
 
-        supervision_contacts = p | "Load StateSupervisionContacts" >> BuildRootEntity(
-            dataset=input_dataset,
-            root_entity_class=entities.StateSupervisionContact,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=False,
-            unifying_id_field_filter_set=person_id_filter_set,
-            state_code=state_code,
+        supervision_contacts = (
+            pipeline
+            | "Load StateSupervisionContacts"
+            >> BuildRootEntity(
+                dataset=input_dataset,
+                root_entity_class=entities.StateSupervisionContact,
+                unifying_id_field=entities.StatePerson.get_class_id_name(),
+                build_related_entities=False,
+                unifying_id_field_filter_set=person_id_filter_set,
+                state_code=state_code,
+            )
         )
 
         supervision_period_to_agent_associations_as_kv = (
-            p
+            pipeline
             | "Load supervision_period_to_agent_associations_as_kv"
             >> ImportTableAsKVTuples(
                 dataset_id=reference_dataset,
@@ -441,7 +378,7 @@ def run(
 
         # Bring in the judicial districts associated with supervision_periods
         sp_to_judicial_district_kv = (
-            p
+            pipeline
             | "Load sp_to_judicial_district_kv"
             >> ImportTableAsKVTuples(
                 dataset_id=reference_dataset,
@@ -453,7 +390,7 @@ def run(
         )
 
         state_race_ethnicity_population_counts = (
-            p
+            pipeline
             | "Load state_race_ethnicity_population_counts"
             >> ImportTable(
                 dataset_id=static_reference_dataset,
@@ -473,13 +410,13 @@ def run(
             )
 
             us_mo_sentence_statuses = (
-                p
+                pipeline
                 | "Read MO sentence status table from BigQuery"
                 >> ReadFromBigQuery(query=us_mo_sentence_status_query)
             )
         else:
             us_mo_sentence_statuses = (
-                p
+                pipeline
                 | f"Generate empty MO statuses list for non-MO state run: {state_code} "
                 >> beam.Create([])
             )
@@ -564,9 +501,6 @@ def run(
             >> beam.ParDo(ExtractPersonEventsMetadata())
         )
 
-        # Get pipeline job details for accessing job_id
-        all_pipeline_options = apache_beam_pipeline_options.get_all_options()
-
         # Get the type of metric to calculate
         metric_types_set = set(metric_types)
 
@@ -585,121 +519,5 @@ def run(
                 calculation_month_count=calculation_month_count,
             )
         )
-        if person_id_filter_set:
-            logging.warning(
-                "Non-empty person filter set - returning before writing metrics."
-            )
-            return
 
-        # Convert the metrics into a format that's writable to BQ
-        writable_metrics = (
-            supervision_metrics
-            | "Convert to dict to be written to BQ"
-            >> beam.ParDo(RecidivizMetricWritableDict()).with_outputs(
-                SupervisionMetricType.SUPERVISION_COMPLIANCE.value,
-                SupervisionMetricType.SUPERVISION_POPULATION.value,
-                SupervisionMetricType.SUPERVISION_REVOCATION.value,
-                SupervisionMetricType.SUPERVISION_START.value,
-                SupervisionMetricType.SUPERVISION_SUCCESS.value,
-                SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED.value,
-                SupervisionMetricType.SUPERVISION_TERMINATION.value,
-                SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION.value,
-                SupervisionMetricType.SUPERVISION_DOWNGRADE.value,
-            )
-        )
-
-        terminations_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionTerminationMetric]
-        compliance_table_id = DATAFLOW_METRICS_TO_TABLES[
-            SupervisionCaseComplianceMetric
-        ]
-        populations_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionPopulationMetric]
-        revocations_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionRevocationMetric]
-        successes_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionSuccessMetric]
-        successful_sentence_lengths_table_id = DATAFLOW_METRICS_TO_TABLES[
-            SuccessfulSupervisionSentenceDaysServedMetric
-        ]
-        supervision_starts_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionStartMetric]
-        out_of_state_populations_table_id = DATAFLOW_METRICS_TO_TABLES[
-            SupervisionOutOfStatePopulationMetric
-        ]
-        supervision_downgrade_table_id = DATAFLOW_METRICS_TO_TABLES[
-            SupervisionDowngradeMetric
-        ]
-
-        _ = (
-            writable_metrics.SUPERVISION_POPULATION
-            | f"Write population metrics to BQ table: {populations_table_id}"
-            >> WriteAppendToBigQuery(
-                output_table=populations_table_id,
-                output_dataset=output,
-            )
-        )
-
-        _ = writable_metrics.SUPERVISION_OUT_OF_STATE_POPULATION | f"Write out of state population metrics to BQ table: {out_of_state_populations_table_id}" >> WriteAppendToBigQuery(
-            output_table=out_of_state_populations_table_id,
-            output_dataset=output,
-        )
-
-        _ = (
-            writable_metrics.SUPERVISION_REVOCATION
-            | f"Write revocation metrics to BQ table: {revocations_table_id}"
-            >> WriteAppendToBigQuery(
-                output_table=revocations_table_id,
-                output_dataset=output,
-            )
-        )
-
-        _ = (
-            writable_metrics.SUPERVISION_SUCCESS
-            | f"Write success metrics to BQ table: {successes_table_id}"
-            >> WriteAppendToBigQuery(
-                output_table=successes_table_id,
-                output_dataset=output,
-            )
-        )
-
-        _ = (
-            writable_metrics.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
-            | f"Write supervision successful sentence length metrics to BQ"
-            f" table: {successful_sentence_lengths_table_id}"
-            >> WriteAppendToBigQuery(
-                output_table=successful_sentence_lengths_table_id,
-                output_dataset=output,
-            )
-        )
-
-        _ = (
-            writable_metrics.SUPERVISION_TERMINATION
-            | f"Write termination metrics to BQ table: {terminations_table_id}"
-            >> WriteAppendToBigQuery(
-                output_table=terminations_table_id,
-                output_dataset=output,
-            )
-        )
-
-        _ = (
-            writable_metrics.SUPERVISION_COMPLIANCE
-            | f"Write compliance metrics to BQ table: {compliance_table_id}"
-            >> WriteAppendToBigQuery(
-                output_table=compliance_table_id,
-                output_dataset=output,
-            )
-        )
-
-        _ = (
-            writable_metrics.SUPERVISION_START
-            | f"Write start metrics to BQ table: {supervision_starts_table_id}"
-            >> WriteAppendToBigQuery(
-                output_table=supervision_starts_table_id,
-                output_dataset=output,
-            )
-        )
-
-        _ = (
-            writable_metrics.SUPERVISION_DOWNGRADE
-            | f"Write downgrade metrics to BQ table: {supervision_downgrade_table_id}"
-            >> WriteAppendToBigQuery(
-                output_table=supervision_downgrade_table_id,
-                output_dataset=output,
-            )
-        )
+        return supervision_metrics

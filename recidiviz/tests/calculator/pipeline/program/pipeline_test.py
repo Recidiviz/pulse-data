@@ -273,7 +273,7 @@ class TestProgramPipeline(unittest.TestCase):
             )
         )
         run_test_pipeline(
-            pipeline_module=pipeline,
+            pipeline=pipeline.ProgramPipeline(),
             state_code="US_XX",
             dataset=dataset,
             read_from_bq_constructor=read_from_bq_constructor,

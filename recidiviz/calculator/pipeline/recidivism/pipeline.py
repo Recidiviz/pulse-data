@@ -20,76 +20,39 @@ for details on how to launch a local run.
 
 from __future__ import absolute_import
 
-import argparse
-import logging
-
-from typing import Any, Dict, List, Tuple, Set, Optional, Iterable, Generator
 import datetime
-
-from apache_beam.pvalue import AsList
+import logging
+from typing import Any, Dict, Generator, Iterable, List, Optional, Set, Tuple
 
 import apache_beam as beam
-from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
+from apache_beam.pvalue import AsList
 from apache_beam.typehints import with_input_types, with_output_types
 from more_itertools import one
 
-from recidiviz.calculator.dataflow_config import (
-    DATAFLOW_METRICS_TO_TABLES,
-)
-from recidiviz.calculator.pipeline.recidivism import identifier
-from recidiviz.calculator.pipeline.recidivism import metric_producer
-from recidiviz.calculator.pipeline.recidivism.release_event import ReleaseEvent
+from recidiviz.calculator.pipeline.base_pipeline import BasePipeline, job_id
+from recidiviz.calculator.pipeline.recidivism import identifier, metric_producer
 from recidiviz.calculator.pipeline.recidivism.metrics import (
-    ReincarcerationRecidivismRateMetric,
-    ReincarcerationRecidivismCountMetric,
     ReincarcerationRecidivismMetric,
-)
-from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismMetricType,
 )
+from recidiviz.calculator.pipeline.recidivism.release_event import ReleaseEvent
 from recidiviz.calculator.pipeline.utils.beam_utils import (
-    RecidivizMetricWritableDict,
-    ImportTableAsKVTuples,
     ImportTable,
+    ImportTableAsKVTuples,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
-    get_job_id,
     person_and_kwargs_for_identifier,
 )
-from recidiviz.calculator.pipeline.utils.extractor_utils import (
-    BuildRootEntity,
-    WriteAppendToBigQuery,
-)
+from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.person_utils import (
-    PersonMetadata,
     BuildPersonMetadata,
-)
-from recidiviz.calculator.pipeline.utils.pipeline_args_utils import (
-    add_shared_pipeline_arguments,
+    PersonMetadata,
 )
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
 )
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state.entities import StatePerson
-from recidiviz.utils import environment
-
-# Cached job_id value
-_job_id = None
-
-
-def job_id(pipeline_options: Dict[str, str]) -> str:
-    global _job_id
-    if not _job_id:
-        _job_id = get_job_id(pipeline_options)
-    return _job_id
-
-
-@environment.test_only
-def clear_job_id() -> None:
-    global _job_id
-    _job_id = None
 
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Iterable[Any]]])
@@ -258,70 +221,29 @@ class ProduceRecidivismMetrics(beam.DoFn):
         pass  # Passing unused abstract method.
 
 
-def get_arg_parser() -> argparse.ArgumentParser:
-    """Returns the parser for the command-line arguments for this pipeline."""
-    parser = argparse.ArgumentParser()
+class RecidivismPipeline(BasePipeline):
+    """Defines the recidivism calculation pipeline."""
 
-    # Parse arguments
-    add_shared_pipeline_arguments(parser)
+    def __init__(self) -> None:
+        self.name = "recidivism"
+        self.metric_type_class = ReincarcerationRecidivismMetricType  # type: ignore
+        self.metric_class = ReincarcerationRecidivismMetric  # type: ignore
+        self.include_calculation_limit_args = False
 
-    parser.add_argument(
-        "--metric_types",
-        dest="metric_types",
-        type=str,
-        nargs="+",
-        choices=[
-            "ALL",
-            ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT.value,
-            ReincarcerationRecidivismMetricType.REINCARCERATION_RATE.value,
-        ],
-        help="A list of the types of metric to calculate.",
-        default={"ALL"},
-    )
-    return parser
-
-
-def run(
-    apache_beam_pipeline_options: PipelineOptions,
-    data_input: str,
-    reference_view_input: str,
-    static_reference_input: str,
-    output: str,
-    metric_types: List[str],
-    state_code: str,
-    person_filter_ids: Optional[List[int]],
-) -> None:
-    """Runs the recidivism calculation pipeline."""
-
-    # Workaround to load SQLAlchemy objects at start of pipeline. This is
-    # necessary because the BuildRootEntity function tries to access attributes
-    # of relationship properties on the SQLAlchemy room_schema_class before they
-    # have been loaded. However, if *any* SQLAlchemy objects have been
-    # instantiated, then the relationship properties are loaded and their
-    # attributes can be successfully accessed.
-    _ = schema.StatePerson()
-
-    apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = True
-
-    # Get pipeline job details
-    all_pipeline_options = apache_beam_pipeline_options.get_all_options()
-    project_id = all_pipeline_options["project"]
-
-    if project_id is None:
-        raise ValueError(f"No project set in pipeline options: {all_pipeline_options}")
-
-    if state_code is None:
-        raise ValueError("No state_code set for pipeline")
-
-    input_dataset = project_id + "." + data_input
-    reference_dataset = project_id + "." + reference_view_input
-    static_reference_dataset = project_id + "." + static_reference_input
-
-    person_id_filter_set = set(person_filter_ids) if person_filter_ids else None
-
-    with beam.Pipeline(options=apache_beam_pipeline_options) as p:
-        # Get StatePersons
-        persons = p | "Load Persons" >> BuildRootEntity(
+    def execute_pipeline(
+        self,
+        pipeline: beam.Pipeline,
+        all_pipeline_options: Dict[str, Any],
+        state_code: str,
+        input_dataset: str,
+        reference_dataset: str,
+        static_reference_dataset: str,
+        metric_types: List[str],
+        person_id_filter_set: Optional[Set[int]],
+        _calculation_month_count: int = -1,
+        _calculation_end_month: Optional[str] = None,
+    ) -> beam.Pipeline:
+        persons = pipeline | "Load Persons" >> BuildRootEntity(
             dataset=input_dataset,
             root_entity_class=entities.StatePerson,
             unifying_id_field=entities.StatePerson.get_class_id_name(),
@@ -331,18 +253,22 @@ def run(
         )
 
         # Get StateIncarcerationPeriods
-        incarceration_periods = p | "Load IncarcerationPeriods" >> BuildRootEntity(
-            dataset=input_dataset,
-            root_entity_class=entities.StateIncarcerationPeriod,
-            unifying_id_field=entities.StatePerson.get_class_id_name(),
-            build_related_entities=False,
-            unifying_id_field_filter_set=person_id_filter_set,
-            state_code=state_code,
+        incarceration_periods = (
+            pipeline
+            | "Load IncarcerationPeriods"
+            >> BuildRootEntity(
+                dataset=input_dataset,
+                root_entity_class=entities.StateIncarcerationPeriod,
+                unifying_id_field=entities.StatePerson.get_class_id_name(),
+                build_related_entities=False,
+                unifying_id_field_filter_set=person_id_filter_set,
+                state_code=state_code,
+            )
         )
 
         # Bring in the table that associates people and their county of residence
         person_id_to_county_kv = (
-            p
+            pipeline
             | "Load person_id_to_county_kv"
             >> ImportTableAsKVTuples(
                 dataset_id=reference_dataset,
@@ -361,7 +287,7 @@ def run(
         } | "Group StatePerson to StateIncarcerationPeriods" >> beam.CoGroupByKey()
 
         state_race_ethnicity_population_counts = (
-            p
+            pipeline
             | "Load state_race_ethnicity_population_counts"
             >> ImportTable(
                 dataset_id=static_reference_dataset,
@@ -391,9 +317,6 @@ def run(
             >> beam.ParDo(ExtractPersonReleaseEventsMetadata())
         )
 
-        # Get pipeline job details for accessing job_id
-        all_pipeline_options = apache_beam_pipeline_options.get_all_options()
-
         # Add timestamp for local jobs
         job_timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S.%f")
         all_pipeline_options["job_timestamp"] = job_timestamp
@@ -409,43 +332,4 @@ def run(
                 pipeline_options=all_pipeline_options, metric_types=metric_types_set
             )
         )
-
-        if person_id_filter_set:
-            logging.warning(
-                "Non-empty person filter set - returning before writing metrics."
-            )
-            return
-
-        # Convert the metrics into a format that's writable to BQ
-        writable_metrics = (
-            recidivism_metrics
-            | "Convert to dict to be written to BQ"
-            >> beam.ParDo(RecidivizMetricWritableDict()).with_outputs(
-                ReincarcerationRecidivismMetricType.REINCARCERATION_RATE.value,
-                ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT.value,
-            )
-        )
-
-        # Write the recidivism metrics to the output tables in BigQuery
-        rates_table_id = DATAFLOW_METRICS_TO_TABLES[ReincarcerationRecidivismRateMetric]
-        counts_table_id = DATAFLOW_METRICS_TO_TABLES[
-            ReincarcerationRecidivismCountMetric
-        ]
-
-        _ = (
-            writable_metrics.REINCARCERATION_RATE
-            | f"Write rate metrics to BQ table: {rates_table_id}"
-            >> WriteAppendToBigQuery(
-                output_table=rates_table_id,
-                output_dataset=output,
-            )
-        )
-
-        _ = (
-            writable_metrics.REINCARCERATION_COUNT
-            | f"Write count metrics to BQ table: {counts_table_id}"
-            >> WriteAppendToBigQuery(
-                output_table=counts_table_id,
-                output_dataset=output,
-            )
-        )
+        return recidivism_metrics
