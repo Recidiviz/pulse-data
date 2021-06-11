@@ -131,7 +131,8 @@ class UsTnController(CsvGcsfsDirectIngestController):
     ) -> None:
         """Set the person's ethnicity, given their race.
 
-        In TN, `Hispanic` is included in their race columns. So parse the race to get the corresponding ethnicity value."""
+        In TN, `Hispanic` is included in their race columns. So parse the race to get the corresponding
+        ethnicity value."""
         race = row.get("Race", None)
         if race:
             ethnicity = self.get_enum_overrides().parse(race, Ethnicity)
@@ -144,3 +145,8 @@ class UsTnController(CsvGcsfsDirectIngestController):
                             extracted_object,
                             "state_person_ethnicities",
                         )
+                        # If the parsed ethnicity is `HISPANIC`, then clear the race. There is no ethnicity column in
+                        # TN, and one can have only 1 race in their system. So if the raw race value corresponds with
+                        # `HISPANIC`, then there no other race that can be associated with the person.
+                        if ethnicity == Ethnicity.HISPANIC:
+                            extracted_object.state_person_races.clear()
