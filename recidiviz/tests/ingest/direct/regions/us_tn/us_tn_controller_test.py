@@ -55,7 +55,7 @@ class TestUsTnController(BaseDirectIngestControllerTests):
     def schema_type(cls) -> SchemaType:
         return SchemaType.STATE
 
-    def test_populate_data_OffenderAndAssociatedStaff(self) -> None:
+    def test_populate_data_OffenderName(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(
@@ -108,6 +108,22 @@ class TestUsTnController(BaseDirectIngestControllerTests):
                     ],
                     gender="F",
                     birthdate="1947-01-11 00:00:00",
+                ),
+                StatePerson(
+                    state_person_id="00000004",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="00000004", id_type=US_TN_DOC
+                        )
+                    ],
+                    given_names="FIRST4",
+                    middle_names="MIDDLE4",
+                    surname="LAST4",
+                    state_person_ethnicities=[
+                        StatePersonEthnicity(ethnicity="HISPANIC")
+                    ],
+                    gender="M",
+                    birthdate="1994-03-12 00:00:00",
                 ),
             ]
         )
@@ -168,11 +184,22 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             ethnicity=Ethnicity.NOT_HISPANIC,
         )
 
-        expected_people = [
-            person_1,
-            person_2,
-            person_3,
-        ]
+        person_4 = entities.StatePerson.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            full_name='{"given_names": "FIRST4", "middle_names": "MIDDLE4", "surname": "LAST4"}',
+            gender=Gender.MALE,
+            gender_raw_text="M",
+            birthdate=datetime.date(year=1994, month=3, day=12),
+            birthdate_inferred_from_age=False,
+        )
+        _add_external_id_to_person(person_4, "00000004")
+        _add_ethnicity_to_person(
+            person_4,
+            ethnicity_raw_text="HISPANIC",
+            ethnicity=Ethnicity.HISPANIC,
+        )
+
+        expected_people = [person_1, person_2, person_3, person_4]
 
         # Act
         self._run_ingest_job_for_filename("OffenderName")
