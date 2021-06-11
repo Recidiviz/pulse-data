@@ -27,23 +27,26 @@ This can be run on-demand whenever locally with the following command:
 import argparse
 import logging
 import sys
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 from recidiviz.big_query.view_update_manager import (
     create_dataset_and_deploy_views_for_view_builders,
     rematerialize_views_for_namespace,
 )
-from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.params import str_to_bool
 from recidiviz.view_registry.dataset_overrides import (
     dataset_overrides_for_deployed_view_datasets,
 )
-from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
-from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.utils.params import str_to_bool
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
+from recidiviz.view_registry.deployed_views import (
+    CROSS_PROJECT_VIEW_BUILDERS,
+    DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE,
+)
 
 
 def load_views_to_sandbox(
@@ -61,9 +64,13 @@ def load_views_to_sandbox(
         builders_to_update = [
             builder
             for builder in builders
-            if dataflow_dataset_override is not None
-            # Only update views in the DATAFLOW_METRICS_MATERIALIZED_DATASET if the dataflow_dataset_override is set
-            or builder.dataset_id != DATAFLOW_METRICS_MATERIALIZED_DATASET
+            if (
+                dataflow_dataset_override is not None
+                # Only update views in the DATAFLOW_METRICS_MATERIALIZED_DATASET if the dataflow_dataset_override is set
+                or builder.dataset_id != DATAFLOW_METRICS_MATERIALIZED_DATASET
+            )
+            # Don't load views that query from multiple projects
+            and builder not in CROSS_PROJECT_VIEW_BUILDERS
         ]
 
         if refresh_materialized_tables_only:
