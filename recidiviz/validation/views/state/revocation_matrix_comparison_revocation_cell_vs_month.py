@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
+# TODO(#1124) Remove this validation once FE no longer use revocations_matrix_by_month
 """A view which provides a comparison of total revocation counts summed across all dimensional breakdowns
 between two views in the Revocation Analysis Matrix tool: the grid cells and the month-over-month chart."""
 

@@ -40,6 +40,9 @@ from recidiviz.ingest.views.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as INGEST_METADATA_VIEW_BUILDERS,
 )
 from recidiviz.validation.views.view_config import (
+    CROSS_PROJECT_VALIDATION_VIEW_BUILDERS,
+)
+from recidiviz.validation.views.view_config import (
     METADATA_VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as VALIDATION_METADATA_VIEW_BUILDERS,
 )
 from recidiviz.validation.views.view_config import (
@@ -67,3 +70,8 @@ DEPLOYED_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     for builder_list in DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.values()
     for builder in builder_list
 ]
+
+
+# Full list of all deployed view builders that query from both production and staging
+# views.
+CROSS_PROJECT_VIEW_BUILDERS = CROSS_PROJECT_VALIDATION_VIEW_BUILDERS

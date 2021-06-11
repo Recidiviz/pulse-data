@@ -34,11 +34,15 @@ from recidiviz.big_query.big_query_view import (
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestViewBuilder,
 )
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.view_registry.dataset_overrides import (
     dataset_overrides_for_view_builders,
 )
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
-from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
+from recidiviz.view_registry.deployed_views import (
+    CROSS_PROJECT_VIEW_BUILDERS,
+    DEPLOYED_VIEW_BUILDERS,
+)
 from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 _PROJECT_ID = "fake-recidiviz-project"
@@ -553,3 +557,30 @@ class ViewManagerTest(unittest.TestCase):
                 VIEW_SOURCE_TABLE_DATASETS,
                 f"Found view [{view_builder.view_id}] in source-table-only dataset [{view_builder.dataset_id}]",
             )
+
+    def test_all_cross_project_views_in_cross_project_view_builders(self) -> None:
+        """Tests that all views that query from both production and staging
+        environments are listed in CROSS_PROJECT_VIEW_BUILDERS."""
+
+        with patch.object(
+            BigQueryTableChecker, "_table_has_column"
+        ) as mock_table_has_column, patch.object(
+            BigQueryTableChecker, "_table_exists"
+        ) as mock_table_exists:
+            mock_table_has_column.return_value = True
+            mock_table_exists.return_value = True
+
+            for view_builder in DEPLOYED_VIEW_BUILDERS:
+                view_query = view_builder.build().view_query
+
+                if (
+                    GCP_PROJECT_STAGING in view_query
+                    and GCP_PROJECT_PRODUCTION in view_query
+                ):
+                    self.assertIn(
+                        view_builder,
+                        CROSS_PROJECT_VIEW_BUILDERS,
+                        f"Found view {view_builder.dataset_id}.{view_builder.view_id} "
+                        "that queries from both production and staging projects but "
+                        "is not listed in CROSS_PROJECT_VIEW_BUILDERS.",
+                    )
