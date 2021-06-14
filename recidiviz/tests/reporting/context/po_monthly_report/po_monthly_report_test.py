@@ -24,15 +24,11 @@ from copy import deepcopy
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
-from recidiviz.reporting.context.po_monthly_report.constants import DEFAULT_MESSAGE_BODY
+from recidiviz.reporting.context.po_monthly_report.constants import (
+    DEFAULT_MESSAGE_BODY_KEY,
+)
 from recidiviz.reporting.context.po_monthly_report.context import PoMonthlyReportContext
 from recidiviz.reporting.recipient import Recipient
-from recidiviz.tests.ingest.fixtures import as_string_from_relative_path
-
-# The path is defined relative to recidiviz/tests/ingest, hence the specific path structure below:
-_PROPERTIES = as_string_from_relative_path(
-    "../../reporting/context/po_monthly_report/properties.json"
-)
 
 FIXTURE_FILE = "po_monthly_report_data_fixture.json"
 
@@ -249,7 +245,7 @@ class PoMonthlyReportContextTests(TestCase):
         expected[
             "static_image_path"
         ] = "http://123.456.7.8/US_ID/po_monthly_report/static"
-        expected["message_body"] = DEFAULT_MESSAGE_BODY
+        expected["message_body"] = context.properties[DEFAULT_MESSAGE_BODY_KEY]
         expected["review_month"] = "May"
         expected["greeting"] = "Hey there, Christopher!"
 
@@ -329,6 +325,9 @@ class PoMonthlyReportContextTests(TestCase):
             "You improved from last month across 4 metrics and out-performed other "
             "officers like you across 5 metrics."
         )
+        expected[
+            "learn_more_link"
+        ] = "https://docs.google.com/document/d/1kgG5LiIrFQaBupHYfoIwo59TCmYH5f_aIpRzGrtOkhU/edit#heading=h.r6s5tyc7ut6c"
 
         for key, value in expected.items():
             if key not in actual:
