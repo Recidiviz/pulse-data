@@ -74,7 +74,7 @@ resource "google_bigquery_table" "validation_results" {
     {
         "name": "validation_category",
         "type": "STRING",
-        "mode": "REQUIRED"
+        "mode": "NULLABLE"
     },
     {
         "name": "was_successful",
