@@ -32,6 +32,7 @@ from typing import Dict, List
 from jinja2 import Environment, FileSystemLoader, Template
 
 import recidiviz.reporting.email_reporting_utils as utils
+from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting.context.context_utils import (
     align_columns,
     format_date,
@@ -48,6 +49,7 @@ from recidiviz.reporting.context.po_monthly_report.constants import (
     DEFAULT_MESSAGE_BODY_KEY,
     TECHNICAL_REVOCATIONS,
     TOTAL_REVOCATIONS,
+    ReportType,
 )
 from recidiviz.reporting.context.po_monthly_report.state_utils.po_monthly_report_metrics_delegate_factory import (
     PoMonthlyReportMetricsDelegateFactory,
@@ -63,9 +65,9 @@ _AVERAGE_VALUES_SIGNIFICANT_DIGITS = 3
 class PoMonthlyReportContext(ReportContext):
     """Report context for the PO Monthly Report."""
 
-    def __init__(self, state_code: str, recipient: Recipient):
+    def __init__(self, state_code: StateCode, recipient: Recipient):
         self.metrics_delegate = PoMonthlyReportMetricsDelegateFactory.build(
-            region_code=state_code
+            state_code=state_code
         )
         super().__init__(state_code, recipient)
         self.recipient_data = recipient.data
@@ -81,8 +83,8 @@ class PoMonthlyReportContext(ReportContext):
     def get_required_recipient_data_fields(self) -> List[str]:
         return self.metrics_delegate.required_recipient_data_fields
 
-    def get_report_type(self) -> str:
-        return "po_monthly_report"
+    def get_report_type(self) -> ReportType:
+        return ReportType.POMonthlyReport
 
     def get_properties_filepath(self) -> str:
         """Returns path to the properties.json, assumes it is in the same directory as the context."""
@@ -505,7 +507,7 @@ class PoMonthlyReportContext(ReportContext):
 
 if __name__ == "__main__":
     context = PoMonthlyReportContext(
-        "US_ID",
+        StateCode.US_ID,
         Recipient.from_report_json(
             {
                 utils.KEY_EMAIL_ADDRESS: "test@recidiviz.org",

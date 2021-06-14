@@ -31,8 +31,10 @@ from flask import Blueprint, request
 
 import recidiviz.reporting.data_retrieval as data_retrieval
 import recidiviz.reporting.email_delivery as email_delivery
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.results import MultiRequestResult
 from recidiviz.reporting import email_reporting_utils
+from recidiviz.reporting.context.po_monthly_report.constants import ReportType
 from recidiviz.reporting.email_reporting_utils import validate_email_address
 from recidiviz.reporting.region_codes import InvalidRegionCodeException
 from recidiviz.utils.auth.gae import requires_gae_auth
@@ -74,8 +76,8 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
         Nothing.  Catch everything so that we can always return a response to the request
     """
     try:
-        state_code = get_only_str_param_value("state_code", request.args)
-        report_type = get_only_str_param_value("report_type", request.args)
+        raw_state_code = get_only_str_param_value("state_code", request.args)
+        report_type = ReportType(get_only_str_param_value("report_type", request.args))
         test_address = get_only_str_param_value("test_address", request.args)
         region_code = get_only_str_param_value("region_code", request.args)
         raw_email_allowlist = get_only_str_param_value("email_allowlist", request.args)
@@ -97,16 +99,22 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
         logging.error(error)
         return str(error), HTTPStatus.BAD_REQUEST
 
-    if not state_code or not report_type:
+    if not raw_state_code or not report_type:
         msg = "Request does not include 'state_code' and/or 'report_type' parameters"
         logging.error(msg)
         return msg, HTTPStatus.BAD_REQUEST
 
     # Normalize query param inputs
-    state_code = state_code.upper()
     if test_address == "":
         test_address = None
     region_code = None if not region_code else region_code.upper()
+
+    try:
+        state_code = StateCode(raw_state_code.upper())
+    except ValueError:
+        msg = f"Invalid parameter: state_code={raw_state_code}"
+        logging.error(msg)
+        return msg, HTTPStatus.BAD_REQUEST
 
     try:
         batch_id = email_reporting_utils.generate_batch_id()
@@ -134,7 +142,7 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
     except InvalidRegionCodeException:
         return "Invalid region code provided", HTTPStatus.BAD_REQUEST
     else:
-        new_batch_text = f"New batch started for {state_code} and {report_type}. Batch id = {batch_id}."
+        new_batch_text = f"New batch started for {state_code.value} and {report_type}. Batch id = {batch_id}."
         test_address_text = (
             f"Emails generated for test address: {test_address}" if test_address else ""
         )
@@ -187,7 +195,7 @@ def deliver_emails_for_batch() -> Tuple[str, HTTPStatus]:
 
     try:
         batch_id = get_only_str_param_value("batch_id", request.args)
-        state_code = get_only_str_param_value("state_code", request.args)
+        raw_state_code = get_only_str_param_value("state_code", request.args)
         review_year = get_int_param_value("review_year", request.args)
         review_month = get_int_param_value("review_month", request.args)
         redirect_address = get_only_str_param_value("redirect_address", request.args)
@@ -217,11 +225,16 @@ def deliver_emails_for_batch() -> Tuple[str, HTTPStatus]:
         logging.error(msg)
         return msg, HTTPStatus.BAD_REQUEST
 
-    if not state_code:
+    if not raw_state_code:
         msg = "Query parameter 'state_code' not received"
         logging.error(msg)
         return msg, HTTPStatus.BAD_REQUEST
-    state_code = state_code.upper()
+    try:
+        state_code = StateCode(raw_state_code.upper())
+    except ValueError:
+        msg = f"Invalid query parameter state_code={raw_state_code} provided"
+        logging.error(msg)
+        return msg, HTTPStatus.BAD_REQUEST
 
     if not review_year:
         msg = "Query parameter 'review_year' not received"

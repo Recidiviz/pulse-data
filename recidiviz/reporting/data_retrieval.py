@@ -23,16 +23,18 @@ for use in the emails.
 
 import json
 import logging
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import recidiviz.reporting.email_generation as email_generation
 import recidiviz.reporting.email_reporting_utils as utils
-from recidiviz.common.results import MultiRequestResult
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
+from recidiviz.common.results import MultiRequestResult
 from recidiviz.reporting.context.available_context import get_report_context
+from recidiviz.reporting.context.po_monthly_report.constants import ReportType
 from recidiviz.reporting.recipient import Recipient
-from recidiviz.reporting.region_codes import InvalidRegionCodeException, REGION_CODES
+from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
 
 
 def filter_recipients(
@@ -60,8 +62,8 @@ def filter_recipients(
 
 
 def start(
-    state_code: str,
-    report_type: str,
+    state_code: StateCode,
+    report_type: ReportType,
     batch_id: Optional[str] = None,
     test_address: Optional[str] = None,
     region_code: Optional[str] = None,
@@ -128,6 +130,10 @@ def start(
     failed_email_addresses: List[str] = []
     succeeded_email_addresses: List[str] = []
 
+    # Currently this is only used to pass review month & year, but when we need to add
+    # more, the way that we do this should likely be changed/refactored.
+    metadata: Dict[str, str] = {}
+
     for recipient in recipients:
         try:
             report_context = get_report_context(state_code, report_type, recipient)
@@ -137,12 +143,24 @@ def start(
             logging.error("Failed to generate report email for %s %s", recipient, e)
         else:
             succeeded_email_addresses.append(recipient.email_address)
+            if report_type == ReportType.POMonthlyReport and len(metadata) == 0:
+                metadata["review_year"] = recipient.data["review_year"]
+                metadata["review_month"] = recipient.data["review_month"]
+
+    _write_batch_metadata(
+        batch_id=batch_id,
+        state_code=state_code,
+        report_type=report_type,
+        **metadata,
+    )
     return MultiRequestResult(
         successes=succeeded_email_addresses, failures=failed_email_addresses
     )
 
 
-def retrieve_data(state_code: str, report_type: str, batch_id: str) -> List[Recipient]:
+def retrieve_data(
+    state_code: StateCode, report_type: ReportType, batch_id: str
+) -> List[Recipient]:
     """Retrieves the data for email generation of the given report type for the given state.
 
     Get the data from Cloud Storage and return it in a list of dictionaries. Saves the data file into an archive
@@ -161,11 +179,24 @@ def retrieve_data(state_code: str, report_type: str, batch_id: str) -> List[Reci
         Non-recoverable errors that should stop execution. Attempts to catch and handle errors that are recoverable.
         Provides logging for debug purposes whenever possible.
     """
+    if report_type == ReportType.POMonthlyReport:
+        return _retrieve_data_for_po_monthly_report(state_code, batch_id)
+    if report_type == ReportType.TopOpportunities:
+        # TODO(#7790): Fetch these recipients.
+        return []
+
+    raise ValueError("unexpected report type for retrieving data")
+
+
+def _retrieve_data_for_po_monthly_report(
+    state_code: StateCode, batch_id: str
+) -> List[Recipient]:
+    """Retrieves the data if the report type is POMonthlyReport."""
     data_bucket = utils.get_data_storage_bucket_name()
     data_filename = ""
     gcs_file_system = GcsfsFactory.build()
     try:
-        data_filename = utils.get_data_filename(state_code, report_type)
+        data_filename = utils.get_data_filename(state_code, ReportType.POMonthlyReport)
         path = GcsfsFilePath.from_absolute_path(f"gs://{data_bucket}/{data_filename}")
         file_contents = gcs_file_system.download_as_string(path)
     except BaseException:
@@ -217,3 +248,21 @@ def retrieve_data(state_code: str, report_type: str, batch_id: str) -> List[Reci
         )
         for recipient in recipient_data
     ]
+
+
+def _write_batch_metadata(
+    *,
+    batch_id: str,
+    state_code: StateCode,
+    report_type: ReportType,
+    **metadata_fields: str,
+) -> None:
+    gcsfs = GcsfsFactory.build()
+    archive_path = GcsfsFilePath.from_absolute_path(
+        f"gs://{utils.get_email_content_bucket_name()}/{state_code.value}/{batch_id}/metadata.json"
+    )
+    gcsfs.upload_from_string(
+        path=archive_path,
+        contents=json.dumps({**metadata_fields, "report_type": report_type.value}),
+        content_type="text/json",
+    )

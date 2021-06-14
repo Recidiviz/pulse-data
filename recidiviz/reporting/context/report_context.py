@@ -24,6 +24,8 @@ from typing import List
 from jinja2 import Template
 
 import recidiviz.reporting.email_reporting_utils as utils
+from recidiviz.common.constants.states import StateCode
+from recidiviz.reporting.context.po_monthly_report.constants import ReportType
 from recidiviz.reporting.recipient import Recipient
 
 
@@ -31,7 +33,7 @@ class ReportContext(ABC):
     """Defines the context for generation and delivery of a single email report to a single recipient,
     for a particular report type."""
 
-    def __init__(self, state_code: str, recipient: Recipient):
+    def __init__(self, state_code: StateCode, recipient: Recipient):
         self.state_code = state_code
         self.recipient = recipient
         self.prepared_data: dict = {}
@@ -62,7 +64,7 @@ class ReportContext(ABC):
             )
 
     @abstractmethod
-    def get_report_type(self) -> str:
+    def get_report_type(self) -> ReportType:
         """Returns the report type for this report."""
 
     @property

@@ -24,8 +24,10 @@ from copy import deepcopy
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting.context.po_monthly_report.constants import (
     DEFAULT_MESSAGE_BODY_KEY,
+    ReportType,
 )
 from recidiviz.reporting.context.po_monthly_report.context import PoMonthlyReportContext
 from recidiviz.reporting.recipient import Recipient
@@ -48,8 +50,8 @@ class PoMonthlyReportContextTests(TestCase):
             self.recipient.data["batch_id"] = "20201105123033"
 
     def test_get_report_type(self) -> None:
-        context = PoMonthlyReportContext("US_ID", self.recipient)
-        self.assertEqual("po_monthly_report", context.get_report_type())
+        context = PoMonthlyReportContext(StateCode.US_ID, self.recipient)
+        self.assertEqual(ReportType.POMonthlyReport, context.get_report_type())
 
     def test_congratulations_text_only_improved_from_last_month(self) -> None:
         """Test that the congratulations text looks correct if only the goals were met for the last month."""
@@ -62,7 +64,7 @@ class PoMonthlyReportContextTests(TestCase):
             "crime_revocations": "4",
         }
         recipient = self.recipient.create_derived_recipient(recipient_data)
-        context = PoMonthlyReportContext("US_ID", recipient)
+        context = PoMonthlyReportContext(StateCode.US_ID, recipient)
         actual = context.get_prepared_data()
         self.assertEqual(
             "You improved from last month for 1 metric.", actual["congratulations_text"]
@@ -78,7 +80,7 @@ class PoMonthlyReportContextTests(TestCase):
             "crime_revocations": "4",
         }
         recipient = self.recipient.create_derived_recipient(recipient_data)
-        context = PoMonthlyReportContext("US_ID", recipient)
+        context = PoMonthlyReportContext(StateCode.US_ID, recipient)
         actual = context.get_prepared_data()
         self.assertEqual(
             "You out-performed other officers like you for 1 metric.",
@@ -97,7 +99,7 @@ class PoMonthlyReportContextTests(TestCase):
             "crime_revocations": "4",
         }
         recipient = self.recipient.create_derived_recipient(recipient_data)
-        context = PoMonthlyReportContext("US_ID", recipient)
+        context = PoMonthlyReportContext(StateCode.US_ID, recipient)
         actual = context.get_prepared_data()
         self.assertEqual("", actual["congratulations_text"])
         self.assertEqual("none", actual["display_congratulations"])
@@ -160,7 +162,7 @@ class PoMonthlyReportContextTests(TestCase):
 
         recipient = self.recipient.create_derived_recipient(recipient_data)
 
-        context = PoMonthlyReportContext("US_ID", recipient)
+        context = PoMonthlyReportContext(StateCode.US_ID, recipient)
         actual = context.get_prepared_data()
         expected = textwrap.dedent(
             """\
@@ -217,7 +219,7 @@ class PoMonthlyReportContextTests(TestCase):
             ]
         }
         recipient = self.recipient.create_derived_recipient(recipient_data)
-        context = PoMonthlyReportContext("US_ID", recipient)
+        context = PoMonthlyReportContext(StateCode.US_ID, recipient)
         actual = context.get_prepared_data()
         expected = textwrap.dedent(
             """\
@@ -235,7 +237,7 @@ class PoMonthlyReportContextTests(TestCase):
         self.assertEqual(expected, actual["attachment_content"])
 
     def test_prepare_for_generation(self) -> None:
-        context = PoMonthlyReportContext("US_ID", self.recipient)
+        context = PoMonthlyReportContext(StateCode.US_ID, self.recipient)
         actual = context.get_prepared_data()
         red = "#A43939"
         gray = "#7D9897"
@@ -365,7 +367,7 @@ class PoMonthlyReportContextTests(TestCase):
                 "earned_discharges_state_average": 0.0,
             }
         )
-        context = PoMonthlyReportContext("US_PA", recipient)
+        context = PoMonthlyReportContext(StateCode.US_PA, recipient)
         actual = context.get_prepared_data()
 
         for key, value in expected.items():

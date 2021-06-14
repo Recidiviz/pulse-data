@@ -25,14 +25,15 @@ and conform to the following:
 3) Each file name is [email address].html
 4) The contents of the file are ready to be sent with no further modification
 """
-import re
 import logging
+import re
 from datetime import date
-from typing import Dict, Optional, List
+from typing import Dict, List, Optional
 
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.results import MultiRequestResult
 from recidiviz.reporting.context.po_monthly_report.constants import (
     DEFAULT_EMAIL_SUBJECT,
@@ -42,7 +43,7 @@ from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
 
 def deliver(
     batch_id: str,
-    state_code: str,
+    state_code: StateCode,
     report_date: date,
     redirect_address: Optional[str] = None,
     cc_addresses: Optional[List[str]] = None,

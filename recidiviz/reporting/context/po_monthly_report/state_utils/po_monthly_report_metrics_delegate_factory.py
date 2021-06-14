@@ -16,6 +16,7 @@
 # =============================================================================
 """Contains the factory class for creating PoMonthlyReportMetricsDelegate objects"""
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting.context.po_monthly_report.state_utils.po_monthly_report_metrics_delegate import (
     PoMonthlyReportMetricsDelegate,
 )
@@ -29,9 +30,9 @@ from recidiviz.reporting.context.po_monthly_report.state_utils.us_pa.us_pa_metri
 
 class PoMonthlyReportMetricsDelegateFactory:
     @classmethod
-    def build(cls, *, region_code: str) -> PoMonthlyReportMetricsDelegate:
-        if region_code.upper() == "US_ID":
+    def build(cls, *, state_code: StateCode) -> PoMonthlyReportMetricsDelegate:
+        if state_code == StateCode.US_ID:
             return UsIdMetricsDelegate()
-        if region_code.upper() == "US_PA":
+        if state_code == StateCode.US_PA:
             return UsPaMetricsDelegate()
-        raise ValueError(f"Unexpected region_code provided: {region_code}")
+        raise ValueError(f"Unexpected state_code provided: {state_code}")

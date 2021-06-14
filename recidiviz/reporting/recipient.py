@@ -16,31 +16,38 @@
 # =============================================================================
 
 """Data class for report recipients"""
+import copy
+
 import attr
 
 import recidiviz.reporting.email_reporting_utils as utils
+from recidiviz.common.constants.states import StateCode
 
 
 @attr.s
 class Recipient:
     email_address: str = attr.ib()
-    state_code: str = attr.ib()
+    state_code: StateCode = attr.ib()
     district: str = attr.ib()
 
     # Includes various fields for report rendering
     data: dict = attr.ib(default=attr.Factory(dict))
 
     def create_derived_recipient(self, new_data: dict) -> "Recipient":
-        """ Return a new Recipient, derived from this instance """
+        """Return a new Recipient, derived from this instance"""
         extended_data = {**self.data, **new_data}
 
         return Recipient.from_report_json(extended_data)
 
     @staticmethod
     def from_report_json(report_json: dict) -> "Recipient":
+        saved_report_json = copy.deepcopy(report_json)
+        saved_report_json[utils.KEY_STATE_CODE] = StateCode(
+            report_json[utils.KEY_STATE_CODE]
+        )
         return Recipient(
-            email_address=report_json[utils.KEY_EMAIL_ADDRESS],
-            state_code=report_json[utils.KEY_STATE_CODE],
-            district=report_json[utils.KEY_DISTRICT],
-            data=report_json,
+            email_address=saved_report_json[utils.KEY_EMAIL_ADDRESS],
+            state_code=saved_report_json[utils.KEY_STATE_CODE],
+            district=saved_report_json[utils.KEY_DISTRICT],
+            data=saved_report_json,
         )

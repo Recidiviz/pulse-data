@@ -18,9 +18,10 @@
 import datetime
 from typing import Dict
 from unittest import TestCase
-from unittest.mock import patch, MagicMock, Mock, call
+from unittest.mock import MagicMock, Mock, call, patch
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting import email_delivery
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
@@ -34,7 +35,7 @@ class EmailDeliveryTest(TestCase):
         self.to_address = "tester_123@one.domain.org"
         self.redirect_address = "redirect@test.org"
         self.mock_files = {f"{self.to_address}": "<html><body></html>"}
-        self.state_code = "US_XX"
+        self.state_code = StateCode.US_XX
         self.report_date = datetime.date(year=2021, month=5, day=31)
         self.attachment_title = "2021-05 Recidiviz Monthly Report - Client Details.txt"
 
@@ -225,8 +226,9 @@ class EmailDeliveryTest(TestCase):
         self.mock_sendgrid_client.send_message.return_value = False
         result = email_delivery.deliver(
             self.batch_id,
-            self.redirect_address,
+            self.state_code,
             self.report_date,
+            self.redirect_address,
         )
         self.assertEqual(len(result.failures), 1)
         self.assertEqual(len(result.successes), 0)
