@@ -25,9 +25,7 @@ To generate a sample output for the PO Monthly Report email template, just run:
 
 python -m recidiviz.reporting.context.po_monthly_report.context
 """
-
 import copy
-import json
 import os
 from typing import Dict, List
 
@@ -47,7 +45,7 @@ from recidiviz.reporting.context.context_utils import (
 )
 from recidiviz.reporting.context.po_monthly_report.constants import (
     CRIME_REVOCATIONS,
-    DEFAULT_MESSAGE_BODY,
+    DEFAULT_MESSAGE_BODY_KEY,
     TECHNICAL_REVOCATIONS,
     TOTAL_REVOCATIONS,
 )
@@ -56,6 +54,8 @@ from recidiviz.reporting.context.po_monthly_report.state_utils.po_monthly_report
 )
 from recidiviz.reporting.context.report_context import ReportContext
 from recidiviz.reporting.recipient import Recipient
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 _AVERAGE_VALUES_SIGNIFICANT_DIGITS = 3
 
@@ -73,9 +73,6 @@ class PoMonthlyReportContext(ReportContext):
         self.jinja_env = Environment(
             loader=FileSystemLoader(self._get_context_templates_folder())
         )
-
-        with open(self.get_properties_filepath()) as properties_file:
-            self.properties = json.loads(properties_file.read())
 
     @property
     def attachment_template(self) -> Template:
@@ -105,9 +102,12 @@ class PoMonthlyReportContext(ReportContext):
         self.prepared_data["greeting"] = format_greeting(
             self.recipient_data["officer_given_name"]
         )
+        self.prepared_data["learn_more_link"] = self.properties["learn_more_link"]
 
         if "message_body_override" not in self.prepared_data:
-            self.prepared_data["message_body"] = DEFAULT_MESSAGE_BODY
+            self.prepared_data["message_body"] = self.properties[
+                DEFAULT_MESSAGE_BODY_KEY
+            ]
 
         self._convert_month_to_name("review_month")
 
@@ -504,17 +504,57 @@ class PoMonthlyReportContext(ReportContext):
 
 
 if __name__ == "__main__":
-    jinja_env = Environment(
-        loader=FileSystemLoader(
-            os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
-        )
+    context = PoMonthlyReportContext(
+        "US_ID",
+        Recipient.from_report_json(
+            {
+                utils.KEY_EMAIL_ADDRESS: "test@recidiviz.org",
+                utils.KEY_STATE_CODE: "US_ID",
+                utils.KEY_DISTRICT: "US_ID_D3",
+                "pos_discharges": 0,
+                "earned_discharges": 0,
+                "supervision_downgrades": 0,
+                "technical_revocations": 0,
+                "crime_revocations": 0,
+                "absconsions": 0,
+                "pos_discharges_district_average": 0,
+                "pos_discharges_state_average": 0,
+                "earned_discharges_district_average": 0,
+                "earned_discharges_state_average": 0,
+                "supervision_downgrades_district_average": 0,
+                "supervision_downgrades_state_average": 0,
+                "technical_revocations_district_average": 0,
+                "technical_revocations_state_average": 0,
+                "crime_revocations_district_average": 0,
+                "crime_revocations_state_average": 0,
+                "absconsions_district_average": 0,
+                "absconsions_state_average": 0,
+                "pos_discharges_last_month": 0,
+                "earned_discharges_last_month": 0,
+                "supervision_downgrades_last_month": 0,
+                "technical_revocations_last_month": 0,
+                "crime_revocations_last_month": 0,
+                "absconsions_last_month": 0,
+                "pos_discharges_clients": 0,
+                "earned_discharges_clients": 0,
+                "supervision_downgrades_clients": 0,
+                "absconsions_clients": 0,
+                "assessments_out_of_date_clients": 0,
+                "facetoface_out_of_date_clients": 0,
+                "revocations_clients": 0,
+                "assessments": 0,
+                "assessments_percent": 0,
+                "facetoface": 0,
+                "facetoface_percent": 0,
+                "officer_external_id": 0,
+                "officer_given_name": "Clementine",
+                "review_month": 4,
+            }
+        ),
     )
 
-    template = jinja_env.get_template("po_monthly_report/email.html.jinja2")
-    print(
-        template.render(
-            greeting="Hi Clementine,",
-            message_body="This is an example message body.",
-            static_image_path="./recidiviz/reporting/context/static",
-        )
-    )
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        prepared_data = context.prepare_for_generation()
+        prepared_data["static_image_path"] = "./recidiviz/reporting/context/static"
+
+    print(context.html_template.render(**prepared_data))

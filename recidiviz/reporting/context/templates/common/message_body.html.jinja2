@@ -13,18 +13,20 @@
                   <td class="em_h12" height="24" style="height: 24px;">&nbsp;</td>
                 </tr>
                 <tr>
-                  <td valign="top" align="center">
-                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                  <td valign="top" align="left">
+                    <table {% if learn_more_link %}width="100%" {% endif %}border="0" cellspacing="0" cellpadding="0">
                       <tr>
                         <td class="em_head_logo" valign="top" align="left"><a href="https://www.recidiviz.org/"
                             target="_blank" style="text-decoration: none;"><img
                               src="{{ static_image_path }}/ic_recidiviz.png" width="26" height="26" alt=" " border="0"
                               style="display: block; max-width: 28px;" /></a></td>
+                        {% if learn_more_link -%}
                         <td class="em_defaultlink em_font em_dm_txt_white em_padtop0" valign="middle" align="right"
                           style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 18px; line-height: 24px; font-weight: 400; color: #006C67; padding-top: 6px;">
-                          <a href="https://docs.google.com/document/d/1kgG5LiIrFQaBupHYfoIwo59TCmYH5f_aIpRzGrtOkhU/edit#heading=h.r6s5tyc7ut6c"
+                          <a href="{{ learn_more_link }}"
                             target="_blank" style="color: #006C67; text-decoration: none;">Learn More</a>
                         </td>
+                        {% endif -%}
                       </tr>
                     </table>
                   </td>

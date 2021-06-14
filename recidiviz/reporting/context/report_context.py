@@ -16,7 +16,7 @@
 # =============================================================================
 
 """Abstract base class that encapsulates report-specific context."""
-
+import json
 import os
 from abc import ABC, abstractmethod
 from typing import List
@@ -37,6 +37,13 @@ class ReportContext(ABC):
         self.prepared_data: dict = {}
 
         self._validate_recipient_has_expected_fields(recipient)
+
+        with open(self.get_properties_filepath()) as properties_file:
+            self.properties = json.loads(properties_file.read())
+
+    @abstractmethod
+    def get_properties_filepath(self) -> str:
+        """Returns the filepath to the context's properties.json file"""
 
     @abstractmethod
     def get_required_recipient_data_fields(self) -> List[str]:
