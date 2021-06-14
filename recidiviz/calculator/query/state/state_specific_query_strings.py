@@ -233,7 +233,7 @@ def state_specific_admission_history_description() -> str:
     return """CASE
             -- US_MO only includes Legal Revocation admissions, so we display the number of admissions instead
             WHEN state_code = 'US_MO' THEN CAST(COUNT(admission_type) AS STRING)
-            ELSE STRING_AGG(admission_type ORDER BY revocation_admission_date)
+            ELSE STRING_AGG(admission_type, ";" ORDER BY revocation_admission_date)
             END AS admission_history_description"""
 
 
