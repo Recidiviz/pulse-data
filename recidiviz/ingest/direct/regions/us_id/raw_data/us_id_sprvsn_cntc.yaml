@@ -76,3 +76,6 @@ columns:
     is_datetime: True
     description: |-
       Date that this row was updated
+  - name: cntc_cmt
+    description: |-
+      The notes as raw text associated with this contact
