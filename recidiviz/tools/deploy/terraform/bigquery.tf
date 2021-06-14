@@ -72,6 +72,11 @@ resource "google_bigquery_table" "validation_results" {
         "mode": "REQUIRED"
     },
     {
+        "name": "validation_category",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
         "name": "was_successful",
         "type": "BOOLEAN",
         "mode": "NULLABLE"
