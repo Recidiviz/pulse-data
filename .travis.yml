@@ -40,7 +40,7 @@ script:
     fi
   - docker exec -it recidiviz pipenv run python -m recidiviz.tools.is_pipenv_locked
   - docker exec -it recidiviz pipenv run mypy recidiviz
-  - travis_wait 20 docker exec -it recidiviz pipenv run ./recidiviz/tools/travis/run_pylint.sh
+  - travis_wait 20 sleep infinity & docker exec -it recidiviz pipenv run ./recidiviz/tools/travis/run_pylint.sh
 
   # Lint Terraform
   - TF_INPUT=false terraform -chdir=recidiviz/tools/deploy/terraform init -backend=false
