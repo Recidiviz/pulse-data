@@ -33,15 +33,15 @@ import logging
 import os
 import pickle
 from typing import List, Optional
-import attr
 
-from googleapiclient.discovery import build, Resource
-from googleapiclient.http import MediaIoBaseDownload
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.credentials import Credentials
-from google.auth.transport.requests import Request
+import attr
 import gspread
 import pandas as pd
+from google.auth.credentials import Credentials
+from google.auth.transport.requests import Request
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import Resource, build
+from googleapiclient.http import MediaIoBaseDownload
 
 from recidiviz.common.constants import states
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -96,6 +96,7 @@ class FileType(enum.Enum):
     FOLDER = "application/vnd.google-apps.folder"
     PLAINTEXT = "text/plain"
     SHEET = "application/vnd.google-apps.spreadsheet"
+    SHEET_EXCEL = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
 @attr.s
@@ -176,6 +177,10 @@ class Drive:
         logging.info("Exporting sheet '%s'", sheet.title)
 
         for worksheet in sheet.worksheets():
+            # pylint: disable=protected-access
+            if worksheet._properties.get("hidden"):  # type: ignore[attr-defined]
+                logging.info("Skipping hidden worksheet '%s'", worksheet.title)
+                continue
             csv_name = csv_filename(sheet.title, worksheet.title)
             logging.info(
                 "Downloading worksheet '%s' to '%s'", worksheet.title, csv_name
