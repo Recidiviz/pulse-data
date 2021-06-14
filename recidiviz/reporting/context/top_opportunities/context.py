@@ -75,7 +75,7 @@ class TopOpportunitiesReportContext(ReportContext):
             "greeting"
         ] = f'Hi {self.recipient_data["officer_given_name"]}:'
 
-        if message_override := self.recipient_data["message_body_override"]:
+        if message_override := self.recipient_data.get("message_body_override"):
             self.prepared_data["message_body"] = message_override
         else:
             self.prepared_data["message_body"] = self.properties[
