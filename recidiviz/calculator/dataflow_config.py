@@ -71,8 +71,9 @@ PRODUCTION_TEMPLATES_PATH = os.path.join(
 # Pipelines that are always run for all dates.
 ALWAYS_UNBOUNDED_DATE_PIPELINES = ["recidivism"]
 
-# The maximum number days of output that should be stored in a dataflow metrics table before being moved to cold storage
-MAX_DAYS_IN_DATAFLOW_METRICS_TABLE: int = 7
+# The maximum number days of output that should be stored in a dataflow metrics table
+# before being moved to cold storage
+MAX_DAYS_IN_DATAFLOW_METRICS_TABLE: int = 2
 
 # Where the metrics from outdated Dataflow jobs are stored
 DATAFLOW_METRICS_COLD_STORAGE_DATASET: str = "dataflow_metrics_cold_storage"
