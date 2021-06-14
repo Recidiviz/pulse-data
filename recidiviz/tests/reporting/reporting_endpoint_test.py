@@ -20,12 +20,14 @@ import json
 from http import HTTPStatus
 from typing import Any, Dict
 from unittest import TestCase
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import flask
 from flask import Flask
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.results import MultiRequestResult
+from recidiviz.reporting.context.po_monthly_report.constants import ReportType
 from recidiviz.reporting.reporting_endpoint import reporting_endpoint_blueprint
 
 FIXTURE_FILE = "po_monthly_report_data_fixture.json"
@@ -55,22 +57,22 @@ class ReportingEndpointTests(TestCase):
             self.deliver_emails_for_batch_url = flask.url_for(
                 "reporting_endpoint_blueprint.deliver_emails_for_batch"
             )
-            self.state_code = "US_ID"
+            self.state_code = StateCode.US_ID
             self.review_year = 2021
             self.review_month = 5
 
     def test_start_new_batch_validation(self) -> None:
         with self.app.test_request_context():
             base_query_string = {
-                "state_code": self.state_code,
-                "report_type": "po_monthly_report",
+                "state_code": self.state_code.value,
+                "report_type": ReportType.POMonthlyReport.value,
             }
             response = self.client.get(self.start_new_batch_url, headers=self.headers)
 
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
             self.assertEqual(
                 response.data,
-                b"Request does not include 'state_code' and/or 'report_type' parameters",
+                b"None is not a valid ReportType",
             )
 
             # Invalid test address
@@ -112,8 +114,8 @@ class ReportingEndpointTests(TestCase):
             response = self.client.get(
                 self.start_new_batch_url,
                 query_string={
-                    "state_code": self.state_code,
-                    "report_type": "po_monthly_report",
+                    "state_code": self.state_code.value,
+                    "report_type": ReportType.POMonthlyReport.value,
                     "email_allowlist": json.dumps(
                         ["dev@recidiviz.org", "other@recidiviz.org"]
                     ),
@@ -123,7 +125,7 @@ class ReportingEndpointTests(TestCase):
 
             mock_start.assert_called_with(
                 state_code=self.state_code,
-                report_type="po_monthly_report",
+                report_type=ReportType.POMonthlyReport,
                 batch_id="test_batch_id",
                 test_address=None,
                 region_code=None,
@@ -133,7 +135,7 @@ class ReportingEndpointTests(TestCase):
 
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.assertIn(
-                f"New batch started for {self.state_code}", str(response.data)
+                f"New batch started for {self.state_code.value}", str(response.data)
             )
 
     @patch("recidiviz.reporting.email_reporting_utils.generate_batch_id")
@@ -150,15 +152,15 @@ class ReportingEndpointTests(TestCase):
             response = self.client.get(
                 self.start_new_batch_url,
                 query_string={
-                    "state_code": self.state_code,
-                    "report_type": "po_monthly_report",
+                    "state_code": self.state_code.value,
+                    "report_type": ReportType.POMonthlyReport.value,
                 },
                 headers=self.headers,
             )
 
             mock_start.assert_called_with(
                 state_code=self.state_code,
-                report_type="po_monthly_report",
+                report_type=ReportType.POMonthlyReport,
                 batch_id="test_batch_id",
                 test_address=None,
                 region_code=None,
@@ -168,7 +170,7 @@ class ReportingEndpointTests(TestCase):
 
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.assertIn(
-                f"New batch started for {self.state_code}", str(response.data)
+                f"New batch started for {self.state_code.value}", str(response.data)
             )
 
     @patch("recidiviz.reporting.email_reporting_utils.generate_batch_id")
@@ -184,8 +186,8 @@ class ReportingEndpointTests(TestCase):
             response = self.client.get(
                 self.start_new_batch_url,
                 query_string={
-                    "state_code": self.state_code,
-                    "report_type": "po_monthly_report",
+                    "state_code": self.state_code.value,
+                    "report_type": ReportType.POMonthlyReport.value,
                     "email_allowlist": json.dumps(
                         ["dev@recidiviz.org", "other@recidiviz.org"]
                     ),
@@ -195,7 +197,7 @@ class ReportingEndpointTests(TestCase):
 
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.assertIn(
-                f"New batch started for {self.state_code}", str(response.data)
+                f"New batch started for {self.state_code.value}", str(response.data)
             )
             self.assertIn("Successfully generated 1 email(s)", str(response.data))
             self.assertNotIn("Failed to generate", str(response.data))
@@ -208,8 +210,8 @@ class ReportingEndpointTests(TestCase):
             response = self.client.get(
                 self.start_new_batch_url,
                 query_string={
-                    "state_code": self.state_code,
-                    "report_type": "po_monthly_report",
+                    "state_code": self.state_code.value,
+                    "report_type": ReportType.POMonthlyReport.value,
                     "email_allowlist": json.dumps(
                         ["dev@recidiviz.org", "other@recidiviz.org"]
                     ),
@@ -219,7 +221,7 @@ class ReportingEndpointTests(TestCase):
 
             self.assertEqual(HTTPStatus.MULTI_STATUS, response.status_code)
             self.assertIn(
-                f"New batch started for {self.state_code}", str(response.data)
+                f"New batch started for {self.state_code.value}", str(response.data)
             )
             self.assertIn("Successfully generated 1 email(s)", str(response.data))
             self.assertIn("Failed to generate 2 email(s)", str(response.data))
@@ -235,8 +237,8 @@ class ReportingEndpointTests(TestCase):
             response = self.client.get(
                 self.start_new_batch_url,
                 query_string={
-                    "state_code": self.state_code,
-                    "report_type": "po_monthly_report",
+                    "state_code": self.state_code.value,
+                    "report_type": ReportType.POMonthlyReport.value,
                     "email_allowlist": json.dumps(
                         ["dev@recidiviz.org", "other@recidiviz.org"]
                     ),
@@ -258,7 +260,7 @@ class ReportingEndpointTests(TestCase):
                 self.deliver_emails_for_batch_url,
                 query_string={
                     "batch_id": "test_batch_id",
-                    "state_code": self.state_code,
+                    "state_code": self.state_code.value,
                     "review_month": self.review_month,
                     "review_year": self.review_year,
                 },
@@ -273,7 +275,7 @@ class ReportingEndpointTests(TestCase):
                 self.deliver_emails_for_batch_url,
                 query_string={
                     "batch_id": "test_batch_id",
-                    "state_code": self.state_code,
+                    "state_code": self.state_code.value,
                     "review_month": self.review_month,
                     "review_year": self.review_year,
                 },
@@ -288,7 +290,7 @@ class ReportingEndpointTests(TestCase):
                 self.deliver_emails_for_batch_url,
                 query_string={
                     "batch_id": "test_batch_id",
-                    "state_code": self.state_code,
+                    "state_code": self.state_code.value,
                     "review_month": self.review_month,
                     "review_year": self.review_year,
                 },

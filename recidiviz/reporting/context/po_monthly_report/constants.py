@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Include constants for use by PO Monthly Reports."""
+from enum import Enum
 
 DEFAULT_EMAIL_SUBJECT = "Your monthly Recidiviz report"
 
@@ -37,3 +38,8 @@ CRIME_REVOCATIONS = "crime_revocations"
 ABSCONSIONS = "absconsions"
 ASSESSMENTS = "assessments"
 FACE_TO_FACE = "facetoface"
+
+
+class ReportType(Enum):
+    POMonthlyReport = "po_monthly_report"
+    TopOpportunities = "top_opportunities"
