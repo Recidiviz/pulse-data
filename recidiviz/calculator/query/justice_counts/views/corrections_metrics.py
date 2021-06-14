@@ -175,6 +175,13 @@ METRICS = [
     metric_calculator.CalculatedMetric(
         system=schema.System.CORRECTIONS,
         metric=schema.MetricType.RELEASES,
+        filtered_dimensions=[],
+        aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
+        output_name="RELEASES",
+    ),
+    metric_calculator.CalculatedMetric(
+        system=schema.System.CORRECTIONS,
+        metric=schema.MetricType.RELEASES,
         filtered_dimensions=[manual_upload.ReleaseType.TO_SUPERVISION],
         aggregated_dimensions={"state_code": _STATE_CODE_AGGREGATION},
         output_name="RELEASES_TO_ALL_SUPERVISION",
