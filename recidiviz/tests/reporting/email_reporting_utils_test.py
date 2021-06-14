@@ -17,10 +17,12 @@
 
 """Tests for email_reporting_utils.py."""
 
-# pylint: disable=import-outside-toplevel
 from unittest import TestCase
-from unittest.mock import patch, Mock, MagicMock
+from unittest.mock import MagicMock, Mock, patch
+
 import recidiviz.reporting.email_reporting_utils as utils
+from recidiviz.common.constants.states import StateCode
+from recidiviz.reporting.context.po_monthly_report.constants import ReportType
 
 _MOCK_PROJECT_ID = "RECIDIVIZ_TEST"
 
@@ -89,30 +91,34 @@ class EmailReportingUtilsTests(TestCase):
         test_secrets = {"po_report_cdn_static_IP": expected}
         mock_secret.side_effect = test_secrets.get
 
-        expected = "http://123.456.7.8/us_va/anything/static"
-        actual = self.eru.get_static_image_path("us_va", "anything")
+        expected = "http://123.456.7.8/US_XX/top_opportunities/static"
+        actual = self.eru.get_static_image_path(
+            StateCode.US_XX, ReportType.TopOpportunities
+        )
         self.assertEqual(expected, actual)
 
     def test_get_data_filename(self) -> None:
-        expected = "anything/us_va/anything_data.json"
-        actual = self.eru.get_data_filename("us_va", "anything")
+        expected = "po_monthly_report/US_XX/po_monthly_report_data.json"
+        actual = self.eru.get_data_filename(StateCode.US_XX, ReportType.POMonthlyReport)
         self.assertEqual(expected, actual)
 
     def test_get_data_archive_filename(self) -> None:
         expected = "US_XX/batch-1.json"
-        actual = self.eru.get_data_archive_filename("batch-1", "US_XX")
+        actual = self.eru.get_data_archive_filename("batch-1", StateCode.US_XX)
         self.assertEqual(expected, actual)
 
     def test_get_email_html_filename(self) -> None:
         expected = "US_XX/batch-1/html/boards@canada.ca.html"
 
-        actual = self.eru.get_html_filename("batch-1", "boards@canada.ca", "US_XX")
+        actual = self.eru.get_html_filename(
+            "batch-1", "boards@canada.ca", StateCode.US_XX
+        )
         self.assertEqual(expected, actual)
 
     def test_get_email_attachment_filename(self) -> None:
         expected = "US_XX/batch-1/attachments/boards@canada.ca.txt"
         actual = self.eru.get_attachment_filename(
-            "batch-1", "boards@canada.ca", "US_XX"
+            "batch-1", "boards@canada.ca", StateCode.US_XX
         )
         self.assertEqual(expected, actual)
 

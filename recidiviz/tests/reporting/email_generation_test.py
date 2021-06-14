@@ -22,6 +22,7 @@ from unittest import TestCase
 from unittest.mock import patch
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting.context.po_monthly_report.context import PoMonthlyReportContext
 from recidiviz.reporting.email_generation import generate
 from recidiviz.reporting.recipient import Recipient
@@ -53,7 +54,7 @@ class EmailGenerationTests(TestCase):
         ) as fixture_file:
             self.recipient = Recipient.from_report_json(json.loads(fixture_file.read()))
 
-        self.state_code = "US_ID"
+        self.state_code = StateCode.US_ID
         self.mock_batch_id = "1"
         self.recipient.data["batch_id"] = self.mock_batch_id
         self.report_context = PoMonthlyReportContext(self.state_code, self.recipient)
@@ -72,7 +73,7 @@ class EmailGenerationTests(TestCase):
         generate(self.report_context)
 
         bucket_name = "recidiviz-test-report-html"
-        bucket_filepath = f"{self.state_code}/{self.mock_batch_id}/html/{self.recipient.email_address}.html"
+        bucket_filepath = f"{self.state_code.value}/{self.mock_batch_id}/html/{self.recipient.email_address}.html"
         path = GcsfsFilePath.from_absolute_path(f"gs://{bucket_name}/{bucket_filepath}")
         self.assertEqual(self.gcs_file_system.download_as_string(path), prepared_html)
 

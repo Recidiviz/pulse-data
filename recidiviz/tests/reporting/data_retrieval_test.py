@@ -22,7 +22,9 @@ from unittest import TestCase
 from unittest.mock import patch
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.reporting.data_retrieval import start, retrieve_data, filter_recipients
+from recidiviz.common.constants.states import StateCode
+from recidiviz.reporting.context.po_monthly_report.constants import ReportType
+from recidiviz.reporting.data_retrieval import filter_recipients, retrieve_data, start
 from recidiviz.reporting.recipient import Recipient
 from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
@@ -57,13 +59,16 @@ class EmailGenerationTests(TestCase):
         self.mock_gcs_file_system = self.gcs_file_system_patcher.start()
         self.mock_gcs_file_system.return_value = self.gcs_file_system
 
-        self.state_code = "US_ID"
-        self.report_type = "po_monthly_report"
+        self.get_secret_patcher = patch("recidiviz.utils.secrets.get_secret")
+        self.get_secret_patcher.start()
+
+        self.state_code = StateCode.US_ID
+        self.report_type = ReportType.POMonthlyReport
 
     def _write_test_data(self, test_data: str) -> None:
         self.gcs_file_system.upload_from_string(
             GcsfsFilePath.from_absolute_path(
-                f"gs://recidiviz-test-report-data/po_monthly_report/{self.state_code}/po_monthly_report_data.json"
+                "gs://recidiviz-test-report-data/po_monthly_report/US_ID/po_monthly_report_data.json"
             ),
             test_data,
             "text/json",
@@ -73,6 +78,7 @@ class EmailGenerationTests(TestCase):
         self.email_generation_patcher.stop()
         self.project_id_patcher.stop()
         self.gcs_file_system_patcher.stop()
+        self.get_secret_patcher.stop()
 
     def test_start(self) -> None:
         """Test that the prepared html is added to Google Cloud Storage with the correct bucket name, filepath,
@@ -90,7 +96,7 @@ class EmailGenerationTests(TestCase):
         )
 
         result = start(
-            state_code="US_ID",
+            state_code=StateCode.US_ID,
             report_type=self.report_type,
             region_code="US_ID_D3",
             test_address="dan@recidiviz.org",
@@ -105,13 +111,64 @@ class EmailGenerationTests(TestCase):
         self.mock_email_generation.reset_mock()
 
         start(
-            state_code="US_ID",
+            state_code=StateCode.US_ID,
             report_type=self.report_type,
             email_allowlist=["excluded@recidiviz.org"],
         )
 
         # No recipients to email (none match `email_allowlist`)
         self.mock_email_generation.assert_not_called()
+
+    def test_metadata_added(self) -> None:
+        """Tests that the metadata.json file is correctly added."""
+        with open(
+            os.path.join(
+                f"{os.path.dirname(__file__)}/context/po_monthly_report", FIXTURE_FILE
+            )
+        ) as fixture_file:
+            # Remove newlines
+            self._write_test_data(json.dumps(json.loads(fixture_file.read())))
+
+        result = start(
+            batch_id="fake-batch-id",
+            state_code=StateCode.US_ID,
+            report_type=self.report_type,
+            region_code="US_ID_D3",
+        )
+        self.assertEqual(len(result.successes), 1)
+
+        # Test that metadata file is created correctly
+        metadata_file = self.gcs_file_system.download_as_string(
+            GcsfsFilePath.from_absolute_path(
+                "gs://recidiviz-test-report-html/US_ID/fake-batch-id/metadata.json"
+            )
+        )
+        self.assertEqual(
+            json.loads(metadata_file),
+            {
+                "report_type": self.report_type.value,
+                "review_month": "5",
+                "review_year": "2021",
+            },
+        )
+
+        # Try again for Top Opps email
+        result = start(
+            batch_id="fake-batch-id-2",
+            state_code=StateCode.US_ID,
+            report_type=ReportType.TopOpportunities,
+            region_code="US_ID_D3",
+        )
+
+        metadata_file = self.gcs_file_system.download_as_string(
+            GcsfsFilePath.from_absolute_path(
+                "gs://recidiviz-test-report-html/US_ID/fake-batch-id-2/metadata.json"
+            )
+        )
+        self.assertEqual(
+            json.loads(metadata_file),
+            {"report_type": ReportType.TopOpportunities.value},
+        )
 
     def test_retrieve_data(self) -> None:
         batch_id = "123"
@@ -137,7 +194,7 @@ class EmailGenerationTests(TestCase):
         self.assertEqual(
             self.gcs_file_system.download_as_string(
                 GcsfsFilePath.from_absolute_path(
-                    f"gs://recidiviz-test-report-data-archive/{self.state_code}/123.json"
+                    f"gs://recidiviz-test-report-data-archive/{self.state_code.value}/123.json"
                 )
             ),
             test_data,
