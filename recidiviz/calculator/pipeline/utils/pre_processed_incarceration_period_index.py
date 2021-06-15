@@ -19,7 +19,7 @@ for use in the calculation pipelines."""
 
 from collections import defaultdict
 from datetime import date
-from typing import List, Set, Tuple, Dict, Optional
+from typing import Dict, List, Optional, Set, Tuple
 
 import attr
 
@@ -194,6 +194,15 @@ class PreProcessedIncarcerationPeriodIndex:
                 return False
 
         return True
+
+    def was_in_incarceration_population_on_date(self, evaluation_date: date) -> bool:
+        """Returns True if this person was counted in the incarcerated population
+        on the given date."""
+        for period in self.incarceration_periods:
+            if period.duration.contains_day(evaluation_date):
+                return True
+
+        return False
 
     def incarceration_admissions_between_dates(
         self, start_date: date, end_date: date

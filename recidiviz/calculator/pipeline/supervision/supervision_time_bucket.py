@@ -28,6 +28,7 @@ from recidiviz.calculator.pipeline.utils.event_utils import (
     IdentifierEventWithSingularDate,
     ViolationHistoryMixin,
     SupervisionLocationMixin,
+    InPopulationMixin,
 )
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_mixins import BuildableAttr
@@ -266,7 +267,7 @@ class ProjectedSupervisionCompletionBucket(SupervisionTimeBucket):
 
 
 @attr.s(frozen=True)
-class SupervisionStartBucket(SupervisionTimeBucket):
+class SupervisionStartBucket(SupervisionTimeBucket, InPopulationMixin):
     """Models details regarding the start of supervision."""
 
     # The reason for supervision admission
@@ -284,7 +285,9 @@ class SupervisionStartBucket(SupervisionTimeBucket):
 
 
 @attr.s(frozen=True)
-class SupervisionTerminationBucket(SupervisionTimeBucket, ViolationHistoryMixin):
+class SupervisionTerminationBucket(
+    SupervisionTimeBucket, ViolationHistoryMixin, InPopulationMixin
+):
     """Models a month in which supervision was terminated.
 
     Describes the reason for termination, and the change in assessment score between
