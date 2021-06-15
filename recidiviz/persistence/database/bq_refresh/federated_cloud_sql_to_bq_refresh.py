@@ -52,7 +52,6 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 from recidiviz.view_registry.dataset_overrides import (
     dataset_overrides_for_view_builders,
 )
-from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 
 def federated_bq_schema_refresh(
@@ -113,7 +112,6 @@ def _federated_bq_regional_dataset_refresh(
         )
     create_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=set(),
-        bq_view_namespace=BigQueryViewNamespace.CLOUDSQL_CONNECTION,
         view_builders_to_update=view_builders,
         dataset_overrides=dataset_overrides,
         bq_region_override=bq_region_override,
@@ -305,7 +303,6 @@ def _hydrate_unioned_regional_dataset_for_schema(
 
     create_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=source_table_datasets,
-        bq_view_namespace=BigQueryViewNamespace.CLOUDSQL_CONNECTION,
         view_builders_to_update=view_builders,
         dataset_overrides=dataset_overrides,
         bq_region_override=bq_region_override,
