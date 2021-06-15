@@ -19,24 +19,22 @@
 import datetime
 import logging
 import re
+import uuid
 from concurrent import futures
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional, Pattern, Tuple
-import uuid
-
-from opencensus.stats import aggregation, measure, view
 
 from flask import Blueprint
+from opencensus.stats import aggregation, measure, view
 
 from recidiviz.big_query import view_update_manager
 from recidiviz.utils import monitoring, structured_logging
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.validation.checks.check_resolver import checker_for_validation
-
 from recidiviz.validation.configured_validations import (
     get_all_validations,
-    get_validation_region_configs,
     get_validation_global_config,
+    get_validation_region_configs,
 )
 from recidiviz.validation.validation_models import (
     DataValidationJob,
@@ -47,7 +45,7 @@ from recidiviz.validation.validation_result_storage import (
     store_validation_results,
 )
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
-from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE
+from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
 
 m_failed_to_run_validations = measure.MeasureInt(
     "validation/num_fail_to_run",
@@ -113,8 +111,10 @@ def execute_validation(
         logging.info(
             'Received query param "should_update_views" = true, updating validation dataset and views... '
         )
-        view_update_manager.rematerialize_views(
-            view_builders_by_namespace=DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE,
+
+        view_update_manager.rematerialize_views_for_view_builders(
+            views_to_update_builders=DEPLOYED_VIEW_BUILDERS,
+            all_view_builders=DEPLOYED_VIEW_BUILDERS,
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
         )
 

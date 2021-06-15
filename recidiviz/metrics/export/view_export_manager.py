@@ -15,42 +15,41 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Export data from BigQuery metric views to configurable locations."""
-import itertools
 import logging
 from http import HTTPStatus
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from flask import Blueprint, request
-from opencensus.stats import measure, view as opencensus_view, aggregation
+from opencensus.stats import aggregation, measure
+from opencensus.stats import view as opencensus_view
 
-import recidiviz.view_registry.deployed_views
-from recidiviz.metrics.export import export_config
 from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.export.big_query_view_export_validator import (
+    ExistsBigQueryViewExportValidator,
+)
 from recidiviz.big_query.export.big_query_view_exporter import (
     BigQueryViewExporter,
     CSVBigQueryViewExporter,
     JsonLinesBigQueryViewExporter,
     ViewExportValidationError,
 )
-from recidiviz.big_query.export.big_query_view_export_validator import (
-    ExistsBigQueryViewExportValidator,
-)
 from recidiviz.big_query.export.export_query_config import ExportOutputFormatType
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.metrics.export import export_config
 from recidiviz.metrics.export.export_config import (
+    PRODUCTS_CONFIG_PATH,
+    BadProductExportSpecificationError,
     ExportBigQueryViewConfig,
     ProductConfigs,
-    BadProductExportSpecificationError,
-    PRODUCTS_CONFIG_PATH,
-)
-from recidiviz.metrics.export.optimized_metric_big_query_view_exporter import (
-    OptimizedMetricBigQueryViewExporter,
 )
 from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import (
     OptimizedMetricBigQueryViewExportValidator,
+)
+from recidiviz.metrics.export.optimized_metric_big_query_view_exporter import (
+    OptimizedMetricBigQueryViewExporter,
 )
 from recidiviz.metrics.export.view_export_cloud_task_manager import (
     ViewExportCloudTaskManager,
@@ -58,7 +57,9 @@ from recidiviz.metrics.export.view_export_cloud_task_manager import (
 from recidiviz.utils import metadata, monitoring
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value
+from recidiviz.view_registry import deployed_views
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
+from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
 
 m_failed_metric_export_validation = measure.MeasureInt(
     "bigquery/metric_view_export_manager/metric_view_export_validation_failure",
@@ -182,7 +183,7 @@ def get_configs_for_export_name(
     state_code: Optional[str] = None,
     destination_override: Optional[str] = None,
     dataset_overrides: Optional[Dict[str, str]] = None,
-) -> Dict[str, Sequence[ExportBigQueryViewConfig]]:
+) -> Sequence[ExportBigQueryViewConfig]:
     """Checks the export index for a matching export and if one exists, returns the
     export name paired with a sequence of export view configs."""
     relevant_export_collection = export_config.VIEW_COLLECTION_EXPORT_INDEX.get(
@@ -194,14 +195,43 @@ def get_configs_for_export_name(
             f"No export configs matching export name: [{export_name.upper()}]"
         )
 
-    return {
-        relevant_export_collection.export_name: relevant_export_collection.export_configs_for_views_to_export(
-            project_id=project_id,
-            state_code_filter=state_code.upper() if state_code else None,
-            destination_override=destination_override,
-            dataset_overrides=dataset_overrides,
-        )
+    return relevant_export_collection.export_configs_for_views_to_export(
+        project_id=project_id,
+        state_code_filter=state_code.upper() if state_code else None,
+        destination_override=destination_override,
+        dataset_overrides=dataset_overrides,
+    )
+
+
+def rematerialize_views_for_metric_export(
+    export_view_configs: Sequence[ExportBigQueryViewConfig],
+) -> None:
+    bq_view_namespaces_to_update = {
+        config.bq_view_namespace for config in export_view_configs
     }
+    for bq_view_namespace_to_update in bq_view_namespaces_to_update:
+        # TODO(#5125): Once view update is consistently trivial, always update all views in namespace
+        if (
+            bq_view_namespace_to_update
+            in export_config.NAMESPACES_REQUIRING_FULL_UPDATE
+        ):
+            view_builders_for_views_to_update = (
+                deployed_views.DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE[
+                    bq_view_namespace_to_update
+                ]
+            )
+            view_update_manager.create_dataset_and_deploy_views_for_view_builders(
+                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+                view_builders_to_update=view_builders_for_views_to_update,
+            )
+
+    # The view deploy will only have rematerialized views that had been updated since the last deploy, this call
+    # will ensure that all materialized tables get refreshed.
+    view_update_manager.rematerialize_views(
+        views_to_update=[config.view for config in export_view_configs],
+        all_view_builders=DEPLOYED_VIEW_BUILDERS,
+        view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+    )
 
 
 def export_view_data_to_cloud_storage(
@@ -230,45 +260,18 @@ def export_view_data_to_cloud_storage(
     )
 
     if should_materialize_views:
-        state_view_configs = list(
-            itertools.chain.from_iterable(export_configs_for_filter.values())
+        rematerialize_views_for_metric_export(
+            export_view_configs=export_configs_for_filter
         )
 
-        bq_view_namespaces_to_update = {
-            config.bq_view_namespace for config in state_view_configs
-        }
-        for bq_view_namespace_to_update in bq_view_namespaces_to_update:
-            view_builders_for_views_to_update = recidiviz.view_registry.deployed_views.DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE[
-                bq_view_namespace_to_update
-            ]
-
-            # TODO(#5125): Once view update is consistently trivial, always update all views in namespace
-            if (
-                bq_view_namespace_to_update
-                in export_config.NAMESPACES_REQUIRING_FULL_UPDATE
-            ):
-                view_update_manager.create_dataset_and_deploy_views_for_view_builders(
-                    view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-                    bq_view_namespace=bq_view_namespace_to_update,
-                    view_builders_to_update=view_builders_for_views_to_update,
-                )
-
-            # The view deploy will only have rematerialized views that had been updated since the last deploy, this call
-            # will ensure that all materialized tables get refreshed.
-            view_update_manager.rematerialize_views_for_namespace(
-                bq_view_namespace=bq_view_namespace_to_update,
-                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-                candidate_view_builders=view_builders_for_views_to_update,
-            )
-
-    trigger_export_for_configs(
-        export_configs=export_configs_for_filter,
+    do_metric_export_for_configs(
+        export_configs={export_job_name: export_configs_for_filter},
         override_view_exporter=override_view_exporter,
         state_code_filter=state_code,
     )
 
 
-def trigger_export_for_configs(
+def do_metric_export_for_configs(
     export_configs: Dict[str, Sequence[ExportBigQueryViewConfig]],
     state_code_filter: Optional[str],
     override_view_exporter: Optional[BigQueryViewExporter] = None,

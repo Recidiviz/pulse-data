@@ -25,17 +25,6 @@ from flask import Flask
 from mock import MagicMock, call, patch
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.calculator.query.county import view_config as county_view_config
-from recidiviz.calculator.query.experiments import (
-    view_config as experiments_view_config,
-)
-from recidiviz.calculator.query.justice_counts import (
-    view_config as justice_counts_view_config,
-)
-from recidiviz.calculator.query.state import view_config as state_view_config
-from recidiviz.case_triage.views import view_config as case_triage_view_config
-from recidiviz.ingest.direct.views import view_config as direct_ingest_view_config
-from recidiviz.ingest.views import view_config as ingest_metadata_view_config
 from recidiviz.tests.utils.matchers import UnorderedCollection
 from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
@@ -66,7 +55,7 @@ from recidiviz.validation.validation_models import (
 )
 from recidiviz.validation.views import view_config as validation_view_config
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
-from recidiviz.view_registry.namespaces import BigQueryViewNamespace
+from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
 
 
 def get_test_validations() -> List[DataValidationJob]:
@@ -156,7 +145,9 @@ class TestHandleRequest(TestCase):
         self.project_id_patcher.stop()
         self.project_number_patcher.stop()
 
-    @patch("recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace")
+    @patch(
+        "recidiviz.big_query.view_update_manager.rematerialize_views_for_view_builders"
+    )
     @patch("recidiviz.validation.validation_manager._emit_failures")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
@@ -191,7 +182,9 @@ class TestHandleRequest(TestCase):
         ((results,), _kwargs) = mock_store_validation_results.call_args
         self.assertEqual(4, len(results))
 
-    @patch("recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace")
+    @patch(
+        "recidiviz.big_query.view_update_manager.rematerialize_views_for_view_builders"
+    )
     @patch("recidiviz.validation.validation_manager._emit_failures")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
@@ -241,7 +234,9 @@ class TestHandleRequest(TestCase):
         ((results,), _kwargs) = mock_store_validation_results.call_args
         self.assertEqual(4, len(results))
 
-    @patch("recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace")
+    @patch(
+        "recidiviz.big_query.view_update_manager.rematerialize_views_for_view_builders"
+    )
     @patch("recidiviz.validation.validation_manager._emit_failures")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
@@ -296,7 +291,9 @@ class TestHandleRequest(TestCase):
         ((results,), _kwargs) = mock_store_validation_results.call_args
         self.assertEqual(4, len(results))
 
-    @patch("recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace")
+    @patch(
+        "recidiviz.big_query.view_update_manager.rematerialize_views_for_view_builders"
+    )
     @patch("recidiviz.validation.validation_manager._emit_failures")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
@@ -324,7 +321,9 @@ class TestHandleRequest(TestCase):
         ((results,), _kwargs) = mock_store_validation_results.call_args
         self.assertEqual(0, len(results))
 
-    @patch("recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace")
+    @patch(
+        "recidiviz.big_query.view_update_manager.rematerialize_views_for_view_builders"
+    )
     @patch("recidiviz.validation.validation_manager._emit_failures")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
@@ -352,57 +351,8 @@ class TestHandleRequest(TestCase):
         expected_update_calls = [
             call(
                 view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-                bq_view_namespace=BigQueryViewNamespace.COUNTY,
-                candidate_view_builders=county_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
-                dataset_overrides=None,
-            ),
-            call(
-                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-                bq_view_namespace=BigQueryViewNamespace.EXPERIMENTS,
-                candidate_view_builders=experiments_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
-                dataset_overrides=None,
-            ),
-            call(
-                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-                bq_view_namespace=BigQueryViewNamespace.JUSTICE_COUNTS,
-                candidate_view_builders=justice_counts_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
-                dataset_overrides=None,
-            ),
-            call(
-                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-                bq_view_namespace=BigQueryViewNamespace.STATE,
-                candidate_view_builders=state_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
-                dataset_overrides=None,
-            ),
-            call(
-                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-                bq_view_namespace=BigQueryViewNamespace.VALIDATION,
-                candidate_view_builders=validation_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
-                dataset_overrides=None,
-            ),
-            call(
-                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-                bq_view_namespace=BigQueryViewNamespace.CASE_TRIAGE,
-                candidate_view_builders=case_triage_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
-                dataset_overrides=None,
-            ),
-            call(
-                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-                bq_view_namespace=BigQueryViewNamespace.INGEST_METADATA,
-                candidate_view_builders=ingest_metadata_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
-                dataset_overrides=None,
-            ),
-            call(
-                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-                bq_view_namespace=BigQueryViewNamespace.VALIDATION_METADATA,
-                candidate_view_builders=validation_view_config.METADATA_VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
-                dataset_overrides=None,
-            ),
-            call(
-                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-                bq_view_namespace=BigQueryViewNamespace.DIRECT_INGEST,
-                candidate_view_builders=direct_ingest_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
-                dataset_overrides=None,
+                views_to_update_builders=DEPLOYED_VIEW_BUILDERS,
+                all_view_builders=DEPLOYED_VIEW_BUILDERS,
             ),
         ]
         self.assertCountEqual(

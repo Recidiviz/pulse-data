@@ -33,7 +33,6 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestViewBuilder,
 )
 from recidiviz.utils import monitoring
-from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 m_failed_view_update = measure.MeasureInt(
     "bigquery/view_update_manager/view_update_all_failure",
@@ -55,36 +54,68 @@ monitoring.register_views([failed_view_updates_view])
 TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS = 24 * 60 * 60 * 1000
 
 
-def rematerialize_views(
-    view_builders_by_namespace: Dict[
-        BigQueryViewNamespace, Sequence[BigQueryViewBuilder]
-    ],
+def rematerialize_views_for_view_builders(
+    views_to_update_builders: Sequence[BigQueryViewBuilder],
+    all_view_builders: Sequence[BigQueryViewBuilder],
     view_source_table_datasets: Set[str],
     dataset_overrides: Optional[Dict[str, str]] = None,
+    skip_missing_views: bool = False,
 ) -> None:
-    """For all registered views, re-materializes any materialized views. This should be called only when we want to
-    refresh the data in the materialized view, not when we want to update the underlying query of the view.
+    """For all views corresponding to the builders in |views_to_update_builders| list,
+    re-materializes any materialized views. This should be called only when we want to
+    refresh the data in the materialized view(s), not when we want to update the
+    underlying query of the view(s).
+
+    Args:
+        views_to_update_builders: List of views to re-materialize
+        all_view_builders: Superset of the views_to_update that contains all views that
+            either depend on or are dependents of the list of input views.
+        view_source_table_datasets: Set of datasets containing tables that can be
+            treated as root nodes in the view dependency graph.
+        dataset_overrides: A dictionary mapping dataset_ids to the dataset name they
+            should be replaced with for the given list of views_to_update.
+        skip_missing_views: If True, ignores any input views that do not exist. If
+            False, crashes if tries to materialize a view that does not exist.
     """
-    for namespace, builders in view_builders_by_namespace.items():
-        rematerialize_views_for_namespace(
-            bq_view_namespace=namespace,
-            view_source_table_datasets=view_source_table_datasets,
-            candidate_view_builders=builders,
-            dataset_overrides=dataset_overrides,
-        )
+    views_to_update = _build_views_to_update(
+        view_source_table_datasets=view_source_table_datasets,
+        candidate_view_builders=views_to_update_builders,
+        dataset_overrides=dataset_overrides,
+    )
+    rematerialize_views(
+        views_to_update=views_to_update,
+        all_view_builders=all_view_builders,
+        view_source_table_datasets=view_source_table_datasets,
+        dataset_overrides=dataset_overrides,
+        skip_missing_views=skip_missing_views,
+    )
 
 
-def rematerialize_views_for_namespace(
-    # TODO(#5785): Clarify use case of BigQueryViewNamespace filter (see ticket for more)
-    bq_view_namespace: BigQueryViewNamespace,
+def rematerialize_views(
+    views_to_update: List[BigQueryView],
+    all_view_builders: Sequence[BigQueryViewBuilder],
     view_source_table_datasets: Set[str],
-    candidate_view_builders: Sequence[BigQueryViewBuilder],
     dataset_overrides: Optional[Dict[str, str]] = None,
     skip_missing_views: bool = False,
     bq_region_override: Optional[str] = None,
 ) -> None:
-    """For all views in a given namespace, re-materializes any materialized views. This should be called only when we
-    want to refresh the data in the materialized view, not when we want to update the underlying query of the view.
+    """For all views in the provided |views_to_update| list, re-materializes any
+    materialized views. This should be called only when we want to refresh the data in
+    the materialized view(s), not when we want to update the underlying query of the
+    view(s).
+
+    Args:
+        views_to_update: List of views to re-materialize
+        all_view_builders: Superset of the views_to_update that contains all views that
+            either depend on or are dependents of the list of input views.
+        view_source_table_datasets: Set of datasets containing tables that can be
+            treated as root nodes in the view dependency graph.
+        dataset_overrides: A dictionary mapping dataset_ids to the dataset name they
+            should be replaced with for the given list of views_to_update.
+        skip_missing_views: If True, ignores any input views that do not exist. If
+            False, crashes if tries to materialize a view that does not exist.
+        bq_region_override: If set, overrides the region (e.g. us-east1) associated with
+            all BigQuery operations.
     """
     set_default_table_expiration_for_new_datasets = bool(dataset_overrides)
     if set_default_table_expiration_for_new_datasets:
@@ -94,18 +125,23 @@ def rematerialize_views_for_namespace(
         )
 
     try:
-        views_to_update = _build_views_to_update(
-            view_source_table_datasets=view_source_table_datasets,
-            candidate_view_builders=candidate_view_builders,
-            dataset_overrides=dataset_overrides,
-        )
-
         bq_client = BigQueryClientImpl(region_override=bq_region_override)
         _create_all_datasets_if_necessary(
             bq_client, views_to_update, set_default_table_expiration_for_new_datasets
         )
 
-        dag_walker = BigQueryViewDagWalker(views_to_update)
+        all_views_dag_walker = BigQueryViewDagWalker(
+            _build_views_to_update(
+                view_source_table_datasets=view_source_table_datasets,
+                candidate_view_builders=all_view_builders,
+                dataset_overrides=dataset_overrides,
+            )
+        )
+
+        # Limit DAG to only ancestor views and the set of views to update
+        ancestors_dag_walker = all_views_dag_walker.get_ancestors_sub_dag(
+            views_to_update
+        )
 
         def _materialize_view(
             v: BigQueryView, _parent_results: Dict[BigQueryView, None]
@@ -128,19 +164,14 @@ def rematerialize_views_for_namespace(
 
             bq_client.materialize_view_to_table(v)
 
-        dag_walker.process_dag(_materialize_view)
-
+        ancestors_dag_walker.process_dag(_materialize_view)
     except Exception as e:
-        with monitoring.measurements(
-            {monitoring.TagKey.CREATE_UPDATE_VIEWS_NAMESPACE: bq_view_namespace.value}
-        ) as measurements:
+        with monitoring.measurements() as measurements:
             measurements.measure_int_put(m_failed_view_update, 1)
         raise e from e
 
 
 def create_dataset_and_deploy_views_for_view_builders(
-    # TODO(#5785): Clarify use case of BigQueryViewNamespace filter (see ticket for more)
-    bq_view_namespace: BigQueryViewNamespace,
     view_source_table_datasets: Set[str],
     view_builders_to_update: Sequence[BigQueryViewBuilder],
     dataset_overrides: Optional[Dict[str, str]] = None,
@@ -174,9 +205,7 @@ def create_dataset_and_deploy_views_for_view_builders(
             set_default_table_expiration_for_new_datasets,
         )
     except Exception as e:
-        with monitoring.measurements(
-            {monitoring.TagKey.CREATE_UPDATE_VIEWS_NAMESPACE: bq_view_namespace.value}
-        ) as measurements:
+        with monitoring.measurements() as measurements:
             measurements.measure_int_put(m_failed_view_update, 1)
         raise e
 
