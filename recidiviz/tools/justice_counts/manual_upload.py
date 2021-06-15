@@ -291,6 +291,7 @@ class PopulationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     PRISON = "PRISON"
     SUPERVISION = "SUPERVISION"
     JAIL = "JAIL"
+    OTHER = "OTHER"
 
     @classmethod
     def get(
