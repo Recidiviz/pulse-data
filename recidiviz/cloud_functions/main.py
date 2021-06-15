@@ -436,10 +436,6 @@ def handle_deliver_emails_for_batch_email_reporting(
     following keys:
         batch_id: (required) Identifier for this batch
         state_code: (required) State code needed for this batch to be triggered
-        # TODO(#7746): Remove review_year and review_month when we have a better
-        # way to access them.
-        review_year: (required) The year that the report is for
-        review_month: (required) The month that the report is for
         redirect_address: (optional) An email address to which all emails should
         be sent instead of to their actual recipients.
         cc_address: (optional) List of email addresses to include in the CC field.
@@ -470,10 +466,6 @@ def handle_deliver_emails_for_batch_email_reporting(
         [
             "batch_id",
             "state_code",
-            # TODO(#7746): Remove review_year and review_month when we have a better
-            # way to access them.
-            "review_year",
-            "review_month",
             "redirect_address",
             "cc_address",
             "subject_override",

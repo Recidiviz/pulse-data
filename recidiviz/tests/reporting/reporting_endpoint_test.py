@@ -25,10 +25,12 @@ from unittest.mock import MagicMock, patch
 import flask
 from flask import Flask
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.results import MultiRequestResult
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
 from recidiviz.reporting.reporting_endpoint import reporting_endpoint_blueprint
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 FIXTURE_FILE = "po_monthly_report_data_fixture.json"
 
@@ -43,6 +45,13 @@ class ReportingEndpointTests(TestCase):
     """Integration tests of our flask endpoints"""
 
     def setUp(self) -> None:
+        self.gcs_file_system_patcher = patch(
+            "recidiviz.cloud_storage.gcsfs_factory.GcsfsFactory.build"
+        )
+        self.gcs_file_system = FakeGCSFileSystem()
+        self.mock_gcs_file_system = self.gcs_file_system_patcher.start()
+        self.mock_gcs_file_system.return_value = self.gcs_file_system
+
         self.app = Flask(__name__)
         self.app.register_blueprint(reporting_endpoint_blueprint)
         self.app.config["TESTING"] = True
@@ -60,6 +69,9 @@ class ReportingEndpointTests(TestCase):
             self.state_code = StateCode.US_ID
             self.review_year = 2021
             self.review_month = 5
+
+    def tearDown(self) -> None:
+        self.gcs_file_system_patcher.stop()
 
     def test_start_new_batch_validation(self) -> None:
         with self.app.test_request_context():
@@ -249,9 +261,97 @@ class ReportingEndpointTests(TestCase):
             self.assertEqual(HTTPStatus.INTERNAL_SERVER_ERROR, response.status_code)
 
     @patch("recidiviz.reporting.email_delivery.deliver")
+    def test_deliver_emails_metadata(self, mock_deliver: MagicMock) -> None:
+        mock_deliver.return_value = MultiRequestResult[str, str](
+            successes=["dev@recidiviz.org"], failures=[]
+        )
+
+        with self.app.test_request_context():
+            # Test that it works with the correct metadata
+            self._upload_metadata(
+                {
+                    "report_type": ReportType.POMonthlyReport.value,
+                    "review_year": "3000",
+                    "review_month": "12",
+                }
+            )
+            response = self.client.get(
+                self.deliver_emails_for_batch_url,
+                query_string={
+                    "batch_id": "test_batch_id",
+                    "state_code": self.state_code.value,
+                },
+                headers=self.headers,
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code, msg=response.data)
+
+            # Test that it fails if missing year/month
+            self._upload_metadata(
+                {
+                    "report_type": ReportType.POMonthlyReport.value,
+                    "review_month": "12",
+                }
+            )
+            response = self.client.get(
+                self.deliver_emails_for_batch_url,
+                query_string={
+                    "batch_id": "test_batch_id",
+                    "state_code": self.state_code.value,
+                },
+                headers=self.headers,
+            )
+            self.assertEqual(
+                HTTPStatus.BAD_REQUEST, response.status_code, msg=response.data
+            )
+
+            self._upload_metadata(
+                {
+                    "report_type": ReportType.POMonthlyReport.value,
+                    "review_year": "3000",
+                }
+            )
+            response = self.client.get(
+                self.deliver_emails_for_batch_url,
+                query_string={
+                    "batch_id": "test_batch_id",
+                    "state_code": self.state_code.value,
+                },
+                headers=self.headers,
+            )
+            self.assertEqual(
+                HTTPStatus.BAD_REQUEST, response.status_code, msg=response.data
+            )
+
+            # Test that it 503s with an unsupported report type
+            self._upload_metadata(
+                {
+                    "report_type": ReportType.TopOpportunities.value,
+                }
+            )
+            response = self.client.get(
+                self.deliver_emails_for_batch_url,
+                query_string={
+                    "batch_id": "test_batch_id",
+                    "state_code": self.state_code.value,
+                },
+                headers=self.headers,
+            )
+            self.assertEqual(
+                HTTPStatus.NOT_IMPLEMENTED, response.status_code, msg=response.data
+            )
+
+    @patch("recidiviz.reporting.email_delivery.deliver")
     def test_integration_deliver_emails_for_batch(
         self, mock_deliver: MagicMock
     ) -> None:
+        self._upload_metadata(
+            {
+                "report_type": ReportType.POMonthlyReport.value,
+                "review_year": "3000",
+                "review_month": "12",
+            }
+        )
+
         with self.app.test_request_context():
             mock_deliver.return_value = MultiRequestResult[str, str](
                 successes=["dev@recidiviz.org"], failures=[]
@@ -261,12 +361,10 @@ class ReportingEndpointTests(TestCase):
                 query_string={
                     "batch_id": "test_batch_id",
                     "state_code": self.state_code.value,
-                    "review_month": self.review_month,
-                    "review_year": self.review_year,
                 },
                 headers=self.headers,
             )
-            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.assertEqual(HTTPStatus.OK, response.status_code, msg=response.data)
 
             mock_deliver.return_value = MultiRequestResult[str, str](
                 successes=["dev@recidiviz.org"], failures=["other@recidiviz.org"]
@@ -276,12 +374,12 @@ class ReportingEndpointTests(TestCase):
                 query_string={
                     "batch_id": "test_batch_id",
                     "state_code": self.state_code.value,
-                    "review_month": self.review_month,
-                    "review_year": self.review_year,
                 },
                 headers=self.headers,
             )
-            self.assertEqual(HTTPStatus.MULTI_STATUS, response.status_code)
+            self.assertEqual(
+                HTTPStatus.MULTI_STATUS, response.status_code, msg=response.data
+            )
 
             mock_deliver.return_value = MultiRequestResult[str, str](
                 successes=[], failures=["dev@recidiviz.org", "other@recidiviz.org"]
@@ -291,9 +389,20 @@ class ReportingEndpointTests(TestCase):
                 query_string={
                     "batch_id": "test_batch_id",
                     "state_code": self.state_code.value,
-                    "review_month": self.review_month,
-                    "review_year": self.review_year,
                 },
                 headers=self.headers,
             )
-            self.assertEqual(HTTPStatus.INTERNAL_SERVER_ERROR, response.status_code)
+            self.assertEqual(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                response.status_code,
+                msg=response.data,
+            )
+
+    def _upload_metadata(self, data: Dict[str, Any]) -> None:
+        self.gcs_file_system.upload_from_string(
+            path=GcsfsFilePath.from_absolute_path(
+                "gs://test-project-report-html/US_ID/test_batch_id/metadata.json"
+            ),
+            contents=json.dumps(data),
+            content_type="application/json",
+        )
