@@ -74,7 +74,7 @@ transitions_data = transitions_data.append(
         c_to="prison_new_crime",
         mean_los=36,
         prob=new_crime_revocation,
-        disagg_type="age",
+        disagg_label="age",
     )
 )
 
