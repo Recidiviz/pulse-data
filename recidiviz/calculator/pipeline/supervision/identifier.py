@@ -250,6 +250,7 @@ def find_supervision_time_buckets(
                 incarceration_sentences=incarceration_sentences,
                 supervision_period=supervision_period,
                 supervision_period_index=supervision_period_index,
+                incarceration_period_index=incarceration_period_index,
                 assessments=assessments,
                 violation_responses_for_history=violation_responses_for_history,
                 supervision_period_to_agent_associations=supervision_period_to_agent_associations,
@@ -260,6 +261,8 @@ def find_supervision_time_buckets(
                 supervision_time_buckets.append(supervision_termination_bucket)
 
             supervision_start_bucket = find_supervision_start_bucket(
+                supervision_sentences=supervision_sentences,
+                incarceration_sentences=incarceration_sentences,
                 supervision_period=supervision_period,
                 supervision_period_index=supervision_period_index,
                 incarceration_period_index=incarceration_period_index,
@@ -379,7 +382,7 @@ def find_time_buckets_for_supervision_period(
     )
 
     while event_date < end_date:
-        if on_supervision_on_date(
+        if in_supervision_population_for_period_on_date(
             event_date,
             supervision_sentences,
             incarceration_sentences,
@@ -519,16 +522,18 @@ def supervision_period_counts_towards_supervision_population_in_date_range(
     )
 
 
-def on_supervision_on_date(
+def in_supervision_population_for_period_on_date(
     evaluation_date: date,
     supervision_sentences: List[StateSupervisionSentence],
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_period: StateSupervisionPeriod,
     incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
+    validate_duration: bool = True,
 ) -> bool:
     """Determines whether the person was on supervision on a given date."""
-    # This should never happen
-    if not supervision_period.duration.contains_day(evaluation_date):
+    if validate_duration and not supervision_period.duration.contains_day(
+        evaluation_date
+    ):
         raise ValueError(
             "evaluation_date must fall between the start and end of the supervision_period"
         )
@@ -548,7 +553,38 @@ def on_supervision_on_date(
     return supervision_period_counts_towards_supervision_population_on_date
 
 
+def _in_supervision_population_on_date(
+    evaluation_date: date,
+    supervision_sentences: List[StateSupervisionSentence],
+    incarceration_sentences: List[StateIncarcerationSentence],
+    supervision_period_index: PreProcessedSupervisionPeriodIndex,
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
+) -> bool:
+    """Determines whether the person was on supervision on a given date, across any and
+    all of the supervision periods included in the given supervision period index.
+
+    This calls out to on_supervision_on_date for each supervision period in the
+    supervision period index.
+    """
+    for period in supervision_period_index.supervision_periods:
+        # validate_duration=False because in this use case we are handling supervision
+        # periods that may have, for example, the same start and termination date
+        if in_supervision_population_for_period_on_date(
+            evaluation_date,
+            supervision_sentences,
+            incarceration_sentences,
+            period,
+            incarceration_period_index,
+            validate_duration=False,
+        ):
+            return True
+
+    return False
+
+
 def find_supervision_start_bucket(
+    supervision_sentences: List[StateSupervisionSentence],
+    incarceration_sentences: List[StateIncarcerationSentence],
     supervision_period: StateSupervisionPeriod,
     supervision_period_index: PreProcessedSupervisionPeriodIndex,
     incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
@@ -585,12 +621,26 @@ def find_supervision_start_bucket(
         or level_1_supervision_location_external_id
     )
 
+    in_incarceration_population_on_date = (
+        incarceration_period_index.was_in_incarceration_population_on_date(start_date)
+    )
+
+    in_supervision_population_on_date = _in_supervision_population_on_date(
+        start_date,
+        supervision_sentences,
+        incarceration_sentences,
+        supervision_period_index,
+        incarceration_period_index,
+    )
+
     return SupervisionStartBucket(
         state_code=supervision_period.state_code,
         admission_reason=admission_reason,
         event_date=start_date,
         year=start_date.year,
         month=start_date.month,
+        in_incarceration_population_on_date=in_incarceration_population_on_date,
+        in_supervision_population_on_date=in_supervision_population_on_date,
         supervision_type=supervision_period.supervision_period_supervision_type,
         case_type=identify_most_severe_case_type(supervision_period),
         supervision_level=supervision_period.supervision_level,
@@ -609,6 +659,7 @@ def find_supervision_termination_bucket(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_period: StateSupervisionPeriod,
     supervision_period_index: PreProcessedSupervisionPeriodIndex,
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
     assessments: List[StateAssessment],
     violation_responses_for_history: List[StateSupervisionViolationResponse],
     supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
@@ -697,11 +748,31 @@ def find_supervision_termination_bucket(
             or level_1_supervision_location_external_id
         )
 
+        in_incarceration_population_on_date = (
+            incarceration_period_index.was_in_incarceration_population_on_date(
+                termination_date
+            )
+        )
+
+        # We check if the person is counted in the supervision population on the day
+        # before the termination date, because the termination date is exclusive, and
+        # what we are trying to determine is whether this termination comes at the end
+        # of some number of days of being counted in the supervision population
+        in_supervision_population_on_date = _in_supervision_population_on_date(
+            termination_date - relativedelta(days=1),
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_period_index,
+            incarceration_period_index,
+        )
+
         return SupervisionTerminationBucket(
             state_code=supervision_period.state_code,
             event_date=termination_date,
             year=termination_date.year,
             month=termination_date.month,
+            in_incarceration_population_on_date=in_incarceration_population_on_date,
+            in_supervision_population_on_date=in_supervision_population_on_date,
             supervision_type=supervision_type,
             case_type=case_type,
             supervision_level=supervision_period.supervision_level,

@@ -129,8 +129,20 @@ class SupervisionLocationMixin(BuildableAttr):
 
 
 @attr.s
+class InPopulationMixin:
+    """Set of attributes marking whether a person was in the supervision and/or
+    incarceration populations on a given date."""
+
+    # Whether or not the person was counted in the incarcerated population on this date
+    in_incarceration_population_on_date: bool = attr.ib(default=False)
+
+    # Whether or not the person was counted in the supervised population on this date
+    in_supervision_population_on_date: bool = attr.ib(default=False)
+
+
+@attr.s
 class AssessmentEventMixin:
-    """Sef of attributes that store information about assessments, and enables an event
+    """Set of attributes that store information about assessments, and enables an event
     to be able to calculate the score bucket from assessment information."""
 
     DEFAULT_ASSESSMENT_SCORE_BUCKET = "NOT_ASSESSED"
