@@ -17,6 +17,7 @@
 # pylint: disable=unused-import,wrong-import-order,protected-access
 
 """Tests for supervision/identifier.py."""
+
 import datetime
 import unittest
 from collections import defaultdict
@@ -270,6 +271,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 termination_reason=supervision_period.termination_reason,
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 supervision_period, case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE
@@ -346,6 +348,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             create_termination_bucket_from_period(
                 supervision_period,
                 supervision_type=supervision_period_supervision_type,
+                in_supervision_population_on_date=True,
             ),
         ]
 
@@ -428,10 +431,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             create_termination_bucket_from_period(
                 first_supervision_period,
                 supervision_type=first_supervision_period_supervision_type,
+                in_supervision_population_on_date=True,
             ),
             create_termination_bucket_from_period(
                 second_supervision_period,
                 supervision_type=second_supervision_period_supervision_type,
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 first_supervision_period,
@@ -532,11 +537,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         expected_events = [
             create_termination_bucket_from_period(
                 first_supervision_period,
+                in_supervision_population_on_date=True,
                 supervision_type=first_supervision_period_supervision_type,
             ),
             create_termination_bucket_from_period(
                 second_supervision_period,
                 supervision_type=second_supervision_period_supervision_type,
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 first_supervision_period,
@@ -640,11 +647,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         expected_events = [
             create_termination_bucket_from_period(
                 first_supervision_period,
+                in_supervision_population_on_date=True,
                 supervision_type=first_supervision_period_supervision_type,
             ),
             create_termination_bucket_from_period(
                 second_supervision_period,
                 supervision_type=overlapping_supervision_period_supervision_type,
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 first_supervision_period,
@@ -770,6 +779,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             create_termination_bucket_from_period(
                 first_supervision_period,
                 supervision_type=first_supervision_period_supervision_type,
+                case_type=StateSupervisionCaseType.GENERAL,
+                in_supervision_population_on_date=True,
             ),
         ]
 
@@ -894,6 +905,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             ),
             create_termination_bucket_from_period(
                 first_supervision_period,
+                in_incarceration_population_on_date=True,
                 supervision_type=first_supervision_period_supervision_type,
             ),
             create_start_bucket_from_period(first_supervision_period),
@@ -991,7 +1003,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 revocation_type=StateSpecializedPurposeForIncarceration.GENERAL,
             ),
             create_start_bucket_from_period(supervision_period),
-            create_termination_bucket_from_period(supervision_period),
+            create_termination_bucket_from_period(
+                supervision_period,
+                in_supervision_population_on_date=True,
+            ),
         ]
 
         expected_events.extend(
@@ -1106,8 +1121,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
+                in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(supervision_period_type_unset),
+            # in_supervision_population_on_date=False because this was a 0-day supervision period
+            create_start_bucket_from_period(
+                supervision_period_type_unset, in_supervision_population_on_date=False
+            ),
             SupervisionTerminationBucket(
                 state_code=supervision_period_type_unset.state_code,
                 year=supervision_period_type_unset.termination_date.year,
@@ -1117,6 +1136,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_level=supervision_period_type_unset.supervision_level,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period_type_unset.termination_reason,
+                in_supervision_population_on_date=True,
             ),
         ]
 
@@ -1262,8 +1282,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 termination_reason=supervision_period.termination_reason,
+                in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(supervision_period_type_internal_unknown),
+            # in_supervision_population_on_date=False because this was a 0-day supervision period
+            create_start_bucket_from_period(
+                supervision_period_type_internal_unknown,
+                in_supervision_population_on_date=False,
+            ),
             SupervisionTerminationBucket(
                 state_code=supervision_period_type_internal_unknown.state_code,
                 year=supervision_period_type_internal_unknown.termination_date.year,
@@ -1274,6 +1299,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_level=supervision_period_type_internal_unknown.supervision_level,
                 supervision_level_raw_text=supervision_period_type_internal_unknown.supervision_level_raw_text,
                 termination_reason=supervision_period_type_internal_unknown.termination_reason,
+                in_supervision_population_on_date=True,
             ),
         ]
 
@@ -1392,11 +1418,17 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 revocation_type=StateSpecializedPurposeForIncarceration.GENERAL,
             ),
             create_start_bucket_from_period(supervision_period),
-            create_termination_bucket_from_period(supervision_period),
-            create_start_bucket_from_period(supervision_period_type_unset),
+            create_termination_bucket_from_period(
+                supervision_period, in_supervision_population_on_date=True
+            ),
+            # in_supervision_population_on_date=False because this was a 0-day supervision period
+            create_start_bucket_from_period(
+                supervision_period_type_unset, in_supervision_population_on_date=False
+            ),
             create_termination_bucket_from_period(
                 supervision_period_type_unset,
                 supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
+                in_supervision_population_on_date=True,
             ),
         ]
 
@@ -1488,6 +1520,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_level=supervision_period.supervision_level,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+                in_supervision_population_on_date=True,
             ),
         ]
         expected_events.extend(
@@ -1713,7 +1746,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 revocation_type=StateSpecializedPurposeForIncarceration.GENERAL,
             ),
             create_start_bucket_from_period(supervision_period),
-            create_termination_bucket_from_period(supervision_period),
+            create_termination_bucket_from_period(
+                supervision_period,
+                in_supervision_population_on_date=True,
+            ),
         ]
 
         expected_events.extend(
@@ -1815,7 +1851,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 revocation_type=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
             ),
             create_start_bucket_from_period(supervision_period),
-            create_termination_bucket_from_period(supervision_period),
+            create_termination_bucket_from_period(
+                supervision_period,
+                in_supervision_population_on_date=True,
+            ),
         ]
 
         expected_events.extend(
@@ -1954,7 +1993,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 revocation_type=StateSpecializedPurposeForIncarceration.GENERAL,
             ),
             create_start_bucket_from_period(supervision_period),
-            create_termination_bucket_from_period(supervision_period),
+            create_termination_bucket_from_period(
+                supervision_period,
+                in_supervision_population_on_date=True,
+            ),
         ]
 
         expected_events.extend(
@@ -2070,6 +2112,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             create_termination_bucket_from_period(
                 first_supervision_period,
                 supervision_type=first_supervision_period_supervision_type,
+                in_supervision_population_on_date=True,
             ),
             RevocationReturnSupervisionTimeBucket(
                 state_code=second_supervision_period.state_code,
@@ -2084,6 +2127,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             create_termination_bucket_from_period(
                 second_supervision_period,
                 supervision_type=second_supervision_period_supervision_type,
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 first_supervision_period,
@@ -2215,6 +2259,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             create_termination_bucket_from_period(
                 first_supervision_period,
                 supervision_type=first_supervision_period_supervision_type,
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 first_supervision_period,
@@ -2322,11 +2367,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             ),
             create_termination_bucket_from_period(
                 first_supervision_period,
+                in_incarceration_population_on_date=True,
                 supervision_type=first_supervision_period_supervision_type,
             ),
             create_termination_bucket_from_period(
                 second_supervision_period,
                 supervision_type=second_supervision_period_supervision_type,
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 first_supervision_period,
@@ -2335,6 +2382,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             create_start_bucket_from_period(
                 second_supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
+                in_incarceration_population_on_date=True,
+                in_supervision_population_on_date=False,
             ),
         ]
 
@@ -2448,13 +2497,18 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             create_termination_bucket_from_period(
                 first_supervision_period,
                 supervision_type=first_supervision_period_supervision_type,
+                in_incarceration_population_on_date=True,
+                in_supervision_population_on_date=True,
             ),
             create_termination_bucket_from_period(
                 second_supervision_period,
                 supervision_type=second_supervision_period_supervision_type,
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(first_supervision_period),
-            create_start_bucket_from_period(second_supervision_period),
+            create_start_bucket_from_period(
+                second_supervision_period, in_incarceration_population_on_date=True
+            ),
         ]
 
         # The entirety of both supervision periods should be counted as NonRevocationReturnSupervisionTimeBuckets
@@ -2535,11 +2589,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         expected_events = [
             create_termination_bucket_from_period(
                 first_supervision_period,
+                in_supervision_population_on_date=True,
                 supervision_type=first_supervision_period_supervision_type,
             ),
             create_termination_bucket_from_period(
                 second_supervision_period,
                 supervision_type=second_supervision_period_supervision_type,
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 first_supervision_period,
@@ -2669,6 +2725,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             ),
             create_termination_bucket_from_period(
                 first_supervision_period,
+                in_incarceration_population_on_date=True,
+                in_supervision_population_on_date=False,
                 supervision_type=first_supervision_period_supervision_type,
             ),
             create_start_bucket_from_period(
@@ -2678,6 +2736,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             create_termination_bucket_from_period(
                 second_supervision_period,
                 supervision_type=second_supervision_period_supervision_type,
+                in_supervision_population_on_date=True,
             ),
         ]
 
@@ -2790,6 +2849,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_district_external_id="X",
                 level_1_supervision_location_external_id="X",
                 level_2_supervision_location_external_id=None,
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 supervision_period,
@@ -2906,6 +2966,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 level_1_supervision_location_external_id="X",
                 level_2_supervision_location_external_id=None,
                 judicial_district_code="XXX",
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 supervision_period,
@@ -3021,6 +3082,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 level_1_supervision_location_external_id="X",
                 level_2_supervision_location_external_id=None,
                 judicial_district_code="XXX",
+                in_supervision_population_on_date=True,
             ),
             RevocationReturnSupervisionTimeBucket(
                 state_code=incarceration_period.state_code,
@@ -3118,6 +3180,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             create_termination_bucket_from_period(
                 supervision_period,
                 supervision_type=supervision_period_supervision_type,
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 supervision_period,
@@ -3214,6 +3277,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             create_termination_bucket_from_period(
                 supervision_period,
                 supervision_type=supervision_period_supervision_type,
+                in_supervision_population_on_date=True,
             ),
             RevocationReturnSupervisionTimeBucket(
                 state_code=incarceration_period.state_code,
@@ -3344,6 +3408,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_period,
                 supervision_type=supervision_period_supervision_type,
                 supervision_level=StateSupervisionLevel.MINIMUM,
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 supervision_period,
@@ -3520,10 +3585,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             create_termination_bucket_from_period(
                 first_supervision_period,
                 supervision_type=first_supervision_period_supervision_type,
+                in_supervision_population_on_date=True,
             ),
             create_termination_bucket_from_period(
                 second_supervision_period,
                 supervision_type=second_supervision_period_supervision_type,
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 first_supervision_period,
@@ -3670,6 +3737,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 termination_reason=supervision_period.termination_reason,
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 supervision_period, case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE
@@ -3775,10 +3843,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             create_termination_bucket_from_period(
                 first_supervision_period,
                 supervision_type=first_supervision_period_supervision_type,
+                in_supervision_population_on_date=True,
             ),
             create_termination_bucket_from_period(
                 second_supervision_period,
                 supervision_type=second_supervision_period_supervision_type,
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 first_supervision_period,
@@ -3894,6 +3964,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             create_termination_bucket_from_period(
                 supervision_period,
                 supervision_type=supervision_period_supervision_type,
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 supervision_period,
@@ -4003,6 +4074,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 level_2_supervision_location_external_id="DISTRICT_1",
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
+                in_supervision_population_on_date=True,
             ),
         ]
 
@@ -4122,6 +4194,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 termination_reason=supervision_period.termination_reason,
                 supervising_officer_external_id="XXX",
                 judicial_district_code="XXX",
+                in_supervision_population_on_date=True,
             ),
         ]
 
@@ -4269,6 +4342,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 year=supervision_period.termination_date.year,
                 month=supervision_period.termination_date.month,
                 event_date=supervision_period.termination_date,
+                in_incarceration_population_on_date=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
@@ -4462,6 +4536,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 judicial_district_code="XXX",
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
+                in_incarceration_population_on_date=True,
+                in_supervision_population_on_date=True,
             ),
         ]
 
@@ -4606,6 +4682,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 termination_reason=supervision_period.termination_reason,
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 supervision_period,
@@ -4715,6 +4792,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 termination_reason=supervision_period.termination_reason,
+                in_supervision_population_on_date=True,
             ),
         ]
 
@@ -4848,6 +4926,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 termination_reason=supervision_period.termination_reason,
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 supervision_period,
@@ -4929,6 +5008,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 termination_reason=supervision_period.termination_reason,
+                in_supervision_population_on_date=True,
             ),
         ]
 
@@ -5029,6 +5109,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 termination_reason=supervision_period.termination_reason,
+                in_supervision_population_on_date=True,
             ),
             SupervisionTerminationBucket(
                 state_code=supervision_period.state_code,
@@ -5038,6 +5119,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 termination_reason=supervision_period.termination_reason,
+                in_supervision_population_on_date=True,
             ),
             SupervisionTerminationBucket(
                 state_code=supervision_period.state_code,
@@ -5048,6 +5130,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_level=supervision_period.supervision_level,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 termination_reason=supervision_period.termination_reason,
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 supervision_period,
@@ -5340,6 +5423,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 year=supervision_period.termination_date.year,
                 month=supervision_period.termination_date.month,
                 event_date=supervision_period.termination_date,
+                in_incarceration_population_on_date=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
@@ -5471,6 +5555,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 response_count=1,
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 supervision_period,
@@ -5746,6 +5831,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_officer_external_id="AGENTX",
                 supervising_district_external_id="OFFICE_1",
                 level_1_supervision_location_external_id="OFFICE_1",
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 supervision_period,
@@ -5997,6 +6083,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_district_external_id="OFFICE_1",
                 level_1_supervision_location_external_id="OFFICE_1",
                 level_2_supervision_location_external_id=None,
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 supervision_period,
@@ -6261,6 +6348,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_officer_external_id="AGENTX",
                 supervising_district_external_id="OFFICE_1",
                 level_1_supervision_location_external_id="OFFICE_1",
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 supervision_period,
@@ -6477,6 +6565,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_officer_external_id="AGENTX",
                 supervising_district_external_id="OFFICE_1",
                 level_1_supervision_location_external_id="OFFICE_1",
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 supervision_period,
@@ -6717,6 +6806,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_officer_external_id="AGENTX",
                 supervising_district_external_id="OFFICE_1",
                 level_1_supervision_location_external_id="OFFICE_1",
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(
                 supervision_period,
@@ -6810,6 +6900,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_district_external_id=supervision_period.supervision_site,
                 level_1_supervision_location_external_id=supervision_period.supervision_site,
                 level_2_supervision_location_external_id=None,
+                in_supervision_population_on_date=True,
             ),
             create_start_bucket_from_period(supervision_period),
         ]
@@ -6898,6 +6989,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_district_external_id=supervision_period.supervision_site,
                 level_1_supervision_location_external_id=supervision_period.supervision_site,
                 level_2_supervision_location_external_id=None,
+                in_supervision_population_on_date=True,
             ),
         ]
 
@@ -6994,8 +7086,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_district_external_id=supervision_period.supervision_site,
                 level_1_supervision_location_external_id=supervision_period.supervision_site,
                 level_2_supervision_location_external_id=None,
+                in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(supervision_period),
+            # in_supervision_population_on_date=False because the lack of an overlapping
+            # supervision span means they are not counted in the supervision population
+            # for US_MO
+            create_start_bucket_from_period(
+                supervision_period, in_supervision_population_on_date=False
+            ),
         ]
 
         expected_events.extend(
@@ -7140,8 +7238,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_district_external_id=supervision_period.supervision_site,
                 level_1_supervision_location_external_id=supervision_period.supervision_site,
                 level_2_supervision_location_external_id=None,
+                in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(supervision_period),
+            # in_supervision_population_on_date=False because the lack of an overlapping
+            # supervision span means they are not counted in the supervision population
+            # for US_MO
+            create_start_bucket_from_period(
+                supervision_period, in_supervision_population_on_date=False
+            ),
         ]
 
         expected_events.extend(
@@ -10208,6 +10312,10 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_periods=[supervision_period]
         )
 
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[]
+        )
+
         incarceration_sentences = []
         supervision_sentences = [supervision_sentence]
         violation_responses = []
@@ -10217,6 +10325,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             incarceration_sentences,
             supervision_period,
             supervision_period_index,
+            incarceration_period_index,
             assessments,
             violation_responses,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
@@ -10241,6 +10350,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             assessment_type=last_assessment.assessment_type,
             termination_reason=supervision_period.termination_reason,
             assessment_score_change=assessment_score_change,
+            in_supervision_population_on_date=True,
         )
 
         self.assertEqual(expected_termination_bucket, termination_bucket)
@@ -10274,6 +10384,10 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_periods=[supervision_period]
         )
 
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[]
+        )
+
         incarceration_sentences = []
         supervision_sentences = [supervision_sentence]
         violation_responses = []
@@ -10283,6 +10397,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             incarceration_sentences,
             supervision_period,
             supervision_period_index,
+            incarceration_period_index,
             assessments,
             violation_responses,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
@@ -10303,6 +10418,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             assessment_type=None,
             termination_reason=supervision_period.termination_reason,
             assessment_score_change=None,
+            in_supervision_population_on_date=True,
         )
 
         self.assertEqual(expected_termination_bucket, termination_bucket)
@@ -10343,6 +10459,10 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_periods=[supervision_period]
         )
 
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[]
+        )
+
         incarceration_sentences = []
         supervision_sentences = [supervision_sentence]
         violation_responses = []
@@ -10352,6 +10472,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             incarceration_sentences,
             supervision_period,
             supervision_period_index,
+            incarceration_period_index,
             assessments,
             violation_responses,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
@@ -10372,6 +10493,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             assessment_type=None,
             termination_reason=supervision_period.termination_reason,
             assessment_score_change=None,
+            in_supervision_population_on_date=True,
         )
 
         self.assertEqual(expected_termination_bucket, termination_bucket)
@@ -10402,6 +10524,10 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_periods=[supervision_period]
         )
 
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[]
+        )
+
         incarceration_sentences = []
         supervision_sentences = [supervision_sentence]
         violation_responses = []
@@ -10411,6 +10537,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             incarceration_sentences,
             supervision_period,
             supervision_period_index,
+            incarceration_period_index,
             assessments,
             violation_responses,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
@@ -10487,6 +10614,10 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_periods=[first_supervision_period, second_supervision_period]
         )
 
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[]
+        )
+
         incarceration_sentences = []
         supervision_sentences = [supervision_sentence]
         violation_responses = []
@@ -10496,6 +10627,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             incarceration_sentences,
             first_supervision_period,
             supervision_period_index,
+            incarceration_period_index,
             assessments,
             violation_responses,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
@@ -10505,11 +10637,13 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
+        # in_supervision_population_on_date=True because another SP was in progress the same day as this termination
         expected_termination_bucket = SupervisionTerminationBucket(
             state_code=first_supervision_period.state_code,
             year=first_supervision_period.termination_date.year,
             month=first_supervision_period.termination_date.month,
             event_date=first_supervision_period.termination_date,
+            in_supervision_population_on_date=True,
             supervision_type=first_supervision_period_supervision_type,
             case_type=StateSupervisionCaseType.GENERAL,
             assessment_score=assessment_3.assessment_score,
@@ -10551,11 +10685,16 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_periods=[supervision_period]
         )
 
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[]
+        )
+
         termination_bucket = identifier.find_supervision_termination_bucket(
             supervision_sentences=[supervision_sentence],
             incarceration_sentences=[],
             supervision_period=supervision_period,
             supervision_period_index=supervision_period_index,
+            incarceration_period_index=incarceration_period_index,
             assessments=[],
             violation_responses_for_history=[],
             supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
@@ -10573,9 +10712,704 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_type=supervision_period_supervision_type,
             case_type=StateSupervisionCaseType.GENERAL,
             termination_reason=supervision_period.termination_reason,
+            in_supervision_population_on_date=True,
         )
 
         self.assertEqual(expected_termination_bucket, termination_bucket)
+
+    def test_find_supervision_termination_bucket_overlapping_incarceration(self):
+        """Tests that the SupervisionTerminationBucket has in_incarceration_population_on_date=True
+        and in_supervision_population_on_date=False if the termination date occurs
+        during an incarceration period for that person."""
+        self.run_overlapping_periods_test(
+            date(2019, 5, 19), date(2019, 5, 15), True, False
+        )
+
+    def test_find_supervision_termination_bucket_overlapping_incarceration_incarceration_ends_first(
+        self,
+    ):
+        """Tests that the SupervisionTerminationBucket has in_incarceration_population_on_date=False
+        and in_supervision_population_on_date=True if the termination date occurs after
+        an incarceration period for that person, even if the supervision and
+        incarceration periods were overlapping previously."""
+        self.run_overlapping_periods_test(
+            date(2019, 5, 19), date(2018, 5, 15), False, True, date(2019, 5, 15)
+        )
+
+    def test_find_supervision_termination_bucket_termination_admission_same_date(self):
+        """Tests that the SupervisionTerminationBucket has in_incarceration_population_on_date=True
+        and in_supervision_population_on_date=True if the termination date is on the
+        same day as the admission date of an incarceration period for that person."""
+        self.run_overlapping_periods_test(
+            date(2019, 5, 19), date(2019, 5, 19), True, True
+        )
+
+    def test_find_supervision_termination_bucket_termination_day_before_admission(self):
+        """Tests that the SupervisionTerminationBucket has in_incarceration_population_on_date=False
+        and in_supervision_population_on_date=True if the termination date is the day
+        before the admission date of an incarceration period for that person."""
+        self.run_overlapping_periods_test(
+            date(2019, 5, 19), date(2019, 5, 20), False, True
+        )
+
+    def test_find_supervision_termination_bucket_single_day_termination_non_overlapping(
+        self,
+    ):
+        """Tests that the SupervisionTerminationBucket has in_supervision_population_on_date=True
+        and in_incarceration_population_on_date=False if the supervision period is 1 full day and
+        non-overlapping with other periods."""
+        self.run_overlapping_periods_test(
+            date(2018, 3, 6), date(2019, 5, 20), False, True
+        )
+
+    def test_find_supervision_termination_bucket_single_day_termination_overlapping(
+        self,
+    ):
+        """Tests that the SupervisionTerminationBucket has in_supervision_population_on_date=True
+        if the supervision period is 1 full day and non-overlapping with other
+        supervision periods, but in_incarceration_population_on_date=True because it's overlapping
+        with an incarceration period."""
+        self.run_overlapping_periods_test(
+            date(2018, 3, 6), date(2018, 3, 6), True, True
+        )
+
+    def test_find_supervision_termination_bucket_single_day_termination_overlapping_with_supervision(
+        self,
+    ):
+        """Tests that the SupervisionTerminationBucket has in_supervision_population_on_date=True
+        if the supervision period is 1 full day and overlapping with another
+        supervision period, but in_incarceration_population_on_date=False because it's overlapping
+        with no incarceration periods."""
+        first_supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_XX",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 3, 6),
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            supervision_type=StateSupervisionType.PROBATION,
+        )
+
+        second_supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_XX",
+            start_date=date(2018, 3, 6),
+            termination_date=date(2020, 5, 18),
+            termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
+            supervision_type=StateSupervisionType.PROBATION,
+        )
+
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            state_code="US_XX",
+            supervision_sentence_id=111,
+            start_date=date(2017, 1, 1),
+            external_id="ss1",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionType.PROBATION,
+            completion_date=date(2020, 5, 18),
+            supervision_periods=[first_supervision_period, second_supervision_period],
+        )
+
+        assessments: List[StateAssessment] = []
+
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
+            supervision_periods=[first_supervision_period, second_supervision_period]
+        )
+
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[]
+        )
+
+        incarceration_sentences: List[StateIncarcerationSentence] = []
+        supervision_sentences = [supervision_sentence]
+        violation_responses: List[StateSupervisionViolationResponse] = []
+
+        termination_bucket = identifier.find_supervision_termination_bucket(
+            supervision_sentences,
+            incarceration_sentences,
+            first_supervision_period,
+            supervision_period_index,
+            incarceration_period_index,
+            assessments,
+            violation_responses,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+        )
+
+        supervision_period_supervision_type = (
+            StateSupervisionPeriodSupervisionType.PROBATION
+        )
+
+        if first_supervision_period.termination_date is None:
+            raise ValueError(
+                "Expected supervision_period.termination_date to be filled"
+            )
+
+        expected_termination_bucket = SupervisionTerminationBucket(
+            state_code=first_supervision_period.state_code,
+            year=first_supervision_period.termination_date.year,
+            month=first_supervision_period.termination_date.month,
+            event_date=first_supervision_period.termination_date,
+            in_incarceration_population_on_date=False,
+            in_supervision_population_on_date=True,
+            supervision_type=supervision_period_supervision_type,
+            case_type=StateSupervisionCaseType.GENERAL,
+            assessment_score=None,
+            assessment_type=None,
+            termination_reason=first_supervision_period.termination_reason,
+            assessment_score_change=None,
+        )
+
+        self.assertEqual(expected_termination_bucket, termination_bucket)
+
+    def test_find_supervision_termination_bucket_zero_day_termination_non_overlapping(
+        self,
+    ):
+        """Tests that the SupervisionTerminationBucket has in_supervision_population_on_date=False
+        if the supervision period is 0 full days and non-overlapping with other periods."""
+        self.run_overlapping_periods_test(
+            date(2018, 3, 5), date(2019, 5, 20), False, False
+        )
+
+    def test_find_supervision_termination_bucket_zero_day_termination_overlapping(
+        self,
+    ):
+        """Tests that the SupervisionTerminationBucket has in_supervision_population_on_date=False
+        if the supervision period is 0 full days and non-overlapping with other
+        supervision periods, but in_incarceration_population_on_date=True because it's overlapping
+        with an incarceration period."""
+        self.run_overlapping_periods_test(
+            date(2018, 3, 5), date(2018, 3, 5), True, False
+        )
+
+    def test_find_supervision_termination_bucket_zero_day_termination_overlapping_with_supervision(
+        self,
+    ):
+        """Tests that the SupervisionTerminationBucket has in_supervision_population_on_date=False
+        if the supervision period is 0 full days and overlapping with another
+        supervision period, but in_incarceration_population_on_date=False because it's overlapping
+        with no incarceration periods."""
+        first_supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_XX",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 3, 5),
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            supervision_type=StateSupervisionType.PROBATION,
+        )
+
+        second_supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_XX",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2020, 5, 18),
+            termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
+            supervision_type=StateSupervisionType.PROBATION,
+        )
+
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            state_code="US_XX",
+            supervision_sentence_id=111,
+            start_date=date(2017, 1, 1),
+            external_id="ss1",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionType.PROBATION,
+            completion_date=date(2020, 5, 18),
+            supervision_periods=[first_supervision_period, second_supervision_period],
+        )
+
+        assessments: List[StateAssessment] = []
+
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
+            supervision_periods=[first_supervision_period, second_supervision_period]
+        )
+
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[]
+        )
+
+        incarceration_sentences: List[StateIncarcerationSentence] = []
+        supervision_sentences = [supervision_sentence]
+        violation_responses: List[StateSupervisionViolationResponse] = []
+
+        termination_bucket = identifier.find_supervision_termination_bucket(
+            supervision_sentences,
+            incarceration_sentences,
+            first_supervision_period,
+            supervision_period_index,
+            incarceration_period_index,
+            assessments,
+            violation_responses,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+        )
+
+        supervision_period_supervision_type = (
+            StateSupervisionPeriodSupervisionType.PROBATION
+        )
+
+        if first_supervision_period.termination_date is None:
+            raise ValueError(
+                "Expected supervision_period.termination_date to be filled"
+            )
+
+        expected_termination_bucket = SupervisionTerminationBucket(
+            state_code=first_supervision_period.state_code,
+            year=first_supervision_period.termination_date.year,
+            month=first_supervision_period.termination_date.month,
+            event_date=first_supervision_period.termination_date,
+            in_incarceration_population_on_date=False,
+            in_supervision_population_on_date=False,
+            supervision_type=supervision_period_supervision_type,
+            case_type=StateSupervisionCaseType.GENERAL,
+            assessment_score=None,
+            assessment_type=None,
+            termination_reason=first_supervision_period.termination_reason,
+            assessment_score_change=None,
+        )
+
+        self.assertEqual(expected_termination_bucket, termination_bucket)
+
+    def run_overlapping_periods_test(
+        self,
+        supervision_termination_date: date,
+        incarceration_admission_date: date,
+        expected_in_incarceration_population_on_date: bool,
+        expected_in_supervision_population_on_date: bool,
+        incarceration_release_date: Optional[date] = date(2020, 9, 20),
+    ) -> None:
+        """Runs a test for find_supervision_termination_bucket where there are
+        overlapping supervision and incarceration periods."""
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_XX",
+            start_date=date(2018, 3, 5),
+            termination_date=supervision_termination_date,
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PROBATION,
+        )
+
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            state_code="US_XX",
+            supervision_sentence_id=111,
+            start_date=date(2017, 1, 1),
+            external_id="ss1",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionType.PROBATION,
+            completion_date=date(2020, 5, 19),
+            supervision_periods=[supervision_period],
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="ip1",
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_XX",
+            admission_date=incarceration_admission_date,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            release_date=incarceration_release_date,
+            release_reason=ReleaseReason.SENTENCE_SERVED,
+        )
+
+        assessments: List[StateAssessment] = []
+
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
+            supervision_periods=[supervision_period]
+        )
+
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[incarceration_period]
+        )
+
+        incarceration_sentences: List[StateIncarcerationSentence] = []
+        supervision_sentences = [supervision_sentence]
+        violation_responses: List[StateSupervisionViolationResponse] = []
+
+        termination_bucket = identifier.find_supervision_termination_bucket(
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_period,
+            supervision_period_index,
+            incarceration_period_index,
+            assessments,
+            violation_responses,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+        )
+
+        supervision_period_supervision_type = (
+            StateSupervisionPeriodSupervisionType.PROBATION
+        )
+
+        if supervision_period.termination_date is None:
+            raise ValueError(
+                "Expected supervision_period.termination_date to be filled"
+            )
+
+        expected_termination_bucket = SupervisionTerminationBucket(
+            state_code=supervision_period.state_code,
+            year=supervision_period.termination_date.year,
+            month=supervision_period.termination_date.month,
+            event_date=supervision_period.termination_date,
+            in_incarceration_population_on_date=expected_in_incarceration_population_on_date,
+            in_supervision_population_on_date=expected_in_supervision_population_on_date,
+            supervision_type=supervision_period_supervision_type,
+            case_type=StateSupervisionCaseType.GENERAL,
+            assessment_score=None,
+            assessment_type=None,
+            termination_reason=supervision_period.termination_reason,
+            assessment_score_change=None,
+        )
+
+        self.assertEqual(expected_termination_bucket, termination_bucket)
+
+
+class TestFindSupervisionStartBucket(unittest.TestCase):
+    """Tests the find_supervision_start_bucket function."""
+
+    def test_find_supervision_start_bucket_overlapping_incarceration(self):
+        """Tests that the SupervisionStartBucket has in_incarceration_population_on_date=True
+        if the start date occurs during an incarceration period for that person.
+        in_supervision_population_on_date=False because the IP overlapping with the
+        start date means they are generally not counted in the supervision population
+        on that date."""
+        self.run_overlapping_periods_test(
+            date(2018, 3, 5), date(2018, 4, 1), True, False
+        )
+
+    def test_find_supervision_start_bucket_overlapping_incarceration_supervision_authority(
+        self,
+    ):
+        """Tests that the SupervisionStartBucket has in_incarceration_population_on_date=True
+        if the start date occurs during an incarceration period for that person.
+        in_supervision_population_on_date=True because the IP overlapping with the
+        start date has custodial_authority=SUPERVISION_AUTHORITY which means the person
+        is counted in the supervision population on that date."""
+        self.run_overlapping_periods_test(
+            date(2018, 3, 5),
+            date(2018, 4, 1),
+            True,
+            True,
+            incarceration_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+        )
+
+    def test_find_supervision_start_bucket_overlapping_incarceration_supervision_starts_first(
+        self,
+    ):
+        """Tests that the SupervisionStartBucket has in_incarceration_population_on_date=False
+        if the start date occurs before an incarceration period for that person,
+        even if the supervision and incarceration periods are overlapping thereafter.
+        in_supervision_population_on_date=True because it's not a 0-day supervision period."""
+        self.run_overlapping_periods_test(
+            date(2018, 3, 5), date(2019, 5, 20), False, True, date(2018, 4, 1)
+        )
+
+    def test_find_supervision_start_bucket_start_release_same_date(self):
+        """Tests that the SupervisionStartBucket has in_incarceration_population_on_date=False
+        and in_supervision_population_on_date=True if the start date is on the same day
+        as the release date of an incarceration period for that person."""
+        self.run_overlapping_periods_test(
+            date(2018, 3, 5), date(2018, 3, 5), False, True
+        )
+
+    def test_find_supervision_start_bucket_start_day_before_release(self):
+        """Tests that the SupervisionStartBucket has in_incarceration_population_on_date=True
+        and in_supervision_population_on_date=False if the start date is the day before
+        the release date of an incarceration period for that person."""
+        self.run_overlapping_periods_test(
+            date(2018, 3, 5), date(2018, 3, 6), True, False
+        )
+
+    def test_find_supervision_start_bucket_single_day_termination_non_overlapping(
+        self,
+    ):
+        """Tests that the SupervisionStartBucket has in_supervision_population_on_date=True
+        and in_incarceration_population_on_date=False if the supervision period is 1 full day and
+        non-overlapping with other periods."""
+        self.run_overlapping_periods_test(
+            date(2019, 5, 18), date(2019, 2, 20), False, True
+        )
+
+    def test_find_supervision_start_bucket_single_day_termination_overlapping(
+        self,
+    ):
+        """Tests that the SupervisionStartBucket has in_supervision_population_on_date=False
+        and in_incarceration_population_on_date=True if the the supervision period
+        is 1 full day and that day is overlapping with an incarceration period."""
+        self.run_overlapping_periods_test(
+            date(2019, 5, 18), date(2020, 5, 18), True, False, date(2019, 5, 18)
+        )
+
+    def test_find_supervision_start_bucket_single_day_termination_overlapping_with_supervision(
+        self,
+    ):
+        """Tests that the SupervisionStartBucket has in_supervision_population_on_date=True
+        and in_incarceration_population_on_date=False if the supervision period is 1
+        full day and overlapping with another supervision period, but with no
+        incarceration periods."""
+        first_supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_XX",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 3, 6),
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            supervision_type=StateSupervisionType.PROBATION,
+        )
+
+        second_supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_XX",
+            start_date=date(2018, 3, 6),
+            termination_date=date(2020, 5, 18),
+            termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
+            supervision_type=StateSupervisionType.PROBATION,
+        )
+
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
+            supervision_periods=[first_supervision_period, second_supervision_period]
+        )
+
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[]
+        )
+
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            state_code="US_XX",
+            supervision_sentence_id=111,
+            start_date=date(2018, 3, 5),
+            external_id="ss1",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionType.PROBATION,
+            completion_date=date(2020, 5, 18),
+            supervision_periods=[first_supervision_period, second_supervision_period],
+        )
+
+        supervision_sentences: List[StateSupervisionSentence] = [supervision_sentence]
+        incarceration_sentences: List[StateIncarcerationSentence] = []
+
+        start_bucket = identifier.find_supervision_start_bucket(
+            supervision_sentences,
+            incarceration_sentences,
+            first_supervision_period,
+            supervision_period_index,
+            incarceration_period_index,
+            {},
+            None,
+        )
+
+        if first_supervision_period.termination_date is None:
+            raise ValueError(
+                "Expected supervision_period.termination_date to be filled"
+            )
+
+        expected_start_bucket = SupervisionStartBucket(
+            state_code=first_supervision_period.state_code,
+            year=first_supervision_period.start_date.year,
+            month=first_supervision_period.start_date.month,
+            event_date=first_supervision_period.start_date,
+            in_incarceration_population_on_date=False,
+            in_supervision_population_on_date=True,
+            supervision_type=first_supervision_period.supervision_period_supervision_type,
+            supervision_level=first_supervision_period.supervision_level,
+            case_type=StateSupervisionCaseType.GENERAL,
+            admission_reason=first_supervision_period.admission_reason,
+        )
+
+        self.assertEqual(expected_start_bucket, start_bucket)
+
+    def test_find_supervision_start_bucket_zero_day_termination_non_overlapping(
+        self,
+    ):
+        """Tests that the SupervisionStartBucket has in_supervision_population_on_date=False
+        if the supervision period is 0 full days and non-overlapping with other periods."""
+        self.run_overlapping_periods_test(
+            date(2019, 5, 19), date(2019, 2, 20), False, False
+        )
+
+    def test_find_supervision_start_bucket_zero_day_termination_overlapping(
+        self,
+    ):
+        """Tests that the SupervisionStartBucket has in_supervision_population_on_date=False
+        and in_incarceration_population_on_date=True if the supervision period is 0 full
+        days and it's overlapping with an incarceration period."""
+        self.run_overlapping_periods_test(
+            date(2019, 5, 19), date(2020, 5, 19), True, False, date(2019, 5, 19)
+        )
+
+    def test_find_supervision_start_bucket_zero_day_termination_overlapping_with_supervision(
+        self,
+    ):
+        """Tests that the SupervisionStartBucket has in_supervision_population_on_date=True
+        and in_incarceration_population_on_date=False if the supervision period is 0
+        full days and overlapping with another supervision period but with no
+        incarceration periods."""
+        first_supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_XX",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 3, 5),
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            supervision_type=StateSupervisionType.PROBATION,
+        )
+
+        second_supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_XX",
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 18),
+            termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
+            supervision_type=StateSupervisionType.PROBATION,
+        )
+
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
+            supervision_periods=[first_supervision_period, second_supervision_period]
+        )
+
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[]
+        )
+
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            state_code="US_XX",
+            supervision_sentence_id=111,
+            start_date=date(2018, 3, 5),
+            external_id="ss1",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionType.PROBATION,
+            completion_date=date(2018, 5, 18),
+            supervision_periods=[first_supervision_period, second_supervision_period],
+        )
+
+        supervision_sentences: List[StateSupervisionSentence] = [supervision_sentence]
+        incarceration_sentences: List[StateIncarcerationSentence] = []
+
+        start_bucket = identifier.find_supervision_start_bucket(
+            supervision_sentences,
+            incarceration_sentences,
+            first_supervision_period,
+            supervision_period_index,
+            incarceration_period_index,
+            {},
+            None,
+        )
+
+        if first_supervision_period.termination_date is None:
+            raise ValueError(
+                "Expected supervision_period.termination_date to be filled"
+            )
+
+        expected_start_bucket = SupervisionStartBucket(
+            state_code=first_supervision_period.state_code,
+            year=first_supervision_period.start_date.year,
+            month=first_supervision_period.start_date.month,
+            event_date=first_supervision_period.start_date,
+            in_incarceration_population_on_date=False,
+            in_supervision_population_on_date=True,
+            supervision_type=first_supervision_period.supervision_period_supervision_type,
+            supervision_level=first_supervision_period.supervision_level,
+            case_type=StateSupervisionCaseType.GENERAL,
+            admission_reason=first_supervision_period.admission_reason,
+        )
+
+        self.assertEqual(expected_start_bucket, start_bucket)
+
+    def run_overlapping_periods_test(
+        self,
+        supervision_start_date: date,
+        incarceration_release_date: date,
+        expected_in_incarceration_population_on_date: bool,
+        expected_in_supervision_population_on_date: bool,
+        incarceration_admission_date: Optional[date] = date(2018, 2, 20),
+        incarceration_authority: Optional[StateCustodialAuthority] = None,
+    ) -> None:
+        """Runs a test for find_supervision_start_bucket where there are overlapping
+        supervision and incarceration periods."""
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_XX",
+            start_date=supervision_start_date,
+            termination_date=date(2019, 5, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PROBATION,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="ip1",
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_XX",
+            admission_date=incarceration_admission_date,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            release_date=incarceration_release_date,
+            release_reason=ReleaseReason.SENTENCE_SERVED,
+            custodial_authority=incarceration_authority,
+        )
+
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
+            supervision_periods=[supervision_period]
+        )
+
+        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+            incarceration_periods=[incarceration_period]
+        )
+
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            state_code="US_XX",
+            supervision_sentence_id=111,
+            start_date=date(2017, 1, 1),
+            external_id="ss1",
+            status=StateSentenceStatus.COMPLETED,
+            supervision_type=StateSupervisionType.PROBATION,
+            completion_date=date(2020, 5, 19),
+            supervision_periods=[supervision_period],
+        )
+
+        supervision_sentences: List[StateSupervisionSentence] = [supervision_sentence]
+        incarceration_sentences: List[StateIncarcerationSentence] = []
+
+        start_bucket = identifier.find_supervision_start_bucket(
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_period,
+            supervision_period_index,
+            incarceration_period_index,
+            {},
+            None,
+        )
+
+        if supervision_period.start_date is None:
+            raise ValueError("Expected supervision_period.start_date to be filled")
+
+        expected_start_bucket = SupervisionStartBucket(
+            state_code=supervision_period.state_code,
+            year=supervision_period.start_date.year,
+            month=supervision_period.start_date.month,
+            event_date=supervision_period.start_date,
+            in_incarceration_population_on_date=expected_in_incarceration_population_on_date,
+            in_supervision_population_on_date=expected_in_supervision_population_on_date,
+            supervision_type=supervision_period.supervision_period_supervision_type,
+            supervision_level=supervision_period.supervision_level,
+            case_type=StateSupervisionCaseType.GENERAL,
+            admission_reason=supervision_period.admission_reason,
+        )
+
+        self.assertEqual(expected_start_bucket, start_bucket)
 
 
 class TestGetMostSevereResponseDecision(unittest.TestCase):
@@ -11560,6 +12394,7 @@ def create_start_bucket_from_period(period, **kwargs) -> SupervisionStartBucket:
         level_2_supervision_location_external_id=level_2_supervision_location_external_id,
         supervision_level=period.supervision_level,
         case_type=StateSupervisionCaseType.GENERAL,
+        in_supervision_population_on_date=True,
         admission_reason=period.admission_reason
         or StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
     )

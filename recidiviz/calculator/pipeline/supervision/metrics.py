@@ -24,6 +24,7 @@ import attr
 from recidiviz.calculator.pipeline.utils.event_utils import (
     SupervisionLocationMixin,
     ViolationHistoryMixin,
+    InPopulationMixin,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import (
     AssessmentMetricMixin,
@@ -263,7 +264,11 @@ class SuccessfulSupervisionSentenceDaysServedMetric(
 
 @attr.s
 class SupervisionTerminationMetric(
-    SupervisionMetric, PersonLevelMetric, ViolationHistoryMixin, AssessmentMetricMixin
+    SupervisionMetric,
+    PersonLevelMetric,
+    ViolationHistoryMixin,
+    InPopulationMixin,
+    AssessmentMetricMixin,
 ):
     """Subclass of SupervisionMetric that contains information about a supervision that has been terminated, the reason
     for the termination, and the change in assessment score between the last assessment and the first reassessment."""
@@ -295,7 +300,7 @@ class SupervisionTerminationMetric(
 
 
 @attr.s
-class SupervisionStartMetric(SupervisionMetric, PersonLevelMetric):
+class SupervisionStartMetric(SupervisionMetric, PersonLevelMetric, InPopulationMixin):
     """Subclass of SupervisionMetric that contains information about the start of supervision."""
 
     @classmethod
@@ -313,6 +318,8 @@ class SupervisionStartMetric(SupervisionMetric, PersonLevelMetric):
 
     # The reason the supervision was started
     is_official_supervision_admission: bool = attr.ib(default=False)
+
+    # The reason the supervision began
     admission_reason: Optional[StateSupervisionPeriodAdmissionReason] = attr.ib(
         default=None
     )

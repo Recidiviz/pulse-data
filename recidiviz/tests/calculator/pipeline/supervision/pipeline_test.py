@@ -1826,6 +1826,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 judicial_district_code=judicial_district_code,
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
+                in_supervision_population_on_date=True,
             )
         )
         expected_buckets.append(
@@ -2000,6 +2001,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
                     most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
                     response_count=1,
+                    in_supervision_population_on_date=True,
                 ),
                 identifier_test.create_start_bucket_from_period(
                     supervision_period,
@@ -2228,6 +2230,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     response_count=1,
                     most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
                     most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
+                    in_supervision_population_on_date=True,
                 ),
                 RevocationReturnSupervisionTimeBucket(
                     state_code=supervision_period.state_code,
@@ -2441,6 +2444,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 judicial_district_code="XXX",
                 supervision_level=supervision_period_with_death.supervision_level,
                 supervision_level_raw_text=supervision_period_with_death.supervision_level_raw_text,
+                in_supervision_population_on_date=True,
             )
         )
 
@@ -2613,6 +2617,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 judicial_district_code="XXX",
                 supervision_level=supervision_period_with_death.supervision_level,
                 supervision_level_raw_text=supervision_period_with_death.supervision_level_raw_text,
+                in_supervision_population_on_date=True,
             )
         )
 
@@ -2650,6 +2655,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 judicial_district_code="XXX",
                 supervision_level=supervision_period_with_death.supervision_level,
                 supervision_level_raw_text=supervision_period_with_death.supervision_level_raw_text,
+                in_supervision_population_on_date=True,
             )
         )
 
@@ -2768,6 +2774,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     level_1_supervision_location_external_id="10",
                     supervision_level=supervision_period.supervision_level,
                     supervision_level_raw_text=supervision_period.supervision_level_raw_text,
+                    in_supervision_population_on_date=True,
                 ),
                 identifier_test.create_start_bucket_from_period(
                     supervision_period,
@@ -2873,6 +2880,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     level_1_supervision_location_external_id="10",
                     supervision_level=supervision_period.supervision_level,
                     supervision_level_raw_text=supervision_period.supervision_level_raw_text,
+                    in_supervision_population_on_date=True,
                 ),
                 identifier_test.create_start_bucket_from_period(
                     supervision_period,
