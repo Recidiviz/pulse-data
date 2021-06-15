@@ -22,11 +22,14 @@ three dataframes required to run Spark population projections.
 
 # import dependencies
 from typing import Optional, Sequence
+from warnings import warn
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
 from scipy.stats import lognorm
-import matplotlib.pyplot as plt
+
 from recidiviz.calculator.modeling.population_projection.utils.transitions_utils import (
     SIG_FIGS,
 )
@@ -39,8 +42,8 @@ def transitions_uniform(
     prob: float,
     round_digits: int = SIG_FIGS,
     max_periods: int = 119,
-    disagg_type: str = "crime_type",
-    disagg_label: str = "x",
+    disagg_label: str = "crime_type",
+    disagg_value: str = "x",
 ) -> pd.DataFrame:
     """
     Creates dataframe with transitions table probabilities
@@ -63,7 +66,10 @@ def transitions_uniform(
                     0.5 * `mean_los`. Must be odd (why? Because with uniform dist,
                     only possible to maintain expected LOS with odd max_periods).
 
-    disagg_label    String label for disaggregation axis, default is 'x'.
+    disagg_label    String label for the disaggregation axis name, default is
+                    'crime_type'
+
+    disagg_value    String label for disaggregation axis, default is 'x'.
 
     Example
     -------
@@ -85,7 +91,7 @@ def transitions_uniform(
 
     # -- assertions --
     # check types
-    for s in [c_from, c_to, disagg_label]:
+    for s in [c_from, c_to, disagg_label, disagg_value]:
         if not isinstance(s, str):
             raise ValueError(f"{s} not type str.")
     for i in [mean_los, round_digits, max_periods]:
@@ -122,7 +128,7 @@ def transitions_uniform(
         {
             "compartment": c_from,
             "outflow_to": c_to,
-            disagg_type: disagg_label,
+            disagg_label: disagg_value,
             "compartment_duration": months,
             "total_population": [prob_u] * len(months),
         },
@@ -133,12 +139,12 @@ def transitions_uniform(
 
 
 def get_lognorm_params(
-    xlst: list,
-    dlst: list,
-    meanbounds: Sequence[int] = (1, 5),
-    sdbounds: Sequence[float] = (5, 50),
+    xlst: Sequence[float],
+    dlst: Sequence[float],
+    meanbounds: Sequence[float] = (5, 50),
+    sdbounds: Sequence[float] = (1, 5),
     splits: int = 10,
-    weights: Optional[list] = None,
+    weights: Optional[Sequence[float]] = None,
     print_errs: bool = False,
     grid_search_only: bool = False,
 ) -> list:
@@ -182,6 +188,10 @@ def get_lognorm_params(
 
     mean, std = get_lognorm_params(months, dlst, meanbounds, sdbounds,
                 50, weights, False, False)
+
+    Note: mean is returned as exp(mu) where mu is the mean parameter in the usual
+    parameterization of a lognormal random variable (e.g. Y = exp(X) s.t.
+    X ~ Normal(mu, sigma)).
     """
 
     # -- assertions --
@@ -189,20 +199,17 @@ def get_lognorm_params(
     for i in [splits]:
         if not isinstance(i, int):
             raise ValueError(f"{i} not type int.")
-    for lvar in [xlst, dlst]:
-        if not isinstance(lvar, list):
-            raise ValueError(f"{lvar} not type list.")
-    for t in [meanbounds, sdbounds]:
-        if not isinstance(t, (tuple, list)):
-            raise ValueError(f"{t} not type tuple or list.")
+    for lvar in [xlst, dlst, meanbounds, sdbounds]:
+        if not isinstance(lvar, Sequence):
+            raise ValueError(f"{lvar} not type Sequence (tuple, list, etc.).")
     for b in [print_errs, grid_search_only]:
         if not isinstance(b, bool):
             raise ValueError(f"{b} not type bool.")
 
     # weights, if found
-    if weights is not None:
-        if not isinstance(weights, list):
-            raise ValueError("weights not type list.")
+    if weights:
+        if not isinstance(weights, Sequence):
+            raise ValueError("weights not type Sequence (tuple, list, etc.).")
     else:
         weights = [1] * len(xlst)
 
@@ -230,7 +237,7 @@ def get_lognorm_params(
     # -- passed assertions --
 
     # get month range
-    x_diff = max(xlst) - min(xlst)
+    x_diff = int(max(xlst) - min(xlst))
 
     # make sure dlst sums to 1
     if abs(sum(dlst) - 1) > 0.01:
@@ -245,6 +252,9 @@ def get_lognorm_params(
         pdf: distribution given params
         pdfr: relevant pdf values used to calculate error
         """
+        # here for mypy
+        if weights is None:
+            raise ValueError
 
         # two params
         mu, sigma = params
@@ -255,10 +265,10 @@ def get_lognorm_params(
 
         # get pdf
         # months to estimate pdfs
-        pdfx = np.linspace(min(xlst), max(xlst), (x_diff + 1))
+        pdfx = np.linspace(min(xlst), max(xlst), x_diff + 1)
 
         # fit probability density function
-        pdf = lognorm.pdf(pdfx, s=mu, loc=0, scale=sigma)
+        pdf = lognorm.pdf(pdfx, s=sigma, loc=0, scale=mu)
 
         # scale pdf
         # This is so every element becomes a (sorta) 'monthly' density and sum to 1
@@ -268,9 +278,6 @@ def get_lognorm_params(
         idx = [j for j, x in enumerate(pdfx) if x in xlst]
         pdfr = [pdf[j] for j in idx]
 
-        # Just here for mypy
-        if weights is None:
-            raise ValueError
         # get squared error
         errs = [(x1 - x2) ** 2 * w for x1, x2, w in zip(pdfr, dlst, weights)]
         if print_errs:
@@ -308,7 +315,8 @@ def transitions_lognorm(
     p_x_months: float,
     last_month: int = 120,
     round_digits: int = SIG_FIGS,
-    disagg_label: str = "x",
+    disagg_label: str = "crime_type",
+    disagg_value: str = "x",
     plot: bool = False,
 ) -> pd.DataFrame:
     """
@@ -324,9 +332,11 @@ def transitions_lognorm(
 
     c_to          compartment transitioning to
 
-    mean          mean param for the log-normal distribution (already logged)
+    mean          mean param for the log-normal distribution, specifically exp(mu) where
+                  mu is the mean parameter in the usual parameterization of a lognormal
+                  random variable (e.g. Y = exp(X) s.t. X ~ Normal(mu, sigma)).
 
-    std           standard deviation paramter for the log-normal distribution
+    std           standard deviation parameter for the log-normal distribution
 
     x_months      number of months at benchmark probability `p_x_months`
 
@@ -337,7 +347,9 @@ def transitions_lognorm(
 
     round_digits  Number of places after decimal to round transition probabilities
 
-    disagg_label  String label for disaggregation axis, default is 'x'.
+    disagg_label  String label for the disaggregation axis name, default is 'crime_type'
+
+    disagg_value  String label for disaggregation axis, default is 'x'.
 
     plot          If True, plots transition probabilities over time
 
@@ -347,10 +359,10 @@ def transitions_lognorm(
 
     x_months = 36
     p_x_months = 0.33
-    mean, std = get_lognorm_params() # 1.5, 20.0
+    mean, std = get_lognorm_params() # 20.0, 1.5
 
     transitions_lognorm('parole', 'release', mean, std, x_months, p_x_months,
-                        120, 5, 'x', False) produces a dataframe with:
+                        120, 5, 'crime_type', 'x', False) produces a dataframe with:
 
     compartment, outflow_to, crime_type, compartment_duration, total_population
     parole,release,x,1,0.01838
@@ -362,7 +374,7 @@ def transitions_lognorm(
 
     # -- assertions --
     # check types
-    for s in [c_from, c_to, disagg_label]:
+    for s in [c_from, c_to, disagg_label, disagg_value]:
         if not isinstance(s, str):
             raise ValueError(f"{s} not type str.")
     for i in [x_months, last_month, round_digits]:
@@ -387,7 +399,7 @@ def transitions_lognorm(
 
     # Get log-normal pdf from params
     months = np.linspace(1, last_month, last_month, dtype=int)
-    pdf = lognorm.pdf(months, s=mean, loc=0, scale=std)
+    pdf = lognorm.pdf(months, s=std, loc=0, scale=mean)
 
     # scale probabilities to equal one
     # This is only necessary if last_month is sufficiently small
@@ -407,7 +419,7 @@ def transitions_lognorm(
         {
             "compartment": c_from,
             "outflow_to": c_to,
-            "crime_type": disagg_label,
+            disagg_label: disagg_value,
             "compartment_duration": months,
             "total_population": pdf,
         },
@@ -428,5 +440,170 @@ def transitions_lognorm(
         plt.title("Transition probabilities")
         plt.ylabel("Monthly P(transition)")
         plt.xlabel("Months")
+
+    return df
+
+
+def transitions_interpolation(
+    c_from: str,
+    c_to: str,
+    pdf_list: Sequence[float],
+    year_list: Optional[Sequence[int]] = None,
+    round_digits: int = SIG_FIGS,
+    disagg_label: str = "crime_type",
+    disagg_value: str = "x",
+    uniform: bool = False,
+    plot: bool = False,
+) -> pd.DataFrame:
+    """
+    Takes yearly PDFs and converts to monthly PDFs using
+    linear interpolation between months while holding yearly
+    probabilities constant. Last year assumed to be pdf = 0.
+
+    Note: PDF must be (weakly) decreasing, i.e.
+    pdf[x1] >= pdf[x2] for all x1 < x2.
+
+    Args:
+    -----
+    c_from : str
+        compartment transitioning from
+
+    c_to : str
+        compartment transitioning to
+
+    pdf_list : List[float]
+        List of yearly transition probabilities corresponding with
+        `year_list`.
+
+    year_list : Optional[List[int]]
+        List of years corresponding with `pdf_list`. If not provided,
+        default is to assume pdf_list corresponds with years 1 to
+        len(pdf_list).
+
+    round_digits : int
+        Number of places after decimal to round transition probabilities
+
+    disagg_label : str
+        String label for disaggregation axis, default is 'x'.
+
+    uniform : bool
+        If True, use uniform transitions within year, default is False.
+
+    plot : bool
+        If True, plots transition probabilities over time
+
+    """
+    # handle missing year_list
+    if not year_list:
+        year_list = list(range(1, len(pdf_list) + 1))
+    else:
+        year_list = list(year_list)
+
+    # -- assertions --
+    for lists in [pdf_list, year_list]:
+        if not isinstance(lists, Sequence):
+            raise ValueError(
+                "pdf_list and year_list must be lists, series, or other Sequences."
+            )
+
+    # check pdf_list and year_list are same length
+    if len(pdf_list) != len(year_list):
+        raise ValueError("pdf_list and year_list must be the same length.")
+
+    # check that pdfs are weakly decreasing
+    for x, y in zip(pdf_list[:-1], pdf_list[1:]):
+        if round(x - y, round_digits) < 0:
+            warn("PDF not weakly decreasing.")
+            break
+    # -- passed assertions --
+
+    # convert yearly probabilities to monthly
+    pdf_list = [x / 12 for x in pdf_list]
+
+    # handle missing years
+    if len(year_list) < year_list[-1] - year_list[0] + 1:
+
+        for i in range(0, year_list[-1] - year_list[0]):
+
+            # check if more than year difference
+            year_diff = year_list[i + 1] - year_list[i]
+            if year_diff > 1:
+
+                # get slope
+                slope = (pdf_list[i + 1] - pdf_list[i]) / year_diff
+
+                # get pdf for next (missing) year
+                pdf_list = pdf_list[: i + 1] + [pdf_list[i] + slope] + pdf_list[i + 1 :]
+                year_list = year_list[: i + 1] + [year_list[i] + 1] + year_list[i + 1 :]
+
+    # uniform transition probabilities within year
+    if uniform:
+        pdf_output = []
+        for i, _ in enumerate(pdf_list):
+            pdf_output += [pdf_list[i]] * 12
+
+    # allow for slopes between years, keep yearly probability constant
+    else:
+        # init pdf_output, and add 0 transition probability to end
+        pdf_output = [0.0]
+        pdf_list = pdf_list + [0]
+
+        # transverse the list backwards, interpolate as we go
+        for i in range(len(year_list) - 1, 0 - 1, -1):
+
+            # get monthly change
+            yint = pdf_output[-1]
+            slope = (pdf_list[i] - yint) / 6
+
+            # don't overshoot, otherwise sawtooth interpolations possible.
+            # Note: we subtract 5.5 to center the point halfway through the year on 6.5.
+            # This is because if Jan is 1 and Dec is 12, then halfway is 6.5.
+            if (i > 0) & (pdf_list[i] + slope * 5.5 > pdf_list[i - 1]):
+                slope = (pdf_list[i - 1] - pdf_list[i]) / 6
+                yint = pdf_list[i] - slope * 6
+
+            # add to pdf_output
+            # we multiply by 0.5 to keep mean within the year constant
+            pdf_output += [slope * (x - 0.5) + yint for x in range(1, 13)]
+
+        # drop last month (pdf = 0) and correct order
+        pdf_output = list(reversed(pdf_output[1:]))
+        pdf_list = pdf_list[:-1]
+
+    # prepare dataframe
+    # create dataframe
+    pdf_output = [round(x, round_digits) for x in pdf_output]
+    start_month = year_list[0] * 12 - 11
+    months = list(range(start_month, len(pdf_output) + start_month))
+    df = pd.DataFrame(
+        {
+            "compartment": c_from,
+            "outflow_to": c_to,
+            disagg_label: disagg_value,
+            "compartment_duration": months,
+            "total_population": pdf_output,
+        },
+        index=range(len(months)),
+    )
+
+    # create plot if option chosen
+    if plot:
+
+        # plot full PDF
+        plt.plot(
+            months,
+            pdf_output,
+            label="Linearly interpolated monthly transition probabilities",
+        )
+
+        # plot the original data as points
+        # Note: we subtract 5.5 to center the point halfway through the year on 6.5.
+        # This is because if Jan is 1 and Dec is 12, then halfway is 6.5.
+        months_plot = [x * 12 - 5.5 for x in year_list]
+        plt.scatter(months_plot, pdf_list)
+        plt.title("Transition probabilities")
+        plt.ylabel("Monthly P(transition)")
+        plt.xlabel("Months")
+        plt.legend(loc="center left", bbox_to_anchor=[1, 0.5])
 
     return df
