@@ -122,6 +122,7 @@ class DataValidationJobResult:
             f"\n\tvalidation["
             f"\n\t\tregion_code: {self.validation_job.region_code},"
             f"\n\t\tcheck_type: {self.validation_job.validation.validation_type},"
+            f"\n\t\tvalidation_category: {self.validation_job.validation.validation_category},"
             f"\n\t\tvalidation_name: {self.validation_job.validation.validation_name},"
             f"\n\t\tview_id: {self.validation_job.validation.view.view_id},"
             f"\n\t]"

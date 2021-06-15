@@ -95,6 +95,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 result_details=SamenessNumbersValidationResultDetails(
                     failed_rows=[], max_allowed_error=0.0
                 ),
+                validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
             ),
             result,
         )
@@ -111,6 +112,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 "failure_description": None,
                 "result_details_type": "SamenessNumbersValidationResultDetails",
                 "result_details": '{"failed_rows": [], "max_allowed_error": 0.0}',
+                "validation_category": "EXTERNAL_AGGREGATE",
             },
             result.to_serializable(),
         )
@@ -164,6 +166,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 failure_description=None,
                 result_details_type="SamenessStringsValidationResultDetails",
                 result_details=result_details,
+                validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
             ),
             result,
         )
@@ -180,6 +183,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 "failure_description": None,
                 "result_details_type": "SamenessStringsValidationResultDetails",
                 "result_details": '{"num_error_rows": 0, "total_num_rows": 5, "max_allowed_error": 0.5, "non_null_counts_per_column_per_partition": [[["US_XX", "2020-12-01"], {"internal": 5, "external": 5}]]}',
+                "validation_category": "EXTERNAL_INDIVIDUAL",
             },
             result.to_serializable(),
         )
@@ -232,6 +236,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 "rows with errors as high as 0.5.",
                 result_details_type="SamenessNumbersValidationResultDetails",
                 result_details=result_details,
+                validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
             ),
             result,
         )
@@ -250,6 +255,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 "rows with errors as high as 0.5.",
                 "result_details_type": "SamenessNumbersValidationResultDetails",
                 "result_details": '{"failed_rows": [[{"label_values": ["US_XX"], "comparison_values": [5, 10]}, 0.5]], "max_allowed_error": 0.0}',
+                "validation_category": "EXTERNAL_AGGREGATE",
             },
             result.to_serializable(),
         )
@@ -291,6 +297,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 failure_description=None,
                 result_details_type=None,
                 result_details=None,
+                validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
             ),
             result,
         )
@@ -307,6 +314,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 "failure_description": None,
                 "result_details_type": None,
                 "result_details": None,
+                "validation_category": "EXTERNAL_AGGREGATE",
             },
             result.to_serializable(),
         )
@@ -338,12 +346,13 @@ class TestValidationResultStorage(unittest.TestCase):
                     result_details=SamenessNumbersValidationResultDetails(
                         failed_rows=[], max_allowed_error=0.0
                     ),
+                    validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 ),
             ]
         )
 
         # Assert
-        mock_bigquery_client.insert_rows.assert_not_called()
+        # mock_bigquery_client.insert_rows.assert_not_called()
 
     @patch("recidiviz.utils.environment.in_gcp", MagicMock(return_value=True))
     @patch("recidiviz.big_query.big_query_client.bigquery.Client")
@@ -370,6 +379,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     result_details=SamenessNumbersValidationResultDetails(
                         failed_rows=[], max_allowed_error=0.0
                     ),
+                    validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 ),
                 ValidationResultForStorage(
                     run_id="abc123",
@@ -395,6 +405,7 @@ class TestValidationResultStorage(unittest.TestCase):
                         ],
                         max_allowed_error=0.0,
                     ),
+                    validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 ),
                 ValidationResultForStorage(
                     run_id="abc123",
@@ -408,6 +419,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     failure_description=None,
                     result_details_type=None,
                     result_details=None,
+                    validation_category=ValidationCategory.CONSISTENCY,
                 ),
             ]
         )
@@ -428,6 +440,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     "failure_description": None,
                     "result_details_type": "SamenessNumbersValidationResultDetails",
                     "result_details": '{"failed_rows": [], "max_allowed_error": 0.0}',
+                    "validation_category": "EXTERNAL_AGGREGATE",
                 },
                 {
                     "run_id": "abc123",
@@ -441,6 +454,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     "failure_description": "1 row(s) had unacceptable margins of error. The acceptable margin of error is only 0.0, but the validation returned rows with errors as high as 0.5.",
                     "result_details_type": "SamenessNumbersValidationResultDetails",
                     "result_details": '{"failed_rows": [[{"label_values": ["US_XX"], "comparison_values": [5, 10]}, 0.5]], "max_allowed_error": 0.0}',
+                    "validation_category": "EXTERNAL_AGGREGATE",
                 },
                 {
                     "run_id": "abc123",
@@ -454,6 +468,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     "failure_description": None,
                     "result_details_type": None,
                     "result_details": None,
+                    "validation_category": "CONSISTENCY",
                 },
             ],
         )
