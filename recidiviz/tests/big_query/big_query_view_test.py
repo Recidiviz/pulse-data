@@ -15,12 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for BigQueryView"""
+import copy
 import unittest
 
 import pytest
 from mock import patch
 
-from recidiviz.big_query.big_query_view import BigQueryView, BigQueryAddress
+from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryView
 
 
 class BigQueryViewTest(unittest.TestCase):
@@ -310,3 +311,26 @@ class BigQueryViewTest(unittest.TestCase):
             BigQueryAddress(dataset_id="my_override_view_dataset", table_id="my_view"),
             view_not_materialized.table_for_query,
         )
+
+    def test_view_equality(self) -> None:
+        v = BigQueryView(
+            dataset_id="view_dataset",
+            view_id="my_view",
+            description="my_view description",
+            view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
+        )
+
+        v_copy = copy.copy(v)
+
+        self.assertTrue(v == v_copy)
+        self.assertTrue(v in {v_copy})
+
+        v_deep_copy = copy.deepcopy(v)
+        self.assertTrue(v == v_deep_copy)
+        self.assertTrue(v in {v_deep_copy})
+
+        view_set = {v}
+        view_set.add(v_copy)
+        view_set.add(v_deep_copy)
+
+        self.assertEqual(1, len(view_set))

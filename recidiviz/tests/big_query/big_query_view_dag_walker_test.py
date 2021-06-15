@@ -26,20 +26,17 @@ from typing import Dict, Set
 from unittest.mock import patch
 
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
-from recidiviz.big_query.big_query_view import BigQueryView, BigQueryAddress
+from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import (
-    BigQueryViewDagWalker,
     BigQueryViewDagNode,
+    BigQueryViewDagWalker,
     DagKey,
-)
-from recidiviz.view_registry.deployed_views import (
-    DEPLOYED_VIEW_BUILDERS,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
-
+from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
 
 LATEST_VIEW_DATASET_REGEX = re.compile(r"(us_[a-z]{2})_raw_data_up_to_date_views")
 MOCK_VIEW_PROCESS_TIME_SECONDS = 0.01
@@ -63,6 +60,71 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             self.all_views = [
                 view_builder.build() for view_builder in DEPLOYED_VIEW_BUILDERS
             ]
+
+        # Views forming a DAG shaped like an X:
+        #  1     2
+        #   \   /
+        #     3
+        #   /   \
+        #  4     5
+        self.x_shaped_dag_views_list = [
+            BigQueryView(
+                dataset_id="dataset_1",
+                view_id="table_1",
+                description="table_1 description",
+                view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+            ),
+            BigQueryView(
+                dataset_id="dataset_2",
+                view_id="table_2",
+                description="table_2 description",
+                view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
+            ),
+            BigQueryView(
+                dataset_id="dataset_3",
+                view_id="table_3",
+                description="table_3 description",
+                view_query_template="""
+            SELECT * FROM `{project_id}.dataset_1.table_1`
+            JOIN `{project_id}.dataset_2.table_2`
+            USING (col)""",
+            ),
+            BigQueryView(
+                dataset_id="dataset_4",
+                view_id="table_4",
+                description="table_4 description",
+                view_query_template="""
+            SELECT * FROM `{project_id}.dataset_3.table_3`""",
+            ),
+            BigQueryView(
+                dataset_id="dataset_5",
+                view_id="table_5",
+                description="table_5 description",
+                view_query_template="""
+            SELECT * FROM `{project_id}.dataset_3.table_3`""",
+            ),
+        ]
+
+        # Views forming a DAG with a diamond in it:
+        #  1     2
+        #   \   /
+        #     3
+        #   /   \
+        #  4     5
+        #   \   /
+        #     6
+        self.diamond_shaped_dag_views_list = self.x_shaped_dag_views_list.copy()
+        self.diamond_shaped_dag_views_list.append(
+            BigQueryView(
+                dataset_id="dataset_6",
+                view_id="table_6",
+                description="table_6 description",
+                view_query_template="""
+            SELECT * FROM `{project_id}.dataset_4.table_4`
+            JOIN `{project_id}.dataset_5.table_5`
+            USING (col)""",
+            )
+        )
 
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
@@ -351,45 +413,10 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         _ = BigQueryViewDagWalker([view_1, view_2, view_3])
 
     def test_populate_node_family_full_parentage(self) -> None:
-        view_1 = BigQueryView(
-            dataset_id="dataset_1",
-            view_id="table_1",
-            description="table_1 description",
-            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-        )
-        view_2 = BigQueryView(
-            dataset_id="dataset_2",
-            view_id="table_2",
-            description="table_2 description",
-            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
-        )
-        view_3 = BigQueryView(
-            dataset_id="dataset_3",
-            view_id="table_3",
-            description="table_3 description",
-            view_query_template="""
-            SELECT * FROM `{project_id}.dataset_1.table_1`
-            JOIN `{project_id}.dataset_2.table_2`
-            USING (col)""",
-        )
-        view_4 = BigQueryView(
-            dataset_id="dataset_4",
-            view_id="table_4",
-            description="table_4 description",
-            view_query_template="""
-            SELECT * FROM `{project_id}.dataset_3.table_3`""",
-        )
-        view_5 = BigQueryView(
-            dataset_id="dataset_5",
-            view_id="table_5",
-            description="table_5 description",
-            view_query_template="""
-            SELECT * FROM `{project_id}.dataset_3.table_3`""",
-        )
-        dag_walker = BigQueryViewDagWalker([view_1, view_2, view_3, view_4, view_5])
+        dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
 
         # root node start
-        start_node = dag_walker.node_for_view(view_1)
+        start_node = dag_walker.node_for_view(self.x_shaped_dag_views_list[0])
         dag_walker.populate_node_family_for_node(
             node=start_node, view_source_table_datasets={"source_dataset"}
         )
@@ -406,7 +433,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         )
 
         # start in middle
-        start_node = dag_walker.node_for_view(view_3)
+        start_node = dag_walker.node_for_view(self.x_shaped_dag_views_list[2])
         dag_walker.populate_node_family_for_node(
             node=start_node, view_source_table_datasets={"source_dataset"}
         )
@@ -421,8 +448,8 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
                     dataset_id="source_dataset", table_id="source_table_2"
                 )
             ),
-            DagKey.for_view(view_1),
-            DagKey.for_view(view_2),
+            DagKey.for_view(self.x_shaped_dag_views_list[0]),
+            DagKey.for_view(self.x_shaped_dag_views_list[1]),
         }
         self.assertEqual(
             expected_parent_nodes,
@@ -430,7 +457,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         )
 
         # single start node
-        start_node = dag_walker.node_for_view(view_4)
+        start_node = dag_walker.node_for_view(self.x_shaped_dag_views_list[3])
         dag_walker.populate_node_family_for_node(
             node=start_node, view_source_table_datasets={"source_dataset"}
         )
@@ -445,9 +472,9 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
                     dataset_id="source_dataset", table_id="source_table_2"
                 )
             ),
-            DagKey.for_view(view_1),
-            DagKey.for_view(view_2),
-            DagKey.for_view(view_3),
+            DagKey.for_view(self.x_shaped_dag_views_list[0]),
+            DagKey.for_view(self.x_shaped_dag_views_list[1]),
+            DagKey.for_view(self.x_shaped_dag_views_list[2]),
         }
         self.assertEqual(
             expected_parent_nodes,
@@ -455,7 +482,10 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         )
 
         # multiple start nodes
-        start_nodes = [start_node, dag_walker.node_for_view(view_5)]
+        start_nodes = [
+            start_node,
+            dag_walker.node_for_view(self.x_shaped_dag_views_list[4]),
+        ]
 
         parentage_set: Set[DagKey] = set()
         for node in start_nodes:
@@ -465,6 +495,246 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             parentage_set = parentage_set.union(node.node_family.full_parentage)
 
         self.assertEqual(expected_parent_nodes, parentage_set)
+
+    def test_get_sub_dag_root_node(self) -> None:
+        all_views_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
+
+        # Get descendants sub-dag
+        sub_dag = all_views_dag_walker.get_descendants_sub_dag(
+            [self.x_shaped_dag_views_list[0]],
+        )
+
+        expected_views = [
+            v
+            for v in self.x_shaped_dag_views_list
+            # This source table does not depend on "table_1"
+            if v.view_id != "table_2"
+        ]
+
+        self.assertCountEqual(expected_views, sub_dag.views)
+
+        # Get ancestors sub-dag
+        sub_dag = all_views_dag_walker.get_ancestors_sub_dag(
+            [self.x_shaped_dag_views_list[0]]
+        )
+
+        # Only should include this view
+        expected_views = [self.x_shaped_dag_views_list[0]]
+
+        self.assertCountEqual(expected_views, sub_dag.views)
+
+    def test_get_sub_dag_middle_node(self) -> None:
+        all_views_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
+
+        # Get descendants sub-dag
+        descendants_sub_dag = all_views_dag_walker.get_descendants_sub_dag(
+            [self.x_shaped_dag_views_list[2]],
+        )
+
+        expected_views = [
+            self.x_shaped_dag_views_list[2],
+            self.x_shaped_dag_views_list[3],
+            self.x_shaped_dag_views_list[4],
+        ]
+
+        self.assertCountEqual(expected_views, descendants_sub_dag.views)
+
+        # Get ancestors sub-dag
+        ancestors_sub_dag = all_views_dag_walker.get_ancestors_sub_dag(
+            [self.x_shaped_dag_views_list[2]]
+        )
+
+        expected_views = [
+            self.x_shaped_dag_views_list[0],
+            self.x_shaped_dag_views_list[1],
+            self.x_shaped_dag_views_list[2],
+        ]
+
+        self.assertCountEqual(expected_views, ancestors_sub_dag.views)
+
+        # Get both directions sub-dag
+        both_directions_dag = BigQueryViewDagWalker.union_dags(
+            descendants_sub_dag, ancestors_sub_dag
+        )
+
+        expected_views = self.x_shaped_dag_views_list
+
+        self.assertCountEqual(expected_views, both_directions_dag.views)
+
+    def test_get_sub_dag_leaf_node(self) -> None:
+        all_views_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
+
+        # Get descendants sub-dag
+        sub_dag = all_views_dag_walker.get_descendants_sub_dag(
+            [self.x_shaped_dag_views_list[4]],
+        )
+
+        # Only should include this view
+        expected_views = [self.x_shaped_dag_views_list[4]]
+
+        self.assertCountEqual(expected_views, sub_dag.views)
+
+        # Get ancestors sub-dag
+        sub_dag = all_views_dag_walker.get_ancestors_sub_dag(
+            [self.x_shaped_dag_views_list[4]]
+        )
+
+        expected_views = [
+            v
+            for v in self.x_shaped_dag_views_list
+            # This view does not depend on other leaf view "table_4"
+            if v.view_id != "table_4"
+        ]
+
+        self.assertCountEqual(expected_views, sub_dag.views)
+
+    def test_get_sub_dag_multiple_input_views(self) -> None:
+        all_views_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
+
+        input_views = [
+            self.x_shaped_dag_views_list[0],
+            self.x_shaped_dag_views_list[1],
+            self.x_shaped_dag_views_list[4],
+        ]
+
+        # Get descendants sub-dag
+        sub_dag = all_views_dag_walker.get_descendants_sub_dag(
+            input_views,
+        )
+
+        # Only should include this view
+        expected_views = self.x_shaped_dag_views_list
+
+        self.assertCountEqual(expected_views, sub_dag.views)
+
+        # Get ancestors sub-dag
+        sub_dag = all_views_dag_walker.get_ancestors_sub_dag(input_views)
+
+        expected_views = [
+            self.x_shaped_dag_views_list[0],
+            self.x_shaped_dag_views_list[1],
+            self.x_shaped_dag_views_list[2],
+            self.x_shaped_dag_views_list[4],
+        ]
+
+        self.assertCountEqual(expected_views, sub_dag.views)
+
+    def test_get_sub_dag_multiple_input_views2(self) -> None:
+        all_views_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
+
+        input_views = [
+            self.x_shaped_dag_views_list[2],
+            self.x_shaped_dag_views_list[4],
+        ]
+
+        # Get descendants sub-dag
+        sub_dag = all_views_dag_walker.get_descendants_sub_dag(
+            input_views,
+        )
+
+        # Only should include this view
+        expected_views = [
+            self.x_shaped_dag_views_list[2],
+            self.x_shaped_dag_views_list[3],
+            self.x_shaped_dag_views_list[4],
+        ]
+
+        self.assertCountEqual(expected_views, sub_dag.views)
+
+        # Get ancestors sub-dag
+        sub_dag = all_views_dag_walker.get_ancestors_sub_dag(input_views)
+
+        expected_views = [
+            self.x_shaped_dag_views_list[0],
+            self.x_shaped_dag_views_list[1],
+            self.x_shaped_dag_views_list[2],
+            self.x_shaped_dag_views_list[4],
+        ]
+
+        self.assertCountEqual(expected_views, sub_dag.views)
+
+    def test_get_sub_dag_empty_input_views(self) -> None:
+        all_views_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
+
+        # Get descendants sub-dag
+        sub_dag = all_views_dag_walker.get_descendants_sub_dag([])
+
+        self.assertCountEqual([], sub_dag.views)
+
+        # Get ancestors sub-dag
+        sub_dag = all_views_dag_walker.get_ancestors_sub_dag([])
+
+        self.assertCountEqual([], sub_dag.views)
+
+    def test_get_sub_dag_single_node_input(self) -> None:
+        all_views_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list[0:1])
+
+        # Get descendants sub-dag
+        sub_dag = all_views_dag_walker.get_descendants_sub_dag(
+            self.x_shaped_dag_views_list[0:1],
+        )
+
+        expected_views = self.x_shaped_dag_views_list[0:1]
+
+        self.assertCountEqual(expected_views, sub_dag.views)
+
+        # Get ancestors sub-dag
+        sub_dag = all_views_dag_walker.get_ancestors_sub_dag(
+            self.x_shaped_dag_views_list[0:1]
+        )
+
+        # Only should include this view
+        expected_views = self.x_shaped_dag_views_list[0:1]
+
+        self.assertCountEqual(expected_views, sub_dag.views)
+
+    def test_get_sub_dag_input_views_not_all_in_input_dag(self) -> None:
+        all_views_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list[0:2])
+
+        with self.assertRaises(ValueError) as e:
+            # Add different input views to build source dag
+            _ = all_views_dag_walker.get_descendants_sub_dag(
+                self.x_shaped_dag_views_list[1:5],
+            )
+
+        self.assertTrue(
+            str(e.exception).startswith("Found input views not in source DAG:")
+        )
+
+    def test_sub_dag_with_cycle(self) -> None:
+        all_views_dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
+
+        input_views = [
+            self.diamond_shaped_dag_views_list[1],
+            self.diamond_shaped_dag_views_list[4],
+        ]
+
+        # Get descendants sub-dag
+        sub_dag = all_views_dag_walker.get_descendants_sub_dag(input_views)
+
+        expected_views = [
+            self.diamond_shaped_dag_views_list[1],
+            self.diamond_shaped_dag_views_list[2],
+            self.diamond_shaped_dag_views_list[3],
+            self.diamond_shaped_dag_views_list[4],
+            self.diamond_shaped_dag_views_list[5],
+        ]
+
+        self.assertCountEqual(expected_views, sub_dag.views)
+
+        # Get ancestors sub-dag
+        sub_dag = all_views_dag_walker.get_ancestors_sub_dag(
+            input_views,
+        )
+
+        expected_views = [
+            self.diamond_shaped_dag_views_list[0],
+            self.diamond_shaped_dag_views_list[1],
+            self.diamond_shaped_dag_views_list[2],
+            self.diamond_shaped_dag_views_list[4],
+        ]
+
+        self.assertCountEqual(expected_views, sub_dag.views)
 
     def test_populate_node_family_full_parentage_complex_dependencies(self) -> None:
         view_1 = BigQueryView(
@@ -822,6 +1092,58 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             {view_1: view_1.view_id, view_2: view_2.view_id, view_3: view_3.view_id},
             result,
         )
+
+    def test_union_dags(self) -> None:
+        x_shaped_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
+
+        # This DAG is a superset of the X-shaped DAG
+        diamond_shaped_dag_walker = BigQueryViewDagWalker(
+            self.diamond_shaped_dag_views_list
+        )
+        unioned_dag = BigQueryViewDagWalker.union_dags(
+            x_shaped_dag_walker, diamond_shaped_dag_walker
+        )
+
+        self.assertCountEqual(self.diamond_shaped_dag_views_list, unioned_dag.views)
+
+    def test_union_dags_empty(self) -> None:
+        unioned_dag = BigQueryViewDagWalker.union_dags(
+            BigQueryViewDagWalker([]), BigQueryViewDagWalker([])
+        )
+
+        self.assertCountEqual([], unioned_dag.views)
+
+    def test_union_dags_same_view_different_object(self) -> None:
+        view = BigQueryView(
+            dataset_id="dataset_1",
+            view_id="table_1",
+            description="table_1 description",
+            should_materialize=True,
+            materialized_address_override=BigQueryAddress(
+                dataset_id="other_dataset_1", table_id="other_table_1"
+            ),
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+        )
+
+        unioned_dag = BigQueryViewDagWalker.union_dags(
+            BigQueryViewDagWalker([view]),
+            BigQueryViewDagWalker(
+                [
+                    BigQueryView(
+                        dataset_id="dataset_1",
+                        view_id="table_1",
+                        description="table_1 description",
+                        should_materialize=True,
+                        materialized_address_override=BigQueryAddress(
+                            dataset_id="other_dataset_1", table_id="other_table_1"
+                        ),
+                        view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+                    )
+                ]
+            ),
+        )
+
+        self.assertCountEqual([view], unioned_dag.views)
 
     def assertIsValidEmptyParentsView(self, node: BigQueryViewDagNode) -> None:
         """Fails the test if a view that has no parents is an expected view with no

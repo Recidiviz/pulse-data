@@ -21,7 +21,7 @@ import unittest
 from http import HTTPStatus
 from typing import Any, Dict
 from unittest import mock
-from unittest.mock import Mock, MagicMock
+from unittest.mock import MagicMock, Mock
 
 import flask
 from flask import Flask
@@ -33,20 +33,19 @@ from recidiviz.big_query.export.export_query_config import (
     ExportBigQueryViewConfig,
     ExportOutputFormatType,
 )
-from recidiviz.metrics.export.view_export_manager import (
-    export_blueprint,
-)
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
+from recidiviz.metrics.export import view_export_manager
+from recidiviz.metrics.export.export_config import ExportViewCollectionConfig
+from recidiviz.metrics.export.view_export_manager import export_blueprint
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.ingest.scrape.scraper_cloud_task_manager_test import (
     CLOUD_TASK_MANAGER_PACKAGE_NAME,
 )
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
+from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
 from recidiviz.view_registry.namespaces import BigQueryViewNamespace
-from recidiviz.metrics.export.export_config import ExportViewCollectionConfig
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.metrics.export import view_export_manager
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.tests.ingest import fixtures
 
 
 @mock.patch(
@@ -223,11 +222,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             ),
         ]
 
-        expected_export_configs_for_filter = {
-            self.mock_export_name: expected_view_config_list,
-        }
-
-        self.assertEqual(expected_export_configs_for_filter, export_configs_for_filter)
+        self.assertEqual(expected_view_config_list, export_configs_for_filter)
 
         # Test for case insensitivity
 
@@ -236,7 +231,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             state_code=self.mock_state_code.lower(),
             project_id=self.mock_project_id,
         )
-        self.assertEqual(expected_export_configs_for_filter, export_configs_for_filter)
+        self.assertEqual(expected_view_config_list, export_configs_for_filter)
 
     @mock.patch("recidiviz.utils.environment.get_gcp_environment")
     def test_get_configs_for_export_name_state_agnostic(
@@ -281,11 +276,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             ),
         ]
 
-        expected_export_configs_for_filter = {
-            self.mock_export_name: expected_view_config_list,
-        }
-
-        self.assertEqual(expected_export_configs_for_filter, export_configs_for_filter)
+        self.assertEqual(expected_view_config_list, export_configs_for_filter)
 
         # Test for case insensitivity
 
@@ -293,11 +284,9 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             export_name=self.mock_export_name.lower(), project_id=self.mock_project_id
         )
 
-        self.assertEqual(expected_export_configs_for_filter, export_configs_for_filter)
+        self.assertEqual(expected_view_config_list, export_configs_for_filter)
 
-    @mock.patch(
-        "recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace"
-    )
+    @mock.patch("recidiviz.big_query.view_update_manager.rematerialize_views")
     @mock.patch(
         "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
     )
@@ -393,9 +382,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 " JOBZZZ",
             )
 
-    @mock.patch(
-        "recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace"
-    )
+    @mock.patch("recidiviz.big_query.view_update_manager.rematerialize_views")
     @mock.patch(
         "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
     )
@@ -472,9 +459,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             any_order=True,
         )
 
-    @mock.patch(
-        "recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace"
-    )
+    @mock.patch("recidiviz.big_query.view_update_manager.rematerialize_views")
     @mock.patch(
         "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
     )
@@ -492,9 +477,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         # Just the metric export is attempted and then the raise stops subsequent checks from happening
         mock_view_update_manager_rematerialize.assert_called_once()
 
-    @mock.patch(
-        "recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace"
-    )
+    @mock.patch("recidiviz.big_query.view_update_manager.rematerialize_views")
     @mock.patch(
         "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
     )
@@ -513,12 +496,8 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         # Just the metric export is attempted and then the raise stops subsequent checks from happening
         mock_view_update_manager_rematerialize.assert_called_once()
 
-    @mock.patch(
-        "recidiviz.view_registry.deployed_views.DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE"
-    )
-    @mock.patch(
-        "recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace"
-    )
+    @mock.patch("recidiviz.metrics.export.view_export_manager.deployed_views")
+    @mock.patch("recidiviz.big_query.view_update_manager.rematerialize_views")
     @mock.patch(
         "recidiviz.big_query.view_update_manager.create_dataset_and_deploy_views_for_view_builders"
     )
@@ -530,7 +509,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         mock_view_exporter: Mock,
         mock_view_update_manager_deploy: Mock,
         mock_view_update_manager_rematerialize: Mock,
-        mock_view_builders_by_namespace: Mock,
+        mock_deployed_views: Mock,
     ) -> None:
         """Tests that all views in the namespace are updated before the export when the export name is in
         export_config.NAMESPACES_REQUIRING_FULL_UPDATE."""
@@ -538,7 +517,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             self.mock_big_query_view_namespace
         ]
 
-        mock_view_builders_by_namespace.return_value = {
+        mock_deployed_views.DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE = {
             self.mock_big_query_view_namespace: self.view_builders_for_dataset
         }
 
@@ -548,19 +527,12 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
         mock_view_update_manager_deploy.assert_called_with(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-            bq_view_namespace=self.mock_big_query_view_namespace,
-            view_builders_to_update=mock_view_builders_by_namespace[
-                self.mock_big_query_view_namespace
-            ],
+            view_builders_to_update=self.view_builders_for_dataset,
         )
         mock_view_update_manager_rematerialize.assert_called_once()
 
-    @mock.patch(
-        "recidiviz.view_registry.deployed_views.DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE"
-    )
-    @mock.patch(
-        "recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace"
-    )
+    @mock.patch("recidiviz.metrics.export.view_export_manager.deployed_views")
+    @mock.patch("recidiviz.big_query.view_update_manager.rematerialize_views")
     @mock.patch(
         "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
     )
@@ -568,13 +540,13 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         self,
         mock_view_exporter: Mock,
         mock_view_update_manager_rematerialize: Mock,
-        mock_view_builders_by_namespace: Mock,
+        mock_deployed_views: Mock,
     ) -> None:
         """Tests that only materialized views in the namespace are updated before the export when the export name is not
         in export_config.NAMESPACES_REQUIRING_FULL_UPDATE."""
         self.mock_export_config.NAMESPACES_REQUIRING_FULL_UPDATE = ["OTHER_NAMESPACE"]
 
-        mock_view_builders_by_namespace.return_value = {
+        mock_deployed_views.DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE = {
             self.mock_big_query_view_namespace: self.view_builders_for_dataset
         }
 
@@ -584,10 +556,8 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
         mock_view_update_manager_rematerialize.assert_called_with(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-            bq_view_namespace=self.mock_big_query_view_namespace,
-            candidate_view_builders=mock_view_builders_by_namespace[
-                self.mock_big_query_view_namespace
-            ],
+            all_view_builders=DEPLOYED_VIEW_BUILDERS,
+            views_to_update=[view.build() for view in self.view_builders_for_dataset],
         )
 
     @mock.patch(

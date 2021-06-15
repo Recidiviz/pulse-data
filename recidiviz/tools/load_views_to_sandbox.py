@@ -31,7 +31,7 @@ from typing import List, Optional, Tuple
 
 from recidiviz.big_query.view_update_manager import (
     create_dataset_and_deploy_views_for_view_builders,
-    rematerialize_views_for_namespace,
+    rematerialize_views_for_view_builders,
 )
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
@@ -45,7 +45,7 @@ from recidiviz.view_registry.dataset_overrides import (
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import (
     CROSS_PROJECT_VIEW_BUILDERS,
-    DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE,
+    DEPLOYED_VIEW_BUILDERS,
 )
 
 
@@ -60,35 +60,33 @@ def load_views_to_sandbox(
         dataflow_dataset_override=dataflow_dataset_override,
     )
 
-    for namespace, builders in DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.items():
-        builders_to_update = [
-            builder
-            for builder in builders
-            if (
-                dataflow_dataset_override is not None
-                # Only update views in the DATAFLOW_METRICS_MATERIALIZED_DATASET if the dataflow_dataset_override is set
-                or builder.dataset_id != DATAFLOW_METRICS_MATERIALIZED_DATASET
-            )
-            # Don't load views that query from multiple projects
-            and builder not in CROSS_PROJECT_VIEW_BUILDERS
-        ]
+    builders_to_update = [
+        builder
+        for builder in DEPLOYED_VIEW_BUILDERS
+        if (
+            dataflow_dataset_override is not None
+            # Only update views in the DATAFLOW_METRICS_MATERIALIZED_DATASET if the dataflow_dataset_override is set
+            or builder.dataset_id != DATAFLOW_METRICS_MATERIALIZED_DATASET
+        )
+        # Don't load views that query from multiple projects
+        and builder not in CROSS_PROJECT_VIEW_BUILDERS
+    ]
 
-        if refresh_materialized_tables_only:
-            rematerialize_views_for_namespace(
-                bq_view_namespace=namespace,
-                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-                candidate_view_builders=builders_to_update,
-                dataset_overrides=sandbox_dataset_overrides,
-                # If a given view hasn't been loaded to the sandbox, skip it
-                skip_missing_views=True,
-            )
-        else:
-            create_dataset_and_deploy_views_for_view_builders(
-                bq_view_namespace=namespace,
-                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-                view_builders_to_update=builders_to_update,
-                dataset_overrides=sandbox_dataset_overrides,
-            )
+    if refresh_materialized_tables_only:
+        rematerialize_views_for_view_builders(
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            views_to_update_builders=builders_to_update,
+            all_view_builders=DEPLOYED_VIEW_BUILDERS,
+            dataset_overrides=sandbox_dataset_overrides,
+            # If a given view hasn't been loaded to the sandbox, skip it
+            skip_missing_views=True,
+        )
+    else:
+        create_dataset_and_deploy_views_for_view_builders(
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            view_builders_to_update=builders_to_update,
+            dataset_overrides=sandbox_dataset_overrides,
+        )
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:

@@ -77,7 +77,13 @@ class BigQueryViewDagNode:
         self.materialized_addresss: Optional[Dict[BigQueryAddress, DagKey]] = None
         self.is_root = is_root
         # Note: Must call populate_node_family_for_node() on a node before using this member variable.
-        self.node_family: BigQueryViewDagNodeFamily = BigQueryViewDagNodeFamily()
+        self._node_family: Optional[BigQueryViewDagNodeFamily] = None
+
+    @property
+    def node_family(self) -> "BigQueryViewDagNodeFamily":
+        if not self._node_family:
+            raise ValueError("Must set node_family via set_node_family().")
+        return self._node_family
 
     @property
     def dag_key(self) -> DagKey:
@@ -118,6 +124,9 @@ class BigQueryViewDagNode:
     ) -> None:
         self.materialized_addresss = materialized_addresss
 
+    def set_node_family(self, node_family: "BigQueryViewDagNodeFamily") -> None:
+        self._node_family = node_family
+
     @property
     def child_keys(self) -> Set[DagKey]:
         return self.child_node_keys
@@ -143,6 +152,7 @@ class BigQueryViewDagWalker:
     """Class implementation that walks a DAG of BigQueryViews."""
 
     def __init__(self, views: List[BigQueryView]):
+        self.views = views
         dag_nodes = [BigQueryViewDagNode(view) for view in views]
         self.nodes_by_key: Dict[DagKey, BigQueryViewDagNode] = {
             node.dag_key: node for node in dag_nodes
@@ -294,6 +304,88 @@ class BigQueryViewDagWalker:
                             processing.add(child_node.dag_key)
         return result
 
+    def _check_sub_dag_input_views(self, *, input_views: List[BigQueryView]) -> None:
+        missing_views = set(input_views).difference(self.views)
+        if missing_views:
+            raise ValueError(f"Found input views not in source DAG: {missing_views}")
+
+    @staticmethod
+    def _check_sub_dag_views(
+        *, input_views: List[BigQueryView], sub_dag_views: Set[BigQueryView]
+    ) -> None:
+        missing_views = set(input_views).difference(sub_dag_views)
+        if missing_views:
+            raise ValueError(
+                f"Found input views not represented in the output DAG: {missing_views}"
+            )
+
+    def get_descendants_sub_dag(
+        self, views: List[BigQueryView]
+    ) -> "BigQueryViewDagWalker":
+        """Returns a DAG containing only views that are descendants of the list of input
+        views. Includes the input views themselves.
+        """
+        self._check_sub_dag_input_views(input_views=views)
+
+        sub_dag_views: Set[BigQueryView] = set()
+
+        def collect_descendants(
+            v: BigQueryView, parent_results: Dict[BigQueryView, bool]
+        ) -> bool:
+            is_target_view_or_descendant = (
+                any(
+                    is_parent_target_view_or_descendant
+                    for is_parent_target_view_or_descendant in parent_results.values()
+                )
+                or v in views
+            )
+            if is_target_view_or_descendant:
+                sub_dag_views.add(v)
+
+            return is_target_view_or_descendant
+
+        self.process_dag(collect_descendants)
+        self._check_sub_dag_views(input_views=views, sub_dag_views=sub_dag_views)
+        return BigQueryViewDagWalker(list(sub_dag_views))
+
+    def get_ancestors_sub_dag(
+        self,
+        views: List[BigQueryView],
+    ) -> "BigQueryViewDagWalker":
+        """Returns a DAG containing only views that are ancestors of the list of input
+        views. Includes the input views themselves.
+        """
+        self._check_sub_dag_input_views(input_views=views)
+
+        sub_dag_views: Set[BigQueryView] = set()
+
+        def collect_ancestors(
+            v: BigQueryView, parent_results: Dict[BigQueryView, Set[BigQueryView]]
+        ) -> Set[BigQueryView]:
+            # Ancestors of this view are comprised of all ancestors of each parent...
+            all_ancestors: Set[BigQueryView] = set().union(*parent_results.values())
+
+            # ...plus the parents themselves
+            all_ancestors |= parent_results.keys()
+
+            if v in views:
+                sub_dag_views.add(v)
+                for ancestor in all_ancestors:
+                    sub_dag_views.add(ancestor)
+
+            return all_ancestors
+
+        self.process_dag(collect_ancestors)
+        self._check_sub_dag_views(input_views=views, sub_dag_views=sub_dag_views)
+        return BigQueryViewDagWalker(list(sub_dag_views))
+
+    @staticmethod
+    def union_dags(
+        dag_1: "BigQueryViewDagWalker", dag_2: "BigQueryViewDagWalker"
+    ) -> "BigQueryViewDagWalker":
+        views: List[BigQueryView] = [*{*dag_1.views, *dag_2.views}]
+        return BigQueryViewDagWalker(views=views)
+
     def populate_node_family_for_node(
         self,
         node: BigQueryViewDagNode,
@@ -373,9 +465,11 @@ class BigQueryViewDagWalker:
         full_parentage, parent_tree = _get_one_way_dependencies()
         full_descendants, child_tree = _get_one_way_dependencies(descendants=True)
 
-        node.node_family = BigQueryViewDagNodeFamily(
-            full_parentage=full_parentage,
-            parent_dfs_tree_str=parent_tree,
-            full_descendants=full_descendants,
-            child_dfs_tree_str=child_tree,
+        node.set_node_family(
+            BigQueryViewDagNodeFamily(
+                full_parentage=full_parentage,
+                parent_dfs_tree_str=parent_tree,
+                full_descendants=full_descendants,
+                child_dfs_tree_str=child_tree,
+            )
         )
