@@ -31,6 +31,7 @@ from recidiviz.validation.validation_models import (
     DataValidationJob,
     DataValidationJobResult,
     DataValidationJobResultDetails,
+    ValidationCategory,
     ValidationCheckType,
 )
 
@@ -55,6 +56,8 @@ class ValidationResultForStorage:
     result_details_type: Optional[str] = attr.ib()
     result_details: Optional[DataValidationJobResultDetails] = attr.ib()
 
+    validation_category: Optional[ValidationCategory] = attr.ib()
+
     @classmethod
     def from_validation_result(
         cls, run_id: str, run_date: datetime.date, result: DataValidationJobResult
@@ -71,6 +74,7 @@ class ValidationResultForStorage:
             failure_description=result.result_details.failure_description(),
             result_details_type=result.result_details.__class__.__name__,
             result_details=result.result_details,
+            validation_category=result.validation_job.validation.validation_category,
         )
 
     @classmethod
@@ -89,6 +93,7 @@ class ValidationResultForStorage:
             failure_description=None,
             result_details_type=None,
             result_details=None,
+            validation_category=job.validation.validation_category,
         )
 
     def to_serializable(self) -> Dict[str, Any]:
