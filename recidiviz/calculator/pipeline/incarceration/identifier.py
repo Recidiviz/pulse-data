@@ -485,8 +485,10 @@ def find_most_serious_prior_charge_in_sentence_group(
         relevant_charges.extend(relevant_charges_in_sentence)
 
     if relevant_charges:
-        # Mypy complains that ncic_code might be None, even though that has already been filtered above.
-        return min(relevant_charges, key=lambda b: b.ncic_code)  # type: ignore[type-var]
+        return min(
+            relevant_charges,
+            key=lambda b: b.ncic_code if b.ncic_code is not None else "",
+        )
 
     return None
 

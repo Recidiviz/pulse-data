@@ -32,6 +32,17 @@ black = "==20.8b1"
 pre-commit = "*"
 pygtrie = "*"
 
+types-dateparser = "*"
+types-flask = "*"
+types-freezegun = "*"
+types-mock = "*"
+types-paramiko = "*"
+types-protobuf = "*"
+types-python-dateutil = "*"
+types-pytz = "*"
+types-requests = "*"
+types-PyYAML = "*"
+
 [packages]
 jupyter = "*"
 callee = "*"
