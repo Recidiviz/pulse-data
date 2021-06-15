@@ -20,19 +20,18 @@
 Mostly copied from:
 https://cloud.google.com/iap/docs/authentication-howto#iap_make_request-python
 """
-from typing import List, Dict, Any
 import urllib.parse
-
-import requests
+from typing import Any, Dict, List
 
 import google.auth
 import google.auth.app_engine
 import google.auth.compute_engine.credentials
 import google.auth.iam
-from google.auth import crypt
-from google.auth.transport.requests import Request
 import google.oauth2.credentials
 import google.oauth2.service_account
+import requests
+from google.auth import crypt
+from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from oauth2client.client import GoogleCredentials
 
@@ -58,7 +57,7 @@ GCSFS_NO_CACHING = -1
 
 
 def make_iap_request(
-    url: str, client_id: str, method: str = "GET", **kwargs: Dict[str, Any]
+    url: str, client_id: str, method: str = "GET", **kwargs: Any
 ) -> requests.Response:
     """Makes a request to an application protected by Identity-Aware Proxy.
 
