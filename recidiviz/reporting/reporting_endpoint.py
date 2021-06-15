@@ -40,11 +40,7 @@ from recidiviz.reporting.region_codes import InvalidRegionCodeException
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.utils.params import (
-    get_int_param_value,
-    get_only_str_param_value,
-    get_str_param_values,
-)
+from recidiviz.utils.params import get_only_str_param_value, get_str_param_values
 
 reporting_endpoint_blueprint = Blueprint("reporting_endpoint_blueprint", __name__)
 
@@ -176,8 +172,6 @@ def deliver_emails_for_batch() -> Tuple[str, HTTPStatus]:
         state_code: (required) A valid state code for which reporting is enabled (ex. "US_ID")
         redirect_address: (optional) An email address to which all emails will be sent. This can be used for redirecting
         all of the reports to a supervisor.
-        review_year: A year date of review month for the name of the po monthly report attachment title (ex. "2021")
-        review_month: A month date of review month for the name of the po monthly report attachment title (ex. "05")
         cc_address: (optional) An email address to which all emails will be CC'd. This can be used for sending
         a batch of reports to multiple recipients. Multiple cc_address params can be given.
             Example:
@@ -196,8 +190,6 @@ def deliver_emails_for_batch() -> Tuple[str, HTTPStatus]:
     try:
         batch_id = get_only_str_param_value("batch_id", request.args)
         raw_state_code = get_only_str_param_value("state_code", request.args)
-        review_year = get_int_param_value("review_year", request.args)
-        review_month = get_int_param_value("review_month", request.args)
         redirect_address = get_only_str_param_value("redirect_address", request.args)
         cc_addresses = get_str_param_values("cc_address", request.args)
         subject_override = get_only_str_param_value(
@@ -236,15 +228,26 @@ def deliver_emails_for_batch() -> Tuple[str, HTTPStatus]:
         logging.error(msg)
         return msg, HTTPStatus.BAD_REQUEST
 
-    if not review_year:
-        msg = "Query parameter 'review_year' not received"
+    metadata = data_retrieval.read_batch_metadata(
+        batch_id=batch_id, state_code=state_code
+    )
+    if (report_type := metadata.get("report_type")) != ReportType.POMonthlyReport.value:
+        # TODO(#7790): Support more email types.
+        msg = f"Sending emails with {report_type=} is not supported yet"
         logging.error(msg)
-        return msg, HTTPStatus.BAD_REQUEST
+        return msg, HTTPStatus.NOT_IMPLEMENTED
 
-    if not review_month:
-        msg = "Query parameter 'review_month' not received"
+    if (metadata_year := metadata.get("review_year")) is None:
+        msg = "review_year not found in metadata"
         logging.error(msg)
         return msg, HTTPStatus.BAD_REQUEST
+    review_year = int(metadata_year)
+
+    if (metadata_month := metadata.get("review_month")) is None:
+        msg = "review_month not found in metadata"
+        logging.error(msg)
+        return msg, HTTPStatus.BAD_REQUEST
+    review_month = int(metadata_month)
 
     review_day = calendar.monthrange(review_year, review_month)[1]
     report_date = datetime.date(year=review_year, month=review_month, day=review_day)
