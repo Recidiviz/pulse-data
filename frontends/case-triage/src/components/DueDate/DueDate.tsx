@@ -15,45 +15,45 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import assertNever from "assert-never";
 import moment from "moment";
 import * as React from "react";
 import Tooltip from "../Tooltip";
 import { BaseDueDate, PastDueDate, TodayDueDate } from "./DueDate.styles";
+import { useDueDateStatus } from "./useDueDateStatus";
 
 export interface DueDateProps {
   date: moment.Moment | null;
 }
 
 export const DueDate: React.FC<DueDateProps> = ({ date }: DueDateProps) => {
-  if (!date) {
+  const due = useDueDateStatus({ date });
+
+  if (!due) {
     return <BaseDueDate>Contact not required</BaseDueDate>;
   }
 
-  const beginningOfDay = moment().startOf("day");
-
-  // Upcoming contacts are set to day boundaries. Use the beginning of today when calculating distance
-  // Thus, showing a minimum unit of "In a day" rather than "In X hours"
-  const timeAgo = date.from(beginningOfDay, true);
-
-  if (date.isSame(beginningOfDay, "day")) {
-    return (
-      <Tooltip title="Face to Face Contact recommended today">
-        <TodayDueDate>Contact today</TodayDueDate>
-      </Tooltip>
-    );
-  }
-
-  if (date.isAfter(beginningOfDay, "day")) {
-    return (
-      <Tooltip title={`Face to Face Contact recommended in ${timeAgo}`}>
-        <BaseDueDate>Contact in {timeAgo}</BaseDueDate>
-      </Tooltip>
-    );
+  let DateComponent;
+  const { status, timeDifference } = due;
+  switch (status) {
+    case "Today":
+      DateComponent = TodayDueDate;
+      break;
+    case "Future":
+      DateComponent = BaseDueDate;
+      break;
+    case "Past":
+      DateComponent = PastDueDate;
+      break;
+    default:
+      assertNever(status);
   }
 
   return (
-    <Tooltip title={`Face to Face Contact recommended ${timeAgo} ago`}>
-      <PastDueDate>Contact due {timeAgo} ago</PastDueDate>
+    <Tooltip title={`Face to Face Contact recommended ${timeDifference}`}>
+      <DateComponent>
+        Contact {status === "Past" ? "due" : ""} {timeDifference}
+      </DateComponent>
     </Tooltip>
   );
 };

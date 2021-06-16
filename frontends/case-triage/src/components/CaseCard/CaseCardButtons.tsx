@@ -25,8 +25,11 @@ import {
   spacing,
 } from "@recidiviz/design-system";
 import Tooltip from "../Tooltip";
+import { Pill } from "../Pill";
 
-const baseStyle = `
+export const UncheckedButton = styled.button.attrs({
+  type: "button",
+})`
   cursor: pointer;
   padding: ${rem(spacing.xs)} ${rem(12)};
   height: ${rem(32)};
@@ -34,33 +37,17 @@ const baseStyle = `
   align-items: center;
   justify-content: center;
 
-  border: 1px solid transparent;
+  border: 1px solid ${palette.slate30};
   font-size: ${rem("14px")};
   white-space: nowrap;
   margin-right: ${rem(spacing.xs)};
 
   box-sizing: border-box;
   border-radius: 4px;
-`;
-
-const CheckedButton = styled.div`
-  ${baseStyle}
-
-  color: ${palette.white};
-  background-color: ${palette.slate60};
-  border-radius: 16px;
-  cursor: auto;
-`;
-
-export const UncheckedButton = styled.button.attrs({
-  type: "button",
-})`
-  ${baseStyle}
 
   background-color: transparent;
 
   color: ${palette.pine4};
-  border-color: ${palette.slate30};
 
   &:hover {
     color: ${palette.pine2};
@@ -90,7 +77,7 @@ export const NeedsCheckboxButton: React.FC<NeedsCheckboxButtonProps> = ({
 }) => {
   if (checked) {
     return (
-      <CheckedButton>
+      <Pill filled kind="neutral">
         {tooltip ? <Tooltip title={tooltip}>{title}</Tooltip> : title}
         <CloseButton
           onClick={() => {
@@ -104,7 +91,7 @@ export const NeedsCheckboxButton: React.FC<NeedsCheckboxButtonProps> = ({
             <Icon kind={IconSVG.CloseOutlined} fill={palette.white} size={16} />
           </Tooltip>
         </CloseButton>
-      </CheckedButton>
+      </Pill>
     );
   }
 
