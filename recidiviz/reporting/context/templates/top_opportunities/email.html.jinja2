@@ -30,25 +30,29 @@
                         <td valign="top" align="center">
                           <table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
                             class="em_wrapper" style="width:600px;">
-                            {% if mismatches['high_to_medium'] -%}
+                            {% if mismatches['high_downgrades'] -%}
                             <tr>
-                              <td class="em_heading em_dm_txt_white" valign="top" align="left"
+                              <td class="em_heading em_dm_txt_white" valign="top" align="left" colspan="3"
                                 style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 24px; line-height: 24px; font-weight: 500; color: #00413E; letter-spacing: -0.16px;">
-                                Highs that should be Medium
+                                Highs who should be downgraded
                               </td>
                             </tr>
                             <tr>
                               <td class="em_h10" height="24" style="height: 24px;">&nbsp;</td>
                             </tr>
-                            {% for mismatch in mismatches['high_to_medium'] -%}
+                            {% for mismatch in mismatches['high_downgrades'] -%}
                             <tr>
                               <td class="em_line" height="24"
                                 style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 16px; line-height: 16px; font-weight: 500;">
-                                {{ mismatch['name'] }}
+                                {{ mismatch['name'] }} ({{ mismatch['person_external_id'] }})
                               </td>
                               <td class="em_line" height="24"
                                 style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 16px; line-height: 16px; font-weight: 500;">
-                                {{ mismatch['person_external_id'] }}
+                                {% if mismatch['last_score'] %}{{ assessment_name }}&nbsp;Score: {{ mismatch['last_score'] }}{% endif %}
+                              </td>
+                              <td class="em_line" height="24"
+                                style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 16px; line-height: 16px; font-weight: 500;">
+                                {% if mismatch['last_assessment_date'] %}Last&nbsp;Assessed: {{ mismatch['last_assessment_date'] }}{% endif %}
                               </td>
                             </tr>
                             {% endfor -%}
@@ -56,57 +60,34 @@
                               <td class="em_h34" height="63" style="height: 63px;">&nbsp;</td>
                             </tr>
                             {% endif -%}
-                            {% if mismatches['high_to_low'] -%}
+                            {% if mismatches['medium_downgrades'] -%}
                             <tr>
-                              <td class="em_heading em_dm_txt_white" valign="top" align="left"
+                              <td class="em_heading em_dm_txt_white" valign="top" align="left" colspan="3"
                                 style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 24px; line-height: 24px; font-weight: 500; color: #00413E; letter-spacing: -0.16px;">
-                                Highs that should be Low
+                                Mediums who should be downgraded
                               </td>
                             </tr>
                             <tr>
                               <td class="em_h10" height="24" style="height: 24px;">&nbsp;</td>
                             </tr>
-                            {% for mismatch in mismatches['high_to_low'] -%}
+                            {% for mismatch in mismatches['medium_downgrades'] -%}
                             <tr>
                               <td class="em_line" height="24"
                                 style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 16px; line-height: 16px; font-weight: 500;">
-                                {{ mismatch['name'] }}
+                                {{ mismatch['name'] }} ({{ mismatch['person_external_id'] }})
                               </td>
                               <td class="em_line" height="24"
                                 style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 16px; line-height: 16px; font-weight: 500;">
-                                {{ mismatch['person_external_id'] }}
+                                {% if mismatch['last_score'] %}{{ assessment_name }}&nbsp;Score: {{ mismatch['last_score'] }}{% endif %}
+                              </td>
+                              <td class="em_line" height="24"
+                                style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 16px; line-height: 16px; font-weight: 500;">
+                                {% if mismatch['last_assessment_date'] %}Last&nbsp;Assessed: {{ mismatch['last_assessment_date'] }}{% endif %}
                               </td>
                             </tr>
                             {% endfor -%}
                             <tr>
                               <td class="em_h34" height="63" style="height: 63px;">&nbsp;</td>
-                            </tr>
-                            {% endif -%}
-                            {% if mismatches['medium_to_low'] -%}
-                            <tr>
-                              <td class="em_heading em_dm_txt_white" valign="top" align="left"
-                                style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 24px; line-height: 24px; font-weight: 500; color: #00413E; letter-spacing: -0.16px;">
-                                Mediums that should be Low
-                              </td>
-                            </tr>
-                            <tr>
-                              <td class="em_h10" height="24" style="height: 24px;">&nbsp;</td>
-                            </tr>
-                            {% for mismatch in mismatches['medium_to_low'] -%}
-                            <tr>
-                              <td class="em_line" height="24"
-                                style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 16px; line-height: 16px; font-weight: 500;">
-                                {{ mismatch['name'] }}
-                              </td>
-                              <td class="em_line" height="24"
-                                style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 16px; line-height: 16px; font-weight: 500;">
-                                {{ mismatch['person_external_id'] }}
-                              </td>
-                            </tr>
-                            {% endfor -%}
-                            <tr>
-                              <td class="em_h8" height="16" style="height: 16px; font-size: 0px; line-height: 0px;">
-                                &nbsp;</td>
                             </tr>
                             {% endif -%}
                           </table>
