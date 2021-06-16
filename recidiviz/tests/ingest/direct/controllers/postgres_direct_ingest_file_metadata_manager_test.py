@@ -18,7 +18,7 @@
 import datetime
 import unittest
 from sqlite3 import IntegrityError
-from typing import Type, List, Tuple
+from typing import List, Tuple, Type
 
 import pytz
 from freezegun import freeze_time
@@ -36,16 +36,17 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 )
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestFileMetadataManager,
+    PostgresDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.errors import DirectIngestInstanceError
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.persistence.entity.base_entity import entity_graph_eq, Entity
+from recidiviz.persistence.entity.base_entity import Entity, entity_graph_eq
 from recidiviz.persistence.entity.operations.entities import (
-    DirectIngestRawFileMetadata,
     DirectIngestIngestFileMetadata,
+    DirectIngestRawFileMetadata,
 )
 from recidiviz.tests.utils import fakes
 
@@ -69,6 +70,10 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         self.other_output_bucket_name = "other_output_bucket_name"
         self.metadata_manager_other_region = PostgresDirectIngestFileMetadataManager(
             region_code="us_yy", ingest_database_name="us_xx_ingest_database_name"
+        )
+
+        self.raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+            region_code="us_xx", ingest_database_name="us_xx_ingest_database_name"
         )
 
         def fake_eq(e1: Entity, e2: Entity) -> bool:
@@ -199,6 +204,113 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         self.assertIsNotNone(metadata.file_id)
 
         self.assertEqual(expected_metadata, metadata)
+
+    def test_has_raw_file_been_discovered(self) -> None:
+        # Arrange
+        raw_unprocessed_path = self._make_unprocessed_path(
+            "bucket/file_tag.csv", GcsfsDirectIngestFileType.RAW_DATA
+        )
+
+        # Act
+        self.raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path)
+
+        # Assert
+        self.assertTrue(
+            self.metadata_manager.has_raw_file_been_discovered(raw_unprocessed_path)
+        )
+        self.assertTrue(
+            self.raw_metadata_manager.has_raw_file_been_discovered(raw_unprocessed_path)
+        )
+        self.assertTrue(
+            self.metadata_manager_secondary.has_raw_file_been_discovered(
+                raw_unprocessed_path
+            )
+        )
+
+    def test_has_raw_file_been_discovered_returns_false_for_no_rows(self) -> None:
+        # Arrange
+        raw_unprocessed_path = self._make_unprocessed_path(
+            "bucket/file_tag.csv", GcsfsDirectIngestFileType.RAW_DATA
+        )
+
+        # Assert
+        self.assertFalse(
+            self.metadata_manager.has_raw_file_been_discovered(raw_unprocessed_path)
+        )
+        self.assertFalse(
+            self.raw_metadata_manager.has_raw_file_been_discovered(raw_unprocessed_path)
+        )
+        self.assertFalse(
+            self.metadata_manager_secondary.has_raw_file_been_discovered(
+                raw_unprocessed_path
+            )
+        )
+
+    def test_has_raw_file_been_processed(self) -> None:
+        # Arrange
+        raw_unprocessed_path = self._make_unprocessed_path(
+            "bucket/file_tag.csv", GcsfsDirectIngestFileType.RAW_DATA
+        )
+
+        # Act
+        self.raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path)
+        self.raw_metadata_manager.mark_raw_file_as_processed(raw_unprocessed_path)
+
+        # Assert
+        self.assertTrue(
+            self.metadata_manager.has_raw_file_been_processed(raw_unprocessed_path)
+        )
+        self.assertTrue(
+            self.raw_metadata_manager.has_raw_file_been_processed(raw_unprocessed_path)
+        )
+        self.assertTrue(
+            self.metadata_manager_secondary.has_raw_file_been_processed(
+                raw_unprocessed_path
+            )
+        )
+
+    def test_has_raw_file_been_processed_returns_false_for_no_rows(self) -> None:
+        # Arrange
+        raw_unprocessed_path = self._make_unprocessed_path(
+            "bucket/file_tag.csv", GcsfsDirectIngestFileType.RAW_DATA
+        )
+
+        # Assert
+        self.assertFalse(
+            self.metadata_manager.has_raw_file_been_processed(raw_unprocessed_path)
+        )
+        self.assertFalse(
+            self.raw_metadata_manager.has_raw_file_been_processed(raw_unprocessed_path)
+        )
+        self.assertFalse(
+            self.metadata_manager_secondary.has_raw_file_been_processed(
+                raw_unprocessed_path
+            )
+        )
+
+    def test_has_raw_file_been_processed_returns_false_for_no_processed_time(
+        self,
+    ) -> None:
+        # Arrange
+        raw_unprocessed_path = self._make_unprocessed_path(
+            "bucket/file_tag.csv", GcsfsDirectIngestFileType.RAW_DATA
+        )
+
+        # Act
+        self.raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path)
+
+        # Assert
+        self.assertFalse(
+            self.metadata_manager.has_raw_file_been_processed(raw_unprocessed_path)
+        )
+        self.assertFalse(
+            self.raw_metadata_manager.has_raw_file_been_processed(raw_unprocessed_path)
+        )
+        self.assertFalse(
+            self.metadata_manager_secondary.has_raw_file_been_processed(
+                raw_unprocessed_path
+            )
+        )
 
     @freeze_time("2015-01-02T03:05:06.000007")
     def test_mark_raw_file_as_processed(self) -> None:

@@ -18,37 +18,35 @@
 Postgres table.
 """
 import datetime
-from typing import Optional, List
+from typing import List, Optional
 
 import pytz
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.controllers.direct_ingest_file_metadata_manager import (
     DirectIngestFileMetadataManager,
-    DirectIngestRawFileMetadataManager,
     DirectIngestIngestFileMetadataManager,
+    DirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DIRECT_INGEST_UNPROCESSED_PREFIX,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    GcsfsDirectIngestFileType,
     GcsfsIngestViewExportArgs,
     filename_parts_from_path,
-    GcsfsDirectIngestFileType,
 )
 from recidiviz.ingest.direct.errors import DirectIngestInstanceError
-from recidiviz.persistence.database.schema.operations import schema, dao
+from recidiviz.persistence.database.schema.operations import dao, schema
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
     convert_schema_object_to_entity,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import (
-    SQLAlchemyDatabaseKey,
-)
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.operations.entities import (
-    DirectIngestRawFileMetadata,
     DirectIngestIngestFileMetadata,
+    DirectIngestRawFileMetadata,
 )
 
 
@@ -58,7 +56,7 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
     """
 
     def __init__(self, region_code: str, ingest_database_name: str):
-        self.region_code = region_code
+        self.region_code = region_code.upper()
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
         self.ingest_database_name = ingest_database_name
 
@@ -245,7 +243,7 @@ class PostgresDirectIngestIngestFileMetadataManager(
     """
 
     def __init__(self, region_code: str, ingest_database_name: str):
-        self.region_code = region_code
+        self.region_code = region_code.upper()
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
         self.ingest_database_name = ingest_database_name
 
