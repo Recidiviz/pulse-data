@@ -19,8 +19,8 @@
 
 import string
 import unittest
-from unittest import mock
 from typing import Dict, List
+from unittest import mock
 
 import sqlalchemy
 from parameterized import parameterized
@@ -31,9 +31,7 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.view_registry.datasets import (
-    VIEW_SOURCE_TABLE_DATASETS,
-)
+from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 
 
 class CloudSqlToBQConfigTest(unittest.TestCase):
@@ -94,14 +92,14 @@ county_columns_to_exclude:
                 config = CloudSqlToBQConfig.for_schema_type(schema_type)
                 self.assertIsInstance(config, CloudSqlToBQConfig)
 
-    def test_is_state_segmented_refresh_schema(self):
+    def test_is_state_segmented_refresh_schema(self) -> None:
         for schema_type in self.enabled_schema_types:
             config = CloudSqlToBQConfig.for_schema_type(schema_type)
             is_state_segmented = config.is_state_segmented_refresh_schema()
             if schema_type == SchemaType.STATE:
                 self.assertTrue(is_state_segmented)
 
-    def test_unioned_regional_dataset(self):
+    def test_unioned_regional_dataset(self) -> None:
         for schema_type in self.enabled_schema_types:
             config = CloudSqlToBQConfig.for_schema_type(schema_type)
             dataset = config.unioned_regional_dataset(dataset_override_prefix=None)
@@ -115,7 +113,7 @@ county_columns_to_exclude:
             self.assertTrue(dataset_with_prefix.endswith("regional"))
             self.assertTrue(dataset_with_prefix not in VIEW_SOURCE_TABLE_DATASETS)
 
-    def test_unioned_multi_region_dataset(self):
+    def test_unioned_multi_region_dataset(self) -> None:
         for schema_type in self.enabled_schema_types:
             config = CloudSqlToBQConfig.for_schema_type(schema_type)
             dataset = config.unioned_multi_region_dataset(dataset_override_prefix=None)
