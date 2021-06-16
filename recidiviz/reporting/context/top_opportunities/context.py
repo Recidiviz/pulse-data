@@ -96,35 +96,33 @@ if __name__ == "__main__":
                 utils.KEY_STATE_CODE: "US_ID",
                 utils.KEY_DISTRICT: "US_ID_D3",
                 OFFICER_GIVEN_NAME: "Clementine",
+                "assessment_name": "LSI-R",
                 "mismatches": {
-                    "high_to_medium": [
+                    "high_downgrades": [
                         {
                             "name": "Nikhil Bhargava",
                             "person_external_id": "189472",
+                            "last_score": 14,
                         },
                     ],
-                    "high_to_low": [
+                    "medium_downgrades": [
                         {
                             "name": "Serena Chang",
                             "person_external_id": "47228",
+                            "last_assessment_date": "1/12/21",
+                            "last_score": 8,
                         },
                         {
                             "name": "Juan Agron",
                             "person_external_id": "132878",
+                            "last_assessment_date": "3/14/20",
+                            "last_score": 10,
                         },
                         {
                             "name": "Emily Chao",
                             "person_external_id": "147872",
-                        },
-                    ],
-                    "medium_to_low": [
-                        {
-                            "name": "Annalise Irby",
-                            "person_external_id": "74827",
-                        },
-                        {
-                            "name": "Dan Hansen",
-                            "person_external_id": "32224",
+                            "last_assessment_date": "3/13/20",
+                            "last_score": 4,
                         },
                     ],
                 },
