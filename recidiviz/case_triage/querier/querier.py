@@ -51,6 +51,24 @@ class CaseTriageQuerier:
     """Implements Querier abstraction for Case Triage data sources."""
 
     @staticmethod
+    def fetch_etl_client(
+        session: Session, person_external_id: str, state_code: str
+    ) -> ETLClient:
+        try:
+            return (
+                session.query(ETLClient)
+                .filter(
+                    ETLClient.state_code == state_code,
+                    ETLClient.person_external_id == person_external_id,
+                )
+                .one()
+            )
+        except sqlalchemy.orm.exc.NoResultFound as e:
+            raise PersonDoesNotExistError(
+                f"could not find id: {person_external_id}"
+            ) from e
+
+    @staticmethod
     def etl_client_for_officer(
         session: Session, officer: ETLOfficer, person_external_id: str
     ) -> ETLClient:

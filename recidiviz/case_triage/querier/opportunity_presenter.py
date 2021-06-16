@@ -41,9 +41,16 @@ class OpportunityPresenter:
         self.etl_opportunity = etl_opportunity
         self.opportunity_deferral = opportunity_deferral
 
-    def to_json(self, query_time: Optional[datetime]) -> Dict[str, Any]:
+    def is_deferred(self, query_time: Optional[datetime] = None) -> bool:
         if not query_time:
             query_time = datetime.now(tz=pytz.UTC)
+        return (
+            self.opportunity_deferral is not None
+            and self.opportunity_deferral.deferred_until.replace(tzinfo=pytz.UTC)
+            >= query_time
+        )
+
+    def to_json(self, query_time: Optional[datetime]) -> Dict[str, Any]:
         base = {
             "personExternalId": unconvert_fake_person_id_for_demo_user(
                 self.etl_opportunity.person_external_id
@@ -53,11 +60,7 @@ class OpportunityPresenter:
             "opportunityType": self.etl_opportunity.opportunity_type,
             "opportunityMetadata": self.etl_opportunity.opportunity_metadata,
         }
-        if (
-            self.opportunity_deferral is not None
-            and self.opportunity_deferral.deferred_until.replace(tzinfo=pytz.UTC)
-            >= query_time
-        ):
+        if self.opportunity_deferral is not None and self.is_deferred(query_time):
             # TODO(#5708): Check the metadata as well to see if the deferral is
             # still active
             base["deferredUntil"] = self.opportunity_deferral.deferred_until
