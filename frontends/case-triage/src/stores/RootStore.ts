@@ -73,8 +73,4 @@ export default class RootStore {
       userStore: this.userStore,
     });
   }
-
-  updateClientsList(): void {
-    this.clientsStore.updateClientsList();
-  }
 }

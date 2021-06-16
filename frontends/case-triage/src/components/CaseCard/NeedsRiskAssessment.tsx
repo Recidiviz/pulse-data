@@ -19,7 +19,7 @@ import moment from "moment";
 import * as React from "react";
 import { observer } from "mobx-react-lite";
 import { Caption, CaseCardBody, CaseCardInfo } from "./CaseCard.styles";
-import { DecoratedClient } from "../../stores/ClientsStore/Client";
+import { Client } from "../../stores/ClientsStore/Client";
 import { useRootStore } from "../../stores";
 import {
   ScoreMinMax,
@@ -32,11 +32,11 @@ import TEST_IDS from "../TestIDs";
 
 interface NeedsRiskAssessmentProps {
   className: string;
-  client: DecoratedClient;
+  client: Client;
 }
 
 const getAssessmentLevelText = (
-  client: DecoratedClient,
+  client: Client,
   cutoffs?: ScoreMinMaxBySupervisionLevel
 ) => {
   if (cutoffs) {
@@ -56,7 +56,7 @@ const getAssessmentLevelText = (
   return null;
 };
 
-const getAssessmentScoreText = (client: DecoratedClient) =>
+const getAssessmentScoreText = (client: Client) =>
   client.assessmentScore !== null ? `Score: ${client.assessmentScore}` : null;
 
 const getCutoffsText = ([min, max]: ScoreMinMax) => {

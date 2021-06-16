@@ -16,12 +16,12 @@
 // =============================================================================
 import * as React from "react";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
-import { DecoratedClient } from "../../stores/ClientsStore";
+import { Client } from "../../stores/ClientsStore";
 import BaseFeedbackForm from "./BaseForm";
 import { useRootStore } from "../../stores";
 
 interface IncorrectDataFormProps {
-  client: DecoratedClient;
+  client: Client;
   actionType: CaseUpdateActionType;
 
   title: string;

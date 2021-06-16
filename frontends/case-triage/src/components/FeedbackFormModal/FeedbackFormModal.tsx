@@ -22,7 +22,7 @@ import {
   CaseUpdateActionType,
   NotInCaseloadActions,
 } from "../../stores/CaseUpdatesStore";
-import { DecoratedClient } from "../../stores/ClientsStore";
+import { Client } from "../../stores/ClientsStore";
 import IncorrectDataForm from "./IncorrectDataForm";
 import MoveToProcessingForm from "./MoveToProcessingForm";
 
@@ -35,7 +35,7 @@ const UnpaddedModal = styled(Modal)`
 
 interface FeedbackFormModalProps {
   actionType: CaseUpdateActionType;
-  client: DecoratedClient;
+  client: Client;
   isOpen: boolean;
   onRequestClose: () => void;
 }

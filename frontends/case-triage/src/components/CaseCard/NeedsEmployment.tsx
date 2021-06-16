@@ -19,13 +19,13 @@ import * as React from "react";
 import { observer } from "mobx-react-lite";
 import { Caption, CaseCardBody, CaseCardInfo } from "./CaseCard.styles";
 import { NeedsActionFlow } from "../NeedsActionFlow/NeedsActionFlow";
-import { DecoratedClient } from "../../stores/ClientsStore/Client";
+import { Client } from "../../stores/ClientsStore/Client";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 import TEST_IDS from "../TestIDs";
 
 interface NeedsEmploymentProps {
   className: string;
-  client: DecoratedClient;
+  client: Client;
 }
 
 const NeedsEmployment: React.FC<NeedsEmploymentProps> = ({

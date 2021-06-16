@@ -78,8 +78,7 @@ const Home = (props: RouteComponentProps): ReactElement => {
   const showNewLayout = userStore.isInExperiment(KNOWN_EXPERIMENTS.NewLayout);
 
   const ClientCard =
-    clientsStore.activeClient &&
-    clientsStore.isVisible(clientsStore.activeClient) ? (
+    clientsStore.activeClient && clientsStore.activeClient.isVisible ? (
       <CaseCard client={clientsStore.activeClient} />
     ) : null;
 

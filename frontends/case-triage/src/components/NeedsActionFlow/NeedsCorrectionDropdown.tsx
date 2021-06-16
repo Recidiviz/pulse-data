@@ -2,7 +2,7 @@ import * as React from "react";
 import { Dropdown } from "@recidiviz/design-system";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 import FeedbackFormModal from "../FeedbackFormModal";
-import { DecoratedClient } from "../../stores/ClientsStore";
+import { Client } from "../../stores/ClientsStore";
 import { ACTION_TITLES } from "./NeedsActionFlow";
 
 interface NeedsCorrectionDropdownProps {
@@ -10,7 +10,7 @@ interface NeedsCorrectionDropdownProps {
   borderless?: boolean;
   children?: React.ReactNode | React.ReactNode[] | null;
   className?: string;
-  client: DecoratedClient;
+  client: Client;
   alignment?: "left" | "right";
 }
 

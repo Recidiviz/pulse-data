@@ -22,7 +22,7 @@ import {
   CaseCardBody,
   CaseCardInfo,
 } from "../CaseCard/CaseCard.styles";
-import { DecoratedClient } from "../../stores/ClientsStore/Client";
+import { Client } from "../../stores/ClientsStore/Client";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 import { NeedsActionFlow } from "../NeedsActionFlow/NeedsActionFlow";
 import { titleCase } from "../../utils";
@@ -31,7 +31,7 @@ import { Opportunity } from "../../stores/OpportunityStore";
 
 interface OpportunitySupervisionLevelReviewProps {
   className: string;
-  client: DecoratedClient;
+  client: Client;
   opportunity: Opportunity;
 }
 

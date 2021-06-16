@@ -18,16 +18,10 @@ import { action, autorun, makeAutoObservable, runInAction } from "mobx";
 import { parse } from "query-string";
 import PolicyStore from "../PolicyStore";
 import UserStore from "../UserStore";
-import {
-  Client,
-  decorateClient,
-  DecoratedClient,
-  Note,
-  PENDING_ID,
-} from "./Client";
+import { ClientData, Client } from "./Client";
 
-import API, { isErrorResponse } from "../API";
-import { caseInsensitiveIncludes } from "../../utils";
+import API from "../API";
+
 import { CLIENT_LIST_KIND, ClientListBuilder } from "./ClientListBuilder";
 
 interface ClientsStoreProps {
@@ -40,13 +34,13 @@ interface ClientsStoreProps {
 class ClientsStore {
   private api: API;
 
-  private clients: DecoratedClient[];
+  private clients: Client[];
 
   private clientListBuilder: ClientListBuilder;
 
   isLoading?: boolean;
 
-  activeClient?: DecoratedClient;
+  activeClient?: Client;
 
   activeClientOffset: number;
 
@@ -54,13 +48,9 @@ class ClientsStore {
 
   clientSearchString: string;
 
-  clientPendingView: DecoratedClient | null;
+  clientPendingView: Client | null;
 
   clientPendingAnimation: boolean;
-
-  lists: Record<CLIENT_LIST_KIND, DecoratedClient[]>;
-
-  unfilteredLists: Record<CLIENT_LIST_KIND, DecoratedClient[]>;
 
   error?: string;
 
@@ -83,14 +73,6 @@ class ClientsStore {
     this.activeClientOffset = 0;
     this.clientListBuilder = clientListBuilder;
     this.clients = [];
-    this.lists = {
-      [CLIENT_LIST_KIND.UP_NEXT]: [],
-      [CLIENT_LIST_KIND.PROCESSING_FEEDBACK]: [],
-    };
-    this.unfilteredLists = {
-      [CLIENT_LIST_KIND.UP_NEXT]: [],
-      [CLIENT_LIST_KIND.PROCESSING_FEEDBACK]: [],
-    };
 
     this.clientPendingView = null;
     this.policyStore = policyStore;
@@ -119,16 +101,15 @@ class ClientsStore {
   async fetchClientsList(): Promise<void> {
     this.isLoading = true;
     try {
-      const clients = await this.api.get<Client[]>("/api/clients");
+      const clients = await this.api.get<ClientData[]>("/api/clients");
 
       runInAction(() => {
         this.isLoading = false;
 
+        const { api } = this;
         this.clients = clients.map((client) =>
-          decorateClient(client, this.policyStore)
+          Client.build({ api, client, clientsStore: this })
         );
-
-        this.updateClientsList();
       });
     } catch (error) {
       runInAction(() => {
@@ -138,64 +119,47 @@ class ClientsStore {
     }
   }
 
-  updateClientsList(): void {
-    this.unfilteredLists = this.clientListBuilder.build(this.clients);
-    this.lists = {
+  get unfilteredLists(): Record<CLIENT_LIST_KIND, Client[]> {
+    return this.clientListBuilder.build(this.clients);
+  }
+
+  get lists(): Record<CLIENT_LIST_KIND, Client[]> {
+    const lists = {
       [CLIENT_LIST_KIND.UP_NEXT]: [
         ...this.unfilteredLists[CLIENT_LIST_KIND.UP_NEXT],
-      ],
+      ].filter((client) => client.isVisible),
       [CLIENT_LIST_KIND.PROCESSING_FEEDBACK]: [
         ...this.unfilteredLists[CLIENT_LIST_KIND.PROCESSING_FEEDBACK],
-      ],
+      ].filter((client) => client.isVisible),
     };
-    this.filterClients(this.clientSearchString);
+
+    return lists;
   }
 
   filterClients(searchString: string): void {
-    runInAction(() => {
-      this.clientSearchString = searchString;
+    this.clientSearchString = searchString;
 
-      // Set query params
-      const queryParams = new URLSearchParams(window.location.search);
-      if (queryParams.get("search") !== this.clientSearchString) {
-        if (this.clientSearchString !== "") {
-          queryParams.set("search", this.clientSearchString);
-          window.history.replaceState(null, "", `?${queryParams.toString()}`);
-        } else {
-          window.history.replaceState(null, "", window.location.pathname);
-        }
+    // Set query params
+    const queryParams = new URLSearchParams(window.location.search);
+    if (queryParams.get("search") !== this.clientSearchString) {
+      if (this.clientSearchString !== "") {
+        queryParams.set("search", this.clientSearchString);
+        window.history.replaceState(null, "", `?${queryParams.toString()}`);
+      } else {
+        window.history.replaceState(null, "", window.location.pathname);
       }
+    }
 
-      this.lists[CLIENT_LIST_KIND.UP_NEXT] = this.unfilteredLists[
-        CLIENT_LIST_KIND.UP_NEXT
-      ].filter((client) => this.isVisible(client));
-
-      this.lists[CLIENT_LIST_KIND.PROCESSING_FEEDBACK] = this.unfilteredLists[
-        CLIENT_LIST_KIND.PROCESSING_FEEDBACK
-      ].filter((client) => this.isVisible(client));
-
-      if (this.activeClient) {
-        this.setClientPendingView(this.activeClient);
-      }
-    });
-  }
-
-  isVisible({ name }: DecoratedClient): boolean {
-    return caseInsensitiveIncludes(name, this.clientSearchString);
-  }
-
-  isActive({ personExternalId }: DecoratedClient): boolean {
-    return (
-      this.clientPendingView?.personExternalId === personExternalId ||
-      this.activeClient?.personExternalId === personExternalId
-    );
+    if (this.activeClient) {
+      this.setClientPendingView(this.activeClient);
+    }
   }
 
   setClientPendingAnimation(animation: boolean): void {
     this.clientPendingAnimation = animation;
   }
 
-  setClientPendingView(client?: DecoratedClient): void {
+  setClientPendingView(client?: Client): void {
     if (!client) {
       return;
     }
@@ -206,7 +170,7 @@ class ClientsStore {
   get showClientCard(): boolean {
     let showCard = this.showClientCardIfVisible;
     if (showCard && this.activeClient) {
-      showCard = this.isVisible(this.activeClient);
+      showCard = this.activeClient.isVisible;
     }
     return showCard;
   }
@@ -215,7 +179,7 @@ class ClientsStore {
     this.showClientCardIfVisible = show;
   }
 
-  view(client: DecoratedClient | undefined = undefined, offset = 0): void {
+  view(client: Client | undefined = undefined, offset = 0): void {
     this.activeClient =
       this.clientPendingView !== null && !client
         ? this.clientPendingView
@@ -226,71 +190,6 @@ class ClientsStore {
     this.activeClientOffset = offset;
 
     this.clientPendingView = null;
-  }
-
-  /**
-   * Creates the specified note via API request. If the request succeeds,
-   * the resulting `Note` object will be appended to `client.notes`
-   */
-  async createNoteForClient({
-    client,
-    text,
-  }: {
-    client: Client;
-    text: string;
-  }): Promise<void> {
-    const newNote: Note = {
-      createdDatetime: "",
-      noteId: PENDING_ID,
-      resolved: false,
-      text,
-      updatedDatetime: "",
-    };
-
-    // eslint-disable-next-line no-param-reassign
-    client.notes = client.notes ?? [];
-    const { notes } = client;
-    notes.push(newNote);
-
-    const response = await this.api.post<Note>("/api/create_note", {
-      personExternalId: client.personExternalId,
-      text,
-    });
-
-    if (!isErrorResponse(response)) {
-      Object.assign(newNote, response);
-    } else {
-      notes.splice(notes.indexOf(newNote), 1);
-    }
-  }
-
-  /**
-   * Marks the provided note with specified resolution and updates
-   * the backend via API request. Will make local updates optimistically
-   * and revert on API failure.
-   */
-  async setNoteResolution({
-    note,
-    isResolved,
-  }: {
-    note: Note;
-    isResolved: boolean;
-  }): Promise<void> {
-    /* eslint-disable no-param-reassign */
-    note.resolved = isResolved;
-
-    const response = await this.api.post<{ status: string }>(
-      "/api/resolve_note",
-      {
-        noteId: note.noteId,
-        isResolved,
-      }
-    );
-
-    if (isErrorResponse(response)) {
-      note.resolved = !isResolved;
-    }
-    /* eslint-enable no-param-reassign */
   }
 }
 

@@ -24,7 +24,7 @@ import {
 import * as React from "react";
 import { observer } from "mobx-react-lite";
 import { Caption, CaseCardBody, CaseCardInfo } from "./CaseCard.styles";
-import { DecoratedClient } from "../../stores/ClientsStore/Client";
+import { Client } from "../../stores/ClientsStore/Client";
 import { useRootStore } from "../../stores";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 import { SupervisionContactFrequency } from "../../stores/PolicyStore/Policy";
@@ -33,10 +33,10 @@ import TEST_IDS from "../TestIDs";
 
 interface NeedsFaceToFaceContactProps {
   className: string;
-  client: DecoratedClient;
+  client: Client;
 }
 
-const getLastContactedText = (client: DecoratedClient) => {
+const getLastContactedText = (client: Client) => {
   const { mostRecentFaceToFaceDate } = client;
 
   if (mostRecentFaceToFaceDate) {
