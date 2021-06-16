@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import TruncatedList from "react-truncate-list";
 import styled from "styled-components/macro";
 import { rem } from "polished";
 import {
@@ -43,19 +44,9 @@ export const ClientListCardElement = styled(Card).attrs(
     };
   }
 )`
+  align-items: center;
   position: relative;
   min-height: 92px;
-
-  // Override base <Card/> flex-direction
-  && {
-    flex-direction: column;
-  }
-
-  @media ${device.desktop} {
-    && {
-      flex-direction: row;
-    }
-  }
 
   &:hover,
   &:focus {
@@ -70,6 +61,20 @@ export const ClientListCardElement = styled(Card).attrs(
 
   &.client-card--in-progress {
     background-color: ${palette.marble5};
+  }
+`;
+
+export const StackingClientListCardElement = styled(ClientListCardElement)`
+  // Override base <Card/> flex-direction
+  && {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  @media ${device.desktop} {
+    && {
+      flex-direction: row;
+    }
   }
 `;
 
@@ -171,4 +176,27 @@ export const InProgressIndicator = styled.div`
 
 export const PendingText = styled.div`
   color: ${palette.slate70};
+`;
+
+export const NameCardSection = styled(FlexCardSection)`
+  display: flex;
+  justify-content: space-between;
+  flex: 0 0 30% !important;
+`;
+
+export const StatusCardSection = styled(BaseCardSection)`
+  min-width: 0;
+  white-space: nowrap;
+`;
+
+export const StatusList = styled(TruncatedList)`
+  text-align: right;
+
+  li {
+    display: inline;
+
+    &[hidden] {
+      display: none;
+    }
+  }
 `;

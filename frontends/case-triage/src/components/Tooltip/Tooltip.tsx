@@ -82,13 +82,13 @@ const Tooltip: React.FC<TooltipProps> = ({ children, title }: TooltipProps) => {
     <>
       {tooltip}
 
-      <div
+      <span
         onMouseMove={onMouseMove}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
       >
         {children}
-      </div>
+      </span>
     </>
   );
 };

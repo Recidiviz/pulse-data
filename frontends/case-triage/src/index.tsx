@@ -16,6 +16,7 @@
 // =============================================================================
 import "./window.d";
 import "react-app-polyfill/ie11";
+import "react-truncate-list/dist/styles.css";
 import "core-js";
 import React from "react";
 import ReactDOM from "react-dom";
