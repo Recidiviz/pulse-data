@@ -21,7 +21,7 @@ import {
   CaseUpdateActionType,
   CaseUpdateStatus,
 } from "./CaseUpdates";
-import ClientsStore, { DecoratedClient } from "../ClientsStore";
+import ClientsStore, { Client } from "../ClientsStore";
 import UserStore from "../UserStore";
 
 import API from "../API";
@@ -55,7 +55,7 @@ class CaseUpdatesStore {
   }
 
   async recordAction(
-    client: DecoratedClient,
+    client: Client,
     actionType: CaseUpdateActionType,
     comment?: string
   ): Promise<void> {
@@ -92,12 +92,11 @@ class CaseUpdatesStore {
 
     trackPersonActionTaken(client, actionType);
 
-    this.clientsStore.updateClientsList();
     this.isLoading = false;
   }
 
   async removeAction(
-    client: DecoratedClient,
+    client: Client,
     updateId: string,
     actionType: CaseUpdateActionType
   ): Promise<void> {
@@ -114,12 +113,11 @@ class CaseUpdatesStore {
     await this.api.delete(`/api/case_updates/${updateId}`);
     trackPersonActionRemoved(client, updateId, actionType);
 
-    this.clientsStore.updateClientsList();
     this.isLoading = false;
   }
 
   async toggleAction(
-    client: DecoratedClient,
+    client: Client,
     eventType: CaseUpdateActionType,
     completedAction: boolean
   ): Promise<void> {

@@ -1,15 +1,12 @@
-import { DecoratedClient, getNextContactDate } from "./Client";
+import { Client } from "./Client";
 import OpportunityStore, { Opportunity } from "../OpportunityStore";
 import { opportunityPriorityComparator } from "../OpportunityStore/Opportunity";
 import PolicyStore from "../PolicyStore";
 import { CaseUpdateActionType } from "../CaseUpdatesStore";
 
-const ClientListContactComparator = (
-  self: DecoratedClient,
-  other: DecoratedClient
-) => {
-  const selfNextContactDate = getNextContactDate(self);
-  const otherNextContactDate = getNextContactDate(other);
+const ClientListContactComparator = (self: Client, other: Client) => {
+  const selfNextContactDate = self.nextContactDate;
+  const otherNextContactDate = other.nextContactDate;
 
   // No upcoming contact recommended. Shift myself to the right
   if (!selfNextContactDate) {
@@ -67,10 +64,8 @@ class ClientListBuilder {
     this.policyStore = policyStore;
   }
 
-  buildBuckets(
-    clients: DecoratedClient[]
-  ): Record<CLIENT_BUCKET, DecoratedClient[]> {
-    const buckets: Record<CLIENT_BUCKET, DecoratedClient[]> = {
+  buildBuckets(clients: Client[]): Record<CLIENT_BUCKET, Client[]> {
+    const buckets: Record<CLIENT_BUCKET, Client[]> = {
       [CLIENT_BUCKET.TOP_OPPORTUNITY]: [],
       [CLIENT_BUCKET.CONTACT_CLIENTS]: [],
       [CLIENT_BUCKET.IN_CUSTODY]: [],
@@ -102,9 +97,7 @@ class ClientListBuilder {
     }, buckets);
   }
 
-  build(
-    clients: DecoratedClient[]
-  ): Record<CLIENT_LIST_KIND, DecoratedClient[]> {
+  build(clients: Client[]): Record<CLIENT_LIST_KIND, Client[]> {
     const buckets = this.buildBuckets(clients);
 
     return {

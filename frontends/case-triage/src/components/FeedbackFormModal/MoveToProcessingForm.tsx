@@ -17,13 +17,13 @@
 import * as React from "react";
 import { useRootStore } from "../../stores";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
-import { DecoratedClient } from "../../stores/ClientsStore";
+import { Client } from "../../stores/ClientsStore";
 import BaseFeedbackForm from "./BaseForm";
 import InCustodyHeader from "./InCustodyHeader";
 import NotOnCaseloadHeader from "./NotOnCaseloadHeader";
 
 interface MoveToProcessingFormProps {
-  client: DecoratedClient;
+  client: Client;
   actionType: CaseUpdateActionType;
 
   title: string;

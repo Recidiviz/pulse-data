@@ -14,14 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import { makeAutoObservable, runInAction, set } from "mobx";
 import moment from "moment";
-import { titleCase } from "../../utils";
+import { caseInsensitiveIncludes, titleCase } from "../../utils";
+import type API from "../API";
+import { isErrorResponse } from "../API";
 import {
   CaseUpdate,
   CaseUpdateActionType,
   CaseUpdateStatus,
 } from "../CaseUpdatesStore";
-import PolicyStore from "../PolicyStore";
+import ClientsStore from "./ClientsStore";
+import { NoteData, Note } from "./Note";
 
 /* eslint-disable camelcase */
 interface ClientFullName {
@@ -62,15 +66,7 @@ export enum PreferredContactMethod {
 
 export const PENDING_ID = "PENDING";
 
-export type Note = {
-  createdDatetime: APIDate;
-  noteId: string;
-  resolved: boolean;
-  text: string;
-  updatedDatetime: APIDate;
-};
-
-export interface Client {
+export interface ClientData {
   assessmentScore: number | null;
   caseType: CaseType;
   caseUpdates: Record<CaseUpdateActionType, CaseUpdate>;
@@ -93,31 +89,7 @@ export interface Client {
   nextHomeVisitDate: APIDate;
   preferredName?: string;
   preferredContactMethod?: PreferredContactMethod;
-  notes?: Note[];
-}
-
-export interface DecoratedClient extends Client {
-  name: string;
-  formalName: string;
-  possessivePronoun: string;
-  supervisionStartDate: moment.Moment | null;
-  projectedEndDate: moment.Moment | null;
-  mostRecentFaceToFaceDate: moment.Moment | null;
-  mostRecentHomeVisitDate: moment.Moment | null;
-  mostRecentAssessmentDate: moment.Moment | null;
-  nextAssessmentDate: moment.Moment | null;
-  nextFaceToFaceDate: moment.Moment | null;
-  nextHomeVisitDate: moment.Moment | null;
-
-  previousInProgressActions?: CaseUpdateActionType[];
-
-  supervisionLevelText: string;
-  hasCaseUpdateInStatus(
-    action: CaseUpdateActionType,
-    status: CaseUpdateStatus
-  ): boolean;
-
-  hasInProgressUpdate(action: CaseUpdateActionType): boolean;
+  notes?: NoteData[];
 }
 
 const parseDate = (date?: APIDate) => {
@@ -128,55 +100,202 @@ const parseDate = (date?: APIDate) => {
   return moment(date);
 };
 
-const decorateClient = (
-  client: Client,
-  policyStore: PolicyStore
-): DecoratedClient => {
-  const { given_names: given, surname } = client.fullName;
+/**
+ * Data model representing a single client. To instantiate, it is recommended
+ * to use the static `build` method.
+ */
+export class Client {
+  assessmentScore: number | null;
 
-  const name = `${titleCase(given)} ${titleCase(surname)}`;
+  caseType: CaseType;
 
-  let formalName = titleCase(surname);
-  if (given) {
-    formalName += `, ${titleCase(given)}`;
+  caseUpdates: Record<CaseUpdateActionType, CaseUpdate>;
+
+  currentAddress: string;
+
+  emailAddress?: string;
+
+  employer?: string;
+
+  formalName: string;
+
+  fullName: ClientFullName;
+
+  gender: Gender;
+
+  mostRecentAssessmentDate: moment.Moment | null;
+
+  mostRecentFaceToFaceDate: moment.Moment | null;
+
+  mostRecentHomeVisitDate: moment.Moment | null;
+
+  name: string;
+
+  needsMet: NeedsMet;
+
+  nextAssessmentDate: moment.Moment | null;
+
+  nextFaceToFaceDate: moment.Moment | null;
+
+  nextHomeVisitDate: moment.Moment | null;
+
+  notes: Note[];
+
+  personExternalId: string;
+
+  possessivePronoun: string;
+
+  preferredContactMethod?: PreferredContactMethod;
+
+  preferredName?: string;
+
+  projectedEndDate: moment.Moment | null;
+
+  supervisionLevel: SupervisionLevel;
+
+  supervisionLevelText: string;
+
+  supervisionStartDate: moment.Moment | null;
+
+  supervisionType: string;
+
+  constructor(
+    clientData: ClientData & { supervisionLevelText: string },
+    private api: API,
+    private clientsStore: ClientsStore
+  ) {
+    makeAutoObservable<Client, "api" | "clientStore">(this, {
+      api: false,
+      clientStore: false,
+    });
+
+    // fields that come directly from the input
+    this.assessmentScore = clientData.assessmentScore;
+    this.caseType = clientData.caseType;
+    this.caseUpdates = clientData.caseUpdates;
+    this.currentAddress = clientData.currentAddress;
+    this.fullName = clientData.fullName;
+    this.employer = clientData.employer;
+    this.gender = clientData.gender;
+    this.supervisionType = clientData.supervisionType;
+    this.supervisionLevel = clientData.supervisionLevel;
+    this.personExternalId = clientData.personExternalId;
+    this.emailAddress = clientData.emailAddress;
+    this.needsMet = clientData.needsMet;
+    this.preferredName = clientData.preferredName;
+    this.preferredContactMethod = clientData.preferredContactMethod;
+    this.supervisionLevelText = clientData.supervisionLevelText;
+
+    // fields that require some processing
+    this.notes = (clientData.notes || []).map(
+      (noteData) => new Note(noteData, api)
+    );
+    const { given_names: given, surname } = clientData.fullName;
+
+    this.name = `${titleCase(given)} ${titleCase(surname)}`;
+
+    this.formalName = titleCase(surname);
+    if (given) {
+      this.formalName += `, ${titleCase(given)}`;
+    }
+
+    this.possessivePronoun = POSSESSIVE_PRONOUNS[clientData.gender] || "their";
+
+    this.supervisionStartDate = parseDate(clientData.supervisionStartDate);
+    this.projectedEndDate = parseDate(clientData.projectedEndDate);
+    this.mostRecentFaceToFaceDate = parseDate(
+      clientData.mostRecentFaceToFaceDate
+    );
+    this.mostRecentHomeVisitDate = parseDate(
+      clientData.mostRecentHomeVisitDate
+    );
+    this.mostRecentAssessmentDate = parseDate(
+      clientData.mostRecentAssessmentDate
+    );
+    this.nextFaceToFaceDate = parseDate(clientData.nextFaceToFaceDate);
+    this.nextHomeVisitDate = parseDate(clientData.nextHomeVisitDate);
+    this.nextAssessmentDate = parseDate(clientData.nextAssessmentDate);
   }
 
-  return {
-    ...client,
-    name,
-    formalName,
-    possessivePronoun: POSSESSIVE_PRONOUNS[client.gender] || "their",
-    supervisionStartDate: parseDate(client.supervisionStartDate),
-    projectedEndDate: parseDate(client.projectedEndDate),
-    mostRecentFaceToFaceDate: parseDate(client.mostRecentFaceToFaceDate),
-    mostRecentHomeVisitDate: parseDate(client.mostRecentHomeVisitDate),
-    mostRecentAssessmentDate: parseDate(client.mostRecentAssessmentDate),
-    nextFaceToFaceDate: parseDate(client.nextFaceToFaceDate),
-    nextHomeVisitDate: parseDate(client.nextHomeVisitDate),
-    nextAssessmentDate: parseDate(client.nextAssessmentDate),
-    supervisionLevelText: policyStore.getSupervisionLevelNameForClient(client),
+  static build({
+    api,
+    client,
+    clientsStore,
+  }: {
+    api: API;
+    client: ClientData;
+    clientsStore: ClientsStore;
+  }): Client {
+    const supervisionLevelText =
+      clientsStore.policyStore.getSupervisionLevelNameForClient(client);
+    return new Client({ ...client, supervisionLevelText }, api, clientsStore);
+  }
 
-    hasCaseUpdateInStatus(
-      action: CaseUpdateActionType,
-      status: CaseUpdateStatus
-    ) {
-      return this.caseUpdates[action]?.status === status;
-    },
+  hasCaseUpdateInStatus(
+    action: CaseUpdateActionType,
+    status: CaseUpdateStatus
+  ): boolean {
+    return this.caseUpdates[action]?.status === status;
+  }
 
-    hasInProgressUpdate(action: CaseUpdateActionType) {
-      return this.hasCaseUpdateInStatus(action, CaseUpdateStatus.IN_PROGRESS);
-    },
-  };
-};
+  hasInProgressUpdate(action: CaseUpdateActionType): boolean {
+    return this.hasCaseUpdateInStatus(action, CaseUpdateStatus.IN_PROGRESS);
+  }
 
-export { decorateClient };
+  get isVisible(): boolean {
+    return caseInsensitiveIncludes(
+      this.name,
+      this.clientsStore.clientSearchString
+    );
+  }
 
-export const getNextContactDate = (
-  client: DecoratedClient
-): moment.Moment | null => {
-  // TODO(#7320): Our current `nextHomeVisitDate` determines when the next home visit
-  // should be assuming that home visits must be F2F visits and not collateral visits.
-  // As a result, until we do more investigation into what the appropriate application
-  // of state policy is, we're not showing home visits as the next contact dates.
-  return client.nextFaceToFaceDate;
-};
+  get isActive(): boolean {
+    return (
+      this.clientsStore.clientPendingView?.personExternalId ===
+        this.personExternalId ||
+      this.clientsStore.activeClient?.personExternalId === this.personExternalId
+    );
+  }
+
+  get nextContactDate(): moment.Moment | null {
+    // TODO(#7320): Our current `nextHomeVisitDate` determines when the next home visit
+    // should be assuming that home visits must be F2F visits and not collateral visits.
+    // As a result, until we do more investigation into what the appropriate application
+    // of state policy is, we're not showing home visits as the next contact dates.
+    return this.nextFaceToFaceDate;
+  }
+
+  /**
+   * Creates the specified note via API request. If the request succeeds,
+   * the resulting `Note` object will be appended to `this.notes`.
+   */
+  async createNote({ text }: { text: string }): Promise<void> {
+    const { api, notes } = this;
+
+    const newNote = new Note(
+      {
+        createdDatetime: "",
+        noteId: PENDING_ID,
+        resolved: false,
+        text,
+        updatedDatetime: "",
+      },
+      api
+    );
+
+    notes.push(newNote);
+
+    const response = await this.api.post<NoteData>("/api/create_note", {
+      personExternalId: this.personExternalId,
+      text,
+    });
+
+    runInAction(() => {
+      if (!isErrorResponse(response)) {
+        set(newNote, response);
+      } else {
+        notes.splice(notes.indexOf(newNote), 1);
+      }
+    });
+  }
+}
