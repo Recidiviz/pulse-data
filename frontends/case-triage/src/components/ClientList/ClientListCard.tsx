@@ -19,7 +19,6 @@ import moment from "moment";
 import { IconSVG, NeedState } from "@recidiviz/design-system";
 import { observer } from "mobx-react-lite";
 import { autorun } from "mobx";
-import { DecoratedClient } from "../../stores/ClientsStore";
 import { useRootStore } from "../../stores";
 import {
   ClientListCardElement,
@@ -38,24 +37,24 @@ import { titleCase } from "../../utils";
 import DueDate from "../DueDate";
 import Tooltip from "../Tooltip";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
-import { getNextContactDate } from "../../stores/ClientsStore/Client";
 import { TodayDueDate } from "../DueDate/DueDate.styles";
 import { OPPORTUNITY_TITLES } from "../../stores/OpportunityStore/Opportunity";
 import { trackPersonSelected } from "../../analytics";
+import type { Client } from "../../stores/ClientsStore";
 
 interface ClientProps {
-  client: DecoratedClient;
+  client: Client;
 }
 
 const getNeedsMetState = (
-  needsMet: DecoratedClient["needsMet"],
-  need: keyof DecoratedClient["needsMet"]
+  needsMet: Client["needsMet"],
+  need: keyof Client["needsMet"]
 ): NeedState => {
   return needsMet[need] ? NeedState.MET : NeedState.NOT_MET;
 };
 
 interface TertiaryTextProps {
-  client: DecoratedClient;
+  client: Client;
 }
 
 const TertiaryText = observer(({ client }: TertiaryTextProps): JSX.Element => {
@@ -91,7 +90,7 @@ const TertiaryText = observer(({ client }: TertiaryTextProps): JSX.Element => {
     return <PendingText>In Custody</PendingText>;
   }
 
-  return <DueDate date={getNextContactDate(client)} />;
+  return <DueDate date={client.nextContactDate} />;
 });
 
 const ClientCardIcons: React.FC<ClientProps> = observer(
@@ -167,7 +166,7 @@ const ClientComponent: React.FC<ClientProps> = observer(
       // When undoing a Case Update, we need to re-open the client card
       // Check if this card's client is pending a `view`, if so, re-open the Case Card
       return autorun(() => {
-        if (clientsStore.isActive(client)) {
+        if (client.isActive) {
           viewClient();
         }
       });

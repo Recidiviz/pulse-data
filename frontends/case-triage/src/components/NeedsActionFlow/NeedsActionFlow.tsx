@@ -6,7 +6,7 @@ import {
   CaseUpdateActionType,
   CaseUpdateStatus,
 } from "../../stores/CaseUpdatesStore";
-import { DecoratedClient } from "../../stores/ClientsStore";
+import { Client } from "../../stores/ClientsStore";
 import { useRootStore } from "../../stores";
 import { ButtonContainer } from "../CaseCard/CaseCard.styles";
 import { NeedsCheckboxButton } from "../CaseCard/CaseCardButtons";
@@ -37,7 +37,7 @@ export const ACTION_TITLES: Record<CaseUpdateActionType, string> = {
 
 interface NeedsActionFlowProps {
   actionable: boolean;
-  client: DecoratedClient;
+  client: Client;
   opportunity?: Opportunity;
   resolve: CaseUpdateActionType;
   dismiss: CaseUpdateActionType;
@@ -45,7 +45,7 @@ interface NeedsActionFlowProps {
 
 interface CaseUpdateProps {
   actionType: CaseUpdateActionType;
-  client: DecoratedClient;
+  client: Client;
   onCompleteClicked: CallableFunction;
 }
 

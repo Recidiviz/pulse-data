@@ -24,7 +24,7 @@ import {
 } from "./Opportunity";
 import UserStore from "../UserStore";
 import API from "../API";
-import { DecoratedClient } from "../ClientsStore";
+import { Client } from "../ClientsStore";
 import RootStore from "../RootStore";
 
 interface OpportunityStoreProps {
@@ -105,7 +105,7 @@ class OpportunityStore {
   }
 
   *createOpportunityDeferral(
-    client: DecoratedClient,
+    client: Client,
     opportunityType: OpportunityType,
     deferUntil: moment.Moment
   ): Generator {
@@ -118,7 +118,6 @@ class OpportunityStore {
     });
 
     yield this.fetchOpportunities();
-    this.rootStore.updateClientsList();
   }
 
   *deleteOpportunityDeferral(opportunity: Opportunity): Generator {
@@ -129,8 +128,6 @@ class OpportunityStore {
     remove(opportunity, "deferredUntil");
     remove(opportunity, "deferralId");
     remove(opportunity, "deferralType");
-
-    this.rootStore.updateClientsList();
 
     // HACK: Due to a combination of bugs in React/Chrome, the scroll position is reset to the top of the page when re-rendering the client list
     // Store scroll position and re-scroll to the position upon the next re-render

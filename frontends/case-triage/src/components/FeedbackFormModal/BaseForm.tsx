@@ -20,7 +20,7 @@ import { FormikBag, FormikProps, withFormik } from "formik";
 import CaseUpdatesStore, {
   CaseUpdateActionType,
 } from "../../stores/CaseUpdatesStore";
-import { DecoratedClient } from "../../stores/ClientsStore";
+import { Client } from "../../stores/ClientsStore";
 import {
   Description,
   Input,
@@ -36,7 +36,7 @@ interface BaseFormProps {
   // eslint-disable-next-line react/no-unused-prop-types
   caseUpdatesStore: CaseUpdatesStore;
   // eslint-disable-next-line react/no-unused-prop-types
-  client: DecoratedClient;
+  client: Client;
   // eslint-disable-next-line react/no-unused-prop-types
   actionType: CaseUpdateActionType;
 

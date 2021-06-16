@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { v4 as uuidv4 } from "uuid";
-import { Client } from "./stores/ClientsStore/Client";
+import { Client } from "./stores/ClientsStore";
 import { CaseUpdateActionType } from "./stores/CaseUpdatesStore/CaseUpdates";
 
 const sessionId = uuidv4();

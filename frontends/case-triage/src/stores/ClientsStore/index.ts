@@ -16,4 +16,5 @@
 // =============================================================================
 export { default } from "./ClientsStore";
 export { SupervisionLevels } from "./Client";
-export type { Client, DecoratedClient, SupervisionLevel } from "./Client";
+export type { ClientData, SupervisionLevel, Client } from "./Client";
+export type { Note } from "./Note";

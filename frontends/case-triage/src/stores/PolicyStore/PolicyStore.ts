@@ -16,7 +16,7 @@
 // =============================================================================
 import { autorun, makeAutoObservable, runInAction } from "mobx";
 import UserStore from "../UserStore";
-import { Client, DecoratedClient, SupervisionLevel } from "../ClientsStore";
+import { ClientData, Client, SupervisionLevel } from "../ClientsStore";
 import {
   Policy,
   ScoreMinMaxBySupervisionLevel,
@@ -86,7 +86,7 @@ class PolicyStore {
   }
 
   getSupervisionLevelCutoffsForClient(
-    client: DecoratedClient
+    client: Client
   ): ScoreMinMaxBySupervisionLevel | undefined {
     return this.policies?.assessmentScoreCutoffs[client.gender];
   }
@@ -121,7 +121,7 @@ class PolicyStore {
     ];
   }
 
-  getSupervisionLevelNameForClient(client: Client): string {
+  getSupervisionLevelNameForClient(client: ClientData): string {
     return (
       this.policies?.supervisionLevelNames[client.supervisionLevel] ||
       client.supervisionLevel
@@ -129,7 +129,7 @@ class PolicyStore {
   }
 
   findContactFrequencyForClient(
-    client: DecoratedClient
+    client: Client
   ): SupervisionContactFrequency | undefined {
     const contactFrequencies =
       this.policies?.supervisionContactFrequencies[client.caseType];
@@ -140,7 +140,7 @@ class PolicyStore {
   }
 
   findHomeVisitFrequencyForClient(
-    client: DecoratedClient
+    client: Client
   ): SupervisionContactFrequency | undefined {
     return this.policies?.supervisionHomeVisitFrequencies[
       client.supervisionLevel

@@ -21,7 +21,7 @@ import {
   CaseUpdateActionType,
   NotInCaseloadActionType,
 } from "../../stores/CaseUpdatesStore";
-import { DecoratedClient } from "../../stores/ClientsStore";
+import { Client } from "../../stores/ClientsStore";
 import {
   ButtonContainer,
   Caption,
@@ -35,7 +35,7 @@ interface NotInCaseloadProps {
   action: NotInCaseloadActionType;
 
   className: string;
-  client: DecoratedClient;
+  client: Client;
 
   onUndo: (updateId: string) => void;
 }
