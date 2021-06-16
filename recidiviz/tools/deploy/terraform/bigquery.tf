@@ -72,6 +72,11 @@ resource "google_bigquery_table" "validation_results" {
         "mode": "REQUIRED"
     },
     {
+        "name": "run_datetime",
+        "type": "DATETIME",
+        "mode": "NULLABLE"
+    },
+    {
         "name": "validation_category",
         "type": "STRING",
         "mode": "NULLABLE"
