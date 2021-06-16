@@ -16,29 +16,27 @@
 # =============================================================================
 """Tests for cloud_sql_to_bq_refresh_control.py."""
 
-from http import HTTPStatus
 import json
 import unittest
+from http import HTTPStatus
 from typing import Optional
 from unittest import mock
 
 import flask
 from mock import Mock, create_autospec
 
+from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.bq_refresh import cloud_sql_to_bq_refresh_control
-from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
-    GCSPseudoLockAlreadyExists,
-)
+from recidiviz.ingest.direct import direct_ingest_control
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
 )
-from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager import (
-    CloudSqlToBQLockManager,
-)
-from recidiviz.ingest.direct import direct_ingest_control
+from recidiviz.persistence.database.bq_refresh import cloud_sql_to_bq_refresh_control
 from recidiviz.persistence.database.bq_refresh.bq_refresh_cloud_task_manager import (
     BQRefreshCloudTaskManager,
+)
+from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager import (
+    CloudSqlToBQLockManager,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
@@ -118,7 +116,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             # pylint: disable=unused-argument
             schema_type: SchemaType,
             dataset_override_prefix: Optional[str] = None,
-        ):
+        ) -> None:
             self.assertTrue(self.mock_lock_manager.can_proceed(SchemaType.STATE))
             # At the moment the federated refresh is called, the state schema should
             # be locked.
@@ -157,7 +155,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             # pylint: disable=unused-argument
             schema_type: SchemaType,
             dataset_override_prefix: Optional[str] = None,
-        ):
+        ) -> None:
             self.assertTrue(self.mock_lock_manager.can_proceed(SchemaType.JAILS))
             # At the moment the federated refresh is called, the state schema should
             # be locked.
