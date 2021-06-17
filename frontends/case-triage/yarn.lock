@@ -1968,17 +1968,18 @@
     prop-types "^15.6.1"
     react-lifecycles-compat "^3.0.4"
 
-"@recidiviz/design-system@0.5.4":
-  version "0.5.4"
-  resolved "https://registry.yarnpkg.com/@recidiviz/design-system/-/design-system-0.5.4.tgz#bb80e5442e042103e4d431ea84e117c59a4413ae"
-  integrity sha512-Nq9NFvP0GB9AlyMJSdEZrtbU1nufxaoS5v5TkTKd12/rc2XMEAZv82GiFY9A81z7bkND2hIGzG0A4sBiJaBzvg==
+"@recidiviz/design-system@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@recidiviz/design-system/-/design-system-2.1.0.tgz#adff63086acab83bdbb84fcec0db8cb0b01e08a9"
+  integrity sha512-vrtd4FfwGtMRgJ5AeEuNs8ux4P2TrAvqh7KNLR5OFcqeQ6WDNFbnH5wajpVfoX/PiwCjr0C0prWR1Let46VLLg==
   dependencies:
     "@fontsource/libre-baskerville" "^4.1.0"
     "@fontsource/libre-franklin" "^4.1.0"
+    "@types/react-tabs" "^2.3.2"
     body-scroll-lock "^3.1.5"
     polished "^4.1.0"
     prop-types "^15.7.2"
-    react-customizable-progressbar "^1.0.2"
+    react-tabs "^3.2.2"
     react-toast-notifications "^2.4.3"
     styled-components "^5.2.1"
 
@@ -2605,6 +2606,13 @@
   integrity sha512-LAJpqYUaCTMT2anZheoidiIymt8MuX286zoVFPM3DVb23aQBH0mAkFvzpd4LKqiolV8bBtZWT5Qp7hClCNDENw==
   dependencies:
     "@types/history" "*"
+    "@types/react" "*"
+
+"@types/react-tabs@^2.3.2":
+  version "2.3.2"
+  resolved "https://registry.yarnpkg.com/@types/react-tabs/-/react-tabs-2.3.2.tgz#99fb6866bbc6912d44f7bbc99eca03fbbd217960"
+  integrity sha512-QfMelaJSdMcp+CenKhATp12XFFqqUcLXILgwpX3dgWfVYNZPtsLXZDDCRsVn+kwmBOWB+DFPKpQorxbUhnXINw==
+  dependencies:
     "@types/react" "*"
 
 "@types/react@*", "@types/react@^17.0.0":
@@ -4664,6 +4672,11 @@ clone@^1.0.2:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/clone/-/clone-1.0.4.tgz#da309cc263df15994c688ca902179ca3c7cd7c7e"
   integrity sha1-2jCcwmPfFZlMaIypAheco8fNfH4=
+
+clsx@^1.1.0:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/clsx/-/clsx-1.1.1.tgz#98b3134f9abbdf23b2663491ace13c5c03a73188"
+  integrity sha512-6/bPho624p3S2pMyvP5kKBPXnI3ufHLObBFCfgx+LkeR5lg2XYy2hqZqUf45ypD8COn2bhgGJSUE+l5dhNBieA==
 
 co@^4.6.0:
   version "4.6.0"
@@ -11075,7 +11088,7 @@ prompts@^2.0.1:
     kleur "^3.0.3"
     sisteransi "^1.0.5"
 
-prop-types@^15.5.10, prop-types@^15.6.1, prop-types@^15.6.2, prop-types@^15.7.2:
+prop-types@^15.5.0, prop-types@^15.5.10, prop-types@^15.6.1, prop-types@^15.6.2, prop-types@^15.7.2:
   version "15.7.2"
   resolved "https://registry.yarnpkg.com/prop-types/-/prop-types-15.7.2.tgz#52c41e75b8c87e72b9d9360e0206b99dcbffa6c5"
   integrity sha512-8QQikdH7//R2vurIJSutZ1smHYTcLpRWEOlHnzcWHmBYrOGUysKwSsrC89BCiFj3CbrfJ/nXFdJepOVrY1GCHQ==
@@ -11327,11 +11340,6 @@ react-app-polyfill@^2.0.0:
     regenerator-runtime "^0.13.7"
     whatwg-fetch "^3.4.1"
 
-react-customizable-progressbar@^1.0.2:
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/react-customizable-progressbar/-/react-customizable-progressbar-1.0.3.tgz#db4151802ae844eb051c38aa238e68bffb848452"
-  integrity sha512-aqkZoexIfXXiQgFvo1++7GaxAKAQCb/zj5lRMj6oniZjn9CSIhowr3dSnGnvvvygvegVcPGEYK8shPV5MZasSQ==
-
 react-dev-utils@^11.0.3:
   version "11.0.4"
   resolved "https://registry.yarnpkg.com/react-dev-utils/-/react-dev-utils-11.0.4.tgz#a7ccb60257a1ca2e0efe7a83e38e6700d17aa37a"
@@ -11499,6 +11507,14 @@ react-spinners@^0.10.4:
   integrity sha512-UPLcaMFhFnLWtS1zVDDT14ssW08gnZ44cjPN6GL27dEGboiCvRSthOilZXRDWESp449GB2iI6gjEbxzaMtA+dg==
   dependencies:
     "@emotion/core" "^10.0.35"
+
+react-tabs@^3.2.2:
+  version "3.2.2"
+  resolved "https://registry.yarnpkg.com/react-tabs/-/react-tabs-3.2.2.tgz#07bdc3cdb17bdffedd02627f32a93cd4b3d6e4d0"
+  integrity sha512-/o52eGKxFHRa+ssuTEgSM8qORnV4+k7ibW+aNQzKe+5gifeVz8nLxCrsI9xdRhfb0wCLdgIambIpb1qCxaMN+A==
+  dependencies:
+    clsx "^1.1.0"
+    prop-types "^15.5.0"
 
 react-toast-notifications@^2.4.3:
   version "2.4.4"
