@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import * as React from "react";
-import { Card, Dropdown, H3, Icon, IconSVG } from "@recidiviz/design-system";
+import { Card, H3, Icon, IconSVG } from "@recidiviz/design-system";
 import { observer } from "mobx-react-lite";
 import {
   Caption,
@@ -60,9 +60,8 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }) => {
         actions={ellipsisDropdownActions}
         client={client}
         alignment="right"
-        borderless
       >
-        <Dropdown.ToggleIcon kind={IconSVG.TripleDot} size={18} />
+        <Icon kind="TripleDot" size={18} />
       </EllipsisDropdown>
     );
   }

@@ -17,45 +17,19 @@
 import * as React from "react";
 import styled from "styled-components/macro";
 import { rem } from "polished";
-import {
-  Button,
-  Icon,
-  IconSVG,
-  palette,
-  spacing,
-} from "@recidiviz/design-system";
+import { Button, Icon, IconSVG, spacing } from "@recidiviz/design-system";
 import Tooltip from "../Tooltip";
 import { Pill } from "../Pill";
 
-export const UncheckedButton = styled.button.attrs({
-  type: "button",
+export const UncheckedButton = styled(Button).attrs({
+  kind: "secondary",
+  shape: "block",
 })`
-  cursor: pointer;
-  padding: ${rem(spacing.xs)} ${rem(12)};
-  height: ${rem(32)};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border: 1px solid ${palette.slate30};
-  font-size: ${rem("14px")};
-  white-space: nowrap;
   margin-right: ${rem(spacing.xs)};
-
-  box-sizing: border-box;
-  border-radius: 4px;
-
-  background-color: transparent;
-
-  color: ${palette.pine4};
-
-  &:hover {
-    color: ${palette.pine2};
-    border-color: ${palette.signal.links};
-  }
 `;
 
 const CloseButton = styled(Button).attrs({ kind: "link" })`
+  color: white;
   margin-left: ${rem(spacing.sm)};
   height: 16px;
   width: 16px;
@@ -88,7 +62,7 @@ export const NeedsCheckboxButton: React.FC<NeedsCheckboxButtonProps> = ({
           aria-label="Remove"
         >
           <Tooltip title="Remove">
-            <Icon kind={IconSVG.CloseOutlined} fill={palette.white} size={16} />
+            <Icon kind={IconSVG.CloseOutlined} size={16} />
           </Tooltip>
         </CloseButton>
       </Pill>

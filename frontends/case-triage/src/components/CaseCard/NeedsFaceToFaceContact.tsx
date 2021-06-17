@@ -89,7 +89,7 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
         <br />
         <Caption>
           <div>
-            <Icon kind={IconSVG.Place} size={10} fill={palette.text.caption} />{" "}
+            <Icon kind={IconSVG.Place} size={10} />{" "}
             {client.currentAddress || "No address on file"}
           </div>
           <div>
