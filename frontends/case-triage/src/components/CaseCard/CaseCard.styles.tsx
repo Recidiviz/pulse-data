@@ -76,13 +76,21 @@ export const ClientNameRow = styled.div`
   justify-content: space-between;
 `;
 
-export const CloseButton = styled(Button).attrs({ kind: "link" })`
+export const CloseButton = styled(Button).attrs({
+  kind: "borderless",
+  shape: "block",
+})`
   height: ${rem(spacing.xl)};
   width: ${rem(spacing.xl)};
   padding: ${rem(spacing.sm)};
 `;
 
-export const EllipsisDropdown = styled(NeedsCorrectionDropdown)`
+export const EllipsisDropdown = styled(NeedsCorrectionDropdown).attrs({
+  toggleProps: {
+    kind: "borderless",
+    shape: "block",
+  },
+})`
   margin-left: auto;
   margin-right: ${rem(spacing.sm)};
 `;

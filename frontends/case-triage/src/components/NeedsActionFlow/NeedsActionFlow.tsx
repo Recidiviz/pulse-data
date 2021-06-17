@@ -1,6 +1,6 @@
 import * as React from "react";
 import moment from "moment";
-import { Dropdown, IconSVG } from "@recidiviz/design-system";
+import { Icon, IconSVG } from "@recidiviz/design-system";
 import { observer } from "mobx-react-lite";
 import {
   CaseUpdateActionType,
@@ -143,8 +143,10 @@ const NeedsActionFlow = observer(
           client={client}
           alignment={!actionable ? "left" : "right"}
         >
-          {!actionable ? "Submit a correction " : null}
-          <Dropdown.ToggleIcon kind={IconSVG.Caret} size={6} />
+          <span style={{ alignSelf: !actionable ? "auto" : "baseline" }}>
+            {!actionable ? "Submit a correction " : null}
+            <Icon kind={IconSVG.Caret} size={6} />
+          </span>
         </NeedsCorrectionDropdown>
       </ButtonContainer>
     );

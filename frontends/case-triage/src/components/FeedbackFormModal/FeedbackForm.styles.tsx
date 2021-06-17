@@ -93,7 +93,10 @@ export const CancelButton = styled(Button).attrs({
   font-size: ${rem(17)};
 `;
 
-export const CloseButton = styled(Button).attrs({ kind: "link" })`
+export const CloseButton = styled(Button).attrs({
+  shape: "block",
+  kind: "borderless",
+})`
   position: absolute;
   top: ${rem(spacing.xl)};
   right: ${rem(spacing.xl)};
