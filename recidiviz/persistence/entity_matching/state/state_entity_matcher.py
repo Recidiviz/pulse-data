@@ -187,15 +187,19 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                 f"[{entity_cls.__name__}]. Entity: [{entity}]"
             )
             if hasattr(entity, "external_id") or isinstance(entity, schema.StatePerson):
-                raise ValueError(error_message)
-            # This is an enum-like entity that we will not do any interesting
-            # post-processing to. Downgrade to a warning and continue.
-            logging.warning(
-                "%s. Adding non-external_id class [%s] to set now.",
-                error_message,
-                entity_cls,
-            )
-            self.non_placeholder_ingest_types.add(entity_cls)
+                # TODO(#7908): This was changed from raising a value error to just logging
+                # an error. This should probably be re-visited to see if we can re-enable
+                # raising the error.
+                logging.error(error_message)
+            else:
+                # This is an enum-like entity that we will not do any interesting
+                # post-processing to. Downgrade to a warning and continue.
+                logging.warning(
+                    "%s. Adding non-external_id class [%s] to set now.",
+                    error_message,
+                    entity_cls,
+                )
+                self.non_placeholder_ingest_types.add(entity_cls)
 
         return entity_is_placeholder
 
