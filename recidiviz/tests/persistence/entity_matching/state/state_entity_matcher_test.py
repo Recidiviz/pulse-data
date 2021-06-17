@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for state_entity_matcher.py."""
 import datetime
+import unittest
 from typing import Any, List, Tuple
 
 import attr
@@ -3834,6 +3835,9 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
     @patch(
         f"{state_entity_matcher.__name__}.NUM_TREES_TO_SEARCH_FOR_NON_PLACEHOLDER_TYPES",
         1,
+    )
+    @unittest.skip(
+        "TODO(#7908): Re-enable once we go back to throwing errors on mismatched shapes"
     )
     def test_mergeMultiParentEntitiesMismatchedTreeShapeSmallerSearch(self) -> None:
         # Arrange 1 - Match
