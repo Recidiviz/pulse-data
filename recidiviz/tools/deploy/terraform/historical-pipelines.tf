@@ -24,11 +24,11 @@ module "incarceration_historical_pipelines" {
     US_PA = "us-central1"
   }
 
-  project_id    = var.project_id
-  git_hash      = var.git_hash
-  pipeline_type = "incarceration"
-  state_code    = each.key
-  region        = each.value
+  project_id     = var.project_id
+  repo_url       = local.repo_url
+  pipeline_type  = "incarceration"
+  state_code     = each.key
+  region         = each.value
 }
 
 module "supervision_historical_pipelines" {
@@ -40,9 +40,9 @@ module "supervision_historical_pipelines" {
     US_PA = "us-central1"
   }
 
-  project_id    = var.project_id
-  git_hash      = var.git_hash
-  pipeline_type = "supervision"
-  state_code    = each.key
-  region        = each.value
+  project_id     = var.project_id
+  repo_url       = local.repo_url
+  pipeline_type  = "supervision"
+  state_code     = each.key
+  region         = each.value
 }
