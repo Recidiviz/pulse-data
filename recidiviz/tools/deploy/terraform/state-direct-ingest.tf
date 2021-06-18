@@ -25,7 +25,7 @@ module "state_direct_ingest_buckets_and_accounts" {
   is_production                   = local.is_production
   project_id                      = var.project_id
   state_admin_role                = google_project_iam_custom_role.state-admin-role.name
-  git_hash                        = var.git_hash
+  repo_url                        = local.repo_url
   cloudsql_instance_name          = module.state_database.instance_name
   cloudsql_instance_id            = module.state_database.cloudsql_instance_id
   cloudsql_instance_region        = module.state_database.region

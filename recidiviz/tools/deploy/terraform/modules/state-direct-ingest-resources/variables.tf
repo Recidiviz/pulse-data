@@ -40,11 +40,6 @@ variable "state_admin_role" {
   type = string
 }
 
-# Current git hash (for use in provisioning cloud functions).
-variable "git_hash" {
-  type = string
-}
-
 # Name of the CloudSQL instance where new dbs will be provisioned.
 variable "cloudsql_instance_name" {
   type = string
@@ -67,6 +62,10 @@ variable "cloudsql_instance_user_name" {
 
 # Password for cloudsql_instance_user_name.
 variable "cloudsql_instance_user_password" {
+  type = string
+}
+
+variable "repo_url" {
   type = string
 }
 
