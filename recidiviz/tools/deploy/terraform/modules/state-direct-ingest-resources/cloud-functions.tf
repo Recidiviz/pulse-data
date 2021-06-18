@@ -14,10 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-locals {
-  repo_url = "https://source.developers.google.com/projects/${var.project_id}/repos/github_Recidiviz_pulse-data/revisions/${var.git_hash}/paths/recidiviz/cloud_functions"
-}
-
 resource "google_cloudfunctions_function" "primary-ingest" {
   name    = local.direct_ingest_formatted_str
   runtime = "python38"
@@ -36,7 +32,7 @@ resource "google_cloudfunctions_function" "primary-ingest" {
   }
 
   source_repository {
-    url = local.repo_url
+    url = var.repo_url
   }
 
   timeout = 540
@@ -62,7 +58,7 @@ resource "google_cloudfunctions_function" "secondary-ingest" {
   }
 
   source_repository {
-    url = local.repo_url
+    url = var.repo_url
   }
 
   timeout = 540

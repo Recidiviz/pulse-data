@@ -19,10 +19,6 @@ variable "project_id" {
   type = string
 }
 
-variable "git_hash" {
-  type = string
-}
-
 variable "pipeline_type" {
   // Either "supervision" or "incarceration"
   type = string
@@ -34,6 +30,10 @@ variable "state_code" {
 }
 
 variable "region" {
+  type = string
+}
+
+variable "repo_url" {
   type = string
 }
 

@@ -64,3 +64,13 @@ variable "max_case_triage_instances" {
   # https://cloud.google.com/sql/docs/quotas#postgresql for more.
   default = 3
 }
+
+variable "github_username" {
+  type        = string
+  default     = "Recidiviz"
+  description = "GitHub user to mirror the pulse-data repo from."
+}
+
+locals {
+  repo_url = "https://source.developers.google.com/projects/${var.project_id}/repos/github_${var.github_username}_pulse-data/revisions/${var.git_hash}/paths/recidiviz/cloud_functions"
+}

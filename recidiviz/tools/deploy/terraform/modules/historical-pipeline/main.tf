@@ -41,6 +41,6 @@ resource "google_cloudfunctions_function" "trigger_historical_pipeline" {
   }
 
   source_repository {
-    url = "https://source.developers.google.com/projects/${var.project_id}/repos/github_Recidiviz_pulse-data/revisions/${var.git_hash}/paths/recidiviz/cloud_functions"
+    url = var.repo_url
   }
 }
