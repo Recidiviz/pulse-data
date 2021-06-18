@@ -57,7 +57,7 @@ resource "google_cloud_run_service" "case-triage" {
   template {
     spec {
       containers {
-        image   = "us.gcr.io/recidiviz-staging/appengine/default:${var.docker_image_tag}"
+        image   = "us.gcr.io/${var.registry_project_id}/appengine/default:${var.docker_image_tag}"
         command = ["pipenv"]
         args    = ["run", "gunicorn", "-c", "gunicorn.conf.py", "--log-file=-", "-b", ":$PORT", "recidiviz.case_triage.server:app"]
 
