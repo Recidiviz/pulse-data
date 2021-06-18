@@ -19,6 +19,12 @@ variable "project_id" {
   type = string
 }
 
+variable "registry_project_id" {
+  type        = string
+  default     = "recidiviz-staging"
+  description = "Project ID to source container images from. Defaults to recidiviz-staging."
+}
+
 variable "region" {
   type    = string
   default = "us-central1"
