@@ -94,6 +94,11 @@ resource "google_cloudfunctions_function" "parse-state-aggregate" {
 
   available_memory_mb = 2048
 
+  event_trigger {
+    event_type = "google.storage.object.finalize"
+    resource   = "${var.project_id}-state-aggregate-reports"
+  }
+
   entry_point = "parse_state_aggregate"
   environment_variables = {
     "GCP_PROJECT" = var.project_id
