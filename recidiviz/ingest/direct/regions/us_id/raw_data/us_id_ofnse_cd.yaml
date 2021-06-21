@@ -1,0 +1,48 @@
+file_tag: ofnse_cd
+file_description: |-
+  Not in use
+primary_key_cols:
+  - ofnse_cat_cd
+  - ofnse_cd
+  - ofnse_cd_ver
+columns:
+  - name: ofnse_cat_cd
+    description: |-
+      Code for the offense category
+  - name: ofnse_cd
+    description: |-
+      Offense code
+  - name: ofnse_cd_ver
+    description: |-
+      Offense code version
+  - name: ofnse_desc
+    description: |-
+      Full description of the offense
+  - name: strt_dt
+    is_datetime: True
+    description: |-
+      Unknown
+  - name: felny_flg
+    description: |-
+      Whether the offense is a felony
+    known_values:
+      - value: F
+        description: Felony
+      - value: M
+        description: Misdemeanor
+  - name: vld_flg
+    description: |-
+      Whether the category is still valid
+    known_values:
+      - value: "Y"
+        description: Valid
+      - value: "N"
+        description: Not valid
+  - name: high_severity
+    description: |-
+      Whether the offense is high severity
+    known_values:
+      - value: T
+        description: High severity
+      - value: F
+        description: Not high severity
