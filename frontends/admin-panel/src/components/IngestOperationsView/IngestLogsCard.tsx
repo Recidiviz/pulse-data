@@ -27,11 +27,11 @@ const IngestLogsCard: React.FC<IngestLogsCardProps> = ({ stateCode, env }) => {
   let logsUrl = "";
   let non200Url = "";
   if (env === "staging" || env === "development") {
-    logsUrl = `http://go/staging-ingest-logs/${stateCode.toLowerCase()}`;
-    non200Url = `http://go/staging-non-200-ingest-responses/${stateCode.toLowerCase()}`;
+    logsUrl = `http://go/staging-ingest-logs/${stateCode.toLowerCase()}/`;
+    non200Url = `http://go/staging-non-200-ingest-responses/${stateCode.toLowerCase()}/`;
   } else if (env === "production") {
-    logsUrl = `https://go/prod-ingest-logs/${stateCode.toLowerCase()}`;
-    non200Url = `http://go/prod-non-200-ingest-responses/${stateCode.toLowerCase()}`;
+    logsUrl = `http://go/prod-ingest-logs/${stateCode.toLowerCase()}/`;
+    non200Url = `http://go/prod-non-200-ingest-responses/${stateCode.toLowerCase()}/`;
   }
 
   return (

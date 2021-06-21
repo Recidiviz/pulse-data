@@ -33,7 +33,7 @@ script_prompt "Do you want to continue?"
 echo "Commits since last deploy:"
 run_cmd git log --oneline tags/${LAST_DEPLOYED_GIT_VERSION_TAG}..tags/${GIT_VERSION_TAG}
 
-script_prompt "Have you completed all Pre-Deploy tasks listed at http://go/deploy-checklist?"
+script_prompt "Have you completed all Pre-Deploy tasks listed at http://go/deploy-checklist/ ?"
 
 echo "Fetching all tags"
 run_cmd git fetch --all --tags --prune --prune-tags
@@ -87,6 +87,6 @@ run_cmd gcloud -q app deploy prod-scrapers.yaml --project=recidiviz-123 --versio
 echo "Deploy succeeded - triggering post-deploy jobs."
 post_deploy_triggers 'recidiviz-123' $CALC_CHANGES_SINCE_LAST_DEPLOY
 
-script_prompt "Have you completed all Post-Deploy tasks listed at http://go/deploy-checklist?"
+script_prompt "Have you completed all Post-Deploy tasks listed at http://go/deploy-checklist/ ?"
 
 echo "Production deploy complete."
