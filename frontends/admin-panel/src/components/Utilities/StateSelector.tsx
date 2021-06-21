@@ -16,29 +16,29 @@
 // =============================================================================
 import { Select } from "antd";
 import * as React from "react";
-import {
-  fetchEmailStateCodes,
-  fetchIngestStateCodes,
-} from "../../AdminPanelAPI";
-import useFetchedData from "../../hooks";
 import { StateCodeInfo } from "../IngestOperationsView/constants";
 
 interface StateSelectorProps {
-  handleStateCodeChange: (stateCode: string) => void;
+  /* form component onChange that changes the stateCode */
+  onChange?: (stateCode: string) => void;
+  /* initial state code */
   initialValue?: string | null;
+  value?: string;
   loading: boolean;
+  /* array of available states */
   data: StateCodeInfo[] | undefined;
 }
 
 const StateSelector: React.FC<StateSelectorProps> = ({
-  handleStateCodeChange,
+  onChange,
   initialValue,
   loading,
   data,
+  value,
 }) => {
-  const handleOnChange = (value: string) => {
-    if (handleStateCodeChange) {
-      handleStateCodeChange(value);
+  const handleOnChange = (selectedValue: string) => {
+    if (onChange) {
+      onChange(selectedValue);
     }
   };
 
@@ -52,6 +52,7 @@ const StateSelector: React.FC<StateSelectorProps> = ({
       optionFilterProp="children"
       defaultValue={defaultValue}
       onChange={handleOnChange}
+      value={value}
       filterOption={(input, option) =>
         option?.props.children.toLowerCase().indexOf(input.toLowerCase()) >=
           0 ||

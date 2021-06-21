@@ -100,7 +100,7 @@ const IngestOperationsView = (): JSX.Element => {
     getData();
   }, [getData]);
 
-  const handleStateCodeChange = (value: string) => {
+  const stateCodeChange = (value: string) => {
     setStateCode(value);
     updateQueryParams(value);
   };
@@ -194,7 +194,7 @@ const IngestOperationsView = (): JSX.Element => {
             onClick={() => getData()}
           />,
           <StateSelector
-            handleStateCodeChange={handleStateCodeChange}
+            onChange={stateCodeChange}
             initialValue={initialStateCode}
             loading={loading}
             data={data}

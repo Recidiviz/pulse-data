@@ -16,11 +16,14 @@
 # =============================================================================
 """Store used to maintain all admin panel related stores"""
 
-from recidiviz.admin_panel.validation_metadata_store import ValidationStatusStore
+from typing import Dict, List
+
 from recidiviz.admin_panel.dataset_metadata_store import DatasetMetadataCountsStore
 from recidiviz.admin_panel.ingest_metadata_store import IngestDataFreshnessStore
 from recidiviz.admin_panel.ingest_operations_store import IngestOperationsStore
-from recidiviz.utils.environment import in_gcp, in_development, GCP_PROJECT_STAGING
+from recidiviz.admin_panel.validation_metadata_store import ValidationStatusStore
+from recidiviz.common.constants.states import StateCode
+from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development, in_gcp
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.timer import RepeatedTimer
 
@@ -73,3 +76,13 @@ class AdminStores:
                 RepeatedTimer(
                     15 * 60, store.recalculate_store, run_immediately=True
                 ).start()
+
+
+def fetch_state_codes(state_codes: List[StateCode]) -> List[Dict[str, str]]:
+    return [
+        {
+            "code": state_code.value,
+            "name": state_code.get_state().name,
+        }
+        for state_code in state_codes
+    ]

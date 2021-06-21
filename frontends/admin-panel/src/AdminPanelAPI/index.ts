@@ -64,7 +64,7 @@ export {
   generateCaseUpdatesExport,
   getPOFeedback,
   runCloudSQLImport,
-} from "./CaseTriage";
+} from "./LineStaffTools";
 export {
   createDiscovery,
   fetchDiscoveryStatus,

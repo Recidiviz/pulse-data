@@ -15,12 +15,22 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import * as React from "react";
-import { Alert, Button, Form, PageHeader } from "antd";
+import {
+  Alert,
+  Button,
+  Card,
+  Form,
+  Input,
+  message,
+  PageHeader,
+  Spin,
+} from "antd";
 import { WarningFilled } from "@ant-design/icons";
-import { useState } from "react";
-import { useHistory, useLocation } from "react-router-dom";
 import { StateCodeInfo } from "./IngestOperationsView/constants";
-import { fetchEmailStateCodes } from "../AdminPanelAPI";
+import {
+  fetchEmailStateCodes,
+  generateEmails,
+} from "../AdminPanelAPI/LineStaffTools";
 import ActionRegionConfirmationForm from "./Utilities/ActionRegionConfirmationForm";
 import useFetchedData from "../hooks";
 import StateSelector from "./Utilities/StateSelector";
@@ -35,32 +45,67 @@ const POEmailsView = (): JSX.Element => {
   }
 
   const actionNames = { [EmailActions.GenerateEmails]: "Generate Emails" };
-
-  const [stateCode, setStateCode] = React.useState<string | null>(null);
   const [isConfirmationModalVisible, setIsConfirmationModalVisible] =
     React.useState(false);
+  const [emailsGenerated, setEmailsGenerated] = React.useState(false);
+  const [formData, setFormData] =
+    React.useState<{ [key: string]: string } | null>(null);
+  const [showSpinner, setShowSpinner] = React.useState(false);
+  const { loading, data } =
+    useFetchedData<StateCodeInfo[]>(fetchEmailStateCodes);
 
   const layout = {
-    labelCol: { span: 2 },
-    wrapperCol: { span: 20 },
+    labelCol: { span: 6 },
+    wrapperCol: { span: 16 },
   };
 
   const tailLayout = {
-    wrapperCol: { offset: 2, span: 20 },
+    wrapperCol: { offset: 6, span: 16 },
   };
 
-  const onEmailActionConfirmation = async (
-    emailActionToExecute: string | null
-  ) => {
+  const onFinish = (values: { [key: string]: string }) => {
+    setFormData(values);
+    showConfirmationModal();
+  };
+
+  const onEmailActionConfirmation = async () => {
     setIsConfirmationModalVisible(false);
+    if (formData?.state) {
+      message.info("Generating emails...");
+      const r = await generateEmails(
+        formData.state,
+        formData.testAddress,
+        formData.regionCode,
+        formData.messageBodyOverride
+      );
+      message.info("This might take a while...");
+      setShowSpinner(true);
+      if (r.status >= 400) {
+        const text = await r.text();
+        message.error(`Generate emails failed: ${text}`);
+      } else {
+        message.success("Generate emails succeeded!");
+        setEmailsGenerated(true);
+      }
+      setShowSpinner(false);
+    }
   };
 
   const showConfirmationModal = () => {
     setIsConfirmationModalVisible(true);
   };
 
-  const { loading, data } =
-    useFetchedData<StateCodeInfo[]>(fetchEmailStateCodes);
+  function bucketLink(environment: string, stateCode?: string) {
+    const projectName =
+      environment === "production" ? "recidiviz-123" : "recidiviz-staging";
+    return (
+      <a
+        href={`https://console.cloud.google.com/storage/browser/${projectName}-report-html/${stateCode}`}
+      >
+        Bucket link to {projectName}-report-html for {stateCode}.
+      </a>
+    );
+  }
 
   return (
     <>
@@ -71,31 +116,50 @@ const POEmailsView = (): JSX.Element => {
             <WarningFilled /> Caution!
           </>
         }
-        description="You should only use this form if you are a member of the Line Staff Tools team, and you know absolutely know what you are doing."
+        description="You should only use this form if you are a member of the Line Staff Tools team, and you absolutely know what you are doing."
         type="warning"
       />
-      <Form {...layout} className="buffer">
-        <Form.Item label="State" name="state" rules={[{ required: true }]}>
-          <StateSelector
-            handleStateCodeChange={setStateCode}
-            loading={false}
-            data={data}
-          />
-        </Form.Item>
-        <Form.Item {...tailLayout}>
-          <Button
-            type="primary"
-            htmlType="submit"
-            onClick={() => {
-              showConfirmationModal();
-            }}
+      <Card style={{ margin: 10 }}>
+        <Form
+          {...layout}
+          className="buffer"
+          onFinish={(values) => {
+            onFinish(values);
+          }}
+        >
+          <Form.Item label="State" name="state" rules={[{ required: true }]}>
+            <StateSelector loading={loading} data={data} />
+          </Form.Item>
+          <Form.Item
+            label="Test Address"
+            name="testAddress"
+            rules={[{ required: false, type: "email" }]}
           >
-            Generate Emails
-          </Button>
-        </Form.Item>
-      </Form>
-
-      {stateCode ? (
+            <Input placeholder="xxx@recidiviz.org" />
+          </Form.Item>
+          <Form.Item
+            label="Region Code"
+            name="regionCode"
+            rules={[{ required: false }]}
+          >
+            <Input placeholder="ex. US_ID_D5" />
+          </Form.Item>
+          <Form.Item
+            label="Message Body Override"
+            name="messageBodyOverride"
+            rules={[{ required: false }]}
+          >
+            <Input.TextArea />
+          </Form.Item>
+          <Form.Item {...tailLayout}>
+            <Button type="primary" htmlType="submit">
+              Generate Emails
+            </Button>
+          </Form.Item>
+          {showSpinner ? <Spin /> : null}
+        </Form>
+      </Card>
+      {formData?.state ? (
         <ActionRegionConfirmationForm
           visible={isConfirmationModalVisible}
           onConfirm={onEmailActionConfirmation}
@@ -104,9 +168,11 @@ const POEmailsView = (): JSX.Element => {
           }}
           action={EmailActions.GenerateEmails}
           actionName={actionNames[EmailActions.GenerateEmails]}
-          regionCode={stateCode}
+          regionCode={formData.state}
         />
       ) : null}
+
+      {emailsGenerated ? bucketLink(projectId, formData?.state) : null}
     </>
   );
 };
