@@ -18,19 +18,20 @@ import { Layout, Menu, Typography } from "antd";
 import * as React from "react";
 import { Link, Redirect, Route, Switch, useLocation } from "react-router-dom";
 import MetadataDataset from "../models/MetadataDatasets";
-import * as LineStaffTools from "../navigation/LineStaffTools";
 import * as DatasetMetadata from "../navigation/DatasetMetadata";
 import * as IngestOperations from "../navigation/IngestOperations";
+import * as LineStaffTools from "../navigation/LineStaffTools";
 import "../style/App.css";
 import CloudSQLExportView from "./CloudSQLExportView";
 import CloudSQLImportView from "./CloudSQLImportView";
-import DataDiscoveryView from "./DataDiscoveryView";
-import POFeedbackView from "./POFeedbackView";
-import POEmailsView from "./POEmailsView";
 import ColumnView from "./ColumnView";
+import DataDiscoveryView from "./DataDiscoveryView";
 import DataFreshnessView from "./DataFreshnessView";
 import DatasetView from "./DatasetView";
+import FlashDatabaseChecklist from "./FlashDatabaseChecklist";
 import IngestOperationsView from "./IngestOperationsView";
+import POEmailsView from "./POEmailsView";
+import POFeedbackView from "./POFeedbackView";
 import TableView from "./TableView";
 import ValidationStatusView from "./ValidationStatusView";
 
@@ -96,6 +97,11 @@ const App = (): JSX.Element => {
                 Actions &amp; Summaries
               </Link>
             </Menu.Item>
+            <Menu.Item key={IngestOperations.FLASH_DB_CHECKLIST_ROUTE}>
+              <Link to={IngestOperations.FLASH_DB_CHECKLIST_ROUTE}>
+                Flash Database
+              </Link>
+            </Menu.Item>
           </Menu.ItemGroup>
           <Menu.ItemGroup title="Line Staff Tools">
             <Menu.Item key={LineStaffTools.GCS_CSV_TO_CLOUD_SQL_ROUTE}>
@@ -150,6 +156,11 @@ const App = (): JSX.Element => {
             exact
             path={IngestOperations.INGEST_ACTIONS_ROUTE}
             component={IngestOperationsView}
+          />
+          <Route
+            exact
+            path={IngestOperations.FLASH_DB_CHECKLIST_ROUTE}
+            component={FlashDatabaseChecklist}
           />
           <Route
             path={LineStaffTools.GCS_CSV_TO_CLOUD_SQL_ROUTE}
