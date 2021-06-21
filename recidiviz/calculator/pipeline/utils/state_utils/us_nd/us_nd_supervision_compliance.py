@@ -27,22 +27,22 @@
             - Home visit: within 90 days of start of supervision, 1x every 365 days
     Contact with treatment staff is currently excluded for `SEX_OFFENSE` case types.
 """
+import logging
 import sys
 from datetime import date
-import logging
-from typing import Optional, Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
+    StateSupervisionCaseComplianceManager,
+)
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
-from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
-    StateSupervisionCaseComplianceManager,
-)
 
-# Please refer to http://go/nd-risk-assessment-policy for context on these values.
+# Please refer to http://go/nd-risk-assessment-policy/ for context on these values.
 # These values were last verified on 02/23/2021.
 LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE: int = 30
 REASSESSMENT_DEADLINE_DAYS: int = 212
