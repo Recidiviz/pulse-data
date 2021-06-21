@@ -16,3 +16,4 @@
 // =============================================================================
 export const INGEST_OPERATIONS_BASE = "/admin/ingest_operations";
 export const INGEST_ACTIONS_ROUTE = `${INGEST_OPERATIONS_BASE}/key_actions`;
+export const FLASH_DB_CHECKLIST_ROUTE = `${INGEST_OPERATIONS_BASE}/flash_primary_db`;

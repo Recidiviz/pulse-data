@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import * as React from "react";
+import { WarningFilled } from "@ant-design/icons";
 import {
   Alert,
   Button,
@@ -25,21 +25,19 @@ import {
   PageHeader,
   Spin,
 } from "antd";
-import { WarningFilled } from "@ant-design/icons";
-import { StateCodeInfo } from "./IngestOperationsView/constants";
+import * as React from "react";
 import {
   fetchEmailStateCodes,
   generateEmails,
 } from "../AdminPanelAPI/LineStaffTools";
-import ActionRegionConfirmationForm from "./Utilities/ActionRegionConfirmationForm";
 import useFetchedData from "../hooks";
+import { StateCodeInfo } from "./IngestOperationsView/constants";
+import ActionRegionConfirmationForm from "./Utilities/ActionRegionConfirmationForm";
 import StateSelector from "./Utilities/StateSelector";
 
 const POEmailsView = (): JSX.Element => {
-  const env = window.RUNTIME_GCP_ENVIRONMENT || "uknown env";
-  const projectId =
-    env === "production" ? "recidiviz-123" : "recidiviz-staging";
-
+  const isProduction = window.RUNTIME_GCP_ENVIRONMENT === "production";
+  const projectId = isProduction ? "recidiviz-123" : "recidiviz-staging";
   enum EmailActions {
     GenerateEmails = "generate",
   }
