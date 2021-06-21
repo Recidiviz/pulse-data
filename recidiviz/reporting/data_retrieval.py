@@ -123,7 +123,9 @@ def start(
             "Overriding default message body in batch emails (batch id = %s)", batch_id
         )
         recipients = [
-            recipient.create_derived_recipient({"message_body": message_body_override})
+            recipient.create_derived_recipient(
+                {"message_body_override": message_body_override}
+            )
             for recipient in recipients
         ]
 

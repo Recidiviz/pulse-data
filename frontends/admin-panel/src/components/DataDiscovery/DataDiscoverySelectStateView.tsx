@@ -29,7 +29,7 @@ interface DataDiscoverySelectStateViewProps {
 
 const DataDiscoverySelectStateView: React.FC<DataDiscoverySelectStateViewProps> =
   ({ form }) => {
-    const handleStateCodeChange = (value: string) => {
+    const onChange = (value: string) => {
       form.setFieldsValue({ region_code: value });
     };
 
@@ -40,7 +40,7 @@ const DataDiscoverySelectStateView: React.FC<DataDiscoverySelectStateViewProps> 
     return (
       <Form.Item label="State" name="region_code" rules={[{ required: true }]}>
         <StateSelector
-          handleStateCodeChange={handleStateCodeChange}
+          onChange={onChange}
           initialValue={null}
           loading={loading}
           data={data}
