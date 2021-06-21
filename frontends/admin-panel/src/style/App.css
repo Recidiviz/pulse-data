@@ -36,6 +36,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 .buffer {
   padding-top: 16px;
   padding-bottom: 16px;
+  white-space: normal !important;
 }
 
 .ant-layout-sider-children {

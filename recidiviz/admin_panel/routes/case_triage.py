@@ -15,40 +15,47 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines routes for the Case Triage API endpoints in the admin panel."""
+import json
 import logging
 import os
 from http import HTTPStatus
-from typing import Optional, Tuple
+from json import JSONDecodeError
+from typing import List, Optional, Tuple
 
 from flask import Blueprint, jsonify, request
 
+import recidiviz.reporting.data_retrieval as data_retrieval
+from recidiviz.admin_panel.admin_stores import fetch_state_codes
 from recidiviz.admin_panel.case_triage_helpers import (
     columns_for_case_triage_view,
     get_importable_csvs,
 )
 from recidiviz.case_triage.views.view_config import CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
-from recidiviz.cloud_sql.cloud_sql_export_to_gcs import (
-    export_from_cloud_sql_to_gcs_csv,
-)
+from recidiviz.cloud_sql.cloud_sql_export_to_gcs import export_from_cloud_sql_to_gcs_csv
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.persistence.database.schema.case_triage.schema import (
-    CaseUpdate,
-)
+from recidiviz.common.constants.states import StateCode
+from recidiviz.common.results import MultiRequestResult
 from recidiviz.metrics.export.export_config import (
     CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
 )
+from recidiviz.persistence.database.schema.case_triage.schema import CaseUpdate
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import (
-    SQLAlchemyDatabaseKey,
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.reporting.context.po_monthly_report.constants import ReportType
+from recidiviz.reporting.email_reporting_utils import (
+    generate_batch_id,
+    validate_email_address,
 )
+from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils.environment import (
-    GCP_PROJECT_STAGING,
-    in_development,
-)
+from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development
+from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.params import get_only_str_param_value
+
+EMAIL_STATE_CODES = [StateCode.US_ID, StateCode.US_PA]
 
 
 def add_case_triage_routes(bp: Blueprint) -> None:
@@ -170,3 +177,93 @@ def add_case_triage_routes(bp: Blueprint) -> None:
             ),
             HTTPStatus.OK,
         )
+
+    @bp.route("/api/line_staff_tools/fetch_email_state_codes", methods=["POST"])
+    @requires_gae_auth
+    def _fetch_email_state_codes() -> Tuple[str, HTTPStatus]:
+        # hard coding Idaho and Pennsylvania for now
+        state_code_info = fetch_state_codes(EMAIL_STATE_CODES)
+        return jsonify(state_code_info), HTTPStatus.OK
+
+    @bp.route(
+        "/api/line_staff_tools/<state_code_str>/generate_emails", methods=["POST"]
+    )
+    @requires_gae_auth
+    def _generate_emails(state_code_str: str) -> Tuple[str, HTTPStatus]:
+        try:
+            data = request.json
+            state_code = StateCode(state_code_str)
+            if state_code not in EMAIL_STATE_CODES:
+                raise ValueError("State code is invalid for PO monthly reports")
+            # report_type hardcoded for now, need to change when different reports are created
+            report_type = ReportType.POMonthlyReport
+            test_address = data.get("testAddress")
+            region_code = data.get("regionCode")
+            message_body_override = data.get("messageBodyOverride")
+            raw_email_allowlist = get_only_str_param_value(
+                "email_allowlist", request.args
+            )
+
+            validate_email_address(test_address)
+
+            email_allowlist: Optional[List[str]] = (
+                json.loads(raw_email_allowlist) if raw_email_allowlist else None
+            )
+
+        except (ValueError, JSONDecodeError) as error:
+            logging.error(error)
+            return str(error), HTTPStatus.BAD_REQUEST
+
+        if email_allowlist is not None:
+            for recipient_email in email_allowlist:
+                validate_email_address(recipient_email)
+
+        if test_address == "":
+            test_address = None
+        if region_code not in REGION_CODES:
+            region_code = None
+
+        try:
+            batch_id = generate_batch_id()
+            if in_development():
+                with local_project_id_override(GCP_PROJECT_STAGING):
+                    result: MultiRequestResult[str, str] = data_retrieval.start(
+                        state_code=state_code,
+                        report_type=report_type,
+                        batch_id=batch_id,
+                        test_address=test_address,
+                        region_code=region_code,
+                        email_allowlist=email_allowlist,
+                        message_body_override=message_body_override,
+                    )
+            else:
+                result = data_retrieval.start(
+                    state_code=state_code,
+                    report_type=report_type,
+                    batch_id=batch_id,
+                    test_address=test_address,
+                    region_code=region_code,
+                    email_allowlist=email_allowlist,
+                    message_body_override=message_body_override,
+                )
+        except InvalidRegionCodeException:
+            return "Invalid region code provided", HTTPStatus.BAD_REQUEST
+
+        new_batch_text = f"New batch started for {state_code} and {report_type}. Batch id = {batch_id}."
+        test_address_text = (
+            f"Emails generated for test address: {test_address}" if test_address else ""
+        )
+        counts_text = f"Successfully generate {len(result.successes)} email(s)"
+        success_text = f"{new_batch_text} {test_address_text} {counts_text}"
+        if result.failures and not result.successes:
+            return (
+                f"{success_text}"
+                f" Failed to generate all emails. Retry the request again."
+            ), HTTPStatus.INTERNAL_SERVER_ERROR
+        if result.failures:
+            return (
+                f"{success_text}"
+                f" Failed to generate {len(result.failures)} email(s): {', '.join(result.failures)}"
+            ), HTTPStatus.MULTI_STATUS
+
+        return (f"{success_text}"), HTTPStatus.OK

@@ -41,8 +41,22 @@ export const getPOFeedback = async (): Promise<Response> => {
 
 // Fetch states for po monthly reports
 export const fetchEmailStateCodes = async (): Promise<Response> => {
+  return postWithURLAndBody("/api/line_staff_tools/fetch_email_state_codes");
+};
+
+// Generate PO Monthly Report Emails
+export const generateEmails = async (
+  stateCode: string,
+  testAddress?: string | null,
+  regionCode?: string | null,
+  messageBodyOverride?: string | null
+): Promise<Response> => {
   return postWithURLAndBody(
-    // change to fetch_email_state_codes
-    "/api/ingest_operations/fetch_ingest_state_codes"
+    `/api/line_staff_tools/${stateCode}/generate_emails`,
+    {
+      testAddress,
+      regionCode,
+      messageBodyOverride,
+    }
   );
 };

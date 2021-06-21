@@ -21,7 +21,7 @@ from typing import Tuple
 
 from flask import Blueprint, jsonify, request
 
-from recidiviz.admin_panel.admin_stores import AdminStores
+from recidiviz.admin_panel.admin_stores import AdminStores, fetch_state_codes
 from recidiviz.cloud_sql.cloud_sql_client import CloudSQLClientImpl
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockAlreadyExists,
@@ -62,13 +62,7 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
         all_state_codes = (
             admin_stores.ingest_operations_store.state_codes_launched_in_env
         )
-        state_code_info = []
-        for state_code in all_state_codes:
-            code_to_name = {
-                "code": state_code.value,
-                "name": state_code.get_state().name,
-            }
-            state_code_info.append(code_to_name)
+        state_code_info = fetch_state_codes(all_state_codes)
         return jsonify(state_code_info), HTTPStatus.OK
 
     # Start an ingest run for a specific instance
