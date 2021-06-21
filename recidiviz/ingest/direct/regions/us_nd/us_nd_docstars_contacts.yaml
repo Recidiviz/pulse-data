@@ -2,7 +2,7 @@
 # fields.
 
 # For detailed information about each of the columns present in the original table, `docstars_contacts`, please see
-# http://go/us-nd-docstars-contacts-raw-table.
+# http://go/us-nd-docstars-contacts-raw-table/.
 key_mappings:
   RecID: state_supervision_contact.state_supervision_contact_id
   CONTACT_CODE: state_supervision_contact.contact_type
@@ -27,6 +27,3 @@ keys_to_ignore:
   - CONTACT_CODE_4 # TODO(#5057) - Ingest these optional codes specifying further information about the contact
   - CONTACT_CODE_5 # TODO(#5057) - Ingest these optional codes specifying further information about the contact
   - CONTACT_CODE_6 # TODO(#5057) - Ingest these optional codes specifying further information about the contact
-
-
-
