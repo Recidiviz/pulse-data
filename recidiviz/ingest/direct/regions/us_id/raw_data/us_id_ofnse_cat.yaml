@@ -1,0 +1,20 @@
+file_tag: ofnse_cat
+file_description: |-
+  Not in use
+primary_key_cols:
+  - ofnse_cat_cd
+columns:
+  - name: ofnse_cat_cd
+    description: |-
+      Code for the offense category
+  - name: vld_flg
+    description: |-
+      Whether this category is still valid
+    known_values:
+      - value: "Y"
+        description: Valid
+      - value: "N"
+        description: Not valid
+  - name: ofnse_cat_desc
+    description: |-
+      Full description of the offense category
