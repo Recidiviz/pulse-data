@@ -29,7 +29,6 @@ from typing import Any, Callable, Dict, List, Literal, Optional, Union
 
 import dateutil.parser
 
-
 FixtureType = Union[Literal["clients"], Literal["opportunities"]]
 
 
@@ -68,6 +67,7 @@ def csv_row_to_etl_client_json(row: List[str]) -> Dict[str, Any]:
         "most_recent_home_visit_date": parse_nullable_date(row[18]),
         "days_with_current_po": int(row[19]),
         "email_address": treat_empty_as_null(row[20]),
+        "days_on_current_supervision_level": int(row[21]),
     }
 
 

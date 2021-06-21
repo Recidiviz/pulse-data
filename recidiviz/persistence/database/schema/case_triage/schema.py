@@ -76,6 +76,7 @@ class ETLClient(CaseTriageBase):
     most_recent_face_to_face_date = Column(Date)
     most_recent_home_visit_date = Column(Date)
     days_with_current_po = Column(Integer)
+    days_on_current_supervision_level = Column(Integer)
     email_address = Column(Text)
 
     case_updates = relationship(
@@ -160,6 +161,9 @@ class ETLClient(CaseTriageBase):
             ),
             days_with_current_po=json_client.get("days_with_current_po"),
             email_address=json_client.get("email_address"),
+            days_on_current_supervision_level=json_client.get(
+                "days_on_current_supervision_level"
+            ),
         )
 
 
