@@ -23,7 +23,7 @@ from recidiviz.common.constants.enum_overrides import (
     EnumMapper,
     EnumOverrides,
 )
-from recidiviz.common.constants.person_characteristics import Ethnicity, Race
+from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.standard_enum_overrides import (
     get_standard_enum_overrides,
 )
@@ -42,6 +42,7 @@ def generate_enum_overrides() -> EnumOverrides:
     overrides: Dict[EntityEnum, List[str]] = {}
     overrides.update(generate_race_enum_overrides())
     overrides.update(generate_ethnicity_enum_overrides())
+    overrides.update(generate_gender_enum_overrides())
 
     ignores: Dict[EntityEnumMeta, List[str]] = {}
 
@@ -71,6 +72,53 @@ def generate_race_enum_overrides() -> Dict[EntityEnum, List[str]]:
         Race.WHITE: [
             "W",  # White
         ],
+        # The following codes happen extremely infrequently, and
+        # appear to have been mistakenly added.
+        Race.EXTERNAL_UNKNOWN: [
+            "BCCX",
+            "TTCC",
+            "WCFA",
+            "47A",
+            "N",
+            "82B",
+            "NWCX",
+            "036",
+            "044",
+            "066",
+            "DEAD",
+            "WTSP",
+            "SPND",
+            "79A",
+            "HCCF",
+            "003",
+            "032",
+            "ACTV",
+            "076",
+            "065",
+            "001",
+            "57A",
+            "009",
+            "INAC",
+            "007",
+            "TCIX",
+            "070",
+            "013",
+            "034",
+            "NECX",
+            "072",
+            "WCFA",
+            "MCCX",
+            "RMSI",
+            "006",
+            "SCCF",
+            "46A",
+            "TTCC",
+            "SCCC",
+            "011",
+            "19D",
+            "023",
+            "090",
+        ],
     }
     return overrides
 
@@ -86,6 +134,33 @@ def generate_ethnicity_enum_overrides() -> Dict[EntityEnum, List[str]]:
             "B",  # Black
             "I",  # American Indian or Alaska Native
             "W",  # White
+        ],
+    }
+    return overrides
+
+
+def generate_gender_enum_overrides() -> Dict[EntityEnum, List[str]]:
+    """Provides Gender overrides for enum mappings."""
+    overrides: Dict[EntityEnum, List[str]] = {
+        Gender.MALE: [
+            "M",  # Male
+        ],
+        Gender.FEMALE: [
+            "F",  # Female
+        ],
+        # The following codes happen extremely infrequently, and
+        # appear to have been mistakenly added.
+        Gender.EXTERNAL_UNKNOWN: [
+            "B",
+            "W",
+            "H",
+            "INAC",
+            "PEND",
+            "WSTP",
+            "A",
+            "I",
+            "HCCF",
+            "U",
         ],
     }
     return overrides
