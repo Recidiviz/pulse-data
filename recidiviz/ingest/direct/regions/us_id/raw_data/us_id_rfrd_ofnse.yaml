@@ -1,0 +1,43 @@
+file_tag: rfrd_ofnse
+file_description: |-
+  Not in use
+primary_key_cols:
+  - ofnse_id
+columns:
+  - name: ofnse_id
+    description: |-
+      Id of the row
+  - name: ofndr_num
+    description: |-
+      DOC number of the person associated with this offense
+  - name: intr_case_num
+  - name: ofnse_svrty_cd
+  - name: ofnse_cnt
+  - name: cnt_qty
+  - name: ofnse_cat
+  - name: ofnse_cd
+  - name: ofnse_cd_ver
+  - name: crt_ofnse_notes
+  - name: weapon_cd
+  - name: sent_cd
+  - name: intr_ord_num
+  - name: atmpt_flg
+  - name: arrest_agcy
+  - name: arrest_dt
+  - name: ofnse_start_dt
+  - name: ofnse_end_dt
+  - name: ofnse_dt
+  - name: rfrd_ofnse_status_typ
+  - name: bci_arst_disp_cd
+  - name: bci_updt_src
+  - name: bci_updt_dt
+  - name: bci_updt_usr_id
+  - name: otn
+  - name: convict_dt
+  - name: juris_cd
+  - name: crt_actn_dt
+  - name: juris_dt
+  - name: exp_dt
+  - name: sent_seq_num
+  - name: updt_usr_id
+  - name: updt_dt
