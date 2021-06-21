@@ -15,14 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for calling gsutil commands inside of Python scripts."""
-import os
 import subprocess
 from typing import List, Optional
 
+from recidiviz.common.date import is_between_date_strs_inclusive, is_date_str
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
 )
-from recidiviz.common.date import is_date_str, is_between_date_strs_inclusive
 
 
 def gsutil_ls(gs_path: str, directories_only: bool = False) -> List[str]:
@@ -103,24 +102,6 @@ def _date_str_from_date_subdir_path(date_subdir_path: str) -> str:
     return f"{parts[-3]}-{parts[-2]}-{parts[-1]}"
 
 
-def _dfs_get_date_subdirs(paths_to_search: List[str], depth: int = 0) -> List[str]:
-    """Traverses down through year/month/day subdirectories to contain list of all date subdirectories that contain
-    files for a given day."""
-    if depth == 3:
-        return [
-            p
-            for p in paths_to_search
-            if is_date_str(_date_str_from_date_subdir_path(p))
-        ]
-
-    date_subdirs = []
-    for p in paths_to_search:
-        sub_paths = gsutil_ls(p, directories_only=True)
-        date_subdirs.extend(_dfs_get_date_subdirs(sub_paths, depth=depth + 1))
-
-    return date_subdirs
-
-
 def gsutil_get_storage_subdirs_containing_file_types(
     storage_bucket_path: str,
     file_type: GcsfsDirectIngestFileType,
@@ -129,20 +110,18 @@ def gsutil_get_storage_subdirs_containing_file_types(
 ) -> List[str]:
     """Returns all subdirs containing files of type |file_type| in the provided |storage_bucket_path| for a given
     region."""
-    subdirs = gsutil_ls(f"gs://{storage_bucket_path}", directories_only=True)
+    subdirs = gsutil_ls(
+        f"gs://{storage_bucket_path}/{file_type.value}/*/*/", directories_only=True
+    )
 
     subdirs_containing_files = []
-    for outer_subdir_path in subdirs:
-        outer_subdir_name = os.path.basename(os.path.normpath(outer_subdir_path))
-        if outer_subdir_name == file_type.value:
-            date_subdirs = _dfs_get_date_subdirs([outer_subdir_path])
-
-            for date_path in date_subdirs:
-                if is_between_date_strs_inclusive(
-                    upper_bound_date=upper_bound_date,
-                    lower_bound_date=lower_bound_date,
-                    date_of_interest=_date_str_from_date_subdir_path(date_path),
-                ):
-                    subdirs_containing_files.append(date_path)
+    for subdir in subdirs:
+        subdir_date = _date_str_from_date_subdir_path(subdir)
+        if is_date_str(subdir_date) and is_between_date_strs_inclusive(
+            upper_bound_date=upper_bound_date,
+            lower_bound_date=lower_bound_date,
+            date_of_interest=subdir_date,
+        ):
+            subdirs_containing_files.append(subdir)
 
     return subdirs_containing_files
