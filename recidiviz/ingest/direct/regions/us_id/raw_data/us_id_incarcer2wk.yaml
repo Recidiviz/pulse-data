@@ -1,0 +1,42 @@
+file_tag: incarcer2wk
+file_description: |-
+  Not in use
+primary_key_cols:
+  - docno
+  - incrno
+columns:
+  - name: docno
+    description: |-
+      IDOC id for the person
+  - name: incrno
+    description: |-
+      Incarceration number for the record
+  - name: sent_eff_dtd
+  - name: admn_dtd
+  - name: intak_dtd
+  - name: interstate_flg
+  - name: par_dtd
+  - name: rls_dtd
+  - name: gtr_dtd
+  - name: law_cd
+  - name: govn_min_sent
+  - name: govn_max_sent
+  - name: recomp_flg
+  - name: victim_notic_flg
+  - name: par_rev
+  - name: sentdisc_dtd
+  - name: est_sentdisc_dtd
+  - name: parelig_dtd
+  - name: est_parelig_dtd
+  - name: tent_par_dtd
+  - name: est_tent_par_dtd
+  - name: timetran_typ
+  - name: nxt_par_hrg_dtd
+  - name: parterm_dtd
+  - name: est_parterm_dtd
+  - name: lst_tcomp_dtd
+  - name: comm_elig_typ
+  - name: comm_elig_dtd
+  - name: comm_ref_dtd
+  - name: par_agenda_typ
+  - name: ccl_cic_no
