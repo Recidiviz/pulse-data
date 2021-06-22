@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import MockDate from "mockdate";
 import API from "../API";
 import RootStore from "../RootStore";
 import { Client, PENDING_ID } from "./Client";
@@ -51,6 +52,47 @@ beforeEach(() => {
 });
 afterEach(() => {
   APIMock.mockReset();
+  MockDate.reset();
+});
+
+test("contact status", () => {
+  // date in fixture is 2022-06-18
+  MockDate.set("2022-08-18");
+  expect(testClient.contactStatus).toBe("OVERDUE");
+
+  MockDate.set("2022-06-18");
+  expect(testClient.contactStatus).toBe("UPCOMING");
+
+  // shouldn't have to be midnight
+  MockDate.set(new Date(2022, 5, 18, 14, 22));
+  expect(testClient.contactStatus).toBe("UPCOMING");
+
+  MockDate.set("2022-06-11");
+  expect(testClient.contactStatus).toBe("UPCOMING");
+
+  // beyond the threshold to be considered "upcoming"
+  MockDate.set("2022-06-10");
+  expect(testClient.contactStatus).toBe(null);
+});
+
+test("risk assessment status", () => {
+  // date in fixture is 2020-10-23
+  MockDate.set("2020-10-25");
+  expect(testClient.riskAssessmentStatus).toBe("OVERDUE");
+
+  MockDate.set("2020-10-23");
+  expect(testClient.riskAssessmentStatus).toBe("UPCOMING");
+
+  // shouldn't have to be midnight
+  MockDate.set(new Date(2020, 9, 23, 14, 22));
+  expect(testClient.riskAssessmentStatus).toBe("UPCOMING");
+
+  MockDate.set("2020-09-23");
+  expect(testClient.riskAssessmentStatus).toBe("UPCOMING");
+
+  // beyond the threshold to be considered "upcoming"
+  MockDate.set("2020-09-22");
+  expect(testClient.riskAssessmentStatus).toBe(null);
 });
 
 test("create a note", async () => {

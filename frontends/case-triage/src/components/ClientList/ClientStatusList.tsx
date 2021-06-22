@@ -17,15 +17,15 @@
 import * as React from "react";
 import moment from "moment";
 import { observer } from "mobx-react-lite";
-import assertNever from "assert-never";
 import { useRootStore } from "../../stores";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 import { OPPORTUNITY_TITLES } from "../../stores/OpportunityStore/Opportunity";
 import { Pill } from "../Pill";
 import { ClientProps } from "./ClientList.types";
 import { StatusList } from "./ClientList.styles";
-import { useDueDateStatus } from "../DueDate/useDueDateStatus";
-import Tooltip from "../Tooltip";
+import AlertPreview from "../AlertPreview";
+import { DueDateAlert } from "../DueDate/DueDateAlert";
+import { getTimeDifference } from "../../utils";
 
 export const ClientStatusList: React.FC<ClientProps> = observer(
   ({ client }: ClientProps): JSX.Element => {
@@ -41,16 +41,16 @@ export const ClientStatusList: React.FC<ClientProps> = observer(
 
     if (notOnCaseloadAction) {
       statusPills.push(
-        <Pill key="notOnCaseload" kind="info" filled={false}>
+        <AlertPreview key="notOnCaseload" kind="info">
           Incorrect data reported{" "}
           {moment(notOnCaseloadAction.actionTs).format("MMMM Do, YYYY")}
-        </Pill>
+        </AlertPreview>
       );
     } else if (currentlyInCustodyAction) {
       statusPills.push(
-        <Pill key="inCustody" kind="info" filled={false}>
+        <AlertPreview key="inCustody" kind="info">
           In custody
-        </Pill>
+        </AlertPreview>
       );
     }
 
@@ -63,62 +63,46 @@ export const ClientStatusList: React.FC<ClientProps> = observer(
 
       if (topOpp && !topOpp.deferredUntil) {
         statusPills.push(
-          <Pill key="topOpp" filled={false} kind="highlight">
+          <AlertPreview key="topOpp" kind="highlight">
             {OPPORTUNITY_TITLES[topOpp.opportunityType]}
-          </Pill>
+          </AlertPreview>
         );
       }
 
       // other needs follow in order of importance
       if (!client.needsMet.employment) {
         statusPills.push(
-          <Pill key="employment" filled={false} kind="warn">
+          <AlertPreview key="employment" kind="warn">
             Unemployed
-          </Pill>
+          </AlertPreview>
         );
       }
 
-      // TODO(#7801) add alert for risk assessment upcoming
-      if (!client.needsMet.assessment) {
+      const { riskAssessmentStatus, nextAssessmentDate } = client;
+      if (riskAssessmentStatus && nextAssessmentDate) {
         statusPills.push(
-          <Pill key="riskAssessment" filled={false} kind="error">
-            Risk assessment overdue
-          </Pill>
+          <DueDateAlert
+            key="riskAssessment"
+            status={riskAssessmentStatus}
+            alertLabel="Risk assessment"
+            tooltip={`Risk Assessment needed ${getTimeDifference(
+              nextAssessmentDate
+            )}`}
+          />
         );
       }
 
-      const contactDue = useDueDateStatus({ date: client.nextContactDate });
-      if (contactDue) {
-        let statusPill: JSX.Element;
-
-        switch (contactDue.status) {
-          case "Past":
-            statusPill = (
-              <Pill filled={false} kind="error">
-                Contact overdue
-              </Pill>
-            );
-            break;
-          case "Today":
-          case "Future":
-            // TODO(#7801) more limited time horizon for "upcoming"?
-            statusPill = (
-              <Pill filled={false} kind="warn">
-                Contact upcoming
-              </Pill>
-            );
-            break;
-          default:
-            assertNever(contactDue.status);
-        }
-
+      const { contactStatus, nextContactDate } = client;
+      if (contactStatus && nextContactDate) {
         statusPills.push(
-          <Tooltip
+          <DueDateAlert
             key="nextContact"
-            title={`Face to Face Contact recommended ${contactDue.timeDifference}`}
-          >
-            {statusPill}
-          </Tooltip>
+            status={contactStatus}
+            alertLabel="Contact"
+            tooltip={`Face to Face Contact recommended ${getTimeDifference(
+              nextContactDate
+            )}`}
+          />
         );
       }
     }

@@ -19,7 +19,13 @@ import { palette, spacing } from "@recidiviz/design-system";
 import { rem } from "polished";
 import styled from "styled-components/macro";
 
-type PillKind = "highlight" | "info" | "warn" | "error" | "neutral" | "muted";
+export type PillKind =
+  | "highlight"
+  | "info"
+  | "warn"
+  | "error"
+  | "neutral"
+  | "muted";
 
 const pillColors: Record<PillKind, string> = {
   highlight: palette.signal.highlight,
