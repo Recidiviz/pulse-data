@@ -104,6 +104,21 @@ class PoMonthlyReportContextTests(TestCase):
         self.assertEqual("", actual["congratulations_text"])
         self.assertEqual("none", actual["display_congratulations"])
 
+    def test_message_body_override(self) -> None:
+        """Test that the message body is overriden by the message_body_override"""
+        recipient_data = {
+            "pos_discharges": "0",
+            "earned_discharges": "0",
+            "supervision_downgrades": "0",
+            "technical_revocations": "0",
+            "crime_revocations": "0",
+            "message_body_override": "THIS IS A TEST",
+        }
+        recipient = self.recipient.create_derived_recipient(recipient_data)
+        context = PoMonthlyReportContext(StateCode.US_ID, recipient)
+        actual = context.get_prepared_data()
+        self.assertEqual("THIS IS A TEST", actual["message_body"])
+
     # pylint:disable=trailing-whitespace
     def test_attachment_content(self) -> None:
         """Given client details for every section, it returns a formatted string to be used as the email attachment."""
