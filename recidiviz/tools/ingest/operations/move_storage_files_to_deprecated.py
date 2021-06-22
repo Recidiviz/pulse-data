@@ -27,8 +27,10 @@ When run in dry-run mode (the default), will log the move of each file, but will
 
 Example usage (run from `pipenv shell`):
 
-python -m recidiviz.tools.ingest.operations.move_storage_files_to_deprecated --file-type raw --region us_nd --start-date-bound \
-2019-08-12 --end-date-bound 2019-08-17 --project-id recidiviz-staging --file-filter "docstars" --dry-run True
+python -m recidiviz.tools.ingest.operations.move_storage_files_to_deprecated \
+    --file-type raw --region us_nd --start-date-bound  2019-08-12 \
+    --end-date-bound 2019-08-17 --project-id recidiviz-staging \
+    --file-filter "docstars" --ingest-instance PRIMARY --dry-run True
 
 
 """
@@ -38,32 +40,29 @@ import logging
 import os
 import re
 import threading
-from multiprocessing.pool import ThreadPool
-from typing import List, Tuple, Optional
-
 from datetime import date
+from multiprocessing.pool import ThreadPool
+from typing import List, Optional, Tuple
 
 from progress.bar import Bar
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
-
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    gcsfs_direct_ingest_storage_directory_path_for_region,
+    INGEST_FILEPATH_REGEX,
     GcsfsDirectIngestFileType,
     filename_parts_from_path,
-    INGEST_FILEPATH_REGEX,
+    gcsfs_direct_ingest_storage_directory_path_for_region,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.tools.gsutil_shell_helpers import (
-    gsutil_mv,
-    gsutil_ls,
     gsutil_get_storage_subdirs_containing_file_types,
+    gsutil_ls,
+    gsutil_mv,
 )
 from recidiviz.utils.params import str_to_bool
-
 
 # pylint: disable=not-callable
 
