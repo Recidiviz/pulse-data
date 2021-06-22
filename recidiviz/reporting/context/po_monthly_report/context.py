@@ -110,6 +110,10 @@ class PoMonthlyReportContext(ReportContext):
             self.prepared_data["message_body"] = self.properties[
                 DEFAULT_MESSAGE_BODY_KEY
             ]
+        else:
+            self.prepared_data["message_body"] = self.recipient_data.get(
+                "message_body_override"
+            )
 
         self._convert_month_to_name("review_month")
 
