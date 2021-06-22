@@ -25,9 +25,9 @@ import logging
 
 from google.cloud import pubsub_v1
 
+import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.reporting.context.report_context import ReportContext
 
 
@@ -45,7 +45,7 @@ def generate(report_context: ReportContext) -> None:
     prepared_data = report_context.get_prepared_data()
 
     html_content = generate_html_content(report_context)
-    attachment_content = prepared_data["attachment_content"]
+    attachment_content = prepared_data.get("attachment_content")
 
     html_path = utils.get_html_filepath(
         prepared_data[utils.KEY_BATCH_ID],
