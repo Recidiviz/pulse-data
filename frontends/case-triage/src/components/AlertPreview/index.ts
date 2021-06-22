@@ -15,32 +15,4 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Moment } from "moment";
-import { getTimeDifference } from "../../utils";
-
-export interface DueDateProps {
-  date: Moment | null;
-}
-
-type DueDateStatus = "Today" | "Past" | "Future";
-
-export const useDueDateStatus = ({
-  date,
-}: DueDateProps):
-  | { status: DueDateStatus; timeDifference: string }
-  | undefined => {
-  if (!date) return;
-
-  let status: DueDateStatus;
-  const timeDifference = getTimeDifference(date);
-
-  if (timeDifference === "today") {
-    status = "Today";
-  } else if (timeDifference.startsWith("in")) {
-    status = "Future";
-  } else {
-    status = "Past";
-  }
-
-  return { status, timeDifference };
-};
+export { default } from "./AlertPreview";

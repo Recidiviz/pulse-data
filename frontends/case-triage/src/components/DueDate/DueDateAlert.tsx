@@ -15,32 +15,28 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Moment } from "moment";
-import { getTimeDifference } from "../../utils";
+import React from "react";
+import { DueDateStatus } from "../../stores/ClientsStore/Client";
+import AlertPreview from "../AlertPreview";
+import { PillKind } from "../Pill";
 
-export interface DueDateProps {
-  date: Moment | null;
-}
-
-type DueDateStatus = "Today" | "Past" | "Future";
-
-export const useDueDateStatus = ({
-  date,
-}: DueDateProps):
-  | { status: DueDateStatus; timeDifference: string }
-  | undefined => {
-  if (!date) return;
-
-  let status: DueDateStatus;
-  const timeDifference = getTimeDifference(date);
-
-  if (timeDifference === "today") {
-    status = "Today";
-  } else if (timeDifference.startsWith("in")) {
-    status = "Future";
-  } else {
-    status = "Past";
-  }
-
-  return { status, timeDifference };
+type DueDateAlertProps = {
+  alertLabel: string;
+  status: NonNullable<DueDateStatus>;
+  tooltip?: string;
 };
+
+const statusToKind: Record<NonNullable<DueDateStatus>, PillKind> = {
+  OVERDUE: "error",
+  UPCOMING: "warn",
+};
+
+export const DueDateAlert = ({
+  alertLabel,
+  status,
+  tooltip,
+}: DueDateAlertProps): JSX.Element => (
+  <AlertPreview kind={statusToKind[status]} tooltip={tooltip}>
+    {alertLabel} {status.toLowerCase()}
+  </AlertPreview>
+);

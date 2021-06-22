@@ -15,6 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import moment from "moment";
+
 export const titleCase = (str: string): string => {
   // Step 1. Lowercase the string
   // Step 2. Split the string into an array of strings
@@ -35,3 +37,21 @@ export const caseInsensitiveIncludes = (
 ): boolean => {
   return containingString.toLowerCase().includes(substring.toLowerCase());
 };
+
+/**
+ * Formats distance from now in natural language. Any time today will
+ * be rendered as "today", with larger distances in days, months, etc
+ * per [Moment.js](https://momentjs.com/docs/#/displaying/fromnow/) rules.
+ */
+export function getTimeDifference(date: moment.Moment): string {
+  // `date` is generally expected to be a day boundary.
+  // We use the beginning of today when calculating distance,
+  // thus showing a minimum difference of "a day" rather than "X hours"
+  const beginningOfDay = moment().startOf("day");
+
+  if (date.isSame(beginningOfDay, "day")) {
+    return "today";
+  }
+
+  return date.from(beginningOfDay);
+}

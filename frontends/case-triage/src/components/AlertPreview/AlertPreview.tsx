@@ -15,32 +15,31 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Moment } from "moment";
-import { getTimeDifference } from "../../utils";
+import React from "react";
+import { Pill, PillKind } from "../Pill";
+import Tooltip from "../Tooltip";
 
-export interface DueDateProps {
-  date: Moment | null;
-}
+type AlertPreviewProps = {
+  kind: PillKind;
+  tooltip?: React.ReactNode;
+};
 
-type DueDateStatus = "Today" | "Past" | "Future";
+const AlertPreview: React.FC<AlertPreviewProps> = ({
+  children,
+  kind,
+  tooltip,
+}) => {
+  const AlertPill = (
+    <Pill kind={kind} filled={false}>
+      {children}
+    </Pill>
+  );
 
-export const useDueDateStatus = ({
-  date,
-}: DueDateProps):
-  | { status: DueDateStatus; timeDifference: string }
-  | undefined => {
-  if (!date) return;
-
-  let status: DueDateStatus;
-  const timeDifference = getTimeDifference(date);
-
-  if (timeDifference === "today") {
-    status = "Today";
-  } else if (timeDifference.startsWith("in")) {
-    status = "Future";
-  } else {
-    status = "Past";
+  if (tooltip) {
+    return <Tooltip title={tooltip}>{AlertPill}</Tooltip>;
   }
 
-  return { status, timeDifference };
+  return AlertPill;
 };
+
+export default AlertPreview;
