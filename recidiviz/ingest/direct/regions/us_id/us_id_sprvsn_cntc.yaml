@@ -46,3 +46,4 @@ keys_to_ignore:
   - lan_id              # Unused - TODO(#3506): Understand what this is
   - body_loc_cd         # Unused - agent location
   - updt_dt             # Unused - update date for the row
+  - cntc_cmt            # Unused - contact comment
