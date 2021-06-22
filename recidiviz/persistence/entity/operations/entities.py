@@ -26,6 +26,9 @@ from typing import Optional
 import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.persistence.entity.base_entity import entity_graph_eq
 
 
@@ -89,3 +92,12 @@ class DirectIngestIngestFileMetadata(DirectIngestFileMetadata):
     discovery_time: Optional[datetime.datetime] = attr.ib()
 
     ingest_database_name: str = attr.ib()
+
+
+@attr.s(eq=False)
+class DirectIngestInstanceStatus(OperationsEntity, BuildableAttr, DefaultableAttr):
+    """Status of a direct instance ingest process."""
+
+    region_code: str = attr.ib()
+    instance: DirectIngestInstance = attr.ib()
+    is_paused: bool = attr.ib()
