@@ -25,8 +25,8 @@ cleaner. For example, if you need to access some constants related to persistenc
 from higher-level application code, consider pulling these constants out into a
 shared module instead of importing persistence logic into this server.
 """
-from importlib.util import find_spec
 import sys
+from importlib.util import find_spec
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 import pygtrie
@@ -37,7 +37,6 @@ from recidiviz.calculator.pipeline.incarceration import (
 from recidiviz.calculator.pipeline.program import pipeline as program_pipeline
 from recidiviz.calculator.pipeline.recidivism import pipeline as recidivism_pipeline
 from recidiviz.calculator.pipeline.supervision import pipeline as supervision_pipeline
-
 from recidiviz.vendor.modulefinder import modulefinder
 
 PIPELINES = {
@@ -207,10 +206,7 @@ def main() -> int:
                 "recidiviz.backup",
                 "recidiviz.big_query",
                 "recidiviz.calculator",
-                "recidiviz.case_triage.opportunities.types",
-                "recidiviz.case_triage.ops_routes",
-                "recidiviz.case_triage.state_utils",
-                "recidiviz.case_triage.views",
+                "recidiviz.case_triage",
                 "recidiviz.cloud_functions",
                 "recidiviz.cloud_memorystore",
                 "recidiviz.cloud_sql",
