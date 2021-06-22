@@ -1,0 +1,36 @@
+{
+  "email_address": "test@recidiviz.org",
+  "state_code": "US_ID",
+  "district": "US_ID_D3",
+  "officer_given_name": "Alex",
+  "assessment_name": "LSI-R",
+  "mismatches": {
+    "high_downgrades": [
+      {
+        "name": "Tonye Thompson",
+        "person_external_id": "189472",
+        "last_score": 14
+      }
+    ],
+    "medium_downgrades": [
+      {
+        "name": "Linet Hansen",
+        "person_external_id": "47228",
+        "last_assessment_date": "1/12/21",
+        "last_score": 8
+      },
+      {
+        "name": "Rebekah Cortes",
+        "person_external_id": "132878",
+        "last_assessment_date": "3/14/20",
+        "last_score": 10
+      },
+      {
+        "name": "Taryn Berry",
+        "person_external_id": "147872",
+        "last_assessment_date": "3/13/20",
+        "last_score": 4
+      }
+    ]
+  }
+}

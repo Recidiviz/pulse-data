@@ -20,11 +20,9 @@ from unittest.case import TestCase
 
 import pytz
 
-from recidiviz.case_triage.querier.opportunity_presenter import OpportunityPresenter
 from recidiviz.case_triage.opportunities.types import OpportunityDeferralType
-from recidiviz.persistence.database.schema.case_triage.schema import (
-    OpportunityDeferral,
-)
+from recidiviz.case_triage.querier.opportunity_presenter import OpportunityPresenter
+from recidiviz.persistence.database.schema.case_triage.schema import OpportunityDeferral
 from recidiviz.tests.case_triage.case_triage_helpers import generate_fake_opportunity
 
 
@@ -32,7 +30,9 @@ class TestOpportunityPresenter(TestCase):
     """Implements tests for the OpportunityPresenter class."""
 
     def setUp(self) -> None:
-        self.mock_opportunity = generate_fake_opportunity("officer_id_1", "person_id_1")
+        self.mock_opportunity = generate_fake_opportunity(
+            officer_id="officer_id_1", person_external_id="person_id_1"
+        )
 
     def test_no_deferral(self) -> None:
         presenter = OpportunityPresenter(self.mock_opportunity, None)

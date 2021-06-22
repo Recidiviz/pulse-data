@@ -27,12 +27,23 @@ from typing import Dict, List, Optional
 
 import recidiviz.reporting.email_generation as email_generation
 import recidiviz.reporting.email_reporting_utils as utils
+from recidiviz.case_triage.opportunities.types import OpportunityType
+from recidiviz.case_triage.querier.querier import CaseTriageQuerier
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.results import MultiRequestResult
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.reporting.context.available_context import get_report_context
-from recidiviz.reporting.context.po_monthly_report.constants import ReportType
+from recidiviz.reporting.context.po_monthly_report.constants import (
+    OFFICER_GIVEN_NAME,
+    ReportType,
+)
 from recidiviz.reporting.recipient import Recipient
 from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
 
@@ -184,10 +195,90 @@ def retrieve_data(
     if report_type == ReportType.POMonthlyReport:
         return _retrieve_data_for_po_monthly_report(state_code, batch_id)
     if report_type == ReportType.TopOpportunities:
-        # TODO(#7790): Fetch these recipients.
-        return []
+        return _retrieve_data_for_top_opportunities(state_code)
 
     raise ValueError("unexpected report type for retrieving data")
+
+
+def _top_opps_email_recipient_addresses() -> List[str]:
+    # TODO(#7790): We should find a way to automate this. Right now, this is being mocked
+    # out for use in test fixtures.
+    return []
+
+
+def _retrieve_data_for_top_opportunities(state_code: StateCode) -> List[Recipient]:
+    """Fetches list of recipients from the Case Triage backend where we store information
+    about which opportunities are active via the OpportunityPresenter."""
+
+    recipients = []
+
+    session = SessionFactory.for_database(
+        SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
+    )
+    for officer_email in _top_opps_email_recipient_addresses():
+        officer = CaseTriageQuerier.officer_for_email(session, officer_email)
+        opportunities = [
+            opp
+            for opp in CaseTriageQuerier.opportunities_for_officer(session, officer)
+            if not opp.is_deferred()
+            and opp.etl_opportunity.opportunity_type
+            == OpportunityType.OVERDUE_DOWNGRADE.value
+        ]
+        mismatches: Dict[str, List[Dict[str, str]]] = {
+            "high_downgrades": [],
+            "medium_downgrades": [],
+        }
+        for opp in opportunities:
+            client = CaseTriageQuerier.etl_client_for_officer(
+                session, officer, opp.etl_opportunity.person_external_id
+            )
+            key = None
+            if client.supervision_level == StateSupervisionLevel.HIGH.value:
+                key = "high_downgrades"
+            elif client.supervision_level == StateSupervisionLevel.MEDIUM.value:
+                key = "medium_downgrades"
+            else:
+                logging.warning(
+                    "unexpected supervision level for client: person_external_id=%s, supervision_level=%s",
+                    client.person_external_id,
+                    client.supervision_level,
+                )
+                continue
+
+            client_name = json.loads(client.full_name)
+            # TODO(#7957): We shouldn't be converting to title-case because there
+            # are many names whose preferred casing is not that. Once we figure out
+            # how to access the original name casing, we should use that wherever possible.
+            given_names = client_name.get("given_names", "").title()
+            surname = client_name.get("surname").title()
+            full_name = " ".join([given_names, surname]).strip()
+            mismatches[key].append(
+                {
+                    "name": full_name,
+                    "person_external_id": client.person_external_id,
+                    "last_score": opp.etl_opportunity.opportunity_metadata[
+                        "assessmentScore"
+                    ],
+                    "last_assessment_date": opp.etl_opportunity.opportunity_metadata[
+                        "latestAssessmentDate"
+                    ],
+                }
+            )
+
+        if mismatches["high_downgrades"] or mismatches["medium_downgrades"]:
+            recipients.append(
+                Recipient.from_report_json(
+                    {
+                        utils.KEY_EMAIL_ADDRESS: officer_email,
+                        utils.KEY_STATE_CODE: state_code.value,
+                        utils.KEY_DISTRICT: None,
+                        OFFICER_GIVEN_NAME: officer.given_names,
+                        "mismatches": mismatches,
+                    }
+                )
+            )
+
+    return recipients
 
 
 def _retrieve_data_for_po_monthly_report(

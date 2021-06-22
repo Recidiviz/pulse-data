@@ -28,8 +28,10 @@ from recidiviz.case_triage.demo_helpers import (
     get_fixture_clients,
     get_fixture_opportunities,
 )
-from recidiviz.case_triage.opportunities.interface import OpportunityType
-from recidiviz.case_triage.opportunities.types import OpportunityDoesNotExistError
+from recidiviz.case_triage.opportunities.types import (
+    OpportunityDoesNotExistError,
+    OpportunityType,
+)
 from recidiviz.case_triage.querier.case_presenter import CasePresenter
 from recidiviz.case_triage.querier.opportunity_presenter import OpportunityPresenter
 from recidiviz.persistence.database.schema.case_triage.schema import (

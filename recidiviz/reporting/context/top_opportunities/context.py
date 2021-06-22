@@ -95,31 +95,31 @@ if __name__ == "__main__":
                 utils.KEY_EMAIL_ADDRESS: "test@recidiviz.org",
                 utils.KEY_STATE_CODE: "US_ID",
                 utils.KEY_DISTRICT: "US_ID_D3",
-                OFFICER_GIVEN_NAME: "Clementine",
+                OFFICER_GIVEN_NAME: "Alex",
                 "assessment_name": "LSI-R",
                 "mismatches": {
                     "high_downgrades": [
                         {
-                            "name": "Nikhil Bhargava",
+                            "name": "Tonye Thompson",
                             "person_external_id": "189472",
                             "last_score": 14,
                         },
                     ],
                     "medium_downgrades": [
                         {
-                            "name": "Serena Chang",
+                            "name": "Linet Hansen",
                             "person_external_id": "47228",
                             "last_assessment_date": "1/12/21",
                             "last_score": 8,
                         },
                         {
-                            "name": "Juan Agron",
+                            "name": "Rebekah Cortes",
                             "person_external_id": "132878",
                             "last_assessment_date": "3/14/20",
                             "last_score": 10,
                         },
                         {
-                            "name": "Emily Chao",
+                            "name": "Taryn Berry",
                             "person_external_id": "147872",
                             "last_assessment_date": "3/13/20",
                             "last_score": 4,

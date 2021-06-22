@@ -18,21 +18,30 @@
 """Tests for reporting/email_generation.py."""
 import json
 import os
+from abc import abstractmethod
+from typing import Type
 from unittest import TestCase
 from unittest.mock import patch
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting.context.po_monthly_report.context import PoMonthlyReportContext
+from recidiviz.reporting.context.report_context import ReportContext
+from recidiviz.reporting.context.top_opportunities.context import (
+    TopOpportunitiesReportContext,
+)
 from recidiviz.reporting.email_generation import generate
 from recidiviz.reporting.recipient import Recipient
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
-FIXTURE_FILE = "po_monthly_report_data_fixture.json"
-
 
 class EmailGenerationTests(TestCase):
     """Tests for reporting/email_generation.py."""
+
+    # We set __test__ to False to tell `pytest` not to collect this class for running tests
+    # (as successful runs rely on the implementation of an abstract method).
+    # In sub-classes, __test__ should be re-set to True.
+    __test__ = False
 
     def setUp(self) -> None:
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
@@ -47,22 +56,27 @@ class EmailGenerationTests(TestCase):
         self.mock_gcs_file_system = self.gcs_file_system_patcher.start()
         self.mock_gcs_file_system.return_value = self.gcs_file_system
 
-        with open(
-            os.path.join(
-                f"{os.path.dirname(__file__)}/context/po_monthly_report", FIXTURE_FILE
-            )
-        ) as fixture_file:
+        with open(self.fixture_file_path()) as fixture_file:
             self.recipient = Recipient.from_report_json(json.loads(fixture_file.read()))
 
         self.state_code = StateCode.US_ID
         self.mock_batch_id = "1"
         self.recipient.data["batch_id"] = self.mock_batch_id
-        self.report_context = PoMonthlyReportContext(self.state_code, self.recipient)
+        self.report_context = self.report_context_type(self.state_code, self.recipient)
 
     def tearDown(self) -> None:
         self.get_secret_patcher.stop()
         self.project_id_patcher.stop()
         self.gcs_file_system_patcher.stop()
+
+    @property
+    @abstractmethod
+    def report_context_type(self) -> Type[ReportContext]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def fixture_file_path(self) -> str:
+        raise NotImplementedError
 
     def test_generate(self) -> None:
         """Test that the prepared html is added to Google Cloud Storage with the correct bucket name, filepath,
@@ -90,7 +104,37 @@ class EmailGenerationTests(TestCase):
                 }
             )
 
-            report_context = PoMonthlyReportContext(self.state_code, recipient)
+            report_context = self.report_context_type(self.state_code, recipient)
             generate(report_context)
 
         self.assertEqual(self.gcs_file_system.all_paths, [])
+
+
+class POMonthlyReportGenerationTest(EmailGenerationTests):
+    """Tests specific to the PO Monthly report"""
+
+    __test__ = True
+
+    @property
+    def report_context_type(self) -> Type[ReportContext]:
+        return PoMonthlyReportContext
+
+    def fixture_file_path(self) -> str:
+        return os.path.join(
+            f"{os.path.dirname(__file__)}/context/po_monthly_report/po_monthly_report_data_fixture.json"
+        )
+
+
+class TopOpportunityGenerationTest(EmailGenerationTests):
+    """Tests specific to the Top Opps email"""
+
+    __test__ = True
+
+    @property
+    def report_context_type(self) -> Type[ReportContext]:
+        return TopOpportunitiesReportContext
+
+    def fixture_file_path(self) -> str:
+        return os.path.join(
+            f"{os.path.dirname(__file__)}/context/top_opportunities/fixtures.json"
+        )

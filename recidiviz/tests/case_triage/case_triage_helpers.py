@@ -17,11 +17,14 @@
 """Implements helper functions for use in Case Triage tests."""
 import json
 from datetime import date, datetime
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.client_info.types import PreferredContactMethod
 from recidiviz.case_triage.opportunities.types import OpportunityType
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+)
 from recidiviz.persistence.database.schema.case_triage.schema import (
     CaseUpdate,
     ClientInfo,
@@ -45,38 +48,46 @@ def generate_fake_officer(
 
 def generate_fake_client(
     client_id: str,
+    *,
     supervising_officer_id: str = "id_1",
     last_assessment_date: Optional[date] = None,
     last_face_to_face_date: Optional[date] = None,
     last_home_visit_date: Optional[date] = None,
+    supervision_level: StateSupervisionLevel = StateSupervisionLevel.MEDIUM,
+    assessment_score: int = 1,
 ) -> ETLClient:
     return ETLClient(
         person_external_id=client_id,
-        full_name=json.dumps({"given_name": "TEST NAME"}),
+        full_name=json.dumps({"given_names": "TEST", "surname": "NAME"}),
         supervising_officer_external_id=supervising_officer_id,
         supervision_type="PAROLE",
         case_type="GENERAL",
-        supervision_level="MEDIUM",
+        supervision_level=supervision_level.value,
         state_code="US_XX",
         supervision_start_date=date(2018, 1, 1),
         last_known_date_of_employment=date(2018, 2, 1),
         most_recent_assessment_date=last_assessment_date,
-        assessment_score=1,
+        assessment_score=assessment_score,
         most_recent_face_to_face_date=last_face_to_face_date,
         most_recent_home_visit_date=last_home_visit_date,
     )
 
 
 def generate_fake_opportunity(
+    *,
     officer_id: str,
     person_external_id: str = "person_id_1",
+    opportunity_type: OpportunityType = OpportunityType.OVERDUE_DISCHARGE,
+    opportunity_metadata: Optional[Dict[str, Any]] = None,
 ) -> ETLOpportunity:
+    if not opportunity_metadata:
+        opportunity_metadata = {}
     return ETLOpportunity(
         supervising_officer_external_id=officer_id,
         person_external_id=person_external_id,
         state_code="US_XX",
-        opportunity_type=OpportunityType.OVERDUE_DISCHARGE.value,
-        opportunity_metadata={},
+        opportunity_type=opportunity_type.value,
+        opportunity_metadata=opportunity_metadata,
     )
 
 

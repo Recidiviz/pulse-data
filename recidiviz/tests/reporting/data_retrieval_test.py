@@ -18,16 +18,33 @@
 """Tests for reporting/email_generation.py."""
 import json
 import os
+from datetime import date
+from typing import Optional
 from unittest import TestCase
 from unittest.mock import patch
 
+import pytest
+
+from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+)
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
 from recidiviz.reporting.data_retrieval import filter_recipients, retrieve_data, start
 from recidiviz.reporting.recipient import Recipient
 from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
+from recidiviz.tests.case_triage.case_triage_helpers import (
+    generate_fake_client,
+    generate_fake_officer,
+    generate_fake_opportunity,
+)
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tools.postgres import local_postgres_helpers
 
 FIXTURE_FILE = "po_monthly_report_data_fixture.json"
 
@@ -42,8 +59,16 @@ def build_report_json_fixture(email_address: str) -> str:
     )
 
 
+@pytest.mark.uses_db
 class EmailGenerationTests(TestCase):
     """Tests for reporting/email_generation.py."""
+
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
@@ -63,7 +88,75 @@ class EmailGenerationTests(TestCase):
         self.get_secret_patcher.start()
 
         self.state_code = StateCode.US_ID
-        self.report_type = ReportType.POMonthlyReport
+
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
+        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+
+        session = SessionFactory.for_database(self.database_key)
+        self.officer = generate_fake_officer("officer_id_1", "officer1@recidiviz.org")
+        self.client_downgradable_high = generate_fake_client(
+            client_id="client_1",
+            supervising_officer_id=self.officer.external_id,
+            supervision_level=StateSupervisionLevel.HIGH,
+            last_assessment_date=date(2021, 1, 2),
+            assessment_score=1,
+        )
+        self.client_downgradable_medium_1 = generate_fake_client(
+            client_id="client_2",
+            supervising_officer_id=self.officer.external_id,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            last_assessment_date=date(2021, 1, 2),
+            assessment_score=1,
+        )
+        self.client_downgradable_medium_2 = generate_fake_client(
+            client_id="client_3",
+            supervising_officer_id=self.officer.external_id,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            last_assessment_date=date(2021, 1, 2),
+            assessment_score=1,
+        )
+        self.client_no_downgrade = generate_fake_client(
+            client_id="client_4",
+            supervising_officer_id=self.officer.external_id,
+            supervision_level=StateSupervisionLevel.HIGH,
+            last_assessment_date=date(2021, 1, 2),
+            assessment_score=100,
+        )
+        opportunities = [
+            generate_fake_opportunity(
+                officer_id=self.officer.external_id,
+                person_external_id=client.person_external_id,
+                opportunity_type=OpportunityType.OVERDUE_DOWNGRADE,
+                opportunity_metadata={
+                    "assessmentScore": client.assessment_score,
+                    "latestAssessmentDate": str(client.most_recent_assessment_date),
+                },
+            )
+            for client in [
+                self.client_downgradable_high,
+                self.client_downgradable_medium_1,
+                self.client_downgradable_medium_2,
+            ]
+        ]
+
+        session.add_all(
+            [
+                self.officer,
+                self.client_downgradable_high,
+                self.client_downgradable_medium_1,
+                self.client_downgradable_medium_2,
+                self.client_no_downgrade,
+                *opportunities,
+            ]
+        )
+        session.commit()
+
+        self.top_opps_email_recipient_patcher = patch(
+            "recidiviz.reporting.data_retrieval._top_opps_email_recipient_addresses"
+        )
+        self.top_opps_email_recipient_patcher.start().return_value = [
+            self.officer.email_address
+        ]
 
     def _write_test_data(self, test_data: str) -> None:
         self.gcs_file_system.upload_from_string(
@@ -79,6 +172,15 @@ class EmailGenerationTests(TestCase):
         self.project_id_patcher.stop()
         self.gcs_file_system_patcher.stop()
         self.get_secret_patcher.stop()
+        self.top_opps_email_recipient_patcher.stop()
+
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
 
     def test_start(self) -> None:
         """Test that the prepared html is added to Google Cloud Storage with the correct bucket name, filepath,
@@ -97,7 +199,7 @@ class EmailGenerationTests(TestCase):
 
         result = start(
             state_code=StateCode.US_ID,
-            report_type=self.report_type,
+            report_type=ReportType.POMonthlyReport,
             region_code="US_ID_D3",
             test_address="dan@recidiviz.org",
         )
@@ -112,7 +214,7 @@ class EmailGenerationTests(TestCase):
 
         start(
             state_code=StateCode.US_ID,
-            report_type=self.report_type,
+            report_type=ReportType.POMonthlyReport,
             email_allowlist=["excluded@recidiviz.org"],
         )
 
@@ -132,7 +234,7 @@ class EmailGenerationTests(TestCase):
         result = start(
             batch_id="fake-batch-id",
             state_code=StateCode.US_ID,
-            report_type=self.report_type,
+            report_type=ReportType.POMonthlyReport,
             region_code="US_ID_D3",
         )
         self.assertEqual(len(result.successes), 1)
@@ -146,7 +248,7 @@ class EmailGenerationTests(TestCase):
         self.assertEqual(
             json.loads(metadata_file),
             {
-                "report_type": self.report_type.value,
+                "report_type": ReportType.POMonthlyReport.value,
                 "review_month": "5",
                 "review_year": "2021",
             },
@@ -170,7 +272,7 @@ class EmailGenerationTests(TestCase):
             {"report_type": ReportType.TopOpportunities.value},
         )
 
-    def test_retrieve_data(self) -> None:
+    def test_retrieve_data_po_monthly_report(self) -> None:
         batch_id = "123"
         test_data = "\n".join(
             [
@@ -182,7 +284,9 @@ class EmailGenerationTests(TestCase):
         self._write_test_data(test_data)
 
         recipients = retrieve_data(
-            state_code=self.state_code, report_type=self.report_type, batch_id=batch_id
+            state_code=self.state_code,
+            report_type=ReportType.POMonthlyReport,
+            batch_id=batch_id,
         )
 
         # Invalid JSON lines are ignored; warnings are logged
@@ -198,6 +302,45 @@ class EmailGenerationTests(TestCase):
                 )
             ),
             test_data,
+        )
+
+    def test_retrieve_data_top_opps(self) -> None:
+        batch_id = "123"
+        recipients = retrieve_data(
+            state_code=self.state_code,
+            report_type=ReportType.TopOpportunities,
+            batch_id=batch_id,
+        )
+
+        self.assertEqual(len(recipients), 1)
+        recipient = recipients[0]
+
+        self.assertEqual(
+            recipient.data["mismatches"],
+            {
+                "high_downgrades": [
+                    {
+                        "name": "Test Name",
+                        "last_score": 1,
+                        "last_assessment_date": "2021-01-02",
+                        "person_external_id": "client_1",
+                    }
+                ],
+                "medium_downgrades": [
+                    {
+                        "name": "Test Name",
+                        "last_score": 1,
+                        "last_assessment_date": "2021-01-02",
+                        "person_external_id": "client_2",
+                    },
+                    {
+                        "name": "Test Name",
+                        "last_score": 1,
+                        "last_assessment_date": "2021-01-02",
+                        "person_external_id": "client_3",
+                    },
+                ],
+            },
         )
 
     def test_filter_recipients(self) -> None:
