@@ -22,16 +22,24 @@ portable between database implementations.
 from typing import Any
 
 from sqlalchemy import (
-    Column,
-    String,
-    Integer,
-    DateTime,
     Boolean,
     CheckConstraint,
+    Column,
+    DateTime,
+    Integer,
+    String,
     UniqueConstraint,
 )
+from sqlalchemy.sql.sqltypes import Enum
 
+from recidiviz.common.constants.operations import enum_canonical_strings
 from recidiviz.persistence.database.base_schema import OperationsBase
+
+direct_ingest_instance = Enum(
+    enum_canonical_strings.direct_ingest_instance_primary,
+    enum_canonical_strings.direct_ingest_instance_secondary,
+    name="direct_ingest_instance",
+)
 
 
 class _DirectIngestFileMetadataRowSharedColumns:
@@ -131,3 +139,26 @@ class DirectIngestIngestFileMetadata(
     # The name of the database that the data in this file has been or will be written
     # to.
     ingest_database_name = Column(String, nullable=False)
+
+
+class DirectIngestInstanceStatus(OperationsBase):
+    """This type is used to indicate the current operating status of a given state/instance
+    pair. When `is_paused` is true, our ingest processes will all skip operations for the
+    given state/instance pair.
+
+    This will allow us to dynamically pause and resume ingest on the fly."""
+
+    __tablename__ = "direct_ingest_instance_status"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "region_code", "instance", name="single_row_per_ingest_instance"
+        ),
+    )
+
+    region_code = Column(String(255), nullable=False, index=True, primary_key=True)
+    instance = Column(
+        direct_ingest_instance, nullable=False, index=True, primary_key=True
+    )
+
+    is_paused = Column(Boolean, nullable=False, default=True)
