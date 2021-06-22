@@ -16,21 +16,21 @@
 # =============================================================================
 """Tests for schema_utils.py."""
 from typing import List
-import pytest
 
-from recidiviz.persistence.database.schema_utils import (
-    get_all_table_classes,
-    get_state_database_entity_with_name,
-    _get_all_database_entities_in_module,
-    get_non_history_state_database_entities,
-    SchemaType,
-    schema_type_to_schema_base,
-)
+import pytest
 
 from recidiviz.persistence.database.schema.aggregate import schema as aggregate_schema
 from recidiviz.persistence.database.schema.county import schema as county_schema
-from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
+from recidiviz.persistence.database.schema.state import schema as state_schema
+from recidiviz.persistence.database.schema_utils import (
+    SchemaType,
+    _get_all_database_entities_in_module,
+    get_all_table_classes,
+    get_non_history_state_database_entities,
+    get_state_database_entity_with_name,
+    schema_type_to_schema_base,
+)
 
 
 def test_get_all_database_entity_classes() -> None:
@@ -130,6 +130,7 @@ def test_get_all_database_entity_classes() -> None:
     operations_database_entity_names = [
         "DirectIngestIngestFileMetadata",
         "DirectIngestRawFileMetadata",
+        "DirectIngestInstanceStatus",
     ]
 
     expected_qualified_names = (
@@ -272,6 +273,7 @@ def test_get_all_table_classes() -> None:
     operations_table_names = [
         "direct_ingest_ingest_file_metadata",
         "direct_ingest_raw_file_metadata",
+        "direct_ingest_instance_status",
     ]
 
     expected_table_class_names = (
