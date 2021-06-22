@@ -70,14 +70,14 @@ const POEmailsView = (): JSX.Element => {
     setIsConfirmationModalVisible(false);
     if (formData?.state) {
       message.info("Generating emails...");
+      message.info("This might take a while...");
+      setShowSpinner(true);
       const r = await generateEmails(
         formData.state,
         formData.testAddress,
         formData.regionCode,
         formData.messageBodyOverride
       );
-      message.info("This might take a while...");
-      setShowSpinner(true);
       if (r.status >= 400) {
         const text = await r.text();
         message.error(`Generate emails failed: ${text}`);
