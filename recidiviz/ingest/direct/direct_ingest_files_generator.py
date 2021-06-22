@@ -18,7 +18,7 @@
 import os
 import re
 from datetime import datetime
-from shutil import rmtree, copytree, ignore_patterns
+from shutil import copytree, ignore_patterns, rmtree
 from typing import Dict
 
 import recidiviz
@@ -31,15 +31,13 @@ from recidiviz.persistence.entity_matching import (
 )
 from recidiviz.tests.ingest.direct import (
     direct_ingest_fixtures as regions_test_fixtures_module,
-    regions as regions_test_module,
 )
 from recidiviz.tests.ingest.direct import (
     fixtures_templates as test_fixtures_templates_module,
-    templates as test_templates_module,
 )
+from recidiviz.tests.ingest.direct import regions as regions_test_module
+from recidiviz.tests.ingest.direct import templates as test_templates_module
 from recidiviz.tests.ingest.direct.direct_ingest_util import PLACEHOLDER_TO_DO_STRING
-
-_DEFAULT_WORKING_DIR: str = os.path.dirname(recidiviz.__file__)
 
 DEFAULT_WORKING_DIR: str = os.path.dirname(recidiviz.__file__)
 REGIONS_DIR_PATH = os.path.dirname(
