@@ -136,7 +136,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
       <>
         <Alert
           message="NOT READY FOR PRIME TIME"
-          description="TODO(#6079): DO NOT USE DRIVE THROUGH THIS CHECKLIST WHILE THIS ALERT STILL EXISTS."
+          description="TODO(#7655): DO NOT USE DRIVE THROUGH THIS CHECKLIST WHILE THIS ALERT STILL EXISTS."
           type="error"
         />
         <Steps progressDot current={currentStep} direction="vertical">
@@ -207,8 +207,9 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                     python -m recidiviz.tools.migrations.purge_state_db \<br />
                     {"    "}--state-code {stateCode} \<br />
                     {"    "}--database-version primary \<br />
-                    {"    "}--project-id recidiviz-staging \<br />
-                    {"    "}--ssl-cert-path ~/dev_state_data_certs
+                    {"    "}--project-id {projectId} \<br />
+                    {"    "}--ssl-cert-path ~/{isProduction ? "prod" : "dev"}
+                    _state_data_certs
                   </CodeBlock>
                 </p>
               </>
@@ -318,7 +319,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   </li>
                   <li>
                     Run the following SQL query to update the tables:
-                    <CodeBlock enabled={currentStep === 6}>
+                    <CodeBlock enabled={currentStep === 7}>
                       UPDATE direct_ingest_ingest_file_metadata <br />
                       SET ingest_database_name = &#39;{stateCode.toLowerCase()}
                       _primary&#39; <br />
@@ -341,9 +342,15 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   storage.
                 </p>
                 <p>
-                  TODO(#6079): SEE IF WE CAN ADAPT
-                  recidiviz/tools/ingest/operations/copy_raw_state_files_between_projects.py
-                  FOR THIS
+                  <CodeBlock enabled={currentStep === 8}>
+                    python -m
+                    recidiviz.tools.ingest.operations.copy_ingest_views_from_secondary_to_primary
+                    \<br />
+                    {"    "}--region {stateCode.toLowerCase()} \<br />
+                    {"    "}--database-version primary \<br />
+                    {"    "}--project-id {projectId} \<br />
+                    {"    "}--dry-run True
+                  </CodeBlock>
                 </p>
               </>
             }
