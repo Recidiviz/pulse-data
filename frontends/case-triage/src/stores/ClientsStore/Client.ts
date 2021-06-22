@@ -100,6 +100,31 @@ const parseDate = (date?: APIDate) => {
   return moment(date);
 };
 
+export type DueDateStatus = "OVERDUE" | "UPCOMING" | null;
+
+function getDueDateStatus({
+  dueDate,
+  upcomingWindowDays,
+}: {
+  dueDate: moment.Moment | null;
+  upcomingWindowDays: number;
+}) {
+  const currentTime = moment(Date.now());
+  if (dueDate) {
+    const differenceInDays = dueDate.diff(currentTime, "days");
+
+    if (differenceInDays < 0) {
+      return "OVERDUE";
+    }
+
+    if (differenceInDays <= upcomingWindowDays) {
+      return "UPCOMING";
+    }
+  }
+
+  return null;
+}
+
 /**
  * Data model representing a single client. To instantiate, it is recommended
  * to use the static `build` method.
@@ -263,6 +288,20 @@ export class Client {
     // As a result, until we do more investigation into what the appropriate application
     // of state policy is, we're not showing home visits as the next contact dates.
     return this.nextFaceToFaceDate;
+  }
+
+  get contactStatus(): DueDateStatus {
+    return getDueDateStatus({
+      dueDate: this.nextContactDate,
+      upcomingWindowDays: 7,
+    });
+  }
+
+  get riskAssessmentStatus(): DueDateStatus {
+    return getDueDateStatus({
+      dueDate: this.nextAssessmentDate,
+      upcomingWindowDays: 30,
+    });
   }
 
   /**

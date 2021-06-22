@@ -40,6 +40,7 @@ export const clientData = {
     homeVisitContact: true,
   },
   nextAssessmentDate: "2020-10-23",
+  nextFaceToFaceDate: "2022-06-18",
   nextHomeVisitDate: "2022-06-18",
   notes: [],
   personExternalId: "100",
