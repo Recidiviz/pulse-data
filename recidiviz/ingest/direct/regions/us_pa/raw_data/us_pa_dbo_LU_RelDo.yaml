@@ -1,7 +1,7 @@
 file_tag: dbo_LU_RelDo
 file_description: |-
   A lookup table mapping district office codes to human-readable district office names.
-  NOT REFRESHED REGULARLY. TODO(#7237) - Get PA to send us this file regularly.
+  NOT REFRESHED REGULARLY AND PA IT DOES NOT SEEM ABLE TO DO SO.
 primary_key_cols:
   - RelDO
 columns:
