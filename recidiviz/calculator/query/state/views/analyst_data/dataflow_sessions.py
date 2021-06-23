@@ -38,12 +38,12 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
     Union together incarceration and supervision population metrics (both in state and out of state). There are cases in 
     each of these individual dataflow metrics where we have the same person on the same day with different values for 
     supervision types or specialized purpose for incarceration. This deduplication is handled further down in the query. 
-    
+
     Create a field that identifies the compartment_level_1 (incarceration vs supervision) and compartment_level_2.
-    
+
     The field "metric_source" is pulled from dataflow metric as to distinguish the population metric data sources. This 
     is done because SUPERVISION can come from either SUPERVISION_POPULATION and SUPERVISION_OUT_OF_STATE_POPULATION.
-    
+
     Compartment location is defined as facility for incarceration and judicial district for supervision periods.
     */
     (
@@ -89,12 +89,17 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
     FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
     WHERE state_code in ('{supported_states}')
-        AND state_code != 'US_ID'
+        AND state_code NOT IN ('US_ID', 'US_MO')
     UNION ALL
     -- Use Idaho preprocessed dataset to deal with state-specific logic
     SELECT 
         *
     FROM `{project_id}.{analyst_dataset}.us_id_supervision_population_metrics_preprocessed_materialized`
+    UNION ALL
+    -- Use MO preprocessed dataset to deal with state-specific logic
+    SELECT 
+        *
+    FROM `{project_id}.{analyst_dataset}.us_mo_supervision_population_metrics_preprocessed_materialized`
     UNION ALL
     SELECT 
         DISTINCT
