@@ -27,6 +27,7 @@ from flask import Blueprint, request
 
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_ingest
+from recidiviz.ingest.aggregate.regions.co import co_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.ga import ga_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.hi import hi_aggregate_ingest
@@ -52,6 +53,7 @@ HISTORICAL_BUCKET = "{}-processed-state-aggregates"
 # Please add new states in alphabetical order
 STATE_TO_PARSER = {
     "california": ca_aggregate_ingest.parse,
+    "colorado": co_aggregate_ingest.parse,
     "florida": fl_aggregate_ingest.parse,
     "georgia": ga_aggregate_ingest.parse,
     "hawaii": hi_aggregate_ingest.parse,
