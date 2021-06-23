@@ -1171,6 +1171,10 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             BigQueryAddress(
                 dataset_id="analyst_data", table_id="compartment_level_2_dedup_priority"
             ),
+            BigQueryAddress(
+                dataset_id="analyst_data",
+                table_id="supervision_level_compliance_requirements",
+            ),
             # Generate data using pure date functions
             BigQueryAddress(
                 dataset_id="reference_views", table_id="covid_report_weeks"
