@@ -42,6 +42,7 @@ class ValidationResultForStorage:
 
     run_id: str = attr.ib()
     run_date: datetime.date = attr.ib()
+    run_datetime: datetime.datetime = attr.ib()
 
     system_version: str = attr.ib()
 
@@ -58,13 +59,23 @@ class ValidationResultForStorage:
 
     validation_category: Optional[ValidationCategory] = attr.ib()
 
+    def __attrs_post_init__(self) -> None:
+        if self.run_date != self.run_datetime.date():
+            raise ValueError(
+                f"run_date and run_datetime do not have matching dates: {self.run_date} vs. {self.run_datetime.date()}"
+            )
+
     @classmethod
     def from_validation_result(
-        cls, run_id: str, run_date: datetime.date, result: DataValidationJobResult
+        cls,
+        run_id: str,
+        run_datetime: datetime.datetime,
+        result: DataValidationJobResult,
     ) -> "ValidationResultForStorage":
         return cls(
             run_id=run_id,
-            run_date=run_date,
+            run_date=run_datetime.date(),
+            run_datetime=run_datetime,
             system_version=environment.get_version(),
             check_type=result.validation_job.validation.validation_type,
             validation_name=result.validation_job.validation.validation_name,
@@ -79,11 +90,15 @@ class ValidationResultForStorage:
 
     @classmethod
     def from_validation_job(
-        cls, run_id: str, run_date: datetime.date, job: DataValidationJob
+        cls,
+        run_id: str,
+        run_datetime: datetime.datetime,
+        job: DataValidationJob,
     ) -> "ValidationResultForStorage":
         return cls(
             run_id=run_id,
-            run_date=run_date,
+            run_date=run_datetime.date(),
+            run_datetime=run_datetime,
             system_version=environment.get_version(),
             check_type=job.validation.validation_type,
             validation_name=job.validation.validation_name,
