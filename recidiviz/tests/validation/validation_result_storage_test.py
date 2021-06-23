@@ -76,7 +76,9 @@ class TestValidationResultStorage(unittest.TestCase):
 
         # Act
         result = ValidationResultForStorage.from_validation_result(
-            run_id="abc123", run_date=datetime.date(2000, 1, 1), result=job_result
+            run_id="abc123",
+            run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
+            result=job_result,
         )
 
         # Assert
@@ -84,6 +86,7 @@ class TestValidationResultStorage(unittest.TestCase):
             ValidationResultForStorage(
                 run_id="abc123",
                 run_date=datetime.date(2000, 1, 1),
+                run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
                 system_version="v1.0.0",
                 check_type=ValidationCheckType.SAMENESS,
                 validation_name="test_view",
@@ -103,6 +106,7 @@ class TestValidationResultStorage(unittest.TestCase):
             {
                 "run_id": "abc123",
                 "run_date": "2000-01-01",
+                "run_datetime": "2000-01-01T00:00:00",
                 "system_version": "v1.0.0",
                 "check_type": "SAMENESS",
                 "validation_name": "test_view",
@@ -149,7 +153,9 @@ class TestValidationResultStorage(unittest.TestCase):
 
         # Act
         result = ValidationResultForStorage.from_validation_result(
-            run_id="abc123", run_date=datetime.date(2000, 1, 1), result=job_result
+            run_id="abc123",
+            run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
+            result=job_result,
         )
 
         # Assert
@@ -157,6 +163,7 @@ class TestValidationResultStorage(unittest.TestCase):
             ValidationResultForStorage(
                 run_id="abc123",
                 run_date=datetime.date(2000, 1, 1),
+                run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
                 system_version="v1.0.0",
                 check_type=ValidationCheckType.SAMENESS,
                 validation_name="test_view",
@@ -174,6 +181,7 @@ class TestValidationResultStorage(unittest.TestCase):
             {
                 "run_id": "abc123",
                 "run_date": "2000-01-01",
+                "run_datetime": "2000-01-01T00:00:00",
                 "system_version": "v1.0.0",
                 "check_type": "SAMENESS",
                 "validation_name": "test_view",
@@ -217,7 +225,9 @@ class TestValidationResultStorage(unittest.TestCase):
 
         # Act
         result = ValidationResultForStorage.from_validation_result(
-            run_id="abc123", run_date=datetime.date(2000, 1, 1), result=job_result
+            run_id="abc123",
+            run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
+            result=job_result,
         )
 
         # Assert
@@ -225,6 +235,7 @@ class TestValidationResultStorage(unittest.TestCase):
             ValidationResultForStorage(
                 run_id="abc123",
                 run_date=datetime.date(2000, 1, 1),
+                run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
                 system_version="v1.0.0",
                 check_type=ValidationCheckType.SAMENESS,
                 validation_name="test_view",
@@ -244,6 +255,7 @@ class TestValidationResultStorage(unittest.TestCase):
             {
                 "run_id": "abc123",
                 "run_date": "2000-01-01",
+                "run_datetime": "2000-01-01T00:00:00",
                 "system_version": "v1.0.0",
                 "check_type": "SAMENESS",
                 "validation_name": "test_view",
@@ -280,7 +292,9 @@ class TestValidationResultStorage(unittest.TestCase):
 
         # Act
         result = ValidationResultForStorage.from_validation_job(
-            run_id="abc123", run_date=datetime.date(2000, 1, 1), job=validation_job
+            run_id="abc123",
+            run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
+            job=validation_job,
         )
 
         # Assert
@@ -288,6 +302,7 @@ class TestValidationResultStorage(unittest.TestCase):
             ValidationResultForStorage(
                 run_id="abc123",
                 run_date=datetime.date(2000, 1, 1),
+                run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
                 system_version="v1.0.0",
                 check_type=ValidationCheckType.SAMENESS,
                 validation_name="test_view",
@@ -305,6 +320,7 @@ class TestValidationResultStorage(unittest.TestCase):
             {
                 "run_id": "abc123",
                 "run_date": "2000-01-01",
+                "run_datetime": "2000-01-01T00:00:00",
                 "system_version": "v1.0.0",
                 "check_type": "SAMENESS",
                 "validation_name": "test_view",
@@ -335,6 +351,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 ValidationResultForStorage(
                     run_id="abc123",
                     run_date=datetime.date(2000, 1, 1),
+                    run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
                     system_version="v1.0.0",
                     check_type=ValidationCheckType.SAMENESS,
                     validation_name="test_view",
@@ -368,6 +385,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 ValidationResultForStorage(
                     run_id="abc123",
                     run_date=datetime.date(2000, 1, 1),
+                    run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
                     system_version="v1.0.0",
                     check_type=ValidationCheckType.SAMENESS,
                     validation_name="test_view",
@@ -384,6 +402,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 ValidationResultForStorage(
                     run_id="abc123",
                     run_date=datetime.date(2000, 1, 1),
+                    run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
                     system_version="v1.0.0",
                     check_type=ValidationCheckType.SAMENESS,
                     validation_name="test_view",
@@ -410,6 +429,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 ValidationResultForStorage(
                     run_id="abc123",
                     run_date=datetime.date(2000, 1, 1),
+                    run_datetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
                     system_version="v1.0.0",
                     check_type=ValidationCheckType.SAMENESS,
                     validation_name="test_view",
@@ -431,6 +451,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 {
                     "run_id": "abc123",
                     "run_date": "2000-01-01",
+                    "run_datetime": "2000-01-01T00:00:00",
                     "system_version": "v1.0.0",
                     "check_type": "SAMENESS",
                     "validation_name": "test_view",
@@ -445,6 +466,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 {
                     "run_id": "abc123",
                     "run_date": "2000-01-01",
+                    "run_datetime": "2000-01-01T00:00:00",
                     "system_version": "v1.0.0",
                     "check_type": "SAMENESS",
                     "validation_name": "test_view",
@@ -459,6 +481,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 {
                     "run_id": "abc123",
                     "run_date": "2000-01-01",
+                    "run_datetime": "2000-01-01T00:00:00",
                     "system_version": "v1.0.0",
                     "check_type": "SAMENESS",
                     "validation_name": "test_view",

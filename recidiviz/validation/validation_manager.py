@@ -102,7 +102,6 @@ def execute_validation(
     validation_name_filter: Optional[Pattern] = None,
 ) -> List[DataValidationJobResult]:
     """Executes all validation checks.
-
     If |region_code_filter| is supplied, limits validations to just that region.
     If |validation_name_filter| is supplied, only performs validations on those
     that have a regex match.
@@ -124,12 +123,12 @@ def execute_validation(
         validation_name_filter=validation_name_filter,
     )
 
-    run_date = datetime.date.today()
+    run_datetime = datetime.datetime.today()
     run_id = uuid.uuid4().hex
     logging.info(
-        "Performing a total of %s validation jobs [run_date: %s, run_id: %s]...",
+        "Performing a total of %s validation jobs [run_datetime: %s, run_id: %s]...",
         len(validation_jobs),
-        run_date.isoformat(),
+        run_datetime.isoformat(),
         run_id,
     )
 
@@ -149,7 +148,9 @@ def execute_validation(
                 result: DataValidationJobResult = future.result()
                 results_to_store.append(
                     ValidationResultForStorage.from_validation_result(
-                        run_id=run_id, run_date=run_date, result=result
+                        run_id=run_id,
+                        run_datetime=run_datetime,
+                        result=result,
                     )
                 )
                 if not result.was_successful:
@@ -167,7 +168,9 @@ def execute_validation(
                 )
                 results_to_store.append(
                     ValidationResultForStorage.from_validation_job(
-                        run_id=run_id, run_date=run_date, job=job
+                        run_id=run_id,
+                        run_datetime=run_datetime,
+                        job=job,
                     )
                 )
                 failed_to_run_validations.append(job)
