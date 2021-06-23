@@ -17,18 +17,21 @@
 
 """Exposes an endpoint to scrape all of the county websites."""
 
-from http import HTTPStatus
 import logging
 import os
 import tempfile
-from typing import Optional, Dict
+from datetime import date
+from http import HTTPStatus
+from typing import Dict, Optional
 from urllib.parse import urlparse
+
+import gcsfs
 import requests
 from flask import Blueprint, request
-import gcsfs
 
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_site_scraper
+from recidiviz.ingest.aggregate.regions.co import co_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.ga import ga_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.hi import hi_aggregate_site_scraper
@@ -61,6 +64,7 @@ def scrape_aggregate_reports():
     # Please add new states in alphabetical order
     state_to_scraper = {
         "california": ca_aggregate_site_scraper.get_urls_to_download,
+        "colorado": co_aggregate_site_scraper.get_urls_to_download,
         "florida": fl_aggregate_site_scraper.get_urls_to_download,
         "georgia": ga_aggregate_site_scraper.get_urls_to_download,
         "hawaii": hi_aggregate_site_scraper.get_urls_to_download,
@@ -74,6 +78,7 @@ def scrape_aggregate_reports():
     # the same name.
     always_download = state == "new_york"
     is_ca = state == "california"
+    is_co = state == "colorado"
     verify_ssl = state != "kentucky"
     urls = state_to_scraper[state]()
     gcp_project = metadata.project_id()
@@ -91,6 +96,8 @@ def scrape_aggregate_reports():
             pdf_name = state
             if is_ca:
                 pdf_name += str(post_data["year"])
+        elif is_co:
+            pdf_name = date.today().strftime("colorado-%m-%Y")
         else:
             pdf_name = urlparse(url).path.replace("/", "_").lower()
         historical_path = os.path.join(historical_bucket, state, pdf_name)

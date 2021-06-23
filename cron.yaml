@@ -114,6 +114,15 @@ cron:
       max_doublings: 5
       job_age_limit: 9h
 
+  - description: Run colorado aggregate report
+    url: /scrape_aggregate_reports/scrape_state?state=colorado
+    schedule: 15 of month 10:00
+    timezone: America/Denver
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
   - description: Run texas aggregate report
     url: /scrape_aggregate_reports/scrape_state?state=texas
     schedule: every day 15:30

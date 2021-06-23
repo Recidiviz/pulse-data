@@ -36,6 +36,7 @@ from recidiviz.persistence.database.schema_utils import (
 def test_get_all_database_entity_classes() -> None:
     aggregate_database_entity_names = [
         "CaFacilityAggregate",
+        "CoFacilityAggregate",
         "DcFacilityAggregate",
         "FlCountyAggregate",
         "FlFacilityAggregate",
@@ -159,6 +160,7 @@ def test_get_all_database_entity_classes() -> None:
 def test_get_all_table_classes() -> None:
     aggregate_table_names = [
         "ca_facility_aggregate",
+        "co_facility_aggregate",
         "dc_facility_aggregate",
         "fl_county_aggregate",
         "fl_facility_aggregate",
