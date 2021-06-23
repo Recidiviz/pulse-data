@@ -21,14 +21,11 @@ import unittest
 from typing import FrozenSet, List, Tuple
 
 from recidiviz.ingest.models import ingest_info, ingest_info_pb2
-from recidiviz.persistence.database.migrations.state import versions as state_versions
-from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.tools.validate_source_modifications import (
-    check_assertions,
+    INGEST_DOCS_KEY,
     INGEST_KEY,
     PIPFILE_KEY,
-    STATE_KEY,
-    INGEST_DOCS_KEY,
+    check_assertions,
 )
 
 
@@ -97,32 +94,6 @@ class CheckAssertionsTest(unittest.TestCase):
         modified_files = ["Pipfile"]
 
         self._run_test(modified_files, [], [PIPFILE_KEY])
-
-    def test_state_schema_happy(self) -> None:
-        modified_files = [
-            os.path.relpath(state_schema.__file__),
-            os.path.relpath(state_versions.__file__[: -len("__init__.py")]),
-        ]
-
-        self._run_test(modified_files, [], [])
-
-    def test_state_schema_unhappy(self) -> None:
-        modified_files = [os.path.relpath(state_schema.__file__)]
-        expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str]]] = [
-            (
-                frozenset([os.path.relpath(state_schema.__file__)]),
-                frozenset(
-                    [os.path.relpath(state_versions.__file__[: -len("__init__.py")])]
-                ),
-            )
-        ]
-
-        self._run_test(modified_files, expected_failures, [])
-
-    def test_state_schema_skipped(self) -> None:
-        modified_files = [os.path.relpath(state_schema.__file__)]
-
-        self._run_test(modified_files, [], [STATE_KEY])
 
     def test_ingest_docs_happy(self) -> None:
         modified_files = [
