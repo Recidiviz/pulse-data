@@ -9,10 +9,14 @@ file_description: |-
   WITH
   pa_location_names AS (
      WITH district_offices AS (
-         SELECT
-             RelDO AS district_office_external_id,
-             REPLACE(DistrictOfficeName, 'D.O.', 'DO') AS district_office_name,
-         FROM `recidiviz-123.us_pa_raw_data_up_to_date_views.dbo_LU_RelDo_latest`
+        SELECT
+            DistrictOfficeCode AS district_office_external_id,
+            CASE
+                WHEN DistrictOfficeCode = 'CO' THEN 'Central Office'
+                ELSE REPLACE(INITCAP(Org_Name), "District Office", "DO")
+            END AS district_office_name
+        FROM `recidiviz-123.us_pa_raw_data_up_to_date_views.dbo_LU_PBPP_Organization_latest`
+        WHERE DO_Orgcode = Org_cd OR Office = 'CEN'
      ),
      pbpp_organization AS (
          SELECT
