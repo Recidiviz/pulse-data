@@ -110,6 +110,11 @@ class API {
       this.userStore.setLacksCaseTriageAuthorization(true);
     }
 
+    if (response.status === 400 && json.code === "invalid_csrf_token") {
+      this.bootstrapped = false;
+      return this.request<T>({ path, method, body });
+    }
+
     return json;
   }
 
