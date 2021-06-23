@@ -37,6 +37,29 @@ const ClientListContactComparator = (self: Client, other: Client) => {
   return 0;
 };
 
+/**
+ * Sorts clients by the priority of their alerts.
+ * Ties are broken by next contact date.
+ */
+export function ClientListPriorityComparator(a: Client, b: Client): -1 | 0 | 1 {
+  // NOTE: assumes alerts are in priority order
+  for (let i = 0; i < Math.max(a.alerts.length, b.alerts.length); i += 1) {
+    const alertA = a.alerts[i];
+    const alertB = b.alerts[i];
+    // first alert with higher priority wins
+    if (alertA && alertB) {
+      if (alertA.priority < alertB.priority) return -1;
+      if (alertA.priority > alertB.priority) return 1;
+    }
+    // if we've exhausted all matching pairs of alerts,
+    // if one client still has more then it wins
+    if (alertA && !alertB) return -1;
+    if (alertB && !alertA) return 1;
+  }
+
+  return ClientListContactComparator(a, b);
+}
+
 interface ClientListBuilderProps {
   opportunityStore: OpportunityStore;
   policyStore: PolicyStore;

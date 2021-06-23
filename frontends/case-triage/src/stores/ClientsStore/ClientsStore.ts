@@ -17,18 +17,23 @@
 import { action, autorun, makeAutoObservable, runInAction } from "mobx";
 import { parse } from "query-string";
 import PolicyStore from "../PolicyStore";
-import UserStore from "../UserStore";
+import UserStore, { KNOWN_EXPERIMENTS } from "../UserStore";
 import { ClientData, Client } from "./Client";
 
 import API from "../API";
 
-import { CLIENT_LIST_KIND, ClientListBuilder } from "./ClientListBuilder";
+import {
+  CLIENT_LIST_KIND,
+  ClientListBuilder,
+  ClientListPriorityComparator,
+} from "./ClientListBuilder";
+import RootStore from "../RootStore";
+import OpportunityStore from "../OpportunityStore";
 
 interface ClientsStoreProps {
   api: API;
   clientListBuilder: ClientListBuilder;
-  policyStore: PolicyStore;
-  userStore: UserStore;
+  rootStore: RootStore;
 }
 
 class ClientsStore {
@@ -58,25 +63,25 @@ class ClientsStore {
 
   userStore: UserStore;
 
-  constructor({
-    api,
-    clientListBuilder,
-    policyStore,
-    userStore,
-  }: ClientsStoreProps) {
+  opportunityStore: OpportunityStore;
+
+  constructor({ api, clientListBuilder, rootStore }: ClientsStoreProps) {
     makeAutoObservable(this, {
       view: action,
+      userStore: false,
+      policyStore: false,
+      opportunityStore: false,
     });
     this.api = api;
-    this.userStore = userStore;
 
     this.activeClientOffset = 0;
     this.clientListBuilder = clientListBuilder;
     this.clients = [];
 
     this.clientPendingView = null;
-    this.policyStore = policyStore;
-    this.userStore = userStore;
+    this.policyStore = rootStore.policyStore;
+    this.userStore = rootStore.userStore;
+    this.opportunityStore = rootStore.opportunityStore;
     this.clientPendingAnimation = false;
     this.isLoading = false;
 
@@ -108,7 +113,12 @@ class ClientsStore {
 
         const { api } = this;
         this.clients = clients.map((client) =>
-          Client.build({ api, client, clientsStore: this })
+          Client.build({
+            api,
+            client,
+            clientsStore: this,
+            opportunityStore: this.opportunityStore,
+          })
         );
       });
     } catch (error) {
@@ -124,7 +134,11 @@ class ClientsStore {
   }
 
   get lists(): Record<CLIENT_LIST_KIND, Client[]> {
-    const lists = {
+    if (this.userStore.isInExperiment(KNOWN_EXPERIMENTS.NewLayout)) {
+      return this.filteredSortedLists;
+    }
+
+    return {
       [CLIENT_LIST_KIND.UP_NEXT]: [
         ...this.unfilteredLists[CLIENT_LIST_KIND.UP_NEXT],
       ].filter((client) => client.isVisible),
@@ -132,8 +146,40 @@ class ClientsStore {
         ...this.unfilteredLists[CLIENT_LIST_KIND.PROCESSING_FEEDBACK],
       ].filter((client) => client.isVisible),
     };
+  }
 
-    return lists;
+  private get unsortedBuckets() {
+    return this.clientListBuilder.buildBuckets(this.clients);
+  }
+
+  private get sortedActiveClients() {
+    return [
+      ...this.unsortedBuckets.TOP_OPPORTUNITY,
+      ...this.unsortedBuckets.CONTACT_CLIENTS,
+    ].sort(ClientListPriorityComparator);
+  }
+
+  get sortedLists(): Record<CLIENT_LIST_KIND, Client[]> {
+    return {
+      [CLIENT_LIST_KIND.UP_NEXT]: [
+        ...this.sortedActiveClients,
+        ...this.unsortedBuckets.IN_CUSTODY,
+      ],
+      [CLIENT_LIST_KIND.PROCESSING_FEEDBACK]: [
+        ...this.unsortedBuckets.NOT_ON_CASELOAD,
+      ],
+    };
+  }
+
+  get filteredSortedLists(): Record<CLIENT_LIST_KIND, Client[]> {
+    return {
+      [CLIENT_LIST_KIND.UP_NEXT]: [
+        ...this.sortedLists[CLIENT_LIST_KIND.UP_NEXT],
+      ].filter((client) => client.isVisible),
+      [CLIENT_LIST_KIND.PROCESSING_FEEDBACK]: [
+        ...this.sortedLists[CLIENT_LIST_KIND.PROCESSING_FEEDBACK],
+      ].filter((client) => client.isVisible),
+    };
   }
 
   filterClients(searchString: string): void {

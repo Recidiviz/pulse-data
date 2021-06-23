@@ -17,7 +17,7 @@
 import * as React from "react";
 import moment from "moment";
 import { observer } from "mobx-react-lite";
-import { useRootStore } from "../../stores";
+import assertNever from "assert-never";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 import { OPPORTUNITY_TITLES } from "../../stores/OpportunityStore/Opportunity";
 import { Pill } from "../Pill";
@@ -29,8 +29,6 @@ import { getTimeDifference } from "../../utils";
 
 export const ClientStatusList: React.FC<ClientProps> = observer(
   ({ client }: ClientProps): JSX.Element => {
-    const { opportunityStore } = useRootStore();
-
     const statusPills = [] as JSX.Element[];
 
     const notOnCaseloadAction =
@@ -56,55 +54,43 @@ export const ClientStatusList: React.FC<ClientProps> = observer(
 
     // if we picked up one of the above statuses, the rest of these should be ignored
     if (!statusPills.length) {
-      // top opportunities appear first
-      const topOpp = opportunityStore.getTopOpportunityForClient(
-        client.personExternalId
-      );
-
-      if (topOpp && !topOpp.deferredUntil) {
-        statusPills.push(
-          <AlertPreview key="topOpp" kind="highlight">
-            {OPPORTUNITY_TITLES[topOpp.opportunityType]}
-          </AlertPreview>
-        );
-      }
-
-      // other needs follow in order of importance
-      if (!client.needsMet.employment) {
-        statusPills.push(
-          <AlertPreview key="employment" kind="warn">
-            Unemployed
-          </AlertPreview>
-        );
-      }
-
-      const { riskAssessmentStatus, nextAssessmentDate } = client;
-      if (riskAssessmentStatus && nextAssessmentDate) {
-        statusPills.push(
-          <DueDateAlert
-            key="riskAssessment"
-            status={riskAssessmentStatus}
-            alertLabel="Risk assessment"
-            tooltip={`Risk Assessment needed ${getTimeDifference(
-              nextAssessmentDate
-            )}`}
-          />
-        );
-      }
-
-      const { contactStatus, nextContactDate } = client;
-      if (contactStatus && nextContactDate) {
-        statusPills.push(
-          <DueDateAlert
-            key="nextContact"
-            status={contactStatus}
-            alertLabel="Contact"
-            tooltip={`Face to Face Contact recommended ${getTimeDifference(
-              nextContactDate
-            )}`}
-          />
-        );
-      }
+      client.alerts.forEach((alert) => {
+        if ("opportunity" in alert) {
+          const { kind, opportunity } = alert;
+          statusPills.push(
+            <AlertPreview key={kind} kind="highlight">
+              {OPPORTUNITY_TITLES[opportunity.opportunityType]}
+            </AlertPreview>
+          );
+        } else if ("status" in alert) {
+          const { kind, status, date } = alert;
+          let label: string;
+          let tooltip: string;
+          if (kind.startsWith("ASSESSMENT_")) {
+            label = "Risk assessment";
+            tooltip = "Risk Assessment needed";
+          } else {
+            label = "Contact";
+            tooltip = "Face to Face Contact recommended";
+          }
+          statusPills.push(
+            <DueDateAlert
+              key={kind}
+              status={status}
+              alertLabel={label}
+              tooltip={`${tooltip} ${getTimeDifference(date)}`}
+            />
+          );
+        } else if (alert.kind === "EMPLOYMENT") {
+          statusPills.push(
+            <AlertPreview key="employment" kind="warn">
+              Unemployed
+            </AlertPreview>
+          );
+        } else {
+          assertNever(alert);
+        }
+      });
     }
 
     return (

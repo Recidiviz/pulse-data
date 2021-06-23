@@ -63,8 +63,7 @@ export default class RootStore {
     this.clientsStore = new ClientsStore({
       api: this.api,
       clientListBuilder,
-      policyStore: this.policyStore,
-      userStore: this.userStore,
+      rootStore: this,
     });
 
     this.caseUpdatesStore = new CaseUpdatesStore({
