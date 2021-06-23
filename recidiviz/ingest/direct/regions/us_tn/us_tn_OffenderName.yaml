@@ -11,6 +11,7 @@ key_mappings:
 
 child_key_mappings:
   Race: state_person_race.race
+  Ethnicity: state_person_ethnicity.ethnicity
   OffenderID: state_person_external_id.state_person_external_id_id
 
 primary_key:

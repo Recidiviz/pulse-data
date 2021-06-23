@@ -72,53 +72,6 @@ def generate_race_enum_overrides() -> Dict[EntityEnum, List[str]]:
         Race.WHITE: [
             "W",  # White
         ],
-        # The following codes happen extremely infrequently, and
-        # appear to have been mistakenly added.
-        Race.EXTERNAL_UNKNOWN: [
-            "BCCX",
-            "TTCC",
-            "WCFA",
-            "47A",
-            "N",
-            "82B",
-            "NWCX",
-            "036",
-            "044",
-            "066",
-            "DEAD",
-            "WTSP",
-            "SPND",
-            "79A",
-            "HCCF",
-            "003",
-            "032",
-            "ACTV",
-            "076",
-            "065",
-            "001",
-            "57A",
-            "009",
-            "INAC",
-            "007",
-            "TCIX",
-            "070",
-            "013",
-            "034",
-            "NECX",
-            "072",
-            "WCFA",
-            "MCCX",
-            "RMSI",
-            "006",
-            "SCCF",
-            "46A",
-            "TTCC",
-            "SCCC",
-            "011",
-            "19D",
-            "023",
-            "090",
-        ],
     }
     return overrides
 
@@ -127,13 +80,10 @@ def generate_ethnicity_enum_overrides() -> Dict[EntityEnum, List[str]]:
     """Provides Ethnicity overrides for enum mappings."""
     overrides: Dict[EntityEnum, List[str]] = {
         Ethnicity.HISPANIC: [
-            "H",  # Hispanic
+            "HISPANIC",  # Hispanic
         ],
         Ethnicity.NOT_HISPANIC: [
-            "A",  # Asian or Pacific Islander
-            "B",  # Black
-            "I",  # American Indian or Alaska Native
-            "W",  # White
+            "NOT_HISPANIC",
         ],
     }
     return overrides
@@ -147,20 +97,6 @@ def generate_gender_enum_overrides() -> Dict[EntityEnum, List[str]]:
         ],
         Gender.FEMALE: [
             "F",  # Female
-        ],
-        # The following codes happen extremely infrequently, and
-        # appear to have been mistakenly added.
-        Gender.EXTERNAL_UNKNOWN: [
-            "B",
-            "W",
-            "H",
-            "INAC",
-            "PEND",
-            "WSTP",
-            "A",
-            "I",
-            "HCCF",
-            "U",
         ],
     }
     return overrides

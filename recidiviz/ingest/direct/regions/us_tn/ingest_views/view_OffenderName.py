@@ -31,13 +31,24 @@ VIEW_QUERY_TEMPLATE = """
         MIN(COALESCE(FirstName)) as FirstName,
         MIN(COALESCE(MiddleName)) as MiddleName,
         MIN(COALESCE(LastName)) as LastName,
-        Race,
-        Sex,
+        CASE 
+            WHEN Race in ("W", "B", "A", "I") THEN Race
+            ELSE NULL
+        END AS Race,
+        CASE 
+            WHEN Race in ("H") THEN "HISPANIC"
+            ELSE "NOT_HISPANIC"
+        END AS Ethnicity,
+        CASE 
+            WHEN Sex in ("F", "M") THEN Sex
+            ELSE NULL
+        END AS Sex,
         # There are a number of people for whom there are two entries, one with the 
         # birthdate, and one without. Choose the one with a birthdate set, if present.
-        MAX(COALESCE(BirthDate, NULL)) as BirthDate
+        # There are also a number of corrupted entries for BirthDate, so set those instead to be null.
+         MAX(COALESCE(IF(BirthDate in ("A", "B", "F", "H", "I", "M", "W"), NULL, BirthDate), NULL)) as BirthDate,
     FROM {OffenderName} 
-    GROUP BY OffenderID, OffenderStatus, Race, Sex
+    GROUP BY OffenderID, OffenderStatus, Race, Ethnicity, Sex
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
