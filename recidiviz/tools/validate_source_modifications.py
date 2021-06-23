@@ -36,28 +36,18 @@ import subprocess
 import sys
 from collections import defaultdict
 from inspect import getmembers, isfunction
-from typing import Dict, FrozenSet, List, Set, Tuple, Optional
+from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
 import attr
 from flask import Flask
 from werkzeug.routing import Rule
 
 from recidiviz.ingest.models import ingest_info, ingest_info_pb2
-from recidiviz.persistence.database.schema.aggregate import schema as aggregate_schema
-from recidiviz.persistence.database.schema.county import schema as county_schema
-from recidiviz.persistence.database.migrations.jails import versions as jails_versions
-from recidiviz.persistence.database.migrations.operations import (
-    versions as operations_versions,
-)
-from recidiviz.persistence.database.schema.operations import schema as operations_schema
-from recidiviz.persistence.database.migrations.state import versions as state_versions
-from recidiviz.persistence.database.schema.state import schema as state_schema
+from recidiviz.server import all_blueprints_with_url_prefixes
 from recidiviz.tools.docs.endpoint_documentation_generator import (
     EndpointDocumentationGenerator,
 )
-from recidiviz.server import all_blueprints_with_url_prefixes
 from recidiviz.utils.regions import get_supported_direct_ingest_region_codes
-
 
 ENDPOINT_DOCS_DIRECTORY = "docs/endpoints"
 
@@ -149,10 +139,6 @@ def _get_modified_endpoints() -> List[RequiredModificationSets]:
 
 INGEST_KEY = "ingest"
 PIPFILE_KEY = "pipfile"
-AGGREGATE_KEY = "aggregate"
-COUNTY_KEY = "county"
-OPERATIONS_KEY = "operations"
-STATE_KEY = "state"
 INGEST_DOCS_KEY = "ingest_docs"
 CASE_TRIAGE_FIXTURES_KEY = "case_triage_fixtures"
 ENDPOINTS_DOCS_KEY = "endpoints_docs"
@@ -182,56 +168,6 @@ MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
         RequiredModificationSets(
             if_modified_files=frozenset({"Pipfile"}),
             then_modified_files=frozenset({"Pipfile.lock"}),
-        )
-    ],
-    # aggregate schema
-    # This check should not be symmetric because both the county and aggregate schemas add migrations to jails_versions.
-    AGGREGATE_KEY: [
-        RequiredModificationSets(
-            if_modified_files=frozenset(
-                {os.path.relpath(aggregate_schema.__file__)}
-            ),  # aggregate schema
-            then_modified_files=frozenset(
-                {os.path.relpath(jails_versions.__file__[: -len("__init__.py")])}
-            ),  # versions
-        )
-    ],
-    # county schema
-    # This check should not be symmetric because both the county and aggregate schemas add migrations to jails_versions.
-    COUNTY_KEY: [
-        RequiredModificationSets(
-            if_modified_files=frozenset(
-                {os.path.relpath(county_schema.__file__)}
-            ),  # county schema
-            then_modified_files=frozenset(
-                {os.path.relpath(jails_versions.__file__[: -len("__init__.py")])}
-            ),  # versions
-        )
-    ],
-    # operations schema
-    OPERATIONS_KEY: [
-        RequiredModificationSets.for_symmetric_check(
-            frozenset(
-                {
-                    os.path.relpath(operations_schema.__file__),  # operations schema
-                    os.path.relpath(
-                        operations_versions.__file__[: -len("__init__.py")]
-                    ),  # versions
-                }
-            )
-        )
-    ],
-    # state schema
-    STATE_KEY: [
-        RequiredModificationSets.for_symmetric_check(
-            frozenset(
-                {
-                    os.path.relpath(state_schema.__file__),  # state schema
-                    os.path.relpath(
-                        state_versions.__file__[: -len("__init__.py")]
-                    ),  # versions
-                }
-            )
         )
     ],
     # ingest docs
