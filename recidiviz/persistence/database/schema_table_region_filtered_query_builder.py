@@ -19,19 +19,20 @@
     BigQuery tables. For association tables, a join clause is added to filter for region codes via their associated
     table.
 """
-from abc import abstractmethod, ABC
-from typing import List, Optional, Dict
+from abc import ABC, abstractmethod
+from typing import Dict, List, Optional
 
 import sqlalchemy
-from sqlalchemy import Table, ForeignKeyConstraint
+from more_itertools import one
+from sqlalchemy import ForeignKeyConstraint, Table
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.persistence.database.schema_utils import (
     get_foreign_key_constraints,
     get_region_code_col,
     get_table_class_by_name,
-    schema_has_region_code_query_support,
     is_association_table,
+    schema_has_region_code_query_support,
 )
 
 
@@ -104,7 +105,11 @@ class SchemaTableRegionFilteredQueryBuilder:
         return self.table
 
     def _get_association_foreign_key_constraint(self) -> ForeignKeyConstraint:
-        foreign_key_constraints = get_foreign_key_constraints(self.table)
+        # It doesn't actually matter which one we pick, but we sort for determinism
+        # across calls and in tests.
+        foreign_key_constraints = sorted(
+            get_foreign_key_constraints(self.table), key=lambda c: c.referred_table.name
+        )
         constraint = foreign_key_constraints[0]
         return constraint
 
@@ -114,6 +119,10 @@ class SchemaTableRegionFilteredQueryBuilder:
             constraint.referred_table.name, self.sorted_tables
         )
         return join_table
+
+    def _get_association_join_table_col(self) -> str:
+        constraint = self._get_association_foreign_key_constraint()
+        return one(constraint.elements).column.name
 
     def _get_association_foreign_key_col(self) -> str:
         constraint = self._get_association_foreign_key_constraint()
@@ -160,8 +169,9 @@ class SchemaTableRegionFilteredQueryBuilder:
         if not self._join_to_get_region_code():
             return None
         join_table = self._get_association_join_table()
+        join_table_col = self._get_association_join_table_col()
         foreign_key_col = self._get_association_foreign_key_col()
-        return f"JOIN {join_table.name} ON {join_table.name}.{foreign_key_col} = {self.table_name}.{foreign_key_col}"
+        return f"JOIN {join_table.name} ON {join_table.name}.{join_table_col} = {self.table_name}.{foreign_key_col}"
 
     @abstractmethod
     def _join_to_get_region_code(self) -> bool:

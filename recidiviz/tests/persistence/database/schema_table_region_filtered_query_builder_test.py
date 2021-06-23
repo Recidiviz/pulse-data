@@ -18,18 +18,16 @@
 """Tests for schema_table_region_filtered_query_builder.py."""
 
 import unittest
-import collections
 from typing import List
-from unittest import mock
 
 import sqlalchemy
 
-from recidiviz.persistence.database.base_schema import StateBase, JailsBase
+from recidiviz.persistence.database.base_schema import JailsBase, StateBase
 from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
-    CloudSqlSchemaTableRegionFilteredQueryBuilder,
-    SchemaTableRegionFilteredQueryBuilder,
     BigQuerySchemaTableRegionFilteredQueryBuilder,
+    CloudSqlSchemaTableRegionFilteredQueryBuilder,
     FederatedSchemaTableRegionFilteredQueryBuilder,
+    SchemaTableRegionFilteredQueryBuilder,
 )
 
 
@@ -92,7 +90,68 @@ class SchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
         )
 
 
-class CloudSqlSchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
+class BaseSchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
+    """Base test class for SchemaTableRegionFilteredQueryBuilder subclass tests."""
+
+    def setUp(self) -> None:
+        self.fake_jails_table = sqlalchemy.Table(
+            "fake_jails_table",
+            JailsBase.metadata,
+            sqlalchemy.Column("column1", sqlalchemy.Integer, primary_key=True),
+            sqlalchemy.Column("state_code", sqlalchemy.String, index=True),
+            sqlalchemy.Column("excluded_col", sqlalchemy.String),
+        )
+        self.mock_columns_to_include = ["column1", "state_code"]
+        self.fake_state_table = sqlalchemy.Table(
+            "fake_state_table",
+            StateBase.metadata,
+            sqlalchemy.Column("column1", sqlalchemy.Integer, primary_key=True),
+            sqlalchemy.Column("state_code", sqlalchemy.String, index=True),
+            sqlalchemy.Column("excluded_col", sqlalchemy.String),
+        )
+        self.fake_table_complex_schema = sqlalchemy.Table(
+            "fake_state_table_complex_schema",
+            StateBase.metadata,
+            sqlalchemy.Column("column1", sqlalchemy.Integer, primary_key=True),
+            sqlalchemy.Column("state_code", sqlalchemy.String(length=255)),
+            sqlalchemy.Column(
+                "column2", sqlalchemy.ARRAY(sqlalchemy.String(length=255))
+            ),
+            sqlalchemy.Column(
+                "column3", sqlalchemy.Enum("VAL1", "VAL2", name="my_enum")
+            ),
+        )
+
+        self.fake_association_table = sqlalchemy.Table(
+            "fake_state_table_association",
+            StateBase.metadata,
+            sqlalchemy.Column(
+                "column1_simple",
+                sqlalchemy.Integer,
+                sqlalchemy.ForeignKey("fake_state_table.column1"),
+                index=True,
+            ),
+            sqlalchemy.Column(
+                "column1_complex",
+                sqlalchemy.Integer,
+                sqlalchemy.ForeignKey("fake_state_table_complex_schema.column1"),
+                index=True,
+            ),
+        )
+        self.mock_association_table_columns_to_include = [
+            c.name for c in self.fake_association_table.columns
+        ]
+
+    def tearDown(self) -> None:
+        JailsBase.metadata.remove(self.fake_jails_table)
+        StateBase.metadata.remove(self.fake_state_table)
+        StateBase.metadata.remove(self.fake_table_complex_schema)
+        StateBase.metadata.remove(self.fake_association_table)
+
+
+class CloudSqlSchemaTableRegionFilteredQueryBuilderTest(
+    BaseSchemaTableRegionFilteredQueryBuilderTest
+):
     """Tests for the CloudSqlSchemaTableRegionFilteredQueryBuilder class."""
 
     @staticmethod
@@ -101,64 +160,6 @@ class CloudSqlSchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
             sqlalchemy.Column(col_name, sqlalchemy.String(length=255))
             for col_name in column_names
         ]
-
-    def setUp(self) -> None:
-
-        self.mock_columns_to_include = ["column1", "state_code"]
-        self.mock_association_table_columns_to_include = ["column1", "column2"]
-        ForeignKeyConstraint = collections.namedtuple(
-            "ForeignKeyConstraint", ["referred_table", "column_keys"]
-        )
-        Table = collections.namedtuple("Table", ["name", "columns"])
-        self.fake_jails_table = Table(
-            "fake_jails_table",
-            self.sqlalchemy_columns([*self.mock_columns_to_include, "excluded_col"]),
-        )
-        self.fake_state_table = Table(
-            "fake_state_table",
-            self.sqlalchemy_columns([*self.mock_columns_to_include, "excluded_col"]),
-        )
-        self.fake_association_table = Table(
-            "fake_state_table_association",
-            self.sqlalchemy_columns([*self.mock_association_table_columns_to_include]),
-        )
-
-        self.fake_table_complex_schema = Table(
-            "fake_complex_schema_table",
-            [
-                sqlalchemy.Column("state_code", sqlalchemy.String(length=255)),
-                sqlalchemy.Column(
-                    "column1", sqlalchemy.ARRAY(sqlalchemy.String(length=255))
-                ),
-                sqlalchemy.Column(
-                    "column2", sqlalchemy.Enum("VAL1", "VAL2", name="my_enum")
-                ),
-            ],
-        )
-
-        self.foreign_key = "fake_foreign_key"
-        self.get_foreign_key_constraints_patcher = mock.patch(
-            "recidiviz.persistence.database.schema_table_region_filtered_query_builder"
-            ".get_foreign_key_constraints"
-        )
-        self.get_table_class_by_name_patcher = mock.patch(
-            "recidiviz.persistence.database.schema_table_region_filtered_query_builder.get_table_class_by_name"
-        )
-        self.get_region_code_col_patcher = mock.patch(
-            "recidiviz.persistence.database.schema_table_region_filtered_query_builder.get_region_code_col"
-        )
-        self.get_table_class_by_name_patcher.start().return_value = (
-            self.fake_state_table
-        )
-        self.get_region_code_col_patcher.start().return_value = "state_code"
-        self.get_foreign_key_constraints_patcher.start().return_value = [
-            ForeignKeyConstraint(self.fake_state_table, [self.foreign_key])
-        ]
-
-    def tearDown(self) -> None:
-        self.get_table_class_by_name_patcher.stop()
-        self.get_foreign_key_constraints_patcher.stop()
-        self.get_region_code_col_patcher.stop()
 
     def test___init__(self) -> None:
         """Test that an assertion is raised if both region_codes_to_include and region_codes_to_exclude are set"""
@@ -213,8 +214,8 @@ class CloudSqlSchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
             self.mock_association_table_columns_to_include,
         )
         expected_select = (
-            f"SELECT {self.fake_association_table.name}.column1,"
-            f"{self.fake_association_table.name}.column2,"
+            f"SELECT {self.fake_association_table.name}.column1_simple,"
+            f"{self.fake_association_table.name}.column1_complex,"
             f"{self.fake_state_table.name}.state_code AS state_code"
         )
         self.assertEqual(expected_select, query_builder.select_clause())
@@ -228,8 +229,8 @@ class CloudSqlSchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
         )
         expected_join = (
             f"JOIN {self.fake_state_table.name} ON "
-            f"{self.fake_state_table.name}.{self.foreign_key} = "
-            f"{self.fake_association_table.name}.{self.foreign_key}"
+            f"{self.fake_state_table.name}.column1 = "
+            f"{self.fake_association_table.name}.column1_simple"
         )
         self.assertEqual(expected_join, query_builder.join_clause())
 
@@ -319,7 +320,9 @@ class CloudSqlSchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
     def test_full_query_federated(self) -> None:
         """Given a table it returns a full query string."""
         query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
-            JailsBase, self.fake_jails_table, self.mock_columns_to_include
+            metadata_base=JailsBase,
+            table=self.fake_jails_table,
+            columns_to_include=self.mock_columns_to_include,
         )
         expected_query = (
             f"SELECT {self.fake_jails_table.name}.column1,{self.fake_jails_table.name}.state_code "
@@ -330,16 +333,34 @@ class CloudSqlSchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
     def test_full_query_federated_complex_schema(self) -> None:
         """Given a table it returns a full query string."""
         query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
-            JailsBase,
-            self.fake_table_complex_schema,
-            [c.name for c in self.fake_table_complex_schema.columns],
+            metadata_base=StateBase,
+            table=self.fake_table_complex_schema,
+            columns_to_include=[c.name for c in self.fake_table_complex_schema.columns],
         )
         expected_query = (
-            f"SELECT {self.fake_table_complex_schema.name}.state_code,"
-            f"ARRAY_REPLACE({self.fake_table_complex_schema.name}.column1, NULL, '') "
-            f"as column1,"
-            f"CAST({self.fake_table_complex_schema.name}.column2 as VARCHAR) "
+            f"SELECT {self.fake_table_complex_schema.name}.column1,"
+            f"{self.fake_table_complex_schema.name}.state_code,"
+            f"ARRAY_REPLACE({self.fake_table_complex_schema.name}.column2, NULL, '') "
+            f"as column2,"
+            f"CAST({self.fake_table_complex_schema.name}.column3 as VARCHAR) "
             f"FROM {self.fake_table_complex_schema.name}"
+        )
+        self.assertEqual(expected_query, query_builder.full_query())
+
+    def test_full_query_federated_association_table(self) -> None:
+        """Given an association table it returns a full query string."""
+        query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
+            metadata_base=StateBase,
+            table=self.fake_association_table,
+            columns_to_include=self.mock_association_table_columns_to_include,
+        )
+        expected_query = (
+            f"SELECT {self.fake_association_table.name}.column1_simple,"
+            f"{self.fake_association_table.name}.column1_complex,"
+            f"{self.fake_state_table.name}.state_code AS state_code "
+            f"FROM {self.fake_association_table.name} "
+            f"JOIN {self.fake_state_table.name} ON {self.fake_state_table.name}.column1 = "
+            f"{self.fake_association_table.name}.column1_simple"
         )
         self.assertEqual(expected_query, query_builder.full_query())
 
@@ -447,55 +468,22 @@ class CloudSqlSchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
             region_codes_to_exclude=["US_nd"],
         )
         expected_query = (
-            f"SELECT {self.fake_association_table.name}.column1,"
-            f"{self.fake_association_table.name}.column2,"
+            f"SELECT {self.fake_association_table.name}.column1_simple,"
+            f"{self.fake_association_table.name}.column1_complex,"
             f"{self.fake_state_table.name}.state_code AS state_code "
             f"FROM {self.fake_association_table.name} "
             f"JOIN {self.fake_state_table.name} ON "
-            f"{self.fake_state_table.name}.{self.foreign_key} = "
-            f"{self.fake_association_table.name}.{self.foreign_key} "
+            f"{self.fake_state_table.name}.column1 = "
+            f"{self.fake_association_table.name}.column1_simple "
             "WHERE state_code NOT IN ('US_ND')"
         )
         self.assertEqual(expected_query, query_builder.full_query())
 
 
-class BigQuerySchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
+class BigQuerySchemaTableRegionFilteredQueryBuilderTest(
+    BaseSchemaTableRegionFilteredQueryBuilderTest
+):
     """Tests for the BigQuerySchemaTableRegionFilteredQueryBuilder class."""
-
-    def setUp(self) -> None:
-
-        self.mock_columns_to_include = ["column1", "state_code"]
-        self.mock_association_table_columns_to_include = ["column1", "column2"]
-        ForeignKeyConstraint = collections.namedtuple(
-            "ForeignKeyConstraint", ["referred_table", "column_keys"]
-        )
-        Table = collections.namedtuple("Table", ["name"])
-        self.fake_jails_table = Table("fake_jails_table")
-        self.fake_state_table = Table("fake_state_table")
-        self.fake_association_table = Table("fake_state_table_association")
-        self.foreign_key = "fake_foreign_key"
-        self.get_foreign_key_constraints_patcher = mock.patch(
-            "recidiviz.persistence.database.schema_table_region_filtered_query_builder"
-            ".get_foreign_key_constraints"
-        )
-        self.get_table_class_by_name_patcher = mock.patch(
-            "recidiviz.persistence.database.schema_table_region_filtered_query_builder.get_table_class_by_name"
-        )
-        self.get_region_code_col_patcher = mock.patch(
-            "recidiviz.persistence.database.schema_table_region_filtered_query_builder.get_region_code_col"
-        )
-        self.get_table_class_by_name_patcher.start().return_value = (
-            self.fake_state_table
-        )
-        self.get_region_code_col_patcher.start().return_value = "state_code"
-        self.get_foreign_key_constraints_patcher.start().return_value = [
-            ForeignKeyConstraint(Table(self.fake_state_table), [self.foreign_key])
-        ]
-
-    def tearDown(self) -> None:
-        self.get_table_class_by_name_patcher.stop()
-        self.get_foreign_key_constraints_patcher.stop()
-        self.get_region_code_col_patcher.stop()
 
     def test___init__(self) -> None:
         """Test that an assertion is raised if both region_codes_to_include and region_codes_to_exclude are set"""
@@ -568,8 +556,8 @@ class BigQuerySchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
             self.mock_association_table_columns_to_include,
         )
         expected_select = (
-            f"SELECT {self.fake_association_table.name}.column1,"
-            f"{self.fake_association_table.name}.column2,"
+            f"SELECT {self.fake_association_table.name}.column1_simple,"
+            f"{self.fake_association_table.name}.column1_complex,"
             f"{self.fake_association_table.name}.state_code AS state_code"
         )
         self.assertEqual(expected_select, query_builder.select_clause())
@@ -812,8 +800,8 @@ class BigQuerySchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
             region_codes_to_exclude=["US_nd"],
         )
         expected_query = (
-            f"SELECT {self.fake_association_table.name}.column1,"
-            f"{self.fake_association_table.name}.column2,"
+            f"SELECT {self.fake_association_table.name}.column1_simple,"
+            f"{self.fake_association_table.name}.column1_complex,"
             f"{self.fake_association_table.name}.state_code AS state_code "
             f"FROM `recidiviz-456.my_dataset.{self.fake_association_table.name}` {self.fake_association_table.name} "
             "WHERE state_code NOT IN ('US_ND')"
