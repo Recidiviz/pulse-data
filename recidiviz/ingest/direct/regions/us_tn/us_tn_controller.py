@@ -25,7 +25,6 @@ from recidiviz.common.constants.enum_overrides import (
     EnumMapper,
     EnumOverrides,
 )
-from recidiviz.common.constants.person_characteristics import Ethnicity
 from recidiviz.common.constants.state.external_id_types import US_TN_DOC
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import (
@@ -35,17 +34,11 @@ from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller impo
     IngestPrimaryKeyOverrideCallable,
     IngestRowPosthookCallable,
 )
-from recidiviz.ingest.direct.direct_ingest_controller_utils import create_if_not_exists
 from recidiviz.ingest.direct.regions.us_tn.us_tn_enum_helpers import (
     generate_enum_overrides,
 )
 from recidiviz.ingest.direct.state_shared_row_posthooks import IngestGatingContext
-from recidiviz.ingest.models.ingest_info import (
-    IngestObject,
-    StatePerson,
-    StatePersonEthnicity,
-    StatePersonExternalId,
-)
+from recidiviz.ingest.models.ingest_info import IngestObject, StatePersonExternalId
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
@@ -63,7 +56,6 @@ class UsTnController(CsvGcsfsDirectIngestController):
         self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
             "OffenderName": [
                 self._normalize_external_id_type,
-                self._set_state_person_ethnicity,
             ],
         }
 
@@ -121,32 +113,3 @@ class UsTnController(CsvGcsfsDirectIngestController):
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StatePersonExternalId):
                 extracted_object.__setattr__("id_type", US_TN_DOC)
-
-    def _set_state_person_ethnicity(
-        self,
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Set the person's ethnicity, given their race.
-
-        In TN, `Hispanic` is included in their race columns. So parse the race to get the corresponding
-        ethnicity value."""
-        race = row.get("Race", None)
-        if race:
-            ethnicity = self.get_enum_overrides().parse(race, Ethnicity)
-            if ethnicity:
-                ethnicity_to_create = StatePersonEthnicity(ethnicity=ethnicity.value)
-                for extracted_object in extracted_objects:
-                    if isinstance(extracted_object, StatePerson):
-                        create_if_not_exists(
-                            ethnicity_to_create,
-                            extracted_object,
-                            "state_person_ethnicities",
-                        )
-                        # If the parsed ethnicity is `HISPANIC`, then clear the race. There is no ethnicity column in
-                        # TN, and one can have only 1 race in their system. So if the raw race value corresponds with
-                        # `HISPANIC`, then there no other race that can be associated with the person.
-                        if ethnicity == Ethnicity.HISPANIC:
-                            extracted_object.state_person_races.clear()
