@@ -72,11 +72,17 @@ from recidiviz.calculator.query.state.views.analyst_data.release_termination_rea
 from recidiviz.calculator.query.state.views.analyst_data.revocation_sessions import (
     REVOCATION_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.supervision_level_compliance_requirements import (
+    SUPERVISION_LEVEL_COMPLIANCE_REQUIREMENTS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.supervision_level_dedup_priority import (
     SUPERVISION_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.supervision_level_sessions import (
     SUPERVISION_LEVEL_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.supervision_officer_caseload_health_metrics import (
+    SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.supervision_officer_sessions import (
     SUPERVISION_OFFICER_SESSIONS_VIEW_BUILDER,
@@ -176,4 +182,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
     INCARCERATION_SUPER_SESSIONS_VIEW_BUILDER,
     US_MO_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
+    SUPERVISION_LEVEL_COMPLIANCE_REQUIREMENTS_VIEW_BUILDER,
+    SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_VIEW_BUILDER,
 ]
