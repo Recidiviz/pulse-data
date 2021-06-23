@@ -42,7 +42,7 @@ class OpportunityStore {
 
   opportunities?: Opportunity[];
 
-  opportunitiesByPerson?: Record<string, Opportunity[]>;
+  opportunitiesByPerson?: Record<string, Opportunity[] | undefined>;
 
   error?: string;
 
@@ -150,7 +150,7 @@ class OpportunityStore {
     }
 
     return this.opportunitiesByPerson[personExternalId]
-      .slice()
+      ?.slice()
       .sort(opportunityPriorityComparator)[0];
   }
 

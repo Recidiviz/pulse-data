@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import assertNever from "assert-never";
 import { makeAutoObservable, runInAction, set } from "mobx";
 import moment from "moment";
 import { caseInsensitiveIncludes, titleCase } from "../../utils";
@@ -24,7 +25,9 @@ import {
   CaseUpdateActionType,
   CaseUpdateStatus,
 } from "../CaseUpdatesStore";
-import ClientsStore from "./ClientsStore";
+import type OpportunityStore from "../OpportunityStore";
+import { Opportunity, OpportunityType } from "../OpportunityStore/Opportunity";
+import type ClientsStore from "./ClientsStore";
 import { NoteData, Note } from "./Note";
 
 /* eslint-disable camelcase */
@@ -125,6 +128,42 @@ function getDueDateStatus({
   return null;
 }
 
+export const AlertKindList = [
+  OpportunityType.OVERDUE_DOWNGRADE,
+  "EMPLOYMENT",
+  "ASSESSMENT_OVERDUE",
+  "ASSESSMENT_UPCOMING",
+  "CONTACT_OVERDUE",
+  "CONTACT_UPCOMING",
+] as const;
+type AlertKind = typeof AlertKindList[number];
+const ALERT_PRIORITIES = AlertKindList.reduce((memo, kind, index) => {
+  return { ...memo, [kind]: index };
+}, {} as Record<AlertKind, number>);
+
+type AlertBase = { priority: number };
+
+type OpportunityAlert = AlertBase & {
+  kind: Extract<AlertKind, OpportunityType>;
+  opportunity: Opportunity;
+};
+type DateAlert = AlertBase & {
+  kind: Extract<
+    AlertKind,
+    | "ASSESSMENT_OVERDUE"
+    | "ASSESSMENT_UPCOMING"
+    | "CONTACT_OVERDUE"
+    | "CONTACT_UPCOMING"
+  >;
+  status: NonNullable<DueDateStatus>;
+  date: moment.Moment;
+};
+type PlainAlert = AlertBase & {
+  kind: Exclude<AlertKind, OpportunityAlert["kind"] | DateAlert["kind"]>;
+};
+
+type Alert = PlainAlert | OpportunityAlert | DateAlert;
+
 /**
  * Data model representing a single client. To instantiate, it is recommended
  * to use the static `build` method.
@@ -187,12 +226,17 @@ export class Client {
   constructor(
     clientData: ClientData & { supervisionLevelText: string },
     private api: API,
-    private clientsStore: ClientsStore
+    private clientsStore: ClientsStore,
+    private opportunityStore: OpportunityStore
   ) {
-    makeAutoObservable<Client, "api" | "clientStore">(this, {
-      api: false,
-      clientStore: false,
-    });
+    makeAutoObservable<Client, "api" | "clientStore" | "opportunityStore">(
+      this,
+      {
+        api: false,
+        clientStore: false,
+        opportunityStore: false,
+      }
+    );
 
     // fields that come directly from the input
     this.assessmentScore = clientData.assessmentScore;
@@ -246,14 +290,21 @@ export class Client {
     api,
     client,
     clientsStore,
+    opportunityStore,
   }: {
     api: API;
     client: ClientData;
     clientsStore: ClientsStore;
+    opportunityStore: OpportunityStore;
   }): Client {
     const supervisionLevelText =
       clientsStore.policyStore.getSupervisionLevelNameForClient(client);
-    return new Client({ ...client, supervisionLevelText }, api, clientsStore);
+    return new Client(
+      { ...client, supervisionLevelText },
+      api,
+      clientsStore,
+      opportunityStore
+    );
   }
 
   hasCaseUpdateInStatus(
@@ -302,6 +353,85 @@ export class Client {
       dueDate: this.nextAssessmentDate,
       upcomingWindowDays: 30,
     });
+  }
+
+  get opportunities(): Opportunity[] {
+    return (
+      this.opportunityStore.opportunitiesByPerson?.[this.personExternalId] || []
+    );
+  }
+
+  get alerts(): Alert[] {
+    const alerts: (Alert | undefined)[] = AlertKindList.map((kind) => {
+      switch (kind) {
+        case OpportunityType.OVERDUE_DOWNGRADE: {
+          const opportunity = this.opportunities.find(
+            (opp) => opp.opportunityType === kind
+          );
+          if (opportunity && !opportunity.deferredUntil) {
+            return { kind, opportunity, priority: ALERT_PRIORITIES[kind] };
+          }
+          break;
+        }
+        case "EMPLOYMENT":
+          if (!this.needsMet.employment) {
+            return { kind, priority: ALERT_PRIORITIES[kind] };
+          }
+          break;
+        case "ASSESSMENT_OVERDUE":
+          if (
+            this.riskAssessmentStatus === "OVERDUE" &&
+            this.nextAssessmentDate
+          ) {
+            return {
+              kind,
+              status: this.riskAssessmentStatus,
+              date: this.nextAssessmentDate,
+              priority: ALERT_PRIORITIES[kind],
+            };
+          }
+          break;
+        case "ASSESSMENT_UPCOMING":
+          if (
+            this.riskAssessmentStatus === "UPCOMING" &&
+            this.nextAssessmentDate
+          ) {
+            return {
+              kind,
+              status: this.riskAssessmentStatus,
+              date: this.nextAssessmentDate,
+              priority: ALERT_PRIORITIES[kind],
+            };
+          }
+          break;
+        case "CONTACT_OVERDUE":
+          if (this.contactStatus === "OVERDUE" && this.nextContactDate) {
+            return {
+              kind,
+              status: this.contactStatus,
+              date: this.nextContactDate,
+              priority: ALERT_PRIORITIES[kind],
+            };
+          }
+          break;
+        case "CONTACT_UPCOMING":
+          if (this.contactStatus === "UPCOMING" && this.nextContactDate) {
+            return {
+              kind,
+              status: this.contactStatus,
+              date: this.nextContactDate,
+              priority: ALERT_PRIORITIES[kind],
+            };
+          }
+          break;
+        default:
+          assertNever(kind);
+      }
+
+      return undefined;
+    });
+
+    return alerts.filter((alert): alert is Alert => alert !== undefined);
   }
 
   /**

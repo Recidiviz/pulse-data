@@ -15,6 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { Opportunity } from "../OpportunityStore";
+
 export const clientData = {
   assessmentScore: 1,
   birthdate: "1970-07-21",
@@ -51,3 +53,14 @@ export const clientData = {
   supervisionStartDate: "2020-01-26",
   supervisionType: "PAROLE",
 };
+
+export const clientOpportunity = {
+  opportunityMetadata: {
+    assessmentScore: 1,
+    latestAssessmentDate: "2019-10-26",
+  },
+  opportunityType: "OVERDUE_DOWNGRADE",
+  personExternalId: "100",
+  stateCode: "US_ID",
+  supervisingOfficerExternalId: "SIN",
+} as Opportunity;
