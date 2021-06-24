@@ -20,34 +20,33 @@ import logging
 import os
 import uuid
 from enum import Enum
-from typing import Optional, Dict, Union
+from typing import Dict, Optional, Union
 from urllib.parse import urlencode
 
 import attr
 from google.cloud import tasks_v2
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.google_cloud.cloud_task_queue_manager import (
     CloudTaskQueueInfo,
     CloudTaskQueueManager,
 )
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
+    DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2,
     DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2,
     DIRECT_INGEST_SCHEDULER_QUEUE_V2,
-    DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2,
     DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
 )
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_types import (
-    CloudTaskArgs,
-)
+from recidiviz.ingest.direct.controllers.direct_ingest_types import CloudTaskArgs
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestArgs,
-    GcsfsRawDataBQImportArgs,
     GcsfsIngestViewExportArgs,
+    GcsfsRawDataBQImportArgs,
 )
 from recidiviz.persistence.database.sqlalchemy_database_key import (
     SQLAlchemyStateDatabaseVersion,
@@ -290,10 +289,12 @@ class DirectIngestCloudTaskManager:
         return body
 
 
-# TODO(#6226): Remove this and the shared queues when removing LEGACY
+# TODO(#7984): Remove this and the shared queues when removing LEGACY
 def _is_legacy_instance(region: Region, ingest_instance: DirectIngestInstance) -> bool:
     return (
-        ingest_instance.database_version(SystemLevel.for_region(region))
+        ingest_instance.database_version(
+            SystemLevel.for_region(region), StateCode.get(region.region_code)
+        )
         is SQLAlchemyStateDatabaseVersion.LEGACY
     )
 

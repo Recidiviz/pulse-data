@@ -29,6 +29,7 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsDirectoryPath,
     GcsfsFilePath,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.results import MultiRequestResultWithSkipped
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
@@ -179,7 +180,9 @@ class UploadStateFilesToIngestBucketController(
         self.postgres_direct_ingest_file_metadata_manager = (
             PostgresDirectIngestRawFileMetadataManager(
                 region,
-                DirectIngestInstance.PRIMARY.database_version(SystemLevel.STATE).name,
+                DirectIngestInstance.PRIMARY.database_version(
+                    SystemLevel.STATE, state_code=StateCode(self.region.upper())
+                ).name,
             )
         )
 
