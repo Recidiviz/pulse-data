@@ -97,7 +97,7 @@ def main(
     This checks for user validations that the database and branches are correct and then runs the downgrade
     migration.
     """
-    # TODO(#6226): Once we have cut all traffic over to single-database traffic,
+    # TODO(#7984): Once we have cut all traffic over to single-database traffic,
     #   delete this branch.
     if database_version == SQLAlchemyStateDatabaseVersion.LEGACY:
         logging.error(

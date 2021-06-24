@@ -17,19 +17,44 @@
 """Defines enum for specifying an independent set of ingest data / infrastructure for a
 given region.
 """
-
 from enum import Enum
+from typing import List, Optional
 
 from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
     is_primary_ingest_bucket,
     is_secondary_ingest_bucket,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.errors import DirectIngestInstanceError
 from recidiviz.persistence.database.sqlalchemy_database_key import (
     SQLAlchemyStateDatabaseVersion,
 )
+from recidiviz.utils import environment, metadata
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+
+# TODO(#6226): Add each state to these lists when we're ready to migrate that state to
+#  multi-DB in a given project.
+STAGING_MULTI_DB_STATES: List[StateCode] = []
+PROD_MULTI_DB_STATES: List[StateCode] = []
+
+STATE_TO_PRIMARY_DATABASE_VERSION = {
+    GCP_PROJECT_STAGING: {
+        **{state: SQLAlchemyStateDatabaseVersion.LEGACY for state in StateCode},
+        **{
+            state: SQLAlchemyStateDatabaseVersion.PRIMARY
+            for state in STAGING_MULTI_DB_STATES
+        },
+    },
+    GCP_PROJECT_PRODUCTION: {
+        **{state: SQLAlchemyStateDatabaseVersion.LEGACY for state in StateCode},
+        **{
+            state: SQLAlchemyStateDatabaseVersion.PRIMARY
+            for state in PROD_MULTI_DB_STATES
+        },
+    },
+}
 
 
 class DirectIngestInstance(Enum):
@@ -57,8 +82,13 @@ class DirectIngestInstance(Enum):
                 )
 
     def database_version(
-        self, system_level: SystemLevel
+        # TODO(#7984): Remove the state_code arg once all states have been migrated to
+        #   multi-DB.
+        self,
+        system_level: SystemLevel,
+        state_code: Optional[StateCode],
     ) -> SQLAlchemyStateDatabaseVersion:
+        """Return the database version for this instance."""
         self.check_is_valid_system_level(system_level)
 
         if system_level == SystemLevel.COUNTY:
@@ -66,11 +96,23 @@ class DirectIngestInstance(Enum):
             return SQLAlchemyStateDatabaseVersion.LEGACY
 
         if system_level == SystemLevel.STATE:
+            if not state_code:
+                raise ValueError("Found null state_code for STATE schema.")
             if self == self.SECONDARY:
                 return SQLAlchemyStateDatabaseVersion.SECONDARY
             if self == self.PRIMARY:
-                # TODO(#6226): Switch this to PRIMARY to complete migration to multi-DB
-                return SQLAlchemyStateDatabaseVersion.LEGACY
+                # TODO(#7984): Switch this to SQLAlchemyStateDatabaseVersion.PRIMARY
+                #  once all states have been migrated to multi-DB.
+                if metadata.project_id() not in STATE_TO_PRIMARY_DATABASE_VERSION:
+                    if not environment.in_test():
+                        raise ValueError(
+                            f"Unexpected project id {metadata.project_id()}"
+                        )
+                    return SQLAlchemyStateDatabaseVersion.LEGACY
+
+                return STATE_TO_PRIMARY_DATABASE_VERSION[metadata.project_id()][
+                    state_code
+                ]
 
         raise ValueError(
             f"Unexpected combination of [{system_level}] and instance type [{self}]"

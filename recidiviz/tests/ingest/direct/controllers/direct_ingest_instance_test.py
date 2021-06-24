@@ -16,7 +16,9 @@
 # =============================================================================
 """Tests for the DirectIngestInstance."""
 import unittest
+from unittest.mock import patch
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
@@ -33,6 +35,13 @@ from recidiviz.persistence.database.sqlalchemy_database_key import (
 class TestDirectIngestInstance(unittest.TestCase):
     """Tests for the DirectIngestInstance."""
 
+    def setUp(self) -> None:
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.project_id_patcher.start().return_value = "recidiviz-staging"
+
+    def tearDown(self) -> None:
+        self.project_id_patcher.stop()
+
     def test_state_get_database_version_state(self) -> None:
         expected_versions = {
             DirectIngestInstance.PRIMARY: SQLAlchemyStateDatabaseVersion.LEGACY,
@@ -40,7 +49,9 @@ class TestDirectIngestInstance(unittest.TestCase):
         }
 
         versions = {
-            instance: instance.database_version(system_level=SystemLevel.STATE)
+            instance: instance.database_version(
+                system_level=SystemLevel.STATE, state_code=StateCode.US_XX
+            )
             for instance in DirectIngestInstance
         }
 
@@ -50,13 +61,13 @@ class TestDirectIngestInstance(unittest.TestCase):
         self.assertEqual(
             SQLAlchemyStateDatabaseVersion.LEGACY,
             DirectIngestInstance.PRIMARY.database_version(
-                system_level=SystemLevel.COUNTY
+                system_level=SystemLevel.COUNTY, state_code=None
             ),
         )
 
         with self.assertRaises(DirectIngestInstanceError) as e:
             _ = DirectIngestInstance.SECONDARY.database_version(
-                system_level=SystemLevel.COUNTY
+                system_level=SystemLevel.COUNTY, state_code=None
             )
         self.assertEqual(
             str(e.exception),

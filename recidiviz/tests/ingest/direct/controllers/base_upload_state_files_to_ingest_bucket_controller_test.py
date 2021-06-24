@@ -50,6 +50,12 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
         self.project_id = "recidiviz-456"
         self.region = "us_xx"
 
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.project_id_patcher.start().return_value = self.project_id
+
+    def tearDown(self) -> None:
+        self.project_id_patcher.stop()
+
     def test_do_upload_succeeds(self, mock_fs_factory: Mock) -> None:
         mock_fs = FakeGCSFileSystem()
         mock_fs.test_add_path(

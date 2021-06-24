@@ -22,6 +22,7 @@ from unittest import mock
 import us
 
 from recidiviz.common.constants import states
+from recidiviz.common.constants.states import StateCode
 
 
 class TestStates(unittest.TestCase):
@@ -76,3 +77,10 @@ class TestStates(unittest.TestCase):
 
         for state_code in valid_states:
             self.assertTrue(states.StateCode.is_state_code(state_code))
+
+    def test_invalid_state_code(self) -> None:
+        invalid_state_code = "US_XX_YYY"
+        with self.assertRaises(ValueError):
+            _ = StateCode(invalid_state_code)
+
+        self.assertEqual(None, StateCode.get(invalid_state_code))
