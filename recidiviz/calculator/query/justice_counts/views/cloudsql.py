@@ -18,13 +18,15 @@
 
 from typing import List
 
-from recidiviz.calculator.query.justice_counts import dataset_config
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.persistence.database.base_schema import JusticeCountsBase
+from recidiviz.calculator.query.justice_counts import dataset_config
 from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
     FederatedSchemaTableRegionFilteredQueryBuilder,
 )
-from recidiviz.persistence.database.schema_utils import get_justice_counts_table_classes
+from recidiviz.persistence.database.schema_utils import (
+    SchemaType,
+    get_justice_counts_table_classes,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -43,9 +45,10 @@ def get_table_view_builders() -> List[SimpleBigQueryViewBuilder]:
     table_view_builders = []
     for table in get_justice_counts_table_classes():
         query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
-            metadata_base=JusticeCountsBase,
+            schema_type=SchemaType.JUSTICE_COUNTS,
             table=table,
             columns_to_include=[c.name for c in table.columns],
+            region_code=None,
         )
         table_view_builders.append(
             SimpleBigQueryViewBuilder(

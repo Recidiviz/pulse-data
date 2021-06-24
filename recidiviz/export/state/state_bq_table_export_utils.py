@@ -27,6 +27,7 @@ from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
     BigQuerySchemaTableRegionFilteredQueryBuilder,
 )
+from recidiviz.persistence.database.schema_utils import SchemaType
 
 
 def state_table_export_query_str(
@@ -64,7 +65,7 @@ def state_table_export_query_str(
     query_builder = BigQuerySchemaTableRegionFilteredQueryBuilder(
         project_id=project_id,
         dataset_id=table.dataset_id,
-        metadata_base=StateBase,
+        schema_type=SchemaType.STATE,
         table=sqlalchemy_table,
         columns_to_include=column_names,
         region_codes_to_include=state_codes,

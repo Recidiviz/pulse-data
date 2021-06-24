@@ -319,10 +319,10 @@ class CloudSqlToBQConfig:
 
         columns = self._get_table_columns_to_export(table)
         query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
-            self.metadata_base,
-            table,
-            columns,
-            region_codes_to_include=[state_code.value],
+            schema_type=self.schema_type,
+            table=table,
+            columns_to_include=columns,
+            region_code=state_code.value,
         )
         return query_builder.full_query()
 
@@ -344,10 +344,10 @@ class CloudSqlToBQConfig:
         columns = self._get_table_columns_to_export(table)
 
         query_builder = FederatedSchemaTableRegionFilteredQueryBuilder(
-            self.metadata_base,
-            table,
-            columns,
-            region_codes_to_exclude=[],
+            schema_type=self.schema_type,
+            table=table,
+            columns_to_include=columns,
+            region_code=None,
         )
         return query_builder.full_query()
 
@@ -373,7 +373,7 @@ class CloudSqlToBQConfig:
                 project_id=metadata.project_id(),
                 dataset_id=address.dataset_id,
                 table=table,
-                metadata_base=self.metadata_base,
+                schema_type=self.schema_type,
                 columns_to_include=self._get_table_columns_to_export(table),
                 region_codes_to_include=[state_code.value.upper()],
                 region_codes_to_exclude=None,
