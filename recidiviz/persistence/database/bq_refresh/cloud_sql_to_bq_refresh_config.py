@@ -394,20 +394,6 @@ class CloudSqlToBQConfig:
             if table not in self._get_tables_to_exclude()
         )
 
-    @staticmethod
-    def _get_project_id() -> str:
-        project_id = metadata.project_id()
-        if project_id not in {
-            environment.GCP_PROJECT_STAGING,
-            environment.GCP_PROJECT_PRODUCTION,
-        }:
-            raise ValueError(
-                f"Unexpected project_id [{project_id}]. If you are running a manual export, "
-                "you must set the GOOGLE_CLOUD_PROJECT environment variable to specify "
-                "which project bucket to export into."
-            )
-        return project_id
-
     @classmethod
     def is_valid_schema_type(cls, schema_type: SchemaType) -> bool:
         if schema_type in (SchemaType.JAILS, SchemaType.STATE, SchemaType.OPERATIONS):
@@ -423,6 +409,12 @@ class CloudSqlToBQConfig:
 
         raise ValueError(f"Unexpected schema type value [{schema_type}]")
 
+    @staticmethod
+    def default_config_path() -> GcsfsFilePath:
+        return GcsfsFilePath.from_absolute_path(
+            f"gs://{metadata.project_id()}-configs/cloud_sql_to_bq_config.yaml"
+        )
+
     @classmethod
     def for_schema_type(
         cls, schema_type: SchemaType, yaml_path: Optional[GcsfsFilePath] = None
@@ -433,9 +425,7 @@ class CloudSqlToBQConfig:
 
         gcs_fs = GcsfsFactory.build()
         if not yaml_path:
-            yaml_path = GcsfsFilePath.from_absolute_path(
-                f"gs://{cls._get_project_id()}-configs/cloud_sql_to_bq_config.yaml"
-            )
+            yaml_path = cls.default_config_path()
         yaml_string = gcs_fs.download_as_string(yaml_path)
         try:
             yaml_config = yaml.safe_load(yaml_string)
