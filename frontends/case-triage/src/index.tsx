@@ -30,7 +30,7 @@ import {
   setup as setupUseBreakpoint,
 } from "@w11r/use-breakpoint";
 
-import { GlobalStyle } from "@recidiviz/design-system";
+import { GlobalStyle, ToastProvider } from "@recidiviz/design-system";
 
 import Home from "./routes/Home";
 import Verify from "./routes/Verify";
@@ -80,11 +80,13 @@ const RoutingContainer = styled(Router)`
 ReactDOM.render(
   <BreakpointProvider>
     <StoreProvider>
-      <GlobalStyle />
-      <RoutingContainer>
-        <Verify path="verify" />
-        <Home path="/" />
-      </RoutingContainer>
+      <ToastProvider>
+        <GlobalStyle />
+        <RoutingContainer>
+          <Verify path="verify" />
+          <Home path="/" />
+        </RoutingContainer>
+      </ToastProvider>
     </StoreProvider>
   </BreakpointProvider>,
   document.getElementById("root"),
