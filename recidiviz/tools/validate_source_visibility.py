@@ -173,6 +173,12 @@ def main() -> int:
                     "recidiviz.common",
                     # TODO(#6795): Get rid of this dependency
                     "recidiviz.ingest.aggregate",
+                    # TODO(#7965): Remove this dependency once IP pre-processing no
+                    #  longer relies on ingest mappings
+                    "recidiviz.ingest.direct",
+                    # TODO(#7965): Remove this dependency once IP pre-processing no
+                    #  longer relies on ingest mappings
+                    "recidiviz.ingest.models",
                     "recidiviz.persistence",
                     "recidiviz.utils",
                 }

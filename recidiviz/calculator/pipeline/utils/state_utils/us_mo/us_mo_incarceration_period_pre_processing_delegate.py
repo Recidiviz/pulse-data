@@ -17,7 +17,7 @@
 """Contains state-specific logic for certain aspects of pre-processing US_MO
 StateIncarcerationPeriod entities so that they are ready to be used in pipeline
 calculations."""
-from typing import Set
+from typing import Optional, Set
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
     StateSpecificIncarcerationPreProcessingDelegate,
@@ -26,6 +26,8 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
 )
+from recidiviz.common.str_field_utils import normalize
+from recidiviz.ingest.direct.regions.us_mo import us_mo_enum_helpers
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
@@ -56,6 +58,54 @@ class UsMoIncarcerationPreProcessingDelegate(
             == StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
             and incarceration_period.specialized_purpose_for_incarceration is None
         )
+
+    def period_is_non_board_hold_temporary_custody(
+        self, incarceration_period: StateIncarcerationPeriod
+    ) -> bool:
+        """The only periods of temporary custody in US_MO are parole board holds."""
+        return False
+
+    # TODO(#7965): Use default behavior once we've done an ingest re-run for US_MO
+    def pre_processing_incarceration_period_admission_reason_map(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
+        """We have updated our StateIncarcerationPeriodAdmissionReason
+        enum-mappings for US_MO, and the changes require a re-run (are beyond the scope
+        of a database migration). Until that re-run happens, we will be re-ingesting
+        raw admission_reason_raw_text values and using the following logic to provide
+        updated admission reason values."""
+        if not incarceration_period.admission_reason_raw_text:
+            return incarceration_period.admission_reason
+
+        current_admission_reason = incarceration_period.admission_reason
+        re_mapped_admission_reason = (
+            us_mo_enum_helpers.incarceration_period_admission_reason_mapper(
+                normalize(
+                    incarceration_period.admission_reason_raw_text,
+                    remove_punctuation=True,
+                )
+            )
+        )
+
+        # TODO(#7442): Handle double revocation admissions when normalizing commitment
+        #  from supervision admissions in IP pre-processing
+        if (
+            current_admission_reason
+            == StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
+            and re_mapped_admission_reason
+            in (
+                StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
+                StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+                StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            )
+        ):
+            # This admission was previously classified as a board hold, but is now
+            # getting cast as a revocation admission. We're not actually sure what's
+            # going on here, so let's return INTERNAL_UNKNOWN to be safe.
+            return StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN
+
+        return re_mapped_admission_reason
 
     def pre_processing_relies_on_supervision_periods(self) -> bool:
         """IP pre-processing for US_MO does not rely on StateSupervisionPeriod

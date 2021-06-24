@@ -17,7 +17,7 @@
 """Contains state-specific logic for certain aspects of pre-processing US_PA
 StateIncarcerationPeriod entities so that they are ready to be used in pipeline
 calculations."""
-from typing import Set
+from typing import Optional, Set
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
     StateSpecificIncarcerationPreProcessingDelegate,
@@ -26,14 +26,34 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
 )
+from recidiviz.common.str_field_utils import normalize
+from recidiviz.ingest.direct.regions.us_pa import us_pa_enum_helpers
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
 class UsPaIncarcerationPreProcessingDelegate(
     StateSpecificIncarcerationPreProcessingDelegate
 ):
+    """US_PA implementation of the StateSpecificIncarcerationPreProcessingDelegate."""
+
     # Functions with state-specific overrides
-    # No deviations from default logic for US_PA
+    # TODO(#7222): Use default behavior once we've done an ingest re-run for US_PA
+    def pre_processing_incarceration_period_admission_reason_map(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
+        """We have updated our StateIncarcerationPeriodAdmissionReason
+        enum-mappings for US_PA, and the changes require a re-run (are beyond the scope
+        of a database migration). Until that re-run happens, we will be re-ingesting
+        raw admission_reason_raw_text values and using the following logic to provide
+        updated admission reason values."""
+        if not incarceration_period.admission_reason_raw_text:
+            return incarceration_period.admission_reason
+        return us_pa_enum_helpers.incarceration_period_admission_reason_mapper(
+            normalize(
+                incarceration_period.admission_reason_raw_text, remove_punctuation=True
+            )
+        )
 
     # Functions using default behavior
     def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:
@@ -48,6 +68,13 @@ class UsPaIncarcerationPreProcessingDelegate(
         self, incarceration_period: StateIncarcerationPeriod
     ) -> bool:
         return self._default_period_is_parole_board_hold(incarceration_period)
+
+    def period_is_non_board_hold_temporary_custody(
+        self, incarceration_period: StateIncarcerationPeriod
+    ) -> bool:
+        return self._default_period_is_non_board_hold_temporary_custody(
+            incarceration_period
+        )
 
     def pre_processing_relies_on_supervision_periods(self) -> bool:
         # TODO(#7441): Return True once we implement the US_PA IP pre-processing that

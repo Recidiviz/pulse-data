@@ -184,6 +184,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             state_code=state_code,
             admission_date=date(2016, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason_raw_text="40I0050",
             release_date=date(2017, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
         )
@@ -195,6 +196,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code=state_code,
             admission_date=date(2017, 12, 4),
+            admission_reason_raw_text="50N1020",
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
         )
 
@@ -217,3 +219,44 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             self.assertEqual(
                 validated_incarceration_periods, [updated_board_hold, revocation_period]
             )
+
+    def test_prepare_incarceration_periods_for_calculations_temp_custody_not_parole_board_hold(
+        self,
+    ):
+        state_code = "US_MO"
+
+        # TODO(#7442): Update this test once we're handling sanction admission
+        #  overrides for US_MO
+        not_board_hold = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="222",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2016, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            # This admission reason will get mapped as a PAROLE_REVOCATION. Periods
+            # that were previously mapped to TEMPORARY_CUSTODY that are now mapped to
+            # PAROLE_REVOCATION should get an override of INTERNAL_UNKNOWN.
+            admission_reason_raw_text="50N1020",
+            release_date=date(2017, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        updated_period = attr.evolve(
+            not_board_hold,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+        )
+
+        incarceration_periods = [not_board_hold]
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+
+            validated_incarceration_periods = (
+                self._pre_processed_incarceration_periods_for_calculations(
+                    incarceration_periods=ips_for_test,
+                )
+            )
+
+            self.assertEqual(validated_incarceration_periods, [updated_period])
