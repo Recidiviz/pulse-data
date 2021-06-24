@@ -29,8 +29,17 @@ from recidiviz.utils import environment
 STATE_CODE_PATTERN = re.compile(r"US_[A-Z]{2}")
 
 
+StateCodeT = typing.TypeVar("StateCodeT", bound="_SharedStateCode")
+
+
 class _SharedStateCode(enum.Enum):
     """Mixin for StateCode functionality so that the real and fake classes behave the same."""
+
+    @classmethod
+    def get(cls: typing.Type[StateCodeT], state_code: str) -> Optional[StateCodeT]:
+        if cls.is_state_code(state_code):
+            return cls(state_code.upper())
+        return None
 
     def get_state(self) -> us.states.State:
         return self._state_info_map()[self.value]

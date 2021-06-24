@@ -17,11 +17,11 @@
 """Tests for SQLAlchemyDatabaseKey."""
 import os
 from unittest import TestCase
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database import sqlalchemy_database_key
-from recidiviz.persistence.database.base_schema import StateBase, CaseTriageBase
+from recidiviz.persistence.database.base_schema import CaseTriageBase, StateBase
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import (
     SQLAlchemyDatabaseKey,
@@ -39,7 +39,7 @@ class SQLAlchemyDatabaseKeyTest(TestCase):
         )
         self.assertEqual(db_key_1, db_key_1_dup)
 
-        # TODO(#6226): Once we have cut over all traffic to non-legacy state DBs and
+        # TODO(#7984): Once we have cut over all traffic to non-legacy state DBs and
         #  removed the LEGACY database version, remove this part of the test.
         db_key_legacy = SQLAlchemyDatabaseKey.for_state_code(
             StateCode.US_AK, SQLAlchemyStateDatabaseVersion.LEGACY

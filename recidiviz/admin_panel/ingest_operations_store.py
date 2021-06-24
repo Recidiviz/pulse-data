@@ -17,7 +17,7 @@
 """Store used to keep information related to direct ingest operations"""
 import logging
 from datetime import datetime
-from typing import List, Optional, Dict, Union, Any
+from typing import Any, Dict, List, Optional, Union
 
 from google.cloud import tasks_v2
 
@@ -32,9 +32,9 @@ from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    GcsfsDirectIngestFileType,
     gcsfs_direct_ingest_bucket_for_region,
     gcsfs_direct_ingest_storage_directory_path_for_region,
-    GcsfsDirectIngestFileType,
 )
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestFileMetadataManager,
@@ -304,7 +304,8 @@ class IngestOperationsStore:
     ) -> str:
         """Returns the database name for the given state and instance"""
         return SQLAlchemyDatabaseKey.for_state_code(
-            state_code, instance.database_version(SystemLevel.STATE)
+            state_code,
+            instance.database_version(SystemLevel.STATE, state_code=state_code),
         ).db_name
 
     @staticmethod

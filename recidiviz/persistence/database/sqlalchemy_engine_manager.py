@@ -356,7 +356,7 @@ class SQLAlchemyEngineManager:
             env_var: os.environ.get(env_var) for env_var in sqlalchemy_vars
         }
 
-        # TODO(#6226): Delete the legacy db name keys out of Secrets Manager after this
+        # TODO(#7984): Delete the legacy db name keys out of Secrets Manager after this
         #   launches
         os.environ[SQLALCHEMY_DB_NAME] = database_key.db_name
         os.environ[SQLALCHEMY_DB_HOST] = cls._get_db_host(database_key=database_key)

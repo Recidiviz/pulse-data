@@ -44,7 +44,7 @@ DEFAULT_DB_NAME = "postgres"
 class SQLAlchemyStateDatabaseVersion(Enum):
     """Denotes a particular database for a given state."""
 
-    # TODO(#6226): Once we have cut all traffic over to single-database traffic,
+    # TODO(#7984): Once we have cut all traffic over to single-database traffic,
     #   delete the LEGACY type entirely.
     # The single, multi-region 'postgres' DB within the state CloudSQL instance for a
     # given project.
@@ -164,7 +164,7 @@ class SQLAlchemyDatabaseKey:
         """Returns they key to the database corresponding to the provided state code and
         database version.
         """
-        # TODO(#6226): Once we have cut all traffic over to single-database traffic,
+        # TODO(#7984): Once we have cut all traffic over to single-database traffic,
         # delete the LEGACY type entirely.
         if db_version == SQLAlchemyStateDatabaseVersion.LEGACY:
             db_name = DEFAULT_DB_NAME
