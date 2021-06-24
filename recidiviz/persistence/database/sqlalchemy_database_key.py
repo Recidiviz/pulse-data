@@ -193,9 +193,10 @@ class SQLAlchemyDatabaseKey:
         """A 'safe' version of |canonical_for_schema| that throws if the CloudSQL
         instance for the given schema has multiple databases.
         """
-        if schema_type == SchemaType.STATE:
+        if schema_type.is_multi_db_schema:
             raise ValueError(
-                "Must provide db name information to create a STATE database key."
+                f"Must provide db name information to create a {schema_type.name} "
+                f"database key."
             )
         return cls(schema_type)
 

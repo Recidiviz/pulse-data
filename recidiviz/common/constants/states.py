@@ -16,10 +16,10 @@
 # =============================================================================
 """Constants for working with states."""
 
-from abc import abstractmethod
 import enum
 import re
 import typing
+from abc import abstractmethod
 from typing import Any, Dict, Optional
 
 import us
@@ -146,7 +146,7 @@ TEST_STATE_CODE_DOCS = "US_WW"
 TEST_STATE_INFO = {
     TEST_STATE_CODE: us.states.State(
         **{
-            "fips": "XX",
+            "fips": "99",
             "name": "Test State",
             "abbr": "XX",
             "is_territory": False,
@@ -163,7 +163,7 @@ TEST_STATE_INFO = {
     ),
     TEST_STATE_CODE_DOCS: us.states.State(
         **{
-            "fips": "WW",
+            "fips": "88",
             "name": "Test State",
             "abbr": "WW",
             "is_territory": False,
