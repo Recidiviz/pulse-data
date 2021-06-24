@@ -217,6 +217,11 @@ class SchemaType(enum.Enum):
     JUSTICE_COUNTS = "JUSTICE_COUNTS"
     CASE_TRIAGE = "CASE_TRIAGE"
 
+    @property
+    def is_multi_db_schema(self) -> bool:
+        """Returns True if this schema is segmented into multiple databases """
+        return self is SchemaType.STATE
+
 
 DirectIngestSchemaType = Union[Literal[SchemaType.JAILS], Literal[SchemaType.STATE]]
 

@@ -20,19 +20,21 @@
     table.
 """
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 import sqlalchemy
 from more_itertools import one
 from sqlalchemy import ForeignKeyConstraint, Table
-from sqlalchemy.ext.declarative import DeclarativeMeta
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_utils import (
+    SchemaType,
     get_foreign_key_constraints,
     get_region_code_col,
     get_table_class_by_name,
     is_association_table,
     schema_has_region_code_query_support,
+    schema_type_to_schema_base,
 )
 
 
@@ -58,7 +60,7 @@ class SchemaTableRegionFilteredQueryBuilder:
 
     def __init__(
         self,
-        metadata_base: DeclarativeMeta,
+        schema_type: SchemaType,
         table: Table,
         columns_to_include: List[str],
         region_codes_to_include: Optional[List[str]] = None,
@@ -69,8 +71,9 @@ class SchemaTableRegionFilteredQueryBuilder:
                 f"Expected only one of region_codes_to_include ([{region_codes_to_include}])"
                 f"and region_codes_to_exclude ([{region_codes_to_exclude}]) to be not None"
             )
-        self.metadata_base = metadata_base
-        self.sorted_tables: List[Table] = metadata_base.metadata.sorted_tables
+        self.schema_type = schema_type
+        self.metadata_base = schema_type_to_schema_base(schema_type)
+        self.sorted_tables: List[Table] = self.metadata_base.metadata.sorted_tables
         self.table = table
         self.columns_to_include = columns_to_include
         self.region_codes_to_include = region_codes_to_include
@@ -257,19 +260,107 @@ class FederatedSchemaTableRegionFilteredQueryBuilder(
     """Implementation of the SchemaTableRegionFilteredQueryBuilder for querying tables
     in CloudSQL using a BigQuery `EXTERNAL_QUERY` federated query. BigQuery places some
     restrictions on the output columns that we must handle when doing this type of
-    query.
+    query. This query also handles primary/foreign key translation in the case where
+    we're querying a multi-DB schema.
     """
+
+    def __init__(
+        self,
+        *,
+        schema_type: SchemaType,
+        table: Table,
+        columns_to_include: List[str],
+        region_code: Optional[str],
+    ):
+        super().__init__(
+            schema_type=schema_type,
+            table=table,
+            columns_to_include=columns_to_include,
+            region_codes_to_include=[region_code] if region_code else None,
+        )
+        should_translate_key_columns = schema_type.is_multi_db_schema
+        if should_translate_key_columns and not region_code:
+            raise ValueError(
+                f"Can only do primary/foreign key translation for single-region queries."
+                f"Schema [{schema_type}] requires translation."
+            )
+        self.should_translate_key_columns = should_translate_key_columns
+        self.region_code = region_code
+
+    def _key_columns_to_translate(self) -> Set[str]:
+        """Returns a list of column names corresponding to columns in this table that
+        are primary/foreign keys and should have a region mask applied to prevent
+        conflicts when results from multiple databases are merged.
+        """
+        if not self.should_translate_key_columns:
+            return set()
+
+        foreign_key_columns = [fk.parent for fk in self.table.foreign_keys]
+        primary_key_columns = self.table.primary_key.columns
+
+        columns_to_translate = {*foreign_key_columns, *primary_key_columns}
+
+        for c in columns_to_translate:
+            if c.type.python_type != int:
+                raise ValueError(
+                    f"Can only translate integer columns! "
+                    f"Found integer key column [{c.name}] in table [{self.table_name}]"
+                )
+            if c.autoincrement != "auto":
+                raise ValueError(
+                    f"Expected to only translate auto-increment key columns! "
+                    f"Found non-increment column [{c.name}] in table [{self.table_name}]"
+                )
+        return {c.name for c in columns_to_translate}
+
+    def _get_translated_key_column_mask(self) -> int:
+        """Returns an integer mask to add to every primary/foreign key column in this
+        query. The mask is stable across all tables and derived from the region code.
+
+        Example: 46000000000000
+
+        For the above mask, if a primary key is 123456 in Postgres, then the translated
+        primary key would be 46000000123456.
+        """
+        if not self.region_code:
+            raise ValueError(
+                "Must have set region code to do primary/foreign key translation."
+            )
+        if not StateCode.is_state_code(self.region_code):
+            raise ValueError(
+                "No support yet for doing primary/foreign key translation on non-state "
+                "regions."
+            )
+        # The FIPS code is always a two-digit code for states
+        fips = int(StateCode(self.region_code).get_state().fips)
+        return fips * pow(10, 12)
+
+    def _translate_key_colunm_clause(
+        self, column_name: str, qualified_column_name: str
+    ) -> str:
+        """Returns a string column select clause that applies the key translation
+        mask to the given column.
+
+        Example: "(46000000000000 + state_charge.person_id) AS person_id"
+        """
+        mask = self._get_translated_key_column_mask()
+        return f"({mask} + {qualified_column_name}) AS {column_name}"
 
     def _formatted_columns_for_select_clause(self) -> str:
         qualified_names_map = self.qualified_column_names_map(
             self.columns_to_include, table_prefix=self.table_name
         )
         select_columns = []
+        key_columns_to_translate = self._key_columns_to_translate()
         for column in self.table.columns:
             if column.name not in self.columns_to_include:
                 continue
             qualified_name = qualified_names_map[column.name]
-            if isinstance(column.type, sqlalchemy.Enum):
+            if column.name in key_columns_to_translate:
+                select_columns.append(
+                    self._translate_key_colunm_clause(column.name, qualified_name)
+                )
+            elif isinstance(column.type, sqlalchemy.Enum):
                 select_columns.append(f"CAST({qualified_name} as VARCHAR)")
             elif isinstance(column.type, sqlalchemy.ARRAY) and isinstance(
                 column.type.item_type, sqlalchemy.String
@@ -297,14 +388,14 @@ class BigQuerySchemaTableRegionFilteredQueryBuilder(
         self,
         project_id: str,
         dataset_id: str,
-        metadata_base: DeclarativeMeta,
+        schema_type: SchemaType,
         table: Table,
         columns_to_include: List[str],
         region_codes_to_include: Optional[List[str]] = None,
         region_codes_to_exclude: Optional[List[str]] = None,
     ):
         super().__init__(
-            metadata_base,
+            schema_type,
             table,
             columns_to_include,
             region_codes_to_include,
