@@ -234,6 +234,7 @@ def is_official_admission(
         StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
+        StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
         StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
         StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
         StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,

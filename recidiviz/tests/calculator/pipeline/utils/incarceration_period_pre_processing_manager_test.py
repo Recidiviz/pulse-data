@@ -29,9 +29,13 @@ from freezegun import freeze_time
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
     ATTRIBUTES_TRIGGERING_STATUS_CHANGE,
     IncarcerationPreProcessingManager,
+    StateSpecificIncarcerationPreProcessingDelegate,
 )
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
+    get_state_specific_incarceration_period_pre_processing_delegate,
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -42,10 +46,90 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
+
+
+class TestStateSpecificIncarcerationPreProcessingDelegate(unittest.TestCase):
+    """Tests the StateSpecificIncarcerationPreProcessingDelegate."""
+
+    def setUp(self) -> None:
+        # All
+        self.methods_to_implement = frozenset(
+            name
+            for name, attr in vars(
+                StateSpecificIncarcerationPreProcessingDelegate
+            ).items()
+            if getattr(attr, "__isabstractmethod__", False)
+        )
+
+    def test_delegate_function_coverage(self):
+        """Tests that all abstract methods from the
+        StateSpecificIncarcerationPreProcessingDelegate are implemented on all
+        state-specific subclasses of the delegate."""
+        num_state_delegates = 0
+        for state_code in StateCode:
+            try:
+                state_delegate = (
+                    get_state_specific_incarceration_period_pre_processing_delegate(
+                        state_code.value
+                    )
+                )
+
+                if not state_delegate:
+                    # Delegate not implemented for this state
+                    continue
+
+                num_state_delegates += 1
+
+                implemented_methods = frozenset(
+                    name
+                    for name, class_attr in vars(state_delegate.__class__).items()
+                    if not getattr(class_attr, "__isabstractmethod__", False)
+                    and name not in ("__doc__", "__module__")
+                )
+
+                if self.methods_to_implement != implemented_methods:
+                    self.fail(
+                        "StateSpecificIncarcerationPreProcessingDelegate for state "
+                        f"{state_code.value} missing implementation of required "
+                        "methods: "
+                        f"[{self.methods_to_implement.difference(implemented_methods)}]"
+                    )
+            except ValueError:
+                # Only expected error is if a delegate is not implemented for this state
+                pass
+
+        # Assert that we've tested all (non-test) subclasses of the
+        # StateSpecificIncarcerationPreProcessingDelegate
+        self.assertEqual(
+            len(
+                [
+                    subclass
+                    for subclass in StateSpecificIncarcerationPreProcessingDelegate.__subclasses__()
+                    if subclass != UsXxIncarcerationPreProcessingDelegate
+                ]
+            ),
+            num_state_delegates,
+        )
+
+    def test_US_XX_delegate_function_coverage(self):
+        implemented_methods = frozenset(
+            name
+            for name, class_attr in vars(UsXxIncarcerationPreProcessingDelegate).items()
+            if not getattr(class_attr, "__isabstractmethod__", False)
+            and name not in ("__doc__", "__module__")
+        )
+
+        if self.methods_to_implement != implemented_methods:
+            self.fail(
+                "UsXxStateSpecificIncarcerationPreProcessingDelegate missing "
+                "implementation of required methods: "
+                f"[{self.methods_to_implement.difference(implemented_methods)}]"
+            )
 
 
 class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
@@ -223,6 +307,61 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual(
             [updated_board_hold],
+            validated_incarceration_periods,
+        )
+
+    def test_pre_processed_incarceration_periods_for_calculations_board_hold_other_temp_custody(
+        self,
+    ):
+        state_code = "US_XX"
+
+        temporary_custody_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2008, 11, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_date=date(2008, 11, 20),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        board_hold = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_date=date(2010, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        incarceration_periods = [board_hold, temporary_custody_period]
+
+        updated_temporary_custody = attr.evolve(
+            temporary_custody_period,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        updated_board_hold = attr.evolve(
+            board_hold,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        validated_incarceration_periods = (
+            self._pre_processed_incarceration_periods_for_calculations(
+                incarceration_periods=incarceration_periods,
+                collapse_transfers=True,
+                overwrite_facility_information_in_transfers=True,
+            )
+        )
+
+        self.assertEqual(
+            [updated_temporary_custody, updated_board_hold],
             validated_incarceration_periods,
         )
 

@@ -17,7 +17,7 @@
 """Contains state-specific logic for certain aspects of pre-processing US_ND
 StateIncarcerationPeriod entities so that they are ready to be used in pipeline
 calculations."""
-from typing import Set
+from typing import Optional, Set
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
     StateSpecificIncarcerationPreProcessingDelegate,
@@ -59,6 +59,16 @@ class UsNdIncarcerationPreProcessingDelegate(
             )
         return False
 
+    def pre_processing_incarceration_period_admission_reason_map(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
+        return (
+            self._default_pre_processing_incarceration_period_admission_reason_mapper(
+                incarceration_period
+            )
+        )
+
     def pre_processing_relies_on_supervision_periods(self) -> bool:
         # TODO(#7441): Return True once we implement the US_ND IP pre-processing that
         #  relies on supervision periods
@@ -67,3 +77,10 @@ class UsNdIncarcerationPreProcessingDelegate(
     # Functions using default behavior
     def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:
         return self._default_incarceration_types_to_filter()
+
+    def period_is_non_board_hold_temporary_custody(
+        self, incarceration_period: StateIncarcerationPeriod
+    ) -> bool:
+        return self._default_period_is_non_board_hold_temporary_custody(
+            incarceration_period
+        )
