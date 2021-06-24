@@ -33,7 +33,7 @@ interface BootstrapResponse {
   knownExperiments: FeatureVariants;
 }
 
-type ErrorResponse = {
+export type ErrorResponse = {
   code: string;
   description: string;
 };
