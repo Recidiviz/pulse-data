@@ -340,6 +340,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
             "ID-RR",  # Institutional Discharge - Reversed and Remanded
             "ID-XX",  # Institutional Discharge - Unknown
         ],
+        StateSpecializedPurposeForIncarceration.GENERAL: [
+            "S",  # Serving Sentence
+        ],
         StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION: [
             "O",  # 120-Day Shock
             "R",  # Regimented Disc Program
@@ -424,7 +427,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
     ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {
         StateSupervisionType: ["INT"],  # Unknown meaning, rare
         StateSpecializedPurposeForIncarceration: [
-            "S",  # Serving Sentence
             "X",  # Unknown
         ],
         StateSupervisionViolationResponseDecision: [
