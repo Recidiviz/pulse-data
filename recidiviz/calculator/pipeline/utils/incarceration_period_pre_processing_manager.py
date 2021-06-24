@@ -113,6 +113,47 @@ class StateSpecificIncarcerationPreProcessingDelegate:
             == StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
         )
 
+    # TODO(#7965): Remove this once we've done a re-run for US_MO
+    # TODO(#7222): Remove this once we've done a re-run for US_PA
+    @abc.abstractmethod
+    def pre_processing_incarceration_period_admission_reason_map(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
+        """State-specific implementations of this class should return an updated ingest
+        mapping of the admission_reason_raw_text value of the
+        StateIncarcerationPeriod if there is a need to re-map admission reasons for
+        the state (this happens in the case when the enum mappings have changed for a
+        state, but we have yet to do a re-run with the new mappings)."""
+
+    @staticmethod
+    def _default_pre_processing_incarceration_period_admission_reason_mapper(
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
+        """Default behavior of
+        pre_processing_incarceration_period_admission_reason_map function."""
+        return incarceration_period.admission_reason
+
+    @abc.abstractmethod
+    def period_is_non_board_hold_temporary_custody(
+        self, incarceration_period: StateIncarcerationPeriod
+    ) -> bool:
+        """State-specific implementations of this class should return True if the
+        |incarceration_period| represents a period of time spent in a form of
+        temporary custody that is NOT a parole board hold.
+        """
+
+    def _default_period_is_non_board_hold_temporary_custody(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> bool:
+        """Default behavior of period_is_non_board_hold_temporary_custody function."""
+        return (
+            not self._default_period_is_parole_board_hold(incarceration_period)
+            and incarceration_period.admission_reason
+            == StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
+        )
+
     @abc.abstractmethod
     def pre_processing_relies_on_supervision_periods(self) -> bool:
         """State-specific implementations of this class should return whether the IP
@@ -195,6 +236,14 @@ class IncarcerationPreProcessingManager:
                     periods_for_pre_processing
                 )
 
+                # TODO(#7965): Remove this once we've done a re-run for US_MO
+                # TODO(#7222): Remove this once we've done a re-run for US_PA
+                mid_processing_periods = (
+                    self._apply_ingest_mappings_to_admission_reasons(
+                        mid_processing_periods
+                    )
+                )
+
                 # Sort periods, and infer as much missing information as possible
                 mid_processing_periods = (
                     self._sort_and_infer_missing_dates_and_statuses(
@@ -207,10 +256,12 @@ class IncarcerationPreProcessingManager:
                     mid_processing_periods
                 )
 
-                # Update period attributes to match standardized parole board hold
-                # values
-                mid_processing_periods = self._standardize_parole_board_holds(
-                    mid_processing_periods
+                # Update parole board hold and other temporary custody period attributes
+                # to match standardized values
+                mid_processing_periods = (
+                    self._standardize_temporary_custody_and_board_hold_periods(
+                        mid_processing_periods
+                    )
                 )
 
                 # Drop certain periods entirely from the calculations
@@ -231,6 +282,29 @@ class IncarcerationPreProcessingManager:
                     incarceration_periods=mid_processing_periods
                 )
         return self._pre_processed_incarceration_period_index_for_calculations[config]
+
+    def _apply_ingest_mappings_to_admission_reasons(
+        self,
+        incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> List[StateIncarcerationPeriod]:
+        """Re-maps the admission_reason_raw_text value of the |incarceration_period| if
+        there is a need to re-map admission reasons for the state (this happens in
+        the case when the enum mappings have changed for a state, but we have yet to
+        do a re-run with the new mappings)."""
+        updated_periods: List[StateIncarcerationPeriod] = []
+
+        for ip in incarceration_periods:
+            re_mapped_admission_reason = (
+                self.delegate.pre_processing_incarceration_period_admission_reason_map(
+                    ip
+                )
+            )
+
+            updated_periods.append(
+                attr.evolve(ip, admission_reason=re_mapped_admission_reason)
+            )
+
+        return updated_periods
 
     @staticmethod
     def _drop_placeholder_periods(
@@ -564,19 +638,92 @@ class IncarcerationPreProcessingManager:
 
         return incarceration_periods
 
-    def _standardize_parole_board_holds(
+    def _standardize_temporary_custody_and_board_hold_periods(
         self,
         incarceration_periods: List[StateIncarcerationPeriod],
     ) -> List[StateIncarcerationPeriod]:
-        """Ensures that all periods representing time in a parole board hold have the
-        expected admission_reason and specialized_purpose_for_incarceration values.
+        """Ensures that all periods representing time in a parole board hold or some
+        other kind of temporary custody have the expected admission_reason and
+        specialized_purpose_for_incarceration values.
+
         In some cases, overrides the set release_reason to be
         RELEASED_FROM_TEMPORARY_CUSTODY."""
         updated_periods: List[StateIncarcerationPeriod] = []
 
+        valid_temporary_custody_admission_pfi_values: List[
+            StateSpecializedPurposeForIncarceration
+        ] = [
+            StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+        ]
+
         for ip in incarceration_periods:
-            if self.delegate.period_is_parole_board_hold(ip):
-                updated_release_reason = None
+            period_is_board_hold = self.delegate.period_is_parole_board_hold(ip)
+            period_is_non_board_hold_temp_custody = (
+                self.delegate.period_is_non_board_hold_temporary_custody(ip)
+            )
+
+            if period_is_non_board_hold_temp_custody and period_is_board_hold:
+                raise ValueError(
+                    "A period of incarceration cannot be both a parole "
+                    "board hold period AND a non-board hold temporary "
+                    "custody period. Invalid logic in the delegate."
+                )
+
+            updated_pfi: Optional[StateSpecializedPurposeForIncarceration] = None
+            updated_admission_reason: Optional[
+                StateIncarcerationPeriodAdmissionReason
+            ] = None
+            if period_is_board_hold:
+                # Standard values for parole board hold periods
+                updated_admission_reason = (
+                    StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
+                )
+                updated_pfi = StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
+            elif period_is_non_board_hold_temp_custody:
+                # Standard values for non-board hold temporary custody periods
+                updated_admission_reason = (
+                    StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
+                )
+                updated_pfi = StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY
+            else:
+                if (
+                    ip.admission_reason
+                    == StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
+                ):
+                    # Periods should only have a TEMPORARY_CUSTODY admission reason if
+                    # they are parole board holds or other periods of temporary custody.
+                    updated_admission_reason = (
+                        StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN
+                    )
+
+                if (
+                    ip.specialized_purpose_for_incarceration
+                    in valid_temporary_custody_admission_pfi_values
+                ):
+                    # Periods should not have PAROLE_BOARD_HOLD or TEMPORARY_CUSTODY
+                    # periods if they are parole board holds or other periods of
+                    # temporary custody.
+                    updated_pfi = (
+                        StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
+                    )
+
+            if not updated_admission_reason and not updated_pfi:
+                # No need to update this period
+                updated_periods.append(ip)
+                continue
+
+            updated_release_reason: Optional[
+                StateIncarcerationPeriodReleaseReason
+            ] = None
+            if (
+                updated_admission_reason
+                == StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
+            ):
+                # TEMPORARY_CUSTODY admissions should have
+                # RELEASED_FROM_TEMPORARY_CUSTODY releases unless the period has a
+                # release_reason that has more important information (e.g. DEATH)
+                # about the release from temporary custody
                 if (
                     ip.release_reason
                     and not release_reason_overrides_released_from_temporary_custody(
@@ -587,16 +734,17 @@ class IncarcerationPreProcessingManager:
                         StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY
                     )
 
-                updated_ip = attr.evolve(
-                    ip,
-                    admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
-                    # Override the release_reason if there's a set updated_release_reason
-                    release_reason=(updated_release_reason or ip.release_reason),
-                )
-                updated_periods.append(updated_ip)
-            else:
-                updated_periods.append(ip)
+            # Update the period with expected values
+            updated_ip = attr.evolve(
+                ip,
+                admission_reason=(updated_admission_reason or ip.admission_reason),
+                specialized_purpose_for_incarceration=(
+                    updated_pfi or ip.specialized_purpose_for_incarceration
+                ),
+                release_reason=(updated_release_reason or ip.release_reason),
+            )
+            updated_periods.append(updated_ip)
+
         return updated_periods
 
     def _collapse_incarceration_period_transfers(

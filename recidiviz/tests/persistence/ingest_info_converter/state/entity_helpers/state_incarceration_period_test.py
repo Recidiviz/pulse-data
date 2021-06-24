@@ -22,10 +22,10 @@ from datetime import date
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
     StateIncarcerationFacilitySecurityLevel,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
+    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.ingest.models import ingest_info_pb2
@@ -93,150 +93,6 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
             housing_unit="CB4",
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
             custodial_authority_raw_text="STATE_PRISON",
-        )
-
-        self.assertEqual(result, expected_result)
-
-    def testParseStateIncarcerationPeriod_temporaryCustody_overwriteAdmission(self):
-        # Arrange
-        ingest_incarceration = ingest_info_pb2.StateIncarcerationPeriod(
-            status="NOT_IN_CUSTODY",
-            incarceration_type="STATE_PRISON",
-            admission_reason="PAROLE_REVOCATION",
-            release_reason="RELEASED_FROM_TEMPORARY_CUSTODY",
-            admission_date="1/2/2111",
-            release_date="2/2/2112",
-            state_code="us_nd",
-        )
-
-        # Act
-        incarceration_builder = entities.StateIncarcerationPeriod.builder()
-        state_incarceration_period.copy_fields_to_builder(
-            incarceration_builder, ingest_incarceration, _EMPTY_METADATA
-        )
-        result = incarceration_builder.build()
-
-        # Assert
-        expected_result = entities.StateIncarcerationPeriod.new_with_defaults(
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text="NOT_IN_CUSTODY",
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            incarceration_type_raw_text="STATE_PRISON",
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-            admission_reason_raw_text="PAROLE_REVOCATION",
-            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-            release_reason_raw_text="RELEASED_FROM_TEMPORARY_CUSTODY",
-            admission_date=date(year=2111, month=1, day=2),
-            release_date=date(year=2112, month=2, day=2),
-            state_code="US_ND",
-        )
-
-        self.assertEqual(result, expected_result)
-
-    def testParseStateIncarcerationPeriod_temporaryCustody_leaveAdmission(self):
-        # Arrange
-        ingest_incarceration = ingest_info_pb2.StateIncarcerationPeriod(
-            status="NOT_IN_CUSTODY",
-            incarceration_type="STATE_PRISON",
-            admission_reason="TRANSFER",
-            release_reason="RELEASED_FROM_TEMPORARY_CUSTODY",
-            admission_date="1/2/2111",
-            release_date="2/2/2112",
-            state_code="us_nd",
-        )
-
-        # Act
-        incarceration_builder = entities.StateIncarcerationPeriod.builder()
-        state_incarceration_period.copy_fields_to_builder(
-            incarceration_builder, ingest_incarceration, _EMPTY_METADATA
-        )
-        result = incarceration_builder.build()
-
-        # Assert
-        expected_result = entities.StateIncarcerationPeriod.new_with_defaults(
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text="NOT_IN_CUSTODY",
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            incarceration_type_raw_text="STATE_PRISON",
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
-            admission_reason_raw_text="TRANSFER",
-            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-            release_reason_raw_text="RELEASED_FROM_TEMPORARY_CUSTODY",
-            admission_date=date(year=2111, month=1, day=2),
-            release_date=date(year=2112, month=2, day=2),
-            state_code="US_ND",
-        )
-
-        self.assertEqual(result, expected_result)
-
-    def testParseStateIncarcerationPeriod_temporaryCustody_overwriteRelease(self):
-        # Arrange
-        ingest_incarceration = ingest_info_pb2.StateIncarcerationPeriod(
-            status="NOT_IN_CUSTODY",
-            incarceration_type="STATE_PRISON",
-            admission_reason="TEMPORARY_CUSTODY",
-            release_reason="SERVED",
-            admission_date="1/2/2111",
-            release_date="2/2/2112",
-            state_code="us_nd",
-        )
-
-        # Act
-        incarceration_builder = entities.StateIncarcerationPeriod.builder()
-        state_incarceration_period.copy_fields_to_builder(
-            incarceration_builder, ingest_incarceration, _EMPTY_METADATA
-        )
-        result = incarceration_builder.build()
-
-        # Assert
-        expected_result = entities.StateIncarcerationPeriod.new_with_defaults(
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text="NOT_IN_CUSTODY",
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            incarceration_type_raw_text="STATE_PRISON",
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-            admission_reason_raw_text="TEMPORARY_CUSTODY",
-            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-            release_reason_raw_text="SERVED",
-            admission_date=date(year=2111, month=1, day=2),
-            release_date=date(year=2112, month=2, day=2),
-            state_code="US_ND",
-        )
-
-        self.assertEqual(result, expected_result)
-
-    def testParseStateIncarcerationPeriod_temporaryCustody_leaveRelease(self):
-        # Arrange
-        ingest_incarceration = ingest_info_pb2.StateIncarcerationPeriod(
-            status="NOT_IN_CUSTODY",
-            incarceration_type="STATE_PRISON",
-            admission_reason="TEMPORARY_CUSTODY",
-            release_reason="TRANSFER",
-            admission_date="1/2/2111",
-            release_date="2/2/2112",
-            state_code="us_nd",
-        )
-
-        # Act
-        incarceration_builder = entities.StateIncarcerationPeriod.builder()
-        state_incarceration_period.copy_fields_to_builder(
-            incarceration_builder, ingest_incarceration, _EMPTY_METADATA
-        )
-        result = incarceration_builder.build()
-
-        # Assert
-        expected_result = entities.StateIncarcerationPeriod.new_with_defaults(
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            status_raw_text="NOT_IN_CUSTODY",
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            incarceration_type_raw_text="STATE_PRISON",
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-            admission_reason_raw_text="TEMPORARY_CUSTODY",
-            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
-            release_reason_raw_text="TRANSFER",
-            admission_date=date(year=2111, month=1, day=2),
-            release_date=date(year=2112, month=2, day=2),
-            state_code="US_ND",
         )
 
         self.assertEqual(result, expected_result)

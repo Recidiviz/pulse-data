@@ -20,14 +20,14 @@ persistence entity."""
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
     StateIncarcerationFacilitySecurityLevel,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
+    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import parse_date, normalize
+from recidiviz.common.str_field_utils import normalize, parse_date
 from recidiviz.ingest.models.ingest_info_pb2 import StateIncarcerationPeriod
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
@@ -106,34 +106,6 @@ def copy_fields_to_builder(
     new.release_reason = enum_mappings.get(
         StateIncarcerationPeriodReleaseReason, field_name="release_reason"
     )
-
-    # Assumes that incarceration periods with either a admission or release reason of TEMPORARY_CUSTODY represent a
-    # temporary hold period. Temporary hold periods must:
-    # - start with an admission_reason of either TRANSFER or TEMPORARY_CUSTODY
-    # - if a release_reason is present, end with a release_reason of either TRANSFER or RELEASE_FROM_TEMPORARY_CUSTODY.
-    if (
-        new.admission_reason
-        == StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
-    ):
-        if new.release_reason and new.release_reason not in (
-            StateIncarcerationPeriodReleaseReason.TRANSFER,
-            StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-        ):
-            new.release_reason = (
-                StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY
-            )
-
-    if (
-        new.release_reason
-        == StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY
-    ):
-        if new.admission_reason not in (
-            StateIncarcerationPeriodAdmissionReason.TRANSFER,
-            StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-        ):
-            new.admission_reason = (
-                StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
-            )
 
     new.release_reason_raw_text = fn(normalize, "release_reason", proto)
 

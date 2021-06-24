@@ -15,24 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Direct ingest controller implementation for US_MO."""
-from typing import Optional, List, Callable, Dict, Type
 import datetime
 import logging
 import re
+from typing import Callable, Dict, List, Optional, Type
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common import ncic
-from recidiviz.common.constants.entity_enum import EntityEnumMeta, EntityEnum
+from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import (
-    EnumOverrides,
-    EnumMapper,
     EnumIgnorePredicate,
+    EnumMapper,
+    EnumOverrides,
 )
 from recidiviz.common.constants.state.external_id_types import US_MO_DOC
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
-    StateAssessmentType,
     StateAssessmentLevel,
+    StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
@@ -45,110 +45,107 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodTerminationReason,
-    StateSupervisionLevel,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseRevocationType,
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,
-)
-from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseRevocationType,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import munge_date_string
 from recidiviz.common.str_field_utils import (
+    parse_days,
     parse_days_from_duration_pieces,
     parse_yyyymmdd_date,
-    parse_days,
     sorted_list_from_str,
 )
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import (
     CsvGcsfsDirectIngestController,
-    IngestRowPosthookCallable,
-    IngestPrimaryKeyOverrideCallable,
     IngestAncestorChainOverridesCallable,
+    IngestPrimaryKeyOverrideCallable,
+    IngestRowPosthookCallable,
 )
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     create_if_not_exists,
     update_overrides_from_maps,
 )
 from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import (
-    INCARCERATION_SENTENCE_MIN_RELEASE_TYPE,
-    INCARCERATION_SENTENCE_LENGTH_YEARS,
-    INCARCERATION_SENTENCE_LENGTH_MONTHS,
-    INCARCERATION_SENTENCE_LENGTH_DAYS,
     CHARGE_COUNTY_CODE,
-    SENTENCE_COUNTY_CODE,
-    INCARCERATION_SENTENCE_PAROLE_INELIGIBLE_YEARS,
-    INCARCERATION_SENTENCE_START_DATE,
-    SENTENCE_OFFENSE_DATE,
-    SENTENCE_COMPLETED_FLAG,
-    MOST_RECENT_SENTENCE_STATUS_CODE,
-    SUPERVISION_SENTENCE_LENGTH_YEARS,
-    TAK076_PREFIX,
-    TAK291_PREFIX,
-    VIOLATION_REPORT_ID_PREFIX,
-    VIOLATION_KEY_SEQ,
     CITATION_ID_PREFIX,
     CITATION_KEY_SEQ,
-    DOC_ID,
     CYCLE_ID,
-    SENTENCE_KEY_SEQ,
+    DOC_ID,
     FIELD_KEY_SEQ,
-    SUPERVISION_SENTENCE_LENGTH_MONTHS,
-    SUPERVISION_SENTENCE_LENGTH_DAYS,
+    INCARCERATION_SENTENCE_LENGTH_DAYS,
+    INCARCERATION_SENTENCE_LENGTH_MONTHS,
+    INCARCERATION_SENTENCE_LENGTH_YEARS,
+    INCARCERATION_SENTENCE_MIN_RELEASE_TYPE,
+    INCARCERATION_SENTENCE_PAROLE_INELIGIBLE_YEARS,
+    INCARCERATION_SENTENCE_START_DATE,
+    MOST_RECENT_SENTENCE_STATUS_CODE,
+    MOST_RECENT_SENTENCE_STATUS_DATE,
+    ORAS_ASSESSMENT_ID,
+    ORAS_ASSESSMENTS_DOC_ID,
+    PERIOD_CLOSE_CODE,
+    PERIOD_CLOSE_CODE_SUBTYPE,
     PERIOD_PURPOSE_FOR_INCARCERATION,
     PERIOD_START_DATE,
-    SUPERVISION_VIOLATION_VIOLATED_CONDITIONS,
-    SUPERVISION_VIOLATION_TYPES,
-    SUPERVISION_VIOLATION_RECOMMENDATIONS,
-    PERIOD_CLOSE_CODE_SUBTYPE,
-    PERIOD_CLOSE_CODE,
-    ORAS_ASSESSMENTS_DOC_ID,
-    ORAS_ASSESSMENT_ID,
-    MOST_RECENT_SENTENCE_STATUS_DATE,
+    SENTENCE_COMPLETED_FLAG,
+    SENTENCE_COUNTY_CODE,
+    SENTENCE_KEY_SEQ,
+    SENTENCE_OFFENSE_DATE,
+    SUPERVISION_SENTENCE_LENGTH_DAYS,
+    SUPERVISION_SENTENCE_LENGTH_MONTHS,
+    SUPERVISION_SENTENCE_LENGTH_YEARS,
     SUPERVISION_SENTENCE_TYPE,
+    SUPERVISION_VIOLATION_RECOMMENDATIONS,
+    SUPERVISION_VIOLATION_TYPES,
+    SUPERVISION_VIOLATION_VIOLATED_CONDITIONS,
+    TAK076_PREFIX,
+    TAK291_PREFIX,
+    VIOLATION_KEY_SEQ,
+    VIOLATION_REPORT_ID_PREFIX,
 )
 from recidiviz.ingest.direct.regions.us_mo.us_mo_enum_helpers import (
-    supervision_period_admission_reason_mapper,
-    supervision_period_termination_reason_mapper,
     PAROLE_REVOKED_WHILE_INCARCERATED_STATUS_CODES,
+    TREATMENT_FAILURE_STATUSES,
     incarceration_period_admission_reason_mapper,
     supervising_officer_mapper,
+    supervision_period_admission_reason_mapper,
+    supervision_period_termination_reason_mapper,
 )
 from recidiviz.ingest.direct.state_shared_row_posthooks import (
-    copy_name_to_alias,
-    gen_label_single_external_id_hook,
-    gen_normalize_county_codes_posthook,
-    gen_map_ymd_counts_to_max_length_field_posthook,
-    gen_set_is_life_sentence_hook,
-    gen_convert_person_ids_to_external_id_objects,
-    gen_set_field_as_concatenated_values_hook,
     IngestGatingContext,
+    copy_name_to_alias,
+    gen_convert_person_ids_to_external_id_objects,
+    gen_label_single_external_id_hook,
+    gen_map_ymd_counts_to_max_length_field_posthook,
+    gen_normalize_county_codes_posthook,
+    gen_set_field_as_concatenated_values_hook,
+    gen_set_is_life_sentence_hook,
 )
-from recidiviz.ingest.extractor.csv_data_extractor import (
-    IngestFieldCoordinates,
-)
+from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import (
     IngestObject,
-    StateSentenceGroup,
-    StateCharge,
-    StateIncarcerationSentence,
-    StateSupervisionSentence,
-    StateIncarcerationPeriod,
-    StateSupervisionPeriod,
-    StateSupervisionViolation,
-    StateSupervisionViolatedConditionEntry,
-    StateSupervisionViolationTypeEntry,
-    StateSupervisionViolationResponseDecisionEntry,
     StateAgent,
+    StateCharge,
+    StateIncarcerationPeriod,
+    StateIncarcerationSentence,
+    StateSentenceGroup,
     StateSupervisionCaseTypeEntry,
+    StateSupervisionPeriod,
+    StateSupervisionSentence,
+    StateSupervisionViolatedConditionEntry,
+    StateSupervisionViolation,
+    StateSupervisionViolationResponseDecisionEntry,
+    StateSupervisionViolationTypeEntry,
 )
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
@@ -324,6 +321,11 @@ class UsMoController(CsvGcsfsDirectIngestController):
             # statuses, are always closing a board hold period when seen as an
             # end code .
             *PAROLE_REVOKED_WHILE_INCARCERATED_STATUS_CODES
+        ],
+        StateIncarcerationPeriodReleaseReason.STATUS_CHANGE: [
+            # These statuses indicate a failure of treatment causing mandate to serve
+            # rest of sentence
+            *TREATMENT_FAILURE_STATUSES
         ],
         StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED: [
             # TODO(#2898) - Use TAK026 statuses to populate release reason
@@ -1094,6 +1096,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
         return _clear_magical_date_values
 
+    # TODO(#7331): Stop putting SSVR entities on StateIncarcerationPeriods
     def _create_source_violation_response(
         self,
         _gating_context: IngestGatingContext,

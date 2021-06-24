@@ -16,7 +16,7 @@
 # =============================================================================
 """Contains generic implementation of the StateSpecificIncarcerationPreProcessingDelegate
  for used in state-agnostic tests."""
-from typing import Set
+from typing import Optional, Set
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
     StateSpecificIncarcerationPreProcessingDelegate,
@@ -50,6 +50,23 @@ class UsXxIncarcerationPreProcessingDelegate(
         self, incarceration_period: StateIncarcerationPeriod
     ) -> bool:
         return self._default_period_is_parole_board_hold(incarceration_period)
+
+    def period_is_non_board_hold_temporary_custody(
+        self, incarceration_period: StateIncarcerationPeriod
+    ) -> bool:
+        return self._default_period_is_non_board_hold_temporary_custody(
+            incarceration_period
+        )
+
+    def pre_processing_incarceration_period_admission_reason_map(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
+        return (
+            self._default_pre_processing_incarceration_period_admission_reason_mapper(
+                incarceration_period
+            )
+        )
 
     def pre_processing_relies_on_supervision_periods(self):
         return self._default_pre_processing_relies_on_supervision_periods()

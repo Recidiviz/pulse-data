@@ -16,7 +16,7 @@
 # =============================================================================
 """US_MO specific enum helper methods."""
 import re
-from typing import Dict, Callable, Optional, List, Set
+from typing import Callable, Dict, List, Optional, Set
 
 from more_itertools import one
 
@@ -26,20 +26,19 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodTerminationReason,
     StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.str_field_utils import sorted_list_from_str
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     invert_enum_to_str_mappings,
 )
 from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import (
-    TAK026_STATUS_SUPERVISION_PERIOD_START_REGEX,
     TAK026_STATUS_CYCLE_TERMINATION_REGEX,
-    TAK026_STATUS_SUPERVISION_SENTENCE_COMPLETION_REGEX,
+    TAK026_STATUS_SUPERVISION_PERIOD_START_REGEX,
     TAK026_STATUS_SUPERVISION_PERIOD_TERMINATION_REGEX,
+    TAK026_STATUS_SUPERVISION_SENTENCE_COMPLETION_REGEX,
 )
-
 
 NEW_COURT_COMMITTMENT_STATUS_CODES: List[str] = [
     #  All New Court Commitment (10I10*) statuses from TAK026 (except erroneous committment)
@@ -85,24 +84,24 @@ BOND_RETURN_STATUS_CODES: List[str] = [
 ]
 
 PAROLE_REVOKED_REENTRY_STATUS_CODES: List[str] = [
-    # All Parole Revocation (40I1*) statuses from TAK026
+    # All Parole Revocation (40I1*) statuses from TAK026 (except 40I1060, which is a
+    # sanction admission, and 40I1040, which is a temporary custody admission pending an
+    # out of state decision).
     "40I1010",  # Parole Ret-Tech Viol
     "40I1020",  # Parole Ret-New Felony-Viol
     "40I1021",  # Parole Ret-No Violation
     "40I1025",  # Medical Parole Ret - Rescinded
-    "40I1040",  # Parole Ret-OTST Decision Pend
     "40I1050",  # Parole Viol-Felony Law Viol
     "40I1055",  # Parole Viol-Misd Law Viol
-    "40I1060",  # Parole Ret-Treatment Center
     "40I1070",  # Parole Return-Work Release
 ]
 
+#  Note: Conditional Release is a type of discretionary parole
 CONDITIONAL_RELEASE_RETURN_STATUS_CODES: List[str] = [
     # All Conditional Release Return (40I3*) statuses from TAK026
     "40I3010",  # CR Ret-Tech Viol
     "40I3020",  # CR Ret-New Felony-Viol
     "40I3021",  # CR Ret-No Violation
-    "40I3040",  # CR Ret-OTST Decision Pend
     "40I3050",  # CR Viol-Felony Law Viol
     "40I3055",  # CR Viol-Misd Law Viol
     "40I3060",  # CR Ret-Treatment Center
@@ -112,24 +111,27 @@ CONDITIONAL_RELEASE_RETURN_STATUS_CODES: List[str] = [
 PAROLE_REVOKED_WHILE_INCARCERATED_STATUS_CODES: List[str] = [
     # All Parole Update (50N10*) statuses
     "50N1010",  # Parole Update - Tech Viol
-    "50N1015",  # Parole Update - ITC Failure
     "50N1020",  # Parole Update - New Felony - Viol
     "50N1021",  # Parole Update - No Violation
     "50N1045",  # Parole Update - ITC Ineligible
     "50N1050",  # Parole Viol Upd - Fel Law Viol
     "50N1055",  # Parole Viol Upd - Misd Law Viol
-    "50N1060",  # Parole Update - Treatment Center
     "50N1065",  # Parole Update - CRC
     # All Conditional Release Update (50N30*) statuses
     "50N3010",  # CR Update - Tech Viol
-    "50N3015",  # CR Update - ITC Failure
     "50N3020",  # CR Update - New Felony - Viol
     "50N3021",  # CR Update - No Violation
     "50N3045",  # CR Update - ITC Ineligible
     "50N3050",  # CR Viol Update - Felony Law Viol
     "50N3055",  # CR Viol Update - Misd Law Viol
-    "50N3060",  # CR Update - Treatment Center
     "50N3065",  # CR Update - CRC
+]
+
+TREATMENT_FAILURE_STATUSES: List[str] = [
+    #  All statuses indicating a failure of treatment causing mandate to serve rest of
+    #  sentence
+    "50N1015",  # Parole Update - ITC Failure
+    "50N3015",  # CR Update - ITC Failure
 ]
 
 PROBATION_REVOCATION_RETURN_STATUSES: List[str] = [
@@ -154,7 +156,6 @@ PROBATION_REVOCATION_RETURN_STATUSES: List[str] = [
     "40I2085",  # Prob Rev-New Mis Conv-Reg Disc
     "40I2090",  # Prob Rev-Fel Law Vio-Reg Disc
     "40I2095",  # Prob Rev-Misd Law Vio-Reg Disc
-    "40I2100",  # Prob Rev-Tech-120 Day Treat
     "40I2105",  # Prob Rev-New Felon-120 Day Trt
     "40I2110",  # Prob Rev-New Misd-120 Day Trt
     "40I2115",  # Prob Rev-Fel Law-120 Day Treat
@@ -215,23 +216,30 @@ LEGACY_PROBATION_REENTRY_STATUS_CODES: List[str] = [
     "40I8070",  # Admin Par Return-Work Release
 ]
 
-MID_PROBATION_COMMITMENT_FOR_TREATMENT_OR_SHOCK_STATUS_CODES: List[str] = [
+PROBATION_REVOCATION_SECONDARY_STATUS_CODES: List[str] = [
+    # These codes will sometimes show up as the only meaningful statuses indicating a
+    # probation revocation
+    "40I7000",  # Field Supv to DAI-Oth Sentence
+    "40I7001",  # Field Supv to DAI-Same Sentence
+]
+
+SUPERVISION_SANCTION_COMMITMENT_FOR_TREATMENT_OR_SHOCK_STATUS_CODES: List[str] = [
     #  All commitment for treatment / shock additional sentences (20I10*) statuses from TAK026 (except 20I1000, which
     #  is always NEW_ADMISSION). These statuses may show up on the same day as another new admission status, but if they
-    #  do not, then we can treat them as a revocation from probation.
+    #  do not, then we can treat them as a sanction admission from supervision.
     "20I1010",  # Court Comm-120 Day-Addl Charge
     "20I1020",  # Court Comm-Lng Tm Trt-Addl Chg
     "20I1030",  # Court Comm-Reg Dis Pgm-Addl Ch
     "20I1040",  # Court Comm-120 Day Treat-Addl
     "20I1050",  # Court Comm-SOAU-Addl Charge
     "20I1060",  # Court Comm-MH 120 Day-Addl Chg
-    #  All Probation returns for shock/treatment (40I70*)
-    # TODO(#2666): These are not technically revocation, revist once we think more broadly about how to handle returns
-    #   vs revocations
-    #  Note: These seem to be treated like a New Admission (NA) in TAK158, though they always follow a 15I1000 (New
-    #  Court Probation) or other new admission reason.
-    "40I7000",  # Field Supv to DAI-Oth Sentence
-    "40I7001",  # Field Supv to DAI-Same Sentence
+    #  Parole returns for shock/treatment
+    "40I1060",  # Parole Ret-Treatment Center
+    "50N1060",  # Parole Update - Treatment Center
+    "50N3060",  # CR Update - Treatment Center
+    # Probation sanction admission for treatment
+    "40I2100",  # Prob Rev-Tech-120 Day Treat
+    #  All other probation returns for shock/treatment (40I70*)
     "40I7010",  # Prob Adm-Shock Incarceration
     "40I7020",  # Prob Adm-Ct Order Det Sanction
     "40I7030",  # Prob Adm-Mental Health 120 Day
@@ -240,8 +248,12 @@ MID_PROBATION_COMMITMENT_FOR_TREATMENT_OR_SHOCK_STATUS_CODES: List[str] = [
 ]
 
 BOARD_HOLDOVER_ENTRY_STATUS_CODES: List[str] = [
-    #  All Board Holdover incarceration admission statuses (40I0*)
+    #  All Board Holdover incarceration admission statuses (40I*)
     "40I0050",  # Board Holdover
+    # TODO(#7442): Confirm these should be board holds and not regular temporary
+    #  custody periods
+    "40I1040",  # Parole Ret-OTST Decision Pend
+    "40I3040",  # CR Ret-OTST Decision Pend
 ]
 
 RETURN_FROM_ESCAPE_STATUS_CODES: List[str] = [
@@ -797,10 +809,13 @@ INCARCERATION_PERIOD_ADMISSION_REASON_TO_STR_MAPPINGS: Dict[
     StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION: [
         *PROBATION_REVOCATION_RETURN_STATUSES,
         *LEGACY_PROBATION_REENTRY_STATUS_CODES,
-        *MID_PROBATION_COMMITMENT_FOR_TREATMENT_OR_SHOCK_STATUS_CODES,
+        *PROBATION_REVOCATION_SECONDARY_STATUS_CODES,
     ],
     StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY: [
         *BOARD_HOLDOVER_ENTRY_STATUS_CODES
+    ],
+    StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION: [
+        *SUPERVISION_SANCTION_COMMITMENT_FOR_TREATMENT_OR_SHOCK_STATUS_CODES,
     ],
     StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR: [
         *ADMITTED_IN_ERROR_STATUS_CODES
@@ -816,6 +831,9 @@ INCARCERATION_PERIOD_ADMISSION_REASON_TO_STR_MAPPINGS: Dict[
     ],
     StateIncarcerationPeriodAdmissionReason.TRANSFER: [
         *REDUCTION_OF_SENTENCE_REENTRY_STATUS_CODES
+    ],
+    StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE: [
+        *TREATMENT_FAILURE_STATUSES
     ],
 }
 
@@ -849,22 +867,36 @@ def rank_incarceration_period_admission_reason_status_str(
         # These are the main NEW_ADMISSION statuses
         return 1
 
-    if status_str in MID_PROBATION_COMMITMENT_FOR_TREATMENT_OR_SHOCK_STATUS_CODES:
-        # These are codes that count as a PROBATION_REVOCATION when there are no other new admission or revocation
-        # statuses present.
+    if (
+        status_str
+        in SUPERVISION_SANCTION_COMMITMENT_FOR_TREATMENT_OR_SHOCK_STATUS_CODES
+    ):
+        # These are codes that count as a SANCTION_ADMISSION when there are no other
+        # new admission or revocation statuses present.
         return 2
+
+    if status_str in PROBATION_REVOCATION_SECONDARY_STATUS_CODES:
+        # These are codes that count as a PROBATION_REVOCATION when there are no other
+        # new admission, revocation, or sanction admission statuses present.
+        return 3
+
+    if status_str in TREATMENT_FAILURE_STATUSES:
+        #  These are codes that indicate a STATUS_CHANGE, such as a failure of
+        #  treatment, when there are no other new admission or revocation statuses
+        #  present
+        return 4
 
     if status_str in NEW_ADMISSION_SECONDARY_STATUS_CODES:
         # These status codes are sometimes the only real admissions status, though are more rare. Should not take
         # precedent over other new admission / revocation statuses.
-        return 3
+        return 5
 
     if status_str in BOARD_HOLDOVER_ENTRY_STATUS_CODES:
         # These are TEMPORARY_CUSTODY statuses
-        return 4
+        return 6
 
     if status_str in INSTITUTIONAL_TRANSFER_FROM_OUT_OF_STATE_STATUS_CODES:
-        return 5
+        return 7
 
     if (
         status_str in RETURN_FROM_ESCAPE_STATUS_CODES
@@ -873,10 +905,10 @@ def rank_incarceration_period_admission_reason_status_str(
     ):
         # These are other statuses that don't / shouldn't show up together, should be considered after revocation,
         # transfer, and new admission statuses.
-        return 6
+        return 8
 
     if status_str in REDUCTION_OF_SENTENCE_REENTRY_STATUS_CODES:
-        return 7
+        return 9
 
     # This status code does not give us good info about the admission reason
     return None
