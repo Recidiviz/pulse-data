@@ -14,13 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { action, autorun, makeAutoObservable, runInAction } from "mobx";
+import { action, autorun, makeAutoObservable, runInAction, set } from "mobx";
 import { parse } from "query-string";
 import PolicyStore from "../PolicyStore";
 import UserStore, { KNOWN_EXPERIMENTS } from "../UserStore";
-import { ClientData, Client } from "./Client";
+import { ClientData, Client, PreferredContactMethod } from "./Client";
 
-import API from "../API";
+import API, { ErrorResponse } from "../API";
 
 import {
   CLIENT_LIST_KIND,
@@ -236,6 +236,24 @@ class ClientsStore {
     this.activeClientOffset = offset;
 
     this.clientPendingView = null;
+  }
+
+  updateClientPreferredContactMethod(
+    client: Client,
+    contactMethod: PreferredContactMethod
+  ): Promise<void | ErrorResponse> {
+    const { preferredContactMethod: previousContactMethod } = client;
+    set(client, "preferredContactMethod", contactMethod);
+
+    return this.api
+      .post<void>("/api/set_preferred_contact_method", {
+        personExternalId: client.personExternalId,
+        contactMethod,
+      })
+      .catch((error) => {
+        set(client, "preferredContactMethod", previousContactMethod);
+        throw error;
+      });
   }
 }
 
