@@ -25,6 +25,7 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_man
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.ingest.direct.regions.us_mo import us_mo_enum_helpers
@@ -50,13 +51,14 @@ class UsMoIncarcerationPreProcessingDelegate(
         self, incarceration_period: StateIncarcerationPeriod
     ) -> bool:
         """In US_MO, we can infer that an incarceration period with an admission_reason
-        of TEMPORARY_CUSTODY is a parole board hold if the period has no other set
-        specialized_purpose_for_incarceration value.
+        of TEMPORARY_CUSTODY is a parole board hold if the period has a
+        specialized_purpose_for_incarceration value of GENERAL.
         """
         return (
             incarceration_period.admission_reason
             == StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
-            and incarceration_period.specialized_purpose_for_incarceration is None
+            and incarceration_period.specialized_purpose_for_incarceration
+            == StateSpecializedPurposeForIncarceration.GENERAL
         )
 
     def period_is_non_board_hold_temporary_custody(
