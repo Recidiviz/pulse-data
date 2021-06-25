@@ -18,7 +18,7 @@
 import datetime
 import logging
 from collections import defaultdict
-from typing import List, Optional, Dict, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import attr
 from google.cloud import bigquery
@@ -30,12 +30,7 @@ from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestView,
-    DirectIngestPreProcessedIngestViewBuilder,
-    RawTableViewType,
-    DestinationTableType,
-)
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.ingest.direct.controllers.direct_ingest_file_metadata_manager import (
     DirectIngestFileMetadataManager,
 )
@@ -46,12 +41,14 @@ from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsIngestViewExportArgs,
     GcsfsDirectIngestFileType,
+    GcsfsIngestViewExportArgs,
 )
-from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsFilePath,
-    GcsfsBucketPath,
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DestinationTableType,
+    DirectIngestPreProcessedIngestView,
+    DirectIngestPreProcessedIngestViewBuilder,
+    RawTableViewType,
 )
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestIngestFileMetadata,
@@ -107,7 +104,7 @@ class _IngestViewExportState:
         return result
 
 
-# TODO(#3020): Detailed tests for this class
+# TODO(#7843): Debug and write test for edge case crash while uploading many raw data files while queues are unpaused
 class DirectIngestIngestViewExportManager:
     """Class that manages logic related to exporting ingest views to a region's direct ingest bucket."""
 
