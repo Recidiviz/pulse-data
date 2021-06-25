@@ -25,25 +25,23 @@ from typing import Optional
 import attr
 
 from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
-    INGEST_SECONDARY_BUCKET_SUFFIX,
     INGEST_PRIMARY_BUCKET_SUFFIX,
+    INGEST_SECONDARY_BUCKET_SUFFIX,
+    INGEST_SFTP_BUCKET_SUFFIX,
     build_ingest_bucket_name,
     build_ingest_storage_bucket_name,
-    INGEST_SFTP_BUCKET_SUFFIX,
+)
+from recidiviz.cloud_storage.gcsfs_path import (
+    GcsfsBucketPath,
+    GcsfsDirectoryPath,
+    GcsfsFilePath,
 )
 from recidiviz.common.date import snake_case_datetime
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsFilePath,
-    GcsfsDirectoryPath,
-    GcsfsBucketPath,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_types import (
-    CloudTaskArgs,
-)
+from recidiviz.ingest.direct.controllers.direct_ingest_types import CloudTaskArgs
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
 from recidiviz.utils import metadata
 

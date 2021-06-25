@@ -22,7 +22,7 @@ import abc
 import datetime
 import os
 import unittest
-from typing import List, Type, Optional, cast
+from typing import List, Optional, Type, cast
 
 import pytest
 import pytz
@@ -33,6 +33,12 @@ from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
@@ -56,26 +62,24 @@ from recidiviz.persistence.entity.entity_utils import (
 )
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.persistence.persistence import (
-    OVERALL_THRESHOLD,
-    ENUM_THRESHOLD,
-    ENTITY_MATCHING_THRESHOLD,
     DATABASE_INVARIANT_THRESHOLD,
+    ENTITY_MATCHING_THRESHOLD,
+    ENUM_THRESHOLD,
+    OVERALL_THRESHOLD,
 )
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct import fixture_util
 from recidiviz.tests.ingest.direct.direct_ingest_util import (
-    run_task_queues_to_empty,
     build_gcsfs_controller_for_tests,
     ingest_args_for_fixture_file,
     path_for_fixture_file,
+    run_task_queues_to_empty,
 )
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
-    clear_db_ids,
     assert_no_unexpected_entities_in_db,
+    clear_db_ids,
 )
-from recidiviz.tests.utils.test_utils import (
-    print_visible_header_label,
-)
+from recidiviz.tests.utils.test_utils import print_visible_header_label
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.environment import in_ci
 
@@ -149,6 +153,11 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
         )
 
         self.entity_matching_error_threshold_patcher.start()
+
+        for instance in DirectIngestInstance:
+            DirectIngestInstanceStatusManager.add_instance(
+                self.region_code(), instance, (instance != DirectIngestInstance.PRIMARY)
+            )
 
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(

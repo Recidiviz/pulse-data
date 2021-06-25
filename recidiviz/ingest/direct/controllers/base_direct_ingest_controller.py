@@ -44,6 +44,9 @@ from recidiviz.ingest.direct.controllers.direct_ingest_ingest_view_export_manage
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
+from recidiviz.ingest.direct.controllers.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
+)
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportManager,
 )
@@ -149,6 +152,10 @@ class BaseDirectIngestController(Ingestor):
             launched_file_tags=self.get_file_tag_rank_list(),
         )
 
+        self.ingest_instance_status_manager = DirectIngestInstanceStatusManager(
+            self.region_code(), self.ingest_instance
+        )
+
     @property
     def region(self) -> Region:
         return regions.get_region(self.region_code().lower(), is_direct_ingest=True)
@@ -197,11 +204,9 @@ class BaseDirectIngestController(Ingestor):
         process and commit the contents to Postgres."""
         check_is_region_launched_in_env(self.region)
 
-        if self.ingest_instance == DirectIngestInstance.SECONDARY:
-            # TODO(#6226): Remove this check once we are ready to launch ingest out of
-            #  secondary buckets.
+        if self.ingest_instance_status_manager.is_instance_paused():
             logging.info(
-                "Ingest out of [%s] not yet supported.", self.ingest_bucket_path.uri()
+                "Ingest out of [%s] is currently paused.", self.ingest_bucket_path.uri()
             )
             return
 
@@ -416,6 +421,12 @@ class BaseDirectIngestController(Ingestor):
         self, args: GcsfsIngestArgs
     ) -> None:
         check_is_region_launched_in_env(self.region)
+
+        if self.ingest_instance_status_manager.is_instance_paused():
+            logging.info(
+                "Ingest out of [%s] is currently paused.", self.ingest_bucket_path.uri()
+            )
+            return
 
         if not self.region_lock_manager.can_proceed():
             logging.warning(
@@ -727,11 +738,9 @@ class BaseDirectIngestController(Ingestor):
                 "endpoint and any cloud functions that trigger ingest."
             )
 
-        if self.ingest_instance == DirectIngestInstance.SECONDARY:
-            # TODO(#6226): Remove this check once we are ready to launch ingest out of
-            #  secondary buckets.
+        if self.ingest_instance_status_manager.is_instance_paused():
             logging.info(
-                "Ingest out of [%s] not yet supported.", self.ingest_bucket_path.uri()
+                "Ingest out of [%s] is currently paused.", self.ingest_bucket_path.uri()
             )
             return
 
@@ -819,6 +828,12 @@ class BaseDirectIngestController(Ingestor):
         """
         check_is_region_launched_in_env(self.region)
 
+        if self.ingest_instance_status_manager.is_instance_paused():
+            logging.info(
+                "Ingest out of [%s] is currently paused.", self.ingest_bucket_path.uri()
+            )
+            return
+
         if self.ingest_instance == DirectIngestInstance.SECONDARY:
             raise ValueError(
                 f"Raw data import not supported from SECONDARY ingest bucket "
@@ -866,6 +881,13 @@ class BaseDirectIngestController(Ingestor):
         self, ingest_view_export_args: GcsfsIngestViewExportArgs
     ) -> None:
         check_is_region_launched_in_env(self.region)
+
+        if self.ingest_instance_status_manager.is_instance_paused():
+            logging.info(
+                "Ingest out of [%s] is currently paused.", self.ingest_bucket_path.uri()
+            )
+            return
+
         did_export = self.ingest_view_export_manager.export_view_for_args(
             ingest_view_export_args
         )

@@ -26,19 +26,22 @@ from typing import List, Optional, Set, Tuple, Type, TypeVar
 import pytest
 import pytz
 from freezegun import freeze_time
-from mock import patch, Mock
+from mock import Mock, patch
 
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsFilePath,
-    GcsfsDirectoryPath,
     GcsfsBucketPath,
+    GcsfsDirectoryPath,
+    GcsfsFilePath,
 )
 from recidiviz.common.serialization import (
+    attr_from_json_dict,
     attr_to_json_dict,
     datetime_to_serializable,
     serializable_to_datetime,
-    attr_from_json_dict,
+)
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import (
     CsvGcsfsDirectIngestController,
@@ -46,14 +49,17 @@ from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller impo
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     SPLIT_FILE_STORAGE_SUBDIR,
 )
-from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
-    BaseDirectIngestController,
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsIngestArgs,
-    filename_parts_from_path,
     GcsfsDirectIngestFileType,
+    GcsfsIngestArgs,
     GcsfsIngestViewExportArgs,
+    filename_parts_from_path,
 )
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestFileMetadataManager,
@@ -67,17 +73,17 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.tests.ingest.direct import fixture_util
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
+from recidiviz.tests.ingest.direct import fixture_util
 from recidiviz.tests.ingest.direct.direct_ingest_util import (
-    build_gcsfs_controller_for_tests,
+    FakeDirectIngestRawFileImportManager,
+    FakeDirectIngestRegionRawFileConfig,
+    add_paths_with_tags,
     add_paths_with_tags_and_process,
+    build_gcsfs_controller_for_tests,
+    check_all_paths_processed,
     path_for_fixture_file,
     run_task_queues_to_empty,
-    check_all_paths_processed,
-    FakeDirectIngestRawFileImportManager,
-    add_paths_with_tags,
-    FakeDirectIngestRegionRawFileConfig,
 )
 from recidiviz.tests.ingest.direct.fake_direct_ingest_big_query_client import (
     FakeDirectIngestBigQueryClient,
@@ -85,9 +91,7 @@ from recidiviz.tests.ingest.direct.fake_direct_ingest_big_query_client import (
 from recidiviz.tests.ingest.direct.fake_synchronous_direct_ingest_cloud_task_manager import (
     FakeSynchronousDirectIngestCloudTaskManager,
 )
-from recidiviz.tests.utils.fake_region import (
-    fake_region,
-)
+from recidiviz.tests.utils.fake_region import fake_region
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.regions import Region
 
@@ -210,6 +214,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         local_postgres_helpers.use_on_disk_postgresql_database(
             self.operations_database_key
         )
+
+        # Insert test states into DirectIngestInstanceStatus
+        for region in ["US_XX", "US_XX_YYYYY"]:
+            for instance in DirectIngestInstance:
+                DirectIngestInstanceStatusManager.add_instance(
+                    region, instance, (instance != DirectIngestInstance.PRIMARY)
+                )
 
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(
@@ -416,6 +427,19 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.check_imported_path_count(controller, 3)
 
         self.check_tags(controller, controller.get_file_tag_rank_list())
+
+    def test_state_doesnt_run_when_paused(self) -> None:
+        controller = build_gcsfs_controller_for_tests(
+            StateTestGcsfsDirectIngestController, run_async=True
+        )
+        controller.ingest_instance_status_manager.pause_instance()
+
+        file_tags = list(reversed(sorted(controller.get_file_tag_rank_list())))
+        add_paths_with_tags(controller, file_tags, None)
+        run_task_queues_to_empty(controller)
+
+        # No files should be imported because we are paused
+        self.check_imported_path_count(controller, 0)
 
     @patch(
         "recidiviz.cloud_storage.gcs_pseudo_lock_manager.GcsfsFactory.build",
