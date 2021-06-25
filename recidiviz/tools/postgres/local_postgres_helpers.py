@@ -272,7 +272,7 @@ def use_on_disk_postgresql_database(database_key: SQLAlchemyDatabaseKey) -> None
     already been initialized.
 
     This includes:
-    1. Create all tables in the newly created sqlite database
+    1. Create all tables in the newly created Postgres database
     2. Bind the global SessionMaker to the new database engine
     """
     if database_key.declarative_meta not in DECLARATIVE_BASES:
