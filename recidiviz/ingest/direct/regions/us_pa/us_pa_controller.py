@@ -212,7 +212,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
             "dbo_Senrec": [
                 self._set_incarceration_sentence_id,
                 self._enrich_incarceration_sentence,
-                self._strip_id_whitespace,
                 self._rationalize_offense_type,
                 self._set_is_violent,
             ],
@@ -354,7 +353,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         StateAssessmentType.LSIR: ["LSI-R"],
         StateAssessmentType.PA_RST: ["RST"],
         StateAssessmentType.STATIC_99: ["ST99"],
-        # TODO(#3020): Confirm the COMPLETED codes below. Some may be intermediate and not appropriately mapped as
+        # TODO(#3312): Confirm the COMPLETED codes below. Some may be intermediate and not appropriately mapped as
         # final.
         StateSentenceStatus.COMPLETED: [
             "B",  # Bailed
@@ -1169,20 +1168,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
                 obj.is_life = str(is_life)
                 obj.is_capital_punishment = str(is_capital_punishment)
-
-    # TODO(#3020): When PA is switched to use SQL pre-processing, this will no longer be necessary.
-    @staticmethod
-    def _strip_id_whitespace(
-        _gating_context: IngestGatingContext,
-        _row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Strips id fields provided as strings with inconsistent whitespace padding to avoid id matching issues."""
-        for obj in extracted_objects:
-            if isinstance(obj, StateCharge):
-                if obj.state_charge_id:
-                    obj.state_charge_id = obj.state_charge_id.strip()
 
     @staticmethod
     def _set_is_violent(
