@@ -19,6 +19,12 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+)
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodAdmissionReason,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -30,18 +36,44 @@ ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_DESCRIPTION = (
     """Dedup priority for session start reasons"""
 )
 
+SUPERVISION_START_REASON_ORDERED_PRIORITY = [
+    StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+    StateSupervisionPeriodAdmissionReason.ABSCONSION,
+    StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+    StateSupervisionPeriodAdmissionReason.INVESTIGATION,
+    StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
+    StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
+    StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+    StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE,
+    StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
+    StateSupervisionPeriodAdmissionReason.EXTERNAL_UNKNOWN,
+]
+
+INCARCERATION_START_REASON_ORDERED_PRIORITY = [
+    StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+    StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+    StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
+    StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+    StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+    StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+    StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+    StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
+    StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
+    StateIncarcerationPeriodAdmissionReason.TRANSFER,
+    StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
+    StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
+    StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
+    StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+    StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
+]
+
+
 ADMISSION_START_REASON_DEDUP_PRIORITY_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT 
         'SUPERVISION_START' AS metric_source,
         * 
-    FROM UNNEST([
-        'CONDITIONAL_RELEASE',
-        'ABSCONSION',
-        'COURT_SENTENCE',
-        'RETURN_FROM_ABSCONSION',
-        'TRANSFER_WITHIN_STATE',
-        'TRANSFER_OUT_OF_STATE']) AS start_reason
+    FROM UNNEST([{prioritized_supervision_start_reasons}]) AS start_reason
     WITH OFFSET AS priority
     
     UNION ALL
@@ -49,19 +81,8 @@ ADMISSION_START_REASON_DEDUP_PRIORITY_QUERY_TEMPLATE = """
     SELECT 
         'INCARCERATION_ADMISSION' AS metric_source,
         *
-    FROM UNNEST([
-        'PAROLE_REVOCATION',
-        'PROBATION_REVOCATION',
-        'ADMITTED_FROM_SUPERVISION', 
-        'NEW_ADMISSION',
-        'RETURN_FROM_ESCAPE',
-        'STATUS_CHANGE',
-        'TRANSFER',
-        'TRANSFERRED_FROM_OUT_OF_STATE',
-        'RETURN_FROM_ERRONEOUS_RELEASE',
-        'ADMITTED_IN_ERROR',
-        'INTERNAL_UNKNOWN',
-        'EXTERNAL_UNKNOWN']) AS start_reason
+    FROM UNNEST([{prioritized_incarceration_start_reasons}]) AS 
+start_reason
     WITH OFFSET AS priority  
     """
 
@@ -71,6 +92,22 @@ ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=ADMISSION_START_REASON_DEDUP_PRIORITY_QUERY_TEMPLATE,
     description=ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_DESCRIPTION,
     should_materialize=False,
+    prioritized_supervision_start_reasons=(
+        "\n,".join(
+            [
+                f"'{start_reason.value}'"
+                for start_reason in SUPERVISION_START_REASON_ORDERED_PRIORITY
+            ]
+        )
+    ),
+    prioritized_incarceration_start_reasons=(
+        "\n,".join(
+            [
+                f"'{start_reason.value}'"
+                for start_reason in INCARCERATION_START_REASON_ORDERED_PRIORITY
+            ]
+        )
+    ),
 )
 
 if __name__ == "__main__":
