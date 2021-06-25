@@ -76,8 +76,6 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
                 f"Unexpected metadata type [{type(metadata)}] for path [{path.abs_path()}]"
             )
 
-        # TODO(#3020): Design/handle/write tests for case where this is a file we've moved from storage for a
-        #  rerun. How do we accurately detect when this is happening?
         return True
 
     def mark_raw_file_as_discovered(self, path: GcsfsFilePath) -> None:
@@ -319,8 +317,6 @@ class PostgresDirectIngestIngestFileMetadataManager(
                 f"Unexpected metadata type [{type(metadata)}] for path [{path.abs_path()}]"
             )
 
-        # TODO(#3020): Design/handle/write tests for case where this is a file we've moved from storage for a
-        #  rerun. How do we accurately detect when this is happening?
         return metadata.discovery_time is not None
 
     def mark_ingest_view_file_as_discovered(self, path: GcsfsFilePath) -> None:
