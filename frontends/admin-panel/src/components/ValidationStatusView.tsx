@@ -71,7 +71,7 @@ const ValidationStatusView = (): JSX.Element => {
 
   const metadata: MetadataItem[] = [
     { key: "Run ID", value: data.runId },
-    { key: "Run Date", value: data.runDate },
+    { key: "Run Datetime", value: data.runDatetime },
     { key: "System Version", value: data.systemVersion },
   ];
   return (
