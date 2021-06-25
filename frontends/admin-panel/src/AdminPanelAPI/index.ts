@@ -59,13 +59,6 @@ export const fetchValidationStatus = async (): Promise<Response> => {
 };
 
 export {
-  fetchEmailStateCodes,
-  fetchETLViewIds,
-  generateCaseUpdatesExport,
-  getPOFeedback,
-  runCloudSQLImport,
-} from "./LineStaffTools";
-export {
   createDiscovery,
   fetchDiscoveryStatus,
   fetchRegionCodeFiles,
@@ -79,7 +72,15 @@ export {
   getIngestInstanceSummaries,
   getIngestQueuesState,
   importDatabaseFromGCS,
+  pauseDirectIngestInstance,
   releaseBQExportLock,
   startIngestRun,
   updateIngestQueuesState,
 } from "./IngestOperations";
+export {
+  fetchEmailStateCodes,
+  fetchETLViewIds,
+  generateCaseUpdatesExport,
+  getPOFeedback,
+  runCloudSQLImport,
+} from "./LineStaffTools";
