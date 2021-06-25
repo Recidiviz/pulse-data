@@ -20,7 +20,7 @@ import logging
 import os
 import uuid
 from enum import Enum
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 from urllib.parse import urlencode
 
 import attr
@@ -47,6 +47,9 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestArgs,
     GcsfsIngestViewExportArgs,
     GcsfsRawDataBQImportArgs,
+)
+from recidiviz.ingest.direct.direct_ingest_region_utils import (
+    get_direct_ingest_states_with_sftp_queue,
 )
 from recidiviz.persistence.database.sqlalchemy_database_key import (
     SQLAlchemyStateDatabaseVersion,
@@ -99,6 +102,54 @@ def _build_direct_ingest_queue_name(
         'direct-ingest-state-us-id-sftp-queue'
     """
     return f"direct-ingest-state-{region_code.lower().replace('_', '-')}-{queue_type.value}"
+
+
+def _queue_name_for_queue_type(
+    queue_type: DirectIngestQueueType,
+    region_code: str,
+    # TODO(#7984): Delete these args once we have deleted legacy instance ingest
+    system_level: SystemLevel,
+    ingest_instance: DirectIngestInstance,
+) -> str:
+    # TODO(#7984): Remove this block and the shared queues when removing LEGACY
+    if _is_legacy_instance(system_level, region_code, ingest_instance):
+        if queue_type == DirectIngestQueueType.SFTP_QUEUE:
+            return _build_direct_ingest_queue_name(region_code, queue_type)
+
+        if queue_type == DirectIngestQueueType.SCHEDULER:
+            return DIRECT_INGEST_SCHEDULER_QUEUE_V2
+
+        if queue_type == DirectIngestQueueType.PROCESS_JOB_QUEUE:
+            if system_level is SystemLevel.COUNTY:
+                return DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2
+            if system_level is SystemLevel.STATE:
+                return DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2
+            raise ValueError(f"Unexpected system level: {system_level}")
+
+        if queue_type == DirectIngestQueueType.BQ_IMPORT_EXPORT:
+            return DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2
+
+        raise ValueError(f"Unexpected queue_type: [{queue_type}]")
+
+    return _build_direct_ingest_queue_name(region_code, queue_type)
+
+
+def get_direct_ingest_queues_for_state(
+    state_code: StateCode,
+    # TODO(#7984): Delete this arg once we have deleted legacy instance ingest
+    ingest_instance: DirectIngestInstance,
+) -> List[str]:
+    queue_names = []
+    for queue_type in DirectIngestQueueType:
+        if queue_type == DirectIngestQueueType.SFTP_QUEUE:
+            if state_code not in get_direct_ingest_states_with_sftp_queue():
+                continue
+        queue_names.append(
+            _queue_name_for_queue_type(
+                queue_type, state_code.value, SystemLevel.STATE, ingest_instance
+            )
+        )
+    return queue_names
 
 
 @attr.s
@@ -290,11 +341,11 @@ class DirectIngestCloudTaskManager:
 
 
 # TODO(#7984): Remove this and the shared queues when removing LEGACY
-def _is_legacy_instance(region: Region, ingest_instance: DirectIngestInstance) -> bool:
+def _is_legacy_instance(
+    system_level: SystemLevel, region_code: str, ingest_instance: DirectIngestInstance
+) -> bool:
     return (
-        ingest_instance.database_version(
-            SystemLevel.for_region(region), StateCode.get(region.region_code)
-        )
+        ingest_instance.database_version(system_level, StateCode.get(region_code))
         is SQLAlchemyStateDatabaseVersion.LEGACY
     )
 
@@ -309,12 +360,12 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     def _get_scheduler_queue_manager(
         self, region: Region, ingest_instance: DirectIngestInstance
     ) -> CloudTaskQueueManager[SchedulerCloudTaskQueueInfo]:
-        if _is_legacy_instance(region, ingest_instance):
-            queue_name = DIRECT_INGEST_SCHEDULER_QUEUE_V2
-        else:
-            queue_name = _build_direct_ingest_queue_name(
-                region.region_code, DirectIngestQueueType.SCHEDULER
-            )
+        queue_name = _queue_name_for_queue_type(
+            DirectIngestQueueType.SCHEDULER,
+            region.region_code,
+            SystemLevel.for_region(region),
+            ingest_instance,
+        )
 
         return CloudTaskQueueManager(
             queue_info_cls=SchedulerCloudTaskQueueInfo,
@@ -325,12 +376,12 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     def _get_bq_import_export_queue_manager(
         self, region: Region, ingest_instance: DirectIngestInstance
     ) -> CloudTaskQueueManager[BQImportExportCloudTaskQueueInfo]:
-        if _is_legacy_instance(region, ingest_instance):
-            queue_name = DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2
-        else:
-            queue_name = _build_direct_ingest_queue_name(
-                region.region_code, DirectIngestQueueType.BQ_IMPORT_EXPORT
-            )
+        queue_name = _queue_name_for_queue_type(
+            DirectIngestQueueType.BQ_IMPORT_EXPORT,
+            region.region_code,
+            SystemLevel.for_region(region),
+            ingest_instance,
+        )
 
         return CloudTaskQueueManager(
             queue_info_cls=BQImportExportCloudTaskQueueInfo,
@@ -341,18 +392,12 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     def _get_process_job_queue_manager(
         self, region: Region, ingest_instance: DirectIngestInstance
     ) -> CloudTaskQueueManager[ProcessIngestJobCloudTaskQueueInfo]:
-        if _is_legacy_instance(region, ingest_instance):
-            system_level = SystemLevel.for_region(region)
-            if system_level is SystemLevel.COUNTY:
-                queue_name = DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2
-            elif system_level is SystemLevel.STATE:
-                queue_name = DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2
-            else:
-                raise ValueError(f"Unexpected system level: {system_level}")
-        else:
-            queue_name = _build_direct_ingest_queue_name(
-                region.region_code, DirectIngestQueueType.PROCESS_JOB_QUEUE
-            )
+        queue_name = _queue_name_for_queue_type(
+            DirectIngestQueueType.PROCESS_JOB_QUEUE,
+            region.region_code,
+            SystemLevel.for_region(region),
+            ingest_instance,
+        )
 
         return CloudTaskQueueManager(
             queue_info_cls=ProcessIngestJobCloudTaskQueueInfo,
