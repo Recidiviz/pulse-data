@@ -41,6 +41,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
+    is_commitment_from_supervision,
     is_official_admission,
     release_reason_overrides_released_from_temporary_custody,
 )
@@ -82,6 +83,24 @@ class StateSpecificIncarcerationPreProcessingDelegate:
     ]:
         """Default behavior of admission_reasons_to_filter function."""
         return set()
+
+    # TODO(#7441): Bring in PreProcessedSupervisionPeriodIndex
+    # TODO(#7443): Bring in StateSupervisionViolationResponses
+    @abc.abstractmethod
+    def normalize_period_if_commitment_from_supervision(
+        self, incarceration_period: StateIncarcerationPeriod
+    ) -> StateIncarcerationPeriod:
+        """State-specific implementations of this class should return a new
+        StateIncarcerationPeriod with updated attributes if this period represents a
+        commitment from supervision admission and requires updated attribute values."""
+
+    @staticmethod
+    def _default_normalize_period_if_commitment_from_supervision(
+        incarceration_period: StateIncarcerationPeriod,
+    ) -> StateIncarcerationPeriod:
+        """Default behavior of normalize_period_if_commitment_from_supervision."""
+        # By default, returns the original period
+        return incarceration_period
 
     @abc.abstractmethod
     def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:
@@ -260,6 +279,14 @@ class IncarcerationPreProcessingManager:
                 # to match standardized values
                 mid_processing_periods = (
                     self._standardize_temporary_custody_and_board_hold_periods(
+                        mid_processing_periods
+                    )
+                )
+
+                # Override values on the incarceration periods that are
+                # commitment from supervision admissions
+                mid_processing_periods = (
+                    self._normalize_commitment_from_supervision_admission_periods(
                         mid_processing_periods
                     )
                 )
@@ -743,6 +770,46 @@ class IncarcerationPreProcessingManager:
                 ),
                 release_reason=(updated_release_reason or ip.release_reason),
             )
+            updated_periods.append(updated_ip)
+
+        return updated_periods
+
+    # TODO(#7441): Bring in PreProcessedSupervisionPeriodIndex
+    # TODO(#7443): Bring in StateSupervisionViolationResponses
+    def _normalize_commitment_from_supervision_admission_periods(
+        self,
+        incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> List[StateIncarcerationPeriod]:
+        """Returns the |incarceration_periods| with updated attributes for each period
+        that represents a commitment from supervision admission and requires updated
+        attribute values to match expected values."""
+        updated_periods: List[StateIncarcerationPeriod] = []
+        for ip in incarceration_periods:
+            # First, apply any state-specific overrides for commitment from
+            # supervision admissions
+            updated_ip = self.delegate.normalize_period_if_commitment_from_supervision(
+                ip
+            )
+
+            # Then, universally apply overrides to ensure commitment from supervision
+            # admissions match expected values
+            if is_commitment_from_supervision(
+                updated_ip.admission_reason
+            ) and updated_ip.specialized_purpose_for_incarceration in (
+                StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+                StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+            ):
+                # Any commitment from supervision for SHOCK_INCARCERATION or
+                # TREATMENT_IN_PRISON should actually be classified as a
+                # SANCTION_ADMISSION
+                updated_ip = attr.evolve(
+                    updated_ip,
+                    admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+                )
+
+            # TODO(#7070): Fail here if the updated_ip doesn't have an
+            #  admission_reason of ADMITTED_FROM_SUPERVISION once this value is
+            #  handled by all state delegates
             updated_periods.append(updated_ip)
 
         return updated_periods
