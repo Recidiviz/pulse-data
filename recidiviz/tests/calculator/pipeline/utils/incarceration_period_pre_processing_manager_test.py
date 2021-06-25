@@ -57,7 +57,8 @@ class TestStateSpecificIncarcerationPreProcessingDelegate(unittest.TestCase):
     """Tests the StateSpecificIncarcerationPreProcessingDelegate."""
 
     def setUp(self) -> None:
-        # All
+        # All methods on the StateSpecificIncarcerationPreProcessingDelegate that
+        # need to be implemented by subclasses
         self.methods_to_implement = frozenset(
             name
             for name, attr in vars(
@@ -892,6 +893,62 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             [initial_incarceration_period, expected_collapsed_period],
             validated_incarceration_periods,
         )
+
+    def test_apply_overrides_sanction_admission(self):
+        sanction_admission = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="1",
+            state_code="US_XX",
+            admission_date=date(2012, 12, 24),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+            release_date=date(2012, 12, 24),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        )
+
+        updated_period = attr.evolve(
+            sanction_admission,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+        )
+
+        validated_incarceration_periods = (
+            self._pre_processed_incarceration_periods_for_calculations(
+                incarceration_periods=[sanction_admission],
+                collapse_transfers=True,
+                overwrite_facility_information_in_transfers=True,
+            )
+        )
+
+        self.assertEqual([updated_period], validated_incarceration_periods)
+
+    def test_apply_overrides_not_sanction_admission(self):
+        regular_admission = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="1",
+            state_code="US_XX",
+            admission_date=date(2012, 12, 24),
+            # This person was sentenced to complete treatment in prison
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+            release_date=date(2012, 12, 24),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        )
+
+        period_copy = attr.evolve(
+            regular_admission,
+        )
+
+        validated_incarceration_periods = (
+            self._pre_processed_incarceration_periods_for_calculations(
+                incarceration_periods=[regular_admission],
+                collapse_transfers=True,
+                overwrite_facility_information_in_transfers=True,
+            )
+        )
+
+        self.assertEqual([period_copy], validated_incarceration_periods)
 
 
 class TestCollapseIncarcerationPeriods(unittest.TestCase):
