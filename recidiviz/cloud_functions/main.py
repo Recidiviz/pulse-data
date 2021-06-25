@@ -107,7 +107,9 @@ def parse_state_aggregate(
     return "", response.status_code
 
 
-def normalize_raw_file_path(data: Dict[str, Any]) -> Tuple[str, HTTPStatus]:
+def normalize_raw_file_path(
+    data: Dict[str, Any], _: ContextType
+) -> Tuple[str, HTTPStatus]:
     """Cloud functions can be configured to trigger this function on any bucket that is being used as a test bed for
     automatic uploads. This will just rename the incoming files to have a normalized path with a timestamp so
     subsequent uploads do not have naming conflicts."""

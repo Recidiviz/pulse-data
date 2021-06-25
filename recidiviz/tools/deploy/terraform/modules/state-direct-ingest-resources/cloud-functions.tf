@@ -50,9 +50,7 @@ resource "google_cloudfunctions_function" "secondary-ingest" {
     resource   = module.secondary-direct-ingest-bucket.name
   }
 
-  # TODO(#6226): Once we branch on bucket name to determine database destination, change this
-  # entry_point from `normalize_raw_file_path` to `handle_state_direct_ingest_file`.
-  entry_point = "normalize_raw_file_path"
+  entry_point = "handle_state_direct_ingest_file"
   environment_variables = {
     "GCP_PROJECT" = var.project_id
   }
