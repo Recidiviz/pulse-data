@@ -51,7 +51,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
         mock_bigquery_client.run_query_async.return_value = [
             {
                 "run_id": "abc123",
-                "run_date": datetime.date(2000, 1, 1),
+                "run_datetime": datetime.datetime(2000, 1, 1, 0, 0, 0),
                 "system_version": "v1.0.0",
                 "validation_name": "test_view",
                 "region_code": "US_XX",
@@ -63,7 +63,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
             },
             {
                 "run_id": "abc123",
-                "run_date": datetime.date(2000, 1, 1),
+                "run_datetime": datetime.datetime(2000, 1, 1, 0, 0, 0),
                 "system_version": "v1.0.0",
                 "validation_name": "test_view",
                 "region_code": "US_YY",
@@ -75,7 +75,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
             },
             {
                 "run_id": "abc123",
-                "run_date": datetime.date(2000, 1, 1),
+                "run_datetime": datetime.datetime(2000, 1, 1, 0, 0, 0),
                 "system_version": "v1.0.0",
                 "validation_name": "other_view",
                 "region_code": "US_XX",
@@ -95,7 +95,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
             results,
             ValidationStatusResults(
                 runId="abc123",
-                runDate=datetime.date(2000, 1, 1),
+                runDatetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
                 systemVersion="v1.0.0",
                 results={
                     "test_view": {
@@ -132,7 +132,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
         mock_bigquery_client.run_query_async.return_value = [
             {
                 "run_id": "abc123",
-                "run_date": datetime.date(2000, 1, 1),
+                "run_datetime": datetime.datetime(2000, 1, 1, 0, 0, 0),
                 "system_version": "v1.0.0",
                 "validation_name": "test_view",
                 "region_code": "US_XX",
@@ -144,7 +144,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
             },
             {
                 "run_id": "def456",
-                "run_date": datetime.date(2000, 1, 1),
+                "run_datetime": datetime.datetime(2000, 1, 1, 0, 0, 0),
                 "system_version": "v1.0.0",
                 "validation_name": "test_view",
                 "region_code": "US_YY",
