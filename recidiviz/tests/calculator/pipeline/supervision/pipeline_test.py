@@ -14,12 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-# pylint: disable=wrong-import-order
-
 """Tests for supervision/pipeline.py"""
 import unittest
 from datetime import date
-from typing import Any, Collection, Dict, List, Optional, Set
+from typing import Any, Callable, Collection, Dict, List, Optional, Set, Type
 from unittest import mock
 
 import apache_beam as beam
@@ -46,7 +44,10 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
     SupervisionTerminationBucket,
     SupervisionTimeBucket,
 )
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetricType
+from recidiviz.calculator.pipeline.utils.metric_utils import (
+    RecidivizMetric,
+    RecidivizMetricType,
+)
 from recidiviz.calculator.pipeline.utils.person_utils import (
     ExtractPersonEventsMetadata,
     PersonMetadata,
@@ -82,11 +83,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseRevocationType,
-)
-from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseRevocationType as RevocationType,
-)
-from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseType,
 )
 from recidiviz.persistence.database.schema.state import schema
@@ -165,7 +161,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         self.pre_processing_delegate_patcher.stop()
 
     @staticmethod
-    def _default_data_dict():
+    def _default_data_dict() -> Dict[str, List]:
         return {
             schema.StatePerson.__tablename__: [],
             schema.StateIncarcerationPeriod.__tablename__: [],
@@ -205,7 +201,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
     def build_supervision_pipeline_data_dict(
         self, fake_person_id: int, fake_supervision_period_id: int
-    ):
+    ) -> Dict[str, List[Any]]:
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
             state_code="US_XX",
@@ -486,7 +482,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         return data_dict
 
     @freeze_time("2017-01-31")
-    def testSupervisionPipeline(self):
+    def testSupervisionPipeline(self) -> None:
         fake_person_id = 12345
         fake_supervision_period_id = 1111
 
@@ -506,7 +502,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         self.run_test_pipeline(dataset, data_dict, expected_metric_types)
 
     @freeze_time("2017-01-31")
-    def testSupervisionPipelineWithPersonIdFilterSet(self):
+    def testSupervisionPipelineWithPersonIdFilterSet(self) -> None:
         fake_person_id = 12345
         fake_supervision_period_id = 1111
 
@@ -566,7 +562,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             )
 
     @freeze_time("2017-01-31")
-    def testSupervisionPipeline_withRevocations(self):
+    def testSupervisionPipeline_withRevocations(self) -> None:
         fake_person_id = 12345
         fake_svr_id = 56789
         fake_violation_id = 345789
@@ -821,7 +817,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         self.run_test_pipeline(dataset, data_dict, expected_metric_types)
 
     @freeze_time("2017-07-31")
-    def testSupervisionPipeline_withTechnicalRevocations(self):
+    def testSupervisionPipeline_withTechnicalRevocations(self) -> None:
         fake_person_id = 562
         fake_svr_id = 5582552
         fake_violation_id = 4702488
@@ -1111,7 +1107,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         )
 
     @freeze_time("2017-01-31")
-    def testSupervisionPipeline_withMetricTypesFilter(self):
+    def testSupervisionPipeline_withMetricTypesFilter(self) -> None:
         fake_person_id = 12345
         fake_svr_id = 56789
         fake_violation_id = 345789
@@ -1369,7 +1365,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         )
 
     @freeze_time("2019-11-26")
-    def testSupervisionPipelineNoSupervision(self):
+    def testSupervisionPipelineNoSupervision(self) -> None:
         """Tests the supervision pipeline when a person doesn't have any supervision periods."""
         fake_person_id_1 = 12345
 
@@ -1610,7 +1606,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     """Tests the ClassifySupervisionTimeBuckets DoFn in the pipeline."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.maxDiff = None
 
         self.assessment_types_patcher = mock.patch(
@@ -1648,7 +1644,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_contacts: List[entities.StateSupervisionContact] = None,
         supervision_period_judicial_district_association: List[Dict[Any, Any]] = None,
         supervision_period_to_agent_association: List[Dict[Any, Any]] = None,
-    ):
+    ) -> Dict[str, List[Any]]:
         return {
             "person": [person],
             "supervision_periods": supervision_periods if supervision_periods else [],
@@ -1675,7 +1671,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             or [],
         }
 
-    def testClassifySupervisionTimeBuckets(self):
+    def testClassifySupervisionTimeBuckets(self) -> None:
         """Tests the ClassifySupervisionTimeBuckets DoFn."""
         fake_person_id = 12345
 
@@ -1699,6 +1695,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
+        supervision_period_termination_date = date(2015, 5, 29)
         supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1111,
             status=StateSupervisionPeriodStatus.TERMINATED,
@@ -1706,7 +1703,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             county_code="124",
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             start_date=date(2015, 3, 14),
-            termination_date=date(2015, 5, 29),
+            termination_date=supervision_period_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=StateSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
@@ -1715,15 +1712,17 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             person=fake_person,
         )
 
+        start_date = date(2008, 1, 1)
+        completion_date = date(2015, 5, 29)
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             supervision_sentence_id=111,
             external_id="ss1",
             status=StateSentenceStatus.COMPLETED,
             supervision_type=StateSupervisionType.PROBATION,
-            start_date=date(2008, 1, 1),
+            start_date=start_date,
             projected_completion_date=date(2015, 5, 30),
-            completion_date=date(2015, 5, 29),
+            completion_date=completion_date,
             supervision_periods=[supervision_period],
         )
 
@@ -1772,7 +1771,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_period_supervision_type = (
             StateSupervisionPeriodSupervisionType.PROBATION
         )
-        expected_buckets = [
+        expected_buckets: List[SupervisionTimeBucket] = [
             ProjectedSupervisionCompletionBucket(
                 state_code=supervision_period.state_code,
                 year=2015,
@@ -1788,10 +1787,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 successful_completion=True,
                 incarcerated_during_sentence=True,
                 judicial_district_code=judicial_district_code,
-                sentence_days_served=(
-                    supervision_sentence.completion_date
-                    - supervision_sentence.start_date
-                ).days,
+                sentence_days_served=(completion_date - start_date).days,
             )
         ]
 
@@ -1814,9 +1810,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         expected_buckets.append(
             SupervisionTerminationBucket(
                 state_code=supervision_period.state_code,
-                year=supervision_period.termination_date.year,
-                month=supervision_period.termination_date.month,
-                event_date=supervision_period.termination_date,
+                year=supervision_period_termination_date.year,
+                month=supervision_period_termination_date.month,
+                event_date=supervision_period_termination_date,
                 supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
@@ -1853,7 +1849,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testClassifySupervisionTimeBucketsRevocation(self):
+    def testClassifySupervisionTimeBucketsRevocation(self) -> None:
         """Tests the ClassifySupervisionTimeBuckets DoFn when there is an instance of revocation."""
         fake_person_id = 12345
 
@@ -1865,6 +1861,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             residency_status=ResidencyStatus.PERMANENT,
         )
 
+        supervision_period_termination_date = date(2015, 5, 29)
         supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1111,
             status=StateSupervisionPeriodStatus.TERMINATED,
@@ -1873,7 +1870,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             start_date=date(2015, 3, 14),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            termination_date=date(2015, 5, 29),
+            termination_date=supervision_period_termination_date,
             supervision_type=StateSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="H",
@@ -1904,12 +1901,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             ),
         )
 
+        admission_date = date(2015, 5, 30)
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_XX",
-            admission_date=date(2015, 5, 30),
+            admission_date=admission_date,
             admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             release_date=date(2018, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
@@ -1953,18 +1951,18 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_period_supervision_type = (
             StateSupervisionPeriodSupervisionType.PROBATION
         )
-        expected_buckets: List[
-            SupervisionTimeBucket
-        ] = identifier_test.expected_non_revocation_return_time_buckets(
-            supervision_period,
-            supervision_period_supervision_type,
-            end_date=violation_report.response_date,
-            assessment_score=assessment.assessment_score,
-            assessment_level=assessment.assessment_level,
-            assessment_type=assessment.assessment_type,
-            supervising_officer_external_id="OFFICER0009",
-            level_1_supervision_location_external_id="10",
-        )
+        expected_buckets: List[SupervisionTimeBucket] = [
+            *identifier_test.expected_non_revocation_return_time_buckets(
+                supervision_period,
+                supervision_period_supervision_type,
+                end_date=violation_report.response_date,
+                assessment_score=assessment.assessment_score,
+                assessment_level=assessment.assessment_level,
+                assessment_type=assessment.assessment_type,
+                supervising_officer_external_id="OFFICER0009",
+                level_1_supervision_location_external_id="10",
+            )
+        ]
 
         expected_buckets.extend(
             identifier_test.expected_non_revocation_return_time_buckets(
@@ -1987,9 +1985,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             [
                 SupervisionTerminationBucket(
                     state_code=supervision_period.state_code,
-                    year=supervision_period.termination_date.year,
-                    month=supervision_period.termination_date.month,
-                    event_date=supervision_period.termination_date,
+                    year=supervision_period_termination_date.year,
+                    month=supervision_period_termination_date.month,
+                    event_date=supervision_period_termination_date,
                     supervision_type=supervision_period_supervision_type,
                     case_type=StateSupervisionCaseType.GENERAL,
                     supervision_level=supervision_period.supervision_level,
@@ -2012,7 +2010,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     state_code=supervision_period.state_code,
                     year=2015,
                     month=5,
-                    event_date=incarceration_period.admission_date,
+                    event_date=admission_date,
                     supervision_type=supervision_period_supervision_type,
                     most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
                     most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
@@ -2049,7 +2047,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testClassifySupervisionTimeBucketsRevocation_US_MO(self):
+    def testClassifySupervisionTimeBucketsRevocation_US_MO(self) -> None:
         """Tests the ClassifySupervisionTimeBuckets DoFn when there is an instance of revocation."""
         fake_person_id = 12345
 
@@ -2061,14 +2059,16 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             residency_status=ResidencyStatus.PERMANENT,
         )
 
+        start_date = date(2015, 3, 14)
+        supervision_period_termination_date = date(2015, 5, 29)
         supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1111,
             state_code="US_MO",
             county_code="124",
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            start_date=date(2015, 3, 14),
+            start_date=start_date,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            termination_date=date(2015, 5, 29),
+            termination_date=supervision_period_termination_date,
             supervision_type=StateSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="H",
@@ -2101,12 +2101,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             ),
         )
 
+        admission_date = date(2015, 5, 30)
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_MO",
-            admission_date=date(2015, 5, 30),
+            admission_date=admission_date,
             admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
             release_date=date(2018, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
@@ -2160,18 +2161,18 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        expected_buckets: List[
-            SupervisionTimeBucket
-        ] = identifier_test.expected_non_revocation_return_time_buckets(
-            supervision_period,
-            supervision_period_supervision_type,
-            end_date=supervision_period.start_date + relativedelta(days=1),
-            assessment_score=assessment.assessment_score,
-            assessment_level=assessment.assessment_level,
-            assessment_type=assessment.assessment_type,
-            supervising_officer_external_id="OFFICER0009",
-            level_1_supervision_location_external_id="10",
-        )
+        expected_buckets: List[SupervisionTimeBucket] = [
+            *identifier_test.expected_non_revocation_return_time_buckets(
+                supervision_period,
+                supervision_period_supervision_type,
+                end_date=start_date + relativedelta(days=1),
+                assessment_score=assessment.assessment_score,
+                assessment_level=assessment.assessment_level,
+                assessment_type=assessment.assessment_type,
+                supervising_officer_external_id="OFFICER0009",
+                level_1_supervision_location_external_id="10",
+            )
+        ]
         expected_buckets.append(
             identifier_test.create_start_bucket_from_period(
                 supervision_period,
@@ -2183,7 +2184,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             identifier_test.expected_non_revocation_return_time_buckets(
                 attr.evolve(
                     supervision_period,
-                    start_date=supervision_period.start_date + relativedelta(days=1),
+                    start_date=start_date + relativedelta(days=1),
                 ),
                 supervision_period_supervision_type,
                 end_date=violation_report.response_date,
@@ -2216,9 +2217,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             [
                 SupervisionTerminationBucket(
                     state_code=supervision_period.state_code,
-                    year=supervision_period.termination_date.year,
-                    month=supervision_period.termination_date.month,
-                    event_date=supervision_period.termination_date,
+                    year=supervision_period_termination_date.year,
+                    month=supervision_period_termination_date.month,
+                    event_date=supervision_period_termination_date,
                     supervision_type=supervision_period_supervision_type,
                     case_type=StateSupervisionCaseType.GENERAL,
                     supervision_level=supervision_period.supervision_level,
@@ -2236,7 +2237,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     state_code=supervision_period.state_code,
                     year=2015,
                     month=5,
-                    event_date=incarceration_period.admission_date,
+                    event_date=admission_date,
                     supervision_type=supervision_period_supervision_type,
                     most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
                     most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
@@ -2273,7 +2274,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testClassifySupervisionTimeBuckets_withPeriodsStartingAfterDeath(self):
+    def testClassifySupervisionTimeBuckets_withPeriodsStartingAfterDeath(self) -> None:
         """Tests the ClassifySupervisionTimeBuckets DoFn when the person has supervision
         periods after their death."""
         fake_person_id = 12345
@@ -2299,6 +2300,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         # This probation supervision period ended in a death
+        termination_date = date(2017, 1, 4)
         supervision_period_with_death = (
             entities.StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=1111,
@@ -2306,7 +2308,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 county_code="124",
                 admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
                 start_date=date(2017, 1, 3),
-                termination_date=date(2017, 1, 4),
+                termination_date=termination_date,
                 termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
                 supervision_type=StateSupervisionType.PROBATION,
                 person=fake_person,
@@ -2421,22 +2423,22 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_period_to_agent_association=supervision_period_to_agent_data,
         )
 
-        expected_buckets: List[
-            SupervisionTimeBucket
-        ] = identifier_test.expected_non_revocation_return_time_buckets(
-            supervision_period_with_death,
-            StateSupervisionPeriodSupervisionType.PROBATION,
-            supervising_officer_external_id="OFFICER0009",
-            judicial_district_code="XXX",
-            projected_supervision_completion_date=supervision_sentence.projected_completion_date,
-        )
+        expected_buckets: List[SupervisionTimeBucket] = [
+            *identifier_test.expected_non_revocation_return_time_buckets(
+                supervision_period_with_death,
+                StateSupervisionPeriodSupervisionType.PROBATION,
+                supervising_officer_external_id="OFFICER0009",
+                judicial_district_code="XXX",
+                projected_supervision_completion_date=supervision_sentence.projected_completion_date,
+            )
+        ]
 
         expected_buckets.append(
             SupervisionTerminationBucket(
                 state_code=supervision_period_with_death.state_code,
-                year=supervision_period_with_death.termination_date.year,
-                month=supervision_period_with_death.termination_date.month,
-                event_date=supervision_period_with_death.termination_date,
+                year=termination_date.year,
+                month=termination_date.month,
+                event_date=termination_date,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period_with_death.termination_reason,
@@ -2473,7 +2475,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
     def testClassifySupervisionTimeBuckets_withOpenPeriodStartDateCapturedByPeriodEndingInDeath(
         self,
-    ):
+    ) -> None:
         """Tests the ClassifySupervisionTimeBuckets DoFn when the person has open period
         within the range of the period ending in their death."""
         fake_person_id = 12345
@@ -2511,6 +2513,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         # This probation supervision period ended in a death
+        termination_date = date(2017, 1, 5)
         supervision_period_with_death = (
             entities.StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=1111,
@@ -2518,7 +2521,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 county_code="124",
                 admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
                 start_date=date(2017, 1, 3),
-                termination_date=date(2017, 1, 5),
+                termination_date=termination_date,
                 termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
                 supervision_type=StateSupervisionType.PROBATION,
                 person=fake_person,
@@ -2594,22 +2597,22 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_period_to_agent_association=supervision_period_to_agent_data,
         )
 
-        expected_buckets: List[
-            SupervisionTimeBucket
-        ] = identifier_test.expected_non_revocation_return_time_buckets(
-            supervision_period_with_death,
-            StateSupervisionPeriodSupervisionType.PROBATION,
-            supervising_officer_external_id="OFFICER0009",
-            judicial_district_code="XXX",
-            projected_supervision_completion_date=supervision_sentence.projected_completion_date,
-        )
+        expected_buckets: List[SupervisionTimeBucket] = [
+            *identifier_test.expected_non_revocation_return_time_buckets(
+                supervision_period_with_death,
+                StateSupervisionPeriodSupervisionType.PROBATION,
+                supervising_officer_external_id="OFFICER0009",
+                judicial_district_code="XXX",
+                projected_supervision_completion_date=supervision_sentence.projected_completion_date,
+            )
+        ]
 
         expected_buckets.append(
             SupervisionTerminationBucket(
                 state_code=supervision_period_with_death.state_code,
-                year=supervision_period_with_death.termination_date.year,
-                month=supervision_period_with_death.termination_date.month,
-                event_date=supervision_period_with_death.termination_date,
+                year=termination_date.year,
+                month=termination_date.month,
+                event_date=termination_date,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period_with_death.termination_reason,
@@ -2645,9 +2648,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         expected_buckets.append(
             SupervisionTerminationBucket(
                 state_code=supervision_period_with_death.state_code,
-                year=supervision_period_with_death.termination_date.year,
-                month=supervision_period_with_death.termination_date.month,
-                event_date=supervision_period_with_death.termination_date,
+                year=termination_date.year,
+                month=termination_date.month,
+                event_date=termination_date,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period_with_death.termination_reason,
@@ -2682,7 +2685,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testClassifySupervisionTimeBuckets_NoIncarcerationPeriods(self):
+    def testClassifySupervisionTimeBuckets_NoIncarcerationPeriods(self) -> None:
         """Tests the ClassifySupervisionTimeBuckets DoFn when the person has no
         incarceration periods."""
         fake_person_id = 12345
@@ -2695,6 +2698,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             residency_status=ResidencyStatus.PERMANENT,
         )
 
+        supervision_period_termination = date(2015, 5, 29)
         supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1111,
             status=StateSupervisionPeriodStatus.TERMINATED,
@@ -2703,7 +2707,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             start_date=date(2015, 3, 14),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            termination_date=date(2015, 5, 29),
+            termination_date=supervision_period_termination,
             supervision_type=StateSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.INTERNAL_UNKNOWN,
             supervision_level_raw_text="XXXX",
@@ -2747,25 +2751,25 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        expected_buckets: List[
-            SupervisionTimeBucket
-        ] = identifier_test.expected_non_revocation_return_time_buckets(
-            supervision_period,
-            supervision_period_supervision_type,
-            assessment_score=assessment.assessment_score,
-            assessment_level=assessment.assessment_level,
-            assessment_type=assessment.assessment_type,
-            supervising_officer_external_id="OFFICER0009",
-            level_1_supervision_location_external_id="10",
-        )
+        expected_buckets: List[SupervisionTimeBucket] = [
+            *identifier_test.expected_non_revocation_return_time_buckets(
+                supervision_period,
+                supervision_period_supervision_type,
+                assessment_score=assessment.assessment_score,
+                assessment_level=assessment.assessment_level,
+                assessment_type=assessment.assessment_type,
+                supervising_officer_external_id="OFFICER0009",
+                level_1_supervision_location_external_id="10",
+            )
+        ]
 
         expected_buckets.extend(
             [
                 SupervisionTerminationBucket(
                     state_code=supervision_period.state_code,
-                    year=supervision_period.termination_date.year,
-                    month=supervision_period.termination_date.month,
-                    event_date=supervision_period.termination_date,
+                    year=supervision_period_termination.year,
+                    month=supervision_period_termination.month,
+                    event_date=supervision_period_termination,
                     supervision_type=supervision_period_supervision_type,
                     case_type=StateSupervisionCaseType.GENERAL,
                     termination_reason=supervision_period.termination_reason,
@@ -2799,7 +2803,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testClassifySupervisionTimeBuckets_NoAssessments(self):
+    def testClassifySupervisionTimeBuckets_NoAssessments(self) -> None:
         """Tests the ClassifySupervisionTimeBuckets DoFn when the person has no
         assessments."""
         fake_person_id = 12345
@@ -2812,6 +2816,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             residency_status=ResidencyStatus.PERMANENT,
         )
 
+        termination_date = date(2015, 5, 29)
         supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1111,
             status=StateSupervisionPeriodStatus.TERMINATED,
@@ -2820,7 +2825,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             start_date=date(2015, 3, 14),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            termination_date=date(2015, 5, 29),
+            termination_date=termination_date,
             supervision_type=StateSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.INTERNAL_UNKNOWN,
             supervision_level_raw_text="XXXX",
@@ -2856,22 +2861,22 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        expected_buckets: List[
-            SupervisionTimeBucket
-        ] = identifier_test.expected_non_revocation_return_time_buckets(
-            supervision_period,
-            supervision_period_supervision_type,
-            supervising_officer_external_id="OFFICER0009",
-            level_1_supervision_location_external_id="10",
-        )
+        expected_buckets: List[SupervisionTimeBucket] = [
+            *identifier_test.expected_non_revocation_return_time_buckets(
+                supervision_period,
+                supervision_period_supervision_type,
+                supervising_officer_external_id="OFFICER0009",
+                level_1_supervision_location_external_id="10",
+            )
+        ]
 
         expected_buckets.extend(
             [
                 SupervisionTerminationBucket(
                     state_code=supervision_period.state_code,
-                    year=supervision_period.termination_date.year,
-                    month=supervision_period.termination_date.month,
-                    event_date=supervision_period.termination_date,
+                    year=termination_date.year,
+                    month=termination_date.month,
+                    event_date=termination_date,
                     supervision_type=supervision_period_supervision_type,
                     case_type=StateSupervisionCaseType.GENERAL,
                     termination_reason=supervision_period.termination_reason,
@@ -2905,7 +2910,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testClassifySupervisionTimeBuckets_NoSupervisionPeriods(self):
+    def testClassifySupervisionTimeBuckets_NoSupervisionPeriods(self) -> None:
         """Tests the ClassifySupervisionTimeBuckets DoFn when the person
         has no supervision periods."""
         fake_person_id = 12345
@@ -2950,7 +2955,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_period_to_agent_association=[supervision_period_to_agent_map],
         )
 
-        correct_output = []
+        correct_output: List = []
 
         test_pipeline = TestPipeline()
 
@@ -2978,7 +2983,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
 
-    def testProduceSupervisionMetrics(self):
+    def testProduceSupervisionMetrics(self) -> None:
         """Tests the ProduceSupervisionMetrics DoFn."""
         fake_person = StatePerson.new_with_defaults(
             state_code="US_XX",
@@ -3047,7 +3052,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testProduceSupervisionMetrics_withRevocations(self):
+    def testProduceSupervisionMetrics_withRevocations(self) -> None:
         """Tests the ProduceSupervisionMetrics DoFn where
         revocations are identified."""
         fake_person = StatePerson.new_with_defaults(
@@ -3065,7 +3070,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 month=2,
                 event_date=date(2015, 2, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                revocation_type=RevocationType.REINCARCERATION,
+                revocation_type=StateSpecializedPurposeForIncarceration.GENERAL,
                 is_on_supervision_last_day_of_month=False,
             ),
             RevocationReturnSupervisionTimeBucket(
@@ -3074,7 +3079,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 month=3,
                 event_date=date(2015, 3, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                revocation_type=RevocationType.REINCARCERATION,
+                revocation_type=StateSpecializedPurposeForIncarceration.GENERAL,
                 is_on_supervision_last_day_of_month=False,
             ),
         ]
@@ -3120,7 +3125,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testProduceSupervisionMetrics_NoSupervision(self):
+    def testProduceSupervisionMetrics_NoSupervision(self) -> None:
         """Tests the ProduceSupervisionMetrics when there are
         no supervision months. This should never happen because any person
         without supervision time is dropped entirely from the pipeline."""
@@ -3162,7 +3167,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testProduceSupervisionMetrics_NoInput(self):
+    def testProduceSupervisionMetrics_NoInput(self) -> None:
         """Tests the ProduceSupervisionMetrics when there is
         no input to the function."""
 
@@ -3198,7 +3203,7 @@ class SupervisionPipelineFakeWriteToBigQuery(FakeWriteToBigQuery):
         self._expected_violation_types = expected_violation_types
         self._table = output_table
 
-    def expand(self, input_or_inputs):
+    def expand(self, input_or_inputs: List[Any]) -> List[RecidivizMetric]:
         ret = super().expand(input_or_inputs)
 
         if self._expected_violation_types:
@@ -3218,10 +3223,10 @@ class AssertMatchers:
     validate pipeline outputs."""
 
     @staticmethod
-    def assert_source_violation_type_set(expected_violation: ViolationType):
+    def assert_source_violation_type_set(expected_violation: ViolationType) -> Callable:
         """Asserts that there are some revocation metrics with the source_violation_type set."""
 
-        def _assert_source_violation_type_set(output):
+        def _assert_source_violation_type_set(output: List[Dict[Any, Any]]) -> None:
             if not output:
                 return
 
@@ -3245,11 +3250,11 @@ class AssertMatchers:
         return _assert_source_violation_type_set
 
     @staticmethod
-    def count_metrics(expected_metric_counts):
+    def count_metrics(expected_metric_counts: Dict[Any, Any]) -> Callable:
         """Asserts that the number of metric combinations matches the expected
         counts."""
 
-        def _count_metrics(output):
+        def _count_metrics(output: List[SupervisionMetric]) -> None:
             actual_combination_counts = {}
 
             for key in expected_metric_counts.keys():
@@ -3274,10 +3279,12 @@ class AssertMatchers:
         return _count_metrics
 
     @staticmethod
-    def validate_metric_is_expected_type(expected_metric_type):
+    def validate_metric_is_expected_type(
+        expected_metric_type: Type[SupervisionMetric],
+    ) -> Callable:
         """Asserts that the SupervisionMetric is of the expected SupervisionMetricType."""
 
-        def _validate_metric_is_expected_type(output):
+        def _validate_metric_is_expected_type(output: List[SupervisionMetric]) -> None:
             supervision_metric = output[0]
 
             if not isinstance(supervision_metric, expected_metric_type):

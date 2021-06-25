@@ -15,11 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for supervision/calculator.py."""
-# pylint: disable=unused-import,wrong-import-order,protected-access
 import unittest
 from collections import defaultdict
 from datetime import date
-from typing import List, Dict
+from typing import Dict, List
 from unittest import mock
 
 from freezegun import freeze_time
@@ -27,12 +26,12 @@ from freezegun import freeze_time
 from recidiviz.calculator.pipeline.supervision import metric_producer
 from recidiviz.calculator.pipeline.supervision.identifier import BUCKET_TYPES_FOR_METRIC
 from recidiviz.calculator.pipeline.supervision.metrics import (
-    SupervisionMetricType,
-    SupervisionPopulationMetric,
-    SupervisionSuccessMetric,
-    SupervisionRevocationMetric,
     SuccessfulSupervisionSentenceDaysServedMetric,
+    SupervisionMetricType,
     SupervisionOutOfStatePopulationMetric,
+    SupervisionPopulationMetric,
+    SupervisionRevocationMetric,
+    SupervisionSuccessMetric,
     SupervisionTerminationMetric,
 )
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
@@ -40,41 +39,44 @@ from recidiviz.calculator.pipeline.supervision.supervision_case_compliance impor
 )
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
     NonRevocationReturnSupervisionTimeBucket,
-    SupervisionTimeBucket,
-    RevocationReturnSupervisionTimeBucket,
     ProjectedSupervisionCompletionBucket,
-    SupervisionTerminationBucket,
+    RevocationReturnSupervisionTimeBucket,
     SupervisionStartBucket,
+    SupervisionTerminationBucket,
+    SupervisionTimeBucket,
 )
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
-from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
+from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_assessment import (
-    StateAssessmentType,
     StateAssessmentLevel,
+    StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateSpecializedPurposeForIncarceration,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodTerminationReason,
-    StateSupervisionPeriodSupervisionType,
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
+)
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType as ViolationType,
-    StateSupervisionViolationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseRevocationType as RevocationType,
     StateSupervisionViolationResponseDecision,
 )
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
-    StatePersonRace,
     StatePersonEthnicity,
     StatePersonExternalId,
+    StatePersonRace,
 )
-
 
 ALL_METRICS_INCLUSIONS_DICT = {
     metric_type: True for metric_type in SupervisionMetricType
@@ -88,7 +90,7 @@ _PIPELINE_JOB_ID = "TEST_JOB_ID"
 class TestProduceSupervisionMetrics(unittest.TestCase):
     """Tests the produce_supervision_metrics function."""
 
-    def test_produce_supervision_metrics(self):
+    def test_produce_supervision_metrics(self) -> None:
         """Tests the produce_supervision_metrics function."""
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
@@ -107,7 +109,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code="US_XX",
                 year=2018,
@@ -148,7 +150,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_produce_supervision_metrics_assessment(self):
+    def test_produce_supervision_metrics_assessment(self) -> None:
         """Tests the produce_supervision_metrics function when there is assessment data present."""
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
@@ -167,7 +169,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code="US_XX",
                 year=2018,
@@ -210,7 +212,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_produce_supervision_metrics_exclude_assessment(self):
+    def test_produce_supervision_metrics_exclude_assessment(self) -> None:
         """Tests the produce_supervision_metrics function when there is assessment data present, but it should not
         be included for this state and pipeline type."""
         person = StatePerson.new_with_defaults(
@@ -230,7 +232,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code="US_XX",
                 year=2018,
@@ -273,7 +275,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_produce_supervision_metrics_supervising_officer_district(self):
+    def test_produce_supervision_metrics_supervising_officer_district(self) -> None:
         """Tests the produce_supervision_metrics function when there is supervising officer and district data
         present."""
         person = StatePerson.new_with_defaults(
@@ -293,7 +295,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code="US_XX",
                 year=2018,
@@ -338,7 +340,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_map_supervision_revocation_combinations(self):
+    def test_map_supervision_revocation_combinations(self) -> None:
         """Tests the produce_supervision_metrics function for a revocation month."""
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
@@ -363,7 +365,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             RevocationReturnSupervisionTimeBucket(
                 state_code="US_XX",
                 year=2018,
@@ -375,7 +377,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 assessment_score=12,
                 assessment_level=StateAssessmentLevel.MEDIUM,
                 assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-                revocation_type=RevocationType.SHOCK_INCARCERATION,
+                revocation_type=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
                 most_severe_violation_type=ViolationType.FELONY,
                 most_severe_violation_type_subtype="SUBTYPE",
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
@@ -406,7 +408,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             and metric.person_id is not None
         )
 
-    def test_produce_supervision_metrics_supervision_success(self):
+    def test_produce_supervision_metrics_supervision_success(self) -> None:
         """Tests the produce_supervision_metrics function when there is a ProjectedSupervisionCompletionBucket."""
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
@@ -425,7 +427,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             ProjectedSupervisionCompletionBucket(
                 state_code="US_XX",
                 year=2018,
@@ -484,7 +486,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric in metrics
         )
 
-    def test_produce_supervision_metrics_supervision_unsuccessful(self):
+    def test_produce_supervision_metrics_supervision_unsuccessful(self) -> None:
         """Tests the produce_supervision_metrics function when there is a ProjectedSupervisionCompletionBucket
         and the supervision is not successfully completed."""
         person = StatePerson.new_with_defaults(
@@ -504,7 +506,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             ProjectedSupervisionCompletionBucket(
                 state_code="US_XX",
                 year=2018,
@@ -566,7 +568,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric in metrics
         )
 
-    def test_produce_supervision_metrics_supervision_mixed_success(self):
+    def test_produce_supervision_metrics_supervision_mixed_success(self) -> None:
         """Tests the produce_supervision_metrics function when there is a ProjectedSupervisionCompletionBucket and the
         supervision is not successfully completed."""
         person = StatePerson.new_with_defaults(
@@ -586,7 +588,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             ProjectedSupervisionCompletionBucket(
                 state_code="US_ND",
                 year=2010,
@@ -663,7 +665,9 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         )
 
     @freeze_time("2020-02-01")
-    def test_produce_supervision_metrics_supervision_with_district_officer(self):
+    def test_produce_supervision_metrics_supervision_with_district_officer(
+        self,
+    ) -> None:
         """Tests the produce_supervision_metrics function when there is a mix of missing & non-null district/officer
         data for one person over many ProjectedSupervisionCompletionBuckets."""
         person = StatePerson.new_with_defaults(
@@ -683,7 +687,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             ProjectedSupervisionCompletionBucket(
                 state_code="US_XX",
                 year=2017,
@@ -727,7 +731,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         self.assertEqual(expected_count, len(metrics))
         assert any(metric.supervising_officer_external_id for metric in metrics)
 
-    def test_produce_supervision_metrics_revocation_and_not(self):
+    def test_produce_supervision_metrics_revocation_and_not(self) -> None:
         """Tests the produce_supervision_metrics function."""
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
@@ -752,7 +756,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code="US_XX",
                 year=2018,
@@ -797,7 +801,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
                 supervising_officer_external_id="OFFICER",
                 supervising_district_external_id="DISTRICT",
-                revocation_type=RevocationType.SHOCK_INCARCERATION,
+                revocation_type=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
                 most_severe_violation_type=StateSupervisionViolationType.FELONY,
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 response_count=19,
@@ -819,7 +823,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_produce_supervision_metrics_multiple_months(self):
+    def test_produce_supervision_metrics_multiple_months(self) -> None:
         """Tests the produce_supervision_metrics function where the person was on supervision for multiple months."""
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
@@ -838,7 +842,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code="US_XX",
                 year=2018,
@@ -900,7 +904,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_produce_supervision_metrics_overlapping_days(self):
+    def test_produce_supervision_metrics_overlapping_days(self) -> None:
         """Tests the produce_supervision_metrics function where the person was serving multiple supervision sentences
         simultaneously in a given month."""
         person = StatePerson.new_with_defaults(
@@ -920,7 +924,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code="US_MO",
                 year=2018,
@@ -964,7 +968,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_produce_supervision_metrics_overlapping_months_types(self):
+    def test_produce_supervision_metrics_overlapping_months_types(self) -> None:
         """Tests the produce_supervision_metrics function where the person was serving multiple supervision sentences
         simultaneously in a given month, but the supervisions are of different types."""
         person = StatePerson.new_with_defaults(
@@ -984,7 +988,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code="US_ND",
                 year=2018,
@@ -1039,7 +1043,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_produce_supervision_metrics_overlapping_months_types_dual(self):
+    def test_produce_supervision_metrics_overlapping_months_types_dual(self) -> None:
         """Tests the produce_supervision_metrics function where the person was serving multiple supervision sentences
         simultaneously in a given month, but the supervisions are of different types."""
         person = StatePerson.new_with_defaults(
@@ -1059,7 +1063,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code="US_ND",
                 year=2010,
@@ -1132,7 +1136,9 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_produce_supervision_metrics_two_revocations_in_month_sort_date(self):
+    def test_produce_supervision_metrics_two_revocations_in_month_sort_date(
+        self,
+    ) -> None:
         """Tests the produce_supervision_metrics function where the person was revoked twice in a given month. Asserts
         that the revocation with the latest date is chosen."""
         person = StatePerson.new_with_defaults(
@@ -1152,7 +1158,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             RevocationReturnSupervisionTimeBucket(
                 state_code="US_ND",
                 year=2018,
@@ -1191,7 +1197,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_produce_supervision_metrics_start_bucket(self):
+    def test_produce_supervision_metrics_start_bucket(self) -> None:
         """Tests the produce_supervision_metrics when there are SupervisionStartBuckets sent to the metric_producer."""
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
@@ -1219,7 +1225,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
         )
 
-        supervision_time_buckets = [start_bucket]
+        supervision_time_buckets: List[SupervisionTimeBucket] = [start_bucket]
 
         metrics = metric_producer.produce_supervision_metrics(
             person,
@@ -1235,7 +1241,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_produce_supervision_metrics_termination_bucket(self):
+    def test_produce_supervision_metrics_termination_bucket(self) -> None:
         """Tests the produce_supervision_metrics when there are SupervisionTerminationBuckets sent to the
         metric_producer."""
         person = StatePerson.new_with_defaults(
@@ -1269,7 +1275,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             assessment_score_change=-9,
         )
 
-        supervision_time_buckets = [termination_bucket]
+        supervision_time_buckets: List[SupervisionTimeBucket] = [termination_bucket]
 
         metrics = metric_producer.produce_supervision_metrics(
             person,
@@ -1284,9 +1290,13 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         expected_count = expected_metrics_count(supervision_time_buckets)
 
         self.assertEqual(expected_count, len(metrics))
-        assert all(metric.assessment_score_change == -9 for metric in metrics)
+        assert all(
+            getattr(metric, "assessment_score_change") == -9 for metric in metrics
+        )
 
-    def test_produce_supervision_metrics_termination_buckets_no_score_change(self):
+    def test_produce_supervision_metrics_termination_buckets_no_score_change(
+        self,
+    ) -> None:
         """Tests the produce_supervision_metrics when there are SupervisionTerminationBuckets sent to the metric_producer,
         but the bucket doesn't have an assessment_score_change."""
         person = StatePerson.new_with_defaults(
@@ -1318,7 +1328,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             assessment_score_change=None,
         )
 
-        supervision_time_buckets = [termination_bucket]
+        supervision_time_buckets: List[SupervisionTimeBucket] = [termination_bucket]
 
         metrics = metric_producer.produce_supervision_metrics(
             person,
@@ -1339,7 +1349,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric in metrics
         )
 
-    def test_produce_supervision_metrics_termination_buckets(self):
+    def test_produce_supervision_metrics_termination_buckets(self) -> None:
         """Tests the produce_supervision_metrics when there are SupervisionTerminationBuckets sent to the metric_producer
         that end in the same month."""
         person = StatePerson.new_with_defaults(
@@ -1383,7 +1393,10 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             assessment_score_change=-9,
         )
 
-        supervision_time_buckets = [first_termination_bucket, second_termination_bucket]
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
+            first_termination_bucket,
+            second_termination_bucket,
+        ]
 
         metrics = metric_producer.produce_supervision_metrics(
             person,
@@ -1404,7 +1417,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             if isinstance(metric, SupervisionTerminationMetric)
         )
 
-    def test_produce_supervision_metrics_only_terminations(self):
+    def test_produce_supervision_metrics_only_terminations(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -1435,7 +1448,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             assessment_score_change=-9,
         )
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             ProjectedSupervisionCompletionBucket(
                 state_code="US_XX",
                 year=2010,
@@ -1498,7 +1511,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric in metrics
         )
 
-    def test_produce_supervision_metrics_only_success(self):
+    def test_produce_supervision_metrics_only_success(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -1528,7 +1541,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             assessment_score_change=-9,
         )
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             ProjectedSupervisionCompletionBucket(
                 state_code="US_XX",
                 year=2010,
@@ -1587,7 +1600,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric in metrics
         )
 
-    def test_produce_supervision_metrics_only_successful_sentence_length(self):
+    def test_produce_supervision_metrics_only_successful_sentence_length(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -1617,7 +1630,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             assessment_score_change=-9,
         )
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             ProjectedSupervisionCompletionBucket(
                 state_code="US_XX",
                 year=2010,
@@ -1682,7 +1695,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric in metrics
         )
 
-    def test_produce_supervision_metrics_only_revocation(self):
+    def test_produce_supervision_metrics_only_revocation(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -1712,7 +1725,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             assessment_score_change=-9,
         )
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             ProjectedSupervisionCompletionBucket(
                 state_code="US_XX",
                 year=2010,
@@ -1770,7 +1783,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             isinstance(metric, SupervisionRevocationMetric) for metric in metrics
         )
 
-    def test_produce_supervision_metrics_only_population(self):
+    def test_produce_supervision_metrics_only_population(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -1800,7 +1813,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             assessment_score_change=-9,
         )
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             ProjectedSupervisionCompletionBucket(
                 state_code="US_XX",
                 year=2010,
@@ -1860,7 +1873,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
     def test_produce_supervision_metrics_only_successful_sentence_length_duplicate_month_longer_sentence(
         self,
-    ):
+    ) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -1878,7 +1891,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             ProjectedSupervisionCompletionBucket(
                 state_code="US_XX",
                 year=2018,
@@ -1936,7 +1949,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric in metrics
         )
 
-    def test_produce_supervision_metrics_compliance_metrics(self):
+    def test_produce_supervision_metrics_compliance_metrics(self) -> None:
         """Tests the produce_supervision_metrics function when there are compliance metrics to be generated."""
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
@@ -1955,7 +1968,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code="US_XX",
                 year=2018,
@@ -2008,7 +2021,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
     def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_is_out_of_state(
         self,
-    ):
+    ) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_ID",
             person_id=12345,
@@ -2026,7 +2039,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             RevocationReturnSupervisionTimeBucket(
                 state_code="US_ID",
                 year=2010,
@@ -2071,7 +2084,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
     def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_is_out_of_state_by_authority(
         self,
-    ):
+    ) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_ID",
             person_id=12345,
@@ -2089,7 +2102,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             RevocationReturnSupervisionTimeBucket(
                 state_code="US_ID",
                 year=2010,
@@ -2134,7 +2147,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
     def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_not_out_of_state(
         self,
-    ):
+    ) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_ID",
             person_id=12345,
@@ -2152,7 +2165,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             RevocationReturnSupervisionTimeBucket(
                 state_code="US_ID",
                 year=2010,
@@ -2188,7 +2201,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
     def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_not_out_of_state_by_authority(
         self,
-    ):
+    ) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_ID",
             person_id=12345,
@@ -2206,7 +2219,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             RevocationReturnSupervisionTimeBucket(
                 state_code="US_ID",
                 year=2010,
@@ -2240,7 +2253,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_map_supervision_downgrade_metrics(self):
+    def test_map_supervision_downgrade_metrics(self) -> None:
         """Tests the produce_supervision_metrics function when there are supervision downgrade metrics to be
         generated."""
         person = StatePerson.new_with_defaults(
@@ -2260,7 +2273,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         person.ethnicities = [ethnicity]
 
-        supervision_time_buckets = [
+        supervision_time_buckets: List[SupervisionTimeBucket] = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code="US_XX",
                 year=2018,
@@ -2307,7 +2320,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 class TestIncludeEventInMetric(unittest.TestCase):
     """Tests the include_event_in_metric function."""
 
-    def test_include_event_in_metric_compliance_no_compliance(self):
+    def test_include_event_in_metric_compliance_no_compliance(self) -> None:
         event = NonRevocationReturnSupervisionTimeBucket(
             state_code="US_XX",
             year=2018,
@@ -2327,7 +2340,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
             )
         )
 
-    def test_include_event_in_metric_compliance_with_compliance(self):
+    def test_include_event_in_metric_compliance_with_compliance(self) -> None:
         event = NonRevocationReturnSupervisionTimeBucket(
             state_code="US_XX",
             year=2018,
@@ -2352,7 +2365,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
             )
         )
 
-    def test_include_event_in_metric_downgrade_no_downgrade(self):
+    def test_include_event_in_metric_downgrade_no_downgrade(self) -> None:
         event = NonRevocationReturnSupervisionTimeBucket(
             state_code="US_XX",
             year=2018,
@@ -2373,7 +2386,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
             )
         )
 
-    def test_include_event_in_metric_downgrade_with_downgrade(self):
+    def test_include_event_in_metric_downgrade_with_downgrade(self) -> None:
         event = NonRevocationReturnSupervisionTimeBucket(
             state_code="US_XX",
             year=2018,
@@ -2397,7 +2410,9 @@ class TestIncludeEventInMetric(unittest.TestCase):
     @mock.patch(
         "recidiviz.calculator.pipeline.supervision.metric_producer.supervision_period_is_out_of_state"
     )
-    def test_include_event_in_metric_not_out_of_state(self, mock_is_out_of_state):
+    def test_include_event_in_metric_not_out_of_state(
+        self, mock_is_out_of_state: mock.Mock
+    ) -> None:
         mock_is_out_of_state.return_value = False
 
         event = NonRevocationReturnSupervisionTimeBucket(
@@ -2422,7 +2437,9 @@ class TestIncludeEventInMetric(unittest.TestCase):
     @mock.patch(
         "recidiviz.calculator.pipeline.supervision.metric_producer.supervision_period_is_out_of_state"
     )
-    def test_include_event_in_metric_out_of_state(self, mock_is_out_of_state):
+    def test_include_event_in_metric_out_of_state(
+        self, mock_is_out_of_state: mock.Mock
+    ) -> None:
         mock_is_out_of_state.return_value = True
 
         event = NonRevocationReturnSupervisionTimeBucket(
@@ -2448,7 +2465,9 @@ class TestIncludeEventInMetric(unittest.TestCase):
     @mock.patch(
         "recidiviz.calculator.pipeline.supervision.metric_producer.supervision_period_is_out_of_state"
     )
-    def test_include_event_in_metric_not_in_state(self, mock_is_out_of_state):
+    def test_include_event_in_metric_not_in_state(
+        self, mock_is_out_of_state: mock.Mock
+    ) -> None:
         mock_is_out_of_state.return_value = True
 
         event = NonRevocationReturnSupervisionTimeBucket(
@@ -2473,7 +2492,9 @@ class TestIncludeEventInMetric(unittest.TestCase):
     @mock.patch(
         "recidiviz.calculator.pipeline.supervision.metric_producer.supervision_period_is_out_of_state"
     )
-    def test_include_event_in_metric_in_state(self, mock_is_out_of_state):
+    def test_include_event_in_metric_in_state(
+        self, mock_is_out_of_state: mock.Mock
+    ) -> None:
         mock_is_out_of_state.return_value = False
 
         event = NonRevocationReturnSupervisionTimeBucket(
@@ -2496,7 +2517,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
             )
         )
 
-    def test_include_in_metric_supervision_successful_days_served(self):
+    def test_include_in_metric_supervision_successful_days_served(self) -> None:
         event = ProjectedSupervisionCompletionBucket(
             state_code="US_XX",
             year=2018,
@@ -2517,7 +2538,9 @@ class TestIncludeEventInMetric(unittest.TestCase):
             )
         )
 
-    def test_include_in_metric_supervision_successful_days_served_unsuccessful(self):
+    def test_include_in_metric_supervision_successful_days_served_unsuccessful(
+        self,
+    ) -> None:
         event = ProjectedSupervisionCompletionBucket(
             state_code="US_XX",
             year=2018,
@@ -2540,7 +2563,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
 
     def test_include_in_metric_supervision_successful_days_served_incarcerated_in_sentence(
         self,
-    ):
+    ) -> None:
         event = ProjectedSupervisionCompletionBucket(
             state_code="US_XX",
             year=2018,
@@ -2561,7 +2584,9 @@ class TestIncludeEventInMetric(unittest.TestCase):
             )
         )
 
-    def test_include_in_metric_supervision_successful_days_served_no_days_served(self):
+    def test_include_in_metric_supervision_successful_days_served_no_days_served(
+        self,
+    ) -> None:
         event = ProjectedSupervisionCompletionBucket(
             state_code="US_XX",
             year=2018,
