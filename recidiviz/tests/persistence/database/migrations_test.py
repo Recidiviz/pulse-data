@@ -27,7 +27,6 @@ from alembic.autogenerate import render_python_code
 from pytest_alembic import runner
 from sqlalchemy import create_engine
 
-from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
@@ -267,11 +266,7 @@ class TestOperationsMigrations(MigrationsTestBase):
             for row in rows:
                 instance_to_state_codes[DirectIngestInstance(row[1])].add(row[0])
 
-            required_states = {
-                name.upper()
-                for name in get_existing_region_dir_names()
-                if StateCode.is_state_code(name)
-            }
+            required_states = {name.upper() for name in get_existing_region_dir_names()}
 
             for instance in DirectIngestInstance:
                 self.assertEqual(required_states, instance_to_state_codes[instance])
