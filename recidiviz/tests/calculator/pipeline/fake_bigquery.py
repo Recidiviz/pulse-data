@@ -17,26 +17,23 @@
 """Helper classes for mocking reading / writing from BigQuery in tests."""
 import re
 from typing import (
-    Dict,
+    Any,
     Callable,
+    Collection,
+    Dict,
+    Generic,
     List,
     Set,
-    Union,
-    Any,
-    TypeVar,
-    Generic,
     Type,
-    Collection,
+    TypeVar,
+    Union,
 )
-
-from apache_beam.testing.util import assert_that, BeamAssertException, equal_to
 
 import apache_beam
+from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from more_itertools import one
 
-from recidiviz.calculator.dataflow_config import (
-    DATAFLOW_METRICS_TO_TABLES,
-)
+from recidiviz.calculator.dataflow_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetricType
 from recidiviz.persistence.database.schema_utils import get_state_table_classes
 from recidiviz.tests.calculator.calculator_test_utils import NormalizedDatabaseDict
@@ -367,7 +364,7 @@ class FakeWriteToBigQuery(apache_beam.PTransform):
         else:
             assert_that(input_or_inputs, equal_to([]))
 
-        return {}
+        return []
 
 
 FakeWriteToBigQueryType = TypeVar("FakeWriteToBigQueryType", bound=FakeWriteToBigQuery)
