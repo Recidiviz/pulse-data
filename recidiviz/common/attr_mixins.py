@@ -15,12 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Logic for Attr objects that can be built with a Builder."""
-from enum import Enum
-from typing import Any, Dict, Optional, Type, Set, TypeVar, Callable, Tuple
 import datetime
+from enum import Enum
+from typing import Any, Callable, Dict, Optional, Set, Tuple, Type, TypeVar
+
 import attr
 
-from recidiviz.common.attr_utils import is_enum, is_forward_ref, get_enum_cls, is_date
+from recidiviz.common.attr_utils import get_enum_cls, is_date, is_enum, is_forward_ref
 from recidiviz.common.str_field_utils import is_yyyymmdd_date, parse_yyyymmdd_date
 from recidiviz.utils import environment
 from recidiviz.utils.types import ClsT
@@ -157,6 +158,9 @@ class DefaultableAttr:
         return cls(**kwargs)
 
 
+BuildableAttrType = TypeVar("BuildableAttrType", bound="BuildableAttr")
+
+
 class BuildableAttr:
     """Mixin used to make attr object buildable"""
 
@@ -229,8 +233,8 @@ class BuildableAttr:
 
     @classmethod
     def build_from_dictionary(
-        cls, build_dict: Dict[str, Any]
-    ) -> Optional["BuildableAttr"]:
+        cls: Type[BuildableAttrType], build_dict: Dict[str, Any]
+    ) -> Optional[BuildableAttrType]:
         """Builds a BuildableAttr with values from the given build_dict.
 
         Given build_dict must contain all required fields, and cannot contain

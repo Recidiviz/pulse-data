@@ -15,23 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests the functions in the us_nd_commitment_from_supervision_utils file."""
-from datetime import date
-
 import unittest
+from datetime import date
 
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_utils import (
+    _us_nd_pre_commitment_supervision_period,
     us_nd_pre_commitment_supervision_period_if_commitment,
     us_nd_violation_history_window_pre_commitment_from_supervision,
-    _us_nd_pre_commitment_supervision_period,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
+    StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -40,8 +39,8 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 from recidiviz.common.date import DateRange
 from recidiviz.persistence.entity.state.entities import (
-    StateSupervisionPeriod,
     StateIncarcerationPeriod,
+    StateSupervisionPeriod,
 )
 
 
@@ -416,7 +415,7 @@ class TestViolationHistoryWindowPreCommitment(unittest.TestCase):
 
     def test_us_nd_violation_history_window_pre_commitment_from_supervision(
         self,
-    ):
+    ) -> None:
         violation_window = (
             us_nd_violation_history_window_pre_commitment_from_supervision(
                 admission_date=date(2000, 1, 1),
@@ -436,7 +435,7 @@ class TestViolationHistoryWindowPreCommitment(unittest.TestCase):
 class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
     """Tests the _us_nd_pre_commitment_supervision_period function."""
 
-    def test_us_nd_pre_commitment_supervision_period_parole_revocation(self):
+    def test_us_nd_pre_commitment_supervision_period_parole_revocation(self) -> None:
         """Tests that we prioritize the period with the supervision_type that matches
         the admission reason supervision type."""
         admission_date = date(2019, 5, 25)
@@ -474,7 +473,9 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
 
         self.assertEqual(parole_period, pre_commitment_supervision_period)
 
-    def test_us_nd_pre_commitment_supervision_period_parole_revocation_overlap(self):
+    def test_us_nd_pre_commitment_supervision_period_parole_revocation_overlap(
+        self,
+    ) -> None:
         """Tests that we prioritize the overlapping parole period over the one that
         was recently terminated because the admission is a PAROLE_REVOCATION."""
         admission_date = date(2019, 5, 25)
@@ -512,7 +513,9 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
 
         self.assertEqual(overlapping_parole_period, pre_commitment_supervision_period)
 
-    def test_us_nd_pre_commitment_supervision_period_parole_revocation_rev_term(self):
+    def test_us_nd_pre_commitment_supervision_period_parole_revocation_rev_term(
+        self,
+    ) -> None:
         """Tests that we prioritize the overlapping parole period with a termination
         reason of REVOCATION."""
         admission_date = date(2019, 5, 25)
@@ -550,7 +553,9 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
 
         self.assertEqual(revoked_parole_period, pre_commitment_supervision_period)
 
-    def test_us_nd_pre_commitment_supervision_period_parole_revocation_closer(self):
+    def test_us_nd_pre_commitment_supervision_period_parole_revocation_closer(
+        self,
+    ) -> None:
         """Tests that we prioritize the overlapping parole period with a termination
         reason of REVOCATION."""
         admission_date = date(2019, 5, 25)
@@ -590,7 +595,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             closer_revoked_parole_period, pre_commitment_supervision_period
         )
 
-    def test_us_nd_pre_commitment_supervision_period_probation_revocation(self):
+    def test_us_nd_pre_commitment_supervision_period_probation_revocation(self) -> None:
         """Tests that we prioritize the period with the supervision_type that matches
         the admission reason supervision type."""
         admission_date = date(2019, 5, 25)
@@ -628,7 +633,9 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
 
         self.assertEqual(probation_period, pre_commitment_supervision_period)
 
-    def test_us_nd_pre_commitment_supervision_period_probation_revocation_overlap(self):
+    def test_us_nd_pre_commitment_supervision_period_probation_revocation_overlap(
+        self,
+    ) -> None:
         """Tests that we prioritize the recently terminated probation period over the
         one that is overlapping because the admission is a PROBATION_REVOCATION."""
         admission_date = date(2019, 5, 25)
@@ -671,7 +678,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
 
     def test_us_nd_pre_commitment_supervision_period_probation_revocation_rev_term(
         self,
-    ):
+    ) -> None:
         """Tests that we prioritize the probation period with a termination
         reason of REVOCATION."""
         admission_date = date(2019, 5, 25)
@@ -711,7 +718,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
 
     def test_us_nd_pre_commitment_supervision_period_probation_revocation_closer(
         self,
-    ):
+    ) -> None:
         """Tests that we prioritize the overlapping probation period with a termination
         date that is closer to the admission_date."""
         admission_date = date(2019, 5, 25)
@@ -756,7 +763,7 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
 
     def test_us_nd_pre_commitment_supervision_period_no_periods(
         self,
-    ):
+    ) -> None:
         """Tests the situation where the person has no supervision periods."""
         admission_date = date(2019, 5, 25)
         admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION

@@ -69,7 +69,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
     def test_pre_processed_incarceration_periods_for_calculations_multiple_temporary_and_valid(
         self,
-    ):
+    ) -> None:
         state_code = "US_ND"
         temporary_custody_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
@@ -128,7 +128,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
     def test_pre_processed_incarceration_periods_for_calculations_multiple_temporary_and_transfer(
         self,
-    ):
+    ) -> None:
         state_code = "US_ND"
         temporary_custody_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
@@ -219,7 +219,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
     def test_pre_processed_incarceration_periods_for_calculations_valid_then_temporary(
         self,
-    ):
+    ) -> None:
         state_code = "US_ND"
         valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -260,7 +260,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
     def test_pre_processed_incarceration_periods_for_calculations_invalid_board_hold(
         self,
-    ):
+    ) -> None:
         state_code = "US_ND"
         invalid_board_hold = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,

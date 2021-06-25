@@ -20,16 +20,16 @@ import unittest
 from typing import Optional
 
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
+    SupervisionTypeSpan,
     UsMoIncarcerationSentence,
     UsMoSupervisionSentence,
-    SupervisionTypeSpan,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_type_identification import (
-    us_mo_get_supervision_period_supervision_type_on_date,
-    us_mo_get_pre_incarceration_supervision_type,
     us_mo_get_month_supervision_type,
     us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day,
     us_mo_get_post_incarceration_supervision_type,
+    us_mo_get_pre_incarceration_supervision_type,
+    us_mo_get_supervision_period_supervision_type_on_date,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -38,25 +38,25 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodStatus,
+    StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationSentence,
-    StateSupervisionSentence,
     StateIncarcerationPeriod,
+    StateIncarcerationSentence,
     StateSupervisionPeriod,
+    StateSupervisionSentence,
 )
 from recidiviz.tests.calculator.pipeline.utils.us_mo_fakes import (
-    FakeUsMoSupervisionSentence,
     FakeUsMoIncarcerationSentence,
+    FakeUsMoSupervisionSentence,
 )
 
 
 class UsMoGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
     """Tests for us_mo_get_pre_incarceration_supervision_type"""
 
-    def test_usMo_getPreIncarcerationSupervisionType(self):
+    def test_usMo_getPreIncarcerationSupervisionType(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
@@ -97,7 +97,9 @@ class UsMoGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
             ),
         )
 
-    def test_usMo_getPreIncarcerationSupervisionType_ignoreOutOfDateSentences(self):
+    def test_usMo_getPreIncarcerationSupervisionType_ignoreOutOfDateSentences(
+        self,
+    ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
@@ -165,7 +167,7 @@ class UsMoGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
 class UsMoGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
     """Tests for us_mo_get_post_incarceration_supervision_type"""
 
-    def test_usMo_getPostIncarcerationSupervisionType(self):
+    def test_usMo_getPostIncarcerationSupervisionType(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
@@ -207,7 +209,9 @@ class UsMoGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
             ),
         )
 
-    def test_usMo_getPostIncarcerationSupervisionType_ignoreOutOfDateSentences(self):
+    def test_usMo_getPostIncarcerationSupervisionType_ignoreOutOfDateSentences(
+        self,
+    ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
@@ -330,7 +334,7 @@ class UsMoGetSupervisionPeriodSupervisionTypeOnDateTest(unittest.TestCase):
 
         return mo_sentence
 
-    def test_get_supervision_type_no_sentences(self):
+    def test_get_supervision_type_no_sentences(self) -> None:
         # Act
         supervision_period_supervision_type = (
             us_mo_get_supervision_period_supervision_type_on_date(
@@ -343,7 +347,7 @@ class UsMoGetSupervisionPeriodSupervisionTypeOnDateTest(unittest.TestCase):
         # Assert
         self.assertEqual(supervision_period_supervision_type, None)
 
-    def test_get_supervision_type_all_sentences_expired(self):
+    def test_get_supervision_type_all_sentences_expired(self) -> None:
         # Arrange
         mo_incarceration_sentence = self._inc_sentence_with_type(None)
         mo_supervision_sentence = self._sup_sentence_with_type(None)
@@ -362,7 +366,7 @@ class UsMoGetSupervisionPeriodSupervisionTypeOnDateTest(unittest.TestCase):
 
     def test_get_supervision_type_dual_with_incarceration_and_supervision_sentences(
         self,
-    ):
+    ) -> None:
         # Arrange
         mo_incarceration_sentence = self._inc_sentence_with_type(
             StateSupervisionType.PAROLE
@@ -386,7 +390,7 @@ class UsMoGetSupervisionPeriodSupervisionTypeOnDateTest(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.DUAL,
         )
 
-    def test_get_supervision_type_dual_with_just_supervision_sentences(self):
+    def test_get_supervision_type_dual_with_just_supervision_sentences(self) -> None:
         # Arrange
         mo_supervision_sentence_1 = self._sup_sentence_with_type(
             StateSupervisionType.PAROLE
@@ -413,7 +417,7 @@ class UsMoGetSupervisionPeriodSupervisionTypeOnDateTest(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.DUAL,
         )
 
-    def test_get_supervision_type_parole_with_sentence_expiration(self):
+    def test_get_supervision_type_parole_with_sentence_expiration(self) -> None:
         # Arrange
         mo_incarceration_sentence_1 = self._inc_sentence_with_type(None)
         mo_incarceration_sentence_2 = self._inc_sentence_with_type(
@@ -438,7 +442,7 @@ class UsMoGetSupervisionPeriodSupervisionTypeOnDateTest(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-    def test_get_supervision_type_probation_with_sentence_expiration(self):
+    def test_get_supervision_type_probation_with_sentence_expiration(self) -> None:
         # Arrange
         mo_incarceration_sentence = self._inc_sentence_with_type(None)
         mo_supervision_sentence = self._sup_sentence_with_type(
@@ -460,7 +464,7 @@ class UsMoGetSupervisionPeriodSupervisionTypeOnDateTest(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-    def test_get_supervision_type_dual_with_sentence_expiration(self):
+    def test_get_supervision_type_dual_with_sentence_expiration(self) -> None:
         # Arrange
         mo_incarceration_sentence_1 = self._inc_sentence_with_type(None)
         mo_incarceration_sentence_2 = self._inc_sentence_with_type(
@@ -488,7 +492,7 @@ class UsMoGetSupervisionPeriodSupervisionTypeOnDateTest(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.DUAL,
         )
 
-    def test_get_supervision_type_dual_with_internal_unknown(self):
+    def test_get_supervision_type_dual_with_internal_unknown(self) -> None:
         # Arrange
         mo_incarceration_sentence_1 = self._inc_sentence_with_type(
             StateSupervisionType.INTERNAL_UNKNOWN
@@ -518,7 +522,7 @@ class UsMoGetSupervisionPeriodSupervisionTypeOnDateTest(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.DUAL,
         )
 
-    def test_get_supervision_type_two_parole_sentences(self):
+    def test_get_supervision_type_two_parole_sentences(self) -> None:
         # Arrange
         mo_incarceration_sentence_1 = self._inc_sentence_with_type(
             StateSupervisionType.PAROLE
@@ -545,7 +549,7 @@ class UsMoGetSupervisionPeriodSupervisionTypeOnDateTest(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-    def test_get_supervision_type_parole_with_internal_unknown(self):
+    def test_get_supervision_type_parole_with_internal_unknown(self) -> None:
         # Arrange
         mo_incarceration_sentence_1 = self._inc_sentence_with_type(
             StateSupervisionType.INTERNAL_UNKNOWN
@@ -572,7 +576,7 @@ class UsMoGetSupervisionPeriodSupervisionTypeOnDateTest(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PAROLE,
         )
 
-    def test_get_supervision_type_probation_with_internal_unknown(self):
+    def test_get_supervision_type_probation_with_internal_unknown(self) -> None:
         # Arrange
         mo_supervision_sentence_1 = self._sup_sentence_with_type(
             StateSupervisionType.INTERNAL_UNKNOWN
@@ -599,7 +603,7 @@ class UsMoGetSupervisionPeriodSupervisionTypeOnDateTest(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-    def test_get_supervision_type_internal_unknown(self):
+    def test_get_supervision_type_internal_unknown(self) -> None:
         # Arrange
         mo_supervision_sentence = self._sup_sentence_with_type(
             StateSupervisionType.INTERNAL_UNKNOWN
@@ -629,7 +633,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
         self.end_of_month_date = datetime.date(2019, 12, 31)
         self.start_of_next_month_date = datetime.date(2020, 1, 1)
 
-    def test_month_supervision_type_no_sentences(self):
+    def test_month_supervision_type_no_sentences(self) -> None:
         # Arrange
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1234,
@@ -653,13 +657,14 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
         )
 
-    def test_month_supervision_type_single_sentence(self):
+    def test_month_supervision_type_single_sentence(self) -> None:
         # Arrange
+        supervision_start = self.end_of_month_date - datetime.timedelta(days=60)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1234,
             external_id="sp1",
             state_code="US_MO",
-            start_date=(self.end_of_month_date - datetime.timedelta(days=60)),
+            start_date=supervision_start,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
@@ -672,7 +677,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             ),
             supervision_type_spans=[
                 SupervisionTypeSpan(
-                    start_date=supervision_period.start_date,
+                    start_date=supervision_start,
                     end_date=None,
                     supervision_type=StateSupervisionType.PROBATION,
                 )
@@ -693,13 +698,14 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-    def test_month_supervision_type_no_supervision_all_month(self):
+    def test_month_supervision_type_no_supervision_all_month(self) -> None:
         # Arrange
+        supervision_start = self.end_of_month_date - datetime.timedelta(days=60)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1234,
             external_id="sp1",
             state_code="US_MO",
-            start_date=(self.end_of_month_date - datetime.timedelta(days=60)),
+            start_date=supervision_start,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
@@ -707,12 +713,12 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             StateSupervisionSentence.new_with_defaults(
                 external_id="ss1",
                 state_code="US_MO",
-                start_date=supervision_period.start_date,
+                start_date=supervision_start,
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             ),
             supervision_type_spans=[
                 SupervisionTypeSpan(
-                    start_date=supervision_period.start_date,
+                    start_date=supervision_start,
                     end_date=self.start_of_month_date,
                     supervision_type=StateSupervisionType.PROBATION,
                 ),
@@ -739,13 +745,14 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
         )
 
-    def test_month_supervision_type_supervision_ends_middle_of_month(self):
+    def test_month_supervision_type_supervision_ends_middle_of_month(self) -> None:
         # Arrange
+        supervision_start = self.end_of_month_date - datetime.timedelta(days=60)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1234,
             external_id="sp1",
             state_code="US_MO",
-            start_date=(self.end_of_month_date - datetime.timedelta(days=60)),
+            start_date=supervision_start,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
@@ -756,12 +763,12 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             StateSupervisionSentence.new_with_defaults(
                 external_id="ss1",
                 state_code="US_MO",
-                start_date=supervision_period.start_date,
+                start_date=supervision_start,
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             ),
             supervision_type_spans=[
                 SupervisionTypeSpan(
-                    start_date=supervision_period.start_date,
+                    start_date=supervision_start,
                     end_date=supervision_end_date_middle_of_month,
                     supervision_type=StateSupervisionType.PROBATION,
                 ),
@@ -788,13 +795,14 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-    def test_get_month_supervision_type_parole_transitions_to_probation(self):
+    def test_get_month_supervision_type_parole_transitions_to_probation(self) -> None:
         # Arrange
+        start_date = self.end_of_month_date - datetime.timedelta(days=60)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1234,
             external_id="sp1",
             state_code="US_MO",
-            start_date=(self.end_of_month_date - datetime.timedelta(days=60)),
+            start_date=start_date,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
@@ -805,12 +813,12 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             StateIncarcerationSentence.new_with_defaults(
                 external_id="ss1",
                 state_code="US_MO",
-                start_date=supervision_period.start_date,
+                start_date=start_date,
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             ),
             supervision_type_spans=[
                 SupervisionTypeSpan(
-                    start_date=supervision_period.start_date,
+                    start_date=start_date,
                     end_date=parole_end_date_middle_of_month,
                     supervision_type=StateSupervisionType.PAROLE,
                 ),
@@ -854,13 +862,14 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-    def test_get_month_supervision_type_dual(self):
+    def test_get_month_supervision_type_dual(self) -> None:
         # Arrange
+        supervision_start = self.end_of_month_date - datetime.timedelta(days=60)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1234,
             external_id="sp1",
             state_code="US_MO",
-            start_date=(self.end_of_month_date - datetime.timedelta(days=60)),
+            start_date=supervision_start,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
@@ -869,12 +878,12 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
                 StateIncarcerationSentence.new_with_defaults(
                     external_id="ss1",
                     state_code="US_MO",
-                    start_date=supervision_period.start_date,
+                    start_date=supervision_start,
                     status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 ),
                 supervision_type_spans=[
                     SupervisionTypeSpan(
-                        start_date=supervision_period.start_date,
+                        start_date=supervision_start,
                         end_date=self.start_of_next_month_date,
                         supervision_type=StateSupervisionType.PAROLE,
                     ),
@@ -891,12 +900,12 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             StateSupervisionSentence.new_with_defaults(
                 external_id="ss1",
                 state_code="US_MO",
-                start_date=supervision_period.start_date,
+                start_date=supervision_start,
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             ),
             supervision_type_spans=[
                 SupervisionTypeSpan(
-                    start_date=supervision_period.start_date,
+                    start_date=supervision_start,
                     end_date=self.start_of_next_month_date,
                     supervision_type=StateSupervisionType.PROBATION,
                 ),
@@ -922,13 +931,14 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.DUAL,
         )
 
-    def test_get_month_supervision_type_dual_ends_mid_month(self):
+    def test_get_month_supervision_type_dual_ends_mid_month(self) -> None:
         # Arrange
+        supervision_start = self.end_of_month_date - datetime.timedelta(days=60)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1234,
             external_id="sp1",
             state_code="US_MO",
-            start_date=(self.end_of_month_date - datetime.timedelta(days=60)),
+            start_date=supervision_start,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
@@ -938,12 +948,12 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
                 StateIncarcerationSentence.new_with_defaults(
                     external_id="ss1",
                     state_code="US_MO",
-                    start_date=supervision_period.start_date,
+                    start_date=supervision_start,
                     status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 ),
                 supervision_type_spans=[
                     SupervisionTypeSpan(
-                        start_date=supervision_period.start_date,
+                        start_date=supervision_start,
                         end_date=second_to_last_month_date,
                         supervision_type=StateSupervisionType.PAROLE,
                     ),
@@ -960,13 +970,13 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             StateSupervisionSentence.new_with_defaults(
                 external_id="ss1",
                 state_code="US_MO",
-                start_date=supervision_period.start_date,
+                start_date=supervision_start,
                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             ),
             supervision_type_spans=[
                 # Probation sentence starts after parole sentence ends
                 SupervisionTypeSpan(
-                    start_date=supervision_period.start_date,
+                    start_date=supervision_start,
                     end_date=second_to_last_month_date,
                     supervision_type=StateSupervisionType.PROBATION,
                 ),
@@ -994,13 +1004,16 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.DUAL,
         )
 
-    def test_get_month_supervision_type_sentence_supervision_ends_different_days(self):
+    def test_get_month_supervision_type_sentence_supervision_ends_different_days(
+        self,
+    ) -> None:
         # Arrange
+        supervision_start = self.end_of_month_date - datetime.timedelta(days=60)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1234,
             external_id="sp1",
             state_code="US_MO",
-            start_date=(self.end_of_month_date - datetime.timedelta(days=60)),
+            start_date=supervision_start,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
@@ -1016,7 +1029,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
                 ),
                 supervision_type_spans=[
                     SupervisionTypeSpan(
-                        start_date=supervision_period.start_date,
+                        start_date=supervision_start,
                         end_date=second_to_last_month_date,
                         supervision_type=StateSupervisionType.PAROLE,
                     ),
@@ -1039,7 +1052,7 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             supervision_type_spans=[
                 # Probation sentence starts after parole sentence ends
                 SupervisionTypeSpan(
-                    start_date=supervision_period.start_date,
+                    start_date=supervision_start,
                     end_date=mid_month_date,
                     supervision_type=StateSupervisionType.PROBATION,
                 ),
@@ -1074,7 +1087,7 @@ class UsMoGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
     def setUp(self) -> None:
         self.upper_bound_date = datetime.date(2018, 10, 10)
 
-    def test_most_recent_supervision_type_no_sentences_no_bound(self):
+    def test_most_recent_supervision_type_no_sentences_no_bound(self) -> None:
         # Act
         supervision_period_supervision_type = us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
             upper_bound_exclusive_date=self.upper_bound_date,
@@ -1086,7 +1099,7 @@ class UsMoGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
         # Assert
         self.assertEqual(supervision_period_supervision_type, None)
 
-    def test_most_recent_supervision_type_no_sentences_same_day_bound(self):
+    def test_most_recent_supervision_type_no_sentences_same_day_bound(self) -> None:
         # Act
         supervision_period_supervision_type = us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
             upper_bound_exclusive_date=self.upper_bound_date,
@@ -1100,7 +1113,7 @@ class UsMoGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
 
     def test_most_recent_supervision_type_two_sentences_same_transition_day_one_different(
         self,
-    ):
+    ) -> None:
         # Arrange
 
         start_date = self.upper_bound_date - datetime.timedelta(days=5)

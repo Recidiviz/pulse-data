@@ -24,26 +24,26 @@ import pytest
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_type_identification import (
-    us_nd_get_post_incarceration_supervision_type,
-    us_nd_infer_supervision_period_admission,
-    us_nd_get_pre_commitment_supervision_type,
-)
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_type_identification import (
+    us_nd_get_post_incarceration_supervision_type,
+    us_nd_get_pre_commitment_supervision_type,
+    us_nd_infer_supervision_period_admission,
+)
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
+    StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodSupervisionType,
-    StateSupervisionPeriodStatus,
-    StateSupervisionPeriodTerminationReason,
     StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodStatus,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
@@ -54,7 +54,7 @@ from recidiviz.persistence.entity.state.entities import (
 class TestUsNdPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
     """Tests the us_nd_get_pre_commitment_supervision_type function."""
 
-    def test_us_nd_get_pre_commitment_supervision_type_default(self):
+    def test_us_nd_get_pre_commitment_supervision_type_default(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
@@ -78,7 +78,9 @@ class TestUsNdPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
             supervision_type_pre_commitment,
         )
 
-    def test_us_nd_get_pre_commitment_supervision_type_new_admission_probation(self):
+    def test_us_nd_get_pre_commitment_supervision_type_new_admission_probation(
+        self,
+    ) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
@@ -113,7 +115,9 @@ class TestUsNdPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
             supervision_type_pre_commitment,
         )
 
-    def test_us_nd_get_pre_commitment_supervision_type_new_admission_parole(self):
+    def test_us_nd_get_pre_commitment_supervision_type_new_admission_parole(
+        self,
+    ) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
@@ -147,7 +151,7 @@ class TestUsNdPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
 
     def test_us_nd_get_pre_commitment_supervision_type_new_admission_no_supervision_period(
         self,
-    ):
+    ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
@@ -172,7 +176,7 @@ class TestUsNdPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
 class TestUsNdPostIncarcerationSupervisionTypeIdentification(unittest.TestCase):
     """Tests the us_nd_get_post_incarceration_supervision_type function."""
 
-    def test_us_nd_get_post_incarceration_supervision_type_parole(self):
+    def test_us_nd_get_post_incarceration_supervision_type_parole(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
@@ -200,7 +204,7 @@ class TestUsNdPostIncarcerationSupervisionTypeIdentification(unittest.TestCase):
                 supervision_type_at_release,
             )
 
-    def test_us_nd_get_post_incarceration_supervision_type_probation(self):
+    def test_us_nd_get_post_incarceration_supervision_type_probation(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
@@ -228,7 +232,7 @@ class TestUsNdPostIncarcerationSupervisionTypeIdentification(unittest.TestCase):
                 supervision_type_at_release,
             )
 
-    def test_us_nd_get_post_incarceration_supervision_type_no_supervision(self):
+    def test_us_nd_get_post_incarceration_supervision_type_no_supervision(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
@@ -250,7 +254,9 @@ class TestUsNdPostIncarcerationSupervisionTypeIdentification(unittest.TestCase):
 
         self.assertIsNone(supervision_type_at_release)
 
-    def test_us_nd_get_post_incarceration_supervision_type_unexpected_raw_text(self):
+    def test_us_nd_get_post_incarceration_supervision_type_unexpected_raw_text(
+        self,
+    ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
@@ -273,7 +279,7 @@ class TestUsNdPostIncarcerationSupervisionTypeIdentification(unittest.TestCase):
 class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
     """Tests the us_nd_supervision_period_admission function."""
 
-    def test_us_nd_infer_supervision_period_admission_conditional_release(self):
+    def test_us_nd_infer_supervision_period_admission_conditional_release(self) -> None:
         previous_incarceration_period: StateIncarcerationPeriod = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
@@ -321,7 +327,9 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             admission_reason, StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE
         )
 
-    def test_us_nd_infer_supervision_period_admission_return_from_absconsion(self):
+    def test_us_nd_infer_supervision_period_admission_return_from_absconsion(
+        self,
+    ) -> None:
         previous_supervision_period: StateSupervisionPeriod = (
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
@@ -373,7 +381,7 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
 
     def test_us_nd_infer_supervision_period_admission_internal_unknown_after_probation(
         self,
-    ):
+    ) -> None:
         previous_supervision_period: StateSupervisionPeriod = (
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
@@ -425,7 +433,7 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
 
     def test_us_nd_infer_supervision_period_admission_court_sentence_after_parole(
         self,
-    ):
+    ) -> None:
         previous_supervision_period: StateSupervisionPeriod = (
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
@@ -477,7 +485,7 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
 
     def test_us_nd_infer_supervision_period_admission_no_previous_preiod_parole(
         self,
-    ):
+    ) -> None:
         current_supervision_period: StateSupervisionPeriod = (
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
@@ -516,7 +524,7 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
 
     def test_us_nd_infer_supervision_period_admission_no_previous_preiod_probation(
         self,
-    ):
+    ) -> None:
         current_supervision_period: StateSupervisionPeriod = (
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
@@ -555,7 +563,7 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
 
     def test_us_nd_infer_supervision_period_admission_no_previous_period_parole(
         self,
-    ):
+    ) -> None:
         current_supervision_period: StateSupervisionPeriod = (
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
@@ -594,7 +602,7 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
 
     def test_us_nd_infer_supervision_period_admission_change_supervising_officer(
         self,
-    ):
+    ) -> None:
         previous_supervision_period: StateSupervisionPeriod = (
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
@@ -648,7 +656,7 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
 
     def test_us_nd_infer_supervision_period_admission_halfway_house_to_parole(
         self,
-    ):
+    ) -> None:
         previous_supervision_period: StateSupervisionPeriod = (
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
@@ -702,7 +710,7 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
 
     def test_us_nd_infer_supervision_period_previous_period_termination_reason_revocation(
         self,
-    ):
+    ) -> None:
         previous_supervision_period: StateSupervisionPeriod = (
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
