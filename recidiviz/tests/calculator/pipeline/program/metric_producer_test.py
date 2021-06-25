@@ -15,11 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for program/metric_producer.py."""
-# pylint: disable=unused-import,wrong-import-order
 import unittest
 from collections import defaultdict
 from datetime import date
-from typing import List, Dict, Type
+from typing import Dict, List, Type
 
 from freezegun import freeze_time
 
@@ -27,24 +26,21 @@ from recidiviz.calculator.pipeline.program import metric_producer
 from recidiviz.calculator.pipeline.program.metric_producer import (
     EVENT_TO_METRIC_CLASSES,
 )
-from recidiviz.calculator.pipeline.program.metrics import (
-    ProgramMetricType,
-    ProgramMetric,
-)
+from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
 from recidiviz.calculator.pipeline.program.program_event import (
-    ProgramReferralEvent,
     ProgramEvent,
     ProgramParticipationEvent,
+    ProgramReferralEvent,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
-from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
+from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
-    StatePersonRace,
     StatePersonEthnicity,
+    StatePersonRace,
 )
 
 ALL_METRICS_INCLUSIONS_DICT = {metric_type: True for metric_type in ProgramMetricType}
@@ -58,7 +54,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
     """Tests the produce_program_metrics function."""
 
     @freeze_time("2030-11-02")
-    def test_produce_program_metrics(self):
+    def test_produce_program_metrics(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_ND",
             person_id=12345,
@@ -99,7 +95,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_produce_program_metrics_full_info(self):
+    def test_produce_program_metrics_full_info(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_ND",
             person_id=12345,
@@ -153,7 +149,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_produce_program_metrics_full_info_probation(self):
+    def test_produce_program_metrics_full_info_probation(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_ND",
             person_id=12345,
@@ -207,7 +203,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_produce_program_metrics_multiple_supervision_types(self):
+    def test_produce_program_metrics_multiple_supervision_types(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_ND",
             person_id=12345,
@@ -279,7 +275,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
         self.assertEqual(expected_count, len(metrics))
 
     @freeze_time("2012-11-30")
-    def test_produce_program_metrics_calculation_month_count_1(self):
+    def test_produce_program_metrics_calculation_month_count_1(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_ND",
             person_id=12345,
@@ -305,7 +301,10 @@ class TestProduceProgramMetrics(unittest.TestCase):
             state_code="US_ND", event_date=date(2000, 2, 2), program_id="ZZZ"
         )
 
-        program_events = [included_event, not_included_event]
+        program_events: List[ProgramEvent] = [
+            included_event,
+            not_included_event,
+        ]
 
         metrics = metric_producer.produce_program_metrics(
             person,
@@ -322,7 +321,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
         self.assertEqual(expected_count, len(metrics))
 
     @freeze_time("2012-12-31")
-    def test_produce_program_metrics_calculation_month_count_36(self):
+    def test_produce_program_metrics_calculation_month_count_36(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_ND",
             person_id=12345,
@@ -348,7 +347,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             state_code="US_ND", event_date=date(2009, 12, 10), program_id="ZZZ"
         )
 
-        program_events = [included_event, not_included_event]
+        program_events: List[ProgramEvent] = [included_event, not_included_event]
 
         metrics = metric_producer.produce_program_metrics(
             person,
