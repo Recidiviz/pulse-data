@@ -75,5 +75,5 @@ class UsXxIncarcerationPreProcessingDelegate(
             )
         )
 
-    def pre_processing_relies_on_supervision_periods(self):
+    def pre_processing_relies_on_supervision_periods(self) -> bool:
         return self._default_pre_processing_relies_on_supervision_periods()

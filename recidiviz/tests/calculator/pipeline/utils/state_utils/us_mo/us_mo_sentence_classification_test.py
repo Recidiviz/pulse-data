@@ -17,10 +17,11 @@
 """Tests for classes and helpers in us_mo_sentence_classification.py."""
 import datetime
 import unittest
+from typing import Any, Dict, List
 
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
-    UsMoSentenceStatus,
     UsMoIncarcerationSentence,
+    UsMoSentenceStatus,
     UsMoSupervisionSentence,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
@@ -34,7 +35,9 @@ from recidiviz.persistence.entity.state.entities import (
 class UsMoSentenceStatusTest(unittest.TestCase):
     """Tests for UsMoSentenceStatus"""
 
-    def _build_test_status(self, status_code: str, status_description: str):
+    def _build_test_status(
+        self, status_code: str, status_description: str
+    ) -> UsMoSentenceStatus:
         return UsMoSentenceStatus(
             sentence_status_external_id="1000038-20180619-1-2",
             sentence_external_id="1000038-20180619-1",
@@ -43,7 +46,7 @@ class UsMoSentenceStatusTest(unittest.TestCase):
             status_description=status_description,
         )
 
-    def test_parse_sentence_status(self):
+    def test_parse_sentence_status(self) -> None:
         # Arrange
         raw_dict = {
             "sentence_status_external_id": "1000038-20180619-1-2",
@@ -75,9 +78,10 @@ class UsMoSentenceStatusTest(unittest.TestCase):
             ),
         )
 
+        assert output is not None
         self.assertEqual(output.person_external_id, "1000038")
 
-    def test_incarceration_supervision_in_out_statuses(self):
+    def test_incarceration_supervision_in_out_statuses(self) -> None:
         sup_in_status = self._build_test_status(
             status_code="15I1000", status_description="New Court Probation"
         )
@@ -111,7 +115,7 @@ class UsMoSentenceStatusTest(unittest.TestCase):
         self.assertFalse(inc_in_status.is_incarceration_out_status)
         self.assertTrue(inc_out_status.is_incarceration_out_status)
 
-    def test_is_investigation_status(self):
+    def test_is_investigation_status(self) -> None:
         investigation_statuses = [
             self._build_test_status(
                 status_code="05I5000",
@@ -276,7 +280,7 @@ class UsMoSentenceStatusTest(unittest.TestCase):
         )
         self.assertFalse(non_investigation_status.is_investigation_status)
 
-    def test_is_sentence_termimination_status(self):
+    def test_is_sentence_termimination_status(self) -> None:
         institutional_sentence_end = self._build_test_status(
             status_code="90O2010", status_description="Parole Completion"
         )
@@ -301,7 +305,7 @@ class UsMoSentenceStatusTest(unittest.TestCase):
             investigation_completion_status.is_sentence_termimination_status
         )
 
-    def test_is_lifetime_supervision_start_status(self):
+    def test_is_lifetime_supervision_start_status(self) -> None:
         lifetime_supv_status1 = self._build_test_status(
             status_code="35I6010", status_description="Release from DMH for SVP Supv"
         )
@@ -319,8 +323,8 @@ class UsMoSentenceTest(unittest.TestCase):
     def setUp(self) -> None:
         self.validation_date = datetime.date(year=2019, month=10, day=31)
 
-    def test_no_statuses_does_not_crash(self):
-        raw_statuses = []
+    def test_no_statuses_does_not_crash(self) -> None:
+        raw_statuses: List[Dict[str, Any]] = []
 
         base_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code="US_MO",
@@ -337,7 +341,7 @@ class UsMoSentenceTest(unittest.TestCase):
             None,
         )
 
-    def test_create_mo_supervision_sentence(self):
+    def test_create_mo_supervision_sentence(self) -> None:
         # Arrange
         raw_sentence_statuses = [
             {
@@ -378,7 +382,7 @@ class UsMoSentenceTest(unittest.TestCase):
         self.assertTrue(isinstance(us_mo_sentence, StateSupervisionSentence))
         self.assertEqual(us_mo_sentence.external_id, sentence.external_id)
 
-    def test_create_mo_incarceration_sentence(self):
+    def test_create_mo_incarceration_sentence(self) -> None:
         # Arrange
         raw_sentence_statuses = [
             {
@@ -426,7 +430,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
     def setUp(self) -> None:
         self.validation_date = datetime.date(year=2019, month=10, day=31)
 
-    def test_supervision_type_new_probation(self):
+    def test_supervision_type_new_probation(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "1345495-20190808-1",
@@ -452,7 +456,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PROBATION,
         )
 
-    def test_supervision_type_parole(self):
+    def test_supervision_type_parole(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "1167633-20171012-2",
@@ -485,7 +489,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PAROLE,
         )
 
-    def test_supervision_type_court_parole(self):
+    def test_supervision_type_court_parole(self) -> None:
         # Court Parole is actually probation
         raw_statuses = [
             {
@@ -512,7 +516,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PROBATION,
         )
 
-    def test_supervision_type_conditional_release_cr(self):
+    def test_supervision_type_conditional_release_cr(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "505542-20120927-1",
@@ -558,7 +562,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PAROLE,
         )
 
-    def test_supervision_type_board_holdover_release(self):
+    def test_supervision_type_board_holdover_release(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "1333144-20180912-1",
@@ -612,7 +616,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PAROLE,
         )
 
-    def test_supervision_type_lifetime_supervision(self):
+    def test_supervision_type_lifetime_supervision(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "13252-20160627-1",
@@ -652,7 +656,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PAROLE,
         )
 
-    def test_supervision_type_lifetime_supervision_after_inst_completion(self):
+    def test_supervision_type_lifetime_supervision_after_inst_completion(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "13252-20160627-1",
@@ -692,7 +696,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PAROLE,
         )
 
-    def test_lifetime_supervision_no_supervision_in(self):
+    def test_lifetime_supervision_no_supervision_in(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "1096616-20060515-3",
@@ -725,7 +729,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PAROLE,
         )
 
-    def test_probation_after_investigation_status_list_unsorted(self):
+    def test_probation_after_investigation_status_list_unsorted(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "282443-20180427-1",
@@ -765,7 +769,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PROBATION,
         )
 
-    def test_diversion_probation_after_investigation(self):
+    def test_diversion_probation_after_investigation(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "1324786-20180214-1",
@@ -814,7 +818,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PROBATION,
         )
 
-    def test_diversion_probation_after_community_court_ref_investigation(self):
+    def test_diversion_probation_after_community_court_ref_investigation(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "1324786-20180214-1",
@@ -854,7 +858,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PROBATION,
         )
 
-    def test_interstate_compact_parole_classified_as_probation(self):
+    def test_interstate_compact_parole_classified_as_probation(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "165467-20171227-1",
@@ -894,7 +898,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PROBATION,
         )
 
-    def test_interstate_compact_parole_classified_as_probation_2(self):
+    def test_interstate_compact_parole_classified_as_probation_2(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "1269010-20140403-1",
@@ -927,7 +931,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PROBATION,
         )
 
-    def test_probation_starts_same_day_as_new_investigation(self):
+    def test_probation_starts_same_day_as_new_investigation(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "1344336-20190703-1",
@@ -981,7 +985,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PROBATION,
         )
 
-    def test_resentenced_probation_revisit(self):
+    def test_resentenced_probation_revisit(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "1254438-20130418-2",
@@ -1021,7 +1025,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PROBATION,
         )
 
-    def test_release_to_field_other_sentence(self):
+    def test_release_to_field_other_sentence(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "1328840-20180523-3",
@@ -1068,7 +1072,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PROBATION,
         )
 
-    def test_prob_rev_codes_not_applicable(self):
+    def test_prob_rev_codes_not_applicable(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "1163420-20180116-1",
@@ -1108,7 +1112,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PROBATION,
         )
 
-    def test_incarcerated_on_date(self):
+    def test_incarcerated_on_date(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "13252-20160627-1",
@@ -1134,7 +1138,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             None,
         )
 
-    def test_suspended_and_reinstated(self):
+    def test_suspended_and_reinstated(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "1001298-20160310-1",
@@ -1215,7 +1219,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             None,
         )
 
-    def test_release_to_field_other_sentence_lookback(self):
+    def test_release_to_field_other_sentence_lookback(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "1061945-20030505-7",
@@ -1255,7 +1259,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PROBATION,
         )
 
-    def test_release_to_field_statuses_cancel_each_other_out(self):
+    def test_release_to_field_statuses_cancel_each_other_out(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "1061945-20030505-7",
@@ -1304,7 +1308,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PROBATION,
         )
 
-    def test_interstate_transfer_not_on_supervision(self):
+    def test_interstate_transfer_not_on_supervision(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "1343861-20190620-2",
@@ -1337,7 +1341,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             None,
         )
 
-    def test_interstate_transfer_same_day_as_new_charge(self):
+    def test_interstate_transfer_same_day_as_new_charge(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "1343861-20190620-2",
@@ -1370,7 +1374,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             None,
         )
 
-    def test_probation_reinstated_on_validation_date(self):
+    def test_probation_reinstated_on_validation_date(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "1313746-20170505-1",
@@ -1417,7 +1421,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PROBATION,
         )
 
-    def test_conditional_release(self):
+    def test_conditional_release(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "1123534-20041220-5",
@@ -1450,7 +1454,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PAROLE,
         )
 
-    def test_conditional_re_release(self):
+    def test_conditional_re_release(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "1123534-20041220-5",
@@ -1504,7 +1508,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PAROLE,
         )
 
-    def test_interstate_transfer_and_return_same_day(self):
+    def test_interstate_transfer_and_return_same_day(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "1291992-20151103-1",
@@ -1544,7 +1548,7 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
             StateSupervisionType.PROBATION,
         )
 
-    def test_crc_converted_from_dai_to_parole(self):
+    def test_crc_converted_from_dai_to_parole(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "38140-19800131-8",
@@ -1595,8 +1599,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
 class UsMoGetMostRecentSupervisionTypeBeforeDay(unittest.TestCase):
     """Tests for UsMoSentence.get_most_recent_supervision_type_before_upper_bound_day()."""
 
-    def test_no_statuses(self):
-        raw_statuses = []
+    def test_no_statuses(self) -> None:
+        raw_statuses: List[Dict[str, Any]] = []
 
         base_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code="US_MO",
@@ -1616,7 +1620,7 @@ class UsMoGetMostRecentSupervisionTypeBeforeDay(unittest.TestCase):
             None,
         )
 
-    def test_no_previous_supervision(self):
+    def test_no_previous_supervision(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "1000044-20100920-1",
@@ -1645,7 +1649,7 @@ class UsMoGetMostRecentSupervisionTypeBeforeDay(unittest.TestCase):
             None,
         )
 
-    def test_board_hold_revocation(self):
+    def test_board_hold_revocation(self) -> None:
         raw_statuses = [
             {
                 "sentence_external_id": "1000044-20100920-1",
