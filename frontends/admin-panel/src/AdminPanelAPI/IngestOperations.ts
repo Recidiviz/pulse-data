@@ -116,3 +116,17 @@ export const releaseBQExportLock = async (
     stateCode,
   });
 };
+
+// Pauses direct ingest instances
+export const pauseDirectIngestInstance = async (
+  stateCode: string,
+  ingestInstance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    `/api/ingest_operations/pause_direct_ingest_instance`,
+    {
+      stateCode,
+      ingestInstance,
+    }
+  );
+};

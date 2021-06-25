@@ -29,6 +29,12 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
+)
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
 )
@@ -245,5 +251,27 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
             lock_manager.release_lock()
         except GCSPseudoLockDoesNotExist:
             return "lock does not exist", HTTPStatus.NOT_FOUND
+
+        return "", HTTPStatus.OK
+
+    @bp.route("/api/ingest_operations/pause_direct_ingest_instance", methods=["POST"])
+    @requires_gae_auth
+    def _pause_direct_ingest_instance() -> Tuple[str, HTTPStatus]:
+        try:
+            state_code = StateCode(request.json["stateCode"])
+            ingest_instance = DirectIngestInstance(request.json["ingest_instance"])
+        except ValueError:
+            return "invalid parameters provided", HTTPStatus.BAD_REQUEST
+
+        ingest_status_manager = DirectIngestInstanceStatusManager(
+            region_code=state_code.value, ingest_instance=ingest_instance
+        )
+        try:
+            ingest_status_manager.pause_instance()
+        except Exception:
+            return (
+                "something went wrong pausing the intance",
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
 
         return "", HTTPStatus.OK
