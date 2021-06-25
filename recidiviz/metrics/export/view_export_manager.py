@@ -220,7 +220,7 @@ def rematerialize_views_for_metric_export(
                     bq_view_namespace_to_update
                 ]
             )
-            view_update_manager.create_dataset_and_deploy_views_for_view_builders(
+            view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
                 view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
                 view_builders_to_update=view_builders_for_views_to_update,
             )

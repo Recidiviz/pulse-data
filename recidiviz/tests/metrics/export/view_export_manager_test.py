@@ -358,7 +358,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         )
 
     @mock.patch(
-        "recidiviz.big_query.view_update_manager.create_dataset_and_deploy_views_for_view_builders"
+        "recidiviz.big_query.view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders"
     )
     @mock.patch(
         "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"
@@ -499,7 +499,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
     @mock.patch("recidiviz.metrics.export.view_export_manager.deployed_views")
     @mock.patch("recidiviz.big_query.view_update_manager.rematerialize_views")
     @mock.patch(
-        "recidiviz.big_query.view_update_manager.create_dataset_and_deploy_views_for_view_builders"
+        "recidiviz.big_query.view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders"
     )
     @mock.patch(
         "recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter"

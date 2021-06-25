@@ -171,7 +171,7 @@ def rematerialize_views(
         raise e from e
 
 
-def create_dataset_and_deploy_views_for_view_builders(
+def create_managed_dataset_and_deploy_views_for_view_builders(
     view_source_table_datasets: Set[str],
     view_builders_to_update: Sequence[BigQueryViewBuilder],
     dataset_overrides: Optional[Dict[str, str]] = None,
@@ -198,7 +198,7 @@ def create_dataset_and_deploy_views_for_view_builders(
             dataset_overrides=dataset_overrides,
         )
 
-        _create_dataset_and_deploy_views(
+        _create_managed_dataset_and_deploy_views(
             views_to_update,
             bq_region_override,
             force_materialize,
@@ -280,7 +280,7 @@ def _create_all_datasets_if_necessary(
                 dataset_ids.add(dataset_ref.dataset_id)
 
 
-def _create_dataset_and_deploy_views(
+def _create_managed_dataset_and_deploy_views(
     views_to_update: List[BigQueryView],
     bq_region_override: Optional[str],
     force_materialize: bool,
