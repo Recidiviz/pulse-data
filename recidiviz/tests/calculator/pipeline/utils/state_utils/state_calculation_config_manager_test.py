@@ -866,7 +866,7 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
 class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
     """Tests the state-specific supervision_period_is_out_of_state function."""
 
-    def test_supervision_period_is_out_of_state_us_id_with_identifier(self):
+    def test_supervision_period_is_out_of_state_us_id_with_identifier(self) -> None:
         self.assertTrue(
             state_calculation_config_manager.supervision_period_is_out_of_state(
                 self.create_time_bucket(
@@ -875,21 +875,25 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
             )
         )
 
-    def test_supervision_period_is_out_of_state_us_id_with_incorrect_identifier(self):
+    def test_supervision_period_is_out_of_state_us_id_with_incorrect_identifier(
+        self,
+    ) -> None:
         self.assertFalse(
             state_calculation_config_manager.supervision_period_is_out_of_state(
                 self.create_time_bucket("US_ID", "Incorrect - remainder of identifier")
             )
         )
 
-    def test_supervision_period_is_out_of_state_us_id_with_empty_identifier(self):
+    def test_supervision_period_is_out_of_state_us_id_with_empty_identifier(
+        self,
+    ) -> None:
         self.assertFalse(
             state_calculation_config_manager.supervision_period_is_out_of_state(
                 self.create_time_bucket("US_ID", None)
             )
         )
 
-    def test_supervision_period_is_out_of_state_us_mo_with_identifier(self):
+    def test_supervision_period_is_out_of_state_us_mo_with_identifier(self) -> None:
         self.assertFalse(
             state_calculation_config_manager.supervision_period_is_out_of_state(
                 self.create_time_bucket(
@@ -898,7 +902,9 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
             )
         )
 
-    def test_supervision_period_is_out_of_state_us_mo_with_incorrect_identifier(self):
+    def test_supervision_period_is_out_of_state_us_mo_with_incorrect_identifier(
+        self,
+    ) -> None:
         self.assertFalse(
             state_calculation_config_manager.supervision_period_is_out_of_state(
                 self.create_time_bucket("US_MO", "Incorrect - remainder of identifier")
@@ -908,7 +914,7 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
     @staticmethod
     def create_time_bucket(
         state_code: str, supervising_district_external_id: Optional[str]
-    ):
+    ) -> RevocationReturnSupervisionTimeBucket:
         return RevocationReturnSupervisionTimeBucket(
             state_code=state_code,
             year=2010,

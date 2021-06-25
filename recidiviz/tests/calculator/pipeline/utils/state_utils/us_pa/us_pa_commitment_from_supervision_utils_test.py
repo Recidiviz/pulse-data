@@ -24,34 +24,34 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa import (
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from_supervision_utils import (
     PURPOSE_FOR_INCARCERATION_PVC,
-    SHOCK_INCARCERATION_UNDER_6_MONTHS,
-    SHOCK_INCARCERATION_12_MONTHS,
-    SHOCK_INCARCERATION_9_MONTHS,
     SHOCK_INCARCERATION_6_MONTHS,
+    SHOCK_INCARCERATION_9_MONTHS,
+    SHOCK_INCARCERATION_12_MONTHS,
     SHOCK_INCARCERATION_PVC,
+    SHOCK_INCARCERATION_UNDER_6_MONTHS,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
     StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
-    StateIncarcerationPeriodReleaseReason,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodStatus,
+    StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseRevocationType,
-    StateSupervisionViolationResponseDecision,
-    StateSupervisionViolationResponseType,
     StateSupervisionViolationResponseDecidingBodyType,
+    StateSupervisionViolationResponseDecision,
+    StateSupervisionViolationResponseRevocationType,
+    StateSupervisionViolationResponseType,
 )
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
-    StateSupervisionViolationResponseDecisionEntry,
     StateSupervisionViolationResponse,
+    StateSupervisionViolationResponseDecisionEntry,
 )
 
 STATE_CODE = "US_PA"
@@ -61,7 +61,7 @@ STATE_CODE = "US_PA"
 class TestIsCommitmentFromSupervision(unittest.TestCase):
     """Tests the us_pa_admission_is_commitment_from_supervision function."""
 
-    def test_us_pa_admission_is_commitment_from_supervision_parole(self):
+    def test_us_pa_admission_is_commitment_from_supervision_parole(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code=STATE_CODE,
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
@@ -74,7 +74,7 @@ class TestIsCommitmentFromSupervision(unittest.TestCase):
             )
         )
 
-    def test_us_pa_admission_is_commitment_from_supervision_probation(self):
+    def test_us_pa_admission_is_commitment_from_supervision_probation(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code=STATE_CODE,
             admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
@@ -87,7 +87,9 @@ class TestIsCommitmentFromSupervision(unittest.TestCase):
             )
         )
 
-    def test_us_pa_admission_is_commitment_from_supervision_not_revocation(self):
+    def test_us_pa_admission_is_commitment_from_supervision_not_revocation(
+        self,
+    ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code=STATE_CODE,
             admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
@@ -104,7 +106,7 @@ class TestIsCommitmentFromSupervision(unittest.TestCase):
 class TestPreCommitmentSupervisionPeriodIfCommitment(unittest.TestCase):
     """Tests the us_pa_pre_commitment_supervision_period_if_commitment function."""
 
-    def test_us_pa_pre_commitment_supervision_period_if_commitment(self):
+    def test_us_pa_pre_commitment_supervision_period_if_commitment(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code=STATE_CODE,
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
@@ -129,7 +131,9 @@ class TestPreCommitmentSupervisionPeriodIfCommitment(unittest.TestCase):
         self.assertTrue(admission_is_revocation)
         self.assertEqual(revoked_supervision_period, pre_commitment_supervision_period)
 
-    def test_us_pa_pre_commitment_supervision_period_if_commitment_transfer(self):
+    def test_us_pa_pre_commitment_supervision_period_if_commitment_transfer(
+        self,
+    ) -> None:
         """It's common for people on parole in US_PA to be transferred to a new
         supervision period on the date of their sanction admission to incarceration
         for shock incarceration. This tests that the period that ended on the
@@ -170,7 +174,7 @@ class TestPreCommitmentSupervisionPeriodIfCommitment(unittest.TestCase):
 
     def test_us_pa_pre_commitment_supervision_period_if_commitment_no_revocation(
         self,
-    ):
+    ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code=STATE_CODE,
             admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
@@ -199,7 +203,9 @@ class TestPreCommitmentSupervisionPeriodIfCommitment(unittest.TestCase):
 class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
     """Tests the us_pa_purpose_for_incarceration_and_subtype function."""
 
-    def test_purpose_for_incarceration_and_subtype_shock_incarceration_RESCR(self):
+    def test_purpose_for_incarceration_and_subtype_shock_incarceration_RESCR(
+        self,
+    ) -> None:
         parole_board_decision_entry = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
             state_code=STATE_CODE,
             decision_raw_text=SHOCK_INCARCERATION_UNDER_6_MONTHS,
@@ -249,7 +255,9 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
             purpose_for_incarceration_subtype,
         )
 
-    def test_purpose_for_incarceration_and_subtype_shock_incarceration_RESCR6(self):
+    def test_purpose_for_incarceration_and_subtype_shock_incarceration_RESCR6(
+        self,
+    ) -> None:
         parole_board_decision_entry = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
             state_code=STATE_CODE,
             decision_raw_text=SHOCK_INCARCERATION_6_MONTHS,
@@ -298,7 +306,9 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
             SHOCK_INCARCERATION_6_MONTHS, purpose_for_incarceration_subtype
         )
 
-    def test_purpose_for_incarceration_and_subtype_shock_incarceration_RESCR9(self):
+    def test_purpose_for_incarceration_and_subtype_shock_incarceration_RESCR9(
+        self,
+    ) -> None:
         parole_board_decision_entry = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
             state_code=STATE_CODE,
             decision_raw_text=SHOCK_INCARCERATION_9_MONTHS,
@@ -347,7 +357,9 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
             SHOCK_INCARCERATION_9_MONTHS, purpose_for_incarceration_subtype
         )
 
-    def test_purpose_for_incarceration_and_subtype_shock_incarceration_RESCR12(self):
+    def test_purpose_for_incarceration_and_subtype_shock_incarceration_RESCR12(
+        self,
+    ) -> None:
         parole_board_decision_entry = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
             state_code=STATE_CODE,
             decision_raw_text=SHOCK_INCARCERATION_12_MONTHS,
@@ -398,7 +410,7 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
 
     def test_purpose_for_incarceration_and_subtype_shock_incarceration_no_set_subtype(
         self,
-    ):
+    ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id="ip2",
@@ -432,7 +444,7 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
 
     def test_purpose_for_incarceration_and_subtype_shock_incarceration_sci_no_set_subtype(
         self,
-    ):
+    ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id="ip2",
@@ -464,7 +476,7 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
 
     def test_purpose_for_incarceration_and_subtype_shock_incarceration_sci_with_board_actions(
         self,
-    ):
+    ) -> None:
         parole_board_decision_entry = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
             state_code=STATE_CODE,
             decision_raw_text=SHOCK_INCARCERATION_12_MONTHS,
@@ -511,7 +523,7 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
             SHOCK_INCARCERATION_12_MONTHS, purpose_for_incarceration_subtype
         )
 
-    def test_purpose_for_incarceration_and_subtype_reincarceration(self):
+    def test_purpose_for_incarceration_and_subtype_reincarceration(self) -> None:
         parole_board_decision_entry = (
             StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code=STATE_CODE,
@@ -557,7 +569,7 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
 
     def test_purpose_for_incarceration_and_subtype_reincarceration_no_board_actions(
         self,
-    ):
+    ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id="ip2",
@@ -584,7 +596,7 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
         )
         self.assertIsNone(purpose_for_incarceration_subtype)
 
-    def test_purpose_for_incarceration_and_subtype_PVC(self):
+    def test_purpose_for_incarceration_and_subtype_PVC(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id="ip2",
@@ -613,7 +625,7 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
         )
         self.assertEqual("PVC", purpose_for_incarceration_subtype)
 
-    def test_purpose_for_incarceration_and_subtype_treatment(self):
+    def test_purpose_for_incarceration_and_subtype_treatment(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id="ip2",
@@ -640,7 +652,7 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
         )
         self.assertIsNone(purpose_for_incarceration_subtype)
 
-    def test_purpose_for_incarceration_and_subtype_treatment_51(self):
+    def test_purpose_for_incarceration_and_subtype_treatment_51(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id="ip2",
@@ -673,7 +685,7 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
 class TestRevocationTypeSubtypeFromParoleDecisions(unittest.TestCase):
     """Tests the _purpose_for_incarceration_subtype function."""
 
-    def test_purpose_for_incarceration_subtype(self):
+    def test_purpose_for_incarceration_subtype(self) -> None:
         parole_board_decision_entry_old = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
             state_code=STATE_CODE,
             decision_raw_text=SHOCK_INCARCERATION_UNDER_6_MONTHS,
@@ -728,7 +740,7 @@ class TestRevocationTypeSubtypeFromParoleDecisions(unittest.TestCase):
             SHOCK_INCARCERATION_12_MONTHS, purpose_for_incarceration_subtype
         )
 
-    def test_purpose_for_incarceration_subtype_pvc(self):
+    def test_purpose_for_incarceration_subtype_pvc(self) -> None:
         commitment_admission_date = date(2020, 1, 1)
         specialized_purpose_for_incarceration_raw_text = PURPOSE_FOR_INCARCERATION_PVC
 
@@ -742,7 +754,7 @@ class TestRevocationTypeSubtypeFromParoleDecisions(unittest.TestCase):
 
         self.assertEqual(SHOCK_INCARCERATION_PVC, purpose_for_incarceration_subtype)
 
-    def test_purpose_for_incarceration_subtype_no_parole_decisions(self):
+    def test_purpose_for_incarceration_subtype_no_parole_decisions(self) -> None:
         violation_response = StateSupervisionViolationResponse.new_with_defaults(
             state_code=STATE_CODE,
             response_date=date(year=2018, month=5, day=16),
@@ -759,7 +771,7 @@ class TestRevocationTypeSubtypeFromParoleDecisions(unittest.TestCase):
 
         self.assertIsNone(purpose_for_incarceration_subtype)
 
-    def test_purpose_for_incarceration_subtype_after_revocations(self):
+    def test_purpose_for_incarceration_subtype_after_revocations(self) -> None:
         parole_board_decision_entry = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
             state_code=STATE_CODE,
             decision_raw_text=SHOCK_INCARCERATION_UNDER_6_MONTHS,
@@ -790,7 +802,7 @@ class TestRevocationTypeSubtypeFromParoleDecisions(unittest.TestCase):
 
         self.assertIsNone(purpose_for_incarceration_subtype)
 
-    def test_purpose_for_incarceration_subtype_two_same_day(self):
+    def test_purpose_for_incarceration_subtype_two_same_day(self) -> None:
         """Tests that the longer shock incarceration length is taken from two parole board actions that happened on
         the same day."""
         parole_board_decision_entry_1 = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
@@ -855,7 +867,7 @@ class TestRevocationTypeSubtypeFromParoleDecisions(unittest.TestCase):
             SHOCK_INCARCERATION_9_MONTHS, purpose_for_incarceration_subtype
         )
 
-    def test_purpose_for_incarceration_subtype_no_responses(self):
+    def test_purpose_for_incarceration_subtype_no_responses(self) -> None:
         commitment_admission_date = date(2020, 1, 1)
 
         purpose_for_incarceration_subtype = (
@@ -871,7 +883,7 @@ class TestRevocationTypeSubtypeFromParoleDecisions(unittest.TestCase):
 class TestMostSevereRevocationTypeSubtype(unittest.TestCase):
     """Tests the _most_severe_purpose_for_incarceration_subtype function."""
 
-    def test_most_severe_purpose_for_incarceration_subtype(self):
+    def test_most_severe_purpose_for_incarceration_subtype(self) -> None:
         parole_board_decision_entry_1 = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
             state_code=STATE_CODE,
             decision_raw_text=SHOCK_INCARCERATION_9_MONTHS,
@@ -918,7 +930,7 @@ class TestMostSevereRevocationTypeSubtype(unittest.TestCase):
             SHOCK_INCARCERATION_9_MONTHS, purpose_for_incarceration_subtype
         )
 
-    def test_most_severe_purpose_for_incarceration_subtype_invalid_type(self):
+    def test_most_severe_purpose_for_incarceration_subtype_invalid_type(self) -> None:
         parole_board_decision_entry_1 = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
             state_code=STATE_CODE,
             decision_raw_text="XXX",
@@ -963,7 +975,7 @@ class TestMostSevereRevocationTypeSubtype(unittest.TestCase):
             SHOCK_INCARCERATION_6_MONTHS, purpose_for_incarceration_subtype
         )
 
-    def test_most_severe_purpose_for_incarceration_subtype_no_responses(self):
+    def test_most_severe_purpose_for_incarceration_subtype_no_responses(self) -> None:
         purpose_for_incarceration_subtype = us_pa_commitment_from_supervision_utils._most_severe_purpose_for_incarceration_subtype(
             []
         )
@@ -974,7 +986,7 @@ class TestMostSevereRevocationTypeSubtype(unittest.TestCase):
 class TestUsPaPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
     """Tests the us_pa_get_pre_commitment_supervision_type function."""
 
-    def test_us_pa_get_pre_commitment_supervision_type_default(self):
+    def test_us_pa_get_pre_commitment_supervision_type_default(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",
@@ -997,7 +1009,9 @@ class TestUsPaPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
             supervision_type_pre_commitment,
         )
 
-    def test_us_pa_get_pre_commitment_supervision_type_probation_revocation(self):
+    def test_us_pa_get_pre_commitment_supervision_type_probation_revocation(
+        self,
+    ) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
@@ -1030,7 +1044,9 @@ class TestUsPaPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
             supervision_type_pre_commitment,
         )
 
-    def test_us_pa_get_pre_commitment_supervision_type_sanction_admission_dual(self):
+    def test_us_pa_get_pre_commitment_supervision_type_sanction_admission_dual(
+        self,
+    ) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
@@ -1063,7 +1079,7 @@ class TestUsPaPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
             supervision_type_pre_commitment,
         )
 
-    def test_us_pa_get_pre_commitment_supervision_type_erroneous(self):
+    def test_us_pa_get_pre_commitment_supervision_type_erroneous(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             external_id="2",

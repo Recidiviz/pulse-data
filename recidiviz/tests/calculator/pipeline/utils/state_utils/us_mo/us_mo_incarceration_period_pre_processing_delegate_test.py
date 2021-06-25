@@ -73,7 +73,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
     def test_prepare_incarceration_periods_for_calculations_multiple_jail_and_valid(
         self,
-    ):
+    ) -> None:
         state_code = "US_MO"
         jail_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
@@ -130,7 +130,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
                 validated_incarceration_periods, [valid_incarceration_period]
             )
 
-    def test_prepare_incarceration_periods_for_calculations_valid_then_jail(self):
+    def test_prepare_incarceration_periods_for_calculations_valid_then_jail(
+        self,
+    ) -> None:
         state_code = "US_MO"
         valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -173,7 +175,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
     def test_prepare_incarceration_periods_for_calculations_parole_board_hold(
         self,
-    ):
+    ) -> None:
         state_code = "US_MO"
 
         board_hold = StateIncarcerationPeriod.new_with_defaults(
@@ -223,7 +225,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
     def test_prepare_incarceration_periods_for_calculations_temp_custody_not_parole_board_hold(
         self,
-    ):
+    ) -> None:
         state_code = "US_MO"
 
         # TODO(#7442): Update this test once we're handling sanction admission

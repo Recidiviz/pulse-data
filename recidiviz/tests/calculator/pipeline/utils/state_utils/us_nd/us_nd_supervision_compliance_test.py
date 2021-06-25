@@ -19,39 +19,40 @@
 
 import unittest
 from datetime import date
+from typing import List
 
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_compliance import (
-    UsNdSupervisionCaseCompliance,
     NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS,
+    UsNdSupervisionCaseCompliance,
 )
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_contact import (
-    StateSupervisionContactType,
-    StateSupervisionContactStatus,
     StateSupervisionContactLocation,
+    StateSupervisionContactStatus,
+    StateSupervisionContactType,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodTerminationReason,
-    StateSupervisionPeriodSupervisionType,
-    StateSupervisionPeriodAdmissionReason,
     StateSupervisionLevel,
+    StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodStatus,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
-    StateSupervisionPeriod,
     StateSupervisionContact,
+    StateSupervisionPeriod,
 )
 
 
 class TestAssessmentsCompletedInComplianceMonth(unittest.TestCase):
     """Tests for assessments_in_compliance_month."""
 
-    def test_completed_assessments_in_compliance_month(self):
+    def test_completed_assessments_in_compliance_month(self) -> None:
         evaluation_date = date(2018, 4, 30)
         assessment_out_of_range = StateAssessment.new_with_defaults(
             state_code=StateCode.US_ND.value,
@@ -121,7 +122,7 @@ class TestAssessmentsCompletedInComplianceMonth(unittest.TestCase):
 class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
     """Tests for face_to_face_contacts_in_compliance_month."""
 
-    def test_face_to_face_contacts_in_compliance_month(self):
+    def test_face_to_face_contacts_in_compliance_month(self) -> None:
         evaluation_date = date(2018, 4, 30)
         contact_1 = StateSupervisionContact.new_with_defaults(
             state_code="US_ND",
@@ -200,13 +201,14 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
 class TestGuidelinesApplicableForCase(unittest.TestCase):
     """Tests the guidelines_applicable_for_case function."""
 
-    def test_guidelines_applicable_for_case_external_unknown(self):
+    def test_guidelines_applicable_for_case_external_unknown(self) -> None:
         """The guidelines should not be applicable to people who are not classified."""
+        start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_ND.value,
-            start_date=date(2018, 3, 5),
+            start_date=start_of_supervision,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -219,7 +221,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=supervision_period.start_date,
+            start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=[],
         )
@@ -228,13 +230,14 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 
         self.assertFalse(applicable)
 
-    def test_guidelines_applicable_for_case_interstate_compact(self):
+    def test_guidelines_applicable_for_case_interstate_compact(self) -> None:
         """The guidelines should not be applicable to people who are in interstate compact."""
+        start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_ND.value,
-            start_date=date(2018, 3, 5),
+            start_date=start_of_supervision,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -247,7 +250,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=supervision_period.start_date,
+            start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=[],
         )
@@ -256,13 +259,14 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 
         self.assertFalse(applicable)
 
-    def test_guidelines_applicable_for_case_diversion(self):
+    def test_guidelines_applicable_for_case_diversion(self) -> None:
         """The guidelines should not be applicable to people who are in diversion programs."""
+        start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_ND.value,
-            start_date=date(2018, 3, 5),
+            start_date=start_of_supervision,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -275,7 +279,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=supervision_period.start_date,
+            start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=[],
         )
@@ -284,13 +288,14 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 
         self.assertFalse(applicable)
 
-    def test_guidelines_applicable_for_case(self):
+    def test_guidelines_applicable_for_case(self) -> None:
         """The guidelines should be applicable to people who are not in interstate compact or not classified."""
+        start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_ND.value,
-            start_date=date(2018, 3, 5),
+            start_date=start_of_supervision,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -303,7 +308,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=supervision_period.start_date,
+            start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=[],
         )
@@ -312,14 +317,15 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 
         self.assertTrue(applicable)
 
-    def test_guidelines_applicable_for_case_invalid_supervision_level(self):
+    def test_guidelines_applicable_for_case_invalid_supervision_level(self) -> None:
         """The guidelines should not be applicable to a supervision level other than MINIMUM,
         MEDIUM, MAXIMUM."""
+        start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_ND.value,
-            start_date=date(2018, 3, 5),
+            start_date=start_of_supervision,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -332,7 +338,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=supervision_period.start_date,
+            start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=[],
         )
@@ -341,13 +347,14 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 
         self.assertFalse(applicable)
 
-    def test_guidelines_applicable_for_case_invalid_supervision_case_type(self):
+    def test_guidelines_applicable_for_case_invalid_supervision_case_type(self) -> None:
         """The guidelines should not be applicable to a case type that is not GENERAL or SEX_OFFENSE."""
+        start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_ND.value,
-            start_date=date(2018, 3, 5),
+            start_date=start_of_supervision,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -360,7 +367,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS,
-            start_of_supervision=supervision_period.start_date,
+            start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=[],
         )
@@ -373,13 +380,14 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 class TestContactFrequencySufficient(unittest.TestCase):
     """Tests the contact_frequency_is_sufficient function."""
 
-    def test_face_to_face_frequency_sufficient(self):
+    def test_face_to_face_frequency_sufficient(self) -> None:
         """Tests for when the face to face contacts is sufficient."""
+        start_of_supervision = date(2018, 3, 5)  # This was a Monday
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_ND.value,
-            start_date=date(2018, 3, 5),  # This was a Monday
+            start_date=start_of_supervision,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -397,32 +405,30 @@ class TestContactFrequencySufficient(unittest.TestCase):
             )
         ]
 
-        start_of_supervision = supervision_period.start_date
-        evaluation_date = start_of_supervision
-
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=evaluation_date,
+            start_of_supervision=start_of_supervision,
             assessments=[],
             supervision_contacts=supervision_contacts,
         )
 
         self.assertTrue(
             us_nd_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
-                evaluation_date
+                start_of_supervision
             )
         )
 
     def test_face_to_face_frequency_sufficient_contacts_before_supervision_start(
         self,
-    ):
+    ) -> None:
         """Tests for when the only face to face contacts is occurs prior to start of supervision."""
+        start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ND",
-            start_date=date(2018, 3, 5),
+            start_date=start_of_supervision,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -435,13 +441,12 @@ class TestContactFrequencySufficient(unittest.TestCase):
             StateSupervisionContact.new_with_defaults(
                 state_code="US_ND",
                 # Only contact happened before supervision started
-                contact_date=supervision_period.start_date - relativedelta(days=100),
+                contact_date=start_of_supervision - relativedelta(days=100),
                 contact_type=StateSupervisionContactType.FACE_TO_FACE,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
         ]
 
-        start_of_supervision = supervision_period.start_date
         evaluation_date = start_of_supervision + relativedelta(days=3)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
@@ -460,13 +465,16 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertFalse(face_to_face_frequency_sufficient)
 
-    def test_face_to_face_frequency_sufficient_contacts_attempted_general_case(self):
+    def test_face_to_face_frequency_sufficient_contacts_attempted_general_case(
+        self,
+    ) -> None:
         """Tests when the only face to face contact is attempted, but not completed."""
+        start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ND",
-            start_date=date(2018, 3, 5),
+            start_date=start_of_supervision,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -485,7 +493,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             )
         ]
 
-        start_of_supervision = supervision_period.start_date
         evaluation_date = start_of_supervision + relativedelta(days=2)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
@@ -506,13 +513,14 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
     def test_face_to_face_frequency_sufficient_contacts_invalid_contact_type_general_case(
         self,
-    ):
+    ) -> None:
         """Tests when the only contact is not a valid type for face to face."""
+        start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ND",
-            start_date=date(2018, 3, 5),
+            start_date=start_of_supervision,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -531,7 +539,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             )
         ]
 
-        start_of_supervision = supervision_period.start_date
         evaluation_date = start_of_supervision + relativedelta(days=5)
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
             supervision_period=supervision_period,
@@ -551,13 +558,14 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
     def test_face_to_face_frequency_sufficient_contacts_invalid_supervision_level(
         self,
-    ):
+    ) -> None:
         """Tests when the only contact is not a valid type for face to face."""
+        start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ND",
-            start_date=date(2018, 3, 5),
+            start_date=start_of_supervision,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -576,7 +584,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             )
         ]
 
-        start_of_supervision = supervision_period.start_date
         evaluation_date = start_of_supervision + relativedelta(days=5)
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
             supervision_period=supervision_period,
@@ -596,13 +603,14 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
     def test_face_to_face_frequency_sufficient_contacts_minimum_level(
         self,
-    ):
+    ) -> None:
         """Tests face to face contacts for the minimum level case."""
+        start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ND",
-            start_date=date(2018, 3, 5),
+            start_date=start_of_supervision,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -614,13 +622,12 @@ class TestContactFrequencySufficient(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code="US_ND",
-                contact_date=supervision_period.start_date + relativedelta(days=89),
+                contact_date=start_of_supervision + relativedelta(days=89),
                 contact_type=StateSupervisionContactType.FACE_TO_FACE,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
         ]
 
-        start_of_supervision = supervision_period.start_date
         evaluation_date = start_of_supervision + relativedelta(days=90)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
@@ -641,13 +648,14 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
     def test_face_to_face_frequency_sufficient_contacts_medium_level(
         self,
-    ):
+    ) -> None:
         """Tests face to face contacts for the medium level case."""
+        start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ND",
-            start_date=date(2018, 3, 5),
+            start_date=start_of_supervision,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -659,13 +667,12 @@ class TestContactFrequencySufficient(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code="US_ND",
-                contact_date=supervision_period.start_date + relativedelta(days=58),
+                contact_date=start_of_supervision + relativedelta(days=58),
                 contact_type=StateSupervisionContactType.FACE_TO_FACE,
                 status=StateSupervisionContactStatus.COMPLETED,
             )
         ]
 
-        start_of_supervision = supervision_period.start_date
         evaluation_date = start_of_supervision + relativedelta(days=59)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
@@ -686,13 +693,14 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
     def test_face_to_face_frequency_sufficient_contacts_maximum_level(
         self,
-    ):
+    ) -> None:
         """Tests face to face contacts for the maximum level case."""
+        start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ND",
-            start_date=date(2018, 3, 5),
+            start_date=start_of_supervision,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -704,19 +712,18 @@ class TestContactFrequencySufficient(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code="US_ND",
-                contact_date=supervision_period.start_date - relativedelta(days=24),
+                contact_date=start_of_supervision - relativedelta(days=24),
                 contact_type=StateSupervisionContactType.FACE_TO_FACE,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
             StateSupervisionContact.new_with_defaults(
                 state_code="US_ND",
-                contact_date=supervision_period.start_date + relativedelta(days=29),
+                contact_date=start_of_supervision + relativedelta(days=29),
                 contact_type=StateSupervisionContactType.FACE_TO_FACE,
                 status=StateSupervisionContactStatus.COMPLETED,
             ),
         ]
 
-        start_of_supervision = supervision_period.start_date
         evaluation_date = start_of_supervision + relativedelta(days=29)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
@@ -739,12 +746,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
 class TestReassessmentRequirementAreMet(unittest.TestCase):
     """Tests the reassessment_requirements_are_met function."""
 
-    def test_num_days_past_required_reassessment(self):
+    def test_num_days_past_required_reassessment(self) -> None:
+        start_of_supervision = date(2018, 3, 5)  # This was a Monday
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_ND.value,
-            start_date=date(2018, 3, 5),  # This was a Monday
+            start_date=start_of_supervision,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -752,39 +760,40 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
+        assessment_date = date(2018, 4, 2)
+        assessment_score = 25
         assessment = StateAssessment.new_with_defaults(
             state_code=StateCode.US_ND.value,
             assessment_type=StateAssessmentType.LSIR,
-            assessment_date=date(2018, 4, 2),
+            assessment_date=assessment_date,
+            assessment_score=assessment_score,
         )
-
-        start_of_supervision = supervision_period.start_date
-        evaluation_date = start_of_supervision
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=evaluation_date,
+            start_of_supervision=start_of_supervision,
             assessments=[assessment],
             supervision_contacts=[],
         )
 
         days_past_reassessment = (
             us_nd_supervision_compliance._num_days_past_required_reassessment(
-                evaluation_date,
-                assessment.assessment_date,
-                assessment.assessment_score,
+                start_of_supervision,
+                assessment_date,
+                assessment_score,
             )
         )
 
         self.assertEqual(days_past_reassessment, 0)
 
-    def test_reassessment_requirements_are_not_met(self):
+    def test_reassessment_requirements_are_not_met(self) -> None:
+        start_of_supervision = date(2018, 3, 5)  # This was a Monday
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code=StateCode.US_ND.value,
-            start_date=date(2018, 3, 5),  # This was a Monday
+            start_date=start_of_supervision,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -792,28 +801,28 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
+        assessment_date = date(2010, 4, 2)
+        assessment_score = 25
         assessment = StateAssessment.new_with_defaults(
             state_code=StateCode.US_ND.value,
             assessment_type=StateAssessmentType.LSIR,
-            assessment_date=date(2010, 4, 2),
+            assessment_date=assessment_date,
+            assessment_score=assessment_score,
         )
-
-        start_of_supervision = supervision_period.start_date
-        evaluation_date = start_of_supervision
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=evaluation_date,
+            start_of_supervision=start_of_supervision,
             assessments=[assessment],
             supervision_contacts=[],
         )
 
         days_past_reassessment = (
             us_nd_supervision_compliance._num_days_past_required_reassessment(
-                evaluation_date,
-                assessment.assessment_date,
-                assessment.assessment_score,
+                start_of_supervision,
+                assessment_date,
+                assessment_score,
             )
         )
 
@@ -825,13 +834,14 @@ class TestHomeVisitsFrequencySufficient(unittest.TestCase):
 
     def test_home_visit_frequency_sufficient_initial_visit_met(
         self,
-    ):
+    ) -> None:
         """Tests for when the initial home visit standard is met."""
+        start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ND",
-            start_date=date(2018, 3, 5),
+            start_date=start_of_supervision,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -843,14 +853,13 @@ class TestHomeVisitsFrequencySufficient(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code="US_ND",
-                contact_date=supervision_period.start_date + relativedelta(days=1),
+                contact_date=start_of_supervision + relativedelta(days=1),
                 contact_type=StateSupervisionContactType.FACE_TO_FACE,
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.RESIDENCE,
             )
         ]
 
-        start_of_supervision = supervision_period.start_date
         evaluation_date = start_of_supervision + relativedelta(days=59)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
@@ -871,13 +880,14 @@ class TestHomeVisitsFrequencySufficient(unittest.TestCase):
 
     def test_home_visit_frequency_sufficient_initial_visit_not_met(
         self,
-    ):
+    ) -> None:
         """Tests for when the initial home visit standard is not met."""
+        start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ND",
-            start_date=date(2018, 3, 5),
+            start_date=start_of_supervision,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -886,9 +896,8 @@ class TestHomeVisitsFrequencySufficient(unittest.TestCase):
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
-        supervision_contacts = []
+        supervision_contacts: List[StateSupervisionContact] = []
 
-        start_of_supervision = supervision_period.start_date
         evaluation_date = start_of_supervision + relativedelta(
             days=NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS + 1
         )
@@ -911,13 +920,14 @@ class TestHomeVisitsFrequencySufficient(unittest.TestCase):
 
     def test_home_visit_frequency_sufficient_initial_visit_not_at_residence(
         self,
-    ):
+    ) -> None:
         """Tests for when the only contact does not have location RESIDENCE."""
+        start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ND",
-            start_date=date(2018, 3, 5),
+            start_date=start_of_supervision,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -929,14 +939,13 @@ class TestHomeVisitsFrequencySufficient(unittest.TestCase):
         supervision_contacts = [
             StateSupervisionContact.new_with_defaults(
                 state_code="US_ND",
-                contact_date=supervision_period.start_date + relativedelta(days=1),
+                contact_date=start_of_supervision + relativedelta(days=1),
                 contact_type=StateSupervisionContactType.FACE_TO_FACE,
                 status=StateSupervisionContactStatus.COMPLETED,
                 location=StateSupervisionContactLocation.SUPERVISION_OFFICE,
             )
         ]
 
-        start_of_supervision = supervision_period.start_date
         evaluation_date = start_of_supervision + relativedelta(
             days=NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS + 1
         )
@@ -959,14 +968,15 @@ class TestHomeVisitsFrequencySufficient(unittest.TestCase):
 
     def test_home_visit_frequency_sufficient_no_initial_visit_within_range(
         self,
-    ):
+    ) -> None:
         """Tests for when the home visit standard is met because the initial period has
         not yet passed."""
+        start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ND",
-            start_date=date(2018, 3, 5),
+            start_date=start_of_supervision,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -975,9 +985,8 @@ class TestHomeVisitsFrequencySufficient(unittest.TestCase):
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
-        supervision_contacts = []
+        supervision_contacts: List[StateSupervisionContact] = []
 
-        start_of_supervision = supervision_period.start_date
         evaluation_date = start_of_supervision + relativedelta(days=59)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
@@ -998,7 +1007,7 @@ class TestHomeVisitsFrequencySufficient(unittest.TestCase):
 
     def test_home_visit_frequency_sufficient_medium_level(
         self,
-    ):
+    ) -> None:
         """Tests home visit frequency for medium level"""
         contact_1 = StateSupervisionContact.new_with_defaults(
             state_code="US_ND",
@@ -1015,11 +1024,12 @@ class TestHomeVisitsFrequencySufficient(unittest.TestCase):
             location=StateSupervisionContactLocation.RESIDENCE,
         )
 
+        start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ND",
-            start_date=date(2018, 3, 5),
+            start_date=start_of_supervision,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -1030,7 +1040,6 @@ class TestHomeVisitsFrequencySufficient(unittest.TestCase):
 
         supervision_contacts = [contact_1, contact_2]
 
-        start_of_supervision = supervision_period.start_date
         evaluation_date = start_of_supervision + relativedelta(days=375)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
@@ -1051,7 +1060,7 @@ class TestHomeVisitsFrequencySufficient(unittest.TestCase):
 
     def test_home_visit_frequency_sufficient_medium_level_not_met(
         self,
-    ):
+    ) -> None:
         """Tests home visit frequency for medium level when standard is not met"""
         contact_1 = StateSupervisionContact.new_with_defaults(
             state_code="US_ND",
@@ -1061,11 +1070,12 @@ class TestHomeVisitsFrequencySufficient(unittest.TestCase):
             location=StateSupervisionContactLocation.RESIDENCE,
         )
 
+        start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
             state_code="US_ND",
-            start_date=date(2018, 3, 5),
+            start_date=start_of_supervision,
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -1076,7 +1086,6 @@ class TestHomeVisitsFrequencySufficient(unittest.TestCase):
 
         supervision_contacts = [contact_1]
 
-        start_of_supervision = supervision_period.start_date
         evaluation_date = start_of_supervision + relativedelta(days=375)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(

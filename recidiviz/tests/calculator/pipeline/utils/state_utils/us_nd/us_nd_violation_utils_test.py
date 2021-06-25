@@ -29,8 +29,8 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolation,
-    StateSupervisionViolationTypeEntry,
     StateSupervisionViolationResponse,
+    StateSupervisionViolationTypeEntry,
 )
 
 STATE_CODE = "US_ND"
@@ -39,7 +39,7 @@ STATE_CODE = "US_ND"
 class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
     """Tests the us_nd_prepare_violation_responses_for_calculations function."""
 
-    def test_us_nd_prepare_violation_responses_for_calculations(self):
+    def test_us_nd_prepare_violation_responses_for_calculations(self) -> None:
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123,
             state_code=STATE_CODE,
@@ -86,7 +86,9 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
 
         self.assertEqual([duplicate_ssvr], prepared_responses)
 
-    def test_us_nd_prepare_violation_responses_for_calculations_multiple_types(self):
+    def test_us_nd_prepare_violation_responses_for_calculations_multiple_types(
+        self,
+    ) -> None:
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123,
             state_code=STATE_CODE,
@@ -150,7 +152,9 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
 
         self.assertEqual([expected_response], prepared_responses)
 
-    def test_us_nd_prepare_violation_responses_for_calculations_different_days(self):
+    def test_us_nd_prepare_violation_responses_for_calculations_different_days(
+        self,
+    ) -> None:
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123,
             state_code=STATE_CODE,

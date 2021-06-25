@@ -71,7 +71,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
     def test_pre_processed_incarceration_periods_for_calculations_different_pfi_do_not_collapse(
         self,
-    ):
+    ) -> None:
         """Tests the pre-processing function does not collapse two adjacent TRANSFER
         edges in US_ID when they have different specialized_purpose_for_incarceration
         values.
@@ -126,7 +126,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
     def test_pre_processed_incarceration_periods_for_calculations_same_pfi_transfer(
         self,
-    ):
+    ) -> None:
         """Tests the pre-processing function does collapse two adjacent TRANSFER
         edges in US_ID when they have the same specialized_purpose_for_incarceration
         values.

@@ -59,22 +59,23 @@ from recidiviz.persistence.entity.state.entities import (
 class UsIdGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
     """Tests for us_id_get_pre_incarceration_supervision_type"""
 
-    def test_usId_getPreIncarcerationSupervisionType(self):
+    def test_usId_getPreIncarcerationSupervisionType(self) -> None:
+        admission_date = date(2019, 9, 13)
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
             admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             external_id="ip1",
             state_code="US_ID",
-            admission_date=date(2019, 9, 13),
+            admission_date=admission_date,
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         preceding_supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=1,
-            start_date=incarceration_period.admission_date
+            start_date=admission_date
             - relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 100),
-            termination_date=incarceration_period.admission_date
+            termination_date=admission_date
             - relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT - 1),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
@@ -97,7 +98,9 @@ class UsIdGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
             ),
         )
 
-    def test_usId_getPreIncarcerationSupervisionType_ignoreOutOfDatePeriods_After(self):
+    def test_usId_getPreIncarcerationSupervisionType_ignoreOutOfDatePeriods_After(
+        self,
+    ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
             admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
@@ -134,22 +137,23 @@ class UsIdGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
 
     def test_usId_getPreIncarcerationSupervisionType_ignoreOutOfDatePeriods_Before(
         self,
-    ):
+    ) -> None:
+        admission_date = date(2019, 9, 13)
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
             admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             external_id="ip1",
             state_code="US_ID",
-            admission_date=date(2019, 9, 13),
+            admission_date=admission_date,
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         preceding_supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=1,
-            start_date=incarceration_period.admission_date
+            start_date=admission_date
             - relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 100),
-            termination_date=incarceration_period.admission_date
+            termination_date=admission_date
             - relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 10),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
@@ -175,7 +179,7 @@ class UsIdGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
 class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
     """Tests for us_id_get_post_incarceration_supervision_type"""
 
-    def test_usId_getPostIncarcerationSupervisionType(self):
+    def test_usId_getPostIncarcerationSupervisionType(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
             admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
@@ -214,14 +218,15 @@ class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
 
     def test_usId_getPostIncarcerationSupervisionType_ignoreOutOfDatePeriods_After(
         self,
-    ):
+    ) -> None:
+        release_date = date(2020, 1, 4)
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
             admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             external_id="ip1",
             state_code="US_ID",
             admission_date=date(2019, 9, 13),
-            release_date=date(2020, 1, 4),
+            release_date=release_date,
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
@@ -229,7 +234,7 @@ class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
         succeeding_supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=1,
-            start_date=incarceration_period.release_date
+            start_date=release_date
             + relativedelta(days=(SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 100)),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
@@ -253,13 +258,14 @@ class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
 
     def test_usId_getPostIncarcerationSupervisionType_ignoreOutOfDatePeriods_Before(
         self,
-    ):
+    ) -> None:
+        admission_date = date(2019, 9, 13)
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
             admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
             external_id="ip1",
             state_code="US_ID",
-            admission_date=date(2019, 9, 13),
+            admission_date=admission_date,
             release_date=date(2020, 1, 18),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
@@ -268,9 +274,9 @@ class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
         succeeding_supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=1,
-            start_date=incarceration_period.admission_date
+            start_date=admission_date
             - relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 100),
-            termination_date=incarceration_period.admission_date
+            termination_date=admission_date
             - relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 10),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
@@ -292,7 +298,9 @@ class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
             )
         )
 
-    def test_usId_getPostIncarcerationSupervisionType_NotConditionalRelease(self):
+    def test_usId_getPostIncarcerationSupervisionType_NotConditionalRelease(
+        self,
+    ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1,
             admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
@@ -321,7 +329,7 @@ class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
     def setUp(self) -> None:
         self.upper_bound_date = date(2018, 10, 10)
 
-    def test_most_recent_supervision_type_no_lower_bound(self):
+    def test_most_recent_supervision_type_no_lower_bound(self) -> None:
         preceding_supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=1,
@@ -342,7 +350,9 @@ class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
             supervision_period_supervision_type,
         )
 
-    def test_most_recent_supervision_type_no_lower_bound_incarceration_sentence(self):
+    def test_most_recent_supervision_type_no_lower_bound_incarceration_sentence(
+        self,
+    ) -> None:
         preceding_supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=1,
@@ -363,7 +373,7 @@ class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
             supervision_period_supervision_type,
         )
 
-    def test_most_recent_supervision_type_lower_bound(self):
+    def test_most_recent_supervision_type_lower_bound(self) -> None:
         preceding_supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=1,
@@ -384,7 +394,7 @@ class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
             supervision_period_supervision_type,
         )
 
-    def test_most_recent_supervision_type_ignore_before_lower_bound(self):
+    def test_most_recent_supervision_type_ignore_before_lower_bound(self) -> None:
         preceding_supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=1,
@@ -403,7 +413,7 @@ class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
         self.assertEqual(None, supervision_period_supervision_type)
 
     @freeze_time("2000-01-31")
-    def test_most_recent_supervision_type_active_supervision(self):
+    def test_most_recent_supervision_type_active_supervision(self) -> None:
         preceding_supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=1,
@@ -424,7 +434,7 @@ class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
             supervision_period_supervision_type,
         )
 
-    def test_most_recent_supervision_type_overlapping_supervision(self):
+    def test_most_recent_supervision_type_overlapping_supervision(self) -> None:
         preceding_supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=1,
@@ -445,7 +455,7 @@ class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
             supervision_period_supervision_type,
         )
 
-    def test_most_recent_supervision_type_supervision_terminates_on_bound(self):
+    def test_most_recent_supervision_type_supervision_terminates_on_bound(self) -> None:
         preceding_supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=1,
@@ -466,7 +476,7 @@ class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
             supervision_period_supervision_type,
         )
 
-    def test_most_recent_supervision_type_supervision_starts_on_bound(self):
+    def test_most_recent_supervision_type_supervision_starts_on_bound(self) -> None:
         preceding_supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=1,
@@ -484,7 +494,7 @@ class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
 
         self.assertEqual(supervision_period_supervision_type, None)
 
-    def test_most_recent_supervision_type_no_sentences_no_lower_bound(self):
+    def test_most_recent_supervision_type_no_sentences_no_lower_bound(self) -> None:
         supervision_period_supervision_type = us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
             upper_bound_exclusive_date=self.upper_bound_date,
             lower_bound_inclusive_date=None,
@@ -493,7 +503,7 @@ class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(
 
         self.assertEqual(supervision_period_supervision_type, None)
 
-    def test_most_recent_supervision_type_no_sentences_same_day_bound(self):
+    def test_most_recent_supervision_type_no_sentences_same_day_bound(self) -> None:
         supervision_period_supervision_type = us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
             upper_bound_exclusive_date=self.upper_bound_date,
             lower_bound_inclusive_date=self.upper_bound_date,
@@ -511,7 +521,7 @@ class UsIdGetSupervisionPeriodAdmissionOverrideTest(unittest.TestCase):
 
     def test_usId_getSupervisionPeriodAdmissionOverride_precededByInvestigation_overrideReason(
         self,
-    ):
+    ) -> None:
         supervision_period_previous = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=1,
@@ -539,12 +549,15 @@ class UsIdGetSupervisionPeriodAdmissionOverrideTest(unittest.TestCase):
             StateSupervisionPeriodAdmissionReason.COURT_SENTENCE, found_admission_reason
         )
 
-    def testUsIdGetSupervisionPeriodAdmissionOverride_investigationTooFarBack(self):
+    def testUsIdGetSupervisionPeriodAdmissionOverride_investigationTooFarBack(
+        self,
+    ) -> None:
+        previous_termination_date = self.upper_bound_date - relativedelta(days=10)
         supervision_period_previous = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=1,
             start_date=self.upper_bound_date - relativedelta(days=100),
-            termination_date=self.upper_bound_date - relativedelta(days=10),
+            termination_date=previous_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
@@ -553,7 +566,7 @@ class UsIdGetSupervisionPeriodAdmissionOverrideTest(unittest.TestCase):
             state_code="US_ID",
             supervision_period_id=2,
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-            start_date=supervision_period_previous.termination_date
+            start_date=previous_termination_date
             + relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 1),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
@@ -566,7 +579,9 @@ class UsIdGetSupervisionPeriodAdmissionOverrideTest(unittest.TestCase):
         )
         self.assertEqual(supervision_period.admission_reason, found_admission_reason)
 
-    def testUsIdGetSupervisionPeriodAdmissionOverride_notPrecededByInvestigation(self):
+    def testUsIdGetSupervisionPeriodAdmissionOverride_notPrecededByInvestigation(
+        self,
+    ) -> None:
         supervision_period_previous = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=1,
@@ -594,12 +609,13 @@ class UsIdGetSupervisionPeriodAdmissionOverrideTest(unittest.TestCase):
 
     def testUsIdGetSupervisionPeriodAdmissionReasonOverride_ignoreNullSupervisionType(
         self,
-    ):
+    ) -> None:
+        previous_termination_date = self.upper_bound_date - relativedelta(days=10)
         supervision_period_previous = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=1,
             start_date=self.upper_bound_date - relativedelta(days=100),
-            termination_date=self.upper_bound_date - relativedelta(days=10),
+            termination_date=previous_termination_date,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
@@ -608,9 +624,8 @@ class UsIdGetSupervisionPeriodAdmissionOverrideTest(unittest.TestCase):
             state_code="US_ID",
             supervision_period_id=2,
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-            start_date=supervision_period_previous.termination_date,
-            termination_date=supervision_period_previous.termination_date
-            + relativedelta(days=10),
+            start_date=previous_termination_date,
+            termination_date=previous_termination_date + relativedelta(days=10),
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         supervision_period_ongoing = StateSupervisionPeriod.new_with_defaults(
@@ -642,7 +657,7 @@ class UsIdGetSupervisionPeriodAdmissionOverrideTest(unittest.TestCase):
 
     def testUsIdGetSupervisionPeriodAdmissionReasonOverride_multiplePeriodsStartOnInvestigationEnd(
         self,
-    ):
+    ) -> None:
         supervision_period_previous = StateSupervisionPeriod.new_with_defaults(
             state_code="US_ID",
             supervision_period_id=1,
@@ -702,7 +717,9 @@ class UsIdGetSupervisionPeriodAdmissionOverrideTest(unittest.TestCase):
 class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
     """Tests the state-specific supervision_period_is_out_of_state function."""
 
-    def test_supervision_period_is_out_of_state_with_identifier_interstate(self):
+    def test_supervision_period_is_out_of_state_with_identifier_interstate(
+        self,
+    ) -> None:
         self.assertTrue(
             us_id_supervision_period_is_out_of_state(
                 self.create_time_bucket(
@@ -711,7 +728,7 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
             )
         )
 
-    def test_supervision_period_is_out_of_state_with_identifier_parole(self):
+    def test_supervision_period_is_out_of_state_with_identifier_parole(self) -> None:
         self.assertTrue(
             us_id_supervision_period_is_out_of_state(
                 self.create_time_bucket(
@@ -720,49 +737,55 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
             )
         )
 
-    def test_supervision_period_is_out_of_state_with_partial_identifier(self):
+    def test_supervision_period_is_out_of_state_with_partial_identifier(self) -> None:
         self.assertFalse(
             us_id_supervision_period_is_out_of_state(
                 self.create_time_bucket("INTERSTATE - remainder of identifier", None)
             )
         )
 
-    def test_supervision_period_is_out_of_state_with_incorrect_identifier(self):
+    def test_supervision_period_is_out_of_state_with_incorrect_identifier(self) -> None:
         self.assertFalse(
             us_id_supervision_period_is_out_of_state(
                 self.create_time_bucket("Invalid", None)
             )
         )
 
-    def test_supervision_period_is_out_of_state_with_empty_identifier(self):
+    def test_supervision_period_is_out_of_state_with_empty_identifier(self) -> None:
         self.assertFalse(
             us_id_supervision_period_is_out_of_state(
                 self.create_time_bucket(None, None)
             )
         )
 
-    def test_supervision_period_is_out_of_state_with_federal_authority(self):
+    def test_supervision_period_is_out_of_state_with_federal_authority(self) -> None:
         self.assertTrue(
             us_id_supervision_period_is_out_of_state(
                 self.create_time_bucket(None, StateCustodialAuthority.FEDERAL)
             )
         )
 
-    def test_supervision_period_is_out_of_state_with_other_country_authority(self):
+    def test_supervision_period_is_out_of_state_with_other_country_authority(
+        self,
+    ) -> None:
         self.assertTrue(
             us_id_supervision_period_is_out_of_state(
                 self.create_time_bucket(None, StateCustodialAuthority.OTHER_COUNTRY)
             )
         )
 
-    def test_supervision_period_is_out_of_state_with_other_state_authority(self):
+    def test_supervision_period_is_out_of_state_with_other_state_authority(
+        self,
+    ) -> None:
         self.assertTrue(
             us_id_supervision_period_is_out_of_state(
                 self.create_time_bucket(None, StateCustodialAuthority.OTHER_STATE)
             )
         )
 
-    def test_supervision_period_is_out_of_state_with_supervision_authority(self):
+    def test_supervision_period_is_out_of_state_with_supervision_authority(
+        self,
+    ) -> None:
         self.assertFalse(
             us_id_supervision_period_is_out_of_state(
                 self.create_time_bucket(
@@ -775,7 +798,7 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
     def create_time_bucket(
         supervising_district_external_id: Optional[str],
         custodial_authority: Optional[StateCustodialAuthority],
-    ):
+    ) -> RevocationReturnSupervisionTimeBucket:
         return RevocationReturnSupervisionTimeBucket(
             state_code="US_ID",
             year=2010,
