@@ -41,27 +41,16 @@ from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_ma
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManagerImpl,
+    get_direct_ingest_queues_for_state,
 )
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
-    get_direct_ingest_states_with_sftp_queue,
 )
 from recidiviz.ingest.direct.errors import DirectIngestInstanceError
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import in_development
 from recidiviz.utils.regions import get_region
-
-_BQ_IMPORT_EXPORT_QUEUE = "direct-ingest-state-{}-bq-import-export"
-_PROCESS_JOB_QUEUE = "direct-ingest-state-{}-process-job-queue"
-_SCHEDULER_QUEUE = "direct-ingest-state-{}-scheduler"
-_SFTP_QUEUE = "direct-ingest-state-{}-sftp-queue"
-
-INGEST_QUEUES: List[str] = [
-    _BQ_IMPORT_EXPORT_QUEUE,
-    _PROCESS_JOB_QUEUE,
-    _SCHEDULER_QUEUE,
-]
 
 _TASK_LOCATION = "us-east1"
 
@@ -92,15 +81,13 @@ class IngestOperationsStore:
     @staticmethod
     def get_queues_for_region(state_code: StateCode) -> List[str]:
         """Returns the list of formatted direct ingest queues for given state"""
-        formatted_region_code = state_code.value.lower().replace("_", "-")
-        queues: List[str] = [
-            queue.format(formatted_region_code) for queue in INGEST_QUEUES
-        ]
+        queues = set()
+        for ingest_instance in DirectIngestInstance:
+            queues.update(
+                get_direct_ingest_queues_for_state(state_code, ingest_instance)
+            )
 
-        if state_code in get_direct_ingest_states_with_sftp_queue():
-            queues.append(_SFTP_QUEUE.format(formatted_region_code))
-
-        return queues
+        return list(queues)
 
     def start_ingest_run(self, state_code: StateCode, instance_str: str) -> None:
         """This function is called through the Ingest Operations UI in the admin panel.

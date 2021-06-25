@@ -43,10 +43,11 @@ import re
 import subprocess
 import threading
 from multiprocessing.pool import ThreadPool
-from typing import Optional, List, Tuple
+from typing import List, Optional, Tuple
 
 from progress.bar import Bar
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path_from_normalized_path,
@@ -55,19 +56,17 @@ from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    gcsfs_direct_ingest_storage_directory_path_for_region,
-    gcsfs_direct_ingest_bucket_for_region,
     GcsfsDirectIngestFileType,
+    gcsfs_direct_ingest_bucket_for_region,
+    gcsfs_direct_ingest_storage_directory_path_for_region,
 )
-from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
-    DIRECT_INGEST_SCHEDULER_QUEUE_V2,
-    DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
-    DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2,
+from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
+    get_direct_ingest_queues_for_state,
 )
 from recidiviz.tools.gsutil_shell_helpers import (
+    gsutil_get_storage_subdirs_containing_file_types,
     gsutil_ls,
     gsutil_mv,
-    gsutil_get_storage_subdirs_containing_file_types,
 )
 from recidiviz.utils.params import str_to_bool
 
@@ -82,13 +81,6 @@ class MoveFilesFromStorageController:
     FILE_TO_MOVE_RE = re.compile(
         r"^(processed_|unprocessed_|un)?(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}:\d{6}(raw|ingest_view)?.*)"
     )
-
-    # TODO(#7651): We will need to update this to pause all region direct ingest queues
-    QUEUES_TO_PAUSE = {
-        DIRECT_INGEST_SCHEDULER_QUEUE_V2,
-        DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
-        DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2,
-    }
 
     PAUSE_QUEUE_URL = "https://cloudtasks.googleapis.com/v2/projects/{}/locations/us-east1/queues/{}:pause"
 
@@ -110,6 +102,7 @@ class MoveFilesFromStorageController:
 
         self.project_id = project_id
         self.region = region
+        self.state_code = StateCode(region.upper())
         self.start_date_bound = start_date_bound
         self.end_date_bound = end_date_bound
         self.dry_run = dry_run
@@ -157,12 +150,12 @@ class MoveFilesFromStorageController:
         if self.dry_run:
             logging.info(
                 "DRY RUN: Would pause [%s] in project [%s]",
-                self.QUEUES_TO_PAUSE,
+                self._queues_to_pause(),
                 self.project_id,
             )
         else:
             i = input(
-                f"Pausing queues {self.QUEUES_TO_PAUSE} in project "
+                f"Pausing queues {self._queues_to_pause()} in project "
                 f"[{self.project_id}] - continue? [y/n]: "
             )
 
@@ -210,7 +203,7 @@ class MoveFilesFromStorageController:
                 self.project_id,
             )
 
-            for queue_name in self.QUEUES_TO_PAUSE:
+            for queue_name in self._queues_to_pause():
                 logging.info("\t%s", self.queue_console_url(queue_name))
 
     def get_date_subdir_paths(self) -> List[str]:
@@ -270,7 +263,7 @@ class MoveFilesFromStorageController:
         return f"https://console.cloud.google.com/cloudtasks/queue/{queue_name}?project={self.project_id}"
 
     def do_post_request(self, url: str) -> None:
-        """Executes a googleapis.com curl POST request with the given url. """
+        """Executes a googleapis.com curl POST request with the given url."""
         res = subprocess.run(
             self.CURL_POST_REQUEST_TEMPLATE.format(url),
             shell=True,
@@ -293,7 +286,7 @@ class MoveFilesFromStorageController:
 
     def pause_and_purge_queues(self) -> None:
         """Pauses and purges Direct Ingest queues for the specified project."""
-        for queue_name in self.QUEUES_TO_PAUSE:
+        for queue_name in self._queues_to_pause():
             self.pause_queue(queue_name)
             self.purge_queue(queue_name)
 
@@ -356,6 +349,11 @@ class MoveFilesFromStorageController:
                 template.format(original_path, new_path)
                 for original_path, new_path in self.moves_list
             )
+
+    def _queues_to_pause(self) -> List[str]:
+        return get_direct_ingest_queues_for_state(
+            self.state_code, DirectIngestInstance.PRIMARY
+        )
 
 
 def main() -> None:
