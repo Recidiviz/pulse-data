@@ -56,13 +56,21 @@ class UsPaIncarcerationPreProcessingDelegate(
         )
 
     # Functions using default behavior
-    def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:
-        return self._default_incarceration_types_to_filter()
-
     def admission_reasons_to_filter(
         self,
     ) -> Set[StateIncarcerationPeriodAdmissionReason]:
         return self._default_admission_reasons_to_filter()
+
+    def normalize_period_if_commitment_from_supervision(
+        self, incarceration_period: StateIncarcerationPeriod
+    ) -> StateIncarcerationPeriod:
+        # TODO(#7441): Implement overrides for US_PA
+        return self._default_normalize_period_if_commitment_from_supervision(
+            incarceration_period
+        )
+
+    def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:
+        return self._default_incarceration_types_to_filter()
 
     def period_is_parole_board_hold(
         self, incarceration_period: StateIncarcerationPeriod
