@@ -25,7 +25,7 @@ import sys
 from typing import List, Tuple
 
 from recidiviz.big_query.view_update_manager import (
-    create_dataset_and_deploy_views_for_view_builders,
+    create_managed_dataset_and_deploy_views_for_view_builders,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     known_args, _ = parse_arguments(sys.argv)
 
     with local_project_id_override(known_args.project_id):
-        create_dataset_and_deploy_views_for_view_builders(
+        create_managed_dataset_and_deploy_views_for_view_builders(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             view_builders_to_update=DEPLOYED_VIEW_BUILDERS,
         )

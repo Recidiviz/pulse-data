@@ -73,8 +73,8 @@ class ViewManagerTest(unittest.TestCase):
         self.client_patcher_2.stop()
         self.metadata_patcher.stop()
 
-    def test_create_dataset_and_deploy_views_for_view_builders(self) -> None:
-        """Test that create_dataset_and_deploy_views_for_view_builders creates a dataset if necessary,
+    def test_create_managed_dataset_and_deploy_views_for_view_builders(self) -> None:
+        """Test that create_managed_dataset_and_deploy_views_for_view_builders creates a dataset if necessary,
         and updates all views built by the view builders."""
         dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
 
@@ -100,7 +100,7 @@ class ViewManagerTest(unittest.TestCase):
 
         self.mock_client.dataset_ref_for_id.return_value = dataset
 
-        view_update_manager.create_dataset_and_deploy_views_for_view_builders(
+        view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             view_builders_to_update=mock_view_builders,
         )
@@ -113,7 +113,7 @@ class ViewManagerTest(unittest.TestCase):
         )
 
     def test_rematerialize_views(self) -> None:
-        """Test that create_dataset_and_deploy_views_for_view_builders only updates
+        """Test that create_managed_dataset_and_deploy_views_for_view_builders only updates
         views that have a set materialized_address when the
         materialized_views_only flag is set to True.
         """
@@ -148,7 +148,7 @@ class ViewManagerTest(unittest.TestCase):
             [mock.call(mock_view_builders[0].build())], any_order=True
         )
 
-    def test_create_dataset_and_deploy_views_for_view_builders_no_materialize_no_update(
+    def test_create_managed_dataset_and_deploy_views_for_view_builders_no_materialize_no_update(
         self,
     ) -> None:
         """Tests that we don't materialize any views if they have not been updated"""
@@ -208,7 +208,7 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.get_table = mock_get_table
         self.mock_client.create_or_update_view.side_effect = mock_create_or_update
 
-        view_update_manager.create_dataset_and_deploy_views_for_view_builders(
+        view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             view_builders_to_update=mock_view_builders,
         )
@@ -227,7 +227,7 @@ class ViewManagerTest(unittest.TestCase):
         # Materialize is not called!
         self.mock_client.materialize_view_to_table.assert_not_called()
 
-    def test_create_dataset_and_deploy_views_for_view_builders_materialize_children(
+    def test_create_managed_dataset_and_deploy_views_for_view_builders_materialize_children(
         self,
     ) -> None:
         """Tests that we don't materialize any views if they have not been updated"""
@@ -308,7 +308,7 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.get_table = mock_get_table
         self.mock_client.create_or_update_view.side_effect = mock_create_or_update
 
-        view_update_manager.create_dataset_and_deploy_views_for_view_builders(
+        view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             view_builders_to_update=mock_view_builders,
         )
@@ -339,10 +339,10 @@ class ViewManagerTest(unittest.TestCase):
             any_order=True,
         )
 
-    def test_create_dataset_and_deploy_views_for_view_builders_different_datasets(
+    def test_create_managed_dataset_and_deploy_views_for_view_builders_different_datasets(
         self,
     ) -> None:
-        """Test that create_dataset_and_deploy_views_for_view_builders only updates
+        """Test that create_managed_dataset_and_deploy_views_for_view_builders only updates
         views that have a set materialized_address when the
         materialized_views_only flag is set to True.
         """
@@ -375,7 +375,7 @@ class ViewManagerTest(unittest.TestCase):
 
         self.mock_client.dataset_ref_for_id.side_effect = get_dataset_ref
 
-        view_update_manager.create_dataset_and_deploy_views_for_view_builders(
+        view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
             view_builders_to_update=mock_view_builders,
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
         )
@@ -401,10 +401,10 @@ class ViewManagerTest(unittest.TestCase):
             any_order=True,
         )
 
-    def test_create_dataset_and_deploy_views_for_view_builders_dataset_override(
+    def test_create_managed_dataset_and_deploy_views_for_view_builders_dataset_override(
         self,
     ) -> None:
-        """Test that create_dataset_and_deploy_views_for_view_builders creates new datasets with a set table expiration
+        """Test that create_managed_dataset_and_deploy_views_for_view_builders creates new datasets with a set table expiration
         for all datasets specified in dataset_overrides."""
         materialized_dataset = "other_dataset"
 
@@ -461,7 +461,7 @@ class ViewManagerTest(unittest.TestCase):
 
         self.mock_client.dataset_ref_for_id.side_effect = get_dataset_ref
 
-        view_update_manager.create_dataset_and_deploy_views_for_view_builders(
+        view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             view_builders_to_update=mock_view_builders,
             dataset_overrides=dataset_overrides,
@@ -518,7 +518,7 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.dataset_ref_for_id.return_value = dataset
 
         # pylint: disable=protected-access
-        view_update_manager._create_dataset_and_deploy_views(
+        view_update_manager._create_managed_dataset_and_deploy_views(
             mock_views, bq_region_override="us-east1", force_materialize=False
         )
 

@@ -29,7 +29,7 @@ from recidiviz.big_query.big_query_view import (
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
-    create_dataset_and_deploy_views_for_view_builders,
+    create_managed_dataset_and_deploy_views_for_view_builders,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
@@ -110,7 +110,7 @@ def _federated_bq_regional_dataset_refresh(
             view_dataset_override_prefix=dataset_override_prefix,
             view_builders=view_builders,
         )
-    create_dataset_and_deploy_views_for_view_builders(
+    create_managed_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=set(),
         view_builders_to_update=view_builders,
         dataset_overrides=dataset_overrides,
@@ -301,7 +301,7 @@ def _hydrate_unioned_regional_dataset_for_schema(
         for dataset in source_table_datasets:
             dataset_overrides[dataset] = f"{dataset_override_prefix}_{dataset}"
 
-    create_dataset_and_deploy_views_for_view_builders(
+    create_managed_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=source_table_datasets,
         view_builders_to_update=view_builders,
         dataset_overrides=dataset_overrides,

@@ -30,7 +30,7 @@ import sys
 from typing import List, Optional, Tuple
 
 from recidiviz.big_query.view_update_manager import (
-    create_dataset_and_deploy_views_for_view_builders,
+    create_managed_dataset_and_deploy_views_for_view_builders,
     rematerialize_views_for_view_builders,
 )
 from recidiviz.calculator.query.state.dataset_config import (
@@ -82,7 +82,7 @@ def load_views_to_sandbox(
             skip_missing_views=True,
         )
     else:
-        create_dataset_and_deploy_views_for_view_builders(
+        create_managed_dataset_and_deploy_views_for_view_builders(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             view_builders_to_update=builders_to_update,
             dataset_overrides=sandbox_dataset_overrides,
