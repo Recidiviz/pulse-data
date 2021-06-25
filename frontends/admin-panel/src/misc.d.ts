@@ -37,14 +37,14 @@ interface MetadataCount {
 // Ingest Metadata Freshness
 interface DataFreshnessResult {
   state: string;
-  date: string;
+  datetime: string;
   ingestPaused: boolean;
 }
 
 // Validation Status
 interface ValidationStatusResults {
   runId: string;
-  runDate: string;
+  runDatetime: string;
   systemVersion: string;
 
   results: {

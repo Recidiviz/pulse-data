@@ -49,7 +49,7 @@ class ValidationStatusRecord:
 @attr.s
 class ValidationStatusResults:
     runId: str = attr.ib()
-    runDate: datetime.date = attr.ib()
+    runDatetime: datetime.datetime = attr.ib()
     systemVersion: str = attr.ib()
 
     results: Dict[str, Dict[str, ValidationStatusRecord]] = attr.ib()
@@ -63,7 +63,7 @@ def result_query(project_id: str, validation_result_address: BigQueryAddress) ->
     return f"""
 SELECT
     run_id,
-    run_date,
+    run_datetime,
     system_version,
     validation_name,
     region_code,
@@ -83,7 +83,7 @@ FROM `{project_id}.{validation_result_address.dataset_id}.{validation_result_add
 WHERE run_id = (
     SELECT run_id
     FROM `{project_id}.{validation_result_address.dataset_id}.{validation_result_address.table_id}`
-    ORDER BY run_date desc LIMIT 1
+    ORDER BY run_datetime desc LIMIT 1
 )
 """
 
@@ -127,13 +127,13 @@ class ValidationStatusStore(AdminPanelStore):
         results: DefaultDict[str, Dict[str, ValidationStatusRecord]] = defaultdict(dict)
 
         run_id: Optional[str] = None
-        run_date: Optional[datetime.date] = None
+        run_datetime: Optional[datetime.datetime] = None
         system_version: Optional[str] = None
 
         row: Row
         for row in query_job:
             run_id = _set_if_new(run_id, row.get("run_id"))
-            run_date = _set_if_new(run_date, row.get("run_date"))
+            run_datetime = _set_if_new(run_datetime, row.get("run_datetime"))
             system_version = _set_if_new(system_version, row.get("system_version"))
 
             results[row.get("validation_name")][
@@ -154,7 +154,7 @@ class ValidationStatusStore(AdminPanelStore):
         # Swap results
         self.results = ValidationStatusResults(
             runId=cast(str, run_id),
-            runDate=cast(datetime.date, run_date),
+            runDatetime=cast(datetime.datetime, run_datetime),
             systemVersion=cast(str, system_version),
             results=dict(results),
         )
