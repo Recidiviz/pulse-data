@@ -48,6 +48,14 @@ daily_pipelines:
     calculation_month_count: 36
     metric_types: INCARCERATION_ADMISSION INCARCERATION_POPULATION INCARCERATION_RELEASE
     region: us-east1
+  
+  # Daily US_MO violation calculations
+  - pipeline: violation
+    job_name: us-mo-violation-calculations-36
+    state_code: US_MO
+    calculation_month_count: 36
+    metric_types: VIOLATION
+    region: us-central1
 
   # Daily US_ID supervision calculations for the COVID and PO reports
   - pipeline: supervision
@@ -64,6 +72,14 @@ daily_pipelines:
     calculation_month_count: 36
     metric_types: INCARCERATION_ADMISSION INCARCERATION_POPULATION INCARCERATION_RELEASE
     region: us-west3
+  
+  # Daily US_ID violation calculations
+  - pipeline: violation
+    job_name: us-id-violation-calculations-36
+    state_code: US_ID
+    calculation_month_count: 36
+    metric_types: VIOLATION
+    region: us-west3
 
   # Daily US_PA calculations for the dashboard and for PO reports
   - pipeline: supervision
@@ -72,6 +88,14 @@ daily_pipelines:
     calculation_month_count: 36
     metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_SUCCESS SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION SUPERVISION_COMPLIANCE SUPERVISION_START SUPERVISION_DOWNGRADE
     region: us-west1
+  
+  # Daily US_PA violation calculations
+  - pipeline: violation
+    job_name: us-pa-violation-calculations-36
+    state_code: US_PA
+    calculation_month_count: 36
+    metric_types: VIOLATION
+    region: us-east1
 
 historical_pipelines:
   - pipeline: incarceration

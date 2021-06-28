@@ -16,7 +16,7 @@
 # =============================================================================
 """Utils for state-specific calculations related to violations for US_MO."""
 import sys
-from typing import List, Optional, Tuple
+from typing import List, Optional, Set, Tuple
 
 from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
 from recidiviz.common.constants.state.state_supervision_violation import (
@@ -256,3 +256,10 @@ def us_mo_shorthand_for_violation_subtype(violation_subtype: str) -> str:
             return subtype_shorthand
 
     raise ValueError(f"Unexpected violation_subtype {violation_subtype} for US_MO.")
+
+
+def us_mo_violation_type_subtypes_with_violation_type_mappings() -> Set[str]:
+    """Returns a the set of supported subtypes for US_MO based on the ordered map."""
+    return {
+        subtype for _, subtype, _ in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP
+    }

@@ -825,6 +825,111 @@ class TestUsMoFindViolationWithResponseEvents(unittest.TestCase):
 
         self.assertEqual(expected, violation_with_response_events)
 
+    def test_find_violation_with_response_events_skips_unexpected_subtypes(
+        self,
+    ) -> None:
+        violation_type_technical = StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=self.state_code,
+            violation_type=StateSupervisionViolationType.TECHNICAL,
+        )
+        violation_type_absconded = StateSupervisionViolationTypeEntry.new_with_defaults(
+            state_code=self.state_code,
+            violation_type=StateSupervisionViolationType.ABSCONDED,
+        )
+        violation_condition_unk = (
+            StateSupervisionViolatedConditionEntry.new_with_defaults(
+                state_code=self.state_code,
+                condition="UNK",
+            )
+        )
+        violation_condition_sub = (
+            StateSupervisionViolatedConditionEntry.new_with_defaults(
+                state_code=self.state_code, condition="substance_abuse"
+            )
+        )
+        violation_decision = (
+            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=self.state_code,
+                decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
+            )
+        )
+        violation_response = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=self.state_code,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_subtype="INI",
+            response_date=date(2021, 1, 4),
+            is_draft=False,
+            supervision_violation_response_decisions=[violation_decision],
+        )
+        violation = StateSupervisionViolation.new_with_defaults(
+            state_code=self.state_code,
+            supervision_violation_id=1,
+            violation_date=date(2021, 1, 1),
+            is_violent=False,
+            is_sex_offense=False,
+            supervision_violation_types=[
+                violation_type_technical,
+                violation_type_absconded,
+            ],
+            supervision_violation_responses=[violation_response],
+            supervision_violated_conditions=[
+                violation_condition_unk,
+                violation_condition_sub,
+            ],
+        )
+        violation_type_absconded.supervision_violation = violation
+        violation_type_technical.supervision_violation = violation
+        violation_decision.supervision_violation_response = violation_response
+        violation_response.supervision_violation = violation
+
+        violation_with_response_events = identifier.find_violation_with_response_events(
+            violation
+        )
+
+        expected = [
+            ViolationWithResponseEvent(
+                state_code=self.state_code,
+                supervision_violation_id=1,
+                event_date=date(2021, 1, 4),
+                response_date=date(2021, 1, 4),
+                violation_date=date(2021, 1, 1),
+                violation_type=StateSupervisionViolationType.ABSCONDED,
+                violation_type_subtype="ABSCONDED",
+                is_most_severe_violation_type=True,
+                is_violent=False,
+                is_sex_offense=False,
+                most_severe_response_decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
+            ),
+            ViolationWithResponseEvent(
+                state_code=self.state_code,
+                supervision_violation_id=1,
+                event_date=date(2021, 1, 4),
+                response_date=date(2021, 1, 4),
+                violation_date=date(2021, 1, 1),
+                violation_type=StateSupervisionViolationType.TECHNICAL,
+                violation_type_subtype="SUBSTANCE_ABUSE",
+                is_most_severe_violation_type=False,
+                is_violent=False,
+                is_sex_offense=False,
+                most_severe_response_decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
+            ),
+            ViolationWithResponseEvent(
+                state_code=self.state_code,
+                supervision_violation_id=1,
+                event_date=date(2021, 1, 4),
+                response_date=date(2021, 1, 4),
+                violation_date=date(2021, 1, 1),
+                violation_type=StateSupervisionViolationType.TECHNICAL,
+                violation_type_subtype="TECHNICAL",
+                is_most_severe_violation_type=False,
+                is_violent=False,
+                is_sex_offense=False,
+                most_severe_response_decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
+            ),
+        ]
+
+        self.assertEqual(expected, violation_with_response_events)
+
 
 class TestUsPaFindViolationWithResponseEvents(unittest.TestCase):
     """Tests the find_violation_with_response_events function for US_PA."""

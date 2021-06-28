@@ -16,14 +16,14 @@
 # =============================================================================
 """Utils for hydrating connections between entities."""
 from collections import defaultdict
-from typing import Dict, Any, Union, List
+from typing import Any, Dict, List, Union
 
 import apache_beam as beam
 from apache_beam.typehints import with_input_types, with_output_types
 
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
-    UsMoSupervisionSentence,
     UsMoIncarcerationSentence,
+    UsMoSupervisionSentence,
 )
 from recidiviz.persistence.entity.entity_utils import get_ids
 from recidiviz.persistence.entity.state import entities
@@ -175,6 +175,59 @@ class SetViolationOnViolationsResponse(beam.DoFn):
                             break
 
                 yield (person_id, violation_response)
+
+    def to_runner_api_parameter(self, _):
+        pass  # Passing unused abstract method.
+
+
+@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
+@with_output_types(beam.typehints.Tuple[int, entities.StateSupervisionViolation])
+class SetViolationResponsesOntoViolations(beam.DoFn):
+    """Sets a hydrated StateSupervisionViolationResponse onto the corresponding
+    StateSupervisionviolation."""
+
+    def process(self, element, *_args, **_kwargs):
+        """For the supervision violations and supervision violation responses of
+        a given person, finds the matching hydrated supervision violation
+        for a resulting supervision violation response, and sets the hydrated
+        version of the response onto the hydrated violation entity.
+
+        Args:
+            element: a tuple containing person_id and a dictionary of the
+                person's StateSupervisionViolations and
+                StateSupervisionViolationResponses
+        Yields:
+            For each violation, a tuple containing the person_id and the violation
+        """
+        person_id, violations_and_responses = element
+
+        # Get the StateSupervisionViolations as a list
+        violations = list(violations_and_responses["violations"])
+
+        # Get the StateSupervisionViolationResponses as a list
+        violation_responses = list(violations_and_responses["violation_responses"])
+
+        for violation in violations:
+            response_ids = [
+                violation_response.supervision_violation_response_id
+                for violation_response in violation.supervision_violation_responses
+            ]
+            if violation_responses:
+                for violation_response in violation_responses:
+                    if (
+                        violation_response.supervision_violation_response_id
+                        in response_ids
+                    ):
+                        # Find and replace within the violation_responses
+                        violation.supervision_violation_responses = [
+                            violation_response
+                            if response.supervision_violation_response_id
+                            == violation_response.supervision_violation_response_id
+                            else response
+                            for response in violation.supervision_violation_responses
+                        ]
+                        violation_response.supervision_violation = violation
+            yield (person_id, violation)
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
