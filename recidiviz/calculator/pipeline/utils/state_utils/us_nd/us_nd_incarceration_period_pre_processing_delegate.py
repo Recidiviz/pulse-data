@@ -75,14 +75,6 @@ class UsNdIncarcerationPreProcessingDelegate(
         return self._default_pre_processing_relies_on_supervision_periods()
 
     # Functions using default behavior
-    def normalize_period_if_commitment_from_supervision(
-        self, incarceration_period: StateIncarcerationPeriod
-    ) -> StateIncarcerationPeriod:
-        # TODO(#7441): Implement overrides for US_ND
-        return self._default_normalize_period_if_commitment_from_supervision(
-            incarceration_period
-        )
-
     def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:
         return self._default_incarceration_types_to_filter()
 
