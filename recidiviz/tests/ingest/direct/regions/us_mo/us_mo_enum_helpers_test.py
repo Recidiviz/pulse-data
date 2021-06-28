@@ -17,9 +17,11 @@
 """Tests for the us_mo_enum_helpers.py."""
 
 import unittest
+
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
@@ -27,13 +29,14 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import normalize
+from recidiviz.ingest.direct.regions.us_mo.us_mo_controller import UsMoController
 from recidiviz.ingest.direct.regions.us_mo.us_mo_enum_helpers import (
+    STR_TO_INCARCERATION_PERIOD_ADMISSION_REASON_MAPPINGS,
+    incarceration_period_admission_reason_mapper,
+    rank_incarceration_period_admission_reason_status_str,
+    supervising_officer_mapper,
     supervision_period_admission_reason_mapper,
     supervision_period_termination_reason_mapper,
-    supervising_officer_mapper,
-    incarceration_period_admission_reason_mapper,
-    STR_TO_INCARCERATION_PERIOD_ADMISSION_REASON_MAPPINGS,
-    rank_incarceration_period_admission_reason_status_str,
 )
 from recidiviz.tests.ingest.direct.fixture_util import direct_ingest_fixture_path
 
@@ -248,6 +251,29 @@ class TestUsMoEnumHelpers(unittest.TestCase):
                     admission_reason,
                     StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
                     f"No mapping for [{status_list_str}]",
+                )
+
+    def test_parse_incarceration_period_release_reasons(
+        self,
+    ) -> None:
+        """Loops over a file with every single combination of release reason raw texts
+        that are present and ensures they all parse."""
+        enum_overrides = UsMoController.generate_enum_overrides()
+        fixture_path = direct_ingest_fixture_path(
+            region_code=self.region_code,
+            file_name="incarceration_period_release_reason_raw_text.csv",
+        )
+        with open(fixture_path, "r") as f:
+            while True:
+                release_reason_str = f.readline().strip()
+                if not release_reason_str:
+                    break
+                release_reason = StateIncarcerationPeriodReleaseReason.parse(
+                    release_reason_str, enum_overrides
+                )
+                self.assertIsNotNone(release_reason)
+                self.assertIsInstance(
+                    release_reason, StateIncarcerationPeriodReleaseReason
                 )
 
     def test_parse_incarceration_admission_reason_statuses_have_rank(self) -> None:

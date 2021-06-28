@@ -127,11 +127,18 @@ PAROLE_REVOKED_WHILE_INCARCERATED_STATUS_CODES: List[str] = [
     "50N3065",  # CR Update - CRC
 ]
 
-TREATMENT_FAILURE_STATUSES: List[str] = [
+MID_INCARCERATION_TREATMENT_FAILURE_STATUSES: List[str] = [
     #  All statuses indicating a failure of treatment causing mandate to serve rest of
     #  sentence
     "50N1015",  # Parole Update - ITC Failure
     "50N3015",  # CR Update - ITC Failure
+]
+
+MID_INCARCERATION_TREATMENT_COMMITMENT_STATUSES: List[str] = [
+    #  All statuses indicating a transition into treatment in the middle of a stint on
+    # incarceration (usually following a board hold).
+    "50N1060",  # Parole Update - Treatment Center
+    "50N3060",  # CR Update - Treatment Center
 ]
 
 PROBATION_REVOCATION_RETURN_STATUSES: List[str] = [
@@ -235,8 +242,6 @@ SUPERVISION_SANCTION_COMMITMENT_FOR_TREATMENT_OR_SHOCK_STATUS_CODES: List[str] =
     "20I1060",  # Court Comm-MH 120 Day-Addl Chg
     #  Parole returns for shock/treatment
     "40I1060",  # Parole Ret-Treatment Center
-    "50N1060",  # Parole Update - Treatment Center
-    "50N3060",  # CR Update - Treatment Center
     # Probation sanction admission for treatment
     "40I2100",  # Prob Rev-Tech-120 Day Treat
     #  All other probation returns for shock/treatment (40I70*)
@@ -245,6 +250,7 @@ SUPERVISION_SANCTION_COMMITMENT_FOR_TREATMENT_OR_SHOCK_STATUS_CODES: List[str] =
     "40I7030",  # Prob Adm-Mental Health 120 Day
     "40I7060",  # Prob Adm-Post Conv-Trt Pgm
     "40I7065",  # Prob Adm-Post Conv-RDP
+    *MID_INCARCERATION_TREATMENT_COMMITMENT_STATUSES,
 ]
 
 BOARD_HOLDOVER_ENTRY_STATUS_CODES: List[str] = [
@@ -833,7 +839,7 @@ INCARCERATION_PERIOD_ADMISSION_REASON_TO_STR_MAPPINGS: Dict[
         *REDUCTION_OF_SENTENCE_REENTRY_STATUS_CODES
     ],
     StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE: [
-        *TREATMENT_FAILURE_STATUSES
+        *MID_INCARCERATION_TREATMENT_FAILURE_STATUSES
     ],
 }
 
@@ -880,7 +886,7 @@ def rank_incarceration_period_admission_reason_status_str(
         # new admission, revocation, or sanction admission statuses present.
         return 3
 
-    if status_str in TREATMENT_FAILURE_STATUSES:
+    if status_str in MID_INCARCERATION_TREATMENT_FAILURE_STATUSES:
         #  These are codes that indicate a STATUS_CHANGE, such as a failure of
         #  treatment, when there are no other new admission or revocation statuses
         #  present

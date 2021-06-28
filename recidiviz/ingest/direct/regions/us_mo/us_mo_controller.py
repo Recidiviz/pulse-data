@@ -28,6 +28,9 @@ from recidiviz.common.constants.enum_overrides import (
     EnumMapper,
     EnumOverrides,
 )
+from recidiviz.common.constants.standard_enum_overrides import (
+    get_standard_enum_overrides,
+)
 from recidiviz.common.constants.state.external_id_types import US_MO_DOC
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
@@ -114,8 +117,9 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import (
     VIOLATION_REPORT_ID_PREFIX,
 )
 from recidiviz.ingest.direct.regions.us_mo.us_mo_enum_helpers import (
+    MID_INCARCERATION_TREATMENT_COMMITMENT_STATUSES,
+    MID_INCARCERATION_TREATMENT_FAILURE_STATUSES,
     PAROLE_REVOKED_WHILE_INCARCERATED_STATUS_CODES,
-    TREATMENT_FAILURE_STATUSES,
     incarceration_period_admission_reason_mapper,
     supervising_officer_mapper,
     supervision_period_admission_reason_mapper,
@@ -317,15 +321,16 @@ class UsMoController(CsvGcsfsDirectIngestController):
         StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY: [
             # These statuses indicate an end to a period of temporary hold since
             # it has now been determined that the person has had their parole
-            # revoked. With the exception of a few rare cases, these
-            # statuses, are always closing a board hold period when seen as an
-            # end code .
-            *PAROLE_REVOKED_WHILE_INCARCERATED_STATUS_CODES
+            # revoked or has been given some other sanction. With the exception of a few
+            # rare cases, these statuses are always closing a board hold period when
+            # seen as an end code.
+            *PAROLE_REVOKED_WHILE_INCARCERATED_STATUS_CODES,
+            *MID_INCARCERATION_TREATMENT_COMMITMENT_STATUSES,
         ],
         StateIncarcerationPeriodReleaseReason.STATUS_CHANGE: [
             # These statuses indicate a failure of treatment causing mandate to serve
             # rest of sentence
-            *TREATMENT_FAILURE_STATUSES
+            *MID_INCARCERATION_TREATMENT_FAILURE_STATUSES,
         ],
         StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED: [
             # TODO(#2898) - Use TAK026 statuses to populate release reason
@@ -588,15 +593,16 @@ class UsMoController(CsvGcsfsDirectIngestController):
     ) -> Optional[Callable]:
         return self.ancestor_chain_override_by_file.get(file_tag, None)
 
-    def generate_enum_overrides(self) -> EnumOverrides:
+    @classmethod
+    def generate_enum_overrides(cls) -> EnumOverrides:
         """Provides Missouri-specific overrides for enum mappings."""
-        base_overrides = super().get_enum_overrides()
+        base_overrides = get_standard_enum_overrides()
         return update_overrides_from_maps(
             base_overrides,
-            self.ENUM_OVERRIDES,
-            self.ENUM_IGNORES,
-            self.ENUM_MAPPERS,
-            self.ENUM_IGNORE_PREDICATES,
+            cls.ENUM_OVERRIDES,
+            cls.ENUM_IGNORES,
+            cls.ENUM_MAPPERS,
+            cls.ENUM_IGNORE_PREDICATES,
         )
 
     def get_enum_overrides(self) -> EnumOverrides:
