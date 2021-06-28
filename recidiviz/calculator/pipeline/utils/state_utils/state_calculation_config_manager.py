@@ -20,7 +20,7 @@ import logging
 # TODO(#2995): Make a state config file for every state and every one of these state-specific calculation methodologies
 import sys
 from datetime import date
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
     NonRevocationReturnSupervisionTimeBucket,
@@ -621,6 +621,22 @@ def get_violation_type_subtype_strings_for_violation(
         ]
 
     return []
+
+
+def state_specific_violation_type_subtypes_with_violation_type_mappings(
+    state_code: str,
+) -> Set[str]:
+    """Returns the set of violation_type_subtype values that have a defined mapping
+    to a violation_type value for the given |state_code|."""
+    if state_code.upper() == StateCode.US_MO.value:
+        return (
+            us_mo_violation_utils.us_mo_violation_type_subtypes_with_violation_type_mappings()
+        )
+    if state_code.upper() == StateCode.US_PA.value:
+        return (
+            us_pa_violation_utils.us_pa_violation_type_subtypes_with_violation_type_mappings()
+        )
+    return {violation_type.value for violation_type in StateSupervisionViolationType}
 
 
 def sorted_violation_subtypes_by_severity(
