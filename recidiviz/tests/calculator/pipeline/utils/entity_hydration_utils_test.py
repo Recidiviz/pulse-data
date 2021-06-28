@@ -18,11 +18,11 @@
 
 import unittest
 from datetime import date
-from typing import List, Tuple, Dict
+from typing import Dict, List, Tuple
 
 import apache_beam as beam
-from apache_beam.testing.util import assert_that, equal_to
 from apache_beam.testing.test_pipeline import TestPipeline
+from apache_beam.testing.util import assert_that, equal_to
 
 from recidiviz.calculator.pipeline.utils import entity_hydration_utils
 from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
@@ -40,18 +40,20 @@ from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateSupervisionViolationResponse,
-    StateSupervisionViolation,
-    StateSupervisionViolationTypeEntry,
-    StateIncarcerationSentence,
-    StateCharge,
-    StateSupervisionSentence,
-    StateSentenceGroup,
     SentenceType,
+    StateCharge,
+    StateIncarcerationPeriod,
+    StateIncarcerationSentence,
+    StateSentenceGroup,
+    StateSupervisionSentence,
+    StateSupervisionViolation,
+    StateSupervisionViolationResponse,
+    StateSupervisionViolationResponseDecisionEntry,
+    StateSupervisionViolationTypeEntry,
 )
 
 
@@ -356,6 +358,140 @@ class TestSetViolationOnViolationsResponse(unittest.TestCase):
         )
 
         assert_that(output, equal_to([(12345, expected_violation_response)]))
+
+        test_pipeline.run()
+
+
+class TestSetViolationResponsesOntoViolations(unittest.TestCase):
+    """Tests the SetViolationResponsesOntoViolations DoFn."""
+
+    def testSetViolationsResponsesOntoViolations(self) -> None:
+        """Tests that the hydrated StateSupervisionViolationResponses are set on the appropriate StateSupervisionViolation."""
+
+        supervision_violation_id = 123
+        supervision_violation_response_id = 234
+
+        hydrated_violation_response = StateSupervisionViolationResponse.new_with_defaults(
+            state_code="US_XX",
+            supervision_violation_response_id=supervision_violation_response_id,
+            response_type=StateSupervisionViolationResponseType.CITATION,
+            response_date=date(2021, 2, 1),
+            supervision_violation_response_decisions=[
+                StateSupervisionViolationResponseDecisionEntry(
+                    state_code="US_XX",
+                    decision=StateSupervisionViolationResponseDecision.SPECIALIZED_COURT,
+                )
+            ],
+        )
+
+        hydrated_violation = StateSupervisionViolation.new_with_defaults(
+            state_code="US_XX",
+            supervision_violation_id=supervision_violation_id,
+            supervision_violation_types=[
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                )
+            ],
+            supervision_violation_responses=[
+                StateSupervisionViolationResponse.new_with_defaults(
+                    state_code="US_XX",
+                    supervision_violation_response_id=supervision_violation_response_id,
+                    response_type=StateSupervisionViolationResponseType.CITATION,
+                    response_date=date(2021, 2, 1),
+                )
+            ],
+        )
+
+        expected_violation = StateSupervisionViolation.new_with_defaults(
+            state_code="US_XX",
+            supervision_violation_id=supervision_violation_id,
+            supervision_violation_types=[
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                )
+            ],
+            supervision_violation_responses=[hydrated_violation_response],
+        )
+        hydrated_violation_response.supervision_violation = expected_violation
+
+        supervision_violations_and_responses = {
+            "violations": [hydrated_violation],
+            "violation_responses": [hydrated_violation_response],
+        }
+
+        test_pipeline = TestPipeline()
+
+        output = (
+            test_pipeline
+            | beam.Create([(12345, supervision_violations_and_responses)])
+            | "Set Supervision Violation Response on Supervision Violation"
+            >> beam.ParDo(entity_hydration_utils.SetViolationResponsesOntoViolations())
+        )
+
+        assert_that(output, equal_to([(12345, expected_violation)]))
+
+        test_pipeline.run()
+
+    def testSetViolationsResponsesOntoViolationsNoResponses(self) -> None:
+        """Tests the SetViolationResponsesOntoViolations is yielded even when there are no responses."""
+
+        supervision_violation_id = 123
+        supervision_violation_response_id = 234
+
+        hydrated_violation_response = StateSupervisionViolationResponse.new_with_defaults(
+            state_code="US_XX",
+            supervision_violation_response_id=supervision_violation_response_id,
+            response_type=StateSupervisionViolationResponseType.CITATION,
+            response_date=date(2021, 2, 1),
+            supervision_violation_response_decisions=[
+                StateSupervisionViolationResponseDecisionEntry(
+                    state_code="US_XX",
+                    decision=StateSupervisionViolationResponseDecision.SPECIALIZED_COURT,
+                )
+            ],
+        )
+
+        hydrated_violation = StateSupervisionViolation.new_with_defaults(
+            state_code="US_XX",
+            supervision_violation_id=supervision_violation_id,
+            supervision_violation_types=[
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                )
+            ],
+            supervision_violation_responses=[],
+        )
+
+        expected_violation = StateSupervisionViolation.new_with_defaults(
+            state_code="US_XX",
+            supervision_violation_id=supervision_violation_id,
+            supervision_violation_types=[
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                )
+            ],
+            supervision_violation_responses=[],
+        )
+
+        supervision_violations_and_responses = {
+            "violations": [hydrated_violation],
+            "violation_responses": [hydrated_violation_response],
+        }
+
+        test_pipeline = TestPipeline()
+
+        output = (
+            test_pipeline
+            | beam.Create([(12345, supervision_violations_and_responses)])
+            | "Set Supervision Violation Response on Supervision Violation"
+            >> beam.ParDo(entity_hydration_utils.SetViolationResponsesOntoViolations())
+        )
+
+        assert_that(output, equal_to([(12345, expected_violation)]))
 
         test_pipeline.run()
 

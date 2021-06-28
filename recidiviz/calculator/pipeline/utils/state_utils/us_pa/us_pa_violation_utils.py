@@ -16,7 +16,7 @@
 # =============================================================================
 """Utils for state-specific calculations related to violations for US_PA."""
 import sys
-from typing import List, Dict, Tuple
+from typing import Dict, List, Set, Tuple
 
 from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
 from recidiviz.common.constants.state.state_supervision_violation import (
@@ -175,3 +175,10 @@ def _violation_subtype_from_violation_type_entry(
     if violation_type_raw_text.startswith("H"):
         return _HIGH_TECHNICAL_SUBTYPE_STR
     raise ValueError(f"Unexpected violation_type_raw_text: {violation_type_raw_text}")
+
+
+def us_pa_violation_type_subtypes_with_violation_type_mappings() -> Set[str]:
+    """Returns a the set of supported subtypes for US_PA based on the ordered map."""
+    return {
+        subtype for _, subtype, _ in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP
+    }
