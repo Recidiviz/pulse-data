@@ -31,25 +31,22 @@ Example Usage:
 import argparse
 import logging
 import sys
-
 from typing import List
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants import states
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
-    RawTableColumnInfo,
-    DirectIngestRawFileConfig,
     ColumnEnumValueInfo,
+    DirectIngestRawFileConfig,
+    RawTableColumnInfo,
 )
-from recidiviz.ingest.direct.query_utils import (
-    get_region_raw_file_config,
-)
+from recidiviz.ingest.direct.query_utils import get_region_raw_file_config
 from recidiviz.tests.ingest.direct.direct_ingest_util import PLACEHOLDER_TO_DO_STRING
 from recidiviz.tools.ingest.development.raw_data_config_writer import (
     RawDataConfigWriter,
 )
 from recidiviz.utils import metadata
-from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 
 def get_known_values(
@@ -141,6 +138,7 @@ def main(state_code: str, project_id: str) -> None:
             original_raw_file_config.file_path,
             default_config.default_encoding,
             default_config.default_separator,
+            default_config.default_ignore_quotes,
         )
 
 

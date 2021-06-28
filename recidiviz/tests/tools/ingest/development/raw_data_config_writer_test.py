@@ -15,16 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for RawDataConfigWriter."""
+import os
 import tempfile
 import unittest
 
-import os
-
-from recidiviz.tests.ingest.direct.direct_ingest_util import PLACEHOLDER_TO_DO_STRING
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
+from recidiviz.tests.ingest.direct.direct_ingest_util import PLACEHOLDER_TO_DO_STRING
 from recidiviz.tools.ingest.development.raw_data_config_writer import (
     RawDataConfigWriter,
 )
@@ -52,6 +51,7 @@ class RawDataConfigWriterTest(unittest.TestCase):
                 config_writer.output_to_file(
                     default_encoding="UTF-8",
                     default_separator=",",
+                    default_ignore_quotes=False,
                     output_path=test_output_path,
                     raw_file_config=config,
                 )
