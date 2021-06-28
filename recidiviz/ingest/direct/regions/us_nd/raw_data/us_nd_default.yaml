@@ -1,3 +1,4 @@
 # TODO(#4823) Wait for new column support before adding elite_offense_in_custody_and_pos_report_data yaml config
 default_encoding: UTF-8
 default_separator: ','
+default_ignore_quotes: False

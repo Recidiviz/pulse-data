@@ -82,6 +82,7 @@ class RawDataConfigWriter:
         output_path: str,
         default_encoding: str,
         default_separator: str,
+        default_ignore_quotes: bool,
     ) -> None:
         """Writes a yaml config file to the given path for a given raw file config"""
         file_description_string = "\n  ".join(
@@ -98,16 +99,18 @@ class RawDataConfigWriter:
 
         if raw_file_config.supplemental_order_by_clause:
             config += "supplemental_order_by_clause: True\n"
-        if raw_file_config.ignore_quotes:
-            config += "ignore_quotes: True\n"
         if raw_file_config.always_historical_export:
             config += "always_historical_export: True\n"
 
         # If an encoding is not the default, we need to include it in the config
         if raw_file_config.encoding != default_encoding:
             config += f"encoding: {raw_file_config.encoding}\n"
+        # If a separator is not the default, we need to include it in the config
         if raw_file_config.separator != default_separator:
             config += f"separator: '{raw_file_config.separator}'\n"
+        # If whether to ignore quotes is not the default, we need to include it in the config
+        if raw_file_config.ignore_quotes != default_ignore_quotes:
+            config += f"ignore_quotes: {raw_file_config.ignore_quotes}\n"
         if raw_file_config.custom_line_terminator:
             config += (
                 f"custom_line_terminator: '{raw_file_config.custom_line_terminator}'\n"

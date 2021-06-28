@@ -1,2 +1,3 @@
 default_encoding: UTF-8
 default_separator: ','
+default_ignore_quotes: True
