@@ -266,6 +266,16 @@ class RecidivismPipeline(BasePipeline):
             )
         )
 
+        # Get StateSupervisionPeriods
+        supervision_periods = pipeline | "Load SupervisionPeriods" >> BuildRootEntity(
+            dataset=input_dataset,
+            root_entity_class=entities.StateSupervisionPeriod,
+            unifying_id_field=entities.StatePerson.get_class_id_name(),
+            build_related_entities=False,
+            unifying_id_field_filter_set=person_id_filter_set,
+            state_code=state_code,
+        )
+
         # Bring in the table that associates people and their county of residence
         person_id_to_county_kv = (
             pipeline
@@ -283,6 +293,7 @@ class RecidivismPipeline(BasePipeline):
         person_entities = {
             "person": persons,
             "incarceration_periods": incarceration_periods,
+            "supervision_periods": supervision_periods,
             "persons_to_recent_county_of_residence": person_id_to_county_kv,
         } | "Group StatePerson to StateIncarcerationPeriods" >> beam.CoGroupByKey()
 
