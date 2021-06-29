@@ -153,7 +153,6 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = """
             OR completion_date IS NOT NULL 
             OR life_sentence)
     GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12
-    ORDER BY 1 ASC, 2 ASC, 3 ASC, 4 ASC, 5 ASC, 6 ASC, 7 ASC, 8 ASC, 9 ASC, 10 ASC, 11 ASC, 12 ASC
     )
     ,
     sentences_with_session_id AS 
