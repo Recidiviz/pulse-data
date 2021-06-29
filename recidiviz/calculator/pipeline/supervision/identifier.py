@@ -39,6 +39,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
 from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
     get_commitment_from_supervision_details,
+    get_commitment_from_supervision_supervision_period,
 )
 from recidiviz.calculator.pipeline.utils.entity_pre_processing_utils import (
     pre_processing_managers_for_calculations,
@@ -59,7 +60,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     get_state_specific_commitment_from_supervision_delegate,
     get_state_specific_supervising_officer_and_location_info_function,
     include_decisions_on_follow_up_responses_for_most_severe_response,
-    pre_commitment_supervision_period_if_commitment,
     second_assessment_on_supervision_is_more_reliable,
     should_produce_supervision_time_bucket_for_period,
     state_specific_supervision_admission_reason_override,
@@ -88,6 +88,9 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    is_commitment_from_supervision,
+)
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
@@ -901,6 +904,8 @@ def find_revocation_return_buckets(
     for incarceration_period in incarceration_period_index.incarceration_periods:
         if not incarceration_period.admission_date:
             raise ValueError(f"Admission date is null for {incarceration_period}")
+        if not incarceration_period.admission_reason:
+            raise ValueError(f"Admision reason is null for {incarceration_period}")
 
         state_code = incarceration_period.state_code
 
@@ -914,19 +919,15 @@ def find_revocation_return_buckets(
             )
         )
 
-        (
-            admission_is_revocation,
-            revoked_supervision_period,
-        ) = pre_commitment_supervision_period_if_commitment(
-            state_code=incarceration_period.state_code,
+        if not is_commitment_from_supervision(incarceration_period.admission_reason):
+            continue
+
+        pre_commitment_supervision_period = get_commitment_from_supervision_supervision_period(
             incarceration_period=incarceration_period,
             supervision_period_index=supervision_period_index,
-            incarceration_period_index=incarceration_period_index,
             commitment_from_supervision_delegate=commitment_from_supervision_delegate,
+            incarceration_period_index=incarceration_period_index,
         )
-
-        if not admission_is_revocation:
-            continue
 
         admission_date = incarceration_period.admission_date
         admission_year = admission_date.year
@@ -996,10 +997,10 @@ def find_revocation_return_buckets(
             most_recent_responses
         )
 
-        if revoked_supervision_period:
+        if pre_commitment_supervision_period:
             revocation_details = get_commitment_from_supervision_details(
                 incarceration_period=incarceration_period,
-                pre_commitment_supervision_period=revoked_supervision_period,
+                pre_commitment_supervision_period=pre_commitment_supervision_period,
                 commitment_from_supervision_delegate=commitment_from_supervision_delegate,
                 violation_responses=sorted_violation_responses,
                 supervision_period_to_agent_associations=supervision_period_to_agent_associations,
@@ -1011,23 +1012,25 @@ def find_revocation_return_buckets(
                     incarceration_sentences,
                     supervision_sentences,
                     incarceration_period,
-                    revoked_supervision_period,
+                    pre_commitment_supervision_period,
                 )
             )
 
-            case_type = identify_most_severe_case_type(revoked_supervision_period)
-            supervision_level = revoked_supervision_period.supervision_level
+            case_type = identify_most_severe_case_type(
+                pre_commitment_supervision_period
+            )
+            supervision_level = pre_commitment_supervision_period.supervision_level
             supervision_level_raw_text = (
-                revoked_supervision_period.supervision_level_raw_text
+                pre_commitment_supervision_period.supervision_level_raw_text
             )
 
             judicial_district_code = _get_judicial_district_code(
-                revoked_supervision_period,
+                pre_commitment_supervision_period,
                 supervision_period_to_judicial_district_associations,
             )
 
             projected_end_date = _get_projected_end_date(
-                period=revoked_supervision_period,
+                period=pre_commitment_supervision_period,
                 supervision_sentences=supervision_sentences,
                 incarceration_sentences=incarceration_sentences,
             )

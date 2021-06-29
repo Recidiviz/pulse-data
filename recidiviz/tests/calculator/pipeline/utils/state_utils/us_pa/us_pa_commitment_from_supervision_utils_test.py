@@ -537,7 +537,7 @@ class TestCommitmentFromSupervisionPurposeForIncarcerationAndSubtype(unittest.Te
 
 
 # pylint: disable=protected-access
-class TestRevocationTypeSubtypeFromParoleDecisions(unittest.TestCase):
+class TestPurposeForIncarcerationTypeSubtypeFromParoleDecisions(unittest.TestCase):
     """Tests the _purpose_for_incarceration_subtype function."""
 
     def test_purpose_for_incarceration_subtype(self) -> None:
