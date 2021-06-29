@@ -113,6 +113,9 @@ from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
     run_test_pipeline,
     test_pipeline_options,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_commitment_from_supervision_utils import (
+    UsXxCommitmentFromSupervisionDelegate,
+)
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
@@ -156,9 +159,21 @@ class TestSupervisionPipeline(unittest.TestCase):
             UsXxIncarcerationPreProcessingDelegate()
         )
 
+        self.commitment_from_supervision_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.supervision.identifier"
+            ".get_state_specific_commitment_from_supervision_delegate"
+        )
+        self.mock_commitment_from_supervision_delegate = (
+            self.commitment_from_supervision_delegate_patcher.start()
+        )
+        self.mock_commitment_from_supervision_delegate.return_value = (
+            UsXxCommitmentFromSupervisionDelegate()
+        )
+
     def tearDown(self) -> None:
         self.assessment_types_patcher.stop()
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
     @staticmethod
     def _default_data_dict() -> Dict[str, List]:
@@ -1628,9 +1643,21 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             UsXxIncarcerationPreProcessingDelegate()
         )
 
+        self.commitment_from_supervision_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.supervision.identifier"
+            ".get_state_specific_commitment_from_supervision_delegate"
+        )
+        self.mock_commitment_from_supervision_delegate = (
+            self.commitment_from_supervision_delegate_patcher.start()
+        )
+        self.mock_commitment_from_supervision_delegate.return_value = (
+            UsXxCommitmentFromSupervisionDelegate()
+        )
+
     def tearDown(self) -> None:
         self.assessment_types_patcher.stop()
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
     @staticmethod
     def load_person_entities_dict(

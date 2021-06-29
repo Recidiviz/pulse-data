@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for us_id_supervision_type_identification.py"""
+"""Tests for us_id_supervision_utils.py"""
 import unittest
 from datetime import date
 from typing import Optional
@@ -28,7 +28,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_type_identification import (
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_utils import (
     SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT,
     us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day,
     us_id_get_post_incarceration_supervision_type,

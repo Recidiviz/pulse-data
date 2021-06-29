@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""US_ID-specific implementations of functions related to supervision type identification."""
+"""US_ID-specific implementations of functions related to supervision."""
 from collections import defaultdict
 from datetime import date
-from typing import Optional, List, Dict, Set, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from dateutil.relativedelta import relativedelta
 
@@ -37,15 +37,15 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
     get_most_relevant_supervision_type,
 )
 from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationSentence,
-    StateSupervisionSentence,
     StateIncarcerationPeriod,
+    StateIncarcerationSentence,
     StateSupervisionPeriod,
+    StateSupervisionSentence,
 )
 
 # We expect transition dates from supervision to incarceration to be fairly close together for the data in US_ID. We
@@ -265,3 +265,36 @@ def us_id_get_supervision_period_admission_override(
     ):
         return StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
     return supervision_period.admission_reason
+
+
+def us_id_get_supervising_officer_and_location_info_from_supervision_period(
+    supervision_period: StateSupervisionPeriod,
+    supervision_period_to_agent_associations: Dict[int, Dict[str, Any]],
+) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    supervising_officer_external_id = None
+    level_1_supervision_location = None
+    level_2_supervision_location = None
+
+    if not supervision_period.supervision_period_id:
+        raise ValueError("Unexpected null supervision_period_id")
+
+    if supervision_period.supervision_site:
+        # In ID, supervision_site follows format
+        # "{supervision district}|{location/office within district}"
+        (
+            level_2_supervision_location,
+            level_1_supervision_location,
+        ) = supervision_period.supervision_site.split("|")
+
+    agent_info = supervision_period_to_agent_associations.get(
+        supervision_period.supervision_period_id
+    )
+
+    if agent_info is not None:
+        supervising_officer_external_id = agent_info["agent_external_id"]
+
+    return (
+        supervising_officer_external_id,
+        level_1_supervision_location or None,
+        level_2_supervision_location or None,
+    )
