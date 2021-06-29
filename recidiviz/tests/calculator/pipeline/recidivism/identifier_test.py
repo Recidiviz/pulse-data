@@ -20,7 +20,7 @@
 """Tests for recidivism/identifier.py."""
 import unittest
 from datetime import date
-from typing import Dict, List
+from typing import Any, Dict, List, Optional
 from unittest import mock
 
 import pytest
@@ -40,7 +40,10 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
 )
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateSupervisionPeriod,
+)
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
@@ -69,6 +72,20 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.pre_processing_delegate_patcher.stop()
+
+    @staticmethod
+    def _test_find_release_events_by_cohort_year(
+        incarceration_periods: List[StateIncarcerationPeriod],
+        supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
+        persons_to_recent_county_of_residence: Optional[List[Dict[str, Any]]] = None,
+    ):
+        return identifier.find_release_events_by_cohort_year(
+            incarceration_periods=incarceration_periods,
+            supervision_periods=(supervision_periods or []),
+            persons_to_recent_county_of_residence=(
+                persons_to_recent_county_of_residence or _COUNTY_OF_RESIDENCE_ROWS
+            ),
+        )
 
     def testFindReleaseEventsByCohortYear_usNd_ignoreTemporaryCustody(self):
         """Tests the find_release_events_by_cohort_year function for US_ND where temporary custody periods are
@@ -130,8 +147,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             temporary_custody_reincarceration_standalone,
         ]
 
-        release_events_by_cohort = identifier.find_release_events_by_cohort_year(
-            incarceration_periods, _COUNTY_OF_RESIDENCE_ROWS
+        release_events_by_cohort = self._test_find_release_events_by_cohort_year(
+            incarceration_periods=incarceration_periods
         )
 
         self.assertEqual(1, len(release_events_by_cohort))
@@ -197,8 +214,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             revocation_incarceration_period,
         ]
 
-        release_events_by_cohort = identifier.find_release_events_by_cohort_year(
-            incarceration_periods, _COUNTY_OF_RESIDENCE_ROWS
+        release_events_by_cohort = self._test_find_release_events_by_cohort_year(
+            incarceration_periods=incarceration_periods
         )
 
         self.assertEqual(1, len(release_events_by_cohort))
@@ -259,8 +276,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             subsequent_reincarceration_period,
         ]
 
-        release_events_by_cohort = identifier.find_release_events_by_cohort_year(
-            incarceration_periods, _COUNTY_OF_RESIDENCE_ROWS
+        release_events_by_cohort = self._test_find_release_events_by_cohort_year(
+            incarceration_periods=incarceration_periods
         )
 
         self.assertEqual(2, len(release_events_by_cohort))
@@ -298,8 +315,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
     def test_find_release_events_by_cohort_year_no_incarcerations_at_all(self):
         """Tests the find_release_events_by_cohort_year function when the person
         has no StateIncarcerationPeriods."""
-        release_events_by_cohort = identifier.find_release_events_by_cohort_year(
-            [], _COUNTY_OF_RESIDENCE_ROWS
+        release_events_by_cohort = self._test_find_release_events_by_cohort_year(
+            incarceration_periods=[]
         )
 
         assert not release_events_by_cohort
@@ -318,8 +335,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_reason=ReleaseReason.SENTENCE_SERVED,
         )
 
-        release_events_by_cohort = identifier.find_release_events_by_cohort_year(
-            [only_incarceration_period], _COUNTY_OF_RESIDENCE_ROWS
+        release_events_by_cohort = self._test_find_release_events_by_cohort_year(
+            incarceration_periods=[only_incarceration_period]
         )
 
         assert len(release_events_by_cohort) == 1
@@ -347,8 +364,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             admission_reason=AdmissionReason.NEW_ADMISSION,
         )
 
-        release_events_by_cohort = identifier.find_release_events_by_cohort_year(
-            [only_incarceration_period], _COUNTY_OF_RESIDENCE_ROWS
+        release_events_by_cohort = self._test_find_release_events_by_cohort_year(
+            incarceration_periods=[only_incarceration_period]
         )
 
         assert not release_events_by_cohort
@@ -376,9 +393,11 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_reason=ReleaseReason.SENTENCE_SERVED,
         )
 
-        release_events_by_cohort = identifier.find_release_events_by_cohort_year(
-            [invalid_open_incarceration_period, closed_incarceration_period],
-            _COUNTY_OF_RESIDENCE_ROWS,
+        release_events_by_cohort = self._test_find_release_events_by_cohort_year(
+            incarceration_periods=[
+                invalid_open_incarceration_period,
+                closed_incarceration_period,
+            ]
         )
 
         assert release_events_by_cohort[2009] == [
@@ -417,8 +436,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_reason=ReleaseReason.SENTENCE_SERVED,
         )
 
-        release_events_by_cohort = identifier.find_release_events_by_cohort_year(
-            [incarceration_period_1, incarceration_period_2], _COUNTY_OF_RESIDENCE_ROWS
+        release_events_by_cohort = self._test_find_release_events_by_cohort_year(
+            incarceration_periods=[incarceration_period_2, incarceration_period_1]
         )
 
         self.assertCountEqual(
@@ -460,8 +479,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_reason=ReleaseReason.SENTENCE_SERVED,
         )
 
-        release_events_by_cohort = identifier.find_release_events_by_cohort_year(
-            [incarceration_period_1, incarceration_period_2], _COUNTY_OF_RESIDENCE_ROWS
+        release_events_by_cohort = self._test_find_release_events_by_cohort_year(
+            incarceration_periods=[incarceration_period_2, incarceration_period_1]
         )
 
         self.assertCountEqual(
@@ -500,8 +519,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             admission_reason=AdmissionReason.NEW_ADMISSION,
         )
 
-        release_events_by_cohort = identifier.find_release_events_by_cohort_year(
-            [incarceration_period_1, incarceration_period_2], _COUNTY_OF_RESIDENCE_ROWS
+        release_events_by_cohort = self._test_find_release_events_by_cohort_year(
+            incarceration_periods=[incarceration_period_2, incarceration_period_1]
         )
 
         self.assertEqual({}, release_events_by_cohort)
@@ -521,8 +540,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_reason=ReleaseReason.CONDITIONAL_RELEASE,
         )
 
-        release_events_by_cohort = identifier.find_release_events_by_cohort_year(
-            [only_incarceration_period], _COUNTY_OF_RESIDENCE_ROWS
+        release_events_by_cohort = self._test_find_release_events_by_cohort_year(
+            incarceration_periods=[only_incarceration_period]
         )
 
         assert len(release_events_by_cohort) == 1
@@ -569,9 +588,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             first_reincarceration_period,
         ]
 
-        release_events_by_cohort = identifier.find_release_events_by_cohort_year(
-            incarceration_periods=incarceration_periods,
-            persons_to_recent_county_of_residence=_COUNTY_OF_RESIDENCE_ROWS,
+        release_events_by_cohort = self._test_find_release_events_by_cohort_year(
+            incarceration_periods=incarceration_periods
         )
 
         assert len(release_events_by_cohort) == 2
@@ -630,9 +648,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             first_reincarceration_period,
         ]
 
-        release_events_by_cohort = identifier.find_release_events_by_cohort_year(
-            incarceration_periods=incarceration_periods,
-            persons_to_recent_county_of_residence=_COUNTY_OF_RESIDENCE_ROWS,
+        release_events_by_cohort = self._test_find_release_events_by_cohort_year(
+            incarceration_periods=incarceration_periods
         )
 
         assert len(release_events_by_cohort) == 2
@@ -691,9 +708,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             first_reincarceration_period,
         ]
 
-        release_events_by_cohort = identifier.find_release_events_by_cohort_year(
-            incarceration_periods=incarceration_periods,
-            persons_to_recent_county_of_residence=_COUNTY_OF_RESIDENCE_ROWS,
+        release_events_by_cohort = self._test_find_release_events_by_cohort_year(
+            incarceration_periods=incarceration_periods
         )
 
         assert len(release_events_by_cohort) == 2
@@ -752,9 +768,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             first_reincarceration_period,
         ]
 
-        release_events_by_cohort = identifier.find_release_events_by_cohort_year(
-            incarceration_periods=incarceration_periods,
-            persons_to_recent_county_of_residence=_COUNTY_OF_RESIDENCE_ROWS,
+        release_events_by_cohort = self._test_find_release_events_by_cohort_year(
+            incarceration_periods=incarceration_periods
         )
 
         assert len(release_events_by_cohort) == 2
@@ -812,9 +827,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             first_reincarceration_period,
         ]
 
-        release_events_by_cohort = identifier.find_release_events_by_cohort_year(
-            incarceration_periods=incarceration_periods,
-            persons_to_recent_county_of_residence=_COUNTY_OF_RESIDENCE_ROWS,
+        release_events_by_cohort = self._test_find_release_events_by_cohort_year(
+            incarceration_periods=incarceration_periods
         )
 
         assert len(release_events_by_cohort) == 1
@@ -860,9 +874,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             first_reincarceration_period,
         ]
 
-        release_events_by_cohort = identifier.find_release_events_by_cohort_year(
-            incarceration_periods=incarceration_periods,
-            persons_to_recent_county_of_residence=_COUNTY_OF_RESIDENCE_ROWS,
+        release_events_by_cohort = self._test_find_release_events_by_cohort_year(
+            incarceration_periods=incarceration_periods
         )
 
         assert len(release_events_by_cohort) == 1
@@ -884,9 +897,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
-        release_events_by_cohort = identifier.find_release_events_by_cohort_year(
-            incarceration_periods=[incarceration_period],
-            persons_to_recent_county_of_residence=_COUNTY_OF_RESIDENCE_ROWS,
+        release_events_by_cohort = self._test_find_release_events_by_cohort_year(
+            incarceration_periods=[incarceration_period]
         )
 
         assert len(release_events_by_cohort) == 0
