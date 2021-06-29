@@ -86,6 +86,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa import (
     us_pa_violation_utils,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from_supervision_utils import (
+    us_pa_get_pre_commitment_supervision_type,
     us_pa_pre_commitment_supervision_period_if_commitment,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_period_pre_processing_delegate import (
@@ -316,8 +317,8 @@ def get_commitment_from_supervision_supervision_type(
             incarceration_period, previous_supervision_period
         )
     if incarceration_period.state_code.upper() == "US_PA":
-        return get_pre_incarceration_supervision_type_from_incarceration_period(
-            incarceration_period
+        return us_pa_get_pre_commitment_supervision_type(
+            incarceration_period, previous_supervision_period
         )
 
     return get_pre_incarceration_supervision_type(

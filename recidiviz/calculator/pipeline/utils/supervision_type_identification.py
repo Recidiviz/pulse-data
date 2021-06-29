@@ -17,7 +17,7 @@
 """Helpers for determining supervision types at different points in time."""
 import datetime
 import logging
-from typing import Optional, Set, List
+from typing import List, Optional, Set
 
 from recidiviz.common.common_utils import date_spans_overlap_inclusive
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -28,13 +28,13 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.common.date import first_day_of_month, last_day_of_month
-from recidiviz.persistence.entity.entity_utils import is_placeholder, get_ids
+from recidiviz.persistence.entity.entity_utils import get_ids, is_placeholder
 from recidiviz.persistence.entity.state.entities import (
+    SentenceType,
     StateIncarcerationPeriod,
+    StateIncarcerationSentence,
     StateSupervisionPeriod,
     StateSupervisionSentence,
-    StateIncarcerationSentence,
-    SentenceType,
 )
 
 SUPERVISION_TYPE_PRECEDENCE_ORDER = [
@@ -47,13 +47,13 @@ SUPERVISION_TYPE_PRECEDENCE_ORDER = [
 
 def get_pre_incarceration_supervision_type_from_supervision_period(
     supervision_period: Optional[StateSupervisionPeriod],
-) -> Optional[StateSupervisionPeriodSupervisionType]:
+) -> StateSupervisionPeriodSupervisionType:
     """Returns the supervision_period_supervision_type associated with the given
     supervision_period that preceded the admission to incarceration from supervision,
     if present. If not, returns None."""
-    if supervision_period:
+    if supervision_period and supervision_period.supervision_period_supervision_type:
         return supervision_period.supervision_period_supervision_type
-    return None
+    return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
 
 
 def get_pre_incarceration_supervision_type_from_incarceration_period(
