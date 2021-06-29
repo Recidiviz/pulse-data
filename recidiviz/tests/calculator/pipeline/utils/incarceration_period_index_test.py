@@ -28,11 +28,19 @@ from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_inde
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodAdmissionReason as AdmissionReason,
-    StateIncarcerationPeriodReleaseReason as ReleaseReason,
-    StateIncarcerationPeriodStatus,
     StateIncarcerationPeriodAdmissionReason,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason as AdmissionReason,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodReleaseReason as ReleaseReason,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.date import DateRange, date_or_tomorrow
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
@@ -1439,9 +1447,9 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
 
 
 class TestPrecedingIncarcerationPeriod(unittest.TestCase):
-    """Tests the preceding_incarceration_period function."""
+    """Tests the preceding_incarceration_period_in_index function."""
 
-    def test_preceding_incarceration_period_first_period(self) -> None:
+    def test_preceding_incarceration_period_in_index_first_period(self) -> None:
         """Tests that this returns None when the given period is the first in the
         index."""
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -1466,10 +1474,12 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
         index = PreProcessedIncarcerationPeriodIndex(incarceration_periods)
 
-        preceding_period = index.preceding_incarceration_period(incarceration_period_1)
+        preceding_period = index.preceding_incarceration_period_in_index(
+            incarceration_period_1
+        )
         self.assertIsNone(preceding_period)
 
-    def test_preceding_incarceration_period_second_period(self) -> None:
+    def test_preceding_incarceration_period_in_index_second_period(self) -> None:
         """Tests that this returns the first period when the given period is the
         second in the index."""
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -1494,10 +1504,12 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
         index = PreProcessedIncarcerationPeriodIndex(incarceration_periods)
 
-        preceding_period = index.preceding_incarceration_period(incarceration_period_2)
+        preceding_period = index.preceding_incarceration_period_in_index(
+            incarceration_period_2
+        )
         self.assertEqual(incarceration_period_1, preceding_period)
 
-    def test_preceding_incarceration_period_later_period(self) -> None:
+    def test_preceding_incarceration_period_in_index_later_period(self) -> None:
         """Tests that this returns the period directly preceding the given period
         when it is not the first period."""
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -1536,11 +1548,13 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
         ]
         index = PreProcessedIncarcerationPeriodIndex(incarceration_periods)
 
-        preceding_period = index.preceding_incarceration_period(incarceration_period_3)
+        preceding_period = index.preceding_incarceration_period_in_index(
+            incarceration_period_3
+        )
         self.assertEqual(incarceration_period_2, preceding_period)
 
-    def test_preceding_incarceration_period_not_in_index(self) -> None:
-        """Tests that this raises a ValueError when the given period is not in the
+    def test_preceding_incarceration_period_in_index_not_in_index(self) -> None:
+        """Tests that this raises a KeyError when the given period is not in the
         index."""
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
@@ -1577,9 +1591,5 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
         ]
         index = PreProcessedIncarcerationPeriodIndex(incarceration_periods)
 
-        with pytest.raises(ValueError) as e:
-            index.preceding_incarceration_period(incarceration_period_3)
-        self.assertEqual(
-            "Given incarceration period [333] not found in this incarceration period index",
-            str(e.value),
-        )
+        with pytest.raises(KeyError):
+            index.preceding_incarceration_period_in_index(incarceration_period_3)

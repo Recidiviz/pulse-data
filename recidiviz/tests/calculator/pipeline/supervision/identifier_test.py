@@ -7517,11 +7517,14 @@ class TestFindRevocationReturnBuckets(unittest.TestCase):
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
             incarceration_periods
         )
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
+            supervision_periods
+        )
 
         return identifier.find_revocation_return_buckets(
             supervision_sentences=supervision_sentences,
             incarceration_sentences=incarceration_sentences,
-            supervision_periods=supervision_periods,
+            supervision_period_index=supervision_period_index,
             assessments=assessments,
             sorted_violation_responses=sorted_violation_responses,
             supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,

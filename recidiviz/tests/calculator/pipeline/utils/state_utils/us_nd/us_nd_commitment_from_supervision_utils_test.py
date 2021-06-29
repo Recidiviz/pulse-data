@@ -17,6 +17,7 @@
 """Tests the functions in the us_nd_commitment_from_supervision_utils file."""
 import unittest
 from datetime import date
+from typing import List, Optional
 
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
@@ -435,6 +436,30 @@ class TestViolationHistoryWindowPreCommitment(unittest.TestCase):
 class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
     """Tests the _us_nd_pre_commitment_supervision_period function."""
 
+    @staticmethod
+    def _test_us_nd_pre_commitment_supervision_period(
+        admission_date: date,
+        admission_reason: StateIncarcerationPeriodAdmissionReason,
+        supervision_periods: List[StateSupervisionPeriod],
+    ) -> Optional[StateSupervisionPeriod]:
+        ip = StateIncarcerationPeriod.new_with_defaults(
+            state_code="US_ND",
+            incarceration_period_id=111,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            admission_date=admission_date,
+            admission_reason=admission_reason,
+        )
+
+        incarceration_periods = [ip]
+
+        return _us_nd_pre_commitment_supervision_period(
+            incarceration_period=ip,
+            incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
+                incarceration_periods
+            ),
+            supervision_periods=supervision_periods,
+        )
+
     def test_us_nd_pre_commitment_supervision_period_parole_revocation(self) -> None:
         """Tests that we prioritize the period with the supervision_type that matches
         the admission reason supervision type."""
@@ -465,10 +490,12 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionType.PROBATION,
         )
 
-        pre_commitment_supervision_period = _us_nd_pre_commitment_supervision_period(
-            admission_date,
-            admission_reason,
-            supervision_periods=[probation_period, parole_period],
+        pre_commitment_supervision_period = (
+            self._test_us_nd_pre_commitment_supervision_period(
+                admission_date=admission_date,
+                admission_reason=admission_reason,
+                supervision_periods=[probation_period, parole_period],
+            )
         )
 
         self.assertEqual(parole_period, pre_commitment_supervision_period)
@@ -505,10 +532,15 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionType.PAROLE,
         )
 
-        pre_commitment_supervision_period = _us_nd_pre_commitment_supervision_period(
-            admission_date,
-            admission_reason,
-            supervision_periods=[terminated_parole_period, overlapping_parole_period],
+        pre_commitment_supervision_period = (
+            self._test_us_nd_pre_commitment_supervision_period(
+                admission_date=admission_date,
+                admission_reason=admission_reason,
+                supervision_periods=[
+                    terminated_parole_period,
+                    overlapping_parole_period,
+                ],
+            )
         )
 
         self.assertEqual(overlapping_parole_period, pre_commitment_supervision_period)
@@ -545,10 +577,12 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionType.PAROLE,
         )
 
-        pre_commitment_supervision_period = _us_nd_pre_commitment_supervision_period(
-            admission_date,
-            admission_reason,
-            supervision_periods=[expired_parole_period, revoked_parole_period],
+        pre_commitment_supervision_period = (
+            self._test_us_nd_pre_commitment_supervision_period(
+                admission_date=admission_date,
+                admission_reason=admission_reason,
+                supervision_periods=[expired_parole_period, revoked_parole_period],
+            )
         )
 
         self.assertEqual(revoked_parole_period, pre_commitment_supervision_period)
@@ -585,10 +619,15 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionType.PAROLE,
         )
 
-        pre_commitment_supervision_period = _us_nd_pre_commitment_supervision_period(
-            admission_date,
-            admission_reason,
-            supervision_periods=[closer_revoked_parole_period, revoked_parole_period],
+        pre_commitment_supervision_period = (
+            self._test_us_nd_pre_commitment_supervision_period(
+                admission_date=admission_date,
+                admission_reason=admission_reason,
+                supervision_periods=[
+                    closer_revoked_parole_period,
+                    revoked_parole_period,
+                ],
+            )
         )
 
         self.assertEqual(
@@ -625,10 +664,12 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionType.PROBATION,
         )
 
-        pre_commitment_supervision_period = _us_nd_pre_commitment_supervision_period(
-            admission_date,
-            admission_reason,
-            supervision_periods=[probation_period, parole_period],
+        pre_commitment_supervision_period = (
+            self._test_us_nd_pre_commitment_supervision_period(
+                admission_date=admission_date,
+                admission_reason=admission_reason,
+                supervision_periods=[probation_period, parole_period],
+            )
         )
 
         self.assertEqual(probation_period, pre_commitment_supervision_period)
@@ -665,13 +706,15 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionType.PROBATION,
         )
 
-        pre_commitment_supervision_period = _us_nd_pre_commitment_supervision_period(
-            admission_date,
-            admission_reason,
-            supervision_periods=[
-                terminated_probation_period,
-                overlapping_probation_period,
-            ],
+        pre_commitment_supervision_period = (
+            self._test_us_nd_pre_commitment_supervision_period(
+                admission_date=admission_date,
+                admission_reason=admission_reason,
+                supervision_periods=[
+                    terminated_probation_period,
+                    overlapping_probation_period,
+                ],
+            )
         )
 
         self.assertEqual(terminated_probation_period, pre_commitment_supervision_period)
@@ -708,10 +751,15 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionType.PROBATION,
         )
 
-        pre_commitment_supervision_period = _us_nd_pre_commitment_supervision_period(
-            admission_date,
-            admission_reason,
-            supervision_periods=[expired_probation_period, revoked_probation_period],
+        pre_commitment_supervision_period = (
+            self._test_us_nd_pre_commitment_supervision_period(
+                admission_date=admission_date,
+                admission_reason=admission_reason,
+                supervision_periods=[
+                    expired_probation_period,
+                    revoked_probation_period,
+                ],
+            )
         )
 
         self.assertEqual(revoked_probation_period, pre_commitment_supervision_period)
@@ -748,13 +796,15 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
             supervision_type=StateSupervisionType.PROBATION,
         )
 
-        pre_commitment_supervision_period = _us_nd_pre_commitment_supervision_period(
-            admission_date,
-            admission_reason,
-            supervision_periods=[
-                closer_revoked_probation_period,
-                revoked_probation_period,
-            ],
+        pre_commitment_supervision_period = (
+            self._test_us_nd_pre_commitment_supervision_period(
+                admission_date=admission_date,
+                admission_reason=admission_reason,
+                supervision_periods=[
+                    closer_revoked_probation_period,
+                    revoked_probation_period,
+                ],
+            )
         )
 
         self.assertEqual(
@@ -768,10 +818,12 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         admission_date = date(2019, 5, 25)
         admission_reason = StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
 
-        pre_commitment_supervision_period = _us_nd_pre_commitment_supervision_period(
-            admission_date,
-            admission_reason,
-            supervision_periods=[],
+        pre_commitment_supervision_period = (
+            self._test_us_nd_pre_commitment_supervision_period(
+                admission_date=admission_date,
+                admission_reason=admission_reason,
+                supervision_periods=[],
+            )
         )
 
         self.assertIsNone(pre_commitment_supervision_period)

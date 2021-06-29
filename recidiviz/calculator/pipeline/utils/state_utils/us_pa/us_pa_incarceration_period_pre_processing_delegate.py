@@ -17,10 +17,13 @@
 """Contains state-specific logic for certain aspects of pre-processing US_PA
 StateIncarcerationPeriod entities so that they are ready to be used in pipeline
 calculations."""
-from typing import Optional, Set
+from typing import List, Optional, Set
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
     StateSpecificIncarcerationPreProcessingDelegate,
+)
+from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
+    PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -62,11 +65,14 @@ class UsPaIncarcerationPreProcessingDelegate(
         return self._default_admission_reasons_to_filter()
 
     def normalize_period_if_commitment_from_supervision(
-        self, incarceration_period: StateIncarcerationPeriod
+        self,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
+        supervision_period_index: Optional[PreProcessedSupervisionPeriodIndex],
     ) -> StateIncarcerationPeriod:
         # TODO(#7441): Implement overrides for US_PA
         return self._default_normalize_period_if_commitment_from_supervision(
-            incarceration_period
+            sorted_incarceration_periods[incarceration_period_list_index]
         )
 
     def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:

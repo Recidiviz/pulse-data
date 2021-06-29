@@ -26,6 +26,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateIncarcerationPeriodStatus,
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.date import DateRangeDiff
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
@@ -56,38 +57,53 @@ def standard_date_sort_for_incarceration_periods(
     return incarceration_periods
 
 
+def periods_are_temporally_adjacent(
+    first_incarceration_period: StateIncarcerationPeriod,
+    second_incarceration_period: StateIncarcerationPeriod,
+) -> bool:
+    """Returns whether two incarceration periods are temporally adjacent, meaning they
+    can be treated as a continuous stint of incarceration, even if their edges do not
+    line up perfectly. Two consecutive periods are temporally adjacent if the
+    release_date on the |first_incarceration_period| is within
+    VALID_TRANSFER_THRESHOLD days of the admission_date on the
+    |second_incarceration_period|."""
+    release_date = first_incarceration_period.release_date
+    admission_date = second_incarceration_period.admission_date
+
+    if not release_date or not admission_date:
+        # If there are missing dates, then this is not a valid period edge
+        return False
+
+    days_between_periods = (admission_date - release_date).days
+
+    return days_between_periods <= VALID_TRANSFER_THRESHOLD_DAYS
+
+
 def period_edges_are_valid_transfer(
     first_incarceration_period: Optional[StateIncarcerationPeriod] = None,
     second_incarceration_period: Optional[StateIncarcerationPeriod] = None,
 ) -> bool:
     """Returns whether the edge between two incarceration periods is a valid transfer.
     Valid transfer means:
-       - The adjacent release reason and admission reason between two consecutive periods is TRANSFER
-       - The adjacent release date and admission date between two consecutive periods is less than or
-       equal to the VALID_TRANSFER_THRESHOLD
+       - The two periods are adjacent
+       - The adjacent release reason and admission reason between two consecutive
+         periods is TRANSFER
     """
     if not first_incarceration_period or not second_incarceration_period:
         return False
 
     release_reason = first_incarceration_period.release_reason
-    release_date = first_incarceration_period.release_date
-
     admission_reason = second_incarceration_period.admission_reason
-    admission_date = second_incarceration_period.admission_date
 
-    if (
-        not release_reason
-        or not release_date
-        or not admission_reason
-        or not admission_date
-    ):
-        # If there is no release reason or admission reason, then this is not a valid period edge
+    if not release_reason or not admission_reason:
+        # If there is no release reason or admission reason, then this is not a valid
+        # period edge
         return False
 
-    days_between_periods = (admission_date - release_date).days
-
     return (
-        days_between_periods <= VALID_TRANSFER_THRESHOLD_DAYS
+        periods_are_temporally_adjacent(
+            first_incarceration_period, second_incarceration_period
+        )
         and admission_reason == StateIncarcerationPeriodAdmissionReason.TRANSFER
         and release_reason == StateIncarcerationPeriodReleaseReason.TRANSFER
     )
@@ -126,4 +142,32 @@ def ip_is_nested_in_previous_period(
     ) or (
         ip.admission_date == ip.release_date
         and ip.release_date < previous_ip.release_date
+    )
+
+
+def period_is_commitment_from_supervision_admission_from_parole_board_hold(
+    incarceration_period: StateIncarcerationPeriod,
+    preceding_incarceration_period: StateIncarcerationPeriod,
+) -> bool:
+    """Determines whether the transition from the preceding_incarceration_period to
+    the incarceration_period is a commitment from supervision admission after being
+    held for a parole board hold."""
+    if not periods_are_temporally_adjacent(
+        first_incarceration_period=preceding_incarceration_period,
+        second_incarceration_period=incarceration_period,
+    ):
+        return False
+
+    return (
+        incarceration_period.admission_reason
+        # Valid revocation admission reasons following a parole board hold
+        in (
+            StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
+            StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+        )
+        # Revocation admission from a parole board hold should happen on the same day
+        # as the release from the parole board hold
+        and preceding_incarceration_period.specialized_purpose_for_incarceration
+        == StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
     )
