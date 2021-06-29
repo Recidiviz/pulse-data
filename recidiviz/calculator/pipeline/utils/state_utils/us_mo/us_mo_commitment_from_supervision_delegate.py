@@ -16,7 +16,7 @@
 # =============================================================================
 """Utils for state-specific logic related to incarceration commitments from supervision
 in US_MO."""
-from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
 )
 

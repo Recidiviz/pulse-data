@@ -21,7 +21,7 @@ from typing import List, Optional, Set, Tuple
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
@@ -73,6 +73,9 @@ SPFI_SUBTYPE_SEVERITY_ORDER = [
 SHOCK_INCARCERATION_SUBTYPES = SPFI_SUBTYPE_SEVERITY_ORDER
 
 
+# TODO(#7441): Move this class to a us_pa_commitment_from_supervision_delegate file
+#  once we've implemented US_PA pre-processing that moves most of the logic in this
+#  file elsewhere
 class UsPaCommitmentFromSupervisionDelegate(
     StateSpecificCommitmentFromSupervisionDelegate
 ):
@@ -190,59 +193,6 @@ def us_pa_get_pre_commitment_supervision_type(
         "Unexpected admission reason being classified as a"
         f"commitment from supervision for US_PA: [{admission_reason}]."
     )
-
-
-def us_pa_purpose_for_incarceration_and_subtype(
-    incarceration_period: StateIncarcerationPeriod,
-    violation_responses: List[StateSupervisionViolationResponse],
-) -> Tuple[Optional[StateSpecializedPurposeForIncarceration], Optional[str]]:
-    """Determines the correct purpose_for_incarceration for the given
-    incarceration_period and, if applicable, the subtype of the
-    purpose_for_incarceration. The subtypes indicate whether someone was admitted to a
-    Parole Violator Center (PVC), or for how long they were mandated to be in prison for
-    a shock incarceration. For shock incarceration commitments, the subtype is
-    determined by the decision_raw_text values on the decisions made by the
-    parole board preceding the commitment admission.
-    """
-    if not incarceration_period.admission_date:
-        raise ValueError(
-            "Unexpected StateIncarcerationPeriod without a set admission_date."
-        )
-
-    if (
-        incarceration_period.specialized_purpose_for_incarceration
-        == StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
-    ):
-        return StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON, None
-
-    purpose_for_incarceration_subtype = _purpose_for_incarceration_subtype(
-        incarceration_period.admission_date,
-        incarceration_period.specialized_purpose_for_incarceration_raw_text,
-        violation_responses,
-    )
-
-    # We know a commitment was for shock incarceration from the
-    # specialized_purpose_for_incarceration and/or the parole decisions
-    is_shock_incarceration_commitment = (
-        purpose_for_incarceration_subtype in SHOCK_INCARCERATION_SUBTYPES
-        or incarceration_period.specialized_purpose_for_incarceration
-        == StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
-    )
-
-    if is_shock_incarceration_commitment and purpose_for_incarceration_subtype is None:
-        # We know that this person was admitted for shock incarceration, but we don't
-        # know how the specific length of shock incarceration. Default to less than 6
-        # months.
-        purpose_for_incarceration_subtype = SHOCK_INCARCERATION_UNDER_6_MONTHS
-
-    purpose_for_incarceration = (
-        StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
-        if is_shock_incarceration_commitment
-        # The GENERAL purpose_for_incarceration indicates a legal revocation
-        else StateSpecializedPurposeForIncarceration.GENERAL
-    )
-
-    return purpose_for_incarceration, purpose_for_incarceration_subtype
 
 
 def _purpose_for_incarceration_subtype(

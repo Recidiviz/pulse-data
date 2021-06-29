@@ -31,8 +31,8 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
 )
 from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
-    StateSpecificCommitmentFromSupervisionDelegate,
     get_commitment_from_supervision_details,
+    get_commitment_from_supervision_supervision_period,
 )
 from recidiviz.calculator.pipeline.utils.entity_pre_processing_utils import (
     pre_processing_managers_for_calculations,
@@ -57,10 +57,12 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     get_state_specific_commitment_from_supervision_delegate,
     get_state_specific_supervising_officer_and_location_info_function,
     include_decisions_on_follow_up_responses_for_most_severe_response,
-    pre_commitment_supervision_period_if_commitment,
     state_specific_incarceration_admission_reason_override,
     state_specific_violation_response_pre_processing_function,
     state_specific_violation_responses_for_violation_history,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
+    StateSpecificCommitmentFromSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_pre_processing_manager import (
     SupervisionPreProcessingManager,
@@ -80,6 +82,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateIncarcerationPeriodStatus,
+    is_commitment_from_supervision,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
@@ -534,18 +537,14 @@ def admission_event_for_period(
             )
         )
 
-        (
-            admission_is_commitment_from_supervision,
-            pre_commitment_supervision_period,
-        ) = pre_commitment_supervision_period_if_commitment(
-            state_code=incarceration_period.state_code,
-            incarceration_period=incarceration_period,
-            supervision_period_index=supervision_period_index,
-            incarceration_period_index=incarceration_period_index,
-            commitment_from_supervision_delegate=commitment_from_supervision_delegate,
-        )
+        if is_commitment_from_supervision(admission_reason):
+            pre_commitment_supervision_period = get_commitment_from_supervision_supervision_period(
+                incarceration_period=incarceration_period,
+                supervision_period_index=supervision_period_index,
+                commitment_from_supervision_delegate=commitment_from_supervision_delegate,
+                incarceration_period_index=incarceration_period_index,
+            )
 
-        if admission_is_commitment_from_supervision:
             return _commitment_from_supervision_event_for_period(
                 incarceration_sentences=incarceration_sentences,
                 supervision_sentences=supervision_sentences,

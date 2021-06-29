@@ -16,11 +16,8 @@
 # =============================================================================
 """Utils for calculations regarding incarceration admissions that are commitments from
 supervision."""
-import abc
 import datetime
-from typing import Any, Callable, Dict, List, NamedTuple, Optional, Set, Tuple
-
-from dateutil.relativedelta import relativedelta
+from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     periods_are_temporally_adjacent,
@@ -32,6 +29,12 @@ from recidiviz.calculator.pipeline.utils.period_utils import (
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
 )
+from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
+    PreProcessedSupervisionPeriodIndex,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
+    StateSpecificCommitmentFromSupervisionDelegate,
+)
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     filter_out_unknown_supervision_period_supervision_type_periods,
     identify_most_severe_case_type,
@@ -39,9 +42,6 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
     get_pre_incarceration_supervision_type_from_ip_admission_reason,
     sentence_supervision_types_to_supervision_period_supervision_type,
-)
-from recidiviz.calculator.pipeline.utils.violation_response_utils import (
-    violation_responses_in_window,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -54,7 +54,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.common.date import DateRange
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
@@ -67,133 +66,10 @@ from recidiviz.persistence.entity.state.entities import (
 SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT = 24
 
 
-class StateSpecificCommitmentFromSupervisionDelegate(abc.ABC):
-    """Interface for state-specific decisions involved in categorizing various
-    attributes of commitment from supervision admissions."""
-
-    def should_filter_to_matching_supervision_types_in_pre_commitment_sp_search(
-        self,
-    ) -> bool:
-        """Whether or not we should only look at supervision periods where the
-        supervision type matches the type of supervision that ended due to the
-        commitment admission as indicated by the admission_reason.
-
-        Default behavior is look at any supervision period, regardless of type.
-        Should be overridden by state-specific implementations if necessary.
-        """
-        return False
-
-    def should_filter_out_unknown_supervision_type_in_pre_commitment_sp_search(
-        self,
-    ) -> bool:
-        """Whether or not we should ignore supervision periods with unset
-        supervision types when identifying the pre-commitment supervision period.
-
-        Default behavior is to not filter out periods with unknown supervision types.
-        Should be overridden by state-specific implementations if necessary.
-        """
-        return False
-
-    def admission_reasons_that_should_prioritize_overlaps_in_pre_commitment_sp_search(
-        self,
-    ) -> Set[StateIncarcerationPeriodAdmissionReason]:
-        """Returns the set of commitment from supervision admission reasons for which
-        we should prioritize periods that *overlap* with the date of admission to
-        incarceration, as opposed to prioritizing periods that have already terminated
-        by the date of admission.
-
-        Default behavior is always prioritizing periods that have terminated prior to
-        the admission. Should be overridden by state-specific implementations if
-        necessary.
-
-        A state may want to override this if supervision periods are habitually
-        terminated after commitment periods begin.
-        """
-
-        return set()
-
-    def identify_specialized_purpose_for_incarceration_and_subtype(
-        self,
-        incarceration_period: StateIncarcerationPeriod,
-        _violation_responses: List[StateSupervisionViolationResponse],
-    ) -> Tuple[Optional[StateSpecializedPurposeForIncarceration], Optional[str]]:
-        """Determines the specialized_purpose_for_incarceration and, if applicable, the
-        specialized_purpose_for_incarceration_subtype of the commitment from supervision
-        admission to the given incarceration_period.
-
-        Should be overridden by state-specific implementations if necessary.
-        """
-        specialized_purpose_for_incarceration = (
-            incarceration_period.specialized_purpose_for_incarceration
-            # Default to GENERAL if no specialized_purpose_for_incarceration is set
-            or StateSpecializedPurposeForIncarceration.GENERAL
-        )
-
-        # For now, all non-state-specific specialized_purpose_for_incarceration_subtypes
-        # are None
-        return specialized_purpose_for_incarceration, None
-
-    def violation_history_window_pre_commitment_from_supervision(
-        self,
-        admission_date: datetime.date,
-        sorted_and_filtered_violation_responses: List[
-            StateSupervisionViolationResponse
-        ],
-        default_violation_history_window_months: int,
-    ) -> DateRange:
-        """Returns the window of time before a commitment from supervision in which we
-        should consider violations for the violation history prior to the admission.
-
-        Default behavior is to use the date of the last violation response recorded
-        prior to the |admission_date| as the upper bound of the window, with a lower
-        bound that is |default_violation_history_window_months| before that date.
-
-        Should be overridden by state-specific implementations if necessary.
-        """
-        # We will use the date of the last response prior to the admission as the
-        # window cutoff.
-        responses_before_admission = violation_responses_in_window(
-            violation_responses=sorted_and_filtered_violation_responses,
-            upper_bound_exclusive=admission_date + relativedelta(days=1),
-            lower_bound_inclusive=None,
-        )
-
-        violation_history_end_date = admission_date
-
-        if responses_before_admission:
-            # If there were violation responses leading up to the incarceration
-            # admission, then we want the violation history leading up to the last
-            # response_date instead of the admission_date on the
-            # incarceration_period
-            last_response = responses_before_admission[-1]
-
-            if not last_response.response_date:
-                # This should never happen, but is here to silence mypy warnings
-                # about empty response_dates.
-                raise ValueError(
-                    "Not effectively filtering out responses without valid"
-                    " response_dates."
-                )
-            violation_history_end_date = last_response.response_date
-
-        violation_window_lower_bound_inclusive = (
-            violation_history_end_date
-            - relativedelta(months=default_violation_history_window_months)
-        )
-        violation_window_upper_bound_exclusive = (
-            violation_history_end_date + relativedelta(days=1)
-        )
-
-        return DateRange(
-            lower_bound_inclusive_date=violation_window_lower_bound_inclusive,
-            upper_bound_exclusive_date=violation_window_upper_bound_exclusive,
-        )
-
-
 def get_commitment_from_supervision_supervision_period(
     incarceration_period: StateIncarcerationPeriod,
-    supervision_periods: List[StateSupervisionPeriod],
     commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
+    supervision_period_index: PreProcessedSupervisionPeriodIndex,
     incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
 ) -> Optional[StateSupervisionPeriod]:
     """Identifies the supervision period associated with the commitment to supervision
@@ -204,7 +80,7 @@ def get_commitment_from_supervision_supervision_period(
     most recently terminated within SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT months of
     the |admission_date|.
     """
-    if not supervision_periods:
+    if not supervision_period_index.supervision_periods:
         return None
 
     if not incarceration_period.admission_date:
@@ -260,7 +136,7 @@ def get_commitment_from_supervision_supervision_period(
 
     relevant_periods = _get_relevant_sps_for_pre_commitment_sp_search(
         admission_reason=admission_reason,
-        supervision_periods=supervision_periods,
+        supervision_periods=supervision_period_index.supervision_periods,
         commitment_from_supervision_delegate=commitment_from_supervision_delegate,
     )
 

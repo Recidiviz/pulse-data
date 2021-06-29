@@ -27,10 +27,6 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
     RevocationReturnSupervisionTimeBucket,
 )
 from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
-from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
-    StateSpecificCommitmentFromSupervisionDelegate,
-    get_commitment_from_supervision_supervision_period,
-)
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
     StateSpecificIncarcerationPreProcessingDelegate,
 )
@@ -40,7 +36,10 @@ from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_inde
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_commitment_from_supervision_utils import (
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
+    StateSpecificCommitmentFromSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_commitment_from_supervision_delegate import (
     UsIdCommitmentFromSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_period_pre_processing_delegate import (
@@ -57,7 +56,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_uti
     us_id_supervision_period_is_out_of_state,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo import us_mo_violation_utils
-from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_commitment_from_supervision_utils import (
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_commitment_from_supervision_delegate import (
     UsMoCommitmentFromSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_incarceration_period_pre_processing_delegate import (
@@ -73,9 +72,8 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils
     us_mo_filter_violation_responses,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd import us_nd_violation_utils
-from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_utils import (
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_delegate import (
     UsNdCommitmentFromSupervisionDelegate,
-    us_nd_pre_commitment_supervision_period_if_commitment,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_period_pre_processing_delegate import (
     UsNdIncarcerationPreProcessingDelegate,
@@ -119,7 +117,6 @@ from recidiviz.calculator.pipeline.utils.violation_response_utils import (
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
-    is_commitment_from_supervision,
 )
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -665,58 +662,6 @@ def shorthand_for_violation_subtype(state_code: str, violation_subtype: str) -> 
         state_code,
     )
     return violation_subtype.lower()
-
-
-# TODO(#7441): Replace this function with universal calls to
-#  is_commitment_from_supervision and get_commitment_from_supervision_supervision_period
-#  once IP pre-processing is implemented for US_ND
-def pre_commitment_supervision_period_if_commitment(
-    state_code: str,
-    incarceration_period: StateIncarcerationPeriod,
-    supervision_period_index: PreProcessedSupervisionPeriodIndex,
-    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
-    commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
-) -> Tuple[bool, Optional[StateSupervisionPeriod]]:
-    """If the incarceration period was a result of a commitment from supervision, finds
-    the supervision period that caused the commitment from supervision.
-
-    Returns (False, None) if the incarceration period was not a result of a commitment
-    from supervision. Returns True and the supervision period that caused the
-    commitment if the incarceration period was a result of a commitment from
-    supervision. In some cases, it's possible for the admission to be a commitment from
-    supervision even though we cannot identify the corresponding supervision period
-    that caused the admission (e.g. the person was serving supervision out-of-state).
-    In these instances, this function will return (True, None).
-    """
-    admission_date = incarceration_period.admission_date
-    pre_commitment_supervision_period: Optional[StateSupervisionPeriod] = None
-
-    if not admission_date:
-        raise ValueError(
-            "Unexpected null admission_date on incarceration_period: "
-            f"[{incarceration_period}]"
-        )
-
-    if state_code == StateCode.US_ND.value:
-        return us_nd_pre_commitment_supervision_period_if_commitment(
-            incarceration_period,
-            supervision_period_index.supervision_periods,
-            incarceration_period_index,
-        )
-
-    admission_is_commitment = is_commitment_from_supervision(
-        incarceration_period.admission_reason
-    )
-
-    if admission_is_commitment:
-        pre_commitment_supervision_period = get_commitment_from_supervision_supervision_period(
-            incarceration_period=incarceration_period,
-            supervision_periods=supervision_period_index.supervision_periods,
-            commitment_from_supervision_delegate=commitment_from_supervision_delegate,
-            incarceration_period_index=incarceration_period_index,
-        )
-
-    return admission_is_commitment, pre_commitment_supervision_period
 
 
 def state_specific_supervision_admission_reason_override(

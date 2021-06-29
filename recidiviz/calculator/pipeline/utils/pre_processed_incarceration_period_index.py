@@ -214,18 +214,6 @@ class PreProcessedIncarcerationPeriodIndex:
             for ip in self.incarceration_periods
         )
 
-    def incarceration_periods_with_admissions_between_dates(
-        self, start_date_inclusive: date, end_date_exclusive: date
-    ) -> List[StateIncarcerationPeriod]:
-        """Returns any incarceration periods with admissions between the start_date and end_date, not inclusive of
-        the end date."""
-        return [
-            ip
-            for ip in self.incarceration_periods
-            if ip.admission_date
-            and start_date_inclusive <= ip.admission_date < end_date_exclusive
-        ]
-
     @staticmethod
     def _get_portions_of_range_not_covered_by_periods_subset(
         time_range_to_cover: DateRange,
@@ -340,7 +328,6 @@ class PreProcessedIncarcerationPeriodIndex:
     ) -> Optional[StateIncarcerationPeriod]:
         """Returns the incarceration period which occurred immediately before the given
         period in the index.
-
         Returns None if the given period is the first period in the list. Errors if
         the given period is not in the index."""
         if not incarceration_period.incarceration_period_id:

@@ -362,3 +362,402 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         )
 
         self.assertEqual(updated_periods, validated_incarceration_periods)
+
+    def test_us_id_normalize_period_if_commitment_from_supervision_probation_revocation(
+        self,
+    ) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_ID",
+            supervision_period_id=111,
+            start_date=date(2017, 1, 1),
+            termination_date=date(2017, 5, 17),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_revocation_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_ID",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 5, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+            release_date=date(2019, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        expected_period = attr.evolve(
+            incarceration_revocation_period,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+        )
+
+        validated_incarceration_periods = (
+            self._pre_processed_incarceration_periods_for_calculations(
+                incarceration_periods=[incarceration_revocation_period],
+                supervision_periods=[supervision_period],
+                collapse_transfers=True,
+            )
+        )
+
+        self.assertEqual([expected_period], validated_incarceration_periods)
+
+    def test_us_id_normalize_period_if_commitment_from_supervision_treatment(
+        self,
+    ) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_ID",
+            supervision_period_id=111,
+            start_date=date(2017, 1, 1),
+            termination_date=date(2017, 5, 17),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_revocation_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_ID",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 5, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+            release_date=date(2019, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+        )
+
+        expected_period = attr.evolve(
+            incarceration_revocation_period,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+        )
+
+        validated_incarceration_periods = (
+            self._pre_processed_incarceration_periods_for_calculations(
+                incarceration_periods=[incarceration_revocation_period],
+                supervision_periods=[supervision_period],
+                collapse_transfers=True,
+            )
+        )
+
+        self.assertEqual([expected_period], validated_incarceration_periods)
+
+    def test_us_id_sanction_admission_shock_incarceration(self) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_ID",
+            supervision_period_id=111,
+            start_date=date(2017, 1, 1),
+            termination_date=date(2017, 5, 17),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        shock_incarceration_admission = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_ID",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 5, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+            release_date=date(2019, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+        )
+
+        with self.assertRaises(ValueError):
+            # We don't expect to see SHOCK_INCARCERATION sanction admissions in US_ID
+            _ = self._pre_processed_incarceration_periods_for_calculations(
+                incarceration_periods=[shock_incarceration_admission],
+                supervision_periods=[supervision_period],
+                collapse_transfers=True,
+            )
+
+    def test_us_id_normalize_period_if_commitment_from_supervision_parole_board_revocation(
+        self,
+    ) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_ID",
+            supervision_period_id=111,
+            start_date=date(2017, 1, 1),
+            termination_date=date(2017, 5, 17),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        board_hold_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_ID",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 5, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+            release_date=date(2017, 5, 29),
+            release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+        )
+
+        incarceration_revocation_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_ID",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 5, 29),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
+            release_date=date(2018, 5, 29),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        updated_board_hold_period = attr.evolve(
+            board_hold_period,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        updated_revocation_period = attr.evolve(
+            incarceration_revocation_period,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+        )
+
+        validated_incarceration_periods = (
+            self._pre_processed_incarceration_periods_for_calculations(
+                incarceration_periods=[
+                    board_hold_period,
+                    incarceration_revocation_period,
+                ],
+                supervision_periods=[supervision_period],
+                collapse_transfers=True,
+            )
+        )
+
+        self.assertEqual(
+            [updated_board_hold_period, updated_revocation_period],
+            validated_incarceration_periods,
+        )
+
+    def test_us_id_normalize_period_if_commitment_from_supervision_parole_board_to_treatment_revocation(
+        self,
+    ) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_ID",
+            supervision_period_id=111,
+            start_date=date(2017, 1, 1),
+            termination_date=date(2017, 5, 17),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        board_hold_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_ID",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 5, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+            release_date=date(2017, 5, 29),
+            release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+        )
+
+        incarceration_revocation_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_ID",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 5, 29),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
+            release_date=date(2018, 5, 29),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+        )
+
+        updated_board_hold_period = attr.evolve(
+            board_hold_period,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        updated_sanction_period = attr.evolve(
+            incarceration_revocation_period,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+        )
+
+        validated_incarceration_periods = (
+            self._pre_processed_incarceration_periods_for_calculations(
+                incarceration_periods=[
+                    board_hold_period,
+                    incarceration_revocation_period,
+                ],
+                supervision_periods=[supervision_period],
+                collapse_transfers=True,
+            )
+        )
+
+        self.assertEqual(
+            [updated_board_hold_period, updated_sanction_period],
+            validated_incarceration_periods,
+        )
+
+    def test_us_id_normalize_period_if_commitment_from_supervision_treatment_transfer_not_revocation(
+        self,
+    ) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_ID",
+            supervision_period_id=111,
+            start_date=date(2017, 1, 1),
+            termination_date=date(2017, 5, 17),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        treatment_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_ID",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 5, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+            release_date=date(2017, 5, 29),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+        )
+
+        transfer_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_ID",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 5, 29),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            release_date=date(2018, 5, 29),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        updated_treatment_period = attr.evolve(
+            treatment_period,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+            release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
+        )
+
+        updated_transfer_period = attr.evolve(
+            transfer_incarceration_period,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
+        )
+
+        validated_incarceration_periods = (
+            self._pre_processed_incarceration_periods_for_calculations(
+                incarceration_periods=[treatment_period, transfer_incarceration_period],
+                supervision_periods=[supervision_period],
+                collapse_transfers=True,
+            )
+        )
+
+        self.assertEqual(
+            [updated_treatment_period, updated_transfer_period],
+            validated_incarceration_periods,
+        )
+
+    def test_us_id_normalize_period_if_commitment_from_supervision_no_revocation(
+        self,
+    ) -> None:
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_ID",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 5, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2019, 5, 29),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        period_copy = attr.evolve(incarceration_period)
+
+        validated_incarceration_periods = (
+            self._pre_processed_incarceration_periods_for_calculations(
+                incarceration_periods=[incarceration_period],
+                collapse_transfers=True,
+            )
+        )
+
+        self.assertEqual([period_copy], validated_incarceration_periods)
+
+    def test_us_id_normalize_period_if_commitment_from_supervision_transfer_admission(
+        self,
+    ) -> None:
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_ID",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 5, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            release_date=date(2019, 5, 29),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        period_copy = attr.evolve(
+            incarceration_period,
+        )
+
+        validated_incarceration_periods = (
+            self._pre_processed_incarceration_periods_for_calculations(
+                incarceration_periods=[incarceration_period],
+                collapse_transfers=True,
+            )
+        )
+
+        self.assertEqual([period_copy], validated_incarceration_periods)
+
+    def test_us_id_normalize_period_if_commitment_from_supervision_investigation_not_revocation(
+        self,
+    ) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_ID",
+            supervision_period_id=111,
+            start_date=date(2017, 1, 1),
+            termination_date=date(2017, 5, 17),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_ID",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 5, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+            release_date=date(2019, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        expected_period = attr.evolve(
+            incarceration_period,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+        )
+
+        validated_incarceration_periods = (
+            self._pre_processed_incarceration_periods_for_calculations(
+                incarceration_periods=[incarceration_period],
+                supervision_periods=[supervision_period],
+                collapse_transfers=True,
+            )
+        )
+
+        self.assertEqual([expected_period], validated_incarceration_periods)

@@ -16,7 +16,7 @@
 # =============================================================================
 """Utils for validating and manipulating incarceration periods for use in
 calculations."""
-
+import datetime
 from typing import List, Optional
 
 from recidiviz.calculator.pipeline.utils.period_utils import (
@@ -26,6 +26,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateIncarcerationPeriodStatus,
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.date import DateRangeDiff
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
@@ -142,3 +143,46 @@ def ip_is_nested_in_previous_period(
         ip.admission_date == ip.release_date
         and ip.release_date < previous_ip.release_date
     )
+
+
+def period_is_commitment_from_supervision_admission_from_parole_board_hold(
+    incarceration_period: StateIncarcerationPeriod,
+    preceding_incarceration_period: StateIncarcerationPeriod,
+) -> bool:
+    """Determines whether the transition from the preceding_incarceration_period to
+    the incarceration_period is a commitment from supervision admission after being
+    held for a parole board hold."""
+    if not periods_are_temporally_adjacent(
+        first_incarceration_period=preceding_incarceration_period,
+        second_incarceration_period=incarceration_period,
+    ):
+        return False
+
+    return (
+        incarceration_period.admission_reason
+        # Valid revocation admission reasons following a parole board hold
+        in (
+            StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
+            StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+        )
+        # Revocation admission from a parole board hold should happen on the same day
+        # as the release from the parole board hold
+        and preceding_incarceration_period.specialized_purpose_for_incarceration
+        == StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
+    )
+
+
+def incarceration_periods_with_admissions_between_dates(
+    incarceration_periods: List[StateIncarcerationPeriod],
+    start_date_inclusive: datetime.date,
+    end_date_exclusive: datetime.date,
+) -> List[StateIncarcerationPeriod]:
+    """Returns any incarceration periods with admissions between the start_date and
+    end_date, not inclusive of the end date."""
+    return [
+        ip
+        for ip in incarceration_periods
+        if ip.admission_date
+        and start_date_inclusive <= ip.admission_date < end_date_exclusive
+    ]

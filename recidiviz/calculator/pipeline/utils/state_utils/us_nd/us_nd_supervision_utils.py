@@ -57,6 +57,7 @@ RELEASE_REASON_RAW_TEXT_TO_SUPERVISION_TYPE = {
 }
 
 
+# TODO(#7441): Move this function to the UsNdCommitmentFromSupervisionDelegate
 def us_nd_get_pre_commitment_supervision_type(
     incarceration_period: StateIncarcerationPeriod,
     revoked_supervision_period: Optional[StateSupervisionPeriod],
@@ -65,9 +66,9 @@ def us_nd_get_pre_commitment_supervision_type(
     preceded the given incarceration period that represents a commitment from
     supervision.
 
-    As noted in us_nd_commitment_from_supervision_utils.us_nd_pre_commitment_supervision_periods_if_commitment,
-    one of the ways in which a commitment from supervision can occur in US_ND is when a
-    NEW_ADMISSION incarceration period directly follows a PROBATION supervision period
+    As noted in UsNdCommitmentFromSupervisionDelegate one of the ways in which a
+    commitment from supervision can occur in US_ND is when a NEW_ADMISSION
+    incarceration period directly follows a PROBATION supervision period
     that ended due to a REVOCATION. As such, we handle that case here by specifying a
     supervision type of PROBATION in this case.
 
