@@ -27,6 +27,10 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
     RevocationReturnSupervisionTimeBucket,
 )
 from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
+from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
+    StateSpecificCommitmentFromSupervisionDelegate,
+    get_commitment_from_supervision_supervision_period,
+)
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
     StateSpecificIncarcerationPreProcessingDelegate,
 )
@@ -37,7 +41,7 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
     PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_commitment_from_supervision_utils import (
-    us_id_filter_sps_for_commitment_from_supervision_identification,
+    UsIdCommitmentFromSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_period_pre_processing_delegate import (
     UsIdIncarcerationPreProcessingDelegate,
@@ -45,17 +49,21 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_p
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
     UsIdSupervisionCaseCompliance,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_type_identification import (
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_utils import (
     us_id_get_post_incarceration_supervision_type,
     us_id_get_pre_incarceration_supervision_type,
+    us_id_get_supervising_officer_and_location_info_from_supervision_period,
     us_id_get_supervision_period_admission_override,
     us_id_supervision_period_is_out_of_state,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo import us_mo_violation_utils
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_commitment_from_supervision_utils import (
+    UsMoCommitmentFromSupervisionDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_incarceration_period_pre_processing_delegate import (
     UsMoIncarcerationPreProcessingDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_type_identification import (
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_utils import (
     us_mo_get_month_supervision_type,
     us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day,
     us_mo_get_post_incarceration_supervision_type,
@@ -66,8 +74,8 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd import us_nd_violation_utils
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_utils import (
+    UsNdCommitmentFromSupervisionDelegate,
     us_nd_pre_commitment_supervision_period_if_commitment,
-    us_nd_violation_history_window_pre_commitment_from_supervision,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_period_pre_processing_delegate import (
     UsNdIncarcerationPreProcessingDelegate,
@@ -75,16 +83,14 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_p
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_compliance import (
     UsNdSupervisionCaseCompliance,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_type_identification import (
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_utils import (
     us_nd_get_post_incarceration_supervision_type,
     us_nd_get_pre_commitment_supervision_type,
     us_nd_infer_supervision_period_admission,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_pa import (
-    us_pa_commitment_from_supervision_utils,
-    us_pa_violation_utils,
-)
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa import us_pa_violation_utils
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from_supervision_utils import (
+    UsPaCommitmentFromSupervisionDelegate,
     us_pa_get_pre_commitment_supervision_type,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_period_pre_processing_delegate import (
@@ -93,15 +99,18 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_p
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_compliance import (
     UsPaSupervisionCaseCompliance,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_utils import (
+    us_pa_get_supervising_officer_and_location_info_from_supervision_period,
+)
 from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
-    get_commitment_from_supervision_supervision_period,
+    default_get_state_specific_supervising_officer_and_location_info_function,
 )
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
     get_month_supervision_type_default,
-    get_pre_incarceration_supervision_type_from_incarceration_period,
+    get_pre_incarceration_supervision_type_from_ip_admission_reason,
     get_pre_incarceration_supervision_type_from_supervision_period,
 )
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
@@ -110,7 +119,6 @@ from recidiviz.calculator.pipeline.utils.violation_response_utils import (
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
-    StateSpecializedPurposeForIncarceration,
     is_commitment_from_supervision,
 )
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
@@ -253,9 +261,15 @@ def get_pre_incarceration_supervision_type(
             incarceration_sentences, supervision_sentences, incarceration_period
         )
 
+    if not incarceration_period.admission_reason:
+        raise ValueError(
+            "Unexpected missing admission_reason on incarceration period: "
+            f"[{incarceration_period}]"
+        )
+
     # TODO(#2938): Decide if we want date matching/supervision period lookback logic for US_ND
-    return get_pre_incarceration_supervision_type_from_incarceration_period(
-        incarceration_period
+    return get_pre_incarceration_supervision_type_from_ip_admission_reason(
+        incarceration_period.admission_reason
     )
 
 
@@ -294,6 +308,10 @@ def get_post_incarceration_supervision_type(
     return None
 
 
+# TODO(#7441): Move these functions to the
+#  StateSpecificCommitmentFromSupervisionDelegate and the state-specific
+#  implementations once commitment from supervision admission reasons are all being
+#  set in IP pre-processing
 def get_commitment_from_supervision_supervision_type(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
@@ -498,88 +516,41 @@ def get_state_specific_incarceration_period_pre_processing_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
-# TODO(#3829): Remove this helper once we've built level 1/level 2 supervision location distinction directly into our
-#  schema (info currently packed into supervision_site for states that have both).
-def get_supervising_officer_and_location_info_from_supervision_period(
-    supervision_period: StateSupervisionPeriod,
-    supervision_period_to_agent_associations: Dict[int, Dict[str, Any]],
-) -> Tuple[Optional[str], Optional[str], Optional[str]]:
-    """Given |supervision_period| returns the relevant officer and supervision location info abiding by state-specific
-    logic.
-    """
-    supervising_officer_external_id = None
-    level_1_supervision_location = None
-    level_2_supervision_location = None
+def get_state_specific_commitment_from_supervision_delegate(
+    state_code: str,
+) -> StateSpecificCommitmentFromSupervisionDelegate:
+    """Returns the type of StateSpecificCommitmentFromSupervisionDelegate that should be used for
+    commitment from supervision admission calculations in a given |state_code|."""
+    if state_code == StateCode.US_ID.value:
+        return UsIdCommitmentFromSupervisionDelegate()
+    if state_code == StateCode.US_ND.value:
+        return UsNdCommitmentFromSupervisionDelegate()
+    if state_code == StateCode.US_MO.value:
+        return UsMoCommitmentFromSupervisionDelegate()
+    if state_code == StateCode.US_PA.value:
+        return UsPaCommitmentFromSupervisionDelegate()
 
-    if not supervision_period.supervision_period_id:
-        raise ValueError("Unexpected null supervision_period_id")
+    raise ValueError(f"Unexpected state code [{state_code}]")
 
-    # In some states we have squashed multiple pieces of supervision location into the supervision site field. We have
-    # state-specific logic to split the supervision_site info into its appropriate fields.
-    if supervision_period.state_code == "US_ID":
-        if supervision_period.supervision_site:
-            # In ID, supervision_site follows format "{supervision district}|{location/office within district}"
-            (
-                level_2_supervision_location,
-                level_1_supervision_location,
-            ) = supervision_period.supervision_site.split("|")
-    elif supervision_period.state_code == "US_PA":
-        # TODO(#6314): Remove this hack once we've re-run US_PA ingest with the fix.
-        #  Replace the contents of this PA-specific block with:
-        #  supervision_site = supervision_period.supervision_site
-        #  if supervision_site and supervision_site.count("|") == 2:
-        #     # In PA, supervision_site follows format
-        #     # "{supervision district}|{supervision suboffice}|{supervision unit org code}"
-        #     (
-        #         level_2_supervision_location,
-        #         level_1_supervision_location,
-        #         _org_code,
-        #     ) = supervision_site.split("|")
-        period_info = supervision_period_to_agent_associations.get(
-            supervision_period.supervision_period_id
-        )
-        if period_info:
-            supervision_info = period_info["agent_external_id"]
 
-            if supervision_info and supervision_info.count("#") == 1:
-                (
-                    supervision_site,
-                    supervising_officer_external_id,
-                ) = supervision_info.split("#")
+# TODO(#3829): Remove this helper once we've built level 1/level 2 supervision
+#  location distinction directly into our schema (info currently packed into
+#  supervision_site for states that have both).
+def get_state_specific_supervising_officer_and_location_info_function(
+    state_code: str,
+) -> Callable[
+    [StateSupervisionPeriod, Dict[int, Dict[str, Any]]],
+    Tuple[Optional[str], Optional[str], Optional[str]],
+]:
+    """Returns the function that should be used to extract supervising officer and
+    location information associated with a supervision_period in the given state."""
 
-                # If the supervising_officer_external_id is only whitespace, set to None
-                if not supervising_officer_external_id.strip():
-                    supervising_officer_external_id = None
+    if state_code == StateCode.US_ID.value:
+        return us_id_get_supervising_officer_and_location_info_from_supervision_period
+    if state_code == StateCode.US_PA.value:
+        return us_pa_get_supervising_officer_and_location_info_from_supervision_period
 
-                if supervision_site and supervision_site.count("|") == 2:
-                    # In PA, supervision_site follows format
-                    # "{supervision district}|{supervision suboffice}|{supervision unit org code}"
-                    (
-                        level_2_supervision_location,
-                        level_1_supervision_location,
-                        _org_code,
-                    ) = supervision_site.split("|")
-            return (
-                supervising_officer_external_id,
-                level_1_supervision_location or None,
-                level_2_supervision_location or None,
-            )
-
-    else:
-        level_1_supervision_location = supervision_period.supervision_site
-
-    agent_info = supervision_period_to_agent_associations.get(
-        supervision_period.supervision_period_id
-    )
-
-    if agent_info is not None:
-        supervising_officer_external_id = agent_info["agent_external_id"]
-
-    return (
-        supervising_officer_external_id,
-        level_1_supervision_location or None,
-        level_2_supervision_location or None,
-    )
+    return default_get_state_specific_supervising_officer_and_location_info_function
 
 
 def get_violation_type_subtype_strings_for_violation(
@@ -696,11 +667,15 @@ def shorthand_for_violation_subtype(state_code: str, violation_subtype: str) -> 
     return violation_subtype.lower()
 
 
+# TODO(#7441): Replace this function with universal calls to
+#  is_commitment_from_supervision and get_commitment_from_supervision_supervision_period
+#  once IP pre-processing is implemented for US_ND
 def pre_commitment_supervision_period_if_commitment(
     state_code: str,
     incarceration_period: StateIncarcerationPeriod,
     supervision_period_index: PreProcessedSupervisionPeriodIndex,
     incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
+    commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
 ) -> Tuple[bool, Optional[StateSupervisionPeriod]]:
     """If the incarceration period was a result of a commitment from supervision, finds
     the supervision period that caused the commitment from supervision.
@@ -729,55 +704,19 @@ def pre_commitment_supervision_period_if_commitment(
             incarceration_period_index,
         )
 
-    relevant_supervision_periods = supervision_period_index.supervision_periods
-
-    if state_code == StateCode.US_ID.value:
-        # For US_ID we need to filter the list of supervision periods to only include
-        # ones with a set supervision_period_supervision_type before looking for a
-        # pre-commitment supervision period
-        relevant_supervision_periods = (
-            us_id_filter_sps_for_commitment_from_supervision_identification(
-                supervision_period_index.supervision_periods
-            )
-        )
-
     admission_is_commitment = is_commitment_from_supervision(
         incarceration_period.admission_reason
     )
 
     if admission_is_commitment:
-        pre_commitment_supervision_period = (
-            get_commitment_from_supervision_supervision_period(
-                incarceration_period=incarceration_period,
-                supervision_periods=relevant_supervision_periods,
-                incarceration_period_index=incarceration_period_index,
-                prioritize_overlapping_periods=True,
-            )
+        pre_commitment_supervision_period = get_commitment_from_supervision_supervision_period(
+            incarceration_period=incarceration_period,
+            supervision_periods=supervision_period_index.supervision_periods,
+            commitment_from_supervision_delegate=commitment_from_supervision_delegate,
+            incarceration_period_index=incarceration_period_index,
         )
 
     return admission_is_commitment, pre_commitment_supervision_period
-
-
-def state_specific_purpose_for_incarceration_and_subtype(
-    state_code: str,
-    incarceration_period: StateIncarcerationPeriod,
-    violation_responses: List[StateSupervisionViolationResponse],
-    default_purpose_for_incarceration_and_subtype_identifier: Callable[
-        [StateIncarcerationPeriod],
-        Tuple[Optional[StateSpecializedPurposeForIncarceration], Optional[str]],
-    ],
-) -> Tuple[Optional[StateSpecializedPurposeForIncarceration], Optional[str]]:
-    """Returns the specialized_purpose_for_incarceration and, if applicable, the
-    specialized_purpose_for_incarceration_subtype of the commitment from supervision
-    admission to the given incarceration_period."""
-    if state_code.upper() == StateCode.US_PA.value:
-        return us_pa_commitment_from_supervision_utils.us_pa_purpose_for_incarceration_and_subtype(
-            incarceration_period, violation_responses
-        )
-
-    return default_purpose_for_incarceration_and_subtype_identifier(
-        incarceration_period
-    )
 
 
 def state_specific_supervision_admission_reason_override(
@@ -873,23 +812,4 @@ def state_specific_violation_responses_for_violation_history(
         )
     return default_filtered_violation_responses_for_violation_history(
         violation_responses
-    )
-
-
-def state_specific_violation_history_window_pre_commitment_from_supervision(
-    state_code: str,
-    admission_date: date,
-    sorted_and_filtered_violation_responses: List[StateSupervisionViolationResponse],
-    default_violation_history_window_function: Callable[
-        [date, List[StateSupervisionViolationResponse]], DateRange
-    ],
-) -> DateRange:
-    """Returns the window of time before a commitment from supervision in which we
-    should consider violations for the violation history prior to the admission."""
-    if state_code == StateCode.US_ND.value:
-        return us_nd_violation_history_window_pre_commitment_from_supervision(
-            admission_date
-        )
-    return default_violation_history_window_function(
-        admission_date, sorted_and_filtered_violation_responses
     )

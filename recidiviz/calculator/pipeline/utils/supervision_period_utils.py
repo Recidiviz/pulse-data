@@ -15,29 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for validating and manipulating supervision periods for use in calculations."""
-import datetime
 import itertools
-from typing import List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
-from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
-    period_is_commitment_from_supervision_admission_from_parole_board_hold,
-)
 from recidiviz.calculator.pipeline.utils.period_utils import (
-    find_last_terminated_period_before_date,
-    sort_period_by_external_id,
     sort_periods_by_set_dates_and_statuses,
-)
-from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
-    PreProcessedIncarcerationPeriodIndex,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodStatus,
+    StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StateSupervisionPeriod,
     StateSupervisionSentence,
@@ -56,11 +47,6 @@ CASE_TYPE_SEVERITY_ORDER = [
     StateSupervisionCaseType.ALCOHOL_DRUG,
     StateSupervisionCaseType.GENERAL,
 ]
-
-# The number of months for the window of time prior to a commitment to
-# from supervision in which we look for the associated terminated supervision
-# period
-SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT = 24
 
 
 def _is_active_period(period: StateSupervisionPeriod) -> bool:
@@ -90,134 +76,6 @@ def standard_date_sort_for_supervision_periods(
     )
 
     return supervision_periods
-
-
-def get_commitment_from_supervision_supervision_period(
-    incarceration_period: StateIncarcerationPeriod,
-    supervision_periods: List[StateSupervisionPeriod],
-    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
-    prioritize_overlapping_periods: bool,
-) -> Optional[StateSupervisionPeriod]:
-    """Identifies the supervision period associated with the commitment to supervision
-    admission on the given |admission_date|.
-
-    If |prioritize_overlapping_periods| is True, prioritizes supervision periods that
-    are overlapping with the |admission_date|. Else, prioritizes the period that has
-    most recently terminated within SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT months of
-    the |admission_date|.
-    """
-    if not supervision_periods:
-        return None
-
-    if not incarceration_period.admission_date:
-        raise ValueError(
-            "Unexpected missing admission_date on incarceration period: "
-            f"[{incarceration_period}]"
-        )
-
-    admission_date = incarceration_period.admission_date
-
-    preceding_incarceration_period = (
-        incarceration_period_index.preceding_incarceration_period_in_index(
-            incarceration_period
-        )
-    )
-
-    if (
-        preceding_incarceration_period
-        and period_is_commitment_from_supervision_admission_from_parole_board_hold(
-            incarceration_period=incarceration_period,
-            preceding_incarceration_period=preceding_incarceration_period,
-        )
-    ):
-        if not preceding_incarceration_period.admission_date:
-            raise ValueError(
-                "Unexpected missing admission_date on incarceration period: "
-                f"[{preceding_incarceration_period}]"
-            )
-
-        # If this person was a commitment from supervision from a parole board hold,
-        # then the date that they entered prison was the date of the preceding
-        # incarceration period.
-        admission_date = preceding_incarceration_period.admission_date
-
-    overlapping_periods = supervision_periods_overlapping_with_date(
-        admission_date, supervision_periods
-    )
-
-    # If there's more than one recently terminated period with the same
-    # termination_date, prioritize the ones with REVOCATION or RETURN_TO_INCARCERATION
-    # termination_reasons
-    def _same_date_sort_override(
-        period_a: StateSupervisionPeriod, period_b: StateSupervisionPeriod
-    ) -> int:
-        prioritized_termination_reasons = [
-            StateSupervisionPeriodTerminationReason.REVOCATION,
-            StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
-        ]
-        prioritize_a = period_a.termination_reason in prioritized_termination_reasons
-        prioritize_b = period_b.termination_reason in prioritized_termination_reasons
-
-        if prioritize_a and prioritize_b:
-            return sort_period_by_external_id(period_a, period_b)
-        return -1 if prioritize_a else 1
-
-    most_recent_terminated_period = find_last_terminated_period_before_date(
-        upper_bound_date=admission_date,
-        periods=supervision_periods,
-        maximum_months_proximity=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
-        same_date_sort_fn=_same_date_sort_override,
-    )
-
-    terminated_periods = (
-        [most_recent_terminated_period] if most_recent_terminated_period else []
-    )
-
-    if prioritize_overlapping_periods:
-        relevant_periods = (
-            overlapping_periods if overlapping_periods else terminated_periods
-        )
-    else:
-        relevant_periods = (
-            terminated_periods if terminated_periods else overlapping_periods
-        )
-
-    if not relevant_periods:
-        return None
-
-    # In the case where there are multiple relevant SPs at this point, sort and return
-    # the first one
-    return min(
-        relevant_periods,
-        key=lambda e: (
-            # Prioritize terminated periods with a termination_reason of REVOCATION
-            # (False sorts before True)
-            e.termination_reason != StateSupervisionPeriodTerminationReason.REVOCATION,
-            # Prioritize termination_date closest to the admission_date
-            abs(((e.termination_date or datetime.date.today()) - admission_date).days),
-            # Deterministically sort by external_id in the case where there
-            # are two REVOKED periods with the same termination_date
-            e.external_id,
-        ),
-    )
-
-
-def supervision_periods_overlapping_with_date(
-    intersection_date: datetime.date, supervision_periods: List[StateSupervisionPeriod]
-) -> List[StateSupervisionPeriod]:
-    """Returns the supervision periods that overlap with the intersection_date."""
-    overlapping_periods = [
-        supervision_period
-        for supervision_period in supervision_periods
-        if supervision_period.start_date is not None
-        and supervision_period.start_date < intersection_date
-        and (
-            supervision_period.termination_date is None
-            or intersection_date <= supervision_period.termination_date
-        )
-    ]
-
-    return overlapping_periods
 
 
 def get_supervision_periods_from_sentences(
@@ -269,4 +127,50 @@ def identify_most_severe_case_type(
             if case_type in case_types
         ),
         StateSupervisionCaseType.GENERAL,
+    )
+
+
+def filter_out_unknown_supervision_period_supervision_type_periods(
+    supervision_periods: List[StateSupervisionPeriod],
+) -> List[StateSupervisionPeriod]:
+    """Filters the list of supervision periods to only include ones with a set
+    supervision_period_supervision_type."""
+    # Drop any supervision periods that don't have a set
+    # supervision_period_supervision_type (this could signify a bench warrant,
+    # for example).
+    return [
+        period
+        for period in supervision_periods
+        if period.supervision_period_supervision_type is not None
+        and period.supervision_period_supervision_type
+        != StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+    ]
+
+
+def default_get_state_specific_supervising_officer_and_location_info_function(
+    supervision_period: StateSupervisionPeriod,
+    supervision_period_to_agent_associations: Dict[int, Dict[str, Any]],
+) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    """Given |supervision_period| returns the relevant officer and supervision
+    location info.
+    """
+    supervising_officer_external_id = None
+    level_1_supervision_location = supervision_period.supervision_site
+    # No generic support for level_2_supervision_location
+    level_2_supervision_location = None
+
+    if not supervision_period.supervision_period_id:
+        raise ValueError("Unexpected null supervision_period_id")
+
+    agent_info = supervision_period_to_agent_associations.get(
+        supervision_period.supervision_period_id
+    )
+
+    if agent_info is not None:
+        supervising_officer_external_id = agent_info["agent_external_id"]
+
+    return (
+        supervising_officer_external_id,
+        level_1_supervision_location or None,
+        level_2_supervision_location or None,
     )

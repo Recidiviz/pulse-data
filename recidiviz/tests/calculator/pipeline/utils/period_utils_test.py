@@ -27,13 +27,13 @@ from recidiviz.calculator.pipeline.utils import (
     incarceration_period_utils,
     supervision_period_utils,
 )
+from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
+    SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
+)
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_earliest_date_of_period_ending_in_death,
     find_last_terminated_period_before_date,
     sort_periods_by_set_dates_and_statuses,
-)
-from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
-    SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (

@@ -14,19 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""US_MO-specific implementations of functions related to supervision type identification."""
+"""US_MO-specific implementations of functions related to supervision."""
 import datetime
 import itertools
 from collections import defaultdict
-from typing import List, Set, Optional, Dict
+from typing import Dict, List, Optional, Set
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
-    _sentence_supervision_types_to_supervision_period_supervision_type,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
     UsMoSentenceMixin,
+)
+from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
+    sentence_supervision_types_to_supervision_period_supervision_type,
 )
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -34,10 +34,10 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 from recidiviz.common.date import first_day_of_month, last_day_of_month
 from recidiviz.persistence.entity.state.entities import (
-    StateSupervisionSentence,
+    StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StateSupervisionPeriod,
-    StateIncarcerationPeriod,
+    StateSupervisionSentence,
 )
 
 # The maximum number of days following a release from incarceration where we will look for a subsequent supervision
@@ -121,7 +121,7 @@ def us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound
 
     max_end_date = max(supervision_types_by_end_date.keys())
 
-    return _sentence_supervision_types_to_supervision_period_supervision_type(
+    return sentence_supervision_types_to_supervision_period_supervision_type(
         supervision_types_by_end_date[max_end_date]
     )
 

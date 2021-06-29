@@ -17,43 +17,66 @@
 """Tests functions in the commitment_from_supervision_utils file."""
 import unittest
 from datetime import date
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 
 from recidiviz.calculator.pipeline.utils import commitment_from_supervision_utils
 from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
     CommitmentDetails,
-    default_violation_history_window_pre_commitment_from_supervision,
+    StateSpecificCommitmentFromSupervisionDelegate,
+    period_is_commitment_from_supervision_admission_from_parole_board_hold,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
+    get_state_specific_supervising_officer_and_location_info_function,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_commitment_from_supervision_utils import (
+    UsMoCommitmentFromSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_utils import (
+    UsNdCommitmentFromSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from_supervision_utils import (
     PURPOSE_FOR_INCARCERATION_PVC,
+    UsPaCommitmentFromSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.violation_utils import (
+    VIOLATION_HISTORY_WINDOW_MONTHS,
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodReleaseReason as ReleaseReason,
-    StateIncarcerationPeriodStatus,
-    StateSpecializedPurposeForIncarceration,
     StateIncarcerationPeriodAdmissionReason,
 )
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodReleaseReason,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodReleaseReason as ReleaseReason,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodStatus,
+    StateSpecializedPurposeForIncarceration,
+)
+from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
-    StateSupervisionPeriodTerminationReason,
-    StateSupervisionPeriodSupervisionType,
     StateSupervisionLevel,
+    StateSupervisionPeriodStatus,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.date import DateRange
 from recidiviz.persistence.entity.state.entities import (
-    StateSupervisionPeriod,
     StateIncarcerationPeriod,
-    StateSupervisionViolationResponse,
     StateSupervisionCaseTypeEntry,
+    StateSupervisionPeriod,
+    StateSupervisionViolationResponse,
 )
-
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_commitment_from_supervision_utils import (
+    UsXxCommitmentFromSupervisionDelegate,
+)
 
 _DEFAULT_SUPERVISION_PERIOD_ID = 999
 _DEFAULT_SSVR_ID = 999
@@ -77,6 +100,9 @@ class TestGetCommitmentDetails(unittest.TestCase):
     def _test_get_commitment_from_supervision_details(
         incarceration_period: StateIncarcerationPeriod,
         supervision_period: Optional[StateSupervisionPeriod] = None,
+        commitment_from_supervision_delegate: Optional[
+            StateSpecificCommitmentFromSupervisionDelegate
+        ] = None,
         violation_responses: Optional[List[StateSupervisionViolationResponse]] = None,
         supervision_period_to_agent_associations: Optional[
             Dict[int, Dict[Any, Any]]
@@ -88,12 +114,20 @@ class TestGetCommitmentDetails(unittest.TestCase):
             supervision_period_to_agent_associations
             or DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
+        commitment_from_supervision_delegate = (
+            commitment_from_supervision_delegate
+            or UsXxCommitmentFromSupervisionDelegate()
+        )
 
         return commitment_from_supervision_utils.get_commitment_from_supervision_details(
             incarceration_period=incarceration_period,
             pre_commitment_supervision_period=supervision_period,
+            commitment_from_supervision_delegate=commitment_from_supervision_delegate,
             violation_responses=violation_responses,
             supervision_period_to_agent_associations=supervision_period_to_agent_associations,
+            state_specific_officer_and_location_info_from_supervision_period_fn=get_state_specific_supervising_officer_and_location_info_function(
+                incarceration_period.state_code
+            ),
         )
 
     def test_get_commitment_from_supervision_details(self):
@@ -160,7 +194,9 @@ class TestGetCommitmentDetails(unittest.TestCase):
         )
 
         commitment_details = self._test_get_commitment_from_supervision_details(
-            incarceration_period, supervision_period
+            incarceration_period,
+            supervision_period,
+            commitment_from_supervision_delegate=UsNdCommitmentFromSupervisionDelegate(),
         )
         self.assertEqual(
             CommitmentDetails(
@@ -206,7 +242,9 @@ class TestGetCommitmentDetails(unittest.TestCase):
         )
 
         commitment_details = self._test_get_commitment_from_supervision_details(
-            incarceration_period, supervision_period
+            incarceration_period,
+            supervision_period,
+            commitment_from_supervision_delegate=UsMoCommitmentFromSupervisionDelegate(),
         )
 
         self.assertEqual(
@@ -239,7 +277,8 @@ class TestGetCommitmentDetails(unittest.TestCase):
         )
 
         commitment_details = self._test_get_commitment_from_supervision_details(
-            incarceration_period
+            incarceration_period,
+            commitment_from_supervision_delegate=UsMoCommitmentFromSupervisionDelegate(),
         )
 
         self.assertEqual(
@@ -277,7 +316,9 @@ class TestGetCommitmentDetails(unittest.TestCase):
         )
 
         commitment_details = self._test_get_commitment_from_supervision_details(
-            incarceration_period, supervision_period
+            incarceration_period,
+            supervision_period,
+            commitment_from_supervision_delegate=UsNdCommitmentFromSupervisionDelegate(),
         )
 
         self.assertEqual(
@@ -348,6 +389,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         commitment_details = self._test_get_commitment_from_supervision_details(
             incarceration_period,
             supervision_period,
+            commitment_from_supervision_delegate=UsPaCommitmentFromSupervisionDelegate(),
             # TODO(#6314): Don't send in this temporary reference
             supervision_period_to_agent_associations=temporary_sp_agent_associations,
         )
@@ -374,8 +416,9 @@ class TestGetCommitmentDetails(unittest.TestCase):
 
 
 class TestDefaultViolationHistoryWindowPreCommitmentFromSupervision(unittest.TestCase):
-    """Tests the default_violation_history_window_pre_commitment_from_supervision
-    function."""
+    """Tests the default behavior of the
+    violation_history_window_pre_commitment_from_supervision function on the
+    StateSpecificCommitmentFromSupervisionDelegate."""
 
     def test_default_violation_history_window_pre_commitment_from_supervision(
         self,
@@ -409,15 +452,14 @@ class TestDefaultViolationHistoryWindowPreCommitmentFromSupervision(unittest.Tes
             )
         )
 
-        violation_window = (
-            default_violation_history_window_pre_commitment_from_supervision(
-                admission_date=date(2009, 12, 14),
-                sorted_and_filtered_violation_responses=[
-                    supervision_violation_response_1,
-                    supervision_violation_response_2,
-                    supervision_violation_response_3,
-                ],
-            )
+        violation_window = UsXxCommitmentFromSupervisionDelegate().violation_history_window_pre_commitment_from_supervision(
+            admission_date=date(2009, 12, 14),
+            sorted_and_filtered_violation_responses=[
+                supervision_violation_response_1,
+                supervision_violation_response_2,
+                supervision_violation_response_3,
+            ],
+            default_violation_history_window_months=VIOLATION_HISTORY_WINDOW_MONTHS,
         )
 
         expected_violation_window = DateRange(
@@ -460,15 +502,14 @@ class TestDefaultViolationHistoryWindowPreCommitmentFromSupervision(unittest.Tes
             )
         )
 
-        violation_window = (
-            default_violation_history_window_pre_commitment_from_supervision(
-                admission_date=date(2009, 12, 14),
-                sorted_and_filtered_violation_responses=[
-                    supervision_violation_response_1,
-                    supervision_violation_response_2,
-                    supervision_violation_response_3,
-                ],
-            )
+        violation_window = UsXxCommitmentFromSupervisionDelegate().violation_history_window_pre_commitment_from_supervision(
+            admission_date=date(2009, 12, 14),
+            sorted_and_filtered_violation_responses=[
+                supervision_violation_response_1,
+                supervision_violation_response_2,
+                supervision_violation_response_3,
+            ],
+            default_violation_history_window_months=VIOLATION_HISTORY_WINDOW_MONTHS,
         )
 
         expected_violation_window = DateRange(
@@ -481,11 +522,10 @@ class TestDefaultViolationHistoryWindowPreCommitmentFromSupervision(unittest.Tes
     def test_default_violation_history_window_pre_commitment_from_supervision_no_responses(
         self,
     ):
-        violation_window = (
-            default_violation_history_window_pre_commitment_from_supervision(
-                admission_date=date(2009, 12, 14),
-                sorted_and_filtered_violation_responses=[],
-            )
+        violation_window = UsXxCommitmentFromSupervisionDelegate().violation_history_window_pre_commitment_from_supervision(
+            admission_date=date(2009, 12, 14),
+            sorted_and_filtered_violation_responses=[],
+            default_violation_history_window_months=VIOLATION_HISTORY_WINDOW_MONTHS,
         )
 
         expected_violation_window = DateRange(
@@ -494,3 +534,128 @@ class TestDefaultViolationHistoryWindowPreCommitmentFromSupervision(unittest.Tes
         )
 
         self.assertEqual(expected_violation_window, violation_window)
+
+
+class TestCommitmentFromBoardHold(unittest.TestCase):
+    """Tests the
+    period_is_commitment_from_supervision_admission_from_parole_board_hold function."""
+
+    def test_period_is_commitment_from_parole_board_hold(self):
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="1",
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_XX",
+            admission_date=date(2002, 2, 5),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_date=date(2002, 9, 11),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="1",
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_XX",
+            admission_date=date(2002, 9, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            release_date=date(2002, 9, 19),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        self.assertTrue(
+            period_is_commitment_from_supervision_admission_from_parole_board_hold(
+                incarceration_period=ip_2, preceding_incarceration_period=ip_1
+            )
+        )
+
+    def test_period_is_commitment_from_parole_board_hold_not_hold(self):
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="1",
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_XX",
+            admission_date=date(2002, 2, 5),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            release_date=date(2002, 9, 11),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="1",
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_XX",
+            admission_date=date(2002, 9, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            release_date=date(2002, 9, 19),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        self.assertFalse(
+            period_is_commitment_from_supervision_admission_from_parole_board_hold(
+                incarceration_period=ip_2, preceding_incarceration_period=ip_1
+            )
+        )
+
+    def test_period_is_commitment_from_parole_board_hold_invalid_admission(self):
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="1",
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_XX",
+            admission_date=date(2002, 2, 5),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_date=date(2002, 9, 11),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="1",
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_XX",
+            admission_date=date(2002, 9, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            release_date=date(2002, 9, 19),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        self.assertFalse(
+            period_is_commitment_from_supervision_admission_from_parole_board_hold(
+                incarceration_period=ip_2, preceding_incarceration_period=ip_1
+            )
+        )
+
+    def test_period_is_commitment_from_parole_board_hold_not_adjacent(self):
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="1",
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_XX",
+            admission_date=date(2002, 2, 5),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_date=date(2002, 9, 11),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="1",
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_XX",
+            admission_date=date(2010, 3, 31),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            release_date=date(2012, 9, 19),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        self.assertFalse(
+            period_is_commitment_from_supervision_admission_from_parole_board_hold(
+                incarceration_period=ip_2, preceding_incarceration_period=ip_1
+            )
+        )

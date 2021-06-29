@@ -31,7 +31,6 @@ from recidiviz.common.date import first_day_of_month, last_day_of_month
 from recidiviz.persistence.entity.entity_utils import get_ids, is_placeholder
 from recidiviz.persistence.entity.state.entities import (
     SentenceType,
-    StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StateSupervisionPeriod,
     StateSupervisionSentence,
@@ -66,13 +65,11 @@ def get_pre_incarceration_supervision_type_from_supervision_period(
     return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
 
 
-def get_pre_incarceration_supervision_type_from_incarceration_period(
-    incarceration_period: StateIncarcerationPeriod,
+def get_pre_incarceration_supervision_type_from_ip_admission_reason(
+    admission_reason: StateIncarcerationPeriodAdmissionReason,
 ) -> Optional[StateSupervisionPeriodSupervisionType]:
-    """Derives the supervision type the person was serving prior to incarceration from the admission reason to an
-    incarceration period."""
-    admission_reason = incarceration_period.admission_reason
-
+    """Derives the supervision type the person was serving prior to being
+    admitted to incarceration with the given |admission_reason|."""
     if admission_reason in [
         StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
         StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
@@ -110,6 +107,12 @@ def get_revocation_admission_reason_from_revoked_supervision_period(
     serving prior to the incarceration admission due to a revocation."""
     if not supervision_period.supervision_period_supervision_type:
         return StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN
+
+    if (
+        supervision_period.supervision_period_supervision_type
+        == StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION
+    ):
+        return StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
 
     return SUPERVISION_TYPE_TO_REVOCATION_TYPE_MAP.get(
         supervision_period.supervision_period_supervision_type,
@@ -193,7 +196,7 @@ def get_supervision_type_from_sentences(
             _get_sentence_supervision_type_from_sentence(incarceration_sentence)
         )
     supervision_type = (
-        _sentence_supervision_types_to_supervision_period_supervision_type(
+        sentence_supervision_types_to_supervision_period_supervision_type(
             supervision_types
         )
     )
@@ -204,7 +207,7 @@ def get_supervision_type_from_sentences(
     return supervision_type
 
 
-def _sentence_supervision_types_to_supervision_period_supervision_type(
+def sentence_supervision_types_to_supervision_period_supervision_type(
     supervision_types: Set[Optional[StateSupervisionType]],
 ) -> Optional[StateSupervisionPeriodSupervisionType]:
 
