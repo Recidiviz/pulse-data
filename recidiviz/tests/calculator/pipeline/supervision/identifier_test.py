@@ -79,9 +79,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason as AdmissionReason,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodReleaseReason,
-)
-from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason as ReleaseReason,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -198,6 +195,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.assessment_types_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
+
+    def _stop_state_specific_delegate_patchers(self) -> None:
         self.pre_processing_delegate_patcher.stop()
         self.commitment_from_supervision_delegate_patcher.stop()
 
@@ -720,7 +720,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     def test_findSupervisionTimeBuckets_usNd_ignoreTemporaryCustodyPeriod(self) -> None:
         """Tests the find_supervision_time_buckets function for state code US_ND to ensure that temporary
         custody periods are ignored."""
-        self.pre_processing_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         first_supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -832,7 +832,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         """Tests the find_supervision_time_buckets function to ensure temporary custody and revocation periods are
         not collapsed.
         """
-        self.pre_processing_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         first_supervision_start = date(2017, 3, 5)
         first_supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -958,7 +958,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
     def test_findSupervisionTimeBuckets_usId(self) -> None:
         """Tests the find_supervision_time_buckets function for state code US_ID."""
-        self.pre_processing_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -1064,7 +1064,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     ) -> None:
         """Tests the find_supervision_time_buckets function for state code US_ID where the supervision periods with
         unset supervision_period_supervision_type values should be filtered out when looking for revocations."""
-        self.pre_processing_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         supervision_period_termination_date = date(2017, 5, 9)
@@ -1201,7 +1201,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         """Tests the find_supervision_time_buckets function for state code US_ID where the supervision periods with
         INTERNAL_UNKNOWN supervision_period_supervision_type values should be filtered out when looking for
         revocations."""
-        self.pre_processing_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         supervision_period_termination_date = date(2017, 5, 9)
@@ -1368,7 +1368,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     def test_findSupervisionTimeBuckets_usId_unsortedIncarcerationPeriods(self) -> None:
         """Tests the find_supervision_time_buckets function for state code US_ID where the incarceration periods
         are not sorted prior to the calculations."""
-        self.pre_processing_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -1500,7 +1500,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         after being on INVESTIGATION. Investigative periods should produce no SupervisionTimeBuckets, and the start
         of probation should be marked as the beginning of supervision.
         """
-        self.pre_processing_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_period_investigation = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -1592,7 +1592,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         """Tests the find_supervision_time_buckets function for state code US_ID where the person is admitted after
         being on INVESTIGATION supervision. These periods should produce no SupervisionTimeBuckets, and the admission
         to prison should not be counted as a revocation."""
-        self.pre_processing_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -1656,7 +1656,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         TODO(#2891): This should be updated or removed once ND has been migrated to supervision_period_supervision_type
         """
-        self.pre_processing_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -1718,7 +1718,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     ) -> None:
         """Tests the find_supervision_time_buckets function for state code US_ID where the person is revoked
         to general incarceration after being held for a board hold."""
-        self.pre_processing_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -1827,7 +1827,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     ) -> None:
         """Tests the find_supervision_time_buckets function for state code US_ID where the person is revoked
         to treatment in prison after being held for a board hold."""
-        self.pre_processing_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -1937,7 +1937,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         """Tests the find_supervision_time_buckets function for state code US_ID where the person is revoked after
         being incarcerated for parole board hold, where they were transferred multiple times while on parole
         board hold."""
-        self.pre_processing_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -2705,7 +2705,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         """Tests the find_supervision_time_buckets function for two supervision periods with an incarceration period
         that overlaps two supervision periods that were revoked, where there is state-specific logic for US_ND on how
         to determine the supervision type on the RevocationReturnSupervisionTimeBuckets."""
-        self.pre_processing_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         first_supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -2970,7 +2970,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         admission the month after the supervision period's termination_date, and the admission_reason supervision
         type does not match the supervision type on the period. This tests state-specific logic for US_ND on how
         to determine the supervision type on the RevocationReturnSupervisionTimeBuckets"""
-        self.pre_processing_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
@@ -4068,7 +4068,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     def test_find_supervision_time_buckets_us_id(self) -> None:
         """Tests the find_supervision_time_buckets function where the supervision type should be taken from the
         supervision_period_supervision_type off of the supervision_period."""
-        self.pre_processing_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
         supervision_period_termination_date = date(2018, 5, 19)
@@ -4183,8 +4183,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
     def test_find_supervision_time_buckets_us_pa(self) -> None:
         """Tests the find_supervision_time_buckets function for periods in US_PA."""
-        self.pre_processing_delegate_patcher.stop()
-        self.commitment_from_supervision_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_period_termination_date = date(2018, 5, 19)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -4299,8 +4298,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         """Tests the find_supervision_time_buckets function for periods in US_PA, where
         there is a revocation return for shock incarceration."""
         state_code = "US_PA"
-        self.pre_processing_delegate_patcher.stop()
-        self.commitment_from_supervision_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_period_termination_date = date(2018, 5, 19)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -4488,8 +4486,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         to a Parole Violator Center (PVC) following a parole board hold and a single-day revocation admission
         before being transferred to the PVC."""
         state_code = "US_PA"
-        self.pre_processing_delegate_patcher.stop()
-        self.commitment_from_supervision_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_period_termination_date = date(2018, 5, 19)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -4923,8 +4920,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         """Tests the find_supervision_time_buckets function where the supervision type needs to be inferred, the
         but the supervision period is attached to both a supervision sentence of type PROBATION and an incarceration
         sentence, so the inferred type should be DUAL."""
-        self.pre_processing_delegate_patcher.stop()
-        self.commitment_from_supervision_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_period_start_date = date(2018, 3, 5)
         supervision_period_termination_date = date(2018, 5, 19)
@@ -5062,8 +5058,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         """Tests the find_supervision_time_buckets function where the supervision type is taken from a `DUAL`
         supervision period. Asserts that the DUAL buckets are NOT expanded into separate PROBATION and PAROLE buckets.
         """
-        self.pre_processing_delegate_patcher.stop()
-        self.commitment_from_supervision_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_period_termination_date = date(2018, 5, 19)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -5149,8 +5144,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         but the supervision period is attached to both a supervision sentence of type PROBATION and an incarceration
         sentence, so the inferred type should be DUAL. Also asserts that the DUAL buckets are expanded to have PAROLE,
         PROBATION, and DUAL buckets."""
-        self.pre_processing_delegate_patcher.stop()
-        self.commitment_from_supervision_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_period_termination_date = date(2018, 5, 19)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -5311,8 +5305,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     def test_find_supervision_time_buckets_no_supervision_when_no_sentences_supervision_spans_us_mo(
         self,
     ) -> None:
-        self.pre_processing_delegate_patcher.stop()
-        self.commitment_from_supervision_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -5752,8 +5745,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         correct revocation_type, violation_count_type, supervising_officer_external_id, and
         supervising_district_external_id are set on the RevocationReturnSupervisionTimeBucket. Also tests that only
         the relevant assessment_type for the given state_code and pipeline is included in output."""
-        self.pre_processing_delegate_patcher.stop()
-        self.commitment_from_supervision_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         mock_assessment_types.return_value = [
             StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -6002,8 +5994,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     def test_supervision_time_buckets_revocation_details_us_mo_shock_spfi(
         self, mock_assessment_types: mock.Mock
     ) -> None:
-        self.pre_processing_delegate_patcher.stop()
-        self.commitment_from_supervision_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         mock_assessment_types.return_value = [
             StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -6260,8 +6251,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         revocation admission in the same month as the supervision period's termination_date. Also ensures that the
         correct revocation_type, violation_count_type, violation_subtype, supervising_officer_external_id, and
         supervising_district_external_id are set on the RevocationReturnSupervisionTimeBucket."""
-        self.pre_processing_delegate_patcher.stop()
-        self.commitment_from_supervision_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_period_agent_association = [
             {
@@ -6516,8 +6506,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         revocation admission in the same month as the supervision period's termination_date. Also ensures that the
         correct revocation_type, violation_count_type, violation_subtype, supervising_officer_external_id, and
         supervising_district_external_id are set on the RevocationReturnSupervisionTimeBucket."""
-        self.pre_processing_delegate_patcher.stop()
-        self.commitment_from_supervision_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_period_agent_association = [
             {
@@ -6741,8 +6730,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         revocation admission in the same month as the supervision period's termination_date. Also ensures that the
         correct revocation_type, violation_count_type, violation_subtype, supervising_officer_external_id, and
         supervising_district_external_id are set on the RevocationReturnSupervisionTimeBucket."""
-        self.pre_processing_delegate_patcher.stop()
-        self.commitment_from_supervision_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_period_agent_association = [
             {
@@ -7000,8 +6988,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         period overlapping with the end of the month, even if the US_MO sentence supervision spans indicate that they
         are on supervision at a given time.
         """
-        self.pre_processing_delegate_patcher.stop()
-        self.commitment_from_supervision_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         start_date = date(2019, 10, 3)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -7080,8 +7067,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     def test_supervision_time_buckets_period_eom_us_mo_supervision_span_shows_no_supervision_eom(
         self,
     ) -> None:
-        self.pre_processing_delegate_patcher.stop()
-        self.commitment_from_supervision_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         start_date = date(2019, 10, 3)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -7180,8 +7166,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     def test_supervision_period_end_of_month_us_mo_supervision_span_shows_no_supervision_all_month(
         self,
     ) -> None:
-        self.pre_processing_delegate_patcher.stop()
-        self.commitment_from_supervision_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -7272,8 +7257,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         self.assertCountEqual(expected_events, supervision_events)
 
     def test_supervision_period_us_mo_supervision_spans_do_not_overlap(self) -> None:
-        self.pre_processing_delegate_patcher.stop()
-        self.commitment_from_supervision_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -7339,8 +7323,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     def test_supervision_period_mid_month_us_mo_supervision_span_shows_supervision_eom(
         self,
     ) -> None:
-        self.pre_processing_delegate_patcher.stop()
-        self.commitment_from_supervision_delegate_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -8026,270 +8009,6 @@ class TestFindRevocationReturnBuckets(unittest.TestCase):
         )
 
         self.assertEqual([expected_revocation_bucket], revocation_buckets)
-
-    def test_revocation_return_buckets_us_nd_new_admission_after_probation_revocation(
-        self,
-    ) -> None:
-        """Tests that the find_revocation_return_buckets when run for a US_ND
-        incarceration period with a NEW_ADMISSION admission reason following a
-        supervision period with a REVOCATION termination reason and a PROBATION
-        supervision type will correctly return a RevocationReturnSupervisionTimeBucket
-        for that commitment from supervision."""
-
-        supervision_violation = StateSupervisionViolation.new_with_defaults(
-            supervision_violation_id=123455,
-            state_code="US_ND",
-            violation_date=date(2008, 12, 7),
-            supervision_violation_types=[
-                StateSupervisionViolationTypeEntry.new_with_defaults(
-                    state_code="US_ND",
-                    violation_type=StateSupervisionViolationType.FELONY,
-                )
-            ],
-        )
-
-        supervision_violation_response = (
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_ND",
-                supervision_violation_response_id=_DEFAULT_SSVR_ID,
-                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-                response_date=date(2009, 12, 7),
-                supervision_violation=supervision_violation,
-            )
-        )
-
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
-            external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
-            state_code="US_ND",
-            start_date=date(2008, 3, 5),
-            termination_date=date(2009, 12, 19),
-            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PROBATION,
-            supervision_site="OFFICE_1",
-        )
-
-        admission_date = date(2009, 12, 31)
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=111,
-            external_id="ip1",
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            state_code="US_ND",
-            admission_date=admission_date,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-        )
-
-        violation_responses = [
-            supervision_violation_response,
-        ]
-
-        revocation_buckets = self._find_revocation_return_buckets(
-            supervision_periods=[supervision_period],
-            incarceration_periods=[incarceration_period],
-            violation_responses=violation_responses,
-        )
-
-        expected_revocation_bucket = RevocationReturnSupervisionTimeBucket(
-            state_code=supervision_period.state_code,
-            year=2009,
-            month=12,
-            event_date=admission_date,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            case_type=StateSupervisionCaseType.GENERAL,
-            revocation_type=StateSpecializedPurposeForIncarceration.GENERAL,
-            most_severe_violation_type=StateSupervisionViolationType.FELONY,
-            most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
-            response_count=1,
-            violation_history_description="1felony",
-            violation_type_frequency_counter=[["FELONY"]],
-            supervising_officer_external_id="XXX",
-            supervising_district_external_id="OFFICE_1",
-            judicial_district_code="XXX",
-            level_1_supervision_location_external_id="OFFICE_1",
-            is_on_supervision_last_day_of_month=False,
-        )
-
-        self.assertEqual([expected_revocation_bucket], revocation_buckets)
-
-    def test_revocation_return_buckets_us_nd_new_admission_after_temporary_hold_and_probation_revocation(
-        self,
-    ) -> None:
-        """Tests that the find_revocation_return_buckets when run for a US_ND
-        incarceration period with a NEW_ADMISSION admission reason following a
-        TEMPORARY_CUSTODY incarceration period, which itself follows a supervision
-        period with a REVOCATION termination reason and a PROBATION supervision type
-        will correctly return a RevocationReturnSupervisionTimeBucket corresponding to
-        that NEW_ADMISSION commitment from supervision, and not the intermediate
-        TEMPORARY_CUSTODY period."""
-        supervision_violation = StateSupervisionViolation.new_with_defaults(
-            supervision_violation_id=123455,
-            state_code="US_ND",
-            violation_date=date(2009, 11, 13),
-            supervision_violation_types=[
-                StateSupervisionViolationTypeEntry.new_with_defaults(
-                    state_code="US_ND",
-                    violation_type=StateSupervisionViolationType.FELONY,
-                )
-            ],
-        )
-
-        supervision_violation_response = (
-            StateSupervisionViolationResponse.new_with_defaults(
-                supervision_violation_response_id=_DEFAULT_SSVR_ID,
-                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-                state_code="US_ND",
-                response_date=date(2009, 11, 13),
-                supervision_violation=supervision_violation,
-            )
-        )
-
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
-            external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
-            state_code="US_ND",
-            start_date=date(2008, 3, 5),
-            termination_date=date(2009, 12, 19),
-            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PROBATION,
-            supervision_site="OFFICE_1",
-        )
-
-        temporary_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=111,
-            external_id="ip1",
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
-            state_code="US_ND",
-            admission_date=date(2009, 12, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-            release_date=date(2009, 12, 31),
-            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-        )
-
-        admission_date = date(2010, 1, 1)
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=111,
-            external_id="ip1",
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            state_code="US_ND",
-            admission_date=admission_date,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-        )
-
-        violation_responses = [supervision_violation_response]
-
-        revocation_buckets = self._find_revocation_return_buckets(
-            supervision_periods=[supervision_period],
-            incarceration_periods=[
-                temporary_incarceration_period,
-                incarceration_period,
-            ],
-            violation_responses=violation_responses,
-        )
-
-        expected_revocation_bucket = RevocationReturnSupervisionTimeBucket(
-            state_code=supervision_period.state_code,
-            year=2010,
-            month=1,
-            event_date=admission_date,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            case_type=StateSupervisionCaseType.GENERAL,
-            revocation_type=StateSpecializedPurposeForIncarceration.GENERAL,
-            most_severe_violation_type=StateSupervisionViolationType.FELONY,
-            most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
-            response_count=1,
-            violation_history_description="1felony",
-            violation_type_frequency_counter=[["FELONY"]],
-            supervising_officer_external_id="XXX",
-            supervising_district_external_id="OFFICE_1",
-            judicial_district_code="XXX",
-            level_1_supervision_location_external_id="OFFICE_1",
-            is_on_supervision_last_day_of_month=False,
-        )
-
-        self.assertEqual([expected_revocation_bucket], revocation_buckets)
-
-    def test_revocation_return_buckets_us_nd_new_admission_after_probation_non_revocation(
-        self,
-    ) -> None:
-        """Tests that the find_revocation_return_buckets when run for a US_ND
-        incarceration period with a NEW_ADMISSION admission reason following a
-        supervision period with a NON-REVOCATION termination reason and a PROBATION
-        supervision type will correctly return no RevocationReturnSupervisionTimeBuckets
-        in accordance with US_ND logic."""
-
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
-            external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
-            state_code="US_ND",
-            start_date=date(2008, 3, 5),
-            termination_date=date(2009, 12, 19),
-            termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
-            supervision_type=StateSupervisionType.PAROLE,
-            supervision_site="OFFICE_1",
-        )
-
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=111,
-            external_id="ip1",
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            state_code="US_ND",
-            admission_date=date(2009, 12, 31),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-        )
-
-        revocation_buckets = self._find_revocation_return_buckets(
-            supervision_periods=[supervision_period],
-            incarceration_periods=[incarceration_period],
-            violation_responses=[],
-        )
-
-        self.assertEqual([], revocation_buckets)
-
-    def test_revocation_return_buckets_us_nd_new_admission_after_parole_revocation(
-        self,
-    ) -> None:
-        """Tests that the find_revocation_return_buckets when run for a US_ND
-        incarceration period with a NEW_ADMISSION admission reason following a
-        supervision period with a REVOCATION termination reason and a PAROLE
-        supervision type will correctly return no RevocationReturnSupervisionTimeBuckets
-        in accordance with US_ND logic."""
-
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
-            external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
-            state_code="US_ND",
-            start_date=date(2008, 3, 5),
-            termination_date=date(2009, 12, 19),
-            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PAROLE,
-            supervision_site="OFFICE_1",
-        )
-
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=111,
-            external_id="ip1",
-            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            state_code="US_ND",
-            admission_date=date(2009, 12, 31),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-        )
-
-        revocation_buckets = self._find_revocation_return_buckets(
-            supervision_periods=[supervision_period],
-            incarceration_periods=[incarceration_period],
-            violation_responses=[],
-        )
-
-        self.assertEqual([], revocation_buckets)
 
 
 class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
