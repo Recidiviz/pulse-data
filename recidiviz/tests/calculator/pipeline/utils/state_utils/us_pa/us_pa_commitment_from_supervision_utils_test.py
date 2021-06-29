@@ -983,6 +983,8 @@ class TestMostSevereRevocationTypeSubtype(unittest.TestCase):
         self.assertIsNone(purpose_for_incarceration_subtype)
 
 
+# TODO(#8028): Update these test when we improve pre-commitment supervision type
+#  identification for US_PA
 class TestUsPaPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
     """Tests the us_pa_get_pre_commitment_supervision_type function."""
 
@@ -1047,6 +1049,7 @@ class TestUsPaPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
     def test_us_pa_get_pre_commitment_supervision_type_sanction_admission_dual(
         self,
     ) -> None:
+        """Right now, all sanction admissions are assumed to be from parole."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
@@ -1075,7 +1078,7 @@ class TestUsPaPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
         )
 
         self.assertEqual(
-            StateSupervisionPeriodSupervisionType.DUAL,
+            StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_type_pre_commitment,
         )
 

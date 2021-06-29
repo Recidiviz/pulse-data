@@ -4535,6 +4535,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=pvc_revocation_admission_date,
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason_raw_text="CCIS-TRUE-INRS",
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
             specialized_purpose_for_incarceration_raw_text=PURPOSE_FOR_INCARCERATION_PVC,
             release_date=date(2019, 3, 3),

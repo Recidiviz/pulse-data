@@ -46,6 +46,13 @@ class UsXxIncarcerationPreProcessingDelegate(
     ) -> Set[StateIncarcerationPeriodAdmissionReason]:
         return self._default_admission_reasons_to_filter()
 
+    def normalize_period_if_commitment_from_supervision(
+        self, incarceration_period: StateIncarcerationPeriod
+    ) -> StateIncarcerationPeriod:
+        return self._default_normalize_period_if_commitment_from_supervision(
+            incarceration_period
+        )
+
     def period_is_parole_board_hold(
         self, incarceration_period: StateIncarcerationPeriod
     ) -> bool:
