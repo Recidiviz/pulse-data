@@ -37,6 +37,7 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
+    SANCTION_ADMISSION_PURPOSE_FOR_INCARCERATION_VALUES,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateIncarcerationPeriodStatus,
@@ -84,11 +85,13 @@ class StateSpecificIncarcerationPreProcessingDelegate:
         """Default behavior of admission_reasons_to_filter function."""
         return set()
 
-    # TODO(#7441): Bring in PreProcessedSupervisionPeriodIndex
     # TODO(#7443): Bring in StateSupervisionViolationResponses
     @abc.abstractmethod
     def normalize_period_if_commitment_from_supervision(
-        self, incarceration_period: StateIncarcerationPeriod
+        self,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
+        supervision_period_index: Optional[PreProcessedSupervisionPeriodIndex],
     ) -> StateIncarcerationPeriod:
         """State-specific implementations of this class should return a new
         StateIncarcerationPeriod with updated attributes if this period represents a
@@ -285,10 +288,9 @@ class IncarcerationPreProcessingManager:
 
                 # Override values on the incarceration periods that are
                 # commitment from supervision admissions
-                mid_processing_periods = (
-                    self._normalize_commitment_from_supervision_admission_periods(
-                        mid_processing_periods
-                    )
+                mid_processing_periods = self._normalize_commitment_from_supervision_admission_periods(
+                    incarceration_periods=mid_processing_periods,
+                    supervision_period_index=self._pre_processed_supervision_period_index,
                 )
 
                 # Drop certain periods entirely from the calculations
@@ -779,25 +781,30 @@ class IncarcerationPreProcessingManager:
     def _normalize_commitment_from_supervision_admission_periods(
         self,
         incarceration_periods: List[StateIncarcerationPeriod],
+        supervision_period_index: Optional[PreProcessedSupervisionPeriodIndex],
     ) -> List[StateIncarcerationPeriod]:
-        """Returns the |incarceration_periods| with updated attributes for each period
-        that represents a commitment from supervision admission and requires updated
-        attribute values to match expected values."""
+        """Updates attributes on incarceration periods that represent a commitment
+        from supervision admission and require updated attribute values.
+
+        Applies both state-specific and universal overrides for commitment from
+        supervision admissions so that the period match expected values.
+        """
         updated_periods: List[StateIncarcerationPeriod] = []
-        for ip in incarceration_periods:
+        for index, _ in enumerate(incarceration_periods):
             # First, apply any state-specific overrides for commitment from
             # supervision admissions
             updated_ip = self.delegate.normalize_period_if_commitment_from_supervision(
-                ip
+                incarceration_period_list_index=index,
+                sorted_incarceration_periods=incarceration_periods,
+                supervision_period_index=supervision_period_index,
             )
 
             # Then, universally apply overrides to ensure commitment from supervision
             # admissions match expected values
-            if is_commitment_from_supervision(
-                updated_ip.admission_reason
-            ) and updated_ip.specialized_purpose_for_incarceration in (
-                StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
-                StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+            if (
+                is_commitment_from_supervision(updated_ip.admission_reason)
+                and updated_ip.specialized_purpose_for_incarceration
+                in SANCTION_ADMISSION_PURPOSE_FOR_INCARCERATION_VALUES
             ):
                 # Any commitment from supervision for SHOCK_INCARCERATION or
                 # TREATMENT_IN_PRISON should actually be classified as a

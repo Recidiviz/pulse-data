@@ -94,12 +94,19 @@ class TestStateSpecificIncarcerationPreProcessingDelegate(unittest.TestCase):
                 )
 
                 if self.methods_to_implement != implemented_methods:
-                    self.fail(
-                        "StateSpecificIncarcerationPreProcessingDelegate for state "
-                        f"{state_code.value} missing implementation of required "
-                        "methods: "
-                        f"[{self.methods_to_implement.difference(implemented_methods)}]"
-                    )
+                    if self.methods_to_implement.difference(implemented_methods):
+                        self.fail(
+                            "StateSpecificIncarcerationPreProcessingDelegate for state "
+                            f"{state_code.value} missing implementation of required "
+                            "methods: "
+                            f"[{self.methods_to_implement.difference(implemented_methods)}]"
+                        )
+                    else:
+                        self.fail(
+                            "StateSpecificIncarcerationPreProcessingDelegate for state "
+                            f"{state_code.value} has unexpected extra methods: "
+                            f"[{implemented_methods.difference(self.methods_to_implement)}]"
+                        )
             except ValueError:
                 # Only expected error is if a delegate is not implemented for this state
                 pass

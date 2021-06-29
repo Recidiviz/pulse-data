@@ -358,6 +358,14 @@ def release_reason_overrides_released_from_temporary_custody(
     )
 
 
+# Commitment from supervision admissions for the following purposes of incarceration
+# should always be classified as SANCTION_ADMISSION
+SANCTION_ADMISSION_PURPOSE_FOR_INCARCERATION_VALUES = [
+    StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+    StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+]
+
+
 _STATE_INCARCERATION_FACILITY_SECURITY_LEVEL_MAP = {
     "MAXIMUM": StateIncarcerationFacilitySecurityLevel.MAXIMUM,
     "MAX": StateIncarcerationFacilitySecurityLevel.MAXIMUM,
