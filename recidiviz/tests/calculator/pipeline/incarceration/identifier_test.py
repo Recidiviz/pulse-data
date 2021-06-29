@@ -456,7 +456,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 ),
             ]
         )
-        self.maxDiff = None
         self.assertCountEqual(expected_events, incarceration_events)
 
     def test_find_incarceration_events_multiple_sentences(self):
@@ -1715,7 +1714,8 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         )
 
         expected_shock_stay_events = expected_incarceration_stay_events(
-            incarceration_period=shock_incarceration_period
+            incarceration_period=shock_incarceration_period,
+            original_admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
         )
 
         expected_admission_events = [
@@ -1732,7 +1732,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 event_date=shock_incarceration_period.admission_date,
                 facility=shock_incarceration_period.facility,
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                admission_reason=shock_incarceration_period.admission_reason,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
                 admission_reason_raw_text=shock_incarceration_period.admission_reason_raw_text,
                 supervision_type=supervision_period.supervision_period_supervision_type,
                 supervision_level=supervision_period.supervision_level,
@@ -1771,7 +1771,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 release_reason=shock_incarceration_period.release_reason,
                 release_reason_raw_text=shock_incarceration_period.release_reason_raw_text,
-                admission_reason=shock_incarceration_period.admission_reason,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
                 total_days_incarcerated=(
                     shock_incarceration_period.release_date
                     - shock_incarceration_period.admission_date
