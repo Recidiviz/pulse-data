@@ -64,6 +64,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateIncarcerationPeriodStatus,
 )
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodStatus,
+)
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.calculator.calculator_test_utils import (
@@ -201,6 +204,17 @@ class TestRecidivismPipeline(unittest.TestCase):
             normalized_database_base_dict(subsequent_reincarceration),
         ]
 
+        supervision_period = schema.StateSupervisionPeriod(
+            supervision_period_id=111,
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_XX",
+            start_date=date(2004, 1, 20),
+            termination_date=date(2006, 11, 2),
+            person_id=fake_person_id,
+        )
+
+        supervision_periods_data = [normalized_database_base_dict(supervision_period)]
+
         fake_person_id_to_county_query_result = [
             {
                 "state_code": "US_XX",
@@ -223,6 +237,7 @@ class TestRecidivismPipeline(unittest.TestCase):
             schema.StatePersonRace.__tablename__: races_data,
             schema.StatePersonEthnicity.__tablename__: ethnicity_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
+            schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
             schema.StateAssessment.__tablename__: [],
             schema.StatePersonExternalId.__tablename__: [],
             schema.StatePersonAlias.__tablename__: [],
@@ -437,6 +452,7 @@ class TestRecidivismPipeline(unittest.TestCase):
         data_dict = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
+            schema.StateSupervisionPeriod.__tablename__: [],
             schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
             schema.StateSupervisionViolation.__tablename__: supervision_violation_data,
             schema.StateAssessment.__tablename__: [],
@@ -567,6 +583,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         person_incarceration_periods = {
             "person": [fake_person],
+            "supervision_periods": [],
             "incarceration_periods": [
                 initial_incarceration,
                 first_reincarceration,
@@ -659,6 +676,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         person_incarceration_periods = {
             "person": [fake_person],
+            "supervision_periods": [],
             "incarceration_periods": [only_incarceration],
             "persons_to_recent_county_of_residence": [
                 fake_person_id_to_county_query_result
@@ -722,6 +740,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         person_incarceration_periods = {
             "person": [fake_person],
+            "supervision_periods": [],
             "incarceration_periods": [],
             "persons_to_recent_county_of_residence": [
                 fake_person_id_to_county_query_result
@@ -797,6 +816,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         person_incarceration_periods = {
             "person": [fake_person],
+            "supervision_periods": [],
             "incarceration_periods": [
                 initial_incarceration,
                 first_reincarceration,
@@ -909,6 +929,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         person_incarceration_periods = {
             "person": [fake_person],
+            "supervision_periods": [],
             "incarceration_periods": [
                 subsequent_reincarceration,
                 initial_incarceration,

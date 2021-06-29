@@ -49,11 +49,15 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.entity_utils import get_single_state_code
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateSupervisionPeriod,
+)
 
 
 def find_release_events_by_cohort_year(
     incarceration_periods: List[StateIncarcerationPeriod],
+    supervision_periods: List[StateSupervisionPeriod],
     persons_to_recent_county_of_residence: List[Dict[str, Any]],
 ) -> Dict[int, List[ReleaseEvent]]:
     """Finds instances of release and determines if they resulted in recidivism.
@@ -74,6 +78,7 @@ def find_release_events_by_cohort_year(
 
     Args:
         incarceration_periods: list of StateIncarcerationPeriods for a person
+        supervision_periods: list of StateSupervisionPeriods for a person
         persons_to_recent_county_of_residence: Reference table rows containing the county that the incarcerated person
             lives in (prior to incarceration).
 
@@ -94,10 +99,7 @@ def find_release_events_by_cohort_year(
     (ip_pre_processing_manager, _,) = pre_processing_managers_for_calculations(
         state_code=state_code,
         incarceration_periods=incarceration_periods,
-        # TODO(#7797): Upgrade this pipeline to bring in StateSupervisionPeriods so that
-        #  we can support states that require StateSupervisionPeriods for IP
-        #  pre-processing
-        supervision_periods=None,
+        supervision_periods=supervision_periods,
     )
 
     if not ip_pre_processing_manager:
