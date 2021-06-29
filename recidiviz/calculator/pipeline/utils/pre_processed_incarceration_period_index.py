@@ -320,6 +320,8 @@ class PreProcessedIncarcerationPeriodIndex:
 
         return original_admission_reasons_by_period_id
 
+    # A dictionary mapping incarceration_period_id values to the location of the
+    # period in the index
     ip_id_to_index: Dict[int, int] = attr.ib()
 
     @ip_id_to_index.default
@@ -343,7 +345,7 @@ class PreProcessedIncarcerationPeriodIndex:
         the given period is not in the index."""
         if not incarceration_period.incarceration_period_id:
             raise ValueError(
-                "Unexpected incarceration period missing an " "incarceration_period_id."
+                "Unexpected incarceration period missing an incarceration_period_id."
             )
         ip_list_index = self.ip_id_to_index[
             incarceration_period.incarceration_period_id

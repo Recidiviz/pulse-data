@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for us_mo_supervision_type_identification.py"""
+"""Tests for us_mo_supervision_utils.py"""
 import datetime
 import unittest
 from typing import Optional
@@ -24,7 +24,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classi
     UsMoIncarcerationSentence,
     UsMoSupervisionSentence,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_type_identification import (
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_utils import (
     us_mo_get_month_supervision_type,
     us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day,
     us_mo_get_post_incarceration_supervision_type,

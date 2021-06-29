@@ -53,7 +53,7 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_state_specific_case_compliance_manager,
-    get_supervising_officer_and_location_info_from_supervision_period,
+    get_state_specific_supervising_officer_and_location_info_function,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
     SupervisionTypeSpan,
@@ -125,6 +125,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponseDecisionEntry,
     StateSupervisionViolationTypeEntry,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_commitment_from_supervision_utils import (
+    UsXxCommitmentFromSupervisionDelegate,
+)
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
@@ -182,9 +185,21 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             UsXxIncarcerationPreProcessingDelegate()
         )
 
+        self.commitment_from_supervision_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.supervision.identifier"
+            ".get_state_specific_commitment_from_supervision_delegate"
+        )
+        self.mock_commitment_from_supervision_delegate = (
+            self.commitment_from_supervision_delegate_patcher.start()
+        )
+        self.mock_commitment_from_supervision_delegate.return_value = (
+            UsXxCommitmentFromSupervisionDelegate()
+        )
+
     def tearDown(self) -> None:
         self.assessment_types_patcher.stop()
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
     def test_find_supervision_time_buckets(self) -> None:
         """Tests the find_supervision_time_buckets function for a single
@@ -4169,6 +4184,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     def test_find_supervision_time_buckets_us_pa(self) -> None:
         """Tests the find_supervision_time_buckets function for periods in US_PA."""
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
         supervision_period_termination_date = date(2018, 5, 19)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -4284,6 +4300,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         there is a revocation return for shock incarceration."""
         state_code = "US_PA"
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
         supervision_period_termination_date = date(2018, 5, 19)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -4472,6 +4489,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         before being transferred to the PVC."""
         state_code = "US_PA"
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
         supervision_period_termination_date = date(2018, 5, 19)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -4906,6 +4924,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         but the supervision period is attached to both a supervision sentence of type PROBATION and an incarceration
         sentence, so the inferred type should be DUAL."""
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
         supervision_period_start_date = date(2018, 3, 5)
         supervision_period_termination_date = date(2018, 5, 19)
@@ -5044,6 +5063,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision period. Asserts that the DUAL buckets are NOT expanded into separate PROBATION and PAROLE buckets.
         """
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
         supervision_period_termination_date = date(2018, 5, 19)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -5130,6 +5150,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         sentence, so the inferred type should be DUAL. Also asserts that the DUAL buckets are expanded to have PAROLE,
         PROBATION, and DUAL buckets."""
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
         supervision_period_termination_date = date(2018, 5, 19)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -5291,6 +5312,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         self,
     ) -> None:
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -5731,6 +5753,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervising_district_external_id are set on the RevocationReturnSupervisionTimeBucket. Also tests that only
         the relevant assessment_type for the given state_code and pipeline is included in output."""
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
         mock_assessment_types.return_value = [
             StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -5980,6 +6003,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         self, mock_assessment_types: mock.Mock
     ) -> None:
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
         mock_assessment_types.return_value = [
             StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -6237,6 +6261,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         correct revocation_type, violation_count_type, violation_subtype, supervising_officer_external_id, and
         supervising_district_external_id are set on the RevocationReturnSupervisionTimeBucket."""
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
         supervision_period_agent_association = [
             {
@@ -6492,6 +6517,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         correct revocation_type, violation_count_type, violation_subtype, supervising_officer_external_id, and
         supervising_district_external_id are set on the RevocationReturnSupervisionTimeBucket."""
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
         supervision_period_agent_association = [
             {
@@ -6716,6 +6742,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         correct revocation_type, violation_count_type, violation_subtype, supervising_officer_external_id, and
         supervising_district_external_id are set on the RevocationReturnSupervisionTimeBucket."""
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
         supervision_period_agent_association = [
             {
@@ -6974,6 +7001,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         are on supervision at a given time.
         """
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
         start_date = date(2019, 10, 3)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -7053,6 +7081,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         self,
     ) -> None:
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
         start_date = date(2019, 10, 3)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -7152,6 +7181,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         self,
     ) -> None:
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -7243,6 +7273,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
     def test_supervision_period_us_mo_supervision_spans_do_not_overlap(self) -> None:
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -7309,6 +7340,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         self,
     ) -> None:
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -7492,6 +7524,21 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
 class TestFindRevocationReturnBuckets(unittest.TestCase):
     """Tests the find_revocation_return_buckets."""
+
+    def setUp(self) -> None:
+        self.commitment_from_supervision_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.supervision.identifier"
+            ".get_state_specific_commitment_from_supervision_delegate"
+        )
+        self.mock_commitment_from_supervision_delegate = (
+            self.commitment_from_supervision_delegate_patcher.start()
+        )
+        self.mock_commitment_from_supervision_delegate.return_value = (
+            UsXxCommitmentFromSupervisionDelegate()
+        )
+
+    def tearDown(self) -> None:
+        self.commitment_from_supervision_delegate_patcher.stop()
 
     @staticmethod
     def _find_revocation_return_buckets(
@@ -12570,8 +12617,10 @@ def create_start_bucket_from_period(
         _supervising_officer_external_id,
         level_1_supervision_location_external_id,
         level_2_supervision_location_external_id,
-    ) = get_supervising_officer_and_location_info_from_supervision_period(
-        period, supervision_period_to_agent_associations={}
+    ) = get_state_specific_supervising_officer_and_location_info_function(
+        state_code=period.state_code
+    )(
+        period, {}
     )
 
     deprecated_supervising_district_external_id = (
@@ -12610,8 +12659,10 @@ def create_termination_bucket_from_period(
         _supervising_officer_external_id,
         level_1_supervision_location_external_id,
         level_2_supervision_location_external_id,
-    ) = get_supervising_officer_and_location_info_from_supervision_period(
-        period, supervision_period_to_agent_associations={}
+    ) = get_state_specific_supervising_officer_and_location_info_function(
+        state_code=period.state_code
+    )(
+        period, {}
     )
 
     deprecated_supervising_district_external_id = (

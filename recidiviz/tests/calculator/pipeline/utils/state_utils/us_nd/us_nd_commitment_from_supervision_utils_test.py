@@ -19,13 +19,15 @@ import unittest
 from datetime import date
 from typing import List, Optional
 
+from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
+    get_commitment_from_supervision_supervision_period,
+)
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_utils import (
-    _us_nd_pre_commitment_supervision_period,
+    UsNdCommitmentFromSupervisionDelegate,
     us_nd_pre_commitment_supervision_period_if_commitment,
-    us_nd_violation_history_window_pre_commitment_from_supervision,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -411,16 +413,16 @@ class TestPreCommitmentSupervisionPeriodsIfCommitment(unittest.TestCase):
 
 
 class TestViolationHistoryWindowPreCommitment(unittest.TestCase):
-    """Tests the us_nd_violation_history_window_pre_commitment_from_supervision
-    function."""
+    """Tests the violation_history_window_pre_commitment_from_supervision
+    function on the UsNdCommitmentFromSupervisionDelegate."""
 
     def test_us_nd_violation_history_window_pre_commitment_from_supervision(
         self,
     ) -> None:
-        violation_window = (
-            us_nd_violation_history_window_pre_commitment_from_supervision(
-                admission_date=date(2000, 1, 1),
-            )
+        violation_window = UsNdCommitmentFromSupervisionDelegate().violation_history_window_pre_commitment_from_supervision(
+            admission_date=date(2000, 1, 1),
+            sorted_and_filtered_violation_responses=[],
+            default_violation_history_window_months=0,
         )
 
         expected_violation_window = DateRange(
@@ -434,7 +436,8 @@ class TestViolationHistoryWindowPreCommitment(unittest.TestCase):
 
 
 class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
-    """Tests the _us_nd_pre_commitment_supervision_period function."""
+    """Tests the get_commitment_from_supervision_supervision_period function when
+    the UsNdCommitmentFromSupervisionDelegate is provided."""
 
     @staticmethod
     def _test_us_nd_pre_commitment_supervision_period(
@@ -452,12 +455,13 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
 
         incarceration_periods = [ip]
 
-        return _us_nd_pre_commitment_supervision_period(
+        return get_commitment_from_supervision_supervision_period(
             incarceration_period=ip,
+            supervision_periods=supervision_periods,
+            commitment_from_supervision_delegate=UsNdCommitmentFromSupervisionDelegate(),
             incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
                 incarceration_periods
             ),
-            supervision_periods=supervision_periods,
         )
 
     def test_us_nd_pre_commitment_supervision_period_parole_revocation(self) -> None:

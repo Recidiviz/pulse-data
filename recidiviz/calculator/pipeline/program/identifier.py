@@ -34,7 +34,7 @@ from recidiviz.calculator.pipeline.utils.execution_utils import (
     list_of_dicts_to_dict_with_keys,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    get_supervising_officer_and_location_info_from_supervision_period,
+    get_state_specific_supervising_officer_and_location_info_function,
 )
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
@@ -300,7 +300,9 @@ def referrals_for_supervision_periods(
                 supervising_officer_external_id,
                 level_1_supervision_location_external_id,
                 level_2_supervision_location_external_id,
-            ) = get_supervising_officer_and_location_info_from_supervision_period(
+            ) = get_state_specific_supervising_officer_and_location_info_function(
+                state_code=supervision_period.state_code
+            )(
                 supervision_period, supervision_period_to_agent_associations
             )
 

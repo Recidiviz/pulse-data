@@ -18,7 +18,12 @@
 
 import unittest
 from datetime import date
+from typing import List
 
+from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
+    CommitmentDetails,
+    get_commitment_from_supervision_details,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa import (
     us_pa_commitment_from_supervision_utils,
 )
@@ -29,6 +34,10 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from
     SHOCK_INCARCERATION_12_MONTHS,
     SHOCK_INCARCERATION_PVC,
     SHOCK_INCARCERATION_UNDER_6_MONTHS,
+    UsPaCommitmentFromSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_utils import (
+    us_pa_get_supervising_officer_and_location_info_from_supervision_period,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -60,8 +69,24 @@ STATE_CODE = "US_PA"
 # pylint: disable=protected-access
 
 
-class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
-    """Tests the us_pa_purpose_for_incarceration_and_subtype function."""
+class TestCommitmentFromSupervisionPurposeForIncarcerationAndSubtype(unittest.TestCase):
+    """Tests the purpose_for_incarceration and purpose_for_incarceration_subtype
+    logic in the get_commitment_from_supervision_details function when
+    the UsPaCommitmentFromSupervisionDelegate is provided."""
+
+    @staticmethod
+    def _test_us_pa_commitment_purpose_and_subtype(
+        incarceration_period: StateIncarcerationPeriod,
+        violation_responses: List[StateSupervisionViolationResponse],
+    ) -> CommitmentDetails:
+        return get_commitment_from_supervision_details(
+            incarceration_period=incarceration_period,
+            pre_commitment_supervision_period=None,
+            commitment_from_supervision_delegate=UsPaCommitmentFromSupervisionDelegate(),
+            violation_responses=violation_responses,
+            supervision_period_to_agent_associations=None,
+            state_specific_officer_and_location_info_from_supervision_period_fn=us_pa_get_supervising_officer_and_location_info_from_supervision_period,
+        )
 
     def test_purpose_for_incarceration_and_subtype_shock_incarceration_RESCR(
         self,
@@ -99,20 +124,17 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
-        (
-            purpose_for_incarceration,
-            purpose_for_incarceration_subtype,
-        ) = us_pa_commitment_from_supervision_utils.us_pa_purpose_for_incarceration_and_subtype(
+        commitment_details = self._test_us_pa_commitment_purpose_and_subtype(
             incarceration_period, [parole_board_permanent_decision]
         )
 
         self.assertEqual(
             StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
-            purpose_for_incarceration,
+            commitment_details.purpose_for_incarceration,
         )
         self.assertEqual(
             SHOCK_INCARCERATION_UNDER_6_MONTHS,
-            purpose_for_incarceration_subtype,
+            commitment_details.purpose_for_incarceration_subtype,
         )
 
     def test_purpose_for_incarceration_and_subtype_shock_incarceration_RESCR6(
@@ -151,19 +173,17 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
-        (
-            purpose_for_incarceration,
-            purpose_for_incarceration_subtype,
-        ) = us_pa_commitment_from_supervision_utils.us_pa_purpose_for_incarceration_and_subtype(
+        commitment_details = self._test_us_pa_commitment_purpose_and_subtype(
             incarceration_period, [parole_board_permanent_decision]
         )
 
         self.assertEqual(
             StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
-            purpose_for_incarceration,
+            commitment_details.purpose_for_incarceration,
         )
         self.assertEqual(
-            SHOCK_INCARCERATION_6_MONTHS, purpose_for_incarceration_subtype
+            SHOCK_INCARCERATION_6_MONTHS,
+            commitment_details.purpose_for_incarceration_subtype,
         )
 
     def test_purpose_for_incarceration_and_subtype_shock_incarceration_RESCR9(
@@ -202,19 +222,17 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
-        (
-            purpose_for_incarceration,
-            purpose_for_incarceration_subtype,
-        ) = us_pa_commitment_from_supervision_utils.us_pa_purpose_for_incarceration_and_subtype(
+        commitment_details = self._test_us_pa_commitment_purpose_and_subtype(
             incarceration_period, [parole_board_permanent_decision]
         )
 
         self.assertEqual(
             StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
-            purpose_for_incarceration,
+            commitment_details.purpose_for_incarceration,
         )
         self.assertEqual(
-            SHOCK_INCARCERATION_9_MONTHS, purpose_for_incarceration_subtype
+            SHOCK_INCARCERATION_9_MONTHS,
+            commitment_details.purpose_for_incarceration_subtype,
         )
 
     def test_purpose_for_incarceration_and_subtype_shock_incarceration_RESCR12(
@@ -253,19 +271,17 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
-        (
-            purpose_for_incarceration,
-            purpose_for_incarceration_subtype,
-        ) = us_pa_commitment_from_supervision_utils.us_pa_purpose_for_incarceration_and_subtype(
+        commitment_details = self._test_us_pa_commitment_purpose_and_subtype(
             incarceration_period, [parole_board_permanent_decision]
         )
 
         self.assertEqual(
             StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
-            purpose_for_incarceration,
+            commitment_details.purpose_for_incarceration,
         )
         self.assertEqual(
-            SHOCK_INCARCERATION_12_MONTHS, purpose_for_incarceration_subtype
+            SHOCK_INCARCERATION_12_MONTHS,
+            commitment_details.purpose_for_incarceration_subtype,
         )
 
     def test_purpose_for_incarceration_and_subtype_shock_incarceration_no_set_subtype(
@@ -286,20 +302,18 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
-        (
-            purpose_for_incarceration,
-            purpose_for_incarceration_subtype,
-        ) = us_pa_commitment_from_supervision_utils.us_pa_purpose_for_incarceration_and_subtype(
+        commitment_details = self._test_us_pa_commitment_purpose_and_subtype(
             incarceration_period, []
         )
 
         self.assertEqual(
             StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
-            purpose_for_incarceration,
+            commitment_details.purpose_for_incarceration,
         )
         # Default subtype for SHOCK_INCARCERATION is RESCR
         self.assertEqual(
-            SHOCK_INCARCERATION_UNDER_6_MONTHS, purpose_for_incarceration_subtype
+            SHOCK_INCARCERATION_UNDER_6_MONTHS,
+            commitment_details.purpose_for_incarceration_subtype,
         )
 
     def test_purpose_for_incarceration_and_subtype_shock_incarceration_sci_no_set_subtype(
@@ -318,20 +332,18 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
-        (
-            purpose_for_incarceration,
-            purpose_for_incarceration_subtype,
-        ) = us_pa_commitment_from_supervision_utils.us_pa_purpose_for_incarceration_and_subtype(
+        commitment_details = self._test_us_pa_commitment_purpose_and_subtype(
             incarceration_period, []
         )
 
         self.assertEqual(
             StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
-            purpose_for_incarceration,
+            commitment_details.purpose_for_incarceration,
         )
         # Default subtype for SHOCK_INCARCERATION is RESCR
         self.assertEqual(
-            SHOCK_INCARCERATION_UNDER_6_MONTHS, purpose_for_incarceration_subtype
+            SHOCK_INCARCERATION_UNDER_6_MONTHS,
+            commitment_details.purpose_for_incarceration_subtype,
         )
 
     def test_purpose_for_incarceration_and_subtype_shock_incarceration_sci_with_board_actions(
@@ -368,19 +380,17 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
-        (
-            purpose_for_incarceration,
-            purpose_for_incarceration_subtype,
-        ) = us_pa_commitment_from_supervision_utils.us_pa_purpose_for_incarceration_and_subtype(
+        commitment_details = self._test_us_pa_commitment_purpose_and_subtype(
             incarceration_period, [parole_board_permanent_decision]
         )
 
         self.assertEqual(
             StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
-            purpose_for_incarceration,
+            commitment_details.purpose_for_incarceration,
         )
         self.assertEqual(
-            SHOCK_INCARCERATION_12_MONTHS, purpose_for_incarceration_subtype
+            SHOCK_INCARCERATION_12_MONTHS,
+            commitment_details.purpose_for_incarceration_subtype,
         )
 
     def test_purpose_for_incarceration_and_subtype_reincarceration(self) -> None:
@@ -414,18 +424,15 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
-        (
-            purpose_for_incarceration,
-            purpose_for_incarceration_subtype,
-        ) = us_pa_commitment_from_supervision_utils.us_pa_purpose_for_incarceration_and_subtype(
+        commitment_details = self._test_us_pa_commitment_purpose_and_subtype(
             incarceration_period, [parole_board_permanent_decision]
         )
 
         self.assertEqual(
             StateSpecializedPurposeForIncarceration.GENERAL,
-            purpose_for_incarceration,
+            commitment_details.purpose_for_incarceration,
         )
-        self.assertIsNone(purpose_for_incarceration_subtype)
+        self.assertIsNone(commitment_details.purpose_for_incarceration_subtype)
 
     def test_purpose_for_incarceration_and_subtype_reincarceration_no_board_actions(
         self,
@@ -443,18 +450,15 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
-        (
-            purpose_for_incarceration,
-            purpose_for_incarceration_subtype,
-        ) = us_pa_commitment_from_supervision_utils.us_pa_purpose_for_incarceration_and_subtype(
+        commitment_details = self._test_us_pa_commitment_purpose_and_subtype(
             incarceration_period, []
         )
 
         self.assertEqual(
             StateSpecializedPurposeForIncarceration.GENERAL,
-            purpose_for_incarceration,
+            commitment_details.purpose_for_incarceration,
         )
-        self.assertIsNone(purpose_for_incarceration_subtype)
+        self.assertIsNone(commitment_details.purpose_for_incarceration_subtype)
 
     def test_purpose_for_incarceration_and_subtype_PVC(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -472,18 +476,15 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
-        (
-            purpose_for_incarceration,
-            purpose_for_incarceration_subtype,
-        ) = us_pa_commitment_from_supervision_utils.us_pa_purpose_for_incarceration_and_subtype(
+        commitment_details = self._test_us_pa_commitment_purpose_and_subtype(
             incarceration_period, []
         )
 
         self.assertEqual(
             StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
-            purpose_for_incarceration,
+            commitment_details.purpose_for_incarceration,
         )
-        self.assertEqual("PVC", purpose_for_incarceration_subtype)
+        self.assertEqual("PVC", commitment_details.purpose_for_incarceration_subtype)
 
     def test_purpose_for_incarceration_and_subtype_treatment(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -499,18 +500,15 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
-        (
-            purpose_for_incarceration,
-            purpose_for_incarceration_subtype,
-        ) = us_pa_commitment_from_supervision_utils.us_pa_purpose_for_incarceration_and_subtype(
+        commitment_details = self._test_us_pa_commitment_purpose_and_subtype(
             incarceration_period, []
         )
 
         self.assertEqual(
             StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
-            purpose_for_incarceration,
+            commitment_details.purpose_for_incarceration,
         )
-        self.assertIsNone(purpose_for_incarceration_subtype)
+        self.assertIsNone(commitment_details.purpose_for_incarceration_subtype)
 
     def test_purpose_for_incarceration_and_subtype_treatment_51(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -527,18 +525,15 @@ class TestPurposeForIncarcerationAndSubtype(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
-        (
-            purpose_for_incarceration,
-            purpose_for_incarceration_subtype,
-        ) = us_pa_commitment_from_supervision_utils.us_pa_purpose_for_incarceration_and_subtype(
+        commitment_details = self._test_us_pa_commitment_purpose_and_subtype(
             incarceration_period, []
         )
 
         self.assertEqual(
             StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
-            purpose_for_incarceration,
+            commitment_details.purpose_for_incarceration,
         )
-        self.assertIsNone(purpose_for_incarceration_subtype)
+        self.assertIsNone(commitment_details.purpose_for_incarceration_subtype)
 
 
 # pylint: disable=protected-access

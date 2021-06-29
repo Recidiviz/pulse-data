@@ -38,7 +38,6 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
 )
 from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
-    default_violation_history_window_pre_commitment_from_supervision,
     get_commitment_from_supervision_details,
 )
 from recidiviz.calculator.pipeline.utils.entity_pre_processing_utils import (
@@ -57,13 +56,13 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     get_commitment_from_supervision_supervision_type,
     get_month_supervision_type,
     get_state_specific_case_compliance_manager,
-    get_supervising_officer_and_location_info_from_supervision_period,
+    get_state_specific_commitment_from_supervision_delegate,
+    get_state_specific_supervising_officer_and_location_info_function,
     include_decisions_on_follow_up_responses_for_most_severe_response,
     pre_commitment_supervision_period_if_commitment,
     second_assessment_on_supervision_is_more_reliable,
     should_produce_supervision_time_bucket_for_period,
     state_specific_supervision_admission_reason_override,
-    state_specific_violation_history_window_pre_commitment_from_supervision,
     state_specific_violation_response_pre_processing_function,
     state_specific_violation_responses_for_violation_history,
     supervision_period_counts_towards_supervision_population_in_date_range_state_specific,
@@ -80,6 +79,7 @@ from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     violation_responses_in_window,
 )
 from recidiviz.calculator.pipeline.utils.violation_utils import (
+    VIOLATION_HISTORY_WINDOW_MONTHS,
     get_violation_and_response_history,
 )
 from recidiviz.common.constants.state.state_assessment import (
@@ -347,7 +347,9 @@ def find_time_buckets_for_supervision_period(
         supervising_officer_external_id,
         level_1_supervision_location_external_id,
         level_2_supervision_location_external_id,
-    ) = get_supervising_officer_and_location_info_from_supervision_period(
+    ) = get_state_specific_supervising_officer_and_location_info_function(
+        state_code=supervision_period.state_code
+    )(
         supervision_period, supervision_period_to_agent_associations
     )
     case_type = identify_most_severe_case_type(supervision_period)
@@ -603,7 +605,9 @@ def find_supervision_start_bucket(
         supervising_officer_external_id,
         level_1_supervision_location_external_id,
         level_2_supervision_location_external_id,
-    ) = get_supervising_officer_and_location_info_from_supervision_period(
+    ) = get_state_specific_supervising_officer_and_location_info_function(
+        state_code=supervision_period.state_code
+    )(
         supervision_period, supervision_period_to_agent_associations
     )
 
@@ -732,7 +736,9 @@ def find_supervision_termination_bucket(
             supervising_officer_external_id,
             level_1_supervision_location_external_id,
             level_2_supervision_location_external_id,
-        ) = get_supervising_officer_and_location_info_from_supervision_period(
+        ) = get_state_specific_supervising_officer_and_location_info_function(
+            state_code=supervision_period.state_code
+        )(
             supervision_period, supervision_period_to_agent_associations
         )
 
@@ -898,6 +904,16 @@ def find_revocation_return_buckets(
 
         state_code = incarceration_period.state_code
 
+        commitment_from_supervision_delegate = (
+            get_state_specific_commitment_from_supervision_delegate(state_code)
+        )
+
+        state_specific_officer_and_location_info_from_supervision_period_fn = (
+            get_state_specific_supervising_officer_and_location_info_function(
+                state_code
+            )
+        )
+
         (
             admission_is_revocation,
             revoked_supervision_period,
@@ -906,6 +922,7 @@ def find_revocation_return_buckets(
             incarceration_period=incarceration_period,
             supervision_period_index=supervision_period_index,
             incarceration_period_index=incarceration_period_index,
+            commitment_from_supervision_delegate=commitment_from_supervision_delegate,
         )
 
         if not admission_is_revocation:
@@ -934,11 +951,10 @@ def find_revocation_return_buckets(
             )
         )
 
-        violation_history_window = state_specific_violation_history_window_pre_commitment_from_supervision(
-            state_code=state_code,
+        violation_history_window = commitment_from_supervision_delegate.violation_history_window_pre_commitment_from_supervision(
             admission_date=admission_date,
             sorted_and_filtered_violation_responses=violation_responses_for_history,
-            default_violation_history_window_function=default_violation_history_window_pre_commitment_from_supervision,
+            default_violation_history_window_months=VIOLATION_HISTORY_WINDOW_MONTHS,
         )
 
         # Get details about the violation and response history leading up to the
@@ -982,10 +998,12 @@ def find_revocation_return_buckets(
 
         if revoked_supervision_period:
             revocation_details = get_commitment_from_supervision_details(
-                incarceration_period,
-                revoked_supervision_period,
-                sorted_violation_responses,
-                supervision_period_to_agent_associations,
+                incarceration_period=incarceration_period,
+                pre_commitment_supervision_period=revoked_supervision_period,
+                commitment_from_supervision_delegate=commitment_from_supervision_delegate,
+                violation_responses=sorted_violation_responses,
+                supervision_period_to_agent_associations=supervision_period_to_agent_associations,
+                state_specific_officer_and_location_info_from_supervision_period_fn=state_specific_officer_and_location_info_from_supervision_period_fn,
             )
 
             pre_revocation_supervision_type = (
@@ -1060,7 +1078,12 @@ def find_revocation_return_buckets(
             # There are no overlapping or proximal supervision periods. Add one
             # RevocationReturnSupervisionTimeBucket with as many details as possible about this revocation
             revocation_details = get_commitment_from_supervision_details(
-                incarceration_period, None, sorted_violation_responses, None
+                incarceration_period=incarceration_period,
+                pre_commitment_supervision_period=None,
+                commitment_from_supervision_delegate=commitment_from_supervision_delegate,
+                violation_responses=sorted_violation_responses,
+                supervision_period_to_agent_associations=None,
+                state_specific_officer_and_location_info_from_supervision_period_fn=state_specific_officer_and_location_info_from_supervision_period_fn,
             )
 
             pre_revocation_supervision_type = (
@@ -1307,7 +1330,9 @@ def _get_projected_completion_bucket(
         supervising_officer_external_id,
         level_1_supervision_location_external_id,
         level_2_supervision_location_external_id,
-    ) = get_supervising_officer_and_location_info_from_supervision_period(
+    ) = get_state_specific_supervising_officer_and_location_info_function(
+        state_code=supervision_period.state_code
+    )(
         supervision_period, supervision_period_to_agent_associations
     )
 

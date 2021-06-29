@@ -20,6 +20,10 @@ from typing import List, Optional
 
 import attr
 
+from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
+    SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
+    StateSpecificCommitmentFromSupervisionDelegate,
+)
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     periods_are_temporally_adjacent,
 )
@@ -30,7 +34,7 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
     PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
-    SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
+    filter_out_unknown_supervision_period_supervision_type_periods,
 )
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
     get_revocation_admission_reason_from_revoked_supervision_period,
@@ -42,27 +46,25 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
-from recidiviz.persistence.entity.state.entities import (
-    StateIncarcerationPeriod,
-    StateSupervisionPeriod,
-)
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
-def us_id_filter_sps_for_commitment_from_supervision_identification(
-    supervision_periods: List[StateSupervisionPeriod],
-) -> List[StateSupervisionPeriod]:
-    """Filters the list of supervision periods to only include ones with a set
-    supervision_period_supervision_type."""
-    # Drop any supervision periods that don't have a set
-    # supervision_period_supervision_type (this could signify a bench warrant,
-    # for example).
-    return [
-        period
-        for period in supervision_periods
-        if period.supervision_period_supervision_type is not None
-        and period.supervision_period_supervision_type
-        != StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
-    ]
+class UsIdCommitmentFromSupervisionDelegate(
+    StateSpecificCommitmentFromSupervisionDelegate
+):
+    """US_ID implementation of the StateSpecificCommitmentFromSupervisionDelegate."""
+
+    def should_filter_out_unknown_supervision_type_in_pre_commitment_sp_search(
+        self,
+    ) -> bool:
+        """In US_ID it's common for there to be periods with unset
+        supervision_period_supervision_type values prior to an admission to
+        incarceration, since these periods may signify that there is a warrant out for
+        the person's arrest. So, for US_ID we need to filter
+        the list of supervision periods to only include ones with a set
+        supervision_period_supervision_type before looking for a
+        pre-commitment supervision period."""
+        return True
 
 
 def us_id_normalize_period_if_commitment_from_supervision(
@@ -91,7 +93,7 @@ def us_id_normalize_period_if_commitment_from_supervision(
             "Expected non-null supervision_period_index."
         )
 
-    relevant_sps = us_id_filter_sps_for_commitment_from_supervision_identification(
+    relevant_sps = filter_out_unknown_supervision_period_supervision_type_periods(
         supervision_period_index.supervision_periods
     )
 

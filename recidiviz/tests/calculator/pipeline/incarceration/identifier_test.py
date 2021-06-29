@@ -37,6 +37,9 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
     IncarcerationStandardAdmissionEvent,
     IncarcerationStayEvent,
 )
+from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
+    StateSpecificCommitmentFromSupervisionDelegate,
+)
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
 )
@@ -93,6 +96,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponseDecisionEntry,
     StateSupervisionViolationTypeEntry,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_commitment_from_supervision_utils import (
+    UsXxCommitmentFromSupervisionDelegate,
+)
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
@@ -143,8 +149,19 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             UsXxIncarcerationPreProcessingDelegate()
         )
 
+        self.commitment_from_supervision_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_commitment_from_supervision_delegate"
+        )
+        self.mock_commitment_from_supervision_delegate = (
+            self.commitment_from_supervision_delegate_patcher.start()
+        )
+        self.mock_commitment_from_supervision_delegate.return_value = (
+            UsXxCommitmentFromSupervisionDelegate()
+        )
+
     def tearDown(self) -> None:
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
     @staticmethod
     def _run_find_incarceration_events(
@@ -624,6 +641,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         result in the correct IncarcerationStayEvents, IncarcerationAdmissionEvents, and
         IncarcerationReleaseEvents with updated STATUS_CHANGE reasons"""
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
         treatment_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=_DEFAULT_IP_ID,
@@ -884,10 +902,11 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         self.assertCountEqual([], incarceration_events)
 
     def testFindIncarcerationEvents_usNd_tempCustodyFollowedByRevocation(self):
-        """Tests that with state code US_ND, temporary custody periods are dropped before finding all incarceration
-        events.
+        """Tests that with state code US_ND, temporary custody periods are dropped
+        before finding all incarceration events.
         """
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
         temp_custody_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -1056,6 +1075,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         period.
         """
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
         temp_custody_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -1251,6 +1271,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
     def testFindIncarcerationEvents_usMo_tempCustody(self):
         """Tests that when there is only a temporary custody period."""
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
         temp_custody_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -1380,6 +1401,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
     def testFindIncarcerationEvents_usId_RevocationAdmission(self):
         """Tests the find_supervision_time_buckets function for state code US_ID."""
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SP_ID,
@@ -1430,8 +1452,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         sentence_groups = [sentence_group]
 
         incarceration_events = self._run_find_incarceration_events(sentence_groups)
-
-        self.maxDiff = None
 
         self.assertCountEqual(
             [
@@ -1598,6 +1618,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         """Tests the find_incarceration_events function for periods in US_PA, where
         there is a sanction admission for shock incarceration."""
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
         state_code = "US_PA"
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -2489,6 +2510,20 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
 class TestAdmissionEventForPeriod(unittest.TestCase):
     """Tests the admission_event_for_period function."""
 
+    def setUp(self) -> None:
+        self.commitment_from_supervision_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_commitment_from_supervision_delegate"
+        )
+        self.mock_commitment_from_supervision_delegate = (
+            self.commitment_from_supervision_delegate_patcher.start()
+        )
+        self.mock_commitment_from_supervision_delegate.return_value = (
+            UsXxCommitmentFromSupervisionDelegate()
+        )
+
+    def tearDown(self) -> None:
+        self.commitment_from_supervision_delegate_patcher.stop()
+
     @staticmethod
     def _run_admission_event_for_period(
         incarceration_period: StateIncarcerationPeriod,
@@ -2766,6 +2801,9 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         incarceration_sentences: Optional[List[StateIncarcerationSentence]] = None,
         assessments: Optional[List[StateAssessment]] = None,
         violation_responses: Optional[List[StateSupervisionViolationResponse]] = None,
+        commitment_from_supervision_delegate: Optional[
+            StateSpecificCommitmentFromSupervisionDelegate
+        ] = None,
     ) -> IncarcerationCommitmentFromSupervisionAdmissionEvent:
         """Helper function for testing the
         _commitment_from_supervision_event_for_period function."""
@@ -2777,6 +2815,10 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             if violation_responses
             else []
         )
+        commitment_from_supervision_delegate = (
+            commitment_from_supervision_delegate
+            or UsXxCommitmentFromSupervisionDelegate()
+        )
 
         return identifier._commitment_from_supervision_event_for_period(
             incarceration_sentences=incarceration_sentences,
@@ -2787,6 +2829,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             sorted_violation_responses=sorted_violation_responses,
             supervision_period_to_agent_associations=_DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             county_of_residence=_COUNTY_OF_RESIDENCE,
+            commitment_from_supervision_delegate=commitment_from_supervision_delegate,
         )
 
     def test_commitment_from_supervision_event_violation_history_cutoff(self):

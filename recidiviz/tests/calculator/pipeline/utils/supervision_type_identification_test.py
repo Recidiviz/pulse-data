@@ -21,16 +21,15 @@
 import unittest
 from datetime import date
 
-
+from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
+    get_month_supervision_type,
+)
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
+    _get_sentence_supervision_type_from_sentence,
     _get_sentences_overlapping_with_date,
     _get_sentences_overlapping_with_dates,
     _get_valid_attached_sentences,
-    _get_sentence_supervision_type_from_sentence,
-    get_pre_incarceration_supervision_type_from_incarceration_period,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    get_month_supervision_type,
+    get_pre_incarceration_supervision_type_from_ip_admission_reason,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -39,15 +38,15 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodStatus,
+    StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
+    StateIncarcerationSentence,
     StateSupervisionPeriod,
     StateSupervisionSentence,
-    StateIncarcerationSentence,
 )
 
 
@@ -771,7 +770,7 @@ class TestGetMonthSupervisionType(unittest.TestCase):
 
 
 class TestGetPreIncarcerationSupervisionType(unittest.TestCase):
-    """Tests get_pre_incarceration_supervision_type_from_incarceration_period."""
+    """Tests get_pre_incarceration_supervision_type_from_ip_admission_reason."""
 
     def test_getPreIncarcerationSupervisionType_typeBasedOnAdmissionReason(self):
         for admission_reason in StateIncarcerationPeriodAdmissionReason:
@@ -798,8 +797,8 @@ class TestGetPreIncarcerationSupervisionType(unittest.TestCase):
                 expected_type = StateSupervisionPeriodSupervisionType.DUAL
             self.assertEqual(
                 expected_type,
-                get_pre_incarceration_supervision_type_from_incarceration_period(
-                    incarceration_period
+                get_pre_incarceration_supervision_type_from_ip_admission_reason(
+                    incarceration_period.admission_reason
                 ),
             )
 

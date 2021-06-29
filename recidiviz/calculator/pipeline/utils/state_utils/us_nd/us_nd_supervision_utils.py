@@ -14,28 +14,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Utils for determining supervision type information for US_ND."""
-from typing import Optional, Union, List
+"""US_ND-specific implementations of functions related to supervision."""
+from typing import List, Optional, Union
 
-from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
-    PreProcessedIncarcerationPeriodIndex,
-)
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_last_terminated_period_before_date,
+)
+from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
+    PreProcessedIncarcerationPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
-    get_pre_incarceration_supervision_type_from_incarceration_period,
+    get_pre_incarceration_supervision_type_from_ip_admission_reason,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
 )
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import (
@@ -77,9 +77,15 @@ def us_nd_get_pre_commitment_supervision_type(
     administered on the ground, and 2) we don’t have mass examples of NEW_ADMISSION
     incarceration directly following PAROLE in the data like we do for PROBATION.
     """
+    if not incarceration_period.admission_reason:
+        raise ValueError(
+            "Unexpected missing admission_reason on incarceration period: "
+            f"[{incarceration_period}]"
+        )
+
     default_supervision_type = (
-        get_pre_incarceration_supervision_type_from_incarceration_period(
-            incarceration_period
+        get_pre_incarceration_supervision_type_from_ip_admission_reason(
+            incarceration_period.admission_reason
         )
     )
 

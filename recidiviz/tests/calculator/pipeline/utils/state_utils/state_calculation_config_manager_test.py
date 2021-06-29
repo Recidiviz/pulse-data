@@ -17,12 +17,15 @@
 """Tests the functions in the state_calculation_config_manager file."""
 import unittest
 from datetime import date
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import attr
 
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
     RevocationReturnSupervisionTimeBucket,
+)
+from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
+    StateSpecificCommitmentFromSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
@@ -34,7 +37,10 @@ from recidiviz.calculator.pipeline.utils.state_utils import (
     state_calculation_config_manager,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    get_supervising_officer_and_location_info_from_supervision_period,
+    get_state_specific_supervising_officer_and_location_info_function,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_commitment_from_supervision_utils import (
+    UsIdCommitmentFromSupervisionDelegate,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -57,6 +63,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_commitment_from_supervision_utils import (
+    UsXxCommitmentFromSupervisionDelegate,
+)
 
 
 class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
@@ -67,6 +76,9 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
         incarceration_period: StateIncarcerationPeriod,
         sorted_incarceration_periods: Optional[List[StateIncarcerationPeriod]] = None,
         supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
+        commitment_from_supervision_delegate: Optional[
+            StateSpecificCommitmentFromSupervisionDelegate
+        ] = None,
     ) -> Tuple[bool, Optional[StateSupervisionPeriod]]:
         supervision_period_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods or []
@@ -75,11 +87,17 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             sorted_incarceration_periods or [incarceration_period]
         )
 
+        commitment_from_supervision_delegate = (
+            commitment_from_supervision_delegate
+            or UsXxCommitmentFromSupervisionDelegate()
+        )
+
         return state_calculation_config_manager.pre_commitment_supervision_period_if_commitment(
             state_code=incarceration_period.state_code,
             incarceration_period=incarceration_period,
             supervision_period_index=supervision_period_index,
             incarceration_period_index=incarceration_period_index,
+            commitment_from_supervision_delegate=commitment_from_supervision_delegate,
         )
 
     def test_pre_commitment_supervision_period_if_commitment(self) -> None:
@@ -137,7 +155,9 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             admission_is_commitment_from_supervision,
             pre_commitment_supervision_period,
         ) = self._pre_commitment_supervision_period_if_commitment(
-            incarceration_period, supervision_periods=[supervision_period]
+            incarceration_period,
+            supervision_periods=[supervision_period],
+            commitment_from_supervision_delegate=UsIdCommitmentFromSupervisionDelegate(),
         )
 
         self.assertTrue(admission_is_commitment_from_supervision)
@@ -373,6 +393,23 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
         }
     }
 
+    def _get_state_specific_supervising_officer_and_location_info(
+        self,
+        supervision_period: StateSupervisionPeriod,
+        supervision_period_to_agent_associations: Optional[
+            Dict[int, Dict[str, Any]]
+        ] = None,
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+        return get_state_specific_supervising_officer_and_location_info_function(
+            supervision_period.state_code
+        )(
+            supervision_period,
+            (
+                supervision_period_to_agent_associations
+                or self.DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+            ),
+        )
+
     def test_get_supervising_officer_and_location_info_from_supervision_period(
         self,
     ) -> None:
@@ -384,8 +421,8 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
             supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = get_supervising_officer_and_location_info_from_supervision_period(
-            supervision_period, self.DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        ) = self._get_state_specific_supervising_officer_and_location_info(
+            supervision_period
         )
 
         self.assertEqual("agent_external_id_1", supervising_officer_external_id)
@@ -399,9 +436,8 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
             supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = get_supervising_officer_and_location_info_from_supervision_period(
+        ) = self._get_state_specific_supervising_officer_and_location_info(
             self.DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
-            self.DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
         )
 
         self.assertEqual("agent_external_id_1", supervising_officer_external_id)
@@ -419,8 +455,8 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
             supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = get_supervising_officer_and_location_info_from_supervision_period(
-            supervision_period, self.DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        ) = self._get_state_specific_supervising_officer_and_location_info(
+            supervision_period
         )
 
         self.assertEqual(None, supervising_officer_external_id)
@@ -440,8 +476,8 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
             supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = get_supervising_officer_and_location_info_from_supervision_period(
-            supervision_period, self.DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        ) = self._get_state_specific_supervising_officer_and_location_info(
+            supervision_period
         )
 
         self.assertEqual("agent_external_id_1", supervising_officer_external_id)
@@ -458,8 +494,8 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
             supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = get_supervising_officer_and_location_info_from_supervision_period(
-            supervision_period, self.DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        ) = self._get_state_specific_supervising_officer_and_location_info(
+            supervision_period
         )
 
         self.assertEqual("agent_external_id_1", supervising_officer_external_id)
@@ -476,8 +512,8 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
             supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = get_supervising_officer_and_location_info_from_supervision_period(
-            supervision_period, self.DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        ) = self._get_state_specific_supervising_officer_and_location_info(
+            supervision_period
         )
 
         self.assertEqual("agent_external_id_1", supervising_officer_external_id)
@@ -494,8 +530,8 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
             supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = get_supervising_officer_and_location_info_from_supervision_period(
-            supervision_period, self.DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        ) = self._get_state_specific_supervising_officer_and_location_info(
+            supervision_period
         )
 
         self.assertEqual("agent_external_id_1", supervising_officer_external_id)
@@ -526,7 +562,7 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
             supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = get_supervising_officer_and_location_info_from_supervision_period(
+        ) = self._get_state_specific_supervising_officer_and_location_info(
             supervision_period, temporary_sp_agent_associations
         )
 
@@ -544,8 +580,8 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
             supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = get_supervising_officer_and_location_info_from_supervision_period(
-            supervision_period, self.DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        ) = self._get_state_specific_supervising_officer_and_location_info(
+            supervision_period
         )
 
         # TODO(#6314): Return to asserting that the officer is "agent_external_id_1"
@@ -573,7 +609,7 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
             supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = get_supervising_officer_and_location_info_from_supervision_period(
+        ) = self._get_state_specific_supervising_officer_and_location_info(
             supervision_period, temporary_sp_agent_associations
         )
 
@@ -594,7 +630,7 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
             supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = get_supervising_officer_and_location_info_from_supervision_period(
+        ) = self._get_state_specific_supervising_officer_and_location_info(
             supervision_period, temporary_sp_agent_associations
         )
 
@@ -615,7 +651,7 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
             supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = get_supervising_officer_and_location_info_from_supervision_period(
+        ) = self._get_state_specific_supervising_officer_and_location_info(
             supervision_period, temporary_sp_agent_associations
         )
 
@@ -636,7 +672,7 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
             supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = get_supervising_officer_and_location_info_from_supervision_period(
+        ) = self._get_state_specific_supervising_officer_and_location_info(
             supervision_period, temporary_sp_agent_associations
         )
 
@@ -657,7 +693,7 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
             supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = get_supervising_officer_and_location_info_from_supervision_period(
+        ) = self._get_state_specific_supervising_officer_and_location_info(
             supervision_period, temporary_sp_agent_associations
         )
 
@@ -686,7 +722,7 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
             supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = get_supervising_officer_and_location_info_from_supervision_period(
+        ) = self._get_state_specific_supervising_officer_and_location_info(
             supervision_period, nd_supervision_period_agent_associations
         )
 
@@ -707,8 +743,8 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
             supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
-        ) = get_supervising_officer_and_location_info_from_supervision_period(
-            supervision_period, self.DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+        ) = self._get_state_specific_supervising_officer_and_location_info(
+            supervision_period
         )
 
         self.assertEqual("agent_external_id_1", supervising_officer_external_id)

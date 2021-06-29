@@ -94,6 +94,9 @@ from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
     run_test_pipeline,
     test_pipeline_options,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_commitment_from_supervision_utils import (
+    UsXxCommitmentFromSupervisionDelegate,
+)
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
@@ -134,8 +137,19 @@ class TestIncarcerationPipeline(unittest.TestCase):
             UsXxIncarcerationPreProcessingDelegate()
         )
 
+        self.commitment_from_supervision_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_commitment_from_supervision_delegate"
+        )
+        self.mock_commitment_from_supervision_delegate = (
+            self.commitment_from_supervision_delegate_patcher.start()
+        )
+        self.mock_commitment_from_supervision_delegate.return_value = (
+            UsXxCommitmentFromSupervisionDelegate()
+        )
+
     def tearDown(self) -> None:
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
 
     @staticmethod
     def _default_data_dict():
@@ -704,6 +718,16 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
         self.mock_pre_processing_delegate.return_value = (
             UsXxIncarcerationPreProcessingDelegate()
+        )
+
+        self.commitment_from_supervision_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_commitment_from_supervision_delegate"
+        )
+        self.mock_commitment_from_supervision_delegate = (
+            self.commitment_from_supervision_delegate_patcher.start()
+        )
+        self.mock_commitment_from_supervision_delegate.return_value = (
+            UsXxCommitmentFromSupervisionDelegate()
         )
 
     def tearDown(self) -> None:
