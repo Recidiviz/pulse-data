@@ -38,7 +38,6 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_commitment_from_supervision_utils import (
     us_id_filter_sps_for_commitment_from_supervision_identification,
-    us_id_pre_commitment_supervision_period_if_commitment,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_period_pre_processing_delegate import (
     UsIdIncarcerationPreProcessingDelegate,
@@ -87,7 +86,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa import (
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from_supervision_utils import (
     us_pa_get_pre_commitment_supervision_type,
-    us_pa_pre_commitment_supervision_period_if_commitment,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_period_pre_processing_delegate import (
     UsPaIncarcerationPreProcessingDelegate,
@@ -370,19 +368,6 @@ def terminating_supervision_period_supervision_type(
         incarceration_sentences,
         supervision_period,
     )
-
-
-def filter_supervision_periods_for_commitment_from_supervision_identification(
-    supervision_periods: List[StateSupervisionPeriod],
-) -> List[StateSupervisionPeriod]:
-    """State-specific filtering of supervision periods that should be included in
-    pre-commitment from supervision analysis."""
-    if supervision_periods:
-        if supervision_periods[0].state_code.upper() == "US_ID":
-            return us_id_filter_sps_for_commitment_from_supervision_identification(
-                supervision_periods
-            )
-    return supervision_periods
 
 
 def should_produce_supervision_time_bucket_for_period(
@@ -714,7 +699,7 @@ def shorthand_for_violation_subtype(state_code: str, violation_subtype: str) -> 
 def pre_commitment_supervision_period_if_commitment(
     state_code: str,
     incarceration_period: StateIncarcerationPeriod,
-    supervision_periods: List[StateSupervisionPeriod],
+    supervision_period_index: PreProcessedSupervisionPeriodIndex,
     incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
 ) -> Tuple[bool, Optional[StateSupervisionPeriod]]:
     """If the incarceration period was a result of a commitment from supervision, finds
@@ -737,40 +722,38 @@ def pre_commitment_supervision_period_if_commitment(
             f"[{incarceration_period}]"
         )
 
-    if state_code == StateCode.US_ID.value:
-        (
-            admission_is_commitment,
-            pre_commitment_supervision_period,
-        ) = us_id_pre_commitment_supervision_period_if_commitment(
-            incarceration_period, supervision_periods, incarceration_period_index
-        )
-    elif state_code == StateCode.US_ND.value:
-        (
-            admission_is_commitment,
-            pre_commitment_supervision_period,
-        ) = us_nd_pre_commitment_supervision_period_if_commitment(
-            incarceration_period, supervision_periods, incarceration_period_index
-        )
-    elif state_code == StateCode.US_PA.value:
-        (
-            admission_is_commitment,
-            pre_commitment_supervision_period,
-        ) = us_pa_pre_commitment_supervision_period_if_commitment(
-            incarceration_period, supervision_periods
-        )
-    else:
-        admission_is_commitment = is_commitment_from_supervision(
-            incarceration_period.admission_reason
+    if state_code == StateCode.US_ND.value:
+        return us_nd_pre_commitment_supervision_period_if_commitment(
+            incarceration_period,
+            supervision_period_index.supervision_periods,
+            incarceration_period_index,
         )
 
-        if admission_is_commitment:
-            pre_commitment_supervision_period = (
-                get_commitment_from_supervision_supervision_period(
-                    admission_date=admission_date,
-                    supervision_periods=supervision_periods,
-                    prioritize_overlapping_periods=True,
-                )
+    relevant_supervision_periods = supervision_period_index.supervision_periods
+
+    if state_code == StateCode.US_ID.value:
+        # For US_ID we need to filter the list of supervision periods to only include
+        # ones with a set supervision_period_supervision_type before looking for a
+        # pre-commitment supervision period
+        relevant_supervision_periods = (
+            us_id_filter_sps_for_commitment_from_supervision_identification(
+                supervision_period_index.supervision_periods
             )
+        )
+
+    admission_is_commitment = is_commitment_from_supervision(
+        incarceration_period.admission_reason
+    )
+
+    if admission_is_commitment:
+        pre_commitment_supervision_period = (
+            get_commitment_from_supervision_supervision_period(
+                incarceration_period=incarceration_period,
+                supervision_periods=relevant_supervision_periods,
+                incarceration_period_index=incarceration_period_index,
+                prioritize_overlapping_periods=True,
+            )
+        )
 
     return admission_is_commitment, pre_commitment_supervision_period
 

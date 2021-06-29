@@ -54,7 +54,6 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
     PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    filter_supervision_periods_for_commitment_from_supervision_identification,
     get_commitment_from_supervision_supervision_type,
     get_month_supervision_type,
     get_state_specific_case_compliance_manager,
@@ -275,7 +274,7 @@ def find_supervision_time_buckets(
     supervision_time_buckets = supervision_time_buckets + find_revocation_return_buckets(
         supervision_sentences=supervision_sentences,
         incarceration_sentences=incarceration_sentences,
-        supervision_periods=supervision_periods,
+        supervision_period_index=supervision_period_index,
         assessments=assessments,
         sorted_violation_responses=sorted_violation_responses,
         supervision_period_to_agent_associations=supervision_period_to_agent_associations,
@@ -875,7 +874,7 @@ def _period_is_within_sentence_bounds(
 def find_revocation_return_buckets(
     supervision_sentences: List[StateSupervisionSentence],
     incarceration_sentences: List[StateIncarcerationSentence],
-    supervision_periods: List[StateSupervisionPeriod],
+    supervision_period_index: PreProcessedSupervisionPeriodIndex,
     assessments: List[StateAssessment],
     sorted_violation_responses: List[StateSupervisionViolationResponse],
     supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
@@ -893,12 +892,6 @@ def find_revocation_return_buckets(
     if not incarceration_period_index.incarceration_periods:
         return revocation_return_buckets
 
-    filtered_supervision_periods = (
-        filter_supervision_periods_for_commitment_from_supervision_identification(
-            supervision_periods
-        )
-    )
-
     for incarceration_period in incarceration_period_index.incarceration_periods:
         if not incarceration_period.admission_date:
             raise ValueError(f"Admission date is null for {incarceration_period}")
@@ -909,10 +902,10 @@ def find_revocation_return_buckets(
             admission_is_revocation,
             revoked_supervision_period,
         ) = pre_commitment_supervision_period_if_commitment(
-            state_code,
-            incarceration_period,
-            filtered_supervision_periods,
-            incarceration_period_index,
+            state_code=incarceration_period.state_code,
+            incarceration_period=incarceration_period,
+            supervision_period_index=supervision_period_index,
+            incarceration_period_index=incarceration_period_index,
         )
 
         if not admission_is_revocation:

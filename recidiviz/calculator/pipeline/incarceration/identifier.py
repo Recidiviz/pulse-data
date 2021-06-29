@@ -47,8 +47,10 @@ from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_man
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
 )
+from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
+    PreProcessedSupervisionPeriodIndex,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    filter_supervision_periods_for_commitment_from_supervision_identification,
     get_commitment_from_supervision_supervision_type,
     get_post_incarceration_supervision_type,
     get_pre_incarceration_supervision_type,
@@ -211,8 +213,8 @@ def find_all_admission_release_events(
         overwrite_facility_information_in_transfers=False,
     )
 
-    supervision_periods_for_calculations = (
-        sp_pre_processing_manager.pre_processed_supervision_period_index_for_calculations().supervision_periods
+    supervision_period_index = (
+        sp_pre_processing_manager.pre_processed_supervision_period_index_for_calculations()
     )
 
     sorted_violation_responses = prepare_violation_responses_for_calculations(
@@ -230,7 +232,7 @@ def find_all_admission_release_events(
             supervision_sentences=supervision_sentences,
             incarceration_period=incarceration_period,
             incarceration_period_index=incarceration_period_index_for_admissions,
-            supervision_periods=supervision_periods_for_calculations,
+            supervision_period_index=supervision_period_index,
             assessments=assessments,
             sorted_violation_responses=sorted_violation_responses,
             supervision_period_to_agent_associations=supervision_period_to_agent_associations,
@@ -498,13 +500,14 @@ def admission_event_for_period(
     supervision_sentences: List[StateSupervisionSentence],
     incarceration_period: StateIncarcerationPeriod,
     incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
-    supervision_periods: List[StateSupervisionPeriod],
+    supervision_period_index: PreProcessedSupervisionPeriodIndex,
     assessments: List[StateAssessment],
     sorted_violation_responses: List[StateSupervisionViolationResponse],
     supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
     county_of_residence: Optional[str],
 ) -> Optional[IncarcerationAdmissionEvent]:
-    """Returns an IncarcerationAdmissionEvent if this incarceration period represents an admission to incarceration."""
+    """Returns an IncarcerationAdmissionEvent if this incarceration period represents an
+    admission to incarceration."""
 
     admission_date: Optional[date] = incarceration_period.admission_date
     admission_reason: Optional[
@@ -523,20 +526,14 @@ def admission_event_for_period(
             supervision_type_at_admission,
         )
 
-        filtered_supervision_periods = (
-            filter_supervision_periods_for_commitment_from_supervision_identification(
-                supervision_periods
-            )
-        )
-
         (
             admission_is_commitment_from_supervision,
             pre_commitment_supervision_period,
         ) = pre_commitment_supervision_period_if_commitment(
-            incarceration_period.state_code,
-            incarceration_period,
-            filtered_supervision_periods,
-            incarceration_period_index,
+            state_code=incarceration_period.state_code,
+            incarceration_period=incarceration_period,
+            supervision_period_index=supervision_period_index,
+            incarceration_period_index=incarceration_period_index,
         )
 
         if admission_is_commitment_from_supervision:

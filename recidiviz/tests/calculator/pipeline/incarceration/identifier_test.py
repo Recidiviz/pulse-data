@@ -40,6 +40,9 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
 )
+from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
+    PreProcessedSupervisionPeriodIndex,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
     SupervisionTypeSpan,
 )
@@ -1428,10 +1431,12 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         incarceration_events = self._run_find_incarceration_events(sentence_groups)
 
+        self.maxDiff = None
+
         self.assertCountEqual(
             [
                 IncarcerationStayEvent(
-                    admission_reason=revocation_period.admission_reason,
+                    admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                     admission_reason_raw_text=revocation_period.admission_reason_raw_text,
                     state_code=revocation_period.state_code,
                     event_date=revocation_period.admission_date,
@@ -1444,7 +1449,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     event_date=revocation_period.admission_date,
                     facility=revocation_period.facility,
                     county_of_residence=_COUNTY_OF_RESIDENCE,
-                    admission_reason=revocation_period.admission_reason,
+                    admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                     admission_reason_raw_text=revocation_period.admission_reason_raw_text,
                     supervision_type=supervision_period.supervision_period_supervision_type,
                     supervision_level=supervision_period.supervision_level,
@@ -1463,7 +1468,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     county_of_residence=_COUNTY_OF_RESIDENCE,
                     release_reason=revocation_period.release_reason,
                     release_reason_raw_text=revocation_period.release_reason_raw_text,
-                    admission_reason=revocation_period.admission_reason,
+                    admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                     total_days_incarcerated=(
                         revocation_period.release_date
                         - revocation_period.admission_date
@@ -2508,7 +2513,9 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             incarceration_period_index
             or PreProcessedIncarcerationPeriodIndex([incarceration_period])
         )
-        supervision_periods = supervision_periods or []
+        supervision_period_index = PreProcessedSupervisionPeriodIndex(
+            supervision_periods or []
+        )
         assessments = assessments or []
         sorted_violation_responses = (
             sorted(violation_responses, key=lambda b: b.response_date or date.min)
@@ -2521,7 +2528,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             supervision_sentences=supervision_sentences,
             incarceration_period=incarceration_period,
             incarceration_period_index=incarceration_period_index,
-            supervision_periods=supervision_periods,
+            supervision_period_index=supervision_period_index,
             assessments=assessments,
             sorted_violation_responses=sorted_violation_responses,
             supervision_period_to_agent_associations=_DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,

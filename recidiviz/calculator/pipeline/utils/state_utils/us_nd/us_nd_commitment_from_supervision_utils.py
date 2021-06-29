@@ -17,15 +17,15 @@
 """Utils for state-specific logic related to identifying commitments from
 supervision in US_ND."""
 import datetime
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
-    PreProcessedIncarcerationPeriodIndex,
-)
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_last_terminated_period_before_date,
+)
+from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
+    PreProcessedIncarcerationPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     get_commitment_from_supervision_supervision_period,
@@ -44,7 +44,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
 )
-
 
 # The number of months for the window of time prior to a new admission return to search
 # for a previous probation supervision period that ended due to revocation to which we
@@ -109,7 +108,9 @@ def us_nd_pre_commitment_supervision_period_if_commitment(
 
     if admission_is_commitment:
         pre_commitment_supervision_period = _us_nd_pre_commitment_supervision_period(
-            admission_date, admission_reason, supervision_periods
+            incarceration_period=incarceration_period,
+            incarceration_period_index=incarceration_period_index,
+            supervision_periods=supervision_periods,
         )
 
         return admission_is_commitment, pre_commitment_supervision_period
@@ -151,8 +152,8 @@ def us_nd_pre_commitment_supervision_period_if_commitment(
 
 
 def _us_nd_pre_commitment_supervision_period(
-    admission_date: datetime.date,
-    admission_reason: StateIncarcerationPeriodAdmissionReason,
+    incarceration_period: StateIncarcerationPeriod,
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
     supervision_periods: List[StateSupervisionPeriod],
 ) -> Optional[StateSupervisionPeriod]:
     """Identifies the supervision period associated with the commitment to supervision
@@ -166,6 +167,7 @@ def _us_nd_pre_commitment_supervision_period(
     if not supervision_periods:
         return None
 
+    admission_reason = incarceration_period.admission_reason
     periods_matching_admission_type: List[StateSupervisionPeriod]
 
     if admission_reason == StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION:
@@ -201,8 +203,9 @@ def _us_nd_pre_commitment_supervision_period(
     ]
 
     return get_commitment_from_supervision_supervision_period(
-        admission_date=admission_date,
+        incarceration_period=incarceration_period,
         supervision_periods=periods_matching_admission_type,
+        incarceration_period_index=incarceration_period_index,
         prioritize_overlapping_periods=prioritize_overlapping_periods,
     )
 

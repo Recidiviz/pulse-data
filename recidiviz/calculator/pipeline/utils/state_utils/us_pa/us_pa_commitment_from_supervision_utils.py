@@ -21,9 +21,6 @@ from typing import List, Optional, Set, Tuple
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
-    get_commitment_from_supervision_supervision_period,
-)
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
     get_pre_incarceration_supervision_type_from_incarceration_period,
 )
@@ -70,55 +67,6 @@ SPFI_SUBTYPE_SEVERITY_ORDER = [
 # Right now, all of the supported SPFI subtypes listed in SPFI_SUBTYPE_SEVERITY_ORDER
 # indicate a specialized_purpose_for_incarceration of SHOCK_INCARCERATION
 SHOCK_INCARCERATION_SUBTYPES = SPFI_SUBTYPE_SEVERITY_ORDER
-
-
-def _us_pa_admission_is_commitment_from_supervision(
-    incarceration_period: StateIncarcerationPeriod,
-) -> bool:
-    """Determines whether the admission to incarceration is due to a commitment from
-    supervision using the admission_reason on the |incarceration_period|."""
-    # These are the only admission reasons in US_PA that indicate a commitment from
-    # supervision
-    return incarceration_period.admission_reason in (
-        StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-        StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-        StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
-    )
-
-
-def us_pa_pre_commitment_supervision_period_if_commitment(
-    incarceration_period: StateIncarcerationPeriod,
-    supervision_periods: List[StateSupervisionPeriod],
-) -> Tuple[bool, Optional[StateSupervisionPeriod]]:
-    """Determines whether the incarceration_period started because of a commitment from
-    supervision. If a commitment from supervision did occur, finds the supervision
-    period associated with the commitment. If a commitment did not occur, returns
-    (False, None).
-    """
-    admission_is_commitment = _us_pa_admission_is_commitment_from_supervision(
-        incarceration_period
-    )
-
-    if not admission_is_commitment:
-        return False, None
-
-    admission_date = incarceration_period.admission_date
-
-    if not admission_date:
-        raise ValueError(
-            "Unexpected null admission_date on incarceration_period: "
-            f"[{incarceration_period}]"
-        )
-
-    pre_commitment_supervision_period = (
-        get_commitment_from_supervision_supervision_period(
-            admission_date=admission_date,
-            supervision_periods=supervision_periods,
-            prioritize_overlapping_periods=True,
-        )
-    )
-
-    return admission_is_commitment, pre_commitment_supervision_period
 
 
 # TODO(#8028): Improve pre-commitment supervision type identification for US_PA to

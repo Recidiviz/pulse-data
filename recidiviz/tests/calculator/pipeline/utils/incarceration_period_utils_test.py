@@ -20,18 +20,19 @@
 
 import unittest
 from datetime import date
+
 import pytest
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     ip_is_nested_in_previous_period,
     period_edges_are_valid_transfer,
-)
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
+    period_is_commitment_from_supervision_admission_from_parole_board_hold,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
+    StateIncarcerationPeriodStatus,
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
@@ -294,3 +295,128 @@ class TestPeriodEdgesAreValidTransfer(unittest.TestCase):
         )
 
         self.assertFalse(period_edges_are_valid_transfer(ip_1, ip_2))
+
+
+class TestCommitmentFromBoardHold(unittest.TestCase):
+    """Tests the
+    period_is_commitment_from_supervision_admission_from_parole_board_hold function."""
+
+    def test_period_is_commitment_from_parole_board_hold(self):
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="1",
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_XX",
+            admission_date=date(2002, 2, 5),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_date=date(2002, 9, 11),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="1",
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_XX",
+            admission_date=date(2002, 9, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            release_date=date(2002, 9, 19),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        self.assertTrue(
+            period_is_commitment_from_supervision_admission_from_parole_board_hold(
+                incarceration_period=ip_2, preceding_incarceration_period=ip_1
+            )
+        )
+
+    def test_period_is_commitment_from_parole_board_hold_not_hold(self):
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="1",
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_XX",
+            admission_date=date(2002, 2, 5),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            release_date=date(2002, 9, 11),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="1",
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_XX",
+            admission_date=date(2002, 9, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            release_date=date(2002, 9, 19),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        self.assertFalse(
+            period_is_commitment_from_supervision_admission_from_parole_board_hold(
+                incarceration_period=ip_2, preceding_incarceration_period=ip_1
+            )
+        )
+
+    def test_period_is_commitment_from_parole_board_hold_invalid_admission(self):
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="1",
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_XX",
+            admission_date=date(2002, 2, 5),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_date=date(2002, 9, 11),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="1",
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_XX",
+            admission_date=date(2002, 9, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            release_date=date(2002, 9, 19),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        self.assertFalse(
+            period_is_commitment_from_supervision_admission_from_parole_board_hold(
+                incarceration_period=ip_2, preceding_incarceration_period=ip_1
+            )
+        )
+
+    def test_period_is_commitment_from_parole_board_hold_not_adjacent(self):
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="1",
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_XX",
+            admission_date=date(2002, 2, 5),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_date=date(2002, 9, 11),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="1",
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_XX",
+            admission_date=date(2010, 3, 31),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            release_date=date(2012, 9, 19),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        self.assertFalse(
+            period_is_commitment_from_supervision_admission_from_parole_board_hold(
+                incarceration_period=ip_2, preceding_incarceration_period=ip_1
+            )
+        )

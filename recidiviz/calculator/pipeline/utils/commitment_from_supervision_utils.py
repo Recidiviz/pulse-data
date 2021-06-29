@@ -17,7 +17,7 @@
 """Utils for calculations regarding incarceration admissions that are commitments from
 supervision."""
 import datetime
-from typing import Optional, List, Dict, Any, NamedTuple, Tuple
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 from dateutil.relativedelta import relativedelta
 

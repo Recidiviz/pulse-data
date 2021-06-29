@@ -320,24 +320,34 @@ class PreProcessedIncarcerationPeriodIndex:
 
         return original_admission_reasons_by_period_id
 
-    def preceding_incarceration_period(
+    ip_id_to_index: Dict[int, int] = attr.ib()
+
+    @ip_id_to_index.default
+    def _ip_id_to_index(self):
+        """Maps the incarceration_period_id of each incarceration period in the index to
+        the location of the period in the index."""
+        ip_id_to_index = {
+            ip.incarceration_period_id: index
+            for index, ip in enumerate(self.incarceration_periods)
+        }
+
+        return ip_id_to_index
+
+    def preceding_incarceration_period_in_index(
         self, incarceration_period: StateIncarcerationPeriod
     ) -> Optional[StateIncarcerationPeriod]:
         """Returns the incarceration period which occurred immediately before the given
-        period in this index.
+        period in the index.
 
-        Returns None if the given period is the first period in this index.
-        Raises a ValueError if the given period is not in this index."""
-        preceding_incarceration_period: Optional[StateIncarcerationPeriod] = None
-
-        if incarceration_period not in self.incarceration_periods:
+        Returns None if the given period is the first period in the list. Errors if
+        the given period is not in the index."""
+        if not incarceration_period.incarceration_period_id:
             raise ValueError(
-                f"Given incarceration period [{incarceration_period.incarceration_period_id}] "
-                "not found in this incarceration period index"
+                "Unexpected incarceration period missing an " "incarceration_period_id."
             )
-
-        ip_index: int = self.incarceration_periods.index(incarceration_period)
-        if ip_index > 0:
-            preceding_incarceration_period = self.incarceration_periods[ip_index - 1]
-
-        return preceding_incarceration_period
+        ip_list_index = self.ip_id_to_index[
+            incarceration_period.incarceration_period_id
+        ]
+        if ip_list_index > 0:
+            return self.incarceration_periods[ip_list_index - 1]
+        return None

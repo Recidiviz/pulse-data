@@ -19,10 +19,16 @@ import datetime
 import itertools
 from typing import List, Optional, Set
 
+from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
+    period_is_commitment_from_supervision_admission_from_parole_board_hold,
+)
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_last_terminated_period_before_date,
     sort_period_by_external_id,
     sort_periods_by_set_dates_and_statuses,
+)
+from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
+    PreProcessedIncarcerationPeriodIndex,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -31,6 +37,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StateSupervisionPeriod,
     StateSupervisionSentence,
@@ -86,8 +93,9 @@ def standard_date_sort_for_supervision_periods(
 
 
 def get_commitment_from_supervision_supervision_period(
-    admission_date: datetime.date,
+    incarceration_period: StateIncarcerationPeriod,
     supervision_periods: List[StateSupervisionPeriod],
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
     prioritize_overlapping_periods: bool,
 ) -> Optional[StateSupervisionPeriod]:
     """Identifies the supervision period associated with the commitment to supervision
@@ -100,6 +108,38 @@ def get_commitment_from_supervision_supervision_period(
     """
     if not supervision_periods:
         return None
+
+    if not incarceration_period.admission_date:
+        raise ValueError(
+            "Unexpected missing admission_date on incarceration period: "
+            f"[{incarceration_period}]"
+        )
+
+    admission_date = incarceration_period.admission_date
+
+    preceding_incarceration_period = (
+        incarceration_period_index.preceding_incarceration_period_in_index(
+            incarceration_period
+        )
+    )
+
+    if (
+        preceding_incarceration_period
+        and period_is_commitment_from_supervision_admission_from_parole_board_hold(
+            incarceration_period=incarceration_period,
+            preceding_incarceration_period=preceding_incarceration_period,
+        )
+    ):
+        if not preceding_incarceration_period.admission_date:
+            raise ValueError(
+                "Unexpected missing admission_date on incarceration period: "
+                f"[{preceding_incarceration_period}]"
+            )
+
+        # If this person was a commitment from supervision from a parole board hold,
+        # then the date that they entered prison was the date of the preceding
+        # incarceration period.
+        admission_date = preceding_incarceration_period.admission_date
 
     overlapping_periods = supervision_periods_overlapping_with_date(
         admission_date, supervision_periods
