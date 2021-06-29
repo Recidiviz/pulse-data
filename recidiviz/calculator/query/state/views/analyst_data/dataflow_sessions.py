@@ -144,7 +144,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         state_code,
         MIN(last_day_of_data) last_day_of_data
     FROM last_day_of_data_by_state_and_source
-    GROUP BY 1 ORDER BY 1
+    GROUP BY 1
     ) 
     ,
     dedup_step_1_cte AS 

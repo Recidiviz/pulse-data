@@ -129,7 +129,6 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         CASE WHEN metric_source != 'INFERRED' THEN MAX(dataflow_session_id) END AS dataflow_session_id_end
     FROM dataflow_sessions_with_session_ids
     GROUP BY 1,2,3,4,5,6,7
-    ORDER BY 1,2,3,4,5,6,7
     )
     ,
     sessions_joined_with_dataflow AS
@@ -303,7 +302,6 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         SUM(CASE WHEN metric_source = 'INFERRED' THEN DATE_DIFF(COALESCE(end_date, last_day_of_data), start_date, DAY) + 1 ELSE 0 END) AS session_days_inferred,
     FROM session_with_ids_2
     GROUP BY 1,2,3,4,5,6,7
-    ORDER BY 1,2,3,4,5,6,7
     )
     ,
     sessions_additional_attributes AS

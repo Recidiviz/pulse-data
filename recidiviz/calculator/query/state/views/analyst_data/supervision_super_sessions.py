@@ -88,7 +88,6 @@ SUPERVISION_SUPER_SESSIONS_QUERY_TEMPLATE = """
     JOIN `{project_id}.{analyst_dataset}.compartment_sessions_materialized`
         USING(person_id, session_id)
     GROUP BY 1,2,3,4
-    ORDER BY 1,2,3,4
     )
     /*
     Pull in session characteristics at start and end of supervision super-session
