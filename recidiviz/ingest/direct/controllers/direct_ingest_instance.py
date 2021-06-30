@@ -36,7 +36,10 @@ from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAG
 
 # TODO(#6226): Add each state to these lists when we're ready to migrate that state to
 #  multi-DB in a given project.
-STAGING_MULTI_DB_STATES: List[StateCode] = []
+STAGING_MULTI_DB_STATES: List[StateCode] = [
+    StateCode.US_PA,
+    StateCode.US_TN,
+]
 PROD_MULTI_DB_STATES: List[StateCode] = []
 
 STATE_TO_PRIMARY_DATABASE_VERSION = {
