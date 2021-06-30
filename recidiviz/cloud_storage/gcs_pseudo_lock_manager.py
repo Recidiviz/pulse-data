@@ -32,7 +32,7 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.utils import metadata
 
 LOCK_TIME_KEY = "lock_time"
-CONTENTS_KEY = "contents"
+PAYLOAD_KEY = "contents"
 EXPIRATION_IN_SECONDS_KEY = "expiration_in_seconds"
 
 
@@ -44,32 +44,39 @@ def postgres_to_bq_lock_name_for_schema(schema: SchemaType) -> str:
 
 
 @attr.s(auto_attribs=True, frozen=True)
-class GCSPseudoLockContents:
+class GCSPseudoLockBody:
     """Defines the schema for the contents of the lock used by GCSPseudoLockManager."""
 
     lock_time: datetime
-    contents: Optional[str] = attr.ib(default=None)
+    payload: Optional[str] = attr.ib(default=None)
     expiration_in_seconds: Optional[int] = attr.ib(default=None)
+
+    def is_expired(self) -> bool:
+        return (
+            self.expiration_in_seconds is not None
+            and self.lock_time + timedelta(seconds=self.expiration_in_seconds)
+            < datetime.now()
+        )
 
     def to_json(self) -> Dict[str, Any]:
         output_json: Dict[str, Any] = {
             LOCK_TIME_KEY: self.lock_time,
         }
-        if self.contents is not None:
-            output_json[CONTENTS_KEY] = self.contents
+        if self.payload is not None:
+            output_json[PAYLOAD_KEY] = self.payload
         if self.expiration_in_seconds is not None:
             output_json[EXPIRATION_IN_SECONDS_KEY] = self.expiration_in_seconds
         return output_json
 
     @staticmethod
-    def from_json_string(lock_contents: str) -> Optional["GCSPseudoLockContents"]:
-        """Returns a GCSPseudoLockContents object from a json string.
+    def from_json_string(lock_body: str) -> Optional["GCSPseudoLockBody"]:
+        """Returns a GCSPseudoLockBody object from a json string.
 
         If the string contents do not match the known structure, it logs a warning
         and then passively returns None."""
 
         try:
-            json_contents = json.loads(lock_contents)
+            json_body = json.loads(lock_body)
         except json.decoder.JSONDecodeError:
             logging.warning(
                 "Could not decode lock's internal json. "
@@ -77,14 +84,14 @@ class GCSPseudoLockContents:
             )
             return None
 
-        if not isinstance(json_contents, dict):
+        if not isinstance(json_body, dict):
             logging.warning(
                 "Could not decode lock's internal json. "
                 "Could be the result of a schema change, so returning None"
             )
             return None
 
-        if LOCK_TIME_KEY not in json_contents:
+        if LOCK_TIME_KEY not in json_body:
             logging.warning(
                 "Could not find lock_time key in lock's internal json. "
                 "Could be the result of a schema change, so returning None"
@@ -92,7 +99,7 @@ class GCSPseudoLockContents:
             return None
 
         try:
-            lock_time = dateutil.parser.parse(json_contents[LOCK_TIME_KEY])
+            lock_time = dateutil.parser.parse(json_body[LOCK_TIME_KEY])
         except (TypeError, ValueError):
             logging.warning(
                 "lock_time key did not correspond to valid datetime in lock's internal json. "
@@ -100,15 +107,15 @@ class GCSPseudoLockContents:
             )
             return None
 
-        contents = json_contents.get(CONTENTS_KEY)
-        if contents is not None and not isinstance(contents, str):
+        payload = json_body.get(PAYLOAD_KEY)
+        if payload is not None and not isinstance(payload, str):
             logging.warning(
-                "contents key did not correspond to valid string in lock's internal json. "
+                "payload key did not correspond to valid string in lock's internal json. "
                 "Could be the result of a schema change, so returning None"
             )
             return None
 
-        expiration_in_seconds = json_contents.get(EXPIRATION_IN_SECONDS_KEY)
+        expiration_in_seconds = json_body.get(EXPIRATION_IN_SECONDS_KEY)
         if expiration_in_seconds is not None and not isinstance(
             expiration_in_seconds, int
         ):
@@ -118,9 +125,9 @@ class GCSPseudoLockContents:
             )
             return None
 
-        return GCSPseudoLockContents(
+        return GCSPseudoLockBody(
             lock_time=lock_time,
-            contents=contents,
+            payload=payload,
             expiration_in_seconds=expiration_in_seconds,
         )
 
@@ -138,14 +145,17 @@ class GCSPseudoLockManager:
 
     def no_active_locks_with_prefix(self, prefix: str) -> bool:
         """Checks to see if any locks exist with prefix"""
-        return (
-            len(
-                self.fs.ls_with_blob_prefix(
-                    bucket_name=self.bucket_name, blob_prefix=prefix
-                )
-            )
-            == 0
+        locks_with_prefix = self.fs.ls_with_blob_prefix(
+            bucket_name=self.bucket_name, blob_prefix=prefix
         )
+
+        lock_bodies = [
+            self._lock_body_for_path(path)
+            for path in locks_with_prefix
+            if isinstance(path, GcsfsFilePath)
+        ]
+
+        return all(lock.is_expired() for lock in lock_bodies if lock is not None)
 
     def unlock_locks_with_prefix(self, prefix: str) -> None:
         locks_with_prefix = self.fs.ls_with_blob_prefix(
@@ -163,11 +173,11 @@ class GCSPseudoLockManager:
     def lock(
         self,
         name: str,
-        contents: Optional[str] = None,
+        payload: Optional[str] = None,
         expiration_in_seconds: Optional[int] = None,
     ) -> None:
         """Locks @param name by generating new file. The body of the lock is json-encoded and contains
-        the lock time, the caller's custom @param contents (if provided), and the
+        the lock time, the caller's custom @param payload (if provided), and the
         @param expiration_in_seconds (if provided).
         """
         if self.is_locked(name):
@@ -176,14 +186,14 @@ class GCSPseudoLockManager:
                 f"{self.bucket_name}"
             )
 
-        lock_contents = GCSPseudoLockContents(
+        lock_body = GCSPseudoLockBody(
             lock_time=datetime.now(),
-            contents=contents,
+            payload=payload,
             expiration_in_seconds=expiration_in_seconds,
         )
         path = GcsfsFilePath(bucket_name=self.bucket_name, blob_name=name)
         self.fs.upload_from_string(
-            path, json.dumps(lock_contents.to_json(), default=str), "text/plain"
+            path, json.dumps(lock_body.to_json(), default=str), "text/plain"
         )
         logging.debug("Created lock file with name: %s", name)
 
@@ -204,43 +214,41 @@ class GCSPseudoLockManager:
 
     def is_locked(self, name: str) -> bool:
         """Checks if @param name is locked by checking if file exists. Returns true if locked, false if unlocked"""
-        path = GcsfsFilePath(bucket_name=self.bucket_name, blob_name=name)
         try:
-            lock_string = self.fs.download_as_string(path)
-        except GCSBlobDoesNotExistError:
+            gcs_pseudo_lock_body = self._lock_body_for_lock(name)
+        except GCSPseudoLockDoesNotExist:
             return False
-        gcs_pseudo_lock_contents = GCSPseudoLockContents.from_json_string(lock_string)
-        return (
-            not gcs_pseudo_lock_contents
-            or not gcs_pseudo_lock_contents.expiration_in_seconds
-            or gcs_pseudo_lock_contents.lock_time
-            + timedelta(seconds=gcs_pseudo_lock_contents.expiration_in_seconds)
-            > datetime.now()
-        )
+        return not gcs_pseudo_lock_body or not gcs_pseudo_lock_body.is_expired()
 
-    def get_lock_contents(self, name: str) -> Optional[str]:
-        """Returns contents of specified lock as string"""
+    def get_lock_payload(self, name: str) -> Optional[str]:
+        """Returns payload (non-metadata contents) of specified lock as string"""
+        gcs_pseudo_lock_body = self._lock_body_for_lock(name)
+        if not gcs_pseudo_lock_body:
+            return None
+        return gcs_pseudo_lock_body.payload
+
+    def _lock_body_for_lock(self, name: str) -> Optional[GCSPseudoLockBody]:
         path = GcsfsFilePath(bucket_name=self.bucket_name, blob_name=name)
+        return self._lock_body_for_path(path)
+
+    def _lock_body_for_path(self, path: GcsfsFilePath) -> Optional[GCSPseudoLockBody]:
         try:
             lock_string = self.fs.download_as_string(path)
         except GCSBlobDoesNotExistError as e:
             raise GCSPseudoLockDoesNotExist(
-                f"Lock with the name {name} does not yet exist in the bucket "
+                f"Lock with the name {path.file_name} does not yet exist in the bucket "
                 f"{self.bucket_name}"
             ) from e
-        gcs_pseudo_lock_contents = GCSPseudoLockContents.from_json_string(lock_string)
-        if not gcs_pseudo_lock_contents:
-            return None
-        return gcs_pseudo_lock_contents.contents
+        return GCSPseudoLockBody.from_json_string(lock_string)
 
     @contextmanager
     def using_lock(
         self,
         name: str,
-        contents: Optional[str] = None,
+        payload: Optional[str] = None,
         expiration_in_seconds: Optional[int] = None,
     ) -> Iterator[None]:
-        self.lock(name, contents, expiration_in_seconds)
+        self.lock(name, payload, expiration_in_seconds)
         try:
             yield
         finally:
