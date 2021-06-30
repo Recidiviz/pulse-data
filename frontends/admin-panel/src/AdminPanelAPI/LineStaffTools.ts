@@ -60,3 +60,19 @@ export const generateEmails = async (
     }
   );
 };
+
+// Send PO Monthly Report Emails
+export const sendEmails = async (
+  stateCode: string,
+  batchId: string,
+  redirectAddress?: string | null,
+  ccAddresses?: string[] | null,
+  subjectOverride?: string | null
+): Promise<Response> => {
+  return postWithURLAndBody(`/api/line_staff_tools/${stateCode}/send_emails`, {
+    batchId,
+    redirectAddress,
+    ccAddresses,
+    subjectOverride,
+  });
+};

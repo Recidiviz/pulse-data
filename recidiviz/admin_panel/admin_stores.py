@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Store used to maintain all admin panel related stores"""
-
 from typing import Dict, List
 
 from recidiviz.admin_panel.dataset_metadata_store import DatasetMetadataCountsStore

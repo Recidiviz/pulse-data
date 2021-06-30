@@ -17,17 +17,28 @@
 
 """ Utilities and constants shared across python modules in this package
 """
+import calendar
+import datetime
+import json
 import os
 import re
-from datetime import datetime
-from typing import Optional
+from typing import Dict, Optional
 
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
 from recidiviz.utils import metadata, secrets
 
 _PO_REPORT_CDN_STATIC_IP_KEY = "po_report_cdn_static_IP"
+
+
+class EmailMetadataReportDateError(ValueError):
+    pass
+
+
+class InvalidReportTypeError(ValueError):
+    pass
 
 
 def get_env_var(key: str) -> str:
@@ -175,6 +186,65 @@ def generate_batch_id() -> str:
         and integer because callers will exclusively use this in situations
         requiring a string.
     """
-    dt = datetime.now()
+    dt = datetime.datetime.now()
     format_str = "%Y%m%d%H%M%S"
     return dt.strftime(format_str)
+
+
+def read_batch_metadata(*, batch_id: str, state_code: StateCode) -> Dict[str, str]:
+    gcsfs = GcsfsFactory.build()
+    return json.loads(
+        gcsfs.download_as_string(
+            path=_gcsfs_path_for_batch_metadata(batch_id, state_code)
+        )
+    )
+
+
+def get_report_type(batch_id: str, state_code: StateCode) -> ReportType:
+    """Get the report type of generated emails.
+    Args:
+        batch_id: string of the batch id of the generated emails
+        state_code: state code of the generated emails
+    Returns:
+        ReportType that is in the ReportType enum class in /po_monthly_report/constants.py
+    """
+    email_metadata = read_batch_metadata(batch_id=batch_id, state_code=state_code)
+    report_type = ReportType(email_metadata.get("report_type"))
+    if report_type not in ReportType:
+        raise InvalidReportTypeError(
+            f"Invalid report type: Sending emails with {report_type} is not a allowed. Report type does not exist."
+        )
+    return report_type
+
+
+def generate_report_date(batch_id: str, state_code: StateCode) -> datetime.date:
+    """Generate a report date from the json that is created when emails are generated.
+
+    Args:
+        batch_id: string of the batch id of the generated emails
+        state_code: state code of the generated emails
+
+    Returns:
+        Date type that contains the year, month, and day.
+    """
+    email_metadata = read_batch_metadata(batch_id=batch_id, state_code=state_code)
+
+    if (metadata_year := email_metadata.get("review_year")) is None:
+        raise EmailMetadataReportDateError("review_year not found in metadata")
+    review_year = int(metadata_year)
+
+    if (metadata_month := email_metadata.get("review_month")) is None:
+        raise EmailMetadataReportDateError("review_month not found in metadata")
+    review_month = int(metadata_month)
+
+    review_day = calendar.monthrange(review_year, review_month)[1]
+    report_date = datetime.date(year=review_year, month=review_month, day=review_day)
+    return report_date
+
+
+def _gcsfs_path_for_batch_metadata(
+    batch_id: str, state_code: StateCode
+) -> GcsfsFilePath:
+    return GcsfsFilePath.from_absolute_path(
+        f"gs://{get_email_content_bucket_name()}/{state_code.value}/{batch_id}/metadata.json"
+    )
