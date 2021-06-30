@@ -38,9 +38,9 @@ const GenerateEmails = (): JSX.Element => {
   const isProduction = window.RUNTIME_GCP_ENVIRONMENT === "production";
   const projectId = isProduction ? "recidiviz-123" : "recidiviz-staging";
 
-  const [emailsGenerated, setEmailsGenerated] = React.useState(false);
   const [formData, setFormData] =
     React.useState<GenerateFormData | undefined>(undefined);
+  const [batchId, setBatchId] = React.useState<string | null>(null);
   const [showSpinner, setShowSpinner] = React.useState(false);
   const [isConfirmationModalVisible, setIsConfirmationModalVisible] =
     React.useState(false);
@@ -64,12 +64,14 @@ const GenerateEmails = (): JSX.Element => {
         formData.regionCode,
         formData.messageBodyOverride
       );
-      const text = await r.text();
       if (r.status >= 400) {
+        const text = await r.text();
         message.error(`Generate emails... failed: ${text}`);
+        setBatchId(null);
       } else {
-        message.success(`Generate emails... succeeded! ${text}`);
-        setEmailsGenerated(true);
+        const json = await r.json();
+        message.success(`Generate emails... succeeded! ${json.statusText}`);
+        setBatchId(json.batchId);
       }
     }
     setShowSpinner(false);
@@ -81,7 +83,6 @@ const GenerateEmails = (): JSX.Element => {
   };
 
   const showConfirmationModal = () => {
-    setEmailsGenerated(false);
     setIsConfirmationModalVisible(true);
   };
 
@@ -89,12 +90,15 @@ const GenerateEmails = (): JSX.Element => {
     const projectName =
       environment === "production" ? "recidiviz-123" : "recidiviz-staging";
     return (
-      <a
-        style={{ margin: 10 }}
-        href={`https://console.cloud.google.com/storage/browser/${projectName}-report-html/${formData?.state}`}
-      >
-        Bucket link to {projectName}-report-html for {formData?.state}.
-      </a>
+      <p>
+        Bucket link to {projectName}-report-html for {formData?.state}, batch #
+        <a
+          style={{ margin: 10 }}
+          href={`https://console.cloud.google.com/storage/browser/${projectName}-report-html/${formData?.state}/${batchId}`}
+        >
+          {batchId}.
+        </a>
+      </p>
     );
   };
 
@@ -145,7 +149,7 @@ const GenerateEmails = (): JSX.Element => {
         </Form>
         {showSpinner ? <Spin /> : null}
       </Card>
-      {emailsGenerated ? bucketLink(projectId) : null}
+      {batchId ? bucketLink(projectId) : null}
       {formData?.state ? (
         <ActionRegionConfirmationForm
           visible={isConfirmationModalVisible}

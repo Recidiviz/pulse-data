@@ -189,6 +189,7 @@ def add_case_triage_routes(bp: Blueprint) -> None:
         state_code_info = fetch_state_codes(EMAIL_STATE_CODES)
         return jsonify(state_code_info), HTTPStatus.OK
 
+    # Generate monthly report emails
     @bp.route(
         "/api/line_staff_tools/<state_code_str>/generate_emails", methods=["POST"]
     )
@@ -252,7 +253,7 @@ def add_case_triage_routes(bp: Blueprint) -> None:
             f"Emails generated for test address: {test_address}" if test_address else ""
         )
         counts_text = f"Successfully generate {len(result.successes)} email(s)"
-        success_text = f"{new_batch_text} {test_address_text} {counts_text}"
+        success_text = f"{new_batch_text} {test_address_text} {counts_text}."
         if result.failures and not result.successes:
             return (
                 f"{success_text}"
@@ -264,9 +265,17 @@ def add_case_triage_routes(bp: Blueprint) -> None:
                 f" Failed to generate {len(result.failures)} email(s): {', '.join(result.failures)}"
             ), HTTPStatus.MULTI_STATUS
 
-        return (f"{success_text}"), HTTPStatus.OK
+        return (
+            jsonify(
+                {
+                    "batchId": batch_id,
+                    "statusText": f"{success_text}",
+                }
+            ),
+            HTTPStatus.OK,
+        )
 
-    # Send Emails
+    # Send monthly report emails
     @bp.route("/api/line_staff_tools/<state_code_str>/send_emails", methods=["POST"])
     @requires_gae_auth
     def _send_emails(state_code_str: str) -> Tuple[str, HTTPStatus]:
