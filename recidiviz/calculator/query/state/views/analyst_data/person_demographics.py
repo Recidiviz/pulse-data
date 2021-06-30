@@ -30,7 +30,11 @@ from recidiviz.utils.metadata import local_project_id_override
 PERSON_DEMOGRAPHICS_VIEW_NAME = "person_demographics"
 
 PERSON_DEMOGRAPHICS_VIEW_DESCRIPTION = (
-    """Person level demographics - age, race, gender"""
+    """Person level demographics - age, race, gender, external ID"""
+)
+
+PERSON_DEMOGRAPHICS_PRIORITIZED_ID_TYPES = (
+    """('US_ID_DOC', 'US_MO_DOC', 'US_ND_SID', 'US_PA_INMATE')"""
 )
 
 PERSON_DEMOGRAPHICS_QUERY_TEMPLATE = """
@@ -55,20 +59,39 @@ PERSON_DEMOGRAPHICS_QUERY_TEMPLATE = """
     SELECT DISTINCT
         state_code,
         person_id,
-        FIRST_VALUE(race_or_ethnicity) OVER (PARTITION BY state_code, person_id ORDER BY COALESCE(representation_priority, 100)) as prioritized_race_or_ethnicity
+        FIRST_VALUE(race_or_ethnicity) OVER (PARTITION BY state_code, person_id ORDER BY COALESCE(representation_priority, 100)) as prioritized_race_or_ethnicity,
     FROM race_or_ethnicity_cte
     LEFT JOIN `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
             USING (state_code, race_or_ethnicity)
+    )
+    ,
+    prioritized_external_id_table AS
+    (
+    SELECT DISTINCT
+        state_code,
+        person_id,
+        external_id AS prioritized_external_id,
+        ROW_NUMBER() OVER (PARTITION BY state_code, person_id ORDER BY external_id) AS id_number,
+    FROM `{project_id}.{base_dataset}.state_person_external_id`
+    WHERE id_type IN {prioritized_id_types}
     )
     SELECT 
         state_code,
         person_id,
         birthdate,
         gender,
-        prioritized_race_or_ethnicity
-    FROM `{project_id}.{base_dataset}.state_person` 
+        prioritized_race_or_ethnicity,
+        prioritized_external_id,
+    FROM `{project_id}.{base_dataset}.state_person`
     FULL OUTER JOIN prioritized_race_ethnicity_cte
-        USING(person_id, state_code)
+        USING(state_code, person_id) 
+    LEFT JOIN prioritized_external_id_table
+        USING(state_code, person_id) 
+    WHERE
+        id_number = 1
+    ORDER BY
+        state_code,
+        person_id
     """
 
 PERSON_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -76,6 +99,7 @@ PERSON_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=PERSON_DEMOGRAPHICS_VIEW_NAME,
     view_query_template=PERSON_DEMOGRAPHICS_QUERY_TEMPLATE,
     description=PERSON_DEMOGRAPHICS_VIEW_DESCRIPTION,
+    prioritized_id_types=PERSON_DEMOGRAPHICS_PRIORITIZED_ID_TYPES,
     base_dataset=STATE_BASE_DATASET,
     reference_views_dataset=REFERENCE_VIEWS_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
