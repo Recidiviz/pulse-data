@@ -16,13 +16,13 @@
 // =============================================================================
 import { autorun, makeAutoObservable, runInAction } from "mobx";
 import UserStore from "../UserStore";
-import { ClientData, Client, SupervisionLevel } from "../ClientsStore";
+import { Client, ClientData, SupervisionLevel } from "../ClientsStore";
 import {
   Policy,
   ScoreMinMaxBySupervisionLevel,
   SupervisionContactFrequency,
 } from "./Policy";
-import API, { isErrorResponse } from "../API";
+import API from "../API";
 import { Gender } from "../ClientsStore/Client";
 
 interface PolicyStoreProps {
@@ -65,16 +65,13 @@ class PolicyStore {
         "/api/policy_requirements_for_state",
         { state: "US_ID" }
       );
-      if (isErrorResponse(response)) {
-        throw new Error(`${response.description} (code: ${response.code})`);
-      } else {
-        runInAction(async () => {
-          this.isLoading = false;
-          this.policies = response;
-        });
-      }
+
+      return runInAction(() => {
+        this.isLoading = false;
+        this.policies = response;
+      });
     } catch (error) {
-      runInAction(() => {
+      return runInAction(() => {
         this.isLoading = false;
         this.error = error;
       });

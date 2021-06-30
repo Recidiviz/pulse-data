@@ -255,6 +255,24 @@ class ClientsStore {
         throw error;
       });
   }
+
+  updateClientPreferredName(
+    client: Client,
+    name: string
+  ): Promise<void | ErrorResponse> {
+    const { preferredName: previousPreferredName } = client;
+    set(client, "preferredName", name);
+
+    return this.api
+      .post<void>("/api/set_preferred_name", {
+        personExternalId: client.personExternalId,
+        name,
+      })
+      .catch((error) => {
+        set(client, "preferredName", previousPreferredName);
+        throw error;
+      });
+  }
 }
 
 export default ClientsStore;
