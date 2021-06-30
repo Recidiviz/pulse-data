@@ -444,6 +444,7 @@ class SupervisionViolationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
 
     NEW_CRIME = "NEW_CRIME"
     TECHNICAL = "TECHNICAL"
+    OTHER = "OTHER"
 
     @classmethod
     def get(
