@@ -17,10 +17,7 @@
 # pylint:disable=bare-except
 
 """A single module containing all Python code related to Email Reporting.
-
 """
-import calendar
-import datetime
 import json
 import logging
 from http import HTTPStatus
@@ -35,7 +32,13 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.common.results import MultiRequestResult
 from recidiviz.reporting import email_reporting_utils
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
-from recidiviz.reporting.email_reporting_utils import validate_email_address
+from recidiviz.reporting.email_reporting_utils import (
+    EmailMetadataReportDateError,
+    InvalidReportTypeError,
+    generate_report_date,
+    get_report_type,
+    validate_email_address,
+)
 from recidiviz.reporting.region_codes import InvalidRegionCodeException
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development
@@ -228,29 +231,23 @@ def deliver_emails_for_batch() -> Tuple[str, HTTPStatus]:
         logging.error(msg)
         return msg, HTTPStatus.BAD_REQUEST
 
-    metadata = data_retrieval.read_batch_metadata(
-        batch_id=batch_id, state_code=state_code
-    )
-    if (report_type := metadata.get("report_type")) != ReportType.POMonthlyReport.value:
-        # TODO(#7790): Support more email types.
-        msg = f"Sending emails with {report_type=} is not supported yet"
-        logging.error(msg)
-        return msg, HTTPStatus.NOT_IMPLEMENTED
+    # TODO(#7790): Support more email types.
+    try:
+        report_type = get_report_type(batch_id, state_code)
+        if report_type != ReportType.POMonthlyReport:
+            raise InvalidReportTypeError(
+                f"Invalid report type: Sending emails with {report_type} is not implemented yet."
+            )
+    except InvalidReportTypeError as error:
+        logging.error(error)
+        return str(error), HTTPStatus.NOT_IMPLEMENTED
 
-    if (metadata_year := metadata.get("review_year")) is None:
-        msg = "review_year not found in metadata"
-        logging.error(msg)
-        return msg, HTTPStatus.BAD_REQUEST
-    review_year = int(metadata_year)
+    try:
+        report_date = generate_report_date(batch_id, state_code)
+    except EmailMetadataReportDateError as error:
+        logging.error(error)
+        return str(error), HTTPStatus.BAD_REQUEST
 
-    if (metadata_month := metadata.get("review_month")) is None:
-        msg = "review_month not found in metadata"
-        logging.error(msg)
-        return msg, HTTPStatus.BAD_REQUEST
-    review_month = int(metadata_month)
-
-    review_day = calendar.monthrange(review_year, review_month)[1]
-    report_date = datetime.date(year=review_year, month=review_month, day=review_day)
     result = email_delivery.deliver(
         batch_id=batch_id,
         state_code=state_code,
