@@ -17,7 +17,7 @@
 
 """Constants related to a StateSupervisionPeriod."""
 from enum import unique
-from typing import Dict, Set, Optional
+from typing import Dict, Optional, Set
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
@@ -132,6 +132,12 @@ class StateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
     UNSUPERVISED = (
         state_enum_strings.state_supervision_period_supervision_level_unsupervised
     )
+    # Unassigned is for when the data explicitly indicates that the supervision level is
+    # unassigned, as opposed to when there is not enough data to determine what the
+    # supervision level is.
+    UNASSIGNED = (
+        state_enum_strings.state_supervision_period_supervision_level_unassigned
+    )
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSupervisionLevel"]:
@@ -245,6 +251,7 @@ _STATE_SUPERVISION_LEVEL_MAP: Dict[str, StateSupervisionLevel] = {
     "UNSUPERVISED": StateSupervisionLevel.UNSUPERVISED,
     "LIMITED": StateSupervisionLevel.LIMITED,
     "ELECTRONIC MONITORING ONLY": StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY,
+    "UNASSIGNED": StateSupervisionLevel.UNASSIGNED,
 }
 
 _STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP = {

@@ -32,7 +32,7 @@ the historical table (which does not). Because the key is shared between the
 master and historical tables, this allows an indirect guarantee of referential
 integrity to the historical tables as well.
 """
-from typing import TypeVar, Any
+from typing import Any, TypeVar
 
 from sqlalchemy import (
     Boolean,
@@ -42,34 +42,33 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
-    Text,
     Table,
+    Text,
     UniqueConstraint,
 )
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
 
+import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.common.constants.state import (
     enum_canonical_strings as state_enum_strings,
-)
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
-from recidiviz.persistence.database.schema.history_table_shared_columns_mixin import (
-    HistoryTableSharedColumns,
-)
-
-from recidiviz.persistence.database.schema.shared_enums import (
-    gender,
-    race,
-    ethnicity,
-    residency_status,
-    bond_status,
-    bond_type,
-    charge_status,
 )
 
 # SQLAlchemy enums. Created separately from the tables so they can be shared
 # between the master and historical tables for each entity.
 from recidiviz.persistence.database.base_schema import StateBase
+from recidiviz.persistence.database.schema.history_table_shared_columns_mixin import (
+    HistoryTableSharedColumns,
+)
+from recidiviz.persistence.database.schema.shared_enums import (
+    bond_status,
+    bond_type,
+    charge_status,
+    ethnicity,
+    gender,
+    race,
+    residency_status,
+)
 
 ASSOCIATON_TABLE_COMMENT_TEMPLATE = (
     "Association table that connects {first_object_name_plural} with "
@@ -353,6 +352,7 @@ state_supervision_level = Enum(
     state_enum_strings.state_supervision_period_supervision_level_limited,
     state_enum_strings.state_supervision_period_supervision_level_electronic_monitoring_only,
     state_enum_strings.state_supervision_period_supervision_level_unsupervised,
+    state_enum_strings.state_supervision_period_supervision_level_unassigned,
     name="state_supervision_level",
 )
 
