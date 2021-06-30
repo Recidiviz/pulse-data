@@ -106,3 +106,37 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         )
 
         self.assertEqual([updated_period], validated_incarceration_periods)
+
+    # TODO(#7222): Remove this test once sci_incarceration_period_v2 has shipped in prod
+    def test_pre_processed_incarceration_periods_revocation_admission_v1(
+        self,
+    ) -> None:
+        """Tests that admission_reason_raw_text values from the v1 version of the
+        sci_incarceration_period view parse in IP pre-processing."""
+        state_code = "US_PA"
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason_raw_text="TPV-TRUE-APV",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            release_date=date(2012, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
+        period_copy = attr.evolve(incarceration_period)
+
+        incarceration_periods = [
+            incarceration_period,
+        ]
+
+        validated_incarceration_periods = (
+            self._pre_processed_incarceration_periods_for_calculations(
+                incarceration_periods=incarceration_periods,
+                collapse_transfers=True,
+            )
+        )
+
+        self.assertEqual([period_copy], validated_incarceration_periods)

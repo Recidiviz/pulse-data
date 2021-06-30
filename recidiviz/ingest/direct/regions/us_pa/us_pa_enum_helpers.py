@@ -20,17 +20,17 @@ from typing import Dict, List, Optional
 
 from recidiviz.common.constants.state.state_assessment import StateAssessmentLevel
 from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
-    StateIncarcerationPeriodAdmissionReason,
-)
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodSupervisionType,
-    get_most_relevant_supervision_type,
 )
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactType,
+)
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+    get_most_relevant_supervision_type,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseRevocationType,
@@ -38,7 +38,6 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     invert_enum_to_str_mappings,
 )
-
 
 INCARCERATION_PERIOD_ADMISSION_REASON_TO_MOVEMENT_CODE_MAPPINGS: Dict[
     StateIncarcerationPeriodAdmissionReason, List[str]
@@ -351,12 +350,20 @@ def incarceration_period_admission_reason_mapper(
         )
         start_is_admin_edge = "FALSE"
     else:
-        (
-            _,
-            start_is_new_revocation,
-            start_movement_code,
-            start_is_admin_edge,
-        ) = concatenated_codes.split(" ")
+        # TODO(#7222): Remove this first clause once sci_incarceration_period_v2 has
+        #  shipped in prod
+        if concatenated_codes.count(" ") == 2:
+            _, start_is_new_revocation, start_movement_code = concatenated_codes.split(
+                " "
+            )
+            start_is_admin_edge = "FALSE"
+        else:
+            (
+                _,
+                start_is_new_revocation,
+                start_movement_code,
+                start_is_admin_edge,
+            ) = concatenated_codes.split(" ")
 
     if start_is_new_revocation == "TRUE":
         # Note: These are not always legal revocations. We are currently using the PAROLE_REVOCATION admission_reason
