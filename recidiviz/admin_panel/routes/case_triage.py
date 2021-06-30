@@ -15,16 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines routes for the Case Triage API endpoints in the admin panel."""
-import json
 import logging
 import os
 from http import HTTPStatus
 from json import JSONDecodeError
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 from flask import Blueprint, jsonify, request
 
 import recidiviz.reporting.data_retrieval as data_retrieval
+import recidiviz.reporting.email_delivery as email_delivery
 from recidiviz.admin_panel.admin_stores import fetch_state_codes
 from recidiviz.admin_panel.case_triage_helpers import (
     columns_for_case_triage_view,
@@ -45,7 +45,11 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
 from recidiviz.reporting.email_reporting_utils import (
+    EmailMetadataReportDateError,
+    InvalidReportTypeError,
     generate_batch_id,
+    generate_report_date,
+    get_report_type,
     validate_email_address,
 )
 from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
@@ -53,7 +57,6 @@ from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.utils.params import get_only_str_param_value
 
 EMAIL_STATE_CODES = [StateCode.US_ID, StateCode.US_PA]
 
@@ -154,6 +157,7 @@ def add_case_triage_routes(bp: Blueprint) -> None:
 
         return "", HTTPStatus.OK
 
+    # fetch PO monthly report states
     @bp.route("/api/case_triage/get_po_feedback", methods=["POST"])
     @requires_gae_auth
     def _fetch_po_user_feedback() -> Tuple[str, HTTPStatus]:
@@ -200,15 +204,9 @@ def add_case_triage_routes(bp: Blueprint) -> None:
             test_address = data.get("testAddress")
             region_code = data.get("regionCode")
             message_body_override = data.get("messageBodyOverride")
-            raw_email_allowlist = get_only_str_param_value(
-                "email_allowlist", request.args
-            )
+            email_allowlist = data.get("emailAllowlist")
 
             validate_email_address(test_address)
-
-            email_allowlist: Optional[List[str]] = (
-                json.loads(raw_email_allowlist) if raw_email_allowlist else None
-            )
 
         except (ValueError, JSONDecodeError) as error:
             logging.error(error)
@@ -266,4 +264,94 @@ def add_case_triage_routes(bp: Blueprint) -> None:
                 f" Failed to generate {len(result.failures)} email(s): {', '.join(result.failures)}"
             ), HTTPStatus.MULTI_STATUS
 
+        return (f"{success_text}"), HTTPStatus.OK
+
+    # Send Emails
+    @bp.route("/api/line_staff_tools/<state_code_str>/send_emails", methods=["POST"])
+    @requires_gae_auth
+    def _send_emails(state_code_str: str) -> Tuple[str, HTTPStatus]:
+        try:
+            data = request.json
+            state_code = StateCode(state_code_str)
+            if state_code not in EMAIL_STATE_CODES:
+                raise ValueError("State code is invalid for PO monthly reports")
+            batch_id = data.get("batchId")
+            redirect_address = data.get("redirectAddress")
+            cc_addresses = data.get("ccAddresses")
+            subject_override = data.get("subjectOverride")
+            email_allowlist = data.get("emailAllowlist")
+
+            validate_email_address(redirect_address)
+            for cc_address in cc_addresses:
+                validate_email_address(cc_address)
+
+            if email_allowlist is not None:
+                for recipient_email in email_allowlist:
+                    validate_email_address(recipient_email)
+
+        except ValueError as error:
+            logging.error(error)
+            return str(error), HTTPStatus.BAD_REQUEST
+
+        if not state_code:
+            msg = "Query parameter 'state_code' not received"
+            logging.error(msg)
+            return msg, HTTPStatus.BAD_REQUEST
+
+        if not batch_id:
+            msg = "Query parameter 'batch_id' not received"
+            logging.error(msg)
+            return msg, HTTPStatus.BAD_REQUEST
+
+        # TODO(#7790): Support more email types.
+        try:
+            report_type = get_report_type(batch_id, state_code)
+            if report_type != ReportType.POMonthlyReport:
+                raise InvalidReportTypeError(
+                    f"Invalid report type: Sending emails with {report_type} is not implemented yet."
+                )
+        except InvalidReportTypeError as error:
+            logging.error(error)
+            return str(error), HTTPStatus.NOT_IMPLEMENTED
+
+        try:
+            report_date = generate_report_date(batch_id, state_code)
+        except EmailMetadataReportDateError as error:
+            logging.error(error)
+            return str(error), HTTPStatus.BAD_REQUEST
+
+        result = email_delivery.deliver(
+            batch_id=batch_id,
+            state_code=state_code,
+            redirect_address=redirect_address,
+            cc_addresses=cc_addresses,
+            subject_override=subject_override,
+            email_allowlist=email_allowlist,
+            report_date=report_date,
+        )
+
+        redirect_text = (
+            f"to the redirect email address {redirect_address}"
+            if redirect_address
+            else ""
+        )
+        cc_addresses_text = (
+            f"CC'd {','.join(email for email in cc_addresses)}." if cc_addresses else ""
+        )
+        success_text = (
+            f"Sent {len(result.successes)} emails {redirect_text}. {cc_addresses_text} "
+        )
+
+        if result.failures and not result.successes:
+            return (
+                f"{success_text} " f"All emails failed to send",
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+
+        if result.failures:
+            return (
+                f"{success_text} "
+                f"{len(result.failures)} emails failed to send: {','.join(result.failures)}",
+                HTTPStatus.MULTI_STATUS,
+            )
         return (f"{success_text}"), HTTPStatus.OK

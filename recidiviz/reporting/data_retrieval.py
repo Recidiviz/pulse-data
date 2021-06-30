@@ -44,6 +44,7 @@ from recidiviz.reporting.context.po_monthly_report.constants import (
     OFFICER_GIVEN_NAME,
     ReportType,
 )
+from recidiviz.reporting.email_reporting_utils import _gcsfs_path_for_batch_metadata
 from recidiviz.reporting.recipient import Recipient
 from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
 
@@ -343,14 +344,6 @@ def _retrieve_data_for_po_monthly_report(
     ]
 
 
-def _gcsfs_path_for_batch_metadata(
-    batch_id: str, state_code: StateCode
-) -> GcsfsFilePath:
-    return GcsfsFilePath.from_absolute_path(
-        f"gs://{utils.get_email_content_bucket_name()}/{state_code.value}/{batch_id}/metadata.json"
-    )
-
-
 def _write_batch_metadata(
     *,
     batch_id: str,
@@ -363,13 +356,4 @@ def _write_batch_metadata(
         path=_gcsfs_path_for_batch_metadata(batch_id, state_code),
         contents=json.dumps({**metadata_fields, "report_type": report_type.value}),
         content_type="text/json",
-    )
-
-
-def read_batch_metadata(*, batch_id: str, state_code: StateCode) -> Dict[str, str]:
-    gcsfs = GcsfsFactory.build()
-    return json.loads(
-        gcsfs.download_as_string(
-            path=_gcsfs_path_for_batch_metadata(batch_id, state_code)
-        )
     )
