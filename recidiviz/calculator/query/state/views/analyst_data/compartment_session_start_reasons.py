@@ -105,7 +105,6 @@ COMPARTMENT_SESSION_START_REASONS_QUERY_TEMPLATE = """
         WHERE reason_priority = 1
         )
     WHERE metric_source_priority = 1
-    ORDER BY 1,2
     """
 
 COMPARTMENT_SESSION_START_REASONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

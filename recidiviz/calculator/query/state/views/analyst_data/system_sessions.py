@@ -48,7 +48,7 @@ SYSTEM_SESSIONS_QUERY_TEMPLATE = """
         FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized` 
         )
     WHERE compartment_level_1 !='RELEASE'
-    GROUP BY 1,2 ORDER BY 1,2
+    GROUP BY 1,2
     """
 
 SYSTEM_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
