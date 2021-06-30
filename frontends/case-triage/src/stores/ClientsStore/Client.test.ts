@@ -206,7 +206,7 @@ test("create a note", async () => {
 });
 
 test("handle failed note creation", async () => {
-  APIMock.prototype.post.mockResolvedValueOnce({
+  APIMock.prototype.post.mockRejectedValueOnce({
     code: "bad_request",
     description: "Something bad was requested.",
   });

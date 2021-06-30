@@ -19,7 +19,6 @@ import { makeAutoObservable, runInAction, set } from "mobx";
 import moment from "moment";
 import { caseInsensitiveIncludes, titleCase } from "../../utils";
 import type API from "../API";
-import { isErrorResponse } from "../API";
 import {
   CaseUpdate,
   CaseUpdateActionType,
@@ -318,6 +317,17 @@ export class Client {
     return this.hasCaseUpdateInStatus(action, CaseUpdateStatus.IN_PROGRESS);
   }
 
+  findInProgressUpdate(
+    actions: CaseUpdateActionType[]
+  ): CaseUpdate | undefined {
+    const found = actions.find((action) => this.hasInProgressUpdate(action));
+    if (!found) {
+      return;
+    }
+
+    return this.caseUpdates[found];
+  }
+
   get isVisible(): boolean {
     return caseInsensitiveIncludes(
       this.name,
@@ -454,17 +464,17 @@ export class Client {
 
     notes.push(newNote);
 
-    const response = await this.api.post<NoteData>("/api/create_note", {
-      personExternalId: this.personExternalId,
-      text,
-    });
+    try {
+      const response = await this.api.post<NoteData>("/api/create_note", {
+        personExternalId: this.personExternalId,
+        text,
+      });
 
-    runInAction(() => {
-      if (!isErrorResponse(response)) {
-        set(newNote, response);
-      } else {
+      runInAction(() => set(newNote, response));
+    } catch (e) {
+      runInAction(() => {
         notes.splice(notes.indexOf(newNote), 1);
-      }
-    });
+      });
+    }
   }
 }

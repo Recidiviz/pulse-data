@@ -35,12 +35,16 @@ interface BootstrapResponse {
 
 export type ErrorResponse = {
   code: string;
-  description: string;
+  description: string | Record<string, unknown>;
 };
+
 export function isErrorResponse(x: {
   [key: string]: unknown;
 }): x is ErrorResponse {
-  return typeof x.code === "string" && typeof x.description === "string";
+  return (
+    typeof x.code === "string" &&
+    (typeof x.description === "string" || typeof x.description === "object")
+  );
 }
 
 const BOOTSTRAP_ROUTE = "/api/bootstrap";
@@ -115,6 +119,10 @@ class API {
       return this.request<T>({ path, method, body });
     }
 
+    if (isErrorResponse(json)) {
+      throw json;
+    }
+
     return json;
   }
 
@@ -126,10 +134,7 @@ class API {
     return this.request({ path, method: "GET" });
   }
 
-  async post<T>(
-    path: string,
-    body: Record<string, unknown>
-  ): Promise<T | ErrorResponse> {
+  async post<T>(path: string, body: Record<string, unknown>): Promise<T> {
     return this.request({ path, body, method: "POST" });
   }
 }
