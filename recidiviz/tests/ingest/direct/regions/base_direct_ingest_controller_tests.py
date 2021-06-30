@@ -29,6 +29,7 @@ import pytz
 from freezegun import freeze_time
 from mock import patch
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
@@ -113,6 +114,19 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
+    @classmethod
+    def _main_database_key(cls) -> "SQLAlchemyDatabaseKey":
+        if cls.schema_type() == SchemaType.STATE:
+            state_code = StateCode(cls.region_code().upper())
+            return SQLAlchemyDatabaseKey.for_state_code(
+                state_code,
+                # We assume we're ingesting into the PRIMARY ingest instance
+                DirectIngestInstance.PRIMARY.database_version(
+                    SystemLevel.STATE, state_code=state_code
+                ),
+            )
+        return SQLAlchemyDatabaseKey.for_schema(cls.schema_type())
+
     def setUp(self) -> None:
         self.maxDiff = 250000
 
@@ -120,9 +134,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = "recidiviz-staging"
 
-        self.main_database_key = SQLAlchemyDatabaseKey.canonical_for_schema(
-            self.schema_type()
-        )
+        self.main_database_key = self._main_database_key()
         self.operations_database_key = SQLAlchemyDatabaseKey.for_schema(
             SchemaType.OPERATIONS
         )
