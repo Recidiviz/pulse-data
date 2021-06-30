@@ -69,7 +69,6 @@ COMPARTMENT_SESSION_END_REASONS_QUERY_TEMPLATE = """
         * EXCEPT (rn)
     FROM release_metric_cte
     WHERE rn = 1
-    ORDER BY 1,2
     """
 
 COMPARTMENT_SESSION_END_REASONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

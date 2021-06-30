@@ -390,7 +390,6 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
             WHEN assessment_score_end>=39 THEN '39+' END as assessment_score_bucket_end
     FROM sessions_additional_attributes
     WHERE NOT (compartment_level_1 = 'DEATH' AND end_date IS NULL)
-    ORDER BY person_id, session_id
 """
 COMPARTMENT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,

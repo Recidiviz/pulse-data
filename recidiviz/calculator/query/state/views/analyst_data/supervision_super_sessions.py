@@ -117,7 +117,6 @@ SUPERVISION_SUPER_SESSIONS_QUERY_TEMPLATE = """
     LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sessions_materialized` last
         ON last.person_id = s.person_id
         AND last.session_id = s.session_id_end
-    ORDER BY 1,2
     """
 
 SUPERVISION_SUPER_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

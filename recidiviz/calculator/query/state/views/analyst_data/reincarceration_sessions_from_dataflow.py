@@ -96,9 +96,6 @@ REINCARCERATION_SESSIONS_FROM_DATAFLOW_QUERY_TEMPLATE = """
         AND release_session.compartment_level_2 NOT IN ('COMMUNITY_PLACEMENT_PROGRAM','SHOCK_INCARCERATION')
         AND (release_session.outflow_to_level_1 IN ('SUPERVISION','SUPERVISION_OUT_OF_STATE','RELEASE','PENDING_SUPERVISION')
         OR release_session.outflow_to_level_2 = 'COMMUNITY_PLACEMENT_PROGRAM')
-        
-    ORDER BY 1,2,3,4
-    
     """
 
 REINCARCERATION_SESSIONS_FROM_DATAFLOW_VIEW_BUILDER = SimpleBigQueryViewBuilder(
