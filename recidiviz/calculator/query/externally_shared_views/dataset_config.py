@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,19 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Namespace references."""
-from enum import Enum
+"""Dataset configuration for case triage experimentation platform."""
 
+CEMENTING_THE_CHANGE_DATASET: str = "cementing_the_change"
+EXTERNALLY_SHARED_VIEWS_DATASET: str = "externally_shared_views"
+USDR_FTR_DATASET: str = "usdr_ftr"
 
-class BigQueryViewNamespace(Enum):
-    CASE_TRIAGE = "case_triage"
-    CLOUDSQL_CONNECTION = "cloudsql_connection"
-    COUNTY = "county"
-    DIRECT_INGEST = "direct_ingest"
-    EXPERIMENTS = "experiments"
-    EXTERNALLY_SHARED_VIEWS = "externally_shared_views"
-    INGEST_METADATA = "ingest_metadata"
-    JUSTICE_COUNTS = "justice_counts"
-    STATE = "state"
-    VALIDATION = "validation"
-    VALIDATION_METADATA = "validation_metadata"
+# state access permissions
+all_ingested_states = ["US_ID", "US_MO", "US_ND", "US_PA"]
+RISC_STATE_PERMISSIONS: list = all_ingested_states
+USDR_STATE_PERMISSIONS: list = all_ingested_states

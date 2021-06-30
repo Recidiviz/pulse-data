@@ -24,6 +24,9 @@ from recidiviz.calculator.query.county.view_config import (
 from recidiviz.calculator.query.experiments.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as EXPERIMENTS_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.externally_shared_views.view_config import (
+    VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as EXTERNALLY_SHARED_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.justice_counts.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as JUSTICE_COUNTS_VIEW_BUILDERS,
 )
@@ -53,14 +56,15 @@ from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE: Dict[
     BigQueryViewNamespace, Sequence[BigQueryViewBuilder]
 ] = {
+    BigQueryViewNamespace.CASE_TRIAGE: CASE_TRIAGE_VIEW_BUILDERS,
     BigQueryViewNamespace.COUNTY: COUNTY_VIEW_BUILDERS,
-    BigQueryViewNamespace.JUSTICE_COUNTS: JUSTICE_COUNTS_VIEW_BUILDERS,
     BigQueryViewNamespace.DIRECT_INGEST: DIRECT_INGEST_VIEW_BUILDERS,
+    BigQueryViewNamespace.EXPERIMENTS: EXPERIMENTS_VIEW_BUILDERS,
+    BigQueryViewNamespace.EXTERNALLY_SHARED_VIEWS: EXTERNALLY_SHARED_VIEW_BUILDERS,
+    BigQueryViewNamespace.JUSTICE_COUNTS: JUSTICE_COUNTS_VIEW_BUILDERS,
+    BigQueryViewNamespace.INGEST_METADATA: INGEST_METADATA_VIEW_BUILDERS,
     BigQueryViewNamespace.STATE: STATE_VIEW_BUILDERS,
     BigQueryViewNamespace.VALIDATION: VALIDATION_VIEW_BUILDERS,
-    BigQueryViewNamespace.CASE_TRIAGE: CASE_TRIAGE_VIEW_BUILDERS,
-    BigQueryViewNamespace.EXPERIMENTS: EXPERIMENTS_VIEW_BUILDERS,
-    BigQueryViewNamespace.INGEST_METADATA: INGEST_METADATA_VIEW_BUILDERS,
     BigQueryViewNamespace.VALIDATION_METADATA: VALIDATION_METADATA_VIEW_BUILDERS,
 }
 
