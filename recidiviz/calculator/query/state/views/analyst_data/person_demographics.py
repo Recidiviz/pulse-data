@@ -19,9 +19,9 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
-    STATE_BASE_DATASET,
-    REFERENCE_VIEWS_DATASET,
     ANALYST_VIEWS_DATASET,
+    REFERENCE_VIEWS_DATASET,
+    STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -69,7 +69,6 @@ PERSON_DEMOGRAPHICS_QUERY_TEMPLATE = """
     FROM `{project_id}.{base_dataset}.state_person` 
     FULL OUTER JOIN prioritized_race_ethnicity_cte
         USING(person_id, state_code)
-    ORDER BY 1,2
     """
 
 PERSON_DEMOGRAPHICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
