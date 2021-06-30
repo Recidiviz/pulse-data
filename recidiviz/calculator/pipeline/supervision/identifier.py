@@ -1707,6 +1707,7 @@ def _supervision_level_downgrade_occurred(
         StateSupervisionLevel.IN_CUSTODY,
         StateSupervisionLevel.INTERSTATE_COMPACT,
         StateSupervisionLevel.LIMITED,
+        StateSupervisionLevel.UNASSIGNED,
     ]
 
     supervision_level_to_number: Dict[StateSupervisionLevel, int] = {

@@ -243,6 +243,7 @@ state_supervision_period_supervision_level_electronic_monitoring_only = (
 )
 state_supervision_period_supervision_level_limited = "LIMITED"
 state_supervision_period_supervision_level_unsupervised = "UNSUPERVISED"
+state_supervision_period_supervision_level_unassigned = "UNASSIGNED"
 
 state_supervision_period_termination_reason_absconsion = "ABSCONSION"
 state_supervision_period_termination_reason_commuted = "COMMUTED"
