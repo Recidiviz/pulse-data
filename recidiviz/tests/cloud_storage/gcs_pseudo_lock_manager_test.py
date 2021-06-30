@@ -18,19 +18,18 @@
 import json
 import unittest
 from datetime import datetime, timedelta
-
 from unittest import mock
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
-    GCSPseudoLockContents,
-    LOCK_TIME_KEY,
-    CONTENTS_KEY,
     EXPIRATION_IN_SECONDS_KEY,
-    GCSPseudoLockManager,
+    LOCK_TIME_KEY,
+    PAYLOAD_KEY,
     GCSPseudoLockAlreadyExists,
+    GCSPseudoLockBody,
     GCSPseudoLockDoesNotExist,
+    GCSPseudoLockManager,
 )
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
@@ -39,65 +38,65 @@ class TestGCSPseudoLockContents(unittest.TestCase):
 
     def test_to_json_no_optionals(self) -> None:
         now = datetime.now()
-        contents = GCSPseudoLockContents(lock_time=now)
-        encoded_contents = contents.to_json()
+        body = GCSPseudoLockBody(lock_time=now)
+        encoded_contents = body.to_json()
 
         self.assertEqual(encoded_contents[LOCK_TIME_KEY], now)
-        self.assertTrue(CONTENTS_KEY not in encoded_contents)
+        self.assertTrue(PAYLOAD_KEY not in encoded_contents)
         self.assertTrue(EXPIRATION_IN_SECONDS_KEY not in encoded_contents)
 
     def test_to_json(self) -> None:
         now = datetime.now()
-        text_contents = "SECRET_CONTENTS"
+        text_payload = "SECRET_CONTENTS"
         expiration_in_seconds = 4
-        contents = GCSPseudoLockContents(
+        body = GCSPseudoLockBody(
             lock_time=now,
-            contents=text_contents,
+            payload=text_payload,
             expiration_in_seconds=expiration_in_seconds,
         )
-        encoded_contents = contents.to_json()
+        encoded_contents = body.to_json()
 
         self.assertEqual(encoded_contents[LOCK_TIME_KEY], now)
-        self.assertEqual(encoded_contents[CONTENTS_KEY], text_contents)
+        self.assertEqual(encoded_contents[PAYLOAD_KEY], text_payload)
         self.assertEqual(
             encoded_contents[EXPIRATION_IN_SECONDS_KEY], expiration_in_seconds
         )
 
     def test_from_json_failures(self) -> None:
-        self.assertIsNone(GCSPseudoLockContents.from_json_string("malformed}{"))
-        self.assertIsNone(GCSPseudoLockContents.from_json_string('"a string"'))
-        self.assertIsNone(GCSPseudoLockContents.from_json_string('["a list"]'))
-        self.assertIsNone(GCSPseudoLockContents.from_json_string("{}"))
-        self.assertIsNone(GCSPseudoLockContents.from_json_string('{"lock_time": -4}'))
+        self.assertIsNone(GCSPseudoLockBody.from_json_string("malformed}{"))
+        self.assertIsNone(GCSPseudoLockBody.from_json_string('"a string"'))
+        self.assertIsNone(GCSPseudoLockBody.from_json_string('["a list"]'))
+        self.assertIsNone(GCSPseudoLockBody.from_json_string("{}"))
+        self.assertIsNone(GCSPseudoLockBody.from_json_string('{"lock_time": -4}'))
         self.assertIsNone(
-            GCSPseudoLockContents.from_json_string(
+            GCSPseudoLockBody.from_json_string(
                 '{"lock_time": "2021-03-05 15:09:32.332362", "contents": 4}'
             )
         )
         self.assertIsNone(
-            GCSPseudoLockContents.from_json_string(
+            GCSPseudoLockBody.from_json_string(
                 '{"lock_time": "2021-03-05 15:09:32.332362", "expiration_in_seconds": "4"}'
             )
         )
 
     def test_from_json_success(self) -> None:
         self.assertIsNotNone(
-            GCSPseudoLockContents.from_json_string(
+            GCSPseudoLockBody.from_json_string(
                 '{"lock_time": "2021-03-05 15:09:32.332362"}'
             )
         )
         self.assertIsNotNone(
-            GCSPseudoLockContents.from_json_string(
+            GCSPseudoLockBody.from_json_string(
                 '{"lock_time": "2021-03-05 15:09:32.332362", "contents": "4"}'
             )
         )
         self.assertIsNotNone(
-            GCSPseudoLockContents.from_json_string(
+            GCSPseudoLockBody.from_json_string(
                 '{"lock_time": "2021-03-05 15:09:32.332362", "contents": "4", "expiration_in_seconds": 4}'
             )
         )
         self.assertIsNotNone(
-            GCSPseudoLockContents.from_json_string(
+            GCSPseudoLockBody.from_json_string(
                 '{"lock_time": "2021-03-05 15:09:32.332362", "expiration_in_seconds": 4}'
             )
         )
@@ -131,6 +130,23 @@ class TestGCSPseudoLockManager(unittest.TestCase):
         self.gcs_factory_patcher.stop()
         self.project_id_patcher.stop()
 
+    def _upload_fake_expired_lock(
+        self, lock_manager: GCSPseudoLockManager, lock_name: str
+    ) -> None:
+        now = datetime.now()
+        yesterday = now - timedelta(days=1)
+        path = GcsfsFilePath(bucket_name=lock_manager.bucket_name, blob_name=lock_name)
+        self.fs.upload_from_string(
+            path,
+            json.dumps(
+                GCSPseudoLockBody(
+                    lock_time=yesterday, expiration_in_seconds=3600
+                ).to_json(),
+                default=str,
+            ),
+            content_type="text/text",
+        )
+
     def test_lock(self) -> None:
         """Locks temp and then checks if locked"""
         lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
@@ -147,12 +163,12 @@ class TestGCSPseudoLockManager(unittest.TestCase):
     def test_double_lock_diff_contents(self) -> None:
         """Locks and then locks again with unique contents, asserts its still locked and an error is raised"""
         lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
-        lock_manager.lock(self.LOCK_NAME, contents=self.CONTENTS)
+        lock_manager.lock(self.LOCK_NAME, payload=self.CONTENTS)
 
         with self.assertRaises(GCSPseudoLockAlreadyExists):
             lock_manager.lock(self.LOCK_NAME, self.CONTENTS2)
         self.assertTrue(lock_manager.is_locked(self.LOCK_NAME))
-        self.assertEqual(self.CONTENTS, lock_manager.get_lock_contents(self.LOCK_NAME))
+        self.assertEqual(self.CONTENTS, lock_manager.get_lock_payload(self.LOCK_NAME))
 
     def test_double_lock(self) -> None:
         """Locks and then locks again, asserts its still locked and an error is raised"""
@@ -222,10 +238,10 @@ class TestGCSPseudoLockManager(unittest.TestCase):
         path = GcsfsFilePath(
             bucket_name=lock_manager.bucket_name, blob_name=self.LOCK_NAME
         )
-        actual_contents = GCSPseudoLockContents.from_json_string(
+        actual_body = GCSPseudoLockBody.from_json_string(
             self.fs.download_as_string(path)
         )
-        self.assertIsNotNone(actual_contents)
+        self.assertIsNotNone(actual_body)
 
     def test_contents_of_lock_set(self) -> None:
         """Locks with pre-specified contents and asserts the lockfile contains those contents"""
@@ -234,12 +250,12 @@ class TestGCSPseudoLockManager(unittest.TestCase):
         path = GcsfsFilePath(
             bucket_name=lock_manager.bucket_name, blob_name=self.LOCK_NAME
         )
-        actual_contents = GCSPseudoLockContents.from_json_string(
+        actual_body = GCSPseudoLockBody.from_json_string(
             self.fs.download_as_string(path)
         )
 
-        assert actual_contents is not None
-        self.assertEqual(self.CONTENTS, actual_contents.contents)
+        assert actual_body is not None
+        self.assertEqual(self.CONTENTS, actual_body.payload)
 
     def test_contents_of_unlocked_and_relocked(self) -> None:
         """Locks with pre-specified contents and asserts the lockfile contains those contents"""
@@ -250,12 +266,12 @@ class TestGCSPseudoLockManager(unittest.TestCase):
         path = GcsfsFilePath(
             bucket_name=lock_manager.bucket_name, blob_name=self.LOCK_NAME
         )
-        actual_contents = GCSPseudoLockContents.from_json_string(
+        actual_body = GCSPseudoLockBody.from_json_string(
             self.fs.download_as_string(path)
         )
 
-        assert actual_contents is not None
-        self.assertEqual(self.CONTENTS2, actual_contents.contents)
+        assert actual_body is not None
+        self.assertEqual(self.CONTENTS2, actual_body.payload)
 
     def test_locks_with_prefix_exist(self) -> None:
         """Ensures lock manager can see if locks with a prefix exist."""
@@ -273,12 +289,31 @@ class TestGCSPseudoLockManager(unittest.TestCase):
         lock_manager.unlock(lock_name)
         self.assertTrue(lock_manager.no_active_locks_with_prefix(prefix))
 
+    def test_locks_with_prefix_ignore_expired(self) -> None:
+        """Ensures lock manager can see if locks with a prefix exist."""
+        prefix = "SOME_LOCK_PREFIX"
+        lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
+
+        self._upload_fake_expired_lock(lock_manager, prefix + "some_suffix")
+
+        self.assertTrue(lock_manager.no_active_locks_with_prefix(prefix))
+
+    def test_locks_with_prefix_mixed(self) -> None:
+        """Ensures lock manager can see if locks with a prefix exist."""
+        prefix = "SOME_LOCK_PREFIX"
+        lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
+
+        self._upload_fake_expired_lock(lock_manager, prefix + "some_suffix")
+        lock_manager.lock(prefix + "some_suffix2")
+
+        self.assertFalse(lock_manager.no_active_locks_with_prefix(prefix))
+
     def test_get_lock_contents(self) -> None:
         """Tests that the get_lock_contents gets the correct contents from the lock"""
         lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
         lock_manager.lock(self.LOCK_NAME, self.CONTENTS)
-        actual_contents = lock_manager.get_lock_contents(self.LOCK_NAME)
-        self.assertEqual(self.CONTENTS, actual_contents)
+        actual_body = lock_manager.get_lock_payload(self.LOCK_NAME)
+        self.assertEqual(self.CONTENTS, actual_body)
 
     def test_unlock_locks_with_prefix(self) -> None:
         """Tests that all locks with prefix are unlocked"""
@@ -302,8 +337,8 @@ class TestGCSPseudoLockManager(unittest.TestCase):
             self.assertTrue(lock_manager.is_locked(self.LOCK_NAME))
 
             # Contents appropriately set
-            actual_contents = lock_manager.get_lock_contents(self.LOCK_NAME)
-            self.assertEqual(self.CONTENTS, actual_contents)
+            actual_body = lock_manager.get_lock_payload(self.LOCK_NAME)
+            self.assertEqual(self.CONTENTS, actual_body)
 
         # lock should be unlocked outside of with
         self.assertFalse(lock_manager.is_locked(self.LOCK_NAME))
@@ -336,9 +371,7 @@ class TestGCSPseudoLockManager(unittest.TestCase):
         self.fs.upload_from_string(
             path,
             json.dumps(
-                GCSPseudoLockContents(
-                    lock_time=now, expiration_in_seconds=60
-                ).to_json(),
+                GCSPseudoLockBody(lock_time=now, expiration_in_seconds=60).to_json(),
                 default=str,
             ),
             content_type="text/text",
@@ -346,43 +379,15 @@ class TestGCSPseudoLockManager(unittest.TestCase):
         self.assertTrue(lock_manager.is_locked(self.LOCK_NAME))
 
     def test_lock_expired(self) -> None:
-        now = datetime.now()
-        yesterday = now - timedelta(days=1)
         lock_manager = GCSPseudoLockManager()
-
-        path = GcsfsFilePath(
-            bucket_name=lock_manager.bucket_name, blob_name=self.LOCK_NAME
-        )
-        self.fs.upload_from_string(
-            path,
-            json.dumps(
-                GCSPseudoLockContents(
-                    lock_time=yesterday, expiration_in_seconds=3600
-                ).to_json(),
-                default=str,
-            ),
-            content_type="text/text",
-        )
+        self._upload_fake_expired_lock(lock_manager, self.LOCK_NAME)
         self.assertFalse(lock_manager.is_locked(self.LOCK_NAME))
 
     def test_unlock_expired(self) -> None:
-        now = datetime.now()
-        yesterday = now - timedelta(days=1)
         lock_manager = GCSPseudoLockManager()
 
-        path = GcsfsFilePath(
-            bucket_name=lock_manager.bucket_name, blob_name=self.LOCK_NAME
-        )
-        self.fs.upload_from_string(
-            path,
-            json.dumps(
-                GCSPseudoLockContents(
-                    lock_time=yesterday, expiration_in_seconds=3600
-                ).to_json(),
-                default=str,
-            ),
-            content_type="text/text",
-        )
+        self._upload_fake_expired_lock(lock_manager, self.LOCK_NAME)
+
         self.assertFalse(lock_manager.is_locked(self.LOCK_NAME))
 
         # Should not raise an error
