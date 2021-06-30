@@ -55,11 +55,11 @@ class CloudSqlToBQLockManager:
         try:
             self.lock_manager.lock(
                 lock_name,
-                contents=lock_id,
+                payload=lock_id,
                 expiration_in_seconds=self._export_lock_timeout_for_schema(schema_type),
             )
         except GCSPseudoLockAlreadyExists as e:
-            previous_lock_id = self.lock_manager.get_lock_contents(lock_name)
+            previous_lock_id = self.lock_manager.get_lock_payload(lock_name)
             logging.info("Lock contents: %s", previous_lock_id)
             if lock_id != previous_lock_id:
                 raise GCSPseudoLockAlreadyExists(
