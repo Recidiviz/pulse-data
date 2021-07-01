@@ -48,13 +48,54 @@ columns:
     description: |-
       Code for the status that was valid for this time span
     known_values:
+      - value: CH
+        description: Courtesy Hold
+      - value: CR
+        description: Community/Rider
+      - value: CV
+        description: Civil
+      - value: IP
+        description: Institutional Probation
+      - value: "NO"
+        description: Non Idaho Commitment
+      - value: PA
+        description: Pardon Applicant
       - value: PB
-        description: probation
+        description: Probation
+      - value: PF
+        description: Firearm Applicant
       - value: PR
-        description: parole
+        description: Parole
+      - value: PS
+        description: Pre-sentence Investigation/Drug Court Pending
+      - value: PV
+        description: Parole Violator
+      - value: RJ
+        description: Rider
+      - value: TM
+        description: Termer
   - name: stat_rls_typ
     description: |-
       Code for the status that began after this status was complete
+    known_values:
+      - value: CR
+        description: Community/Rider
+      - value: HS
+        description: History
+      - value: IP
+        description: Institutional Probation
+      - value: MC
+        description: Multiple Status Close
+      - value: PB
+        description: Probation
+      - value: PR
+        description: Parole
+      - value: PV
+        description: Parole Violator
+      - value: RJ
+        description: Rider
+      - value: TM
+        description: Termer
   - name: proj_rls_dtd
     is_datetime: True
     description: |-
