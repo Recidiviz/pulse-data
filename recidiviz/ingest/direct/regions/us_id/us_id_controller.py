@@ -487,7 +487,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
         StateSupervisionLevel.LIMITED: [
             "LIMITED SUPERVISION",
         ],
-        StateSupervisionLevel.EXTERNAL_UNKNOWN: [
+        StateSupervisionLevel.UNASSIGNED: [
             "UNCLASSIFIED",
         ],
         StateSupervisionLevel.IN_CUSTODY: [
