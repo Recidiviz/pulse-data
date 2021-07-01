@@ -96,7 +96,7 @@ const GenerateEmails = (): JSX.Element => {
           style={{ margin: 10 }}
           href={`https://console.cloud.google.com/storage/browser/${projectName}-report-html/${formData?.state}/${batchId}`}
         >
-          {batchId}.
+          {batchId}
         </a>
       </p>
     );
