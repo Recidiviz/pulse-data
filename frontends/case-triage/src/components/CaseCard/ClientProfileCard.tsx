@@ -15,12 +15,153 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import React from "react";
-import { Card } from "@recidiviz/design-system";
+import {
+  Card,
+  Icon,
+  IconSVG,
+  spacing,
+  Tab,
+  TabList,
+  Tabs,
+} from "@recidiviz/design-system";
+import moment from "moment";
+import { observer } from "mobx-react-lite";
 import TEST_IDS from "../TestIDs";
 import { CaseCardProps } from "./CaseCard.types";
+import { Caption, CloseButton } from "./CaseCard.styles";
+import { titleCase } from "../../utils";
+import { useRootStore } from "../../stores";
+import { NotInCaseloadDropdown } from "./NotInCaseloadDropdown";
+import { getContactFrequencyText } from "./strings";
+import { PreferredContactMethodSelector } from "./PreferredContactMethodSelector";
+import { PreferredNameInput } from "./PreferredNameInput";
+import {
+  ClientName,
+  ClientProfileHeading,
+  ClientProfileTabPanel,
+  ClientInfo,
+  DetailsLabel,
+  DetailsLineItem,
+  DetailsPanelHeading,
+  DetailsPanelSection,
+  Summary,
+  SummaryIcon,
+} from "./ClientProfileCard.styles";
 
-const ClientProfileCard: React.FC<CaseCardProps> = ({ client }) => {
-  return <Card data-testid={TEST_IDS.CLIENT_PROFILE_CARD} stacked />;
+interface SummaryItemProps {
+  icon?: typeof IconSVG[keyof typeof IconSVG];
+}
+const SummaryItem: React.FC<SummaryItemProps> = ({ children, icon }) => {
+  return (
+    <DetailsLineItem>
+      {icon ? <SummaryIcon kind={icon} /> : null}
+      <Summary>{children}</Summary>
+    </DetailsLineItem>
+  );
 };
+
+const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
+  const { policyStore } = useRootStore();
+
+  return (
+    <>
+      <DetailsPanelSection>
+        <DetailsPanelHeading>Summary</DetailsPanelHeading>
+        {client.supervisionStartDate ? (
+          <SummaryItem icon={IconSVG.Journey}>
+            Supervision started on{" "}
+            {client.supervisionStartDate.format("MMMM Do, YYYY")} (
+            {client.supervisionStartDate.from(moment().startOf("day"))})
+          </SummaryItem>
+        ) : null}
+
+        <SummaryItem icon={IconSVG.House}>
+          {client.currentAddress
+            ? `Lives at ${client.currentAddress}`
+            : "No address on file"}
+        </SummaryItem>
+
+        <SummaryItem icon={IconSVG.Briefcase}>
+          {client.needsMet.employment
+            ? `Employed at ${client.employer}`
+            : "Unemployed"}
+        </SummaryItem>
+
+        <SummaryItem icon={IconSVG.Envelope}>
+          {client.emailAddress || "No email on file"} /{" "}
+          {/* TODO(#8055): Add phone number: `client.phoneNumber || "No phone number on file"` */}
+        </SummaryItem>
+      </DetailsPanelSection>
+      <DetailsPanelSection>
+        <DetailsPanelHeading>Upcoming</DetailsPanelHeading>
+        <DetailsLineItem>
+          Next Contact:{" "}
+          {client.nextFaceToFaceDate?.format("MM/DD/YYYY") || "Never"}
+          <Caption style={{ marginLeft: spacing.sm }}>
+            Previous:{" "}
+            {client.mostRecentFaceToFaceDate?.format("MM/DD/YYYY") || "Never"}
+          </Caption>
+        </DetailsLineItem>
+        <DetailsLineItem>
+          Next Assessment:{" "}
+          {client.nextAssessmentDate?.format("MM/DD/YYYY") || "Unknown"}
+          <Caption style={{ marginLeft: spacing.sm }}>
+            Previous:{" "}
+            {client.mostRecentAssessmentDate?.format("MM/DD/YYYY") || "Never"}
+          </Caption>
+        </DetailsLineItem>
+        <DetailsLineItem>
+          <Caption>
+            {getContactFrequencyText(
+              policyStore.findContactFrequencyForClient(client),
+              "contact"
+            )}
+
+            {/* TODO(#8056): Add policy link */}
+          </Caption>
+        </DetailsLineItem>
+      </DetailsPanelSection>
+    </>
+  );
+};
+
+const ClientProfileCard: React.FC<CaseCardProps> = observer(({ client }) => {
+  const { clientsStore } = useRootStore();
+  return (
+    <Card data-testid={TEST_IDS.CLIENT_PROFILE_CARD} stacked>
+      <ClientProfileHeading className="fs-exclude">
+        <ClientName>{client.name}</ClientName>
+
+        <NotInCaseloadDropdown client={client} />
+
+        <CloseButton onClick={() => clientsStore.view()}>
+          <Icon kind={IconSVG.Close} />
+        </CloseButton>
+
+        <ClientInfo>
+          <DetailsLabel>Details:</DetailsLabel>
+          {titleCase(client.supervisionType)},{" "}
+          {titleCase(client.supervisionLevelText)},{" "}
+          {titleCase(client.personExternalId)} <br />
+          <DetailsLabel>Preferred Contact:</DetailsLabel>
+          <PreferredContactMethodSelector client={client} />
+          <br />
+          <DetailsLabel>Preferred Name:</DetailsLabel>
+          <PreferredNameInput client={client} />
+        </ClientInfo>
+      </ClientProfileHeading>
+      <Tabs>
+        <TabList>
+          <Tab>New</Tab>
+          <Tab>Details</Tab>
+        </TabList>
+        <ClientProfileTabPanel className="fs-exclude" />
+        <ClientProfileTabPanel className="fs-exclude">
+          <DetailsPanelContents client={client} />
+        </ClientProfileTabPanel>
+      </Tabs>
+    </Card>
+  );
+});
 
 export default ClientProfileCard;

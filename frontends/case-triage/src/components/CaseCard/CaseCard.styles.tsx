@@ -88,9 +88,9 @@ export const CloseButton = styled(Button).attrs({
 export const EllipsisDropdown = styled(NeedsCorrectionDropdown).attrs({
   toggleProps: {
     kind: "borderless",
+    icon: "TripleDot",
     shape: "block",
   },
 })`
-  margin-left: auto;
   margin-right: ${rem(spacing.sm)};
 `;
