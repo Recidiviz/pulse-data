@@ -23,7 +23,7 @@ import {
   SupervisionContactFrequency,
 } from "./Policy";
 import API from "../API";
-import { Gender } from "../ClientsStore/Client";
+import { Gender, SupervisionLevels } from "../ClientsStore/Client";
 
 interface PolicyStoreProps {
   api: API;
@@ -91,7 +91,7 @@ class PolicyStore {
   findSupervisionLevelForScore(
     gender: Gender,
     score: number | null
-  ): string | undefined {
+  ): SupervisionLevel | undefined {
     const supervisionLevelCutoffs =
       this.policies?.assessmentScoreCutoffs[gender];
 
@@ -99,30 +99,18 @@ class PolicyStore {
       return;
     }
 
-    const foundSupervisionLevel = Object.keys(supervisionLevelCutoffs).find(
-      (supervisionLevel) => {
-        const [min, max] =
-          supervisionLevelCutoffs[supervisionLevel as SupervisionLevel];
-        return (
-          score && score >= min && score <= (max || Number.MAX_SAFE_INTEGER)
-        );
-      }
-    );
+    return SupervisionLevels.find((supervisionLevel) => {
+      const [min, max] = supervisionLevelCutoffs[supervisionLevel];
+      return score && score >= min && score <= (max || Number.MAX_SAFE_INTEGER);
+    });
+  }
 
-    if (!foundSupervisionLevel) {
-      return;
-    }
-
-    return this.policies?.supervisionLevelNames[
-      foundSupervisionLevel as SupervisionLevel
-    ];
+  getSupervisionLevelName(level: SupervisionLevel): string {
+    return this.policies?.supervisionLevelNames[level] || level;
   }
 
   getSupervisionLevelNameForClient(client: ClientData): string {
-    return (
-      this.policies?.supervisionLevelNames[client.supervisionLevel] ||
-      client.supervisionLevel
-    );
+    return this.getSupervisionLevelName(client.supervisionLevel);
   }
 
   findContactFrequencyForClient(

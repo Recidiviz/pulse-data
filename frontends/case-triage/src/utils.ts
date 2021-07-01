@@ -16,6 +16,8 @@
 // =============================================================================
 
 import moment from "moment";
+import { useMemo } from "react";
+import { v4 as uuidv4 } from "uuid";
 
 export const titleCase = (str: string): string => {
   // Step 1. Lowercase the string
@@ -54,4 +56,8 @@ export function getTimeDifference(date: moment.Moment): string {
   }
 
   return date.from(beginningOfDay);
+}
+
+export function useUuid(): string {
+  return useMemo(() => uuidv4(), []);
 }

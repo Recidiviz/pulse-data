@@ -26,6 +26,7 @@ import {
 } from "../CaseUpdatesStore";
 import type OpportunityStore from "../OpportunityStore";
 import { Opportunity, OpportunityType } from "../OpportunityStore/Opportunity";
+import type PolicyStore from "../PolicyStore";
 import type ClientsStore from "./ClientsStore";
 import { NoteData, Note } from "./Note";
 
@@ -68,10 +69,12 @@ export enum PreferredContactMethod {
 
 export const PENDING_ID = "PENDING";
 
+type CaseUpdates = { [key in CaseUpdateActionType]?: CaseUpdate };
+
 export interface ClientData {
   assessmentScore: number | null;
   caseType: CaseType;
-  caseUpdates: Record<CaseUpdateActionType, CaseUpdate>;
+  caseUpdates: CaseUpdates;
   currentAddress: string;
   fullName: ClientFullName;
   employer?: string;
@@ -172,7 +175,7 @@ export class Client {
 
   caseType: CaseType;
 
-  caseUpdates: Record<CaseUpdateActionType, CaseUpdate>;
+  caseUpdates: CaseUpdates;
 
   currentAddress: string;
 
@@ -216,26 +219,26 @@ export class Client {
 
   supervisionLevel: SupervisionLevel;
 
-  supervisionLevelText: string;
-
   supervisionStartDate: moment.Moment | null;
 
   supervisionType: string;
 
   constructor(
-    clientData: ClientData & { supervisionLevelText: string },
+    clientData: ClientData,
     private api: API,
     private clientsStore: ClientsStore,
-    private opportunityStore: OpportunityStore
+    private opportunityStore: OpportunityStore,
+    private policyStore: PolicyStore
   ) {
-    makeAutoObservable<Client, "api" | "clientStore" | "opportunityStore">(
-      this,
-      {
-        api: false,
-        clientStore: false,
-        opportunityStore: false,
-      }
-    );
+    makeAutoObservable<
+      Client,
+      "api" | "clientStore" | "opportunityStore" | "policyStore"
+    >(this, {
+      api: false,
+      clientStore: false,
+      opportunityStore: false,
+      policyStore: false,
+    });
 
     // fields that come directly from the input
     this.assessmentScore = clientData.assessmentScore;
@@ -252,7 +255,6 @@ export class Client {
     this.needsMet = clientData.needsMet;
     this.preferredName = clientData.preferredName;
     this.preferredContactMethod = clientData.preferredContactMethod;
-    this.supervisionLevelText = clientData.supervisionLevelText;
 
     // fields that require some processing
     this.notes = (clientData.notes || []).map(
@@ -290,20 +292,25 @@ export class Client {
     client,
     clientsStore,
     opportunityStore,
+    policyStore,
   }: {
     api: API;
     client: ClientData;
     clientsStore: ClientsStore;
     opportunityStore: OpportunityStore;
+    policyStore: PolicyStore;
   }): Client {
-    const supervisionLevelText =
-      clientsStore.policyStore.getSupervisionLevelNameForClient(client);
     return new Client(
-      { ...client, supervisionLevelText },
+      { ...client },
       api,
       clientsStore,
-      opportunityStore
+      opportunityStore,
+      policyStore
     );
+  }
+
+  get supervisionLevelText(): string {
+    return this.policyStore.getSupervisionLevelNameForClient(this);
   }
 
   hasCaseUpdateInStatus(
@@ -315,6 +322,20 @@ export class Client {
 
   hasInProgressUpdate(action: CaseUpdateActionType): boolean {
     return this.hasCaseUpdateInStatus(action, CaseUpdateStatus.IN_PROGRESS);
+  }
+
+  get riskLevel(): SupervisionLevel | undefined {
+    return this.policyStore.findSupervisionLevelForScore(
+      this.gender,
+      this.assessmentScore
+    );
+  }
+
+  get riskLevelLabel(): string | undefined {
+    const { riskLevel } = this;
+    return riskLevel
+      ? this.policyStore.getSupervisionLevelName(riskLevel)
+      : undefined;
   }
 
   findInProgressUpdate(

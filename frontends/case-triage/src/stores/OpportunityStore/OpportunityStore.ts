@@ -42,8 +42,6 @@ class OpportunityStore {
 
   opportunities?: Opportunity[];
 
-  opportunitiesByPerson?: Record<string, Opportunity[] | undefined>;
-
   error?: string;
 
   userStore: UserStore;
@@ -83,17 +81,6 @@ class OpportunityStore {
 
         runInAction(() => {
           this.opportunities = opportunities;
-          this.opportunitiesByPerson = opportunities.reduce(
-            (memo, opportunity) => {
-              const list = memo[opportunity.personExternalId] || [];
-
-              return {
-                ...memo,
-                [opportunity.personExternalId]: [...list, opportunity],
-              };
-            },
-            {} as Record<string, Opportunity[]>
-          );
         });
       });
     } catch (error) {
@@ -102,6 +89,21 @@ class OpportunityStore {
         this.error = error;
       });
     }
+  }
+
+  get opportunitiesByPerson(): Record<string, Opportunity[] | undefined> {
+    const { opportunities } = this;
+    if (opportunities) {
+      return opportunities.reduce((memo, opportunity) => {
+        const list = memo[opportunity.personExternalId] || [];
+
+        return {
+          ...memo,
+          [opportunity.personExternalId]: [...list, opportunity],
+        };
+      }, {} as Record<string, Opportunity[]>);
+    }
+    return {};
   }
 
   *createOpportunityDeferral(

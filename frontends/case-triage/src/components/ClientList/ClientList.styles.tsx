@@ -21,12 +21,15 @@ import { rem } from "polished";
 import {
   Card,
   CardSection,
+  DropdownMenu,
+  DropdownToggle,
   H2,
   Need,
   palette,
   spacing,
 } from "@recidiviz/design-system";
 import { device } from "../styles";
+import { ToggleMenu } from "../ToggleMenu";
 
 export const ClientNeed = styled(Need)`
   margin-left: ${rem(spacing.md)};
@@ -199,4 +202,49 @@ export const StatusList = styled(TruncatedList)`
       display: none;
     }
   }
+`;
+
+export const ControlsWrapper = styled.div`
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+`;
+
+export const ControlWrapper = styled.div`
+  flex: 0 0 auto;
+  margin-bottom: ${rem(spacing.md)};
+  margin-right: ${rem(spacing.md)};
+`;
+
+export const SortControlWrapper = styled(ControlWrapper)`
+  margin-left: auto;
+`;
+
+const ControlToggle = styled(DropdownToggle).attrs({
+  showCaret: true,
+})``;
+
+const FILTER_CONTROL_WIDTH = 160;
+export const FilterControlToggle = styled(ControlToggle)`
+  width: ${rem(FILTER_CONTROL_WIDTH)};
+`;
+export const FilterControlMenu = styled(ToggleMenu)`
+  min-width: 0;
+  width: ${rem(FILTER_CONTROL_WIDTH)};
+` as typeof ToggleMenu;
+
+const SORT_CONTROL_WIDTH = 280;
+export const SortControlToggle = styled(ControlToggle).attrs({ shape: "pill" })`
+  width: ${rem(SORT_CONTROL_WIDTH)};
+`;
+export const SortControlMenu = styled(DropdownMenu)`
+  width: ${rem(SORT_CONTROL_WIDTH)};
+`;
+
+export const ControlLabel = styled.div`
+  color: ${palette.slate60};
+  font-size: ${rem(14)};
+  font-weight: 500;
+  margin-bottom: ${rem(spacing.sm)};
 `;
