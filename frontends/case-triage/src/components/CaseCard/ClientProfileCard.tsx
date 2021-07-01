@@ -15,15 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import React from "react";
-import {
-  Card,
-  Icon,
-  IconSVG,
-  spacing,
-  Tab,
-  TabList,
-  Tabs,
-} from "@recidiviz/design-system";
+import { Icon, IconSVG, spacing, Tab, TabList } from "@recidiviz/design-system";
 import moment from "moment";
 import { observer } from "mobx-react-lite";
 import TEST_IDS from "../TestIDs";
@@ -39,6 +31,7 @@ import {
   ClientName,
   ClientProfileHeading,
   ClientProfileTabPanel,
+  ClientProfileWrapper,
   ClientInfo,
   DetailsLabel,
   DetailsLineItem,
@@ -46,7 +39,9 @@ import {
   DetailsPanelSection,
   Summary,
   SummaryIcon,
+  ClientProfileTabs,
 } from "./ClientProfileCard.styles";
+import { NewItems } from "./NewItems";
 
 interface SummaryItemProps {
   icon?: typeof IconSVG[keyof typeof IconSVG];
@@ -128,7 +123,7 @@ const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
 const ClientProfileCard: React.FC<CaseCardProps> = observer(({ client }) => {
   const { clientsStore } = useRootStore();
   return (
-    <Card data-testid={TEST_IDS.CLIENT_PROFILE_CARD} stacked>
+    <ClientProfileWrapper data-testid={TEST_IDS.CLIENT_PROFILE_CARD}>
       <ClientProfileHeading className="fs-exclude">
         <ClientName>{client.name}</ClientName>
 
@@ -150,17 +145,19 @@ const ClientProfileCard: React.FC<CaseCardProps> = observer(({ client }) => {
           <PreferredNameInput client={client} />
         </ClientInfo>
       </ClientProfileHeading>
-      <Tabs>
+      <ClientProfileTabs>
         <TabList>
           <Tab>New</Tab>
           <Tab>Details</Tab>
         </TabList>
-        <ClientProfileTabPanel className="fs-exclude" />
+        <ClientProfileTabPanel className="fs-exclude">
+          <NewItems client={client} />
+        </ClientProfileTabPanel>
         <ClientProfileTabPanel className="fs-exclude">
           <DetailsPanelContents client={client} />
         </ClientProfileTabPanel>
-      </Tabs>
-    </Card>
+      </ClientProfileTabs>
+    </ClientProfileWrapper>
   );
 });
 
