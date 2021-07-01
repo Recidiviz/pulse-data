@@ -50,6 +50,14 @@ time_granularity = Enum(
     name="time_granularity",
 )
 
+facility_type_wv = Enum(
+    enum_strings.jail_wv_facility_type,
+    enum_strings.prison_wv_facility_type,
+    enum_strings.community_corrections_wv_facility_type,
+    enum_strings.juvenile_center_wv_facility_type,
+    name="facility_type_wv",
+)
+
 
 # Note that we generally don't aggregate any fields in the schemas below.  The
 # fields are a one to one mapping from the column names in the PDF tables from
@@ -607,6 +615,29 @@ class TnFacilityFemaleAggregate(JailsBase, _AggregateTableMixin):
     pretrial_misdemeanor_population = Column(Integer)
     female_jail_population = Column(Integer)
     female_beds = Column(Integer)
+
+
+class WvFacilityAggregate(JailsBase, _AggregateTableMixin):
+    """WV state-provided aggregate population statistics."""
+
+    __tablename__ = "wv_facility_aggregate"
+    __table_args__ = (
+        UniqueConstraint(
+            "fips",
+            "facility_name",
+            "facility_type",
+            "report_date",
+            "aggregation_window",
+        ),
+        CheckConstraint(
+            "LENGTH(fips) = 5", name="wv_facility_aggregate_fips_length_check"
+        ),
+    )
+
+    facility_name = Column(String(255), nullable=False)
+    county = Column(String(255), nullable=False)
+    total_jail_population = Column(Integer, nullable=False)
+    facility_type = Column(facility_type_wv, nullable=False)
 
 
 class SingleCountAggregate(JailsBase):
