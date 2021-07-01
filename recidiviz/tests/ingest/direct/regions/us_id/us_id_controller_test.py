@@ -22,9 +22,9 @@ import attr
 
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import (
+    Ethnicity,
     Gender,
     Race,
-    Ethnicity,
     ResidencyStatus,
 )
 from recidiviz.common.constants.state.external_id_types import US_ID_DOC
@@ -34,8 +34,8 @@ from recidiviz.common.constants.state.shared_enums import (
 )
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
-    StateAssessmentType,
     StateAssessmentLevel,
+    StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_early_discharge import (
@@ -46,64 +46,64 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateSpecializedPurposeForIncarceration,
     StateIncarcerationPeriodStatus,
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
+    StateSupervisionContactReason,
     StateSupervisionContactStatus,
     StateSupervisionContactType,
-    StateSupervisionContactReason,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
-    StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodTerminationReason,
-    StateSupervisionPeriodSupervisionType,
     StateSupervisionLevel,
+    StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodStatus,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseType,
     StateSupervisionViolationResponseDecision,
+    StateSupervisionViolationResponseType,
 )
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
+)
+from recidiviz.ingest.direct.regions.us_id.us_id_constants import (
+    VIOLATION_REPORT_CONSTANTS_INCLUDING_COMMA,
 )
 from recidiviz.ingest.direct.regions.us_id.us_id_controller import (
     UsIdController,
     _split_violation_response_row,
 )
-from recidiviz.ingest.direct.regions.us_id.us_id_constants import (
-    VIOLATION_REPORT_CONSTANTS_INCLUDING_COMMA,
-)
 from recidiviz.ingest.models.ingest_info import (
     IngestInfo,
+    StateAgent,
+    StateAlias,
+    StateAssessment,
+    StateCharge,
+    StateEarlyDischarge,
+    StateIncarcerationPeriod,
+    StateIncarcerationSentence,
     StatePerson,
+    StatePersonEthnicity,
     StatePersonExternalId,
     StatePersonRace,
-    StateAlias,
-    StatePersonEthnicity,
-    StateAssessment,
     StateSentenceGroup,
-    StateIncarcerationSentence,
-    StateCharge,
-    StateAgent,
-    StateSupervisionSentence,
-    StateIncarcerationPeriod,
-    StateSupervisionPeriod,
-    StateSupervisionViolation,
-    StateSupervisionViolationTypeEntry,
-    StateSupervisionViolationResponse,
-    StateSupervisionViolationResponseDecisionEntry,
-    StateEarlyDischarge,
     StateSupervisionCaseTypeEntry,
     StateSupervisionContact,
+    StateSupervisionPeriod,
+    StateSupervisionSentence,
+    StateSupervisionViolation,
+    StateSupervisionViolationResponse,
+    StateSupervisionViolationResponseDecisionEntry,
+    StateSupervisionViolationTypeEntry,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state import entities
@@ -2136,7 +2136,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             termination_reason_raw_text="I",
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_period_supervision_type_raw_text="PB",
-            supervision_level=StateSupervisionLevel.EXTERNAL_UNKNOWN,
+            supervision_level=StateSupervisionLevel.UNASSIGNED,
             supervision_level_raw_text="UNCLASSIFIED",
             termination_date=datetime.date(year=2018, month=12, day=31),
             supervision_sentences=[ss_1111_2],
