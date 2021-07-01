@@ -75,7 +75,9 @@ const Home = (props: RouteComponentProps): ReactElement => {
 
   const isDesktop = useBreakpoint(true, ["tablet-", false]);
 
-  const showNewLayout = userStore.isInExperiment(KNOWN_EXPERIMENTS.NewLayout);
+  const showNewLayout = userStore.isInExperiment(
+    KNOWN_EXPERIMENTS.NewClientList
+  );
 
   const ClientCard =
     clientsStore.activeClient && clientsStore.activeClient.isVisible ? (
