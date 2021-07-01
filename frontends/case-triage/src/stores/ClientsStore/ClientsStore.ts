@@ -166,7 +166,7 @@ class ClientsStore {
   }
 
   get lists(): Record<CLIENT_LIST_KIND, Client[]> {
-    if (this.userStore.isInExperiment(KNOWN_EXPERIMENTS.NewLayout)) {
+    if (this.userStore.isInExperiment(KNOWN_EXPERIMENTS.NewClientList)) {
       return this.filteredSortedLists;
     }
 
