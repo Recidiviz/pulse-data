@@ -226,8 +226,9 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   \<br />
                   {"    "}--file-type ingest_view \<br />
                   {"    "}--region {stateCode.toLowerCase()} \<br />
+                  {"    "}--ingest-instance PRIMARY \<br />
                   {"    "}--project-id {projectId} \<br />
-                  {"    "}--dry-run True
+                  {"    "}--dry-run False
                 </CodeBlock>
               </p>
               <p>and then run:</p>
@@ -253,7 +254,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 <li>
                   SSH into <code>prod-data-client</code> and log into the
                   operations database via{" "}
-                  <code>{isProduction ? "dev" : "prod"}-operations-psql</code>.
+                  <code>{isProduction ? "prod" : "dev"}-operations-psql</code>.
                 </li>
                 <li>
                   Drop all rows for{" "}
@@ -308,7 +309,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               <ol style={{ paddingLeft: 20 }}>
                 <li>
                   SSH into <code>prod-data-client</code> and run{" "}
-                  <code>{isProduction ? "dev" : "prod"}-operations-psql</code>.
+                  <code>{isProduction ? "prod" : "dev"}-operations-psql</code>.
                 </li>
                 <li>
                   Run the following SQL query to update the tables:
@@ -340,9 +341,8 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   recidiviz.tools.ingest.operations.copy_ingest_views_from_secondary_to_primary
                   \<br />
                   {"    "}--region {stateCode.toLowerCase()} \<br />
-                  {"    "}--database-version primary \<br />
                   {"    "}--project-id {projectId} \<br />
-                  {"    "}--dry-run True
+                  {"    "}--dry-run False
                 </CodeBlock>
               </p>
             </>
@@ -366,6 +366,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           description={
             <p>Mark secondary ingest as paused in the operations db.</p>
           }
+          nextButtonTitle="Mark Paused"
           onNextButtonClick={async () => {
             const request = async () =>
               pauseDirectIngestInstance(

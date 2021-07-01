@@ -76,7 +76,6 @@ def main() -> None:
             system_level=SystemLevel.STATE,
             ingest_instance=DirectIngestInstance.SECONDARY,
             project_id=args.project_id,
-            file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
         )
     )
     destination_region_storage_dir_path = (
@@ -85,13 +84,13 @@ def main() -> None:
             system_level=SystemLevel.STATE,
             ingest_instance=DirectIngestInstance.PRIMARY,
             project_id=args.project_id,
-            file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
         )
     )
     CopyStorageIngestFilesController(
         region_code=args.region,
         source_region_storage_dir_path=source_region_storage_dir_path,
         destination_region_storage_dir_path=destination_region_storage_dir_path,
+        file_type_to_copy=GcsfsDirectIngestFileType.INGEST_VIEW,
         start_date_bound=None,
         end_date_bound=None,
         dry_run=args.dry_run,
