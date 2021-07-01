@@ -16,9 +16,15 @@
 // =============================================================================
 import { action, autorun, makeAutoObservable, runInAction, set } from "mobx";
 import { parse } from "query-string";
+import assertNever from "assert-never";
 import PolicyStore from "../PolicyStore";
 import UserStore, { KNOWN_EXPERIMENTS } from "../UserStore";
-import { ClientData, Client, PreferredContactMethod } from "./Client";
+import {
+  ClientData,
+  Client,
+  SupervisionLevel,
+  PreferredContactMethod,
+} from "./Client";
 
 import API, { ErrorResponse } from "../API";
 
@@ -26,6 +32,9 @@ import {
   CLIENT_LIST_KIND,
   ClientListBuilder,
   ClientListPriorityComparator,
+  ClientListContactComparator,
+  ClientListAssessmentComparator,
+  ClientListSupervisionStartComparator,
 } from "./ClientListBuilder";
 import RootStore from "../RootStore";
 import OpportunityStore from "../OpportunityStore";
@@ -35,6 +44,14 @@ interface ClientsStoreProps {
   clientListBuilder: ClientListBuilder;
   rootStore: RootStore;
 }
+
+export const SortOrderList = [
+  "RELEVANCE",
+  "CONTACT_DATE",
+  "ASSESSMENT_DATE",
+  "START_DATE",
+] as const;
+export type SortOrder = typeof SortOrderList[number];
 
 class ClientsStore {
   private api: API;
@@ -58,6 +75,14 @@ class ClientsStore {
   clientPendingAnimation: boolean;
 
   error?: string;
+
+  sortOrder: SortOrder = "RELEVANCE";
+
+  supervisionLevelFilter?: SupervisionLevel;
+
+  riskLevelFilter?: SupervisionLevel;
+
+  supervisionTypeFilter?: string;
 
   policyStore: PolicyStore;
 
@@ -118,6 +143,7 @@ class ClientsStore {
             client,
             clientsStore: this,
             opportunityStore: this.opportunityStore,
+            policyStore: this.policyStore,
           })
         );
       });
@@ -127,6 +153,12 @@ class ClientsStore {
         this.error = error;
       });
     }
+  }
+
+  get supervisionTypes(): string[] {
+    return Array.from(
+      new Set(this.clients.map((c) => c.supervisionType))
+    ).sort();
   }
 
   get unfilteredLists(): Record<CLIENT_LIST_KIND, Client[]> {
@@ -153,13 +185,32 @@ class ClientsStore {
   }
 
   private get sortedActiveClients() {
+    let sortFn;
+
+    switch (this.sortOrder) {
+      case "RELEVANCE":
+        sortFn = ClientListPriorityComparator;
+        break;
+      case "ASSESSMENT_DATE":
+        sortFn = ClientListAssessmentComparator;
+        break;
+      case "START_DATE":
+        sortFn = ClientListSupervisionStartComparator;
+        break;
+      case "CONTACT_DATE":
+        sortFn = ClientListContactComparator;
+        break;
+      default:
+        assertNever(this.sortOrder);
+    }
+
     return [
       ...this.unsortedBuckets.TOP_OPPORTUNITY,
       ...this.unsortedBuckets.CONTACT_CLIENTS,
-    ].sort(ClientListPriorityComparator);
+    ].sort(sortFn);
   }
 
-  get sortedLists(): Record<CLIENT_LIST_KIND, Client[]> {
+  private get sortedLists(): Record<CLIENT_LIST_KIND, Client[]> {
     return {
       [CLIENT_LIST_KIND.UP_NEXT]: [
         ...this.sortedActiveClients,
@@ -171,14 +222,29 @@ class ClientsStore {
     };
   }
 
-  get filteredSortedLists(): Record<CLIENT_LIST_KIND, Client[]> {
+  private get filteredSortedLists(): Record<CLIENT_LIST_KIND, Client[]> {
+    const filterFn = (client: Client) => {
+      return (
+        client.isVisible &&
+        (this.supervisionLevelFilter
+          ? client.supervisionLevel === this.supervisionLevelFilter
+          : true) &&
+        (this.riskLevelFilter
+          ? client.riskLevel === this.riskLevelFilter
+          : true) &&
+        (this.supervisionTypeFilter
+          ? client.supervisionType === this.supervisionTypeFilter
+          : true)
+      );
+    };
+
     return {
       [CLIENT_LIST_KIND.UP_NEXT]: [
         ...this.sortedLists[CLIENT_LIST_KIND.UP_NEXT],
-      ].filter((client) => client.isVisible),
+      ].filter(filterFn),
       [CLIENT_LIST_KIND.PROCESSING_FEEDBACK]: [
         ...this.sortedLists[CLIENT_LIST_KIND.PROCESSING_FEEDBACK],
-      ].filter((client) => client.isVisible),
+      ].filter(filterFn),
     };
   }
 

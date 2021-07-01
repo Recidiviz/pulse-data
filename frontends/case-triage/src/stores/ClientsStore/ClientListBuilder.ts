@@ -1,47 +1,84 @@
+import type { Moment } from "moment";
 import { Client } from "./Client";
 import OpportunityStore, { Opportunity } from "../OpportunityStore";
 import { opportunityPriorityComparator } from "../OpportunityStore/Opportunity";
 import PolicyStore from "../PolicyStore";
 import { CaseUpdateActionType } from "../CaseUpdatesStore";
 
-const ClientListContactComparator = (self: Client, other: Client) => {
-  const selfNextContactDate = self.nextContactDate;
-  const otherNextContactDate = other.nextContactDate;
+type ClientSortFn = (a: Client, b: Client) => -1 | 0 | 1;
 
-  // No upcoming contact recommended. Shift myself to the right
-  if (!selfNextContactDate) {
-    return 1;
-  }
-  // I have upcoming contact recommended, but they do not. Shift myself left
-  if (!otherNextContactDate) {
-    return -1;
-  }
-  // My next face to face is before theirs. Shift myself left
-  if (selfNextContactDate < otherNextContactDate) {
-    return -1;
-  }
-  // Their face to face date is before mine. Shift them left
-  if (selfNextContactDate > otherNextContactDate) {
-    return 1;
-  }
+function getDateComparator(
+  accessor: (c: Client) => Moment | null
+): ClientSortFn {
+  return (self, other) => {
+    const dateSelf = accessor(self);
+    const dateOther = accessor(other);
 
-  // If the sorting dates are the same, sort by external id so the sort is stable.
-  if (self.personExternalId < other.personExternalId) {
-    return -1;
-  }
-  if (self.personExternalId > other.personExternalId) {
-    return 1;
-  }
+    // No date for me. Shift myself to the right
+    if (!dateSelf) {
+      return 1;
+    }
+    // I have a date, but they do not. Shift myself left
+    if (!dateOther) {
+      return -1;
+    }
+    // My date is before theirs. Shift myself left
+    if (dateSelf < dateOther) {
+      return -1;
+    }
+    // Their date is before mine. Shift them left
+    if (dateSelf > dateOther) {
+      return 1;
+    }
 
-  // We both have scheduled contacts on the same day
-  return 0;
-};
+    // If the sorting dates are the same, sort by external id so the sort is stable.
+    if (self.personExternalId < other.personExternalId) {
+      return -1;
+    }
+    if (self.personExternalId > other.personExternalId) {
+      return 1;
+    }
+
+    // Our tie cannot be broken
+    return 0;
+  };
+}
+
+function getReverseDateComparator(
+  accessor: (c: Client) => Moment | null
+): ClientSortFn {
+  const sortFn = getDateComparator(accessor);
+  return (a, b) => {
+    return sortFn(b, a);
+  };
+}
+
+/**
+ * Sorts chronologically by next contact date.
+ */
+export const ClientListContactComparator = getDateComparator(
+  (c) => c.nextContactDate
+);
+
+/**
+ * Sorts chronologically by next risk assessment date.
+ */
+export const ClientListAssessmentComparator = getDateComparator(
+  (c) => c.nextAssessmentDate
+);
+
+/**
+ * Sorts reverse-chronologically by supervision start date.
+ */
+export const ClientListSupervisionStartComparator = getReverseDateComparator(
+  (c) => c.supervisionStartDate
+);
 
 /**
  * Sorts clients by the priority of their alerts.
  * Ties are broken by next contact date.
  */
-export function ClientListPriorityComparator(a: Client, b: Client): -1 | 0 | 1 {
+export const ClientListPriorityComparator: ClientSortFn = (a, b) => {
   // NOTE: assumes alerts are in priority order
   for (let i = 0; i < Math.max(a.alerts.length, b.alerts.length); i += 1) {
     const alertA = a.alerts[i];
@@ -58,7 +95,7 @@ export function ClientListPriorityComparator(a: Client, b: Client): -1 | 0 | 1 {
   }
 
   return ClientListContactComparator(a, b);
-}
+};
 
 interface ClientListBuilderProps {
   opportunityStore: OpportunityStore;

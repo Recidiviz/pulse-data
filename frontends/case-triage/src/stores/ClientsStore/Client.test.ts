@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { cloneDeep } from "lodash";
 import MockDate from "mockdate";
 import API from "../API";
 import { OpportunityType } from "../OpportunityStore/Opportunity";
@@ -23,19 +24,8 @@ import { AlertKindList, Client, PENDING_ID } from "./Client";
 import { Note } from "./Note";
 import { clientData, clientOpportunity } from "./__fixtures__";
 
-jest.mock("../API", () => {
-  const actual = jest.requireActual("../API");
-  return {
-    ...jest.createMockFromModule<{ default: typeof API }>("../API"),
-    isErrorResponse: actual.isErrorResponse,
-  };
-});
-
+jest.mock("../API");
 const APIMock = API as jest.MockedClass<typeof API>;
-
-function getMockClientData() {
-  return JSON.parse(JSON.stringify(clientData));
-}
 
 const TEST_NOTE_TEXT = "test note";
 
@@ -46,9 +36,10 @@ beforeEach(() => {
   rootStore = new RootStore();
   testClient = Client.build({
     api: rootStore.api,
-    client: getMockClientData(),
+    client: cloneDeep(clientData),
     clientsStore: rootStore.clientsStore,
     opportunityStore: rootStore.opportunityStore,
+    policyStore: rootStore.policyStore,
   });
   APIMock.prototype.post.mockResolvedValue({});
 });
@@ -123,9 +114,7 @@ describe("alerts", () => {
       )
     ).toBeUndefined();
 
-    rootStore.opportunityStore.opportunitiesByPerson = {
-      [testClient.personExternalId]: [clientOpportunity],
-    };
+    rootStore.opportunityStore.opportunities = [clientOpportunity];
 
     expect(
       testClient.alerts.find(

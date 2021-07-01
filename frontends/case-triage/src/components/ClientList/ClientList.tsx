@@ -27,6 +27,8 @@ import ClientListCard from "./ClientListCard";
 import EmptyStateCard from "./EmptyStateCard";
 import { CLIENT_LIST_KIND } from "../../stores/ClientsStore/ClientListBuilder";
 import TEST_IDS from "../TestIDs";
+import { KNOWN_EXPERIMENTS } from "../../stores/UserStore";
+import { ClientListControls } from "./ClientListControls";
 
 interface ClientListProps {
   kind: CLIENT_LIST_KIND;
@@ -69,14 +71,17 @@ const ClientList = observer(
 );
 
 const ClientListContainer = observer(() => {
-  const { clientsStore } = useRootStore();
+  const { clientsStore, userStore } = useRootStore();
   if (clientsStore.isLoading) {
     return <ClientListContainerElement>Loading...</ClientListContainerElement>;
   }
 
+  const showControls = userStore.isInExperiment(KNOWN_EXPERIMENTS.NewLayout);
+
   return (
     <ClientListContainerElement>
       <FirstClientListHeading>Up Next</FirstClientListHeading>
+      {showControls && <ClientListControls />}
       <ClientList kind={CLIENT_LIST_KIND.UP_NEXT} showEmptyState />
       {clientsStore.lists[CLIENT_LIST_KIND.PROCESSING_FEEDBACK].length > 0 ? (
         <ClientListHeading>Processing Feedback</ClientListHeading>
