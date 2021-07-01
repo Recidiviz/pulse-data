@@ -39,6 +39,7 @@ from recidiviz.ingest.aggregate.regions.ky import ky_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.ny import ny_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.tn import tn_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_site_scraper
+from recidiviz.ingest.aggregate.regions.wv import wv_aggregate_site_scraper
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value
@@ -72,6 +73,7 @@ def scrape_aggregate_reports():
         "new_york": ny_aggregate_site_scraper.get_urls_to_download,
         "tennessee": tn_aggregate_site_scraper.get_urls_to_download,
         "texas": tx_aggregate_site_scraper.get_urls_to_download,
+        "west_virginia": wv_aggregate_site_scraper.get_urls_to_download,
     }
     state = get_str_param_value("state", request.args)
     # We want to always download the pdf if it is NY because they always have

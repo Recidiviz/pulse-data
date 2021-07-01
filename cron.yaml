@@ -195,6 +195,15 @@ cron:
       max_doublings: 5
       job_age_limit: 9h
 
+  - description: Run west virginia aggregate report
+    url: /scrape_aggregate_reports/scrape_state?state=west_virginia
+    schedule: every day 19:30
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
   - description: Start Cloud SQL to BigQuery export tasks for county tables
     url: /cloud_sql_to_bq/create_refresh_bq_schema_task/jails
     schedule: every day 6:00

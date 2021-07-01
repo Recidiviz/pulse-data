@@ -1,0 +1,45 @@
+"Testing reflects decisions by facility medical providers, following appropriate guidance and in collaboration with local public health authorities, regarding incarcerated persons who are symptomatic."						
+"As of: 2 pm, April 27, 2020"	County	Negative	Positive	Pending*	Total	Quarantine**
+Jails						
+Central	Braxton	0	0	0	0	31
+Eastern	Berkeley	16	0	0	16	30
+North Central	Doddridge	4	0	2	6	40
+Northern	Marshall	5	0	3	8	11
+Potomac Highlands	Hampshire	1	0	0	1	14
+South Central	Kanawha	10	0	0	10	44
+Southern	Raleigh	1	0	0	1	72
+Southwestern	Logan	1	0	1	2	19
+Tygart Valley	Randolph	0	0	1	1	55
+Western	Cabell	11	0	1	12	123
+						
+Prisons						
+Denmar	Pocahontas	0	0	0	0	0
+Huttonsville	Randolph	1	0	0	1	1
+Lakin	Mason	1	0	0	1	0
+Martinsburg	Berkeley	1	0	0	1	0
+Mount Olive	Fayette	7	0	1	8	3
+Northern	Marshall	1	0	0	1	0
+Ohio County	Ohio	0	0	0	0	0
+Pruntytown	Taylor	7	0	0	7	1
+Salem	Harrison	5	0	0	5	0
+Saint Marys	Pleasants	3	0	1	4	1
+McDowell (contract)	McDowell	1	0	0	1	3
+						
+Community Corrections						
+Beckley	Raleigh	0	0	0	0	0
+Charleston	Kanawha	0	0	0	0	0
+Parkersburg	Wood	1	0	0	1	2
+						
+Juvenile Services						
+Donald R. Kuhn	Boone	0	0	0	0	4
+Gene Spadaro	Fayette	1	0	0	1	4
+"J.M. ""Chick"" Buckbee"	Hampshire	0	0	0	0	2
+Kenneth “Honey” Rubenstein	Tucker	0	0	0	0	0
+Lorrie Yeager Jr.	Wood	0	0	0	0	5
+Robert L. Shell	Cabell	0	0	0	0	1
+Sam Perdue	Mercer	0	0	0	0	0
+"James H. ""Tiger"" Morton"	Kanawha	0	0	0	0	2
+Vicki V. Douglas	Berkeley	0	0	0	0	8
+*Pending: all incarcerated persons awaiting test results remain in medical isolation						
+"**Quarantine: incarcerated persons NOT showing symptoms but separated because they are new intakes, back from a hospital for unrelated reasons, etc. "						
+						

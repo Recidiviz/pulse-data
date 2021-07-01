@@ -50,6 +50,7 @@ def test_get_all_database_entity_classes() -> None:
         "TnFacilityAggregate",
         "TnFacilityFemaleAggregate",
         "TxCountyAggregate",
+        "WvFacilityAggregate",
     ]
     county_database_entity_names = [
         "Arrest",
@@ -174,6 +175,7 @@ def test_get_all_table_classes() -> None:
         "tn_facility_aggregate",
         "tn_facility_female_aggregate",
         "tx_county_aggregate",
+        "wv_facility_aggregate",
     ]
     county_table_names = [
         "arrest",
