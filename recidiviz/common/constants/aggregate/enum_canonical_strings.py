@@ -37,3 +37,8 @@ weekly_granularity = "WEEKLY"
 monthly_granularity = "MONTHLY"
 quarterly_granularity = "QUARTERLY"
 yearly_granularity = "YEARLY"
+
+jail_wv_facility_type = "JAIL"
+prison_wv_facility_type = "PRISON"
+community_corrections_wv_facility_type = "COMMUNITY CORRECTIONS"
+juvenile_center_wv_facility_type = "JUVENILE CENTER"

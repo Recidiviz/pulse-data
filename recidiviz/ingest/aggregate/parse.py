@@ -36,6 +36,7 @@ from recidiviz.ingest.aggregate.regions.ny import ny_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.pa import pa_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.tn import tn_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_ingest
+from recidiviz.ingest.aggregate.regions.wv import wv_aggregate_ingest
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
@@ -62,6 +63,7 @@ STATE_TO_PARSER = {
     "pennsylvania": pa_aggregate_ingest.parse,
     "tennessee": tn_aggregate_ingest.parse,
     "texas": tx_aggregate_ingest.parse,
+    "west_virginia": wv_aggregate_ingest.parse,
 }
 
 

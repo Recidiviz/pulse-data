@@ -30,9 +30,7 @@ class TestAggregateSchemaEnums(TestSchemaEnums):
         #
         # If a schema enum does not correspond to a persistence layer enum,
         # it should be mapped to None.
-        aggregate_enums_mapping = {
-            "time_granularity": None,
-        }
+        aggregate_enums_mapping = {"time_granularity": None, "facility_type_wv": None}
 
         merged_mapping = {**self.SHARED_ENUMS_TEST_MAPPING, **aggregate_enums_mapping}
 
