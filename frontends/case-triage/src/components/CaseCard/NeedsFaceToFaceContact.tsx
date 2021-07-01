@@ -14,52 +14,21 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import {
-  Icon,
-  IconSVG,
-  Need,
-  NeedState,
-  palette,
-} from "@recidiviz/design-system";
+import { Icon, IconSVG, Need, NeedState } from "@recidiviz/design-system";
 import * as React from "react";
 import { observer } from "mobx-react-lite";
 import { Caption, CaseCardBody, CaseCardInfo } from "./CaseCard.styles";
-import { Client } from "../../stores/ClientsStore/Client";
+import { Client } from "../../stores/ClientsStore";
 import { useRootStore } from "../../stores";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
-import { SupervisionContactFrequency } from "../../stores/PolicyStore/Policy";
 import { NeedsActionFlow } from "../NeedsActionFlow/NeedsActionFlow";
 import TEST_IDS from "../TestIDs";
+import { getContactFrequencyText, getLastContactedText } from "./strings";
 
 interface NeedsFaceToFaceContactProps {
   className: string;
   client: Client;
 }
-
-const getLastContactedText = (client: Client) => {
-  const { mostRecentFaceToFaceDate } = client;
-
-  if (mostRecentFaceToFaceDate) {
-    return `Last contacted on ${mostRecentFaceToFaceDate.format(
-      "MMMM Do, YYYY"
-    )}`;
-  }
-  return `Assumed no contact from CIS.`;
-};
-
-const getFrequencyText = (
-  contactFrequency: SupervisionContactFrequency | undefined,
-  singularUnit: string
-) => {
-  if (!contactFrequency) {
-    return null;
-  }
-
-  const [contacts, days] = contactFrequency;
-  const pluralized = contacts === 1 ? "" : "s";
-  const daysPluralized = days === 1 ? "day" : "days";
-  return `Policy: ${contacts} ${singularUnit}${pluralized} every ${days} ${daysPluralized}`;
-};
 
 const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
   className,
@@ -93,7 +62,7 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
             {client.currentAddress || "No address on file"}
           </div>
           <div>
-            {getFrequencyText(contactFrequency, "contact")}
+            {getContactFrequencyText(contactFrequency, "contact")}
             <br />
             {getLastContactedText(client)}
           </div>
