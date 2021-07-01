@@ -110,9 +110,9 @@ def main(
         logging.info("RUNNING AGAINST PRODUCTION\n")
 
     purge_str = (
-        "PURGE STATE IN STAGING"
+        "PURGE DATABASE STATE IN STAGING"
         if metadata.project_id() == GCP_PROJECT_STAGING
-        else "PURGE STATE IN PROD"
+        else "PURGE DATABASE STATE IN PROD"
     )
     prompt_for_confirmation(
         f"This script will run all DOWNGRADE migrations for {state_code=} and {database_version=}.",
