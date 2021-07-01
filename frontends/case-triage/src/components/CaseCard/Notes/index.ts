@@ -15,20 +15,4 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import React from "react";
-import { useRootStore } from "../../stores";
-import CaseCard from "./CaseCard";
-import { CaseCardProps } from "./CaseCard.types";
-import ClientProfileCard from "./ClientProfileCard";
-
-const ExperimentWrapper: React.FC<CaseCardProps> = (props) => {
-  const { userStore } = useRootStore();
-
-  if (userStore.canSeeProfileV2) {
-    return <ClientProfileCard {...props} />;
-  }
-
-  return <CaseCard {...props} />;
-};
-
-export default ExperimentWrapper;
+export * from "./Notes";

@@ -47,18 +47,10 @@ def _create_note(
         person_external_id=client_id,
         text=text,
     )
-    session.execute(insert_statement)
+    result = session.execute(insert_statement)
     session.commit()
 
-    return (
-        session.query(OfficerNote)
-        .filter(
-            OfficerNote.state_code == state_code,
-            OfficerNote.officer_external_id == officer_id,
-            OfficerNote.person_external_id == client_id,
-        )
-        .one()
-    )
+    return session.query(OfficerNote).get(result.inserted_primary_key)
 
 
 def _resolve_note(

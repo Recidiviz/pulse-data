@@ -257,9 +257,11 @@ export class Client {
     this.preferredContactMethod = clientData.preferredContactMethod;
 
     // fields that require some processing
-    this.notes = (clientData.notes || []).map(
-      (noteData) => new Note(noteData, api)
-    );
+    this.notes = (clientData.notes || [])
+      .map((noteData) => new Note(noteData, api))
+      .sort(
+        (a, b) => a.createdDatetime.valueOf() - b.createdDatetime.valueOf()
+      );
     const { given_names: given, surname } = clientData.fullName;
 
     this.name = `${titleCase(given)} ${titleCase(surname)}`;
@@ -497,5 +499,9 @@ export class Client {
         notes.splice(notes.indexOf(newNote), 1);
       });
     }
+  }
+
+  get activeNotes(): Note[] {
+    return this.notes.filter((note) => !note.resolved);
   }
 }

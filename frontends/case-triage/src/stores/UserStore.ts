@@ -164,4 +164,14 @@ export default class UserStore {
   isInExperiment(experiment: KNOWN_EXPERIMENTS): boolean {
     return !!this.featureVariants[experiment];
   }
+
+  /**
+   * Feature flag requires membership in multiple experiments. This checks them all.
+   */
+  get canSeeProfileV2(): boolean {
+    return (
+      this.isInExperiment(KNOWN_EXPERIMENTS.NewClientList) &&
+      this.isInExperiment(KNOWN_EXPERIMENTS.ProfileV2)
+    );
+  }
 }
