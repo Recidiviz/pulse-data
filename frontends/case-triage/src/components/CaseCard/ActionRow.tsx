@@ -16,19 +16,20 @@
 // =============================================================================
 
 import React from "react";
-import { useRootStore } from "../../stores";
-import CaseCard from "./CaseCard";
-import { CaseCardProps } from "./CaseCard.types";
-import ClientProfileCard from "./ClientProfileCard";
+import {
+  TabSection,
+  TabSectionBullet,
+  TabSectionContents,
+} from "./NewItems.styles";
 
-const ExperimentWrapper: React.FC<CaseCardProps> = (props) => {
-  const { userStore } = useRootStore();
-
-  if (userStore.canSeeProfileV2) {
-    return <ClientProfileCard {...props} />;
-  }
-
-  return <CaseCard {...props} />;
+export const ActionRow: React.FC<{ bullet: React.ReactNode }> = ({
+  bullet,
+  children,
+}) => {
+  return (
+    <TabSection>
+      <TabSectionBullet>{bullet}</TabSectionBullet>
+      <TabSectionContents>{children}</TabSectionContents>
+    </TabSection>
+  );
 };
-
-export default ExperimentWrapper;

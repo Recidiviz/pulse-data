@@ -16,6 +16,7 @@
 // =============================================================================
 
 import { makeAutoObservable, runInAction } from "mobx";
+import moment from "moment";
 import API, { isErrorResponse } from "../API";
 
 export type NoteData = {
@@ -27,7 +28,7 @@ export type NoteData = {
 };
 
 export class Note {
-  createdDatetime: string;
+  createdDatetime: moment.Moment;
 
   noteId: string;
 
@@ -40,7 +41,7 @@ export class Note {
   constructor(data: NoteData, private api: API) {
     makeAutoObservable<Note, "api">(this, { api: false });
 
-    this.createdDatetime = data.createdDatetime;
+    this.createdDatetime = moment(data.createdDatetime);
     this.noteId = data.noteId;
     this.resolved = data.resolved;
     this.text = data.text;

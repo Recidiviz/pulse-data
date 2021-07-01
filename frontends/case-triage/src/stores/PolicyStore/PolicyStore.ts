@@ -16,7 +16,7 @@
 // =============================================================================
 import { autorun, makeAutoObservable, runInAction } from "mobx";
 import UserStore from "../UserStore";
-import { Client, ClientData, SupervisionLevel } from "../ClientsStore";
+import { Client, SupervisionLevel } from "../ClientsStore";
 import {
   Policy,
   ScoreMinMaxBySupervisionLevel,
@@ -109,7 +109,7 @@ class PolicyStore {
     return this.policies?.supervisionLevelNames[level] || level;
   }
 
-  getSupervisionLevelNameForClient(client: ClientData): string {
+  getSupervisionLevelNameForClient(client: Client): string {
     return this.getSupervisionLevelName(client.supervisionLevel);
   }
 
