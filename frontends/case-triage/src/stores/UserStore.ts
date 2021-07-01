@@ -30,7 +30,7 @@ interface UserStoreProps {
 
 export enum KNOWN_EXPERIMENTS {
   ProfileV2 = "can-see-profile-v2",
-  NewLayout = "can-see-new-layout",
+  NewClientList = "can-see-new-client-list",
 }
 
 export interface FeatureVariants {

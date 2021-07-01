@@ -42,7 +42,7 @@ beforeEach(async () => {
   store = rootStore.clientsStore;
   // tests in this file require an experiment flag
   rootStore.userStore.setFeatureVariants({
-    [KNOWN_EXPERIMENTS.NewLayout]: "foo",
+    [KNOWN_EXPERIMENTS.NewClientList]: "foo",
   });
 
   // easy-to-remember date for time-sensitive alerts

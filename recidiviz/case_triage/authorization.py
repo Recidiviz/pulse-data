@@ -32,7 +32,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.utils.environment import in_gcp
 from recidiviz.utils.metadata import project_id
 
-KNOWN_EXPERIMENTS: List[str] = ["can-see-profile-v2", "can-see-new-layout"]
+KNOWN_EXPERIMENTS: List[str] = ["can-see-profile-v2", "can-see-new-client-list"]
 
 
 @attr.s(auto_attribs=True)

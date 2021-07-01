@@ -76,7 +76,9 @@ const ClientListContainer = observer(() => {
     return <ClientListContainerElement>Loading...</ClientListContainerElement>;
   }
 
-  const showControls = userStore.isInExperiment(KNOWN_EXPERIMENTS.NewLayout);
+  const showControls = userStore.isInExperiment(
+    KNOWN_EXPERIMENTS.NewClientList
+  );
 
   return (
     <ClientListContainerElement>

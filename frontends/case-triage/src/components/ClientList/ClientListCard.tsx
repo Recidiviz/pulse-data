@@ -70,7 +70,9 @@ const ClientComponent: React.FC<ClientProps> = observer(
     const active =
       clientsStore.activeClient?.personExternalId === client.personExternalId;
 
-    const showNewLayout = userStore.isInExperiment(KNOWN_EXPERIMENTS.NewLayout);
+    const showNewLayout = userStore.isInExperiment(
+      KNOWN_EXPERIMENTS.NewClientList
+    );
 
     const CardElement = showNewLayout
       ? ClientListCardElement
