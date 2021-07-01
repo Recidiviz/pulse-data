@@ -201,8 +201,9 @@ def deliver_emails_for_batch() -> Tuple[str, HTTPStatus]:
         raw_email_allowlist = get_only_str_param_value("email_allowlist", request.args)
 
         validate_email_address(redirect_address)
-        for cc_address in cc_addresses:
-            validate_email_address(cc_address)
+        if cc_addresses is not None:
+            for cc_address in cc_addresses:
+                validate_email_address(cc_address)
 
         email_allowlist: Optional[List[str]] = (
             json.loads(raw_email_allowlist) if raw_email_allowlist else None
