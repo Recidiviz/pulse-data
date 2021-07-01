@@ -15,14 +15,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import * as React from "react";
-import { Card, H3, Icon, IconSVG } from "@recidiviz/design-system";
+import { Card, Icon, IconSVG } from "@recidiviz/design-system";
 import { observer } from "mobx-react-lite";
 import {
   Caption,
   CaseCardHeading,
   ClientNameRow,
   CloseButton,
-  EllipsisDropdown,
 } from "./CaseCard.styles";
 import NeedsEmployment from "./NeedsEmployment";
 import NeedsFaceToFaceContact from "./NeedsFaceToFaceContact";
@@ -31,52 +30,30 @@ import { titleCase } from "../../utils";
 import { useRootStore } from "../../stores";
 import NotInCaseload from "./NotInCaseload";
 import {
-  CaseUpdateActionType,
   NotInCaseloadActions,
   NotInCaseloadActionType,
 } from "../../stores/CaseUpdatesStore";
 import OpportunitySupervisionLevelReview from "../CaseOpportunities/OpportunitySupervisionLevelReview";
 import TEST_IDS from "../TestIDs";
 import { CaseCardProps } from "./CaseCard.types";
+import { NotInCaseloadDropdown } from "./NotInCaseloadDropdown";
+import { ClientName } from "./ClientProfileCard.styles";
 
 const CaseCard: React.FC<CaseCardProps> = ({ client }) => {
   const { caseUpdatesStore, clientsStore, opportunityStore } = useRootStore();
-
-  const currentNotOnCaseloadAction = NotInCaseloadActions.find(
-    (value: string) => client.caseUpdates[value as NotInCaseloadActionType]
-  );
-  let ellipsisDropdownActions: CaseUpdateActionType[] = [];
-  let ellipsisDropdown;
-  if (!currentNotOnCaseloadAction) {
-    ellipsisDropdownActions =
-      ellipsisDropdownActions.concat(NotInCaseloadActions);
-  } else if (client.hasInProgressUpdate(CaseUpdateActionType.NOT_ON_CASELOAD)) {
-    ellipsisDropdownActions.push(CaseUpdateActionType.NOT_ON_CASELOAD);
-  }
-
-  if (ellipsisDropdownActions.length > 0) {
-    ellipsisDropdown = (
-      <EllipsisDropdown
-        actions={ellipsisDropdownActions}
-        client={client}
-        alignment="right"
-      >
-        <Icon kind="TripleDot" size={18} />
-      </EllipsisDropdown>
-    );
-  }
 
   const opportunity = opportunityStore.getTopOpportunityForClient(
     client.personExternalId
   );
 
+  const notInCaseloadUpdate = client.findInProgressUpdate(NotInCaseloadActions);
+
   return (
     <Card stacked data-testid={TEST_IDS.CASE_CARD}>
       <CaseCardHeading className="fs-exclude">
         <ClientNameRow>
-          <H3 as="div">{client.name}</H3>
-
-          {ellipsisDropdown}
+          <ClientName>{client.name}</ClientName>
+          <NotInCaseloadDropdown client={client} />
           <CloseButton onClick={() => clientsStore.setShowClientCard(false)}>
             <Icon kind={IconSVG.Close} />
           </CloseButton>
@@ -88,31 +65,33 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }) => {
         </Caption>
       </CaseCardHeading>
 
-      {opportunity ? (
-        <OpportunitySupervisionLevelReview
-          className="fs-exclude"
-          client={client}
-          opportunity={opportunity}
-        />
-      ) : null}
+      <>
+        {opportunity ? (
+          <OpportunitySupervisionLevelReview
+            className="fs-exclude"
+            client={client}
+            opportunity={opportunity}
+          />
+        ) : null}
 
-      {currentNotOnCaseloadAction ? (
-        <NotInCaseload
-          action={currentNotOnCaseloadAction as NotInCaseloadActionType}
-          client={client}
-          onUndo={(updateId: string) => {
-            caseUpdatesStore.removeAction(
-              client,
-              updateId,
-              currentNotOnCaseloadAction
-            );
-          }}
-          className="fs-exclude"
-        />
-      ) : null}
-      <NeedsEmployment client={client} className="fs-exclude" />
-      <NeedsRiskAssessment client={client} className="fs-exclude" />
-      <NeedsFaceToFaceContact client={client} className="fs-exclude" />
+        {notInCaseloadUpdate ? (
+          <NotInCaseload
+            action={notInCaseloadUpdate.actionType as NotInCaseloadActionType}
+            client={client}
+            onUndo={(updateId: string) => {
+              caseUpdatesStore.removeAction(
+                client,
+                updateId,
+                notInCaseloadUpdate?.actionType
+              );
+            }}
+            className="fs-exclude"
+          />
+        ) : null}
+        <NeedsEmployment client={client} className="fs-exclude" />
+        <NeedsRiskAssessment client={client} className="fs-exclude" />
+        <NeedsFaceToFaceContact client={client} className="fs-exclude" />
+      </>
     </Card>
   );
 };
