@@ -291,8 +291,9 @@ def add_case_triage_routes(bp: Blueprint) -> None:
             email_allowlist = data.get("emailAllowlist")
 
             validate_email_address(redirect_address)
-            for cc_address in cc_addresses:
-                validate_email_address(cc_address)
+            if cc_addresses is not None:
+                for cc_address in cc_addresses:
+                    validate_email_address(cc_address)
 
             if email_allowlist is not None:
                 for recipient_email in email_allowlist:

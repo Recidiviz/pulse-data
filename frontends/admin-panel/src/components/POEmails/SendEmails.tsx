@@ -28,7 +28,7 @@ import StateSelector from "../Utilities/StateSelector";
 
 interface SendFormData {
   state: string;
-  batchID: string;
+  batchId: string;
   redirectAddress: string;
   ccAddresses: string[];
   subjectOverride: string;
@@ -57,7 +57,7 @@ const SendEmails = (): JSX.Element => {
     if (formData?.state) {
       const r = await sendEmails(
         formData.state,
-        formData.batchID,
+        formData.batchId,
         formData.redirectAddress,
         formData.ccAddresses,
         formData.subjectOverride
