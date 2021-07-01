@@ -73,13 +73,8 @@ const OpportunitySupervisionLevelReview: React.FC<OpportunitySupervisionLevelRev
             {client.mostRecentAssessmentDate?.format("LL")}.{" "}
             {titleCase(client.possessivePronoun)} risk level is recorded as{" "}
             <strong>{client.supervisionLevelText}</strong> but should be{" "}
-            <strong>
-              {policyStore.findSupervisionLevelForScore(
-                client.gender,
-                client.assessmentScore
-              )}
-            </strong>{" "}
-            according to {policyLinkElement}.
+            <strong>{client.riskLevelLabel}</strong> according to{" "}
+            {policyLinkElement}.
           </Caption>
 
           <NeedsActionFlow

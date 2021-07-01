@@ -16,19 +16,20 @@
 // =============================================================================
 
 import { Opportunity } from "../OpportunityStore";
+import { OpportunityType } from "../OpportunityStore/Opportunity";
+import { Policy } from "../PolicyStore/Policy";
+import { ClientData } from "./Client";
 
-export const clientData = {
+export const clientData: ClientData = {
   assessmentScore: 1,
-  birthdate: "1970-07-21",
-  birthdateInferredFromAge: true,
-  caseType: "DRUG_COURT",
+  caseType: "GENERAL",
   caseUpdates: {},
-  currentAddress: null,
+  currentAddress: "",
   emailAddress: "demo@recidiviz.org",
-  employer: null,
+  employer: undefined,
   fullName: {
     given_names: "TONYE",
-    middle_names: "BARBY",
+    middle_name: "BARBY",
     surname: "THOMPSON",
   },
   gender: "MALE",
@@ -47,20 +48,70 @@ export const clientData = {
   notes: [],
   personExternalId: "100",
   projectedEndDate: null,
-  stateCode: "US_ID",
-  supervisingOfficerExternalId: "SIN",
   supervisionLevel: "MEDIUM",
   supervisionStartDate: "2020-01-26",
   supervisionType: "PAROLE",
 };
 
-export const clientOpportunity = {
+export const clientOpportunity: Opportunity = {
   opportunityMetadata: {
     assessmentScore: 1,
     latestAssessmentDate: "2019-10-26",
   },
-  opportunityType: "OVERDUE_DOWNGRADE",
+  opportunityType: OpportunityType.OVERDUE_DOWNGRADE,
   personExternalId: "100",
-  stateCode: "US_ID",
-  supervisingOfficerExternalId: "SIN",
-} as Opportunity;
+  stateCode: "US_TEST",
+  supervisingOfficerExternalId: "TESTID",
+};
+
+export const statePolicy: Policy = {
+  assessmentScoreCutoffs: {
+    FEMALE: {
+      HIGH: [21, null],
+      MEDIUM: [11, 20],
+      MINIMUM: [0, 10],
+    },
+    MALE: {
+      HIGH: [11, null],
+      MEDIUM: [6, 10],
+      MINIMUM: [0, 5],
+    },
+    TRANS_FEMALE: {
+      HIGH: [21, null],
+      MEDIUM: [11, 20],
+      MINIMUM: [0, 10],
+    },
+    TRANS_MALE: {
+      HIGH: [11, null],
+      MEDIUM: [6, 10],
+      MINIMUM: [0, 5],
+    },
+  },
+  docShortName: "TestDOC",
+  omsName: "TEST",
+  policyReferencesForOpportunities: {
+    OVERDUE_DOWNGRADE: "http://example.com",
+  },
+  supervisionContactFrequencies: {
+    GENERAL: {
+      HIGH: [2, 30],
+      MEDIUM: [2, 90],
+      MINIMUM: [1, 180],
+    },
+    SEX_OFFENDER: {
+      HIGH: [2, 30],
+      MEDIUM: [1, 30],
+      MINIMUM: [1, 90],
+    },
+  },
+  supervisionHomeVisitFrequencies: {
+    HIGH: [2, 365],
+    MEDIUM: [1, 365],
+    MINIMUM: [1, 365],
+  },
+  supervisionLevelNames: {
+    HIGH: "High",
+    MEDIUM: "Moderate",
+    MINIMUM: "Low",
+  },
+};

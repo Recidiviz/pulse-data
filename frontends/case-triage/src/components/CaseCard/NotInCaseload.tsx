@@ -52,6 +52,8 @@ const NotInCaseload = ({
   onUndo,
 }: NotInCaseloadProps): JSX.Element | null => {
   const caseUpdate = client.caseUpdates[action];
+  if (!caseUpdate) return null;
+
   const submissionTime = moment(caseUpdate.actionTs).format("MMMM Do, Y");
 
   return (
