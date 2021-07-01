@@ -259,7 +259,7 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     def _pause_direct_ingest_instance() -> Tuple[str, HTTPStatus]:
         try:
             state_code = StateCode(request.json["stateCode"])
-            ingest_instance = DirectIngestInstance(request.json["ingest_instance"])
+            ingest_instance = DirectIngestInstance(request.json["ingestInstance"])
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
 

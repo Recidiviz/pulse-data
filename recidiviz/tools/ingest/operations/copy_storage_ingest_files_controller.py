@@ -44,6 +44,7 @@ class CopyStorageIngestFilesController:
         region_code: str,
         source_region_storage_dir_path: GcsfsDirectoryPath,
         destination_region_storage_dir_path: GcsfsDirectoryPath,
+        file_type_to_copy: GcsfsDirectIngestFileType,
         start_date_bound: Optional[str],
         end_date_bound: Optional[str],
         dry_run: bool,
@@ -58,6 +59,7 @@ class CopyStorageIngestFilesController:
         destination_region_storage_dir_path - root path where the files should be moved to
             Critically, this must be an ingest storage buckets, e.g.
             `gs://recidiviz-staging-direct-ingest-state-storage/us_xx/`
+        file_type_to_copy: The file type to copy, e.g. RAW or INGEST_VIEW
         start_date_bound - optional start date in the format 1901-02-28
         end_date_bound - optional end date in the format 1901-02-28
         dry_run - whether or not to run in dry-run mode
@@ -67,6 +69,7 @@ class CopyStorageIngestFilesController:
         self.dry_run = dry_run
         self.start_date_bound = start_date_bound
         self.end_date_bound = end_date_bound
+        self.file_type_to_copy = file_type_to_copy
 
         self.log_output_path = os.path.join(
             os.path.dirname(__file__),
@@ -125,7 +128,7 @@ class CopyStorageIngestFilesController:
     def _get_subdirs_to_copy(self) -> List[str]:
         return gsutil_get_storage_subdirs_containing_file_types(
             storage_bucket_path=self.source_region_storage_dir_path.abs_path(),
-            file_type=GcsfsDirectIngestFileType.RAW_DATA,
+            file_type=self.file_type_to_copy,
             upper_bound_date=self.end_date_bound,
             lower_bound_date=self.start_date_bound,
         )

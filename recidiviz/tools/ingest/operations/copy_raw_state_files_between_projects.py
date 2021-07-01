@@ -35,6 +35,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    GcsfsDirectIngestFileType,
     gcsfs_direct_ingest_storage_directory_path_for_region,
 )
 from recidiviz.tools.ingest.operations.copy_storage_ingest_files_controller import (
@@ -107,6 +108,7 @@ def main() -> None:
         region_code=args.region,
         source_region_storage_dir_path=source_region_storage_dir_path,
         destination_region_storage_dir_path=destination_region_storage_dir_path,
+        file_type_to_copy=GcsfsDirectIngestFileType.RAW_DATA,
         start_date_bound=args.start_date_bound,
         end_date_bound=args.end_date_bound,
         dry_run=args.dry_run,
