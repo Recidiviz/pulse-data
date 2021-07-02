@@ -795,6 +795,11 @@ class TestGetPreIncarcerationSupervisionType(unittest.TestCase):
                 == StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION
             ):
                 expected_type = StateSupervisionPeriodSupervisionType.DUAL
+            elif (
+                admission_reason
+                == StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION
+            ):
+                expected_type = StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
             self.assertEqual(
                 expected_type,
                 get_pre_incarceration_supervision_type_from_ip_admission_reason(

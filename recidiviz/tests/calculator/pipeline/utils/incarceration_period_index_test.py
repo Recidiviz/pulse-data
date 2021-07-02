@@ -18,7 +18,7 @@
 
 import unittest
 from datetime import date, timedelta
-from typing import List
+from typing import Dict, List, Optional
 
 import pytest
 from freezegun import freeze_time
@@ -46,6 +46,24 @@ from recidiviz.common.date import DateRange, date_or_tomorrow
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
+def _get_incarceration_period_index(
+    incarceration_periods: List[StateIncarcerationPeriod],
+    ip_id_to_pfi_subtype: Optional[Dict[int, Optional[str]]] = None,
+) -> PreProcessedIncarcerationPeriodIndex:
+    """Helper function for instantiating an PreProcessedIncarcerationPeriodIndex."""
+    return PreProcessedIncarcerationPeriodIndex(
+        incarceration_periods=incarceration_periods,
+        ip_id_to_pfi_subtype=(
+            ip_id_to_pfi_subtype
+            or {
+                ip.incarceration_period_id: None
+                for ip in incarceration_periods
+                if ip.incarceration_period_id
+            }
+        ),
+    )
+
+
 class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
     """Tests the index_incarceration_periods_by_admission_date function."""
 
@@ -62,7 +80,7 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
-        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+        incarceration_period_index = _get_incarceration_period_index(
             [incarceration_period]
         )
 
@@ -94,7 +112,7 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
             admission_reason=AdmissionReason.NEW_ADMISSION,
         )
 
-        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+        incarceration_period_index = _get_incarceration_period_index(
             [first_incarceration_period, second_incarceration_period]
         )
 
@@ -132,7 +150,7 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
             admission_reason=AdmissionReason.TRANSFER,
         )
 
-        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+        incarceration_period_index = _get_incarceration_period_index(
             [first_incarceration_period, second_incarceration_period]
         )
 
@@ -149,7 +167,7 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
     def test_index_incarceration_periods_by_admission_date_none(self):
         """Tests the index_incarceration_periods_by_admission_date function
         when there are no incarceration periods."""
-        incarceration_period_index = PreProcessedIncarcerationPeriodIndex([])
+        incarceration_period_index = _get_incarceration_period_index([])
 
         self.assertEqual(
             incarceration_period_index.incarceration_periods_by_admission_date, {}
@@ -172,7 +190,7 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
-        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+        incarceration_period_index = _get_incarceration_period_index(
             [incarceration_period]
         )
 
@@ -195,7 +213,7 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
-        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+        incarceration_period_index = _get_incarceration_period_index(
             [incarceration_period]
         )
 
@@ -218,7 +236,7 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
-        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+        incarceration_period_index = _get_incarceration_period_index(
             [incarceration_period]
         )
 
@@ -244,7 +262,7 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
-        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+        incarceration_period_index = _get_incarceration_period_index(
             [incarceration_period]
         )
 
@@ -268,7 +286,7 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
-        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+        incarceration_period_index = _get_incarceration_period_index(
             [incarceration_period]
         )
 
@@ -289,7 +307,7 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
-        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+        incarceration_period_index = _get_incarceration_period_index(
             [incarceration_period]
         )
 
@@ -309,7 +327,7 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
-        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+        incarceration_period_index = _get_incarceration_period_index(
             [incarceration_period, incarceration_period_2]
         )
 
@@ -332,7 +350,7 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
-        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+        incarceration_period_index = _get_incarceration_period_index(
             [incarceration_period]
         )
 
@@ -352,7 +370,7 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
-        incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
+        incarceration_period_index = _get_incarceration_period_index(
             [incarceration_period, incarceration_period_2]
         )
 
@@ -366,7 +384,7 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
     """Tests the month_to_overlapping_ips_not_under_supervision_authority initialization function."""
 
     def test_no_periods(self):
-        index = PreProcessedIncarcerationPeriodIndex([])
+        index = _get_incarceration_period_index([])
         self.assertEqual(
             index.month_to_overlapping_ips_not_under_supervision_authority, {}
         )
@@ -384,7 +402,7 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
-        index = PreProcessedIncarcerationPeriodIndex([incarceration_period])
+        index = _get_incarceration_period_index([incarceration_period])
 
         expected = {
             2007: {12: [incarceration_period]},
@@ -412,7 +430,7 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
-        index = PreProcessedIncarcerationPeriodIndex([incarceration_period])
+        index = _get_incarceration_period_index([incarceration_period])
 
         expected = {
             2007: {12: [incarceration_period]},
@@ -435,7 +453,7 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
         )
 
-        index = PreProcessedIncarcerationPeriodIndex([incarceration_period])
+        index = _get_incarceration_period_index([incarceration_period])
 
         expected = {
             2007: {12: [incarceration_period]},
@@ -464,7 +482,7 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
         )
 
         with pytest.raises(ValueError):
-            _ = PreProcessedIncarcerationPeriodIndex([incarceration_period])
+            _ = _get_incarceration_period_index([incarceration_period])
 
     def test_multiple_periods(self):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -491,7 +509,7 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
-        index = PreProcessedIncarcerationPeriodIndex(
+        index = _get_incarceration_period_index(
             [incarceration_period, incarceration_period_2]
         )
 
@@ -522,7 +540,7 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
-        index = PreProcessedIncarcerationPeriodIndex([incarceration_period])
+        index = _get_incarceration_period_index([incarceration_period])
 
         expected = {
             2008: {
@@ -560,7 +578,7 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
-        index = PreProcessedIncarcerationPeriodIndex(
+        index = _get_incarceration_period_index(
             [incarceration_period, incarceration_period_2]
         )
 
@@ -715,7 +733,7 @@ class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
             days=range_end_num_days_from_periods_end
         )
 
-        index = PreProcessedIncarcerationPeriodIndex(incarceration_periods)
+        index = _get_incarceration_period_index(incarceration_periods)
 
         time_range = DateRange(
             lower_bound_inclusive_date=lower_bound_inclusive,
@@ -732,7 +750,7 @@ class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
 
     def test_no_periods(self):
 
-        index = PreProcessedIncarcerationPeriodIndex([])
+        index = _get_incarceration_period_index([])
         self.assertFalse(
             index.is_excluded_from_supervision_population_for_range(
                 DateRange(
@@ -1092,7 +1110,7 @@ class TestIncarcerationPeriodsNotUnderSupervisionAuthority(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
-        index = PreProcessedIncarcerationPeriodIndex(
+        index = _get_incarceration_period_index(
             [incarceration_period, incarceration_period_2]
         )
 
@@ -1120,7 +1138,7 @@ class TestIncarcerationPeriodsNotUnderSupervisionAuthority(unittest.TestCase):
         for custodial_authority in all_custodial_authority_values:
             incarceration_period.custodial_authority = custodial_authority
 
-            index = PreProcessedIncarcerationPeriodIndex([incarceration_period])
+            index = _get_incarceration_period_index([incarceration_period])
 
             expected_periods = (
                 [incarceration_period]
@@ -1160,7 +1178,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
 
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
-        index = PreProcessedIncarcerationPeriodIndex(incarceration_periods)
+        index = _get_incarceration_period_index(incarceration_periods)
 
         original_admission_reasons_by_period_id = (
             index.original_admission_reasons_by_period_id
@@ -1226,7 +1244,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             incarceration_period_4,
         ]
 
-        index = PreProcessedIncarcerationPeriodIndex(incarceration_periods)
+        index = _get_incarceration_period_index(incarceration_periods)
 
         original_admission_reasons_by_period_id = (
             index.original_admission_reasons_by_period_id
@@ -1298,7 +1316,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
             incarceration_period_4,
         ]
 
-        index = PreProcessedIncarcerationPeriodIndex(incarceration_periods)
+        index = _get_incarceration_period_index(incarceration_periods)
 
         original_admission_reasons_by_period_id = (
             index.original_admission_reasons_by_period_id
@@ -1340,7 +1358,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
 
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
-        index = PreProcessedIncarcerationPeriodIndex(incarceration_periods)
+        index = _get_incarceration_period_index(incarceration_periods)
 
         original_admission_reasons_by_period_id = (
             index.original_admission_reasons_by_period_id
@@ -1383,7 +1401,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
 
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
-        index = PreProcessedIncarcerationPeriodIndex(incarceration_periods)
+        index = _get_incarceration_period_index(incarceration_periods)
 
         original_admission_reasons_by_period_id = (
             index.original_admission_reasons_by_period_id
@@ -1426,7 +1444,7 @@ class TestOriginalAdmissionReasonsByPeriodID(unittest.TestCase):
 
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
-        index = PreProcessedIncarcerationPeriodIndex(incarceration_periods)
+        index = _get_incarceration_period_index(incarceration_periods)
 
         original_admission_reasons_by_period_id = (
             index.original_admission_reasons_by_period_id
@@ -1472,7 +1490,7 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
         )
 
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
-        index = PreProcessedIncarcerationPeriodIndex(incarceration_periods)
+        index = _get_incarceration_period_index(incarceration_periods)
 
         preceding_period = index.preceding_incarceration_period_in_index(
             incarceration_period_1
@@ -1502,7 +1520,7 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
         )
 
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
-        index = PreProcessedIncarcerationPeriodIndex(incarceration_periods)
+        index = _get_incarceration_period_index(incarceration_periods)
 
         preceding_period = index.preceding_incarceration_period_in_index(
             incarceration_period_2
@@ -1546,7 +1564,7 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
             incarceration_period_2,
             incarceration_period_3,
         ]
-        index = PreProcessedIncarcerationPeriodIndex(incarceration_periods)
+        index = _get_incarceration_period_index(incarceration_periods)
 
         preceding_period = index.preceding_incarceration_period_in_index(
             incarceration_period_3
@@ -1589,7 +1607,7 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
             incarceration_period_1,
             incarceration_period_2,
         ]
-        index = PreProcessedIncarcerationPeriodIndex(incarceration_periods)
+        index = _get_incarceration_period_index(incarceration_periods)
 
         with pytest.raises(KeyError):
             index.preceding_incarceration_period_in_index(incarceration_period_3)

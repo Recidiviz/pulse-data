@@ -19,20 +19,28 @@ for state-specific decisions involved in categorizing various attributes of
 commitment from supervision admissions."""
 import abc
 import datetime
-from typing import List, Optional, Set, Tuple
+from typing import List, Optional, Set
 
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
+    get_pre_incarceration_supervision_type_from_ip_admission_reason,
+)
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     violation_responses_in_window,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
-    StateSpecializedPurposeForIncarceration,
+)
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.common.date import DateRange
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
+    StateIncarcerationSentence,
+    StateSupervisionPeriod,
+    StateSupervisionSentence,
     StateSupervisionViolationResponse,
 )
 
@@ -81,27 +89,6 @@ class StateSpecificCommitmentFromSupervisionDelegate(abc.ABC):
         """
 
         return set()
-
-    def identify_specialized_purpose_for_incarceration_and_subtype(
-        self,
-        incarceration_period: StateIncarcerationPeriod,
-        _violation_responses: List[StateSupervisionViolationResponse],
-    ) -> Tuple[Optional[StateSpecializedPurposeForIncarceration], Optional[str]]:
-        """Determines the specialized_purpose_for_incarceration and, if applicable, the
-        specialized_purpose_for_incarceration_subtype of the commitment from supervision
-        admission to the given incarceration_period.
-
-        Should be overridden by state-specific implementations if necessary.
-        """
-        specialized_purpose_for_incarceration = (
-            incarceration_period.specialized_purpose_for_incarceration
-            # Default to GENERAL if no specialized_purpose_for_incarceration is set
-            or StateSpecializedPurposeForIncarceration.GENERAL
-        )
-
-        # For now, all non-state-specific specialized_purpose_for_incarceration_subtypes
-        # are None
-        return specialized_purpose_for_incarceration, None
 
     def violation_history_window_pre_commitment_from_supervision(
         self,
@@ -157,4 +144,37 @@ class StateSpecificCommitmentFromSupervisionDelegate(abc.ABC):
         return DateRange(
             lower_bound_inclusive_date=violation_window_lower_bound_inclusive,
             upper_bound_exclusive_date=violation_window_upper_bound_exclusive,
+        )
+
+    # pylint: disable=unused-argument
+    def get_commitment_from_supervision_supervision_type(
+        self,
+        incarceration_sentences: List[StateIncarcerationSentence],
+        supervision_sentences: List[StateSupervisionSentence],
+        incarceration_period: StateIncarcerationPeriod,
+        previous_supervision_period: Optional[StateSupervisionPeriod],
+    ) -> Optional[StateSupervisionPeriodSupervisionType]:
+        """Returns the supervision type the person was on before they were committed to
+        incarceration from supervision.
+
+        Default behavior is to return the supervision_period_supervision_type on the
+        |previous_supervision_period|, if provided, else infers the supervision type
+        from the admission_reason on the |incarceration_period|.
+
+        Should be overridden by state-specific implementations if necessary.
+        """
+        if (
+            previous_supervision_period
+            and previous_supervision_period.supervision_period_supervision_type
+        ):
+            return previous_supervision_period.supervision_period_supervision_type
+
+        if not incarceration_period.admission_reason:
+            raise ValueError(
+                "Unexpected incarceration period without an "
+                f"admission_reason: {incarceration_period}"
+            )
+
+        return get_pre_incarceration_supervision_type_from_ip_admission_reason(
+            admission_reason=incarceration_period.admission_reason
         )

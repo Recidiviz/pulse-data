@@ -28,6 +28,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateIncarcerationPeriodStatus,
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
@@ -44,7 +45,10 @@ from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarcera
 
 
 class TestIncarcerationPreProcessingDelegate(UsXxIncarcerationPreProcessingDelegate):
-    def pre_processing_relies_on_supervision_periods(self):
+    def pre_processing_relies_on_supervision_periods(self) -> bool:
+        return True
+
+    def pre_processing_relies_on_violation_responses(self) -> bool:
         return True
 
 
@@ -87,6 +91,7 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=datetime.date(2020, 5, 17),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         (
@@ -96,6 +101,7 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
             state_code=state_code,
             incarceration_periods=[incarceration_period],
             supervision_periods=[supervision_period],
+            violation_responses=None,
         )
 
         self.assertEqual(
@@ -122,6 +128,7 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=datetime.date(2020, 5, 17),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         (
@@ -131,6 +138,7 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
             state_code=state_code,
             incarceration_periods=[incarceration_period],
             supervision_periods=None,
+            violation_responses=None,
         )
 
         self.assertEqual(
@@ -166,6 +174,36 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
                 state_code=state_code,
                 incarceration_periods=[incarceration_period],
                 supervision_periods=None,
+                violation_responses=[],
+            )
+
+    def test_pre_processing_managers_for_calculations_no_violation_responses_state_requires(
+        self,
+    ):
+        self.mock_pre_processing_delegate.return_value = (
+            TestIncarcerationPreProcessingDelegate()
+        )
+        state_code = "US_XX"
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="ip1",
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code="US_XX",
+            admission_date=datetime.date(2017, 4, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=datetime.date(2020, 5, 17),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+        )
+
+        with self.assertRaises(ValueError):
+            # Assert an error is raised if the violation_responses arg is None for a
+            # state that relies on violation responses for IP pre-processing
+            (_, _,) = pre_processing_managers_for_calculations(
+                state_code=state_code,
+                incarceration_periods=[incarceration_period],
+                supervision_periods=[],
+                violation_responses=None,
             )
 
     def test_pre_processing_managers_for_calculations_no_ips(self):
@@ -188,6 +226,7 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
             state_code=state_code,
             incarceration_periods=None,
             supervision_periods=[supervision_period],
+            violation_responses=None,
         )
 
         self.assertIsNone(ip_pre_processing_manager)
@@ -206,6 +245,7 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
             state_code=state_code,
             incarceration_periods=[],
             supervision_periods=[],
+            violation_responses=[],
         )
 
         self.assertEqual([], ip_pre_processing_manager._incarceration_periods)

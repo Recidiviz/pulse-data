@@ -854,6 +854,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 most_serious_offense_ncic_code="5699",
                 most_serious_offense_statute="30A123",
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             ),
             IncarcerationCommitmentFromSupervisionAdmissionEvent(
                 state_code=incarceration_period.state_code,
@@ -882,6 +883,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                     incarceration_period.release_date
                     - incarceration_period.admission_date
                 ).days,
+                purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             ),
         ]
 
@@ -1047,6 +1049,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 most_serious_offense_ncic_code="5699",
                 most_serious_offense_statute="30A123",
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             ),
             IncarcerationCommitmentFromSupervisionAdmissionEvent(
                 state_code=incarceration_period_with_death.state_code,
@@ -1070,6 +1073,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
                     incarceration_period_with_death.release_date
                     - incarceration_period_with_death.admission_date
                 ).days,
+                purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             ),
         ]
 

@@ -38,7 +38,10 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateSupervisionViolationResponse,
+)
 
 
 class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
@@ -53,8 +56,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         overwrite_facility_information_in_transfers: bool = True,
         earliest_death_date: Optional[date] = None,
     ) -> List[StateIncarcerationPeriod]:
-
-        # TODO(#7442): Bring in supervision periods for relevant tests
+        # IP pre-processing for US_MO does not rely on violation responses or
+        # supervision periods
+        violation_responses: Optional[List[StateSupervisionViolationResponse]] = []
         sp_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=[],
         )
@@ -63,6 +67,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             incarceration_periods=incarceration_periods,
             delegate=UsMoIncarcerationPreProcessingDelegate(),
             pre_processed_supervision_period_index=sp_index,
+            violation_responses=violation_responses,
             earliest_death_date=earliest_death_date,
         )
 
@@ -85,6 +90,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.ESCAPE,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         jail_period_2 = StateIncarcerationPeriod.new_with_defaults(
@@ -97,6 +103,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2008, 12, 24),
             release_reason=StateIncarcerationPeriodReleaseReason.ESCAPE,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -109,6 +116,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2017, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         incarceration_periods = [
@@ -127,7 +135,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             )
 
             self.assertEqual(
-                validated_incarceration_periods, [valid_incarceration_period]
+                [valid_incarceration_period], validated_incarceration_periods
             )
 
     def test_prepare_incarceration_periods_for_calculations_valid_then_jail(
@@ -144,6 +152,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2009, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         jail_period = StateIncarcerationPeriod.new_with_defaults(
@@ -156,6 +165,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2010, 1, 24),
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         incarceration_periods = [valid_incarceration_period, jail_period]
@@ -170,7 +180,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             )
 
             self.assertEqual(
-                validated_incarceration_periods, [valid_incarceration_period]
+                [valid_incarceration_period], validated_incarceration_periods
             )
 
     def test_prepare_incarceration_periods_for_calculations_parole_board_hold(
@@ -201,6 +211,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_date=date(2017, 12, 4),
             admission_reason_raw_text="50N1020",
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         incarceration_periods = [board_hold, revocation_period]
@@ -228,8 +239,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
     ) -> None:
         state_code = "US_MO"
 
-        # TODO(#7442): Update this test once we're handling sanction admission
-        #  overrides for US_MO
         not_board_hold = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id="222",
@@ -244,6 +253,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_reason_raw_text="50N1020",
             release_date=date(2017, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         updated_period = attr.evolve(
@@ -262,4 +272,4 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
                 )
             )
 
-            self.assertEqual(validated_incarceration_periods, [updated_period])
+            self.assertEqual([updated_period], validated_incarceration_periods)

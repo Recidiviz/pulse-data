@@ -96,6 +96,9 @@ def find_program_events(
         # and this pipeline doesn't require StateIncarcerationPeriods
         incarceration_periods=None,
         supervision_periods=supervision_periods,
+        # Note: This pipeline cannot be run for any state that relies on
+        # StateSupervisionViolationResponse entities in IP pre-processing
+        violation_responses=None,
     )
 
     if not sp_pre_processing_manager:

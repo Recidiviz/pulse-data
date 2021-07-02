@@ -16,8 +16,22 @@
 # =============================================================================
 """Utils for state-specific logic related to incarceration commitments from supervision
 in US_MO."""
+from typing import List, Optional
+
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_utils import (
+    us_mo_get_pre_incarceration_supervision_type,
+)
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+)
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateIncarcerationSentence,
+    StateSupervisionPeriod,
+    StateSupervisionSentence,
 )
 
 
@@ -25,3 +39,17 @@ class UsMoCommitmentFromSupervisionDelegate(
     StateSpecificCommitmentFromSupervisionDelegate
 ):
     """US_MO implementation of the StateSpecificCommitmentFromSupervisionDelegate."""
+
+    def get_commitment_from_supervision_supervision_type(
+        self,
+        incarceration_sentences: List[StateIncarcerationSentence],
+        supervision_sentences: List[StateSupervisionSentence],
+        incarceration_period: StateIncarcerationPeriod,
+        previous_supervision_period: Optional[StateSupervisionPeriod],
+    ) -> Optional[StateSupervisionPeriodSupervisionType]:
+        """In US_MO we calculate the pre-incarceration supervision type by
+        determining the most recent type of supervision a given person was on using
+        the overlapping sentences."""
+        return us_mo_get_pre_incarceration_supervision_type(
+            incarceration_sentences, supervision_sentences, incarceration_period
+        )

@@ -20,7 +20,7 @@ from datetime import date
 from typing import List, Optional
 
 from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
-    get_commitment_from_supervision_supervision_period,
+    _get_commitment_from_supervision_supervision_period,
 )
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
@@ -31,13 +31,16 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_delegate import (
     UsNdCommitmentFromSupervisionDelegate,
 )
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
     StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodStatus,
+    StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.date import DateRange
@@ -71,7 +74,7 @@ class TestViolationHistoryWindowPreCommitment(unittest.TestCase):
 
 
 class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
-    """Tests the get_commitment_from_supervision_supervision_period function when
+    """Tests the _get_commitment_from_supervision_supervision_period function when
     the UsNdCommitmentFromSupervisionDelegate is provided."""
 
     @staticmethod
@@ -90,14 +93,19 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
 
         incarceration_periods = [ip]
 
-        return get_commitment_from_supervision_supervision_period(
+        return _get_commitment_from_supervision_supervision_period(
             incarceration_period=ip,
             commitment_from_supervision_delegate=UsNdCommitmentFromSupervisionDelegate(),
             supervision_period_index=PreProcessedSupervisionPeriodIndex(
                 supervision_periods
             ),
             incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods
+                incarceration_periods=incarceration_periods,
+                ip_id_to_pfi_subtype={
+                    ip.incarceration_period_id: None
+                    for ip in incarceration_periods
+                    if ip.incarceration_period_id
+                },
             ),
         )
 
@@ -468,3 +476,150 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         )
 
         self.assertIsNone(pre_commitment_supervision_period)
+
+
+class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
+    """Tests the _get_commitment_from_supervision_supervision_period function on the
+    UsNdCommitmentFromSupervisionDelegate."""
+
+    def setUp(self) -> None:
+        self.delegate = UsNdCommitmentFromSupervisionDelegate()
+
+    def _test_get_commitment_from_supervision_supervision_type(
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+        previous_supervision_period: Optional[StateSupervisionPeriod] = None,
+    ) -> Optional[StateSupervisionPeriodSupervisionType]:
+        return self.delegate.get_commitment_from_supervision_supervision_type(
+            incarceration_sentences=[],
+            supervision_sentences=[],
+            incarceration_period=incarceration_period,
+            previous_supervision_period=previous_supervision_period,
+        )
+
+    def test_us_nd_get_pre_commitment_supervision_type_default(self) -> None:
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            external_id="2",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_ND",
+            facility="NDSP",
+            admission_date=date(2008, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason_raw_text="ADMN",
+            release_date=date(2010, 12, 21),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        )
+
+        supervision_type_pre_commitment = (
+            self._test_get_commitment_from_supervision_supervision_type(
+                incarceration_period=incarceration_period
+            )
+        )
+
+        self.assertEqual(
+            StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_type_pre_commitment,
+        )
+
+    def test_us_nd_get_pre_commitment_supervision_type_new_admission_probation(
+        self,
+    ) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2008, 3, 5),
+            termination_date=date(2008, 12, 16),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PROBATION,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            external_id="2",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_ND",
+            facility="NDSP",
+            admission_date=date(2008, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="ADMN",
+            release_date=date(2010, 12, 21),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        )
+
+        supervision_type_pre_commitment = (
+            self._test_get_commitment_from_supervision_supervision_type(
+                incarceration_period=incarceration_period,
+                previous_supervision_period=supervision_period,
+            )
+        )
+
+        self.assertEqual(
+            StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type_pre_commitment,
+        )
+
+    def test_us_nd_get_pre_commitment_supervision_type_new_admission_parole(
+        self,
+    ) -> None:
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2008, 3, 5),
+            termination_date=date(2008, 12, 16),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PAROLE,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            external_id="2",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_ND",
+            facility="NDSP",
+            admission_date=date(2008, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="ADMN",
+            release_date=date(2010, 12, 21),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        )
+
+        supervision_type_pre_commitment = (
+            self._test_get_commitment_from_supervision_supervision_type(
+                incarceration_period=incarceration_period,
+                previous_supervision_period=supervision_period,
+            )
+        )
+        self.assertIsNone(supervision_type_pre_commitment)
+
+    def test_us_nd_get_pre_commitment_supervision_type_new_admission_no_supervision_period(
+        self,
+    ) -> None:
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            external_id="2",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code="US_ND",
+            facility="NDSP",
+            admission_date=date(2008, 12, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_reason_raw_text="ADMN",
+            release_date=date(2010, 12, 21),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+        )
+
+        supervision_type_pre_commitment = (
+            self._test_get_commitment_from_supervision_supervision_type(
+                incarceration_period=incarceration_period,
+            )
+        )
+
+        self.assertIsNone(supervision_type_pre_commitment)

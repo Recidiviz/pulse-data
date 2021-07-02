@@ -36,6 +36,7 @@ from recidiviz.calculator.pipeline.utils.supervision_period_pre_processing_manag
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
+    StateSupervisionViolationResponse,
 )
 
 
@@ -43,6 +44,7 @@ def pre_processing_managers_for_calculations(
     state_code: str,
     incarceration_periods: Optional[List[StateIncarcerationPeriod]],
     supervision_periods: Optional[List[StateSupervisionPeriod]],
+    violation_responses: Optional[List[StateSupervisionViolationResponse]],
 ) -> Tuple[
     Optional[IncarcerationPreProcessingManager],
     Optional[SupervisionPreProcessingManager],
@@ -67,6 +69,16 @@ def pre_processing_managers_for_calculations(
                 f"IP pre-processing for {state_code} relies on "
                 "StateSupervisionPeriod entities. This pipeline must provide "
                 "supervision_periods to be run on this state."
+            )
+
+    if violation_responses is None:
+        if (
+            state_ip_pre_processing_manager_delegate.pre_processing_relies_on_violation_responses()
+        ):
+            raise ValueError(
+                f"IP pre-processing for {state_code} relies on "
+                "StateSupervisionViolationResponse entities. This pipeline must "
+                "provide violation_responses to be run on this state."
             )
 
     all_periods: List[Union[StateIncarcerationPeriod, StateSupervisionPeriod]] = []
@@ -95,10 +107,11 @@ def pre_processing_managers_for_calculations(
 
     ip_pre_processing_manager = (
         IncarcerationPreProcessingManager(
-            incarceration_periods,
-            state_ip_pre_processing_manager_delegate,
-            supervision_period_index,
-            earliest_death_date,
+            incarceration_periods=incarceration_periods,
+            delegate=state_ip_pre_processing_manager_delegate,
+            pre_processed_supervision_period_index=supervision_period_index,
+            violation_responses=violation_responses,
+            earliest_death_date=earliest_death_date,
         )
         if incarceration_periods is not None
         else None
