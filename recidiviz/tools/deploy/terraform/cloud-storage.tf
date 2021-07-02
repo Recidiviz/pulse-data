@@ -27,7 +27,7 @@ module "direct-ingest-state-storage-secondary" {
 
   project_id  = var.project_id
   location    = var.direct_ingest_region
-  name_suffix = "direct-ingest-state-storage-secondary"
+  name_suffix = var.direct_ingest_state_storage_secondary_bucket_name_suffix
 }
 
 module "direct-ingest-cloud-sql-exports" {
@@ -42,4 +42,11 @@ module "dashboard-user-restrictions-bucket" {
 
   project_id  = var.project_id
   name_suffix = "dashboard-user-restrictions"
+}
+
+module "state-aggregate-reports" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "state-aggregate-reports"
 }
