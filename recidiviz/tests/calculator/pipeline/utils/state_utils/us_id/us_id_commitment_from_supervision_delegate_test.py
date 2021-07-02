@@ -20,7 +20,7 @@ from datetime import date
 from typing import List, Optional
 
 from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
-    get_commitment_from_supervision_supervision_period,
+    _get_commitment_from_supervision_supervision_period,
 )
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
@@ -46,7 +46,7 @@ from recidiviz.persistence.entity.state.entities import (
 
 
 class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
-    """Tests the get_commitment_from_supervision_supervision_period function when
+    """Tests the _get_commitment_from_supervision_supervision_period function when
     the UsIdCommitmentFromSupervisionDelegate is provided."""
 
     @staticmethod
@@ -65,14 +65,19 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
 
         incarceration_periods = [ip]
 
-        return get_commitment_from_supervision_supervision_period(
+        return _get_commitment_from_supervision_supervision_period(
             incarceration_period=ip,
             commitment_from_supervision_delegate=UsIdCommitmentFromSupervisionDelegate(),
             supervision_period_index=PreProcessedSupervisionPeriodIndex(
                 supervision_periods
             ),
             incarceration_period_index=PreProcessedIncarcerationPeriodIndex(
-                incarceration_periods
+                incarceration_periods=incarceration_periods,
+                ip_id_to_pfi_subtype={
+                    ip.incarceration_period_id: None
+                    for ip in incarceration_periods
+                    if ip.incarceration_period_id
+                },
             ),
         )
 

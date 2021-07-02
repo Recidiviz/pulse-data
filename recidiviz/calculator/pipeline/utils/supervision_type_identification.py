@@ -22,6 +22,7 @@ from typing import Dict, List, Optional, Set
 from recidiviz.common.common_utils import date_spans_overlap_inclusive
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
+    is_commitment_from_supervision,
 )
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -43,26 +44,16 @@ SUPERVISION_TYPE_PRECEDENCE_ORDER = [
     StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
 ]
 
-# Maps supervision types to the revocation admission reason corresponding to a
-# revocation admission from the supervision type
-SUPERVISION_TYPE_TO_REVOCATION_TYPE_MAP: Dict[
-    StateSupervisionPeriodSupervisionType, StateIncarcerationPeriodAdmissionReason
+# Maps commitment from supervision admission reasons to the corresponding supervision
+# type of the period that preceded the admission, as inferred from the admission
+COMMITMENT_FROM_SUPERVISION_ADMISSION_REASON_TO_SUPERVISION_TYPE_MAP: Dict[
+    StateIncarcerationPeriodAdmissionReason, StateSupervisionPeriodSupervisionType
 ] = {
-    StateSupervisionPeriodSupervisionType.DUAL: StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
-    StateSupervisionPeriodSupervisionType.PAROLE: StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-    StateSupervisionPeriodSupervisionType.PROBATION: StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+    StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION: StateSupervisionPeriodSupervisionType.DUAL,
+    StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION: StateSupervisionPeriodSupervisionType.PAROLE,
+    StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION: StateSupervisionPeriodSupervisionType.PROBATION,
+    StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION: StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
 }
-
-
-def get_pre_incarceration_supervision_type_from_supervision_period(
-    supervision_period: Optional[StateSupervisionPeriod],
-) -> StateSupervisionPeriodSupervisionType:
-    """Returns the supervision_period_supervision_type associated with the given
-    supervision_period that preceded the admission to incarceration from supervision,
-    if present. If not, returns None."""
-    if supervision_period and supervision_period.supervision_period_supervision_type:
-        return supervision_period.supervision_period_supervision_type
-    return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
 
 
 def get_pre_incarceration_supervision_type_from_ip_admission_reason(
@@ -70,34 +61,23 @@ def get_pre_incarceration_supervision_type_from_ip_admission_reason(
 ) -> Optional[StateSupervisionPeriodSupervisionType]:
     """Derives the supervision type the person was serving prior to being
     admitted to incarceration with the given |admission_reason|."""
-    if admission_reason in [
-        StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
-        StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
-        StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
-        StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
-        StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-        StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-        StateIncarcerationPeriodAdmissionReason.TRANSFER,
-        StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
-        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
-        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
-        StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
-        StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
-    ]:
+    if not is_commitment_from_supervision(admission_reason):
+        # If this isn't a commitment from supervision admission then we can't infer
+        # the pre-incarceration supervision type from the admission_reason
         return None
 
-    admission_reasons_to_supervision_types = {
-        admission_reason: supervision_type
-        for supervision_type, admission_reason in SUPERVISION_TYPE_TO_REVOCATION_TYPE_MAP.items()
-    }
-
-    if admission_reason not in admission_reasons_to_supervision_types:
+    if (
+        admission_reason
+        not in COMMITMENT_FROM_SUPERVISION_ADMISSION_REASON_TO_SUPERVISION_TYPE_MAP
+    ):
         raise ValueError(
-            f"Enum case not handled for StateIncarcerationPeriodAdmissionReason of type: "
+            "Enum case not handled for StateIncarcerationPeriodAdmissionReason of type: "
             f"{admission_reason}."
         )
 
-    return admission_reasons_to_supervision_types.get(admission_reason)
+    return COMMITMENT_FROM_SUPERVISION_ADMISSION_REASON_TO_SUPERVISION_TYPE_MAP.get(
+        admission_reason
+    )
 
 
 def get_revocation_admission_reason_from_revoked_supervision_period(
@@ -105,19 +85,26 @@ def get_revocation_admission_reason_from_revoked_supervision_period(
 ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
     """Derives the revocation admission reason from the supervision type the person was
     serving prior to the incarceration admission due to a revocation."""
-    if not supervision_period.supervision_period_supervision_type:
+    supervision_type = supervision_period.supervision_period_supervision_type
+
+    if not supervision_type:
         return StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN
 
-    if (
-        supervision_period.supervision_period_supervision_type
-        == StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION
-    ):
+    if supervision_type == StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION:
         return StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
 
-    return SUPERVISION_TYPE_TO_REVOCATION_TYPE_MAP.get(
-        supervision_period.supervision_period_supervision_type,
-        StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
-    )
+    supervision_types_to_commitment_admission_reasons = {
+        supervision_type: admission_reason
+        for admission_reason, supervision_type in COMMITMENT_FROM_SUPERVISION_ADMISSION_REASON_TO_SUPERVISION_TYPE_MAP.items()
+    }
+
+    if supervision_type not in supervision_types_to_commitment_admission_reasons:
+        raise ValueError(
+            "Enum case not handled for StateSupervisionPeriodSupervisionType of type: "
+            f"{supervision_type}."
+        )
+
+    return supervision_types_to_commitment_admission_reasons[supervision_type]
 
 
 def get_month_supervision_type_default(

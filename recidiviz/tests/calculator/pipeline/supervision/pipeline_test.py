@@ -1656,6 +1656,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.assessment_types_patcher.stop()
+        self._stop_state_specific_delegate_patchers()
+
+    def _stop_state_specific_delegate_patchers(self) -> None:
         self.pre_processing_delegate_patcher.stop()
         self.commitment_from_supervision_delegate_patcher.stop()
 
@@ -1898,7 +1901,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             start_date=date(2015, 3, 14),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             termination_date=supervision_period_termination_date,
-            supervision_type=StateSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="H",
             supervision_site="10",
@@ -2076,6 +2079,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
     def testClassifySupervisionTimeBucketsRevocation_US_MO(self) -> None:
         """Tests the ClassifySupervisionTimeBuckets DoFn when there is an instance of revocation."""
+        self._stop_state_specific_delegate_patchers()
+
         fake_person_id = 12345
 
         fake_person = StatePerson.new_with_defaults(

@@ -20,6 +20,7 @@ calculations."""
 from typing import List, Optional, Set
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
+    PurposeForIncarcerationInfo,
     StateSpecificIncarcerationPreProcessingDelegate,
 )
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
@@ -32,7 +33,10 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.ingest.direct.regions.us_mo import us_mo_enum_helpers
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateSupervisionViolationResponse,
+)
 
 
 class UsMoIncarcerationPreProcessingDelegate(
@@ -123,6 +127,16 @@ class UsMoIncarcerationPreProcessingDelegate(
     ) -> Set[StateIncarcerationPeriodAdmissionReason]:
         return self._default_admission_reasons_to_filter()
 
+    def get_pfi_info_for_period_if_commitment_from_supervision(
+        self,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
+        violation_responses: Optional[List[StateSupervisionViolationResponse]],
+    ) -> PurposeForIncarcerationInfo:
+        return self._default_get_pfi_info_for_period_if_commitment_from_supervision(
+            sorted_incarceration_periods[incarceration_period_list_index]
+        )
+
     def normalize_period_if_commitment_from_supervision(
         self,
         incarceration_period_list_index: int,
@@ -132,3 +146,6 @@ class UsMoIncarcerationPreProcessingDelegate(
         return self._default_normalize_period_if_commitment_from_supervision(
             sorted_incarceration_periods[incarceration_period_list_index]
         )
+
+    def pre_processing_relies_on_violation_responses(self) -> bool:
+        return self._default_pre_processing_relies_on_violation_responses()

@@ -25,6 +25,7 @@ from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils impor
     SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
 )
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
+    PurposeForIncarcerationInfo,
     StateSpecificIncarcerationPreProcessingDelegate,
 )
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
@@ -50,7 +51,10 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateSupervisionViolationResponse,
+)
 
 
 class UsIdIncarcerationPreProcessingDelegate(
@@ -82,6 +86,16 @@ class UsIdIncarcerationPreProcessingDelegate(
     ) -> Set[StateIncarcerationPeriodAdmissionReason]:
         return self._default_admission_reasons_to_filter()
 
+    def get_pfi_info_for_period_if_commitment_from_supervision(
+        self,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
+        violation_responses: Optional[List[StateSupervisionViolationResponse]],
+    ) -> PurposeForIncarcerationInfo:
+        return self._default_get_pfi_info_for_period_if_commitment_from_supervision(
+            sorted_incarceration_periods[incarceration_period_list_index]
+        )
+
     def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:
         return self._default_incarceration_types_to_filter()
 
@@ -106,6 +120,9 @@ class UsIdIncarcerationPreProcessingDelegate(
                 incarceration_period
             )
         )
+
+    def pre_processing_relies_on_violation_responses(self) -> bool:
+        return self._default_pre_processing_relies_on_violation_responses()
 
 
 def _us_id_normalize_period_if_commitment_from_supervision(

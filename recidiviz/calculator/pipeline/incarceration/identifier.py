@@ -32,7 +32,6 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
 from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
     get_commitment_from_supervision_details,
-    get_commitment_from_supervision_supervision_period,
 )
 from recidiviz.calculator.pipeline.utils.entity_pre_processing_utils import (
     pre_processing_managers_for_calculations,
@@ -51,7 +50,6 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
     PreProcessedSupervisionPeriodIndex,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    get_commitment_from_supervision_supervision_type,
     get_post_incarceration_supervision_type,
     get_pre_incarceration_supervision_type,
     get_state_specific_commitment_from_supervision_delegate,
@@ -156,6 +154,13 @@ def find_incarceration_events(
         StateSupervisionPeriod.get_class_id_name(),
     )
 
+    sorted_violation_responses = prepare_violation_responses_for_calculations(
+        violation_responses=violation_responses,
+        pre_processing_function=state_specific_violation_response_pre_processing_function(
+            state_code=state_code
+        ),
+    )
+
     (
         ip_pre_processing_manager,
         sp_pre_processing_manager,
@@ -163,6 +168,7 @@ def find_incarceration_events(
         state_code=state_code,
         incarceration_periods=incarceration_periods,
         supervision_periods=supervision_periods,
+        violation_responses=sorted_violation_responses,
     )
 
     if not ip_pre_processing_manager or not sp_pre_processing_manager:
@@ -180,13 +186,12 @@ def find_incarceration_events(
 
     incarceration_events.extend(
         find_all_admission_release_events(
-            state_code=state_code,
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
             ip_pre_processing_manager=ip_pre_processing_manager,
             sp_pre_processing_manager=sp_pre_processing_manager,
             assessments=assessments,
-            violation_responses=violation_responses,
+            sorted_violation_responses=sorted_violation_responses,
             supervision_period_to_agent_associations=supervision_period_to_agent_associations,
             county_of_residence=county_of_residence,
         )
@@ -196,13 +201,12 @@ def find_incarceration_events(
 
 
 def find_all_admission_release_events(
-    state_code: str,
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
     ip_pre_processing_manager: IncarcerationPreProcessingManager,
     sp_pre_processing_manager: SupervisionPreProcessingManager,
     assessments: List[StateAssessment],
-    violation_responses: List[StateSupervisionViolationResponse],
+    sorted_violation_responses: List[StateSupervisionViolationResponse],
     supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
     county_of_residence: Optional[str],
 ) -> List[Union[IncarcerationAdmissionEvent, IncarcerationReleaseEvent]]:
@@ -220,13 +224,6 @@ def find_all_admission_release_events(
 
     supervision_period_index = (
         sp_pre_processing_manager.pre_processed_supervision_period_index_for_calculations()
-    )
-
-    sorted_violation_responses = prepare_violation_responses_for_calculations(
-        violation_responses=violation_responses,
-        pre_processing_function=state_specific_violation_response_pre_processing_function(
-            state_code=state_code
-        ),
     )
 
     for (
@@ -538,18 +535,12 @@ def admission_event_for_period(
         )
 
         if is_commitment_from_supervision(admission_reason):
-            pre_commitment_supervision_period = get_commitment_from_supervision_supervision_period(
-                incarceration_period=incarceration_period,
-                supervision_period_index=supervision_period_index,
-                commitment_from_supervision_delegate=commitment_from_supervision_delegate,
-                incarceration_period_index=incarceration_period_index,
-            )
-
             return _commitment_from_supervision_event_for_period(
                 incarceration_sentences=incarceration_sentences,
                 supervision_sentences=supervision_sentences,
                 incarceration_period=incarceration_period,
-                pre_commitment_supervision_period=pre_commitment_supervision_period,
+                incarceration_period_index=incarceration_period_index,
+                supervision_period_index=supervision_period_index,
                 assessments=assessments,
                 sorted_violation_responses=sorted_violation_responses,
                 supervision_period_to_agent_associations=supervision_period_to_agent_associations,
@@ -574,7 +565,8 @@ def _commitment_from_supervision_event_for_period(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
     incarceration_period: StateIncarcerationPeriod,
-    pre_commitment_supervision_period: Optional[StateSupervisionPeriod],
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
+    supervision_period_index: PreProcessedSupervisionPeriodIndex,
     assessments: List[StateAssessment],
     sorted_violation_responses: List[StateSupervisionViolationResponse],
     supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
@@ -663,20 +655,15 @@ def _commitment_from_supervision_event_for_period(
 
     commitment_details = get_commitment_from_supervision_details(
         incarceration_period=incarceration_period,
-        pre_commitment_supervision_period=pre_commitment_supervision_period,
+        incarceration_period_index=incarceration_period_index,
+        supervision_period_index=supervision_period_index,
+        incarceration_sentences=incarceration_sentences,
+        supervision_sentences=supervision_sentences,
         commitment_from_supervision_delegate=commitment_from_supervision_delegate,
-        violation_responses=sorted_violation_responses,
         supervision_period_to_agent_associations=supervision_period_to_agent_associations,
         state_specific_officer_and_location_info_from_supervision_period_fn=get_state_specific_supervising_officer_and_location_info_function(
             state_code
         ),
-    )
-
-    supervision_type = get_commitment_from_supervision_supervision_type(
-        incarceration_sentences=incarceration_sentences,
-        supervision_sentences=supervision_sentences,
-        incarceration_period=incarceration_period,
-        previous_supervision_period=pre_commitment_supervision_period,
     )
 
     deprecated_supervising_district_external_id = (
@@ -690,7 +677,7 @@ def _commitment_from_supervision_event_for_period(
         facility=incarceration_period.facility,
         admission_reason=admission_reason,
         admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
-        supervision_type=supervision_type,
+        supervision_type=commitment_details.supervision_type,
         specialized_purpose_for_incarceration=commitment_details.purpose_for_incarceration,
         specialized_purpose_for_incarceration_subtype=commitment_details.purpose_for_incarceration_subtype,
         county_of_residence=county_of_residence,
