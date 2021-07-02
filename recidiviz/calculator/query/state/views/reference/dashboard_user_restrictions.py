@@ -14,8 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Reference table for Recidiviz users who should only have access to data from a single or limited set of supervision
-locations.
+"""Reference table for UP Dashboard user restrictions.
 """
 
 # pylint: disable=trailing-whitespace
@@ -26,14 +25,13 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_VIEW_NAME = (
-    "supervision_location_restricted_access_emails"
+DASHBOARD_USER_RESTRICTIONS_VIEW_NAME = "dashboard_user_restrictions"
+
+DASHBOARD_USER_RESTRICTIONS_DESCRIPTION = (
+    """Reference table for UP Dashboard user restrictions."""
 )
 
-SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_DESCRIPTION = """Reference table for Recidiviz users
-who should only have access to data from a single or limited set of supervision locations"""
-
-SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_QUERY_TEMPLATE = """
+DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
     /*{description}*/
     WITH
     mo_restricted_access AS (
@@ -52,7 +50,11 @@ SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_QUERY_TEMPLATE = """
                 ELSE ''
             END AS allowed_supervision_location_ids,
             IF(STRING_AGG(DISTINCT DISTRICT, ',') IS NOT NULL, 'level_1_supervision_location', NULL) AS allowed_supervision_location_level,
-            IF(STRING_AGG(DISTINCT DISTRICT, ',') IS NOT NULL, 'level_1_access_role', 'leadership_role') as internal_role
+            IF(STRING_AGG(DISTINCT DISTRICT, ',') IS NOT NULL, 'level_1_access_role', 'leadership_role') as internal_role,
+            -- All users can access leadership dashboard
+            TRUE AS can_access_leadership_dashboard,
+            -- US_MO is not currently using Case Triage
+            FALSE AS can_access_case_triage
         FROM `{project_id}.us_mo_raw_data_up_to_date_views.LANTERN_DA_RA_LIST_latest`
         WHERE EMAIL IS NOT NULL
         GROUP BY EMAIL
@@ -60,34 +62,29 @@ SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_QUERY_TEMPLATE = """
     id_restricted_access AS (
         SELECT
             'US_ID' AS state_code,
-            CONCAT(LOWER(empl_sdesc), '@idoc.idaho.gov') AS restricted_user_email,
-            # TODO(#7413) Remove allowed_level_1_supervision_location_ids once FE is no longer using it
+            LOWER(email_address) AS restricted_user_email,
             '' AS allowed_level_1_supervision_location_ids,
             '' AS allowed_supervision_location_ids,
             CAST(NULL AS STRING) as allowed_supervision_location_level,
+            internal_role,
             CASE
-                WHEN empl_title LIKE '%OFFICER%' THEN 'level_1_access_role'
-                WHEN empl_title LIKE '%SUPERVISOR%' THEN 'level_2_access_role'
-                WHEN empl_title LIKE '%DISTRICT MANAGER%' THEN 'leadership_role'
-            END AS internal_role
-        FROM `{project_id}.us_id_raw_data_up_to_date_views.employee_latest`
-        WHERE
-            (empl_title LIKE '%OFFICER%'
-                OR empl_title LIKE '%SUPERVISOR%'
-                OR empl_title LIKE '%DISTRICT MANAGER%' )
-            AND empl_stat = 'A'
-        GROUP BY empl_sdesc, empl_title
+                WHEN internal_role LIKE '%leadership_role%' THEN TRUE
+                ELSE FALSE
+            END AS can_access_leadership_dashboard,
+            FALSE AS can_access_case_triage
+        FROM `{project_id}.{static_reference_dataset_id}.us_id_leadership_users`
     )
     SELECT {columns} FROM mo_restricted_access
     UNION ALL
     SELECT {columns} FROM id_restricted_access;
     """
 
-SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
+DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
-    view_id=SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_VIEW_NAME,
-    view_query_template=SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_QUERY_TEMPLATE,
-    description=SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_DESCRIPTION,
+    static_reference_dataset_id=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
+    view_id=DASHBOARD_USER_RESTRICTIONS_VIEW_NAME,
+    view_query_template=DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE,
+    description=DASHBOARD_USER_RESTRICTIONS_DESCRIPTION,
     columns=[
         "state_code",
         "restricted_user_email",
@@ -96,9 +93,11 @@ SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_VIEW_BUILDER = SelectedColumnsBigQ
         "allowed_supervision_location_ids",
         "allowed_supervision_location_level",
         "internal_role",
+        "can_access_leadership_dashboard",
+        "can_access_case_triage",
     ],
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_VIEW_BUILDER.build_and_print()
+        DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER.build_and_print()
