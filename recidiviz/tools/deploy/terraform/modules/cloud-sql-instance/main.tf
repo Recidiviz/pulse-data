@@ -37,12 +37,6 @@ variable "has_readonly_user" {
   type = bool
 }
 
-# Note: Enabling or disabling point-in-time recovery causes the Cloud SQL instance to restart.
-variable "point_in_time_recovery_enabled" {
-  type    = bool
-  default = false
-}
-
 # Preferred region for the instance
 variable "region" {
   type = string
@@ -111,13 +105,14 @@ resource "google_sql_database_instance" "data" {
   region           = var.region
 
   settings {
-    disk_autoresize = true
-    tier            = var.tier
+    disk_autoresize   = true
+    tier              = var.tier
+    availability_type = "REGIONAL"
 
     backup_configuration {
       enabled                        = true
       location                       = "us"
-      point_in_time_recovery_enabled = var.point_in_time_recovery_enabled
+      point_in_time_recovery_enabled = true  # needed for HA
     }
 
     ip_configuration {
