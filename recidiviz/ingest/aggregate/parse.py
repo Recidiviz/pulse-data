@@ -31,6 +31,7 @@ from recidiviz.ingest.aggregate.regions.co import co_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.ga import ga_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.hi import hi_aggregate_ingest
+from recidiviz.ingest.aggregate.regions.indiana import in_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.ky import ky_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.ny import ny_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.pa import pa_aggregate_ingest
@@ -58,6 +59,7 @@ STATE_TO_PARSER = {
     "florida": fl_aggregate_ingest.parse,
     "georgia": ga_aggregate_ingest.parse,
     "hawaii": hi_aggregate_ingest.parse,
+    "indiana": in_aggregate_ingest.parse,
     "kentucky": ky_aggregate_ingest.parse,
     "new_york": ny_aggregate_ingest.parse,
     "pennsylvania": pa_aggregate_ingest.parse,
