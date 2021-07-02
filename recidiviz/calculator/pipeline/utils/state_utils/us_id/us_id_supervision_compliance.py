@@ -254,18 +254,24 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             self.supervision_period.supervision_level == StateSupervisionLevel.MINIMUM
         ):
             return 0
-        if (
-            self.case_type == StateSupervisionCaseType.SEX_OFFENSE
-            and most_recent_assessment_score
-            < SEX_OFFENSE_LSIR_MINIMUM_SCORE[Gender.FEMALE]
-        ):
-            # TODO(#5769): Related to #5809, an extension of the work to bring assessment scores into
-            # the calc pipeline is to bring gender information here as well because many cutoff decisions
-            # branch based on gender. Right now because the cutoffs are most permissive to people with
-            # gender FEMALE, we're going to check the cutoff against that gender type.
-            #
-            # Better to err on the side of less assessments encouraged than more.
-            return 0
+        if self.case_type == StateSupervisionCaseType.SEX_OFFENSE:
+            if (
+                not (gender := self.person.gender)
+                or (threshold_score := SEX_OFFENSE_LSIR_MINIMUM_SCORE.get(gender))
+                is None
+            ):
+                logging.warning(
+                    "No threshold sex offense LSIR minimum found for gender: %s",
+                    gender,
+                )
+
+                # If we can't find a stored threshold, we take the most permissive threshold score that
+                # we know of since it's better to err on the side of less assessments.
+                threshold_score = max(SEX_OFFENSE_LSIR_MINIMUM_SCORE.values())
+
+            if most_recent_assessment_score < threshold_score:
+                # No reassessment needed.
+                return 0
 
         reassessment_deadline = most_recent_assessment_date + relativedelta(
             days=REASSESSMENT_DEADLINE_DAYS
