@@ -28,6 +28,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_com
     DEPRECATED_MAXIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE,
     DEPRECATED_MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE,
     NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS,
+    SEX_OFFENSE_LSIR_MINIMUM_SCORE,
     SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS,
     UsIdSupervisionCaseCompliance,
 )
@@ -2075,6 +2076,81 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
         )
 
         self.assertEqual(days_past_reassessment, 2529)
+
+    @parameterized.expand(
+        [
+            (Gender.MALE,),
+            (Gender.TRANS_MALE,),
+            (Gender.FEMALE,),
+            (Gender.TRANS_FEMALE,),
+        ]
+    )
+    def test_reassessment_requirements_at_sex_offense_boundaries(
+        self, gender: Gender
+    ) -> None:
+        self.person.gender = gender
+        start_of_supervision = date(2018, 3, 5)  # This was a Monday
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code=StateCode.US_ID.value,
+            start_date=start_of_supervision,
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        assessment_date = date(2010, 4, 2)
+        assessment_boundary_score = SEX_OFFENSE_LSIR_MINIMUM_SCORE[gender]
+        assessment_boundary = StateAssessment.new_with_defaults(
+            state_code=StateCode.US_ID.value,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=assessment_date,
+            assessment_score=assessment_boundary_score,
+        )
+
+        us_id_supervision_compliance_boundary = UsIdSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.SEX_OFFENSE,
+            start_of_supervision=start_of_supervision,
+            assessments=[assessment_boundary],
+            supervision_contacts=[],
+        )
+
+        days_past_reassessment = (
+            us_id_supervision_compliance_boundary._num_days_past_required_reassessment(
+                start_of_supervision,
+                assessment_date,
+                assessment_boundary_score,
+            )
+        )
+
+        assessment_under_boundary = StateAssessment.new_with_defaults(
+            state_code=StateCode.US_ID.value,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=assessment_date,
+            assessment_score=assessment_boundary_score - 1,
+        )
+
+        us_id_supervision_compliance_under_boundary = UsIdSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.SEX_OFFENSE,
+            start_of_supervision=start_of_supervision,
+            assessments=[assessment_under_boundary],
+            supervision_contacts=[],
+        )
+
+        days_past_reassessment = us_id_supervision_compliance_under_boundary._num_days_past_required_reassessment(
+            start_of_supervision,
+            assessment_date,
+            assessment_boundary_score - 1,
+        )
+
+        self.assertEqual(days_past_reassessment, 0)
 
 
 class TestSupervisionDowngrades(unittest.TestCase):
