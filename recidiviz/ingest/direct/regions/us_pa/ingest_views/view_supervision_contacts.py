@@ -41,7 +41,7 @@ SELECT
     PRL_AGNT_LAST_NAME as agent_last_name,
     PRL_AGNT_ORG_NAME as parole_org
   FROM
-    {PRS_FACT_PAROLEE_CNTC_SUMRY}
+    {dbo_PRS_FACT_PAROLEE_CNTC_SUMRY}
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
