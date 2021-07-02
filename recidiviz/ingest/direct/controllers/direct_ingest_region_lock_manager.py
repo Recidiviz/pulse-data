@@ -26,6 +26,9 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     postgres_to_bq_lock_name_for_schema,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.persistence.database.schema_utils import (
     DirectIngestSchemaType,
     SchemaType,
@@ -42,10 +45,15 @@ JAILS_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX = (
 
 class DirectIngestRegionLockManager:
     """Manages acquiring and releasing the lock for the ingest process that writes
-    data to Postgres for a given region.
+    data to Postgres for a given region's ingest instance.
     """
 
-    def __init__(self, region_code: str, blocking_locks: List[str]) -> None:
+    def __init__(
+        self,
+        region_code: str,
+        ingest_instance: DirectIngestInstance,
+        blocking_locks: List[str],
+    ) -> None:
         """
         Args:
             region_code: The region code for the region to lock / unlock ingest for.
@@ -53,6 +61,7 @@ class DirectIngestRegionLockManager:
                 cannot proceed for this region.
         """
         self.region_code = region_code
+        self.ingest_instance = ingest_instance
         self.blocking_locks = blocking_locks
         self.lock_manager = GCSPseudoLockManager()
 
@@ -60,9 +69,7 @@ class DirectIngestRegionLockManager:
         """Returns True if the ingest lock is held for the region associated with this
         lock manager.
         """
-        return self.lock_manager.is_locked(
-            self._ingest_lock_name_for_region_code(self.region_code)
-        )
+        return self.lock_manager.is_locked(self._ingest_lock_name_for_instance())
 
     def can_proceed(self) -> bool:
         """Returns True if ingest can proceed for the region associated with this
@@ -74,12 +81,10 @@ class DirectIngestRegionLockManager:
         return True
 
     def acquire_lock(self) -> None:
-        self.lock_manager.lock(self._ingest_lock_name_for_region_code(self.region_code))
+        self.lock_manager.lock(self._ingest_lock_name_for_instance())
 
     def release_lock(self) -> None:
-        self.lock_manager.unlock(
-            self._ingest_lock_name_for_region_code(self.region_code)
-        )
+        self.lock_manager.unlock(self._ingest_lock_name_for_instance())
 
     @contextmanager
     def using_region_lock(
@@ -92,35 +97,43 @@ class DirectIngestRegionLockManager:
            ... do work requiring the lock
         """
         with self.lock_manager.using_lock(
-            self._ingest_lock_name_for_region_code(self.region_code),
+            self._ingest_lock_name_for_instance(),
             expiration_in_seconds=expiration_in_seconds,
         ):
             yield
 
     @staticmethod
-    def for_state_ingest(state_code: StateCode) -> "DirectIngestRegionLockManager":
+    def for_state_ingest(
+        state_code: StateCode, ingest_instance: DirectIngestInstance
+    ) -> "DirectIngestRegionLockManager":
         return DirectIngestRegionLockManager.for_direct_ingest(
             region_code=state_code.value,
+            ingest_instance=ingest_instance,
             schema_type=SchemaType.STATE,
         )
 
     @staticmethod
     def for_direct_ingest(
         region_code: str,
+        ingest_instance: DirectIngestInstance,
         schema_type: DirectIngestSchemaType,
     ) -> "DirectIngestRegionLockManager":
         return DirectIngestRegionLockManager(
             region_code=region_code,
+            ingest_instance=ingest_instance,
             blocking_locks=[
                 postgres_to_bq_lock_name_for_schema(schema_type),
                 postgres_to_bq_lock_name_for_schema(SchemaType.OPERATIONS),
             ],
         )
 
-    @staticmethod
-    def _ingest_lock_name_for_region_code(region_code: str) -> str:
-        if StateCode.is_state_code(region_code):
+    def _ingest_lock_name_for_instance(self) -> str:
+        if StateCode.is_state_code(self.region_code):
             return (
-                STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX + region_code.upper()
+                STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX
+                + self.region_code.upper()
+                + f"_{self.ingest_instance.name}"
             )
-        return JAILS_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX + region_code.upper()
+        return (
+            JAILS_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX + self.region_code.upper()
+        )

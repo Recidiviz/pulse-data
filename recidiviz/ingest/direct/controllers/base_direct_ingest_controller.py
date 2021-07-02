@@ -98,12 +98,13 @@ class BaseDirectIngestController(Ingestor):
     def __init__(self, ingest_bucket_path: GcsfsBucketPath) -> None:
         """Initialize the controller."""
         self.cloud_task_manager = DirectIngestCloudTaskManagerImpl()
+        self.ingest_instance = DirectIngestInstance.for_ingest_bucket(
+            ingest_bucket_path
+        )
         self.region_lock_manager = DirectIngestRegionLockManager.for_direct_ingest(
             region_code=self.region.region_code,
             schema_type=self.system_level.schema_type(),
-        )
-        self.ingest_instance = DirectIngestInstance.for_ingest_bucket(
-            ingest_bucket_path
+            ingest_instance=self.ingest_instance,
         )
         self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
         self.ingest_bucket_path = ingest_bucket_path

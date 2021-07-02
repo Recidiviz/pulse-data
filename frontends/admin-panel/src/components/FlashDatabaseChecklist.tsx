@@ -161,6 +161,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           }
           nextButtonTitle="Acquire Lock"
           onNextButtonClick={async () => {
+            // TODO(#8070): Update this to acquire both secondary and primary locks
             const request = async () => acquireBQExportLock(stateCode);
             const succeeded = await runAndCheckStatus(request);
             if (succeeded) {
@@ -354,6 +355,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           description={<p>Release the ingest lock for {stateCode}.</p>}
           nextButtonTitle="Release Lock"
           onNextButtonClick={async () => {
+            // TODO(#8070): Update this to release both secondary and primary locks
             const request = async () => releaseBQExportLock(stateCode);
             const succeeded = await runAndCheckStatus(request);
             if (succeeded) {
