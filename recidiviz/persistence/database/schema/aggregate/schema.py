@@ -401,6 +401,22 @@ class HiFacilityAggregate(JailsBase, _AggregateTableMixin):
     probation_violation_female_population = Column(Integer)
 
 
+class InCountyAggregate(JailsBase, _AggregateTableMixin):
+    """IN state-provided aggregate statistics."""
+
+    __tablename__ = "in_county_aggregate"
+    __table_args__ = (
+        UniqueConstraint("fips", "report_date", "aggregation_window"),
+        CheckConstraint(
+            "LENGTH(fips) = 5", name="in_county_aggregate_fips_length_check"
+        ),
+    )
+
+    county = Column(String(255), nullable=False)
+    total_jail_population = Column(Integer, nullable=False)
+    jail_capacity = Column(Integer, nullable=False)
+
+
 class KyFacilityAggregate(JailsBase, _AggregateTableMixin):
     """KY state-provided aggregate statistics."""
 
