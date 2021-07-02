@@ -354,11 +354,12 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         self.assertEqual([updated_period], validated_incarceration_periods)
 
-    def test_pre_processed_incarceration_periods_for_calculations_NewAdmissionNotAfterProbation(
+    def test_pre_processed_incarceration_periods_for_calculations_NewAdmissionAfterParoleRevocation(
         self,
     ) -> None:
-        """Tests that when a NEW_ADMISSION incarceration follows a PAROLE+NOT REVOCATION
-        supervision period directly, then the incarceration period is not updated."""
+        """Tests that when a NEW_ADMISSION incarceration follows a PAROLE+REVOCATION
+        supervision period directly, then the admission_reason on the period is
+        updated to be PAROLE_REVOCATION."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
@@ -368,6 +369,48 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             termination_date=date(2019, 6, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
             supervision_type=StateSupervisionType.PAROLE,
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="ip2",
+            state_code="US_ND",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            admission_date=date(2019, 6, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+        )
+
+        updated_period = attr.evolve(
+            incarceration_period,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        validated_incarceration_periods = (
+            self._pre_processed_incarceration_periods_for_calculations(
+                incarceration_periods=[incarceration_period],
+                supervision_periods=[supervision_period],
+            )
+        )
+
+        self.assertEqual([updated_period], validated_incarceration_periods)
+
+    def test_pre_processed_incarceration_periods_for_calculations_NewAdmissionAfterIrrelevantSupervisionType(
+        self,
+    ) -> None:
+        """Tests that when a NEW_ADMISSION incarceration follows a
+        PRE_CONFINEMENT+NOT REVOCATION supervision period directly, then the
+        incarceration period is not updated."""
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code="US_ND",
+            start_date=date(2019, 3, 5),
+            termination_date=date(2019, 6, 9),
+            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
+            supervision_type=StateSupervisionType.PRE_CONFINEMENT,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -438,8 +481,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         self,
     ) -> None:
         """Tests that when a NEW_ADMISSION incarceration follows a PROBATION+REVOCATION
-        supervision period, but not directly, as there is a PAROLE+REVOCATION supervision
-        period in between them, then the incarceration period is not updated."""
+        supervision period, but not directly, as there is a PRE_CONFINEMENT+REVOCATION
+        supervision period in between them, then the incarceration period is not
+        updated."""
         earlier_probation_supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
@@ -459,7 +503,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PAROLE,
+            supervision_type=StateSupervisionType.PRE_CONFINEMENT,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
