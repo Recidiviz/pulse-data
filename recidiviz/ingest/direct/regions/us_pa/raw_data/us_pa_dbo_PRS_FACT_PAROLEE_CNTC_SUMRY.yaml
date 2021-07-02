@@ -119,11 +119,11 @@ columns:
   - name: CASE_NOTE_TYPE_CODE
     description: |-
       Unclear, all entries are ROI
-  - name: NOTE_TEXT
-    # TODO(#8099): Un-comment this once they are actually transferring the col to us and
-    #  we can query it.
-    #description: |-
-      #Raw text that contains the notes that the parole officer entered regarding the contact
+# TODO(#8099): Un-comment this once they are actually transferring the col to us and
+#  we can query it.
+#  - name: NOTE_TEXT
+#    description: |-
+#      Raw text that contains the notes that the parole officer entered regarding the contact
   - name: PRL_AGNT_EMPL_NO
     description: |-
       Employee number for the parole officer
@@ -136,11 +136,11 @@ columns:
   - name: PRL_AGNT_LAST_NAME
     description: |-
       Last name for the parole officer
-  - name: PRL_AGNT_JOB_CLASSIFCTN
-    # TODO(#8099): Un-comment this once they are actually transferring the col to us
-    # with the correct name (currently it's L_AGNT_JOB_CLASSIFCTN).
-    #description: |-
-      #Role and title for the parole officer
+# TODO(#8099): Un-comment this once they are actually transferring the col to us
+#   with the correct name (currently it's L_AGNT_JOB_CLASSIFCTN).
+#  - name: PRL_AGNT_JOB_CLASSIFCTN
+#    description: |-
+#      Role and title for the parole officer
   - name: PRL_AGNT_ORG_NAME
     description: |-
       The district or unit for the parole officer
