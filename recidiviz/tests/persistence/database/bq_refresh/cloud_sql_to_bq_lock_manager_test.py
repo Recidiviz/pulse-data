@@ -20,14 +20,17 @@ import unittest
 from unittest.mock import Mock, patch
 
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
-    GCSPseudoLockDoesNotExist,
     GCSPseudoLockAlreadyExists,
+    GCSPseudoLockDoesNotExist,
+)
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager import (
     CloudSqlToBQLockManager,
 )
@@ -49,10 +52,14 @@ class CloudSqlToBQLockManagerTest(unittest.TestCase):
             self.lock_manager = CloudSqlToBQLockManager()
             self.lock_bucket = self.lock_manager.lock_manager.bucket_name
             self.state_ingest_lock_manager = DirectIngestRegionLockManager(
-                region_code=StateCode.US_XX.value, blocking_locks=[]
+                region_code=StateCode.US_XX.value,
+                blocking_locks=[],
+                ingest_instance=DirectIngestInstance.PRIMARY,
             )
             self.county_ingest_lock_manager = DirectIngestRegionLockManager(
-                region_code="US_XX_YYYYY", blocking_locks=[]
+                region_code="US_XX_YYYYY",
+                blocking_locks=[],
+                ingest_instance=DirectIngestInstance.PRIMARY,
             )
 
     def tearDown(self) -> None:

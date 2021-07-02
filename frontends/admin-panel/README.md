@@ -1,3 +1,9 @@
+# Set up your environment
+Install `yarn`:
+```
+brew install yarn
+```
+
 # Running the app
 
 To spin up the backend: from the root of the repo, run `FLASK_APP=recidiviz/server.py FLASK_ENV=development IS_DEV=true flask run`.
