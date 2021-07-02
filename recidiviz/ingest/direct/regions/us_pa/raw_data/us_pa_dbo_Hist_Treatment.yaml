@@ -1,8 +1,9 @@
 file_tag: dbo_Hist_Treatment
 file_description: |-
   A table with information on referred treatments for people under supervision in the past.
-  NOT REFRESHED REGULARLY.
-primary_key_cols: []
+primary_key_cols:
+  - ParoleNumber
+  - TrtHistoryID
 columns:
   - name: ParoleNumber
   - name: TrtHistoryID
@@ -24,3 +25,7 @@ columns:
   - name: LastModifiedDateTime
   - name: TrtHistHrsImposed
   - name: TrtHistHrsCompleted
+separator: ‡
+custom_line_terminator: †
+ignore_quotes: True
+encoding: WINDOWS-1252

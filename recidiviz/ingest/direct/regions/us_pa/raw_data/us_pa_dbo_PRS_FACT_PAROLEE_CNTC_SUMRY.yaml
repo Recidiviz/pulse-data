@@ -1,7 +1,6 @@
-file_tag: PRS_FACT_PAROLEE_CNTC_SUMRY
+file_tag: dbo_PRS_FACT_PAROLEE_CNTC_SUMRY
 file_description: |-
   This file is provided by PADOC and provides an entry for a supervision contact that was made.
-  It's as current as July 24, 2020 and is a one time generation.
 primary_key_cols:
   - FACT_PAROLEE_CNTC_SUMRY_ID
 columns:
@@ -155,3 +154,7 @@ columns:
   - name: DW_UPDATED_BY
     description: |-
       Unclear, always null
+separator: ‡
+custom_line_terminator: †
+ignore_quotes: True
+encoding: WINDOWS-1252
