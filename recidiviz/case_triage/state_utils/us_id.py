@@ -15,49 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains policy requirements that are specific to Idaho."""
-from typing import Dict, Optional, Tuple
-
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
+    CURRENT_US_ID_ASSESSMENT_SCORE_RANGE,
     SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS,
     US_ID_SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS,
 )
 from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.case_triage.state_utils.types import PolicyRequirements
-from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
-
-
-# Note: This mapping doesn't contain details for EXTERNAL_UNKNOWN or NULL. All other types
-# that we know about (as of Feb. 9, 2021) are reflected in this mapping.
-# See
-# http://forms.idoc.idaho.gov/WebLink/0/edoc/281944/Interim%20Standards%20to%20Probation%20and%20Parole%20Supervision%20Strategies.pdf
-# Home visit frequency information on pages 2, 3, and 4 updated on 4/20/2021
-US_ID_ASSESSMENT_SCORE_RANGE: Dict[
-    Gender, Dict[StateSupervisionLevel, Tuple[int, Optional[int]]]
-] = {
-    Gender.FEMALE: {
-        StateSupervisionLevel.MINIMUM: (0, 22),
-        StateSupervisionLevel.MEDIUM: (23, 30),
-        StateSupervisionLevel.HIGH: (31, None),
-    },
-    Gender.TRANS_FEMALE: {
-        StateSupervisionLevel.MINIMUM: (0, 22),
-        StateSupervisionLevel.MEDIUM: (23, 30),
-        StateSupervisionLevel.HIGH: (31, None),
-    },
-    Gender.MALE: {
-        StateSupervisionLevel.MINIMUM: (0, 20),
-        StateSupervisionLevel.MEDIUM: (21, 28),
-        StateSupervisionLevel.HIGH: (29, None),
-    },
-    Gender.TRANS_MALE: {
-        StateSupervisionLevel.MINIMUM: (0, 20),
-        StateSupervisionLevel.MEDIUM: (21, 28),
-        StateSupervisionLevel.HIGH: (29, None),
-    },
-}
 
 US_ID_SUPERVISION_LEVEL_NAMES = {
     StateSupervisionLevel.MINIMUM: "Low",
@@ -73,7 +40,7 @@ US_ID_POLICY_REFERENCES_FOR_OPPORTUNITIES = {
 def us_id_policy_requirements() -> PolicyRequirements:
     """Returns set of policy requirements for Idaho."""
     return PolicyRequirements(
-        assessment_score_cutoffs=US_ID_ASSESSMENT_SCORE_RANGE,
+        assessment_score_cutoffs=CURRENT_US_ID_ASSESSMENT_SCORE_RANGE,
         doc_short_name="IDOC",
         oms_name="CIS",
         policy_references_for_opportunities=US_ID_POLICY_REFERENCES_FOR_OPPORTUNITIES,

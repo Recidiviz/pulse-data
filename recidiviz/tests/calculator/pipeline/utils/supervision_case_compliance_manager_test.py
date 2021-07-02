@@ -20,52 +20,54 @@ import unittest
 from datetime import date
 
 from dateutil.relativedelta import relativedelta
-from mock import patch, MagicMock
+from mock import MagicMock, patch
 
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_compliance import (
-    UsNdSupervisionCaseCompliance,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
     NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS,
-    SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION,
-    SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE,
     SEX_OFFENSE_LSIR_MINIMUM_SCORE,
+    SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE,
+    SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION,
     UsIdSupervisionCaseCompliance,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_compliance import (
     LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE,
+    UsNdSupervisionCaseCompliance,
 )
 from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_assessment import (
-    StateAssessmentType,
     StateAssessmentLevel,
+    StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_contact import (
-    StateSupervisionContactType,
-    StateSupervisionContactStatus,
     StateSupervisionContactLocation,
+    StateSupervisionContactStatus,
+    StateSupervisionContactType,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodTerminationReason,
-    StateSupervisionPeriodSupervisionType,
-    StateSupervisionPeriodAdmissionReason,
     StateSupervisionLevel,
+    StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodStatus,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
-    StateSupervisionPeriod,
     StateAssessment,
+    StatePerson,
     StateSupervisionContact,
+    StateSupervisionPeriod,
 )
 
 
 class TestCaseCompliance(unittest.TestCase):
     """Tests the get_case_compliance_on_date function."""
+
+    def setUp(self) -> None:
+        self.person = StatePerson.new_with_defaults(state_code="US_XX")
 
     @patch.object(UsNdSupervisionCaseCompliance, "_guidelines_applicable_for_case")
     def test_us_nd_guidelines_not_applicable_provided(
@@ -91,6 +93,7 @@ class TestCaseCompliance(unittest.TestCase):
         compliance_evaluation_date = date(2018, 4, 30)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
             start_of_supervision=date(2018, 3, 5),
@@ -129,6 +132,7 @@ class TestCaseCompliance(unittest.TestCase):
         compliance_evaluation_date = date(2018, 4, 30)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
             start_of_supervision=date(2018, 3, 5),
@@ -164,6 +168,7 @@ class TestCaseCompliance(unittest.TestCase):
         compliance_evaluation_date = date(2018, 3, 31)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
             start_of_supervision=date(2018, 3, 5),
@@ -218,6 +223,7 @@ class TestCaseCompliance(unittest.TestCase):
         ]
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
             start_of_supervision=date(2018, 3, 5),
@@ -274,6 +280,7 @@ class TestCaseCompliance(unittest.TestCase):
         ]
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
             start_of_supervision=date(2018, 2, 5),
@@ -328,6 +335,7 @@ class TestCaseCompliance(unittest.TestCase):
         ]
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
             start_of_supervision=date(2018, 2, 5),
@@ -397,6 +405,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         compliance_evaluation_date = date(2018, 4, 30)
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
             start_of_supervision=date(2018, 3, 5),
@@ -469,6 +478,7 @@ class TestCaseCompliance(unittest.TestCase):
         compliance_evaluation_date = date(2018, 4, 6)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
             start_of_supervision=date(2018, 3, 5),
@@ -515,6 +525,7 @@ class TestCaseCompliance(unittest.TestCase):
         compliance_evaluation_date = date(2018, 4, 30)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
             start_of_supervision=start_of_supervision,
@@ -576,6 +587,7 @@ class TestCaseCompliance(unittest.TestCase):
         compliance_evaluation_date = date(2018, 3, 31)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
             start_of_supervision=start_of_supervision,
@@ -619,6 +631,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         compliance_evaluation_date = date(2018, 4, 30)
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
             start_of_supervision=date(2018, 3, 5),
@@ -683,6 +696,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         compliance_evaluation_date = date(2018, 4, 30)
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
             start_of_supervision=date(2018, 3, 5),
@@ -745,6 +759,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         compliance_evaluation_date = date(2018, 4, 30)
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
             start_of_supervision=date(2018, 3, 5),
@@ -807,6 +822,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         compliance_evaluation_date = date(2018, 4, 30)
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=case_type,
             start_of_supervision=date(2018, 3, 5),
@@ -905,6 +921,7 @@ class TestCaseCompliance(unittest.TestCase):
         compliance_evaluation_date_2 = date(2019, 4, 30)
 
         us_id_supervision_compliance_1 = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period_1,
             case_type=case_type,
             start_of_supervision=date(2018, 3, 5),
@@ -916,6 +933,7 @@ class TestCaseCompliance(unittest.TestCase):
         )
 
         us_id_supervision_compliance_2 = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period_2,
             case_type=case_type,
             start_of_supervision=date(2019, 3, 5),
@@ -1030,6 +1048,7 @@ class TestCaseCompliance(unittest.TestCase):
         compliance_evaluation_date_2 = date(2019, 4, 30)
 
         us_id_supervision_compliance_1 = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period_1,
             case_type=case_type,
             start_of_supervision=date(2018, 3, 5),
@@ -1041,6 +1060,7 @@ class TestCaseCompliance(unittest.TestCase):
         )
 
         us_id_supervision_compliance_2 = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period_2,
             case_type=case_type,
             start_of_supervision=date(2019, 3, 5),
@@ -1085,6 +1105,9 @@ class TestCaseCompliance(unittest.TestCase):
 class TestNumDaysAssessmentOverdue(unittest.TestCase):
     """Tests the _num_days_assessment_overdue function."""
 
+    def setUp(self) -> None:
+        self.person = StatePerson.new_with_defaults(state_code="US_XX")
+
     def test_us_id_num_days_assessment_overdue(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -1110,6 +1133,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = date(2018, 4, 30)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=date(2018, 3, 5),
@@ -1140,6 +1164,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = start_date + relativedelta(days=1)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -1174,6 +1199,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = start_date + relativedelta(days=1)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -1218,6 +1244,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = start_date + relativedelta(days=1)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -1262,6 +1289,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = start_date + relativedelta(days=1)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -1305,6 +1333,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = start_date + relativedelta(days=1)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -1351,6 +1380,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = start_date + relativedelta(days=1)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -1397,6 +1427,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = start_date + relativedelta(days=1)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -1442,6 +1473,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = start_date + relativedelta(days=1)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -1482,6 +1514,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = date(2018, 4, 30)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
             start_of_supervision=start_of_supervision,
@@ -1514,6 +1547,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = start_date + relativedelta(days=1)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
             start_of_supervision=start_of_supervision,
@@ -1550,6 +1584,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = start_date + relativedelta(days=1)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
             start_of_supervision=start_of_supervision,
@@ -1586,6 +1621,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = start_date + relativedelta(days=1)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
             start_of_supervision=start_of_supervision,
@@ -1630,6 +1666,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = start_date + relativedelta(days=1)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
             start_of_supervision=start_of_supervision,
@@ -1674,6 +1711,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = start_date + relativedelta(days=1)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
             start_of_supervision=start_of_supervision,
@@ -1718,6 +1756,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = start_date + relativedelta(days=1)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
             start_of_supervision=start_of_supervision,
@@ -1763,6 +1802,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = start_date + relativedelta(days=1)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
             start_of_supervision=start_of_supervision,
@@ -1808,6 +1848,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = start_date + relativedelta(days=1)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
             start_of_supervision=start_of_supervision,
@@ -1845,6 +1886,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = start_date + relativedelta(days=1)
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
             start_of_supervision=start_of_supervision,
@@ -1882,6 +1924,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = start_date + relativedelta(days=1)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
             start_of_supervision=start_of_supervision,
@@ -1923,6 +1966,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = start_date - relativedelta(days=1)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
             start_of_supervision=start_of_supervision,
@@ -1964,6 +2008,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = start_date + relativedelta(days=1)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
             start_of_supervision=start_of_supervision,
@@ -2007,6 +2052,7 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         compliance_evaluation_date = start_date + relativedelta(days=1)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            person=self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
             start_of_supervision=start_of_supervision,

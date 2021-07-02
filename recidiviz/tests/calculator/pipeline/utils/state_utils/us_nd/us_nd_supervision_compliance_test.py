@@ -44,6 +44,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
+    StatePerson,
     StateSupervisionContact,
     StateSupervisionPeriod,
 )
@@ -51,6 +52,9 @@ from recidiviz.persistence.entity.state.entities import (
 
 class TestAssessmentsCompletedInComplianceMonth(unittest.TestCase):
     """Tests for assessments_in_compliance_month."""
+
+    def setUp(self) -> None:
+        self.person = StatePerson.new_with_defaults(state_code="US_XX")
 
     def test_completed_assessments_in_compliance_month(self) -> None:
         evaluation_date = date(2018, 4, 30)
@@ -104,6 +108,7 @@ class TestAssessmentsCompletedInComplianceMonth(unittest.TestCase):
         expected_assessments = [assessment_1, assessment_2]
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=evaluation_date,
@@ -121,6 +126,9 @@ class TestAssessmentsCompletedInComplianceMonth(unittest.TestCase):
 
 class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
     """Tests for face_to_face_contacts_in_compliance_month."""
+
+    def setUp(self) -> None:
+        self.person = StatePerson.new_with_defaults(state_code="US_XX")
 
     def test_face_to_face_contacts_in_compliance_month(self) -> None:
         evaluation_date = date(2018, 4, 30)
@@ -184,6 +192,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
         expected_contacts = [contact_3]
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=evaluation_date,
@@ -200,6 +209,9 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
 
 class TestGuidelinesApplicableForCase(unittest.TestCase):
     """Tests the guidelines_applicable_for_case function."""
+
+    def setUp(self) -> None:
+        self.person = StatePerson.new_with_defaults(state_code="US_XX")
 
     def test_guidelines_applicable_for_case_external_unknown(self) -> None:
         """The guidelines should not be applicable to people who are not classified."""
@@ -219,6 +231,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
         )
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -226,7 +239,9 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        applicable = us_nd_supervision_compliance._guidelines_applicable_for_case()
+        applicable = us_nd_supervision_compliance._guidelines_applicable_for_case(
+            start_of_supervision
+        )
 
         self.assertFalse(applicable)
 
@@ -248,6 +263,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
         )
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -255,7 +271,9 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        applicable = us_nd_supervision_compliance._guidelines_applicable_for_case()
+        applicable = us_nd_supervision_compliance._guidelines_applicable_for_case(
+            start_of_supervision
+        )
 
         self.assertFalse(applicable)
 
@@ -277,6 +295,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
         )
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -284,7 +303,9 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        applicable = us_nd_supervision_compliance._guidelines_applicable_for_case()
+        applicable = us_nd_supervision_compliance._guidelines_applicable_for_case(
+            start_of_supervision
+        )
 
         self.assertFalse(applicable)
 
@@ -306,6 +327,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
         )
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -313,7 +335,9 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        applicable = us_nd_supervision_compliance._guidelines_applicable_for_case()
+        applicable = us_nd_supervision_compliance._guidelines_applicable_for_case(
+            start_of_supervision
+        )
 
         self.assertTrue(applicable)
 
@@ -336,6 +360,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
         )
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -343,7 +368,9 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        applicable = us_nd_supervision_compliance._guidelines_applicable_for_case()
+        applicable = us_nd_supervision_compliance._guidelines_applicable_for_case(
+            start_of_supervision
+        )
 
         self.assertFalse(applicable)
 
@@ -365,6 +392,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
         )
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS,
             start_of_supervision=start_of_supervision,
@@ -372,13 +400,18 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        applicable = us_nd_supervision_compliance._guidelines_applicable_for_case()
+        applicable = us_nd_supervision_compliance._guidelines_applicable_for_case(
+            start_of_supervision
+        )
 
         self.assertFalse(applicable)
 
 
 class TestContactFrequencySufficient(unittest.TestCase):
     """Tests the contact_frequency_is_sufficient function."""
+
+    def setUp(self) -> None:
+        self.person = StatePerson.new_with_defaults(state_code="US_XX")
 
     def test_face_to_face_frequency_sufficient(self) -> None:
         """Tests for when the face to face contacts is sufficient."""
@@ -406,6 +439,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
         ]
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -450,6 +484,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
         evaluation_date = start_of_supervision + relativedelta(days=3)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -496,6 +531,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
         evaluation_date = start_of_supervision + relativedelta(days=2)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -541,6 +577,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         evaluation_date = start_of_supervision + relativedelta(days=5)
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -586,6 +623,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         evaluation_date = start_of_supervision + relativedelta(days=5)
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -631,6 +669,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
         evaluation_date = start_of_supervision + relativedelta(days=90)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -676,6 +715,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
         evaluation_date = start_of_supervision + relativedelta(days=59)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.SEX_OFFENSE,
             start_of_supervision=start_of_supervision,
@@ -727,6 +767,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
         evaluation_date = start_of_supervision + relativedelta(days=29)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -745,6 +786,9 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
 class TestReassessmentRequirementAreMet(unittest.TestCase):
     """Tests the reassessment_requirements_are_met function."""
+
+    def setUp(self) -> None:
+        self.person = StatePerson.new_with_defaults(state_code="US_XX")
 
     def test_num_days_past_required_reassessment(self) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
@@ -770,6 +814,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
         )
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -811,6 +856,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
         )
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -831,6 +877,9 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
 
 class TestHomeVisitsFrequencySufficient(unittest.TestCase):
     """Tests the home_visit_frequency_is_sufficient function."""
+
+    def setUp(self) -> None:
+        self.person = StatePerson.new_with_defaults(state_code="US_XX")
 
     def test_home_visit_frequency_sufficient_initial_visit_met(
         self,
@@ -863,6 +912,7 @@ class TestHomeVisitsFrequencySufficient(unittest.TestCase):
         evaluation_date = start_of_supervision + relativedelta(days=59)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -903,6 +953,7 @@ class TestHomeVisitsFrequencySufficient(unittest.TestCase):
         )
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -951,6 +1002,7 @@ class TestHomeVisitsFrequencySufficient(unittest.TestCase):
         )
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -990,6 +1042,7 @@ class TestHomeVisitsFrequencySufficient(unittest.TestCase):
         evaluation_date = start_of_supervision + relativedelta(days=59)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -1043,6 +1096,7 @@ class TestHomeVisitsFrequencySufficient(unittest.TestCase):
         evaluation_date = start_of_supervision + relativedelta(days=375)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,
@@ -1089,6 +1143,7 @@ class TestHomeVisitsFrequencySufficient(unittest.TestCase):
         evaluation_date = start_of_supervision + relativedelta(days=375)
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
+            self.person,
             supervision_period=supervision_period,
             case_type=StateSupervisionCaseType.GENERAL,
             start_of_supervision=start_of_supervision,

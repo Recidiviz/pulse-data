@@ -150,7 +150,9 @@ class ClassifySupervisionTimeBuckets(beam.DoFn):
 
         # Find the SupervisionTimeBuckets from the supervision and incarceration
         # periods
-        supervision_time_buckets = identifier.find_supervision_time_buckets(**kwargs)
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            person=person, **kwargs
+        )
 
         if not supervision_time_buckets:
             logging.info(

@@ -19,9 +19,9 @@
     where necessary.
 """
 import abc
-from datetime import date
 import logging
-from typing import Optional, List, Tuple
+from datetime import date
+from typing import List, Optional, Tuple
 
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
@@ -29,17 +29,21 @@ from recidiviz.calculator.pipeline.supervision.supervision_case_compliance impor
 from recidiviz.calculator.pipeline.utils.assessment_utils import (
     find_most_recent_applicable_assessment_of_class_for_state,
 )
+from recidiviz.calculator.pipeline.utils.supervision_level_policy import (
+    SupervisionLevelPolicy,
+)
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_contact import (
-    StateSupervisionContactType,
-    StateSupervisionContactStatus,
     StateSupervisionContactLocation,
+    StateSupervisionContactStatus,
+    StateSupervisionContactType,
 )
 from recidiviz.persistence.entity.state.entities import (
-    StateSupervisionPeriod,
     StateAssessment,
+    StatePerson,
     StateSupervisionContact,
+    StateSupervisionPeriod,
 )
 
 
@@ -48,19 +52,19 @@ class StateSupervisionCaseComplianceManager:
 
     def __init__(
         self,
+        person: StatePerson,
         supervision_period: StateSupervisionPeriod,
         case_type: StateSupervisionCaseType,
         start_of_supervision: date,
         assessments: List[StateAssessment],
         supervision_contacts: List[StateSupervisionContact],
     ):
+        self.person = person
         self.supervision_period = supervision_period
         self.case_type = case_type
         self.start_of_supervision = start_of_supervision
         self.assessments = assessments
         self.supervision_contacts = supervision_contacts
-
-        self.guidelines_applicable_for_case = self._guidelines_applicable_for_case()
 
     def get_case_compliance_on_date(
         self, compliance_evaluation_date: date
@@ -95,7 +99,7 @@ class StateSupervisionCaseComplianceManager:
         face_to_face_frequency_sufficient = None
         home_visit_frequency_sufficient = None
 
-        if self.guidelines_applicable_for_case:
+        if self._guidelines_applicable_for_case(compliance_evaluation_date):
             most_recent_assessment = (
                 find_most_recent_applicable_assessment_of_class_for_state(
                     compliance_evaluation_date,
@@ -136,6 +140,9 @@ class StateSupervisionCaseComplianceManager:
             ),
             home_visit_count=home_visit_count,
             home_visit_frequency_sufficient=home_visit_frequency_sufficient,
+            eligible_for_supervision_downgrade=self._is_eligible_for_supervision_downgrade(
+                compliance_evaluation_date
+            ),
         )
 
     def _num_days_assessment_overdue(
@@ -325,8 +332,45 @@ class StateSupervisionCaseComplianceManager:
 
         return max(contact_dates)
 
+    def _is_eligible_for_supervision_downgrade(
+        self, evaluation_date: date
+    ) -> Optional[bool]:
+        """Determines whether the person under evaluation was eligible for a downgrade
+        on this date."""
+        policy = self._get_supervision_level_policy(evaluation_date)
+        if not policy:
+            return None
+
+        if (
+            not (current_level := self.supervision_period.supervision_level)
+            or not current_level.is_comparable()
+        ):
+            return None
+
+        most_recent_assessment = (
+            find_most_recent_applicable_assessment_of_class_for_state(
+                evaluation_date,
+                self.assessments,
+                assessment_class=StateAssessmentClass.RISK,
+                state_code=self.supervision_period.state_code,
+            )
+        )
+        if (
+            most_recent_assessment is None
+            or (last_score := most_recent_assessment.assessment_score) is None
+        ):
+            return None
+
+        recommended_level = policy.recommended_supervision_level_for_person(
+            self.person, last_score
+        )
+        if not recommended_level:
+            return None
+
+        return recommended_level < current_level
+
     @abc.abstractmethod
-    def _guidelines_applicable_for_case(self) -> bool:
+    def _guidelines_applicable_for_case(self, evaluation_date: date) -> bool:
         """Returns whether the standard state guidelines are applicable for the given supervision case."""
 
     @abc.abstractmethod
@@ -366,3 +410,10 @@ class StateSupervisionCaseComplianceManager:
     ) -> Optional[bool]:
         """Returns whether the frequency of home visits between the officer and the person on supervision
         is sufficient with respect to the state standards for the level of supervision of the case."""
+
+    @abc.abstractmethod
+    def _get_supervision_level_policy(
+        self, evaluation_date: date
+    ) -> Optional[SupervisionLevelPolicy]:
+        """Returns the SupervisionLevelPolicy associated with evaluation for the person
+        under supervision on the specified date."""

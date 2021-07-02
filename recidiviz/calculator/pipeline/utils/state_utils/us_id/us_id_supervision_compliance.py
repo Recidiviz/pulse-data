@@ -27,9 +27,6 @@
                 - `MEDIUM`:`LEVEL 2`
                     - Face to face contacts: 1x every 180 days
                     - LSI-R Assessment: 1x every 365 days
-                - `MEDIUM`:`LEVEL 2`
-                    - Face to face contacts: 1x every 180 days
-                    - LSI-R Assessment: 1x every 365 days
                 - `HIGH`: `LEVEL 3`
                     - Face to face contacts: 1x every 30 days
                     - LSI-R Assessment: 1x every 365 days
@@ -74,11 +71,14 @@ from dateutil.relativedelta import relativedelta
 from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
 )
+from recidiviz.calculator.pipeline.utils.supervision_level_policy import (
+    SupervisionLevelPolicy,
+)
 from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodSupervisionType,
     StateSupervisionLevel,
+    StateSupervisionPeriodSupervisionType,
 )
 
 SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION = 45
@@ -131,11 +131,56 @@ US_ID_SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS: Dict[
 NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS = 3
 NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS = 30
 
+# This is the date where Idaho switched its method of determining supervision
+# levels, going from 4 levels to 3.
+DATE_OF_SUPERVISION_LEVEL_SWITCH = date(2020, 7, 23)
+
+# Note: This mapping doesn't contain details for EXTERNAL_UNKNOWN or NULL. All other types
+# that we know about (as of Feb. 9, 2021) are reflected in this mapping.
+# See
+# http://forms.idoc.idaho.gov/WebLink/0/edoc/281944/Interim%20Standards%20to%20Probation%20and%20Parole%20Supervision%20Strategies.pdf
+CURRENT_US_ID_ASSESSMENT_SCORE_RANGE: Dict[
+    Gender, Dict[StateSupervisionLevel, Tuple[int, Optional[int]]]
+] = {
+    Gender.FEMALE: {
+        StateSupervisionLevel.MINIMUM: (0, 22),
+        StateSupervisionLevel.MEDIUM: (23, 30),
+        StateSupervisionLevel.HIGH: (31, None),
+    },
+    Gender.TRANS_FEMALE: {
+        StateSupervisionLevel.MINIMUM: (0, 22),
+        StateSupervisionLevel.MEDIUM: (23, 30),
+        StateSupervisionLevel.HIGH: (31, None),
+    },
+    Gender.MALE: {
+        StateSupervisionLevel.MINIMUM: (0, 20),
+        StateSupervisionLevel.MEDIUM: (21, 28),
+        StateSupervisionLevel.HIGH: (29, None),
+    },
+    Gender.TRANS_MALE: {
+        StateSupervisionLevel.MINIMUM: (0, 20),
+        StateSupervisionLevel.MEDIUM: (21, 28),
+        StateSupervisionLevel.HIGH: (29, None),
+    },
+}
+
+THROUGH_07_2020_US_ID_ASSESSMENT_SCORE_RANGE: Dict[
+    Gender, Dict[StateSupervisionLevel, Tuple[int, Optional[int]]]
+] = {
+    gender: {
+        StateSupervisionLevel.MINIMUM: (0, 15),
+        StateSupervisionLevel.MEDIUM: (16, 23),
+        StateSupervisionLevel.HIGH: (24, 30),
+        StateSupervisionLevel.MAXIMUM: (31, None),
+    }
+    for gender in Gender
+}
+
 
 class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
     """US_ID specific calculations for supervision case compliance."""
 
-    def _guidelines_applicable_for_case(self) -> bool:
+    def _guidelines_applicable_for_case(self, evaluation_date: date) -> bool:
         """Returns whether the standard state guidelines are applicable for the given supervision case. The standard
         guidelines are only applicable for supervision cases of type GENERAL and SEX_OFFENSE, each with corresponding
         expected supervision levels and supervision types."""
@@ -154,7 +199,10 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             StateSupervisionLevel.MEDIUM,
             StateSupervisionLevel.HIGH,
         ]
-        if self.case_type is StateSupervisionCaseType.GENERAL:
+        if (
+            self.case_type is StateSupervisionCaseType.GENERAL
+            and evaluation_date < DATE_OF_SUPERVISION_LEVEL_SWITCH
+        ):
             allowed_supervision_levels.append(StateSupervisionLevel.MAXIMUM)
         if self.supervision_period.supervision_level not in allowed_supervision_levels:
             return False
@@ -341,3 +389,20 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         """
         # There are no home visit standards for US_ID
         return None
+
+    def _get_supervision_level_policy(
+        self, evaluation_date: date
+    ) -> Optional[SupervisionLevelPolicy]:
+        if self.case_type != StateSupervisionCaseType.GENERAL:
+            return None
+
+        if evaluation_date < DATE_OF_SUPERVISION_LEVEL_SWITCH:
+            return SupervisionLevelPolicy(
+                level_mapping=THROUGH_07_2020_US_ID_ASSESSMENT_SCORE_RANGE,
+                end_date_exclusive=DATE_OF_SUPERVISION_LEVEL_SWITCH,
+            )
+
+        return SupervisionLevelPolicy(
+            level_mapping=CURRENT_US_ID_ASSESSMENT_SCORE_RANGE,
+            start_date=DATE_OF_SUPERVISION_LEVEL_SWITCH,
+        )
