@@ -74,14 +74,14 @@ class AuthEndpointTests(TestCase):
         self.headers: Dict[str, Dict[Any, Any]] = {"x-goog-iap-jwt-assertion": {}}
         self.region_code = "US_MO"
         self.bucket = "test-project-dashboard-user-restrictions"
-        self.filename = "supervision_location_restricted_access_emails.json"
+        self.filename = "dashboard_user_restrictions.json"
         self.update_query_params = {
             "bucket": self.bucket,
             "region_code": self.region_code,
             "filename": self.filename,
         }
         self.gcs_csv_uri = GcsfsFilePath.from_absolute_path(
-            f"{self.bucket}/{self.region_code}/supervision_location_restricted_access_emails.csv"
+            f"{self.bucket}/{self.region_code}/dashboard_user_restrictions.csv"
         )
         self.columns = [col.name for col in DashboardUserRestrictions.__table__.columns]
 
@@ -147,7 +147,7 @@ class AuthEndpointTests(TestCase):
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.assertEqual(
-                b"CSV US_MO/supervision_location_restricted_access_emails.csv successfully imported to "
+                b"CSV US_MO/dashboard_user_restrictions.csv successfully imported to "
                 b"Cloud SQL schema SchemaType.CASE_TRIAGE for region code US_MO",
                 response.data,
             )
@@ -477,7 +477,7 @@ class AuthEndpointTests(TestCase):
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
             self.assertEqual(
                 b"GCS path does not exist: bucket=test-project-dashboard-user-restrictions, region_code=US_PA, "
-                b"filename=supervision_location_restricted_access_emails.json",
+                b"filename=dashboard_user_restrictions.json",
                 response.data,
             )
 

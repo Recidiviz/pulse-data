@@ -29,8 +29,8 @@ from flask import Blueprint, request
 from sqlalchemy import func
 
 from recidiviz.auth.auth0_client import Auth0AppMetadata, Auth0Client
-from recidiviz.calculator.query.state.views.reference.supervision_location_restricted_access_emails import (
-    SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.reference.dashboard_user_restrictions import (
+    DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
 )
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
@@ -72,7 +72,7 @@ def import_user_restrictions_csv_to_sql() -> Tuple[str, HTTPStatus]:
             logging.error(error)
             return str(error), HTTPStatus.BAD_REQUEST
 
-        view_builder = SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_VIEW_BUILDER
+        view_builder = DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER
         csv_path = GcsfsFilePath.from_absolute_path(
             os.path.join(
                 DASHBOARD_USER_RESTRICTIONS_OUTPUT_DIRECTORY_URI.format(
@@ -201,7 +201,7 @@ def update_auth0_user_metadata() -> Tuple[str, HTTPStatus]:
             e.g. recidiviz-{env}-dashboard-user-restrictions
         region_code: (required) The region code that has the updated user restrictions file, e.g. US_MO
         filename: (required) The filename for the user restrictions file,
-            e.g. supervision_location_restricted_access_emails.json
+            e.g. dashboard_user_restrictions.json
 
     Returns:
          Text indicating the results of the run and an HTTP status
@@ -216,7 +216,7 @@ def update_auth0_user_metadata() -> Tuple[str, HTTPStatus]:
     )
     filename = get_only_str_param_value("filename", request.args)
 
-    if filename != "supervision_location_restricted_access_emails.json":
+    if filename != "dashboard_user_restrictions.json":
         return (
             f"Auth endpoint update_auth0_user_metadata called with unexpected filename: {filename}",
             HTTPStatus.BAD_REQUEST,

@@ -39,6 +39,8 @@ def generate_fake_user_restrictions(
         allowed_supervision_location_ids=allowed_supervision_location_ids,
         allowed_supervision_location_level=allowed_supervision_location_level,
         internal_role="level_1_access_role",
+        can_access_leadership_dashboard=True,
+        can_access_case_triage=False,
     )
 
 
