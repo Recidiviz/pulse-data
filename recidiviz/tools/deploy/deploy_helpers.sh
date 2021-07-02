@@ -250,7 +250,7 @@ function reconfigure_terraform_backend {
   PROJECT_ID=$1
   echo "Reconfiguring Terraform backend..."
   rm -rf ${BASH_SOURCE_DIR}/.terraform/
-  run_cmd terraform -chdir=${BASH_SOURCE_DIR}/terraform init -backend-config "bucket=${PROJECT_ID}-tf-state"
+  run_cmd terraform -chdir=${BASH_SOURCE_DIR}/terraform init -backend-config "bucket=${PROJECT_ID}-tf-state" -reconfigure
 }
 
 
