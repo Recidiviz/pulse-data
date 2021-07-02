@@ -24,11 +24,10 @@ from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
 from recidiviz.case_triage.opportunities.types import OpportunityType
-from recidiviz.case_triage.state_utils.us_id import US_ID_ASSESSMENT_SCORE_RANGE
+from recidiviz.case_triage.state_utils.us_id import CURRENT_US_ID_ASSESSMENT_SCORE_RANGE
 from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
 
 TOP_OPPORTUNITIES_QUERY_VIEW = f"""
 WITH overdue_downgrades AS (
@@ -131,7 +130,7 @@ def _get_assessment_score_clause() -> str:
     return "\n  OR ".join(
         [
             f"(gender = '{gender.value}' AND supervision_level = '{level.value}' AND assessment_score < {score_range[0]})"
-            for gender, subdict in US_ID_ASSESSMENT_SCORE_RANGE.items()
+            for gender, subdict in CURRENT_US_ID_ASSESSMENT_SCORE_RANGE.items()
             for level, score_range in subdict.items()
         ]
     )

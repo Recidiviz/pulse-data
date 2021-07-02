@@ -22,9 +22,9 @@ from typing import List, Optional
 import attr
 
 from recidiviz.calculator.pipeline.utils.event_utils import (
+    InPopulationMixin,
     SupervisionLocationMixin,
     ViolationHistoryMixin,
-    InPopulationMixin,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import (
     AssessmentMetricMixin,
@@ -380,6 +380,11 @@ class SupervisionCaseComplianceMetric(SupervisionPopulationMetric):
     # enough to satisfy compliance measures. Should be unset if we do not know the
     # home visit compliance standards for this person.
     home_visit_frequency_sufficient: Optional[bool] = attr.ib(default=None)
+
+    # Whether the person on supervision is eligible for a downgrade.
+    # This value is set to None if we do not know how to calculate recommended
+    # supervision level status for this person.
+    eligible_for_supervision_downgrade: Optional[bool] = attr.ib(default=None)
 
 
 @attr.s

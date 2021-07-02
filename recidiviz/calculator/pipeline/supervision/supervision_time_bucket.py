@@ -26,9 +26,9 @@ from recidiviz.calculator.pipeline.supervision.supervision_case_compliance impor
 from recidiviz.calculator.pipeline.utils.event_utils import (
     AssessmentEventMixin,
     IdentifierEventWithSingularDate,
-    ViolationHistoryMixin,
-    SupervisionLocationMixin,
     InPopulationMixin,
+    SupervisionLocationMixin,
+    ViolationHistoryMixin,
 )
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_mixins import BuildableAttr
@@ -38,10 +38,10 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodTerminationReason,
-    StateSupervisionPeriodSupervisionType,
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
     is_official_supervision_admission,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
@@ -246,6 +246,12 @@ class NonRevocationReturnSupervisionTimeBucket(
         if not self.case_compliance:
             return None
         return self.case_compliance.home_visit_frequency_sufficient
+
+    @property
+    def eligible_for_supervision_downgrade(self) -> Optional[bool]:
+        if not self.case_compliance:
+            return None
+        return self.case_compliance.eligible_for_supervision_downgrade
 
 
 @attr.s(frozen=True)

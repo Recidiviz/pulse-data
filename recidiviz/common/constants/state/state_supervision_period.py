@@ -139,6 +139,45 @@ class StateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
         state_enum_strings.state_supervision_period_supervision_level_unassigned
     )
 
+    def __lt__(self, other: "StateSupervisionLevel") -> bool:
+        self_ranking = self.get_comparable_level_rankings().get(self)
+        other_ranking = self.get_comparable_level_rankings().get(other)
+        if self_ranking is None or other_ranking is None:
+            raise NotImplementedError(
+                "Cannot compare non-comparable StateSupervisionLevel"
+            )
+        return self_ranking < other_ranking
+
+    def __gt__(self, other: "StateSupervisionLevel") -> bool:
+        return other < self
+
+    def __le__(self, other: "StateSupervisionLevel") -> bool:
+        return self == other or self < other
+
+    def __ge__(self, other: "StateSupervisionLevel") -> bool:
+        return other <= self
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, StateSupervisionLevel):
+            return False
+        return self.value == other.value
+
+    def __hash__(self) -> int:
+        return hash(self.value)
+
+    def is_comparable(self) -> bool:
+        return self in self.get_comparable_level_rankings()
+
+    @staticmethod
+    def get_comparable_level_rankings() -> Dict["StateSupervisionLevel", int]:
+        return {
+            StateSupervisionLevel.LIMITED: 0,
+            StateSupervisionLevel.MINIMUM: 1,
+            StateSupervisionLevel.MEDIUM: 2,
+            StateSupervisionLevel.HIGH: 3,
+            StateSupervisionLevel.MAXIMUM: 4,
+        }
+
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSupervisionLevel"]:
         return _STATE_SUPERVISION_LEVEL_MAP
