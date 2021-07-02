@@ -130,3 +130,27 @@ class DirectIngestInstance(Enum):
         if is_secondary_ingest_bucket(ingest_bucket.bucket_name):
             return cls.SECONDARY
         raise ValueError(f"Unexpected ingest bucket [{ingest_bucket.bucket_name}]")
+
+    @classmethod
+    def for_state_database_version(
+        cls,
+        database_version: SQLAlchemyStateDatabaseVersion,
+        state_code: StateCode,
+    ) -> "DirectIngestInstance":
+        if database_version == SQLAlchemyStateDatabaseVersion.SECONDARY:
+            return cls.SECONDARY
+        if database_version in (
+            SQLAlchemyStateDatabaseVersion.PRIMARY,
+            SQLAlchemyStateDatabaseVersion.LEGACY,
+        ):
+            expected_primary_db_version = cls.PRIMARY.database_version(
+                SystemLevel.STATE, state_code
+            )
+            # TODO(#7984): Remove this check once there are no states running ingest out
+            #   of a LEGACY DB.
+            if expected_primary_db_version != database_version:
+                raise ValueError(
+                    f"Requested database version [{database_version}] is not valid for state [{state_code}]."
+                )
+            return cls.PRIMARY
+        raise ValueError(f"Unexpected database version [{database_version}]")

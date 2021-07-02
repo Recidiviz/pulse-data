@@ -17,9 +17,12 @@
 """Tests for DirectIngestRegionLockManager."""
 import time
 import unittest
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
 )
@@ -40,11 +43,21 @@ class DirectIngestRegionLockManagerTest(unittest.TestCase):
             Mock(return_value=self.fake_fs),
         ):
             self.lock_manager = DirectIngestRegionLockManager(
-                region_code=StateCode.US_XX.value, blocking_locks=self.blocking_locks
+                region_code=StateCode.US_XX.value,
+                blocking_locks=self.blocking_locks,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+            )
+
+            self.lock_manager_secondary = DirectIngestRegionLockManager(
+                region_code=StateCode.US_XX.value,
+                blocking_locks=self.blocking_locks,
+                ingest_instance=DirectIngestInstance.SECONDARY,
             )
 
             self.lock_manager_other_region = DirectIngestRegionLockManager(
-                region_code=StateCode.US_WW.value, blocking_locks=[]
+                region_code=StateCode.US_WW.value,
+                blocking_locks=[],
+                ingest_instance=DirectIngestInstance.PRIMARY,
             )
 
     def tearDown(self) -> None:
@@ -60,6 +73,19 @@ class DirectIngestRegionLockManagerTest(unittest.TestCase):
             ):
                 self.assertTrue(self.lock_manager_other_region.is_locked())
             self.assertFalse(self.lock_manager_other_region.is_locked())
+        self.assertFalse(self.lock_manager.is_locked())
+
+    def test_locking_different_instances(self) -> None:
+        self.assertFalse(self.lock_manager.is_locked())
+        with self.lock_manager.using_region_lock(expiration_in_seconds=10):
+            self.assertTrue(self.lock_manager.is_locked())
+            self.assertFalse(self.lock_manager_secondary.is_locked())
+            with self.lock_manager_secondary.using_region_lock(
+                expiration_in_seconds=10
+            ):
+                self.assertTrue(self.lock_manager_secondary.is_locked())
+            self.assertFalse(self.lock_manager_secondary.is_locked())
+            self.assertTrue(self.lock_manager.is_locked())
         self.assertFalse(self.lock_manager.is_locked())
 
     def test_locking_expiration(self) -> None:

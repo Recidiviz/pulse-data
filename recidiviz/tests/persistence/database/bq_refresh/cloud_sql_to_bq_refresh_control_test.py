@@ -28,6 +28,9 @@ from mock import Mock, create_autospec
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_control
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
 )
@@ -259,7 +262,9 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         mock_kick_all_schedulers: mock.MagicMock,
     ) -> None:
         ingest_lock_manager = DirectIngestRegionLockManager(
-            region_code=StateCode.US_XX.value, blocking_locks=[]
+            region_code=StateCode.US_XX.value,
+            blocking_locks=[],
+            ingest_instance=DirectIngestInstance.PRIMARY,
         )
 
         # Attempt to refresh while ingest is still locked for a STATE
@@ -294,7 +299,9 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         mock_kick_all_schedulers: mock.MagicMock,
     ) -> None:
         ingest_lock_manager = DirectIngestRegionLockManager(
-            region_code="US_XX_YYYY", blocking_locks=[]
+            region_code="US_XX_YYYY",
+            blocking_locks=[],
+            ingest_instance=DirectIngestInstance.PRIMARY,
         )
 
         # Attempt to refresh while ingest is still locked for a COUNTY
@@ -343,7 +350,9 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
     ) -> None:
         # Arrange
         lock_manager = DirectIngestRegionLockManager(
-            region_code="US_XX", blocking_locks=[]
+            region_code="US_XX",
+            blocking_locks=[],
+            ingest_instance=DirectIngestInstance.PRIMARY,
         )
 
         # Act

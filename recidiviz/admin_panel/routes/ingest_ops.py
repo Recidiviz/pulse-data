@@ -29,6 +29,7 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
@@ -123,13 +124,18 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     def _export_database_to_gcs() -> Tuple[str, HTTPStatus]:
         try:
             state_code = StateCode(request.json["stateCode"])
-            db_version = SQLAlchemyStateDatabaseVersion(
-                request.json["ingestInstance"].lower()
+            ingest_instance = DirectIngestInstance(
+                request.json["ingestInstance"].upper()
+            )
+            db_version = ingest_instance.database_version(
+                system_level=SystemLevel.STATE, state_code=state_code
             )
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
 
-        lock_manager = DirectIngestRegionLockManager.for_state_ingest(state_code)
+        lock_manager = DirectIngestRegionLockManager.for_state_ingest(
+            state_code, ingest_instance
+        )
         if not lock_manager.can_proceed():
             return (
                 "other locks blocking ingest have been acquired; aborting operation",
@@ -170,6 +176,9 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
             db_version = SQLAlchemyStateDatabaseVersion(
                 request.json["importToDatabaseVersion"].lower()
             )
+            ingest_instance = DirectIngestInstance.for_state_database_version(
+                database_version=db_version, state_code=state_code
+            )
             exported_db_version = SQLAlchemyStateDatabaseVersion(
                 request.json["exportedDatabaseVersion"].lower()
             )
@@ -179,7 +188,9 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
         if db_version == SQLAlchemyStateDatabaseVersion.LEGACY:
             return "ingestInstance cannot be LEGACY", HTTPStatus.BAD_REQUEST
 
-        lock_manager = DirectIngestRegionLockManager.for_state_ingest(state_code)
+        lock_manager = DirectIngestRegionLockManager.for_state_ingest(
+            state_code, ingest_instance=ingest_instance
+        )
         if not lock_manager.can_proceed():
             return (
                 "other locks blocking ingest have been acquired; aborting operation",
@@ -217,10 +228,15 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     def _acquire_ingest_lock() -> Tuple[str, HTTPStatus]:
         try:
             state_code = StateCode(request.json["stateCode"])
+            # TODO(#8070): For now, we assume we are locking PRIMARY - we need to thread
+            #   this through from the frontend.
+            ingest_instance = DirectIngestInstance.PRIMARY
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
 
-        lock_manager = DirectIngestRegionLockManager.for_state_ingest(state_code)
+        lock_manager = DirectIngestRegionLockManager.for_state_ingest(
+            state_code, ingest_instance=ingest_instance
+        )
         try:
             lock_manager.acquire_lock()
         except GCSPseudoLockAlreadyExists:
@@ -243,10 +259,15 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     def _release_ingest_lock() -> Tuple[str, HTTPStatus]:
         try:
             state_code = StateCode(request.json["stateCode"])
+            # TODO(#8070): For now, we assume we are unlocking PRIMARY - we need to thread
+            #   this through from the frontend.
+            ingest_instance = DirectIngestInstance.PRIMARY
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
 
-        lock_manager = DirectIngestRegionLockManager.for_state_ingest(state_code)
+        lock_manager = DirectIngestRegionLockManager.for_state_ingest(
+            state_code, ingest_instance=ingest_instance
+        )
         try:
             lock_manager.release_lock()
         except GCSPseudoLockDoesNotExist:
