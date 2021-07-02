@@ -10,7 +10,6 @@ file_description: |-
 primary_key_cols:
   - inmate_number
   - control_number
-  - state_id_num
 columns:
   - name: inmate_number
     description: |-

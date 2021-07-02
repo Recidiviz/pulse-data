@@ -1,12 +1,9 @@
 file_tag: dbo_Treatment
 file_description: |-
   A table with information on referred treatments for people under supervision.
-  NOT REFRESHED REGULARLY.
-# Best initial (unconfirmed) guess at primary keys for this table:
-#      - ParoleNumber
-#      - ParoleCountID
-#      - TreatmentID
-primary_key_cols: []
+primary_key_cols:
+  - ParoleNumber
+  - TreatmentID
 columns:
   - name: ParoleNumber
   - name: ParoleCountID
@@ -32,4 +29,7 @@ columns:
   - name: LastModifiedDateTime
   - name: TrtHrsImposed
   - name: TrtHrsCompleted
-
+separator: ‡
+custom_line_terminator: †
+ignore_quotes: True
+encoding: WINDOWS-1252
