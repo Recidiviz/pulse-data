@@ -19,6 +19,7 @@
 import unittest
 
 from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
     StateSupervisionPeriodSupervisionType,
     get_most_relevant_supervision_type,
 )
@@ -51,3 +52,25 @@ class StateSupervisionPeriodTest(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.DUAL,
             get_most_relevant_supervision_type(types),
         )
+
+
+class StateSupervisionLevelTest(unittest.TestCase):
+    """Tests comparators for StateSupervisionLevel."""
+
+    def test_non_comparable(self) -> None:
+        with self.assertRaises(NotImplementedError):
+            if StateSupervisionLevel.EXTERNAL_UNKNOWN < StateSupervisionLevel.MINIMUM:
+                pass
+
+        with self.assertRaises(NotImplementedError):
+            if StateSupervisionLevel.MEDIUM < StateSupervisionLevel.INTERNAL_UNKNOWN:
+                pass
+
+    def test_pairwise_comparisons(self) -> None:
+        rankings = StateSupervisionLevel.get_comparable_level_rankings()
+        for level_1, rank_1 in rankings.items():
+            for level_2, rank_2 in rankings.items():
+                self.assertEqual(level_1 < level_2, rank_1 < rank_2)
+                self.assertEqual(level_1 > level_2, rank_1 > rank_2)
+                self.assertEqual(level_1 >= level_2, rank_1 >= rank_2)
+                self.assertEqual(level_1 <= level_2, rank_1 <= rank_2)

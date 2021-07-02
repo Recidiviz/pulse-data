@@ -132,6 +132,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
+    StatePerson,
     StateSupervisionContact,
     StateSupervisionPeriod,
     StateSupervisionSentence,
@@ -458,6 +459,7 @@ def supervision_period_counts_towards_supervision_population_in_date_range_state
 
 
 def get_state_specific_case_compliance_manager(
+    person: StatePerson,
     supervision_period: StateSupervisionPeriod,
     case_type: StateSupervisionCaseType,
     start_of_supervision: date,
@@ -470,6 +472,7 @@ def get_state_specific_case_compliance_manager(
     state_code = supervision_period.state_code.upper()
     if state_code == StateCode.US_ID.value:
         return UsIdSupervisionCaseCompliance(
+            person,
             supervision_period,
             case_type,
             start_of_supervision,
@@ -478,6 +481,7 @@ def get_state_specific_case_compliance_manager(
         )
     if state_code == StateCode.US_ND.value:
         return UsNdSupervisionCaseCompliance(
+            person,
             supervision_period,
             case_type,
             start_of_supervision,
@@ -486,6 +490,7 @@ def get_state_specific_case_compliance_manager(
         )
     if state_code == StateCode.US_PA.value:
         return UsPaSupervisionCaseCompliance(
+            person,
             supervision_period,
             case_type,
             start_of_supervision,

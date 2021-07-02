@@ -37,6 +37,9 @@ from dateutil.relativedelta import relativedelta
 from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
 )
+from recidiviz.calculator.pipeline.utils.supervision_level_policy import (
+    SupervisionLevelPolicy,
+)
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
@@ -73,7 +76,7 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         """Returns the number of days that an initial assessment should take place."""
         return LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE
 
-    def _guidelines_applicable_for_case(self) -> bool:
+    def _guidelines_applicable_for_case(self, _evaluation_date: date) -> bool:
         """Returns whether the standard state guidelines are applicable for the given supervision case. The standard
         guidelines are not applicable for people who are not classified or who are in interstate compact."""
         # Check case type
@@ -224,3 +227,8 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         return self._face_to_face_contact_frequency_is_in_compliance(
             compliance_evaluation_date, required_contacts, period_days
         )
+
+    def _get_supervision_level_policy(
+        self, evaluation_date: date
+    ) -> Optional[SupervisionLevelPolicy]:
+        return None

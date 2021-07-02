@@ -105,6 +105,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
+    StatePerson,
     StateSupervisionContact,
     StateSupervisionPeriod,
     StateSupervisionSentence,
@@ -113,6 +114,7 @@ from recidiviz.persistence.entity.state.entities import (
 
 
 def find_supervision_time_buckets(
+    person: StatePerson,
     supervision_sentences: List[StateSupervisionSentence],
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_periods: List[StateSupervisionPeriod],
@@ -235,6 +237,7 @@ def find_supervision_time_buckets(
             )
 
             supervision_time_buckets = supervision_time_buckets + find_time_buckets_for_supervision_period(
+                person=person,
                 supervision_sentences=supervision_sentences,
                 incarceration_sentences=incarceration_sentences,
                 supervision_period=supervision_period,
@@ -296,6 +299,7 @@ def find_supervision_time_buckets(
 
 
 def find_time_buckets_for_supervision_period(
+    person: StatePerson,
     supervision_sentences: List[StateSupervisionSentence],
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_period: StateSupervisionPeriod,
@@ -310,6 +314,7 @@ def find_time_buckets_for_supervision_period(
     """Finds days that this person was on supervision for the given StateSupervisionPeriod, where the person was not
     incarcerated and did not have a revocation admission that day.
     Args:
+        - person: StatePerson encoding of the person under supervision
         - supervision_sentences: List of StateSupervisionSentences for a person
         - incarceration_sentences: List of StateIncarcerationSentence for a person
         - supervision_period: The supervision period the person was on
@@ -374,6 +379,7 @@ def find_time_buckets_for_supervision_period(
         )
 
     state_specific_case_compliance_manager = get_state_specific_case_compliance_manager(
+        person,
         supervision_period,
         case_type,
         start_of_supervision,

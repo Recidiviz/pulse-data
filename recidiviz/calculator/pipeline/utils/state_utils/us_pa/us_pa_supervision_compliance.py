@@ -18,13 +18,18 @@
 import logging
 from datetime import date
 from typing import Dict, Optional, Tuple
-import numpy
 
+import numpy
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
 )
+from recidiviz.calculator.pipeline.utils.supervision_level_policy import (
+    SupervisionLevelPolicy,
+)
+from recidiviz.common.constants.person_characteristics import Gender
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
@@ -58,10 +63,24 @@ NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS = 2
 NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS = 10
 
 
+RISK_SCORE_TO_SUPERVISION_LEVEL_POLICY_DATE = date(2011, 1, 4)
+
+CURRENT_US_PA_ASSESSMENT_SCORE_RANGE: Dict[
+    Gender, Dict[StateSupervisionLevel, Tuple[int, Optional[int]]]
+] = {
+    gender: {
+        StateSupervisionLevel.MINIMUM: (0, 19),
+        StateSupervisionLevel.MEDIUM: (20, 27),
+        StateSupervisionLevel.MAXIMUM: (28, None),
+    }
+    for gender in Gender
+}
+
+
 class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
     """US_PA specific calculations for supervision case compliance."""
 
-    def _guidelines_applicable_for_case(self) -> bool:
+    def _guidelines_applicable_for_case(self, _evaluation_date: date) -> bool:
         """Returns whether the standard state guidelines are applicable for the given supervision case based on the supervision level."""
 
         # Check supervision level is valid
@@ -76,7 +95,7 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         return self.supervision_period.supervision_level in allowed_supervision_levels
 
     def _get_initial_assessment_number_of_days(self) -> int:
-        """Returns the number of days that an initial assessment should take place. """
+        """Returns the number of days that an initial assessment should take place."""
         return NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
 
     def _num_days_past_required_reassessment(
@@ -179,3 +198,20 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
     ) -> Optional[bool]:
         # TODO(#7052) Update with appropriate policies
         return None
+
+    def _get_supervision_level_policy(
+        self, evaluation_date: date
+    ) -> Optional[SupervisionLevelPolicy]:
+        if evaluation_date < RISK_SCORE_TO_SUPERVISION_LEVEL_POLICY_DATE:
+            return None
+
+        if self.case_type != StateSupervisionCaseType.GENERAL:
+            return None
+
+        if not self.person.gender:
+            return None
+
+        return SupervisionLevelPolicy(
+            level_mapping=CURRENT_US_PA_ASSESSMENT_SCORE_RANGE,
+            start_date=RISK_SCORE_TO_SUPERVISION_LEVEL_POLICY_DATE,
+        )
