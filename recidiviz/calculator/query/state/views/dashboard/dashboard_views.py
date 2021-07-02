@@ -23,6 +23,9 @@ from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.state.views.dashboard.admissions import admissions_views
+from recidiviz.calculator.query.state.views.dashboard.population_projections import (
+    population_projections_views,
+)
 from recidiviz.calculator.query.state.views.dashboard.program_evaluation import (
     program_evaluation_views,
 )
@@ -38,15 +41,11 @@ from recidiviz.calculator.query.state.views.dashboard.revocations import (
 from recidiviz.calculator.query.state.views.dashboard.supervision import (
     supervision_views,
 )
-from recidiviz.calculator.query.state.views.dashboard.population_projections import (
-    population_projections_views,
-)
 from recidiviz.calculator.query.state.views.dashboard.vitals_summaries import (
     vitals_views,
 )
-
-from recidiviz.calculator.query.state.views.reference.supervision_location_restricted_access_emails import (
-    SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_VIEW_BUILDER,
+from recidiviz.calculator.query.state.views.reference.dashboard_user_restrictions import (
+    DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
 )
 
 CORE_DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = (
@@ -70,7 +69,7 @@ UP_DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = (
 
 DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDERS: Sequence[
     SelectedColumnsBigQueryViewBuilder
-] = [SUPERVISION_LOCATION_RESTRICTED_ACCESS_EMAILS_VIEW_BUILDER]
+] = [DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER]
 
 
 DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = list(

@@ -399,3 +399,15 @@ class DashboardUserRestrictions(CaseTriageBase):
     internal_role = Column(
         String(255), nullable=False, comment="Dashboard user's access level role"
     )
+    can_access_leadership_dashboard = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="User has permission to access the Leadership Dashboard",
+    )
+    can_access_case_triage = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="User has permission to access Case Triage",
+    )
