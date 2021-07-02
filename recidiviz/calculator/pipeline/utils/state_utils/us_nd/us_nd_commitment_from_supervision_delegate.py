@@ -17,18 +17,29 @@
 """Utils for state-specific logic related to identifying commitments from
 supervision in US_ND."""
 import datetime
-from typing import List, Set
+from typing import List, Optional, Set
 
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
 )
+from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
+    get_pre_incarceration_supervision_type_from_ip_admission_reason,
+)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
 )
+from recidiviz.common.constants.state.state_supervision import StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+)
 from recidiviz.common.date import DateRange
 from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateIncarcerationSentence,
+    StateSupervisionPeriod,
+    StateSupervisionSentence,
     StateSupervisionViolationResponse,
 )
 
@@ -91,3 +102,51 @@ class UsNdCommitmentFromSupervisionDelegate(
             lower_bound_inclusive_date=violation_window_lower_bound_inclusive,
             upper_bound_exclusive_date=violation_window_upper_bound_exclusive,
         )
+
+    def get_commitment_from_supervision_supervision_type(
+        self,
+        incarceration_sentences: List[StateIncarcerationSentence],
+        supervision_sentences: List[StateSupervisionSentence],
+        incarceration_period: StateIncarcerationPeriod,
+        previous_supervision_period: Optional[StateSupervisionPeriod],
+    ) -> Optional[StateSupervisionPeriodSupervisionType]:
+        """Determines the supervision type for the given supervision period that
+        preceded the given incarceration period that represents a commitment from
+        supervision.
+
+        As noted in UsNdIncarcerationPreProcessingDelegate one of the ways in which a
+        commitment from supervision can occur in US_ND is when a NEW_ADMISSION
+        incarceration period directly follows a PROBATION supervision period
+        that ended due to a REVOCATION. As such, we handle that case here by specifying
+        a supervision type of PROBATION in this case.
+
+        Note that this refers specifically to PROBATION and does not include PAROLE
+        because 1) we think that PAROLE followed by NEW ADMISSION is not actually
+        reasonably interpretable as a parole revocation based on how probation and
+        parole are administered on the ground, and 2) we don’t have mass examples of
+        NEW_ADMISSION incarceration directly following PAROLE in the data like we do
+        for PROBATION.
+        """
+        if not incarceration_period.admission_reason:
+            raise ValueError(
+                "Unexpected missing admission_reason on incarceration period: "
+                f"[{incarceration_period}]"
+            )
+
+        default_supervision_type = (
+            get_pre_incarceration_supervision_type_from_ip_admission_reason(
+                incarceration_period.admission_reason
+            )
+        )
+
+        if default_supervision_type:
+            return default_supervision_type
+
+        if (
+            previous_supervision_period
+            and previous_supervision_period.supervision_type
+            == StateSupervisionType.PROBATION
+        ):
+            return StateSupervisionPeriodSupervisionType.PROBATION
+
+        return None

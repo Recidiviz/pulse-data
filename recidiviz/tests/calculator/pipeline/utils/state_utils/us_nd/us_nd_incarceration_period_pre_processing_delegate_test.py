@@ -56,6 +56,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
+    StateSupervisionViolationResponse,
 )
 
 
@@ -72,6 +73,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         overwrite_facility_information_in_transfers: bool = True,
         earliest_death_date: Optional[date] = None,
     ) -> List[StateIncarcerationPeriod]:
+        # IP pre-processing for US_ND does not rely on violation responses
+        violation_responses: Optional[List[StateSupervisionViolationResponse]] = []
+
         sp_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods or [],
         )
@@ -80,6 +84,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             incarceration_periods=incarceration_periods,
             delegate=UsNdIncarcerationPreProcessingDelegate(),
             pre_processed_supervision_period_index=sp_index,
+            violation_responses=violation_responses,
             earliest_death_date=earliest_death_date,
         )
 
@@ -126,6 +131,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_reason=AdmissionReason.NEW_ADMISSION,
             release_date=date(2017, 12, 4),
             release_reason=ReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         incarceration_periods = [
@@ -144,7 +150,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             )
 
             self.assertEqual(
-                validated_incarceration_periods, [valid_incarceration_period]
+                [valid_incarceration_period], validated_incarceration_periods
             )
 
     def test_pre_processed_incarceration_periods_for_calculations_multiple_temporary_and_transfer(
@@ -223,6 +229,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_reason=valid_incarceration_period_1.admission_reason,
             release_date=valid_incarceration_period_3.release_date,
             release_reason=valid_incarceration_period_3.release_reason,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         for ip_order_combo in permutations(incarceration_periods):
@@ -235,7 +242,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             )
 
             self.assertEqual(
-                validated_incarceration_periods, [collapsed_incarceration_period]
+                [collapsed_incarceration_period], validated_incarceration_periods
             )
 
     def test_pre_processed_incarceration_periods_for_calculations_valid_then_temporary(
@@ -264,6 +271,11 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
         )
 
+        updated_valid_period = attr.evolve(
+            valid_incarceration_period,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
         incarceration_periods = [valid_incarceration_period, temporary_custody]
 
         for ip_order_combo in permutations(incarceration_periods):
@@ -275,9 +287,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
                 )
             )
 
-            self.assertEqual(
-                validated_incarceration_periods, [valid_incarceration_period]
-            )
+            self.assertEqual([updated_valid_period], validated_incarceration_periods)
 
     def test_pre_processed_incarceration_periods_for_calculations_invalid_board_hold(
         self,
@@ -332,6 +342,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         updated_period = attr.evolve(
             incarceration_period,
             admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         validated_incarceration_periods = (
@@ -369,8 +380,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
 
-        period_copy = attr.evolve(
+        updated_period = attr.evolve(
             incarceration_period,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         validated_incarceration_periods = (
@@ -380,7 +392,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             )
         )
 
-        self.assertEqual([period_copy], validated_incarceration_periods)
+        self.assertEqual([updated_period], validated_incarceration_periods)
 
     def test_pre_processed_incarceration_periods_for_calculations_NewAdmissionNotAfterRevocation(
         self,
@@ -408,8 +420,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
 
-        period_copy = attr.evolve(
+        updated_period = attr.evolve(
             incarceration_period,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         validated_incarceration_periods = (
@@ -419,7 +432,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             )
         )
 
-        self.assertEqual([period_copy], validated_incarceration_periods)
+        self.assertEqual([updated_period], validated_incarceration_periods)
 
     def test_pre_processed_incarceration_periods_for_calculations_NewAdmissionNotDirectlyAfterProbationRevocation(
         self,
@@ -459,8 +472,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
 
-        period_copy = attr.evolve(
+        updated_period = attr.evolve(
             incarceration_period,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         validated_incarceration_periods = (
@@ -473,7 +487,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             )
         )
 
-        self.assertEqual([period_copy], validated_incarceration_periods)
+        self.assertEqual([updated_period], validated_incarceration_periods)
 
     def test_pre_processed_incarceration_periods_for_calculations_NewAdmissionAfterRevocationAndIntermediateAdmissionToStatePrison(
         self,
@@ -520,9 +534,13 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         updated_initial_period = attr.evolve(
             initial_commitment_incarceration_period,
             admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        subsequent_period_copy = attr.evolve(subsequent_incarceration_period)
+        subsequent_period_updated = attr.evolve(
+            subsequent_incarceration_period,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
 
         validated_incarceration_periods = (
             self._pre_processed_incarceration_periods_for_calculations(
@@ -535,7 +553,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         )
 
         self.assertEqual(
-            [updated_initial_period, subsequent_period_copy],
+            [updated_initial_period, subsequent_period_updated],
             validated_incarceration_periods,
         )
 
@@ -583,6 +601,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         updated_period = attr.evolve(
             subsequent_incarceration_period,
             admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
         validated_incarceration_periods = (

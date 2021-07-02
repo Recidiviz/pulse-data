@@ -100,6 +100,9 @@ def find_release_events_by_cohort_year(
         state_code=state_code,
         incarceration_periods=incarceration_periods,
         supervision_periods=supervision_periods,
+        # Note: This pipeline cannot be run for any state that relies on
+        # StateSupervisionViolationResponse entities in IP pre-processing
+        violation_responses=None,
     )
 
     if not ip_pre_processing_manager:

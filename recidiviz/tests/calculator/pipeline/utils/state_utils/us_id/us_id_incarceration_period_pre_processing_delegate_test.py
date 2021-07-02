@@ -45,6 +45,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
+    StateSupervisionViolationResponse,
 )
 
 
@@ -61,6 +62,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         overwrite_facility_information_in_transfers: bool = True,
         earliest_death_date: Optional[date] = None,
     ) -> List[StateIncarcerationPeriod]:
+        # IP pre-processing for US_ID does not rely on violation responses
+        violation_responses: Optional[List[StateSupervisionViolationResponse]] = []
+
         sp_index = PreProcessedSupervisionPeriodIndex(
             supervision_periods=supervision_periods or [],
         )
@@ -69,6 +73,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             incarceration_periods=incarceration_periods,
             delegate=UsIdIncarcerationPreProcessingDelegate(),
             pre_processed_supervision_period_index=sp_index,
+            violation_responses=violation_responses,
             earliest_death_date=earliest_death_date,
         )
 

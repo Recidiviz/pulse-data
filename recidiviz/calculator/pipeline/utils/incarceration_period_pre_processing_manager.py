@@ -20,7 +20,7 @@ import abc
 import logging
 from copy import deepcopy
 from datetime import date
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, Tuple
 
 import attr
 
@@ -47,7 +47,10 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     release_reason_overrides_released_from_temporary_custody,
 )
 from recidiviz.persistence.entity.entity_utils import is_placeholder
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
+    StateSupervisionViolationResponse,
+)
 
 ATTRIBUTES_TRIGGERING_STATUS_CHANGE = [
     "custodial_authority",
@@ -63,6 +66,19 @@ class PreProcessingConfiguration:
     # Whether or not to overwrite facility information when collapsing
     # transfer edges
     overwrite_facility_information_in_transfers: bool = attr.ib()
+
+
+@attr.s
+class PurposeForIncarcerationInfo:
+    # Purpose for incarceration
+    purpose_for_incarceration: Optional[
+        StateSpecializedPurposeForIncarceration
+    ] = attr.ib(default=None)
+
+    # A string subtype to capture more information about the
+    # purpose_for_incarceration, e.g. the length of stay for a
+    # SHOCK_INCARCERATION admission
+    purpose_for_incarceration_subtype: Optional[str] = attr.ib(default=None)
 
 
 class StateSpecificIncarcerationPreProcessingDelegate:
@@ -85,7 +101,6 @@ class StateSpecificIncarcerationPreProcessingDelegate:
         """Default behavior of admission_reasons_to_filter function."""
         return set()
 
-    # TODO(#7443): Bring in StateSupervisionViolationResponses
     @abc.abstractmethod
     def normalize_period_if_commitment_from_supervision(
         self,
@@ -101,9 +116,39 @@ class StateSpecificIncarcerationPreProcessingDelegate:
     def _default_normalize_period_if_commitment_from_supervision(
         incarceration_period: StateIncarcerationPeriod,
     ) -> StateIncarcerationPeriod:
-        """Default behavior of normalize_period_if_commitment_from_supervision."""
-        # By default, returns the original period
+        """Default behavior of normalize_period_if_commitment_from_supervision.
+
+        By default, returns the original period unchanged.
+        """
         return incarceration_period
+
+    @abc.abstractmethod
+    def get_pfi_info_for_period_if_commitment_from_supervision(
+        self,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
+        violation_responses: Optional[List[StateSupervisionViolationResponse]],
+    ) -> PurposeForIncarcerationInfo:
+        """State-specific implementations of this class should return a
+        PurposeForIncarcerationInfo object complete with the correct
+        purpose_for_incarceration for the incarceration period, if it differs from the
+        purpose_for_incarceration value currently set on the period and if the
+        period represents a commitment from supervision admission."""
+
+    @staticmethod
+    def _default_get_pfi_info_for_period_if_commitment_from_supervision(
+        incarceration_period,
+    ) -> PurposeForIncarcerationInfo:
+        """Default behavior of the
+        get_pfi_info_for_period_if_commitment_from_supervision function.
+
+        Returns a PurposeForIncarcerationInfo object with the period's current
+        purpose_for_incarceration value and an unset
+        purpose_for_incarceration_subtype."""
+        return PurposeForIncarcerationInfo(
+            purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration,
+            purpose_for_incarceration_subtype=None,
+        )
 
     @abc.abstractmethod
     def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:
@@ -187,6 +232,17 @@ class StateSpecificIncarcerationPreProcessingDelegate:
         """Default behavior of pre_processing_relies_on_supervision_periods function."""
         return False
 
+    @abc.abstractmethod
+    def pre_processing_relies_on_violation_responses(self) -> bool:
+        """State-specific implementations of this class should return whether the IP
+        pre-processing logic for the state relies on information in
+        StateSupervisionViolationResponse entities"""
+
+    @staticmethod
+    def _default_pre_processing_relies_on_violation_responses() -> bool:
+        """Default behavior of pre_processing_relies_on_violation_responses function."""
+        return False
+
 
 class IncarcerationPreProcessingManager:
     """Interface for generalized and state-specific pre-processing of
@@ -199,6 +255,7 @@ class IncarcerationPreProcessingManager:
         pre_processed_supervision_period_index: Optional[
             PreProcessedSupervisionPeriodIndex
         ],
+        violation_responses: Optional[List[StateSupervisionViolationResponse]],
         earliest_death_date: Optional[date] = None,
     ):
         self._incarceration_periods = deepcopy(incarceration_periods)
@@ -214,6 +271,15 @@ class IncarcerationPreProcessingManager:
         ] = (
             pre_processed_supervision_period_index
             if self.delegate.pre_processing_relies_on_supervision_periods()
+            else None
+        )
+
+        # Only store the violation_responses if StateSupervisionViolationResponse
+        # entities are required for this state's StateIncarcerationPeriod
+        # pre-processing
+        self._violation_responses: Optional[List[StateSupervisionViolationResponse]] = (
+            violation_responses
+            if self.delegate.pre_processing_relies_on_violation_responses()
             else None
         )
 
@@ -246,7 +312,8 @@ class IncarcerationPreProcessingManager:
                 self._pre_processed_incarceration_period_index_for_calculations[
                     config
                 ] = PreProcessedIncarcerationPeriodIndex(
-                    incarceration_periods=self._incarceration_periods
+                    incarceration_periods=self._incarceration_periods,
+                    ip_id_to_pfi_subtype={},
                 )
             else:
                 # Make a deep copy of the original incarceration periods to preprocess
@@ -288,14 +355,26 @@ class IncarcerationPreProcessingManager:
 
                 # Override values on the incarceration periods that are
                 # commitment from supervision admissions
-                mid_processing_periods = self._normalize_commitment_from_supervision_admission_periods(
+                (
+                    mid_processing_periods,
+                    ip_id_to_pfi_subtype,
+                ) = self._normalize_commitment_from_supervision_admission_periods(
                     incarceration_periods=mid_processing_periods,
                     supervision_period_index=self._pre_processed_supervision_period_index,
+                    violation_responses=self._violation_responses,
                 )
 
                 # Drop certain periods entirely from the calculations
                 mid_processing_periods = self._drop_periods_from_calculations(
                     mid_processing_periods
+                )
+
+                # Ensure that the purpose_for_incarceration values on all periods is
+                # what we expect
+                mid_processing_periods = (
+                    self._standardize_purpose_for_incarceration_values(
+                        mid_processing_periods
+                    )
                 )
 
                 if config.collapse_transfers:
@@ -308,7 +387,8 @@ class IncarcerationPreProcessingManager:
                 self._pre_processed_incarceration_period_index_for_calculations[
                     config
                 ] = PreProcessedIncarcerationPeriodIndex(
-                    incarceration_periods=mid_processing_periods
+                    incarceration_periods=mid_processing_periods,
+                    ip_id_to_pfi_subtype=ip_id_to_pfi_subtype,
                 )
         return self._pre_processed_incarceration_period_index_for_calculations[config]
 
@@ -776,50 +856,118 @@ class IncarcerationPreProcessingManager:
 
         return updated_periods
 
-    # TODO(#7441): Bring in PreProcessedSupervisionPeriodIndex
-    # TODO(#7443): Bring in StateSupervisionViolationResponses
     def _normalize_commitment_from_supervision_admission_periods(
         self,
         incarceration_periods: List[StateIncarcerationPeriod],
         supervision_period_index: Optional[PreProcessedSupervisionPeriodIndex],
-    ) -> List[StateIncarcerationPeriod]:
+        violation_responses: Optional[List[StateSupervisionViolationResponse]],
+    ) -> Tuple[List[StateIncarcerationPeriod], Dict[int, Optional[str]]]:
         """Updates attributes on incarceration periods that represent a commitment
-        from supervision admission and require updated attribute values.
+        from supervision admission and require updated attribute values,
+        and identifies the purpose_for_incarceration_subtype value for these periods.
 
         Applies both state-specific and universal overrides for commitment from
         supervision admissions so that the period match expected values.
         """
         updated_periods: List[StateIncarcerationPeriod] = []
-        for index, _ in enumerate(incarceration_periods):
-            # First, apply any state-specific overrides for commitment from
-            # supervision admissions
+        ip_id_to_pfi_subtype: Dict[int, Optional[str]] = {}
+        for index, original_ip in enumerate(incarceration_periods):
+            # First, identify the purpose_for_incarceration information for the given
+            # period if it's a commitment from supervision admission
+            pfi_info = (
+                self.delegate.get_pfi_info_for_period_if_commitment_from_supervision(
+                    incarceration_period_list_index=index,
+                    sorted_incarceration_periods=incarceration_periods,
+                    violation_responses=violation_responses,
+                )
+            )
+
+            # Then, apply any state-specific overrides if the period is a  commitment
+            # from supervision admission
             updated_ip = self.delegate.normalize_period_if_commitment_from_supervision(
                 incarceration_period_list_index=index,
                 sorted_incarceration_periods=incarceration_periods,
                 supervision_period_index=supervision_period_index,
             )
 
-            # Then, universally apply overrides to ensure commitment from supervision
-            # admissions match expected values
             if (
-                is_commitment_from_supervision(updated_ip.admission_reason)
-                and updated_ip.specialized_purpose_for_incarceration
-                in SANCTION_ADMISSION_PURPOSE_FOR_INCARCERATION_VALUES
+                original_ip.specialized_purpose_for_incarceration
+                != updated_ip.specialized_purpose_for_incarceration
             ):
-                # Any commitment from supervision for SHOCK_INCARCERATION or
-                # TREATMENT_IN_PRISON should actually be classified as a
-                # SANCTION_ADMISSION
-                updated_ip = attr.evolve(
-                    updated_ip,
-                    admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+                raise ValueError(
+                    "The specialized_purpose_for_incarceration value of "
+                    f"incarceration period [{updated_ip.incarceration_period_id}] was "
+                    "updated during the call to "
+                    "normalize_period_if_commitment_from_supervision. "
+                    "All updates to this attribute for commitment from "
+                    "supervision admissions should be determined in "
                 )
 
-            # TODO(#7070): Fail here if the updated_ip doesn't have an
-            #  admission_reason of ADMITTED_FROM_SUPERVISION once this value is
-            #  handled by all state delegates
+            # Then, universally apply overrides to ensure commitment from supervision
+            # admissions match expected values
+            if is_commitment_from_supervision(updated_ip.admission_reason):
+                # Set the purpose_for_incarceration from the pfi_info onto the period,
+                # if set. Default to GENERAL for any unset purpose_for_incarceration
+                # values at this point in pre-processing.
+                updated_ip = attr.evolve(
+                    updated_ip,
+                    specialized_purpose_for_incarceration=(
+                        pfi_info.purpose_for_incarceration
+                        or StateSpecializedPurposeForIncarceration.GENERAL
+                    ),
+                )
+
+                if (
+                    updated_ip.specialized_purpose_for_incarceration
+                    in SANCTION_ADMISSION_PURPOSE_FOR_INCARCERATION_VALUES
+                ):
+                    # Any commitment from supervision for SHOCK_INCARCERATION or
+                    # TREATMENT_IN_PRISON should actually be classified as a
+                    # SANCTION_ADMISSION
+                    updated_ip = attr.evolve(
+                        updated_ip,
+                        admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+                    )
+
+            # TODO(#7070): Fail here if the updated_ip has an admission_reason of
+            #  ADMITTED_FROM_SUPERVISION once this value is handled by all state
+            #  delegates
             updated_periods.append(updated_ip)
 
-        return updated_periods
+            if not updated_ip.incarceration_period_id:
+                raise ValueError(
+                    "Unexpected incarceration period without an "
+                    f"incarceration_period_id: {updated_ip}."
+                )
+
+            ip_id_to_pfi_subtype[
+                updated_ip.incarceration_period_id
+            ] = pfi_info.purpose_for_incarceration_subtype
+
+        return updated_periods, ip_id_to_pfi_subtype
+
+    # TODO(#7441): Update this function to also propagate purpose_for_incarceration
+    #  values from commitment from supervision admissions across TRANSFER edges
+    @staticmethod
+    def _standardize_purpose_for_incarceration_values(
+        incarceration_periods: List[StateIncarcerationPeriod],
+    ) -> List[StateIncarcerationPeriod]:
+        """For any period that doesn't have a set purpose_for_incarceration value,
+        sets the default value of GENERAL.
+        """
+        updated_ips: List[StateIncarcerationPeriod] = []
+
+        for ip in incarceration_periods:
+            updated_ip = attr.evolve(
+                ip,
+                specialized_purpose_for_incarceration=(
+                    ip.specialized_purpose_for_incarceration
+                    or StateSpecializedPurposeForIncarceration.GENERAL
+                ),
+            )
+            updated_ips.append(updated_ip)
+
+        return updated_ips
 
     def _collapse_incarceration_period_transfers(
         self,

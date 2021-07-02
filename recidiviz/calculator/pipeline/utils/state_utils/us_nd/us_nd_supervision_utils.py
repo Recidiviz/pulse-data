@@ -26,9 +26,6 @@ from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_inde
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
 )
-from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
-    get_pre_incarceration_supervision_type_from_ip_admission_reason,
-)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
 )
@@ -55,52 +52,6 @@ RELEASE_REASON_RAW_TEXT_TO_SUPERVISION_TYPE = {
     "PV": StateSupervisionPeriodSupervisionType.PAROLE,
     "RPAR": StateSupervisionPeriodSupervisionType.PAROLE,
 }
-
-
-# TODO(#7441): Move this function to the UsNdCommitmentFromSupervisionDelegate
-def us_nd_get_pre_commitment_supervision_type(
-    incarceration_period: StateIncarcerationPeriod,
-    revoked_supervision_period: Optional[StateSupervisionPeriod],
-) -> Optional[StateSupervisionPeriodSupervisionType]:
-    """Determines the supervision type for the given revoked supervision period that
-    preceded the given incarceration period that represents a commitment from
-    supervision.
-
-    As noted in UsNdCommitmentFromSupervisionDelegate one of the ways in which a
-    commitment from supervision can occur in US_ND is when a NEW_ADMISSION
-    incarceration period directly follows a PROBATION supervision period
-    that ended due to a REVOCATION. As such, we handle that case here by specifying a
-    supervision type of PROBATION in this case.
-
-    Note that this refers specifically to PROBATION and does not include PAROLE because
-    1) we think that PAROLE followed by NEW ADMISSION is not actually reasonably
-    interpretable as a parole revocation based on how probation and parole are
-    administered on the ground, and 2) we don’t have mass examples of NEW_ADMISSION
-    incarceration directly following PAROLE in the data like we do for PROBATION.
-    """
-    if not incarceration_period.admission_reason:
-        raise ValueError(
-            "Unexpected missing admission_reason on incarceration period: "
-            f"[{incarceration_period}]"
-        )
-
-    default_supervision_type = (
-        get_pre_incarceration_supervision_type_from_ip_admission_reason(
-            incarceration_period.admission_reason
-        )
-    )
-
-    if default_supervision_type:
-        return default_supervision_type
-
-    if (
-        revoked_supervision_period
-        and revoked_supervision_period.supervision_type
-        == StateSupervisionType.PROBATION
-    ):
-        return StateSupervisionPeriodSupervisionType.PROBATION
-
-    return None
 
 
 def us_nd_get_post_incarceration_supervision_type(

@@ -56,8 +56,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
+    StateIncarcerationSentence,
     StateSupervisionPeriod,
-    StateSupervisionViolationResponse,
+    StateSupervisionSentence,
 )
 
 # The number of months for the window of time prior to a commitment to
@@ -65,8 +66,214 @@ from recidiviz.persistence.entity.state.entities import (
 # period
 SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT = 24
 
+CommitmentDetails = NamedTuple(
+    "CommitmentDetails",
+    [
+        (
+            "purpose_for_incarceration",
+            StateSpecializedPurposeForIncarceration,
+        ),
+        ("purpose_for_incarceration_subtype", Optional[str]),
+        ("supervising_officer_external_id", Optional[str]),
+        ("level_1_supervision_location_external_id", Optional[str]),
+        ("level_2_supervision_location_external_id", Optional[str]),
+        ("case_type", Optional[StateSupervisionCaseType]),
+        ("supervision_type", StateSupervisionPeriodSupervisionType),
+        ("supervision_level", Optional[StateSupervisionLevel]),
+        ("supervision_level_raw_text", Optional[str]),
+        # TODO(#6988): Remove once we kill the SupervisionRevocationMetrics
+        ("pre_commitment_supervision_period", Optional[StateSupervisionPeriod]),
+    ],
+)
 
-def get_commitment_from_supervision_supervision_period(
+
+def get_commitment_from_supervision_details(
+    incarceration_period: StateIncarcerationPeriod,
+    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
+    supervision_period_index: PreProcessedSupervisionPeriodIndex,
+    incarceration_sentences: List[StateIncarcerationSentence],
+    supervision_sentences: List[StateSupervisionSentence],
+    commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
+    supervision_period_to_agent_associations: Optional[Dict[int, Dict[Any, Any]]],
+    state_specific_officer_and_location_info_from_supervision_period_fn: Callable[
+        [StateSupervisionPeriod, Dict[int, Dict[str, Any]]],
+        Tuple[Optional[str], Optional[str], Optional[str]],
+    ],
+) -> CommitmentDetails:
+    """Identifies various attributes of the commitment to incarceration from
+    supervision.
+    """
+    supervising_officer_external_id = None
+    level_1_supervision_location_external_id = None
+    level_2_supervision_location_external_id = None
+
+    pre_commitment_supervision_period = (
+        _get_commitment_from_supervision_supervision_period(
+            incarceration_period=incarceration_period,
+            supervision_period_index=supervision_period_index,
+            commitment_from_supervision_delegate=commitment_from_supervision_delegate,
+            incarceration_period_index=incarceration_period_index,
+        )
+    )
+
+    if pre_commitment_supervision_period and supervision_period_to_agent_associations:
+        (
+            supervising_officer_external_id,
+            level_1_supervision_location_external_id,
+            level_2_supervision_location_external_id,
+        ) = state_specific_officer_and_location_info_from_supervision_period_fn(
+            pre_commitment_supervision_period, supervision_period_to_agent_associations
+        )
+
+    if not incarceration_period.specialized_purpose_for_incarceration:
+        raise ValueError(
+            "Unexpected incarceration period without an "
+            f"specialized_purpose_for_incarceration: {incarceration_period}. Should "
+            f"be set in IP pre-processing."
+        )
+
+    purpose_for_incarceration = (
+        incarceration_period.specialized_purpose_for_incarceration
+    )
+
+    if not incarceration_period.incarceration_period_id:
+        raise ValueError(
+            "Unexpected incarceration period without an "
+            f"incarceration_period_id: {incarceration_period}."
+        )
+
+    purpose_for_incarceration_subtype = incarceration_period_index.ip_id_to_pfi_subtype[
+        incarceration_period.incarceration_period_id
+    ]
+
+    case_type = (
+        identify_most_severe_case_type(pre_commitment_supervision_period)
+        if pre_commitment_supervision_period
+        else StateSupervisionCaseType.GENERAL
+    )
+
+    supervision_type = (
+        commitment_from_supervision_delegate.get_commitment_from_supervision_supervision_type(
+            incarceration_sentences=incarceration_sentences,
+            supervision_sentences=supervision_sentences,
+            incarceration_period=incarceration_period,
+            previous_supervision_period=pre_commitment_supervision_period,
+        )
+        or StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+    )
+
+    supervision_level = (
+        pre_commitment_supervision_period.supervision_level
+        if pre_commitment_supervision_period
+        else None
+    )
+
+    supervision_level_raw_text = (
+        pre_commitment_supervision_period.supervision_level_raw_text
+        if pre_commitment_supervision_period
+        else None
+    )
+
+    commitment_details_result = CommitmentDetails(
+        purpose_for_incarceration=purpose_for_incarceration,
+        purpose_for_incarceration_subtype=purpose_for_incarceration_subtype,
+        supervising_officer_external_id=supervising_officer_external_id,
+        level_1_supervision_location_external_id=level_1_supervision_location_external_id,
+        level_2_supervision_location_external_id=level_2_supervision_location_external_id,
+        case_type=case_type,
+        supervision_type=supervision_type,
+        supervision_level=supervision_level,
+        supervision_level_raw_text=supervision_level_raw_text,
+        pre_commitment_supervision_period=pre_commitment_supervision_period,
+    )
+
+    return commitment_details_result
+
+
+def period_is_commitment_from_supervision_admission_from_parole_board_hold(
+    incarceration_period: StateIncarcerationPeriod,
+    preceding_incarceration_period: Optional[StateIncarcerationPeriod],
+) -> bool:
+    """Determines whether the transition from the preceding_incarceration_period to
+    the incarceration_period is a commitment from supervision admission after being
+    held for a parole board hold."""
+    if not preceding_incarceration_period:
+        # Commitments from board holds must follow a period of being in a parole
+        # board hold
+        return False
+
+    if not periods_are_temporally_adjacent(
+        first_incarceration_period=preceding_incarceration_period,
+        second_incarceration_period=incarceration_period,
+    ):
+        return False
+
+    return (
+        incarceration_period.admission_reason
+        # Valid revocation admission reasons following a parole board hold
+        in (
+            StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
+            StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+        )
+        # Revocation admission from a parole board hold should happen on the same day
+        # as the release from the parole board hold
+        and preceding_incarceration_period.specialized_purpose_for_incarceration
+        == StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
+    )
+
+
+def _filter_to_matching_supervision_types(
+    admission_reason: StateIncarcerationPeriodAdmissionReason,
+    supervision_periods: List[StateSupervisionPeriod],
+) -> List[StateSupervisionPeriod]:
+    """Filters the given |supervision_periods| to ony the ones that have a
+    supervision type that matches the supervision type implied in the
+    |admission_reason| (for example, filtering to only PAROLE periods if the
+    |admission_reason| is a PAROLE_REVOCATION)."""
+    supervision_types_to_match: List[StateSupervisionPeriodSupervisionType]
+
+    supervision_type_for_admission_reason = (
+        get_pre_incarceration_supervision_type_from_ip_admission_reason(
+            admission_reason=admission_reason
+        )
+    )
+
+    if (
+        supervision_type_for_admission_reason
+        == StateSupervisionPeriodSupervisionType.DUAL
+    ):
+        supervision_types_to_match = [
+            StateSupervisionPeriodSupervisionType.PAROLE,
+            StateSupervisionPeriodSupervisionType.PROBATION,
+            StateSupervisionPeriodSupervisionType.DUAL,
+        ]
+    elif supervision_type_for_admission_reason:
+        supervision_types_to_match = [supervision_type_for_admission_reason]
+    else:
+        raise ValueError(
+            "This function should only be called using "
+            "StateIncarcerationPeriodAdmissionReason values that can be "
+            "used to filter to matching supervision types. Function "
+            f"called with admission_reason: {admission_reason}."
+        )
+
+    return [
+        period
+        for period in supervision_periods
+        if period.supervision_period_supervision_type in supervision_types_to_match
+        # TODO(#2891): supervision_type is DEPRECATED - remove support for this field
+        #  when we delete the supervision_type attribute.
+        or (
+            sentence_supervision_types_to_supervision_period_supervision_type(
+                {period.supervision_type}
+            )
+            in supervision_types_to_match
+        )
+    ]
+
+
+def _get_commitment_from_supervision_supervision_period(
     incarceration_period: StateIncarcerationPeriod,
     commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
     supervision_period_index: PreProcessedSupervisionPeriodIndex,
@@ -204,174 +411,6 @@ def get_commitment_from_supervision_supervision_period(
     )
 
 
-CommitmentDetails = NamedTuple(
-    "CommitmentDetails",
-    [
-        (
-            "purpose_for_incarceration",
-            Optional[StateSpecializedPurposeForIncarceration],
-        ),
-        ("purpose_for_incarceration_subtype", Optional[str]),
-        ("supervising_officer_external_id", Optional[str]),
-        ("level_1_supervision_location_external_id", Optional[str]),
-        ("level_2_supervision_location_external_id", Optional[str]),
-        ("case_type", Optional[StateSupervisionCaseType]),
-        ("supervision_level", Optional[StateSupervisionLevel]),
-        ("supervision_level_raw_text", Optional[str]),
-    ],
-)
-
-
-def get_commitment_from_supervision_details(
-    incarceration_period: StateIncarcerationPeriod,
-    pre_commitment_supervision_period: Optional[StateSupervisionPeriod],
-    commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
-    violation_responses: List[StateSupervisionViolationResponse],
-    supervision_period_to_agent_associations: Optional[Dict[int, Dict[Any, Any]]],
-    state_specific_officer_and_location_info_from_supervision_period_fn: Callable[
-        [StateSupervisionPeriod, Dict[int, Dict[str, Any]]],
-        Tuple[Optional[str], Optional[str], Optional[str]],
-    ],
-) -> CommitmentDetails:
-    """Identifies various attributes of the commitment to incarceration from
-    supervision.
-    """
-    supervising_officer_external_id = None
-    level_1_supervision_location_external_id = None
-    level_2_supervision_location_external_id = None
-
-    if pre_commitment_supervision_period and supervision_period_to_agent_associations:
-        (
-            supervising_officer_external_id,
-            level_1_supervision_location_external_id,
-            level_2_supervision_location_external_id,
-        ) = state_specific_officer_and_location_info_from_supervision_period_fn(
-            pre_commitment_supervision_period, supervision_period_to_agent_associations
-        )
-
-    (
-        purpose_for_incarceration,
-        purpose_for_incarceration_subtype,
-    ) = commitment_from_supervision_delegate.identify_specialized_purpose_for_incarceration_and_subtype(
-        incarceration_period,
-        violation_responses,
-    )
-
-    case_type = (
-        identify_most_severe_case_type(pre_commitment_supervision_period)
-        if pre_commitment_supervision_period
-        else StateSupervisionCaseType.GENERAL
-    )
-
-    supervision_level = (
-        pre_commitment_supervision_period.supervision_level
-        if pre_commitment_supervision_period
-        else None
-    )
-
-    supervision_level_raw_text = (
-        pre_commitment_supervision_period.supervision_level_raw_text
-        if pre_commitment_supervision_period
-        else None
-    )
-
-    commitment_details_result = CommitmentDetails(
-        purpose_for_incarceration=purpose_for_incarceration,
-        purpose_for_incarceration_subtype=purpose_for_incarceration_subtype,
-        supervising_officer_external_id=supervising_officer_external_id,
-        level_1_supervision_location_external_id=level_1_supervision_location_external_id,
-        level_2_supervision_location_external_id=level_2_supervision_location_external_id,
-        case_type=case_type,
-        supervision_level=supervision_level,
-        supervision_level_raw_text=supervision_level_raw_text,
-    )
-
-    return commitment_details_result
-
-
-def period_is_commitment_from_supervision_admission_from_parole_board_hold(
-    incarceration_period: StateIncarcerationPeriod,
-    preceding_incarceration_period: Optional[StateIncarcerationPeriod],
-) -> bool:
-    """Determines whether the transition from the preceding_incarceration_period to
-    the incarceration_period is a commitment from supervision admission after being
-    held for a parole board hold."""
-    if not preceding_incarceration_period:
-        # Commitments from board holds must follow a period of being in a parole
-        # board hold
-        return False
-
-    if not periods_are_temporally_adjacent(
-        first_incarceration_period=preceding_incarceration_period,
-        second_incarceration_period=incarceration_period,
-    ):
-        return False
-
-    return (
-        incarceration_period.admission_reason
-        # Valid revocation admission reasons following a parole board hold
-        in (
-            StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
-            StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-            StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
-        )
-        # Revocation admission from a parole board hold should happen on the same day
-        # as the release from the parole board hold
-        and preceding_incarceration_period.specialized_purpose_for_incarceration
-        == StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
-    )
-
-
-def filter_to_matching_supervision_types(
-    admission_reason: StateIncarcerationPeriodAdmissionReason,
-    supervision_periods: List[StateSupervisionPeriod],
-) -> List[StateSupervisionPeriod]:
-    """Filters the given |supervision_periods| to ony the ones that have a
-    supervision type that matches the supervision type implied in the
-    |admission_reason| (for example, filtering to only PAROLE periods if the
-    |admission_reason| is a PAROLE_REVOCATION)."""
-    supervision_types_to_match: List[StateSupervisionPeriodSupervisionType]
-
-    supervision_type_for_admission_reason = (
-        get_pre_incarceration_supervision_type_from_ip_admission_reason(
-            admission_reason=admission_reason
-        )
-    )
-
-    if (
-        supervision_type_for_admission_reason
-        == StateSupervisionPeriodSupervisionType.DUAL
-    ):
-        supervision_types_to_match = [
-            StateSupervisionPeriodSupervisionType.PAROLE,
-            StateSupervisionPeriodSupervisionType.PROBATION,
-            StateSupervisionPeriodSupervisionType.DUAL,
-        ]
-    elif supervision_type_for_admission_reason:
-        supervision_types_to_match = [supervision_type_for_admission_reason]
-    else:
-        raise ValueError(
-            "This function should only be called using "
-            "StateIncarcerationPeriodAdmissionReason values that can be "
-            "used to filter to matching supervision types. Function "
-            f"called with admission_reason: {admission_reason}."
-        )
-
-    return [
-        period
-        for period in supervision_periods
-        if period.supervision_period_supervision_type in supervision_types_to_match
-        # TODO(#2891): supervision_type is DEPRECATED - remove support for this field
-        #  when we delete the supervision_type attribute.
-        or (
-            sentence_supervision_types_to_supervision_period_supervision_type(
-                {period.supervision_type}
-            )
-            in supervision_types_to_match
-        )
-    ]
-
-
 def _supervision_periods_overlapping_with_date(
     intersection_date: datetime.date, supervision_periods: List[StateSupervisionPeriod]
 ) -> List[StateSupervisionPeriod]:
@@ -410,7 +449,7 @@ def _get_relevant_sps_for_pre_commitment_sp_search(
     if (
         commitment_from_supervision_delegate.should_filter_to_matching_supervision_types_in_pre_commitment_sp_search()
     ):
-        relevant_sps = filter_to_matching_supervision_types(
+        relevant_sps = _filter_to_matching_supervision_types(
             admission_reason, supervision_periods
         )
 

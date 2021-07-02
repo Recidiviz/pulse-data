@@ -29,7 +29,6 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_utils import (
     us_nd_get_post_incarceration_supervision_type,
-    us_nd_get_pre_commitment_supervision_type,
     us_nd_infer_supervision_period_admission,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -49,128 +48,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionPeriod,
 )
-
-
-class TestUsNdPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
-    """Tests the us_nd_get_pre_commitment_supervision_type function."""
-
-    def test_us_nd_get_pre_commitment_supervision_type_default(self) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1112,
-            external_id="2",
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_ND",
-            facility="NDSP",
-            admission_date=date(2008, 12, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-            admission_reason_raw_text="ADMN",
-            release_date=date(2010, 12, 21),
-            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-        )
-
-        supervision_type_pre_commitment = us_nd_get_pre_commitment_supervision_type(
-            incarceration_period, None
-        )
-
-        self.assertEqual(
-            StateSupervisionPeriodSupervisionType.PAROLE,
-            supervision_type_pre_commitment,
-        )
-
-    def test_us_nd_get_pre_commitment_supervision_type_new_admission_probation(
-        self,
-    ) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
-            state_code="US_ND",
-            start_date=date(2008, 3, 5),
-            termination_date=date(2008, 12, 16),
-            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PROBATION,
-        )
-
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1112,
-            external_id="2",
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_ND",
-            facility="NDSP",
-            admission_date=date(2008, 12, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            admission_reason_raw_text="ADMN",
-            release_date=date(2010, 12, 21),
-            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-        )
-
-        supervision_type_pre_commitment = us_nd_get_pre_commitment_supervision_type(
-            incarceration_period, supervision_period
-        )
-
-        self.assertEqual(
-            StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_type_pre_commitment,
-        )
-
-    def test_us_nd_get_pre_commitment_supervision_type_new_admission_parole(
-        self,
-    ) -> None:
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
-            state_code="US_ND",
-            start_date=date(2008, 3, 5),
-            termination_date=date(2008, 12, 16),
-            termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
-            supervision_type=StateSupervisionType.PAROLE,
-        )
-
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1112,
-            external_id="2",
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_ND",
-            facility="NDSP",
-            admission_date=date(2008, 12, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            admission_reason_raw_text="ADMN",
-            release_date=date(2010, 12, 21),
-            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-        )
-
-        supervision_type_pre_commitment = us_nd_get_pre_commitment_supervision_type(
-            incarceration_period, supervision_period
-        )
-
-        self.assertIsNone(supervision_type_pre_commitment)
-
-    def test_us_nd_get_pre_commitment_supervision_type_new_admission_no_supervision_period(
-        self,
-    ) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1112,
-            external_id="2",
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code="US_ND",
-            facility="NDSP",
-            admission_date=date(2008, 12, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            admission_reason_raw_text="ADMN",
-            release_date=date(2010, 12, 21),
-            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-        )
-
-        supervision_type_pre_commitment = us_nd_get_pre_commitment_supervision_type(
-            incarceration_period, None
-        )
-
-        self.assertIsNone(supervision_type_pre_commitment)
 
 
 class TestUsNdPostIncarcerationSupervisionTypeIdentification(unittest.TestCase):
@@ -312,7 +189,8 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[previous_incarceration_period]
+            incarceration_periods=[previous_incarceration_period],
+            ip_id_to_pfi_subtype={1112: None},
         )
 
         admission_reason: Optional[
@@ -363,7 +241,8 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[]
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
         )
 
         admission_reason: Optional[
@@ -415,7 +294,8 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[]
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
         )
 
         admission_reason: Optional[
@@ -467,7 +347,8 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[]
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
         )
 
         admission_reason: Optional[
@@ -506,7 +387,8 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[]
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
         )
 
         admission_reason: Optional[
@@ -545,7 +427,8 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[]
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
         )
 
         admission_reason: Optional[
@@ -584,7 +467,8 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[]
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
         )
 
         admission_reason: Optional[
@@ -638,7 +522,8 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[]
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
         )
 
         admission_reason: Optional[
@@ -692,7 +577,8 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[]
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
         )
 
         admission_reason: Optional[
@@ -746,7 +632,8 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
         )
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
-            incarceration_periods=[]
+            incarceration_periods=[],
+            ip_id_to_pfi_subtype={},
         )
 
         admission_reason: Optional[

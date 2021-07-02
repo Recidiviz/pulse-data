@@ -41,6 +41,12 @@ class PreProcessedIncarcerationPeriodIndex:
 
     incarceration_periods: List[StateIncarcerationPeriod] = attr.ib()
 
+    # A dictionary mapping incarceration_period_id values to the
+    # purpose_for_incarceration_subtype value associated with the incarceration
+    # period. These values are determined at IP pre-processing time, and are used by
+    # various calculations.
+    ip_id_to_pfi_subtype: Dict[int, Optional[str]] = attr.ib()
+
     # Incarceration periods during which a person cannot also be counted in the supervision population
     incarceration_periods_not_under_supervision_authority: List[
         StateIncarcerationPeriod

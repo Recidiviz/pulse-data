@@ -83,13 +83,11 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_com
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_utils import (
     us_nd_get_post_incarceration_supervision_type,
-    us_nd_get_pre_commitment_supervision_type,
     us_nd_infer_supervision_period_admission,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa import us_pa_violation_utils
-from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from_supervision_utils import (
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from_supervision_delegate import (
     UsPaCommitmentFromSupervisionDelegate,
-    us_pa_get_pre_commitment_supervision_type,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_period_pre_processing_delegate import (
     UsPaIncarcerationPreProcessingDelegate,
@@ -109,7 +107,6 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
     get_month_supervision_type_default,
     get_pre_incarceration_supervision_type_from_ip_admission_reason,
-    get_pre_incarceration_supervision_type_from_supervision_period,
 )
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     default_filtered_violation_responses_for_violation_history,
@@ -304,40 +301,6 @@ def get_post_incarceration_supervision_type(
         state_code,
     )
     return None
-
-
-# TODO(#7441): Move these functions to the
-#  StateSpecificCommitmentFromSupervisionDelegate and the state-specific
-#  implementations once commitment from supervision admission reasons are all being
-#  set in IP pre-processing
-def get_commitment_from_supervision_supervision_type(
-    incarceration_sentences: List[StateIncarcerationSentence],
-    supervision_sentences: List[StateSupervisionSentence],
-    incarceration_period: StateIncarcerationPeriod,
-    previous_supervision_period: Optional[StateSupervisionPeriod],
-) -> Optional[StateSupervisionPeriodSupervisionType]:
-    """Returns the supervision type the person was on before they were committed to
-    incarceration from supervision."""
-    if incarceration_period.state_code.upper() == "US_ID":
-        return get_pre_incarceration_supervision_type_from_supervision_period(
-            previous_supervision_period
-        )
-    if incarceration_period.state_code.upper() == "US_MO":
-        return us_mo_get_pre_incarceration_supervision_type(
-            incarceration_sentences, supervision_sentences, incarceration_period
-        )
-    if incarceration_period.state_code.upper() == "US_ND":
-        return us_nd_get_pre_commitment_supervision_type(
-            incarceration_period, previous_supervision_period
-        )
-    if incarceration_period.state_code.upper() == "US_PA":
-        return us_pa_get_pre_commitment_supervision_type(
-            incarceration_period, previous_supervision_period
-        )
-
-    return get_pre_incarceration_supervision_type(
-        incarceration_sentences, supervision_sentences, incarceration_period
-    )
 
 
 def terminating_supervision_period_supervision_type(
@@ -689,6 +652,7 @@ def state_specific_supervision_admission_reason_override(
     return supervision_period.admission_reason
 
 
+# TODO(#8002): Implement a ViolationResponsePreProcessingManager
 def state_specific_violation_response_pre_processing_function(
     state_code: str,
 ) -> Optional[
