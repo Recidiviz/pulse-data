@@ -55,7 +55,6 @@ module "justice_counts_database" {
   zone                           = "us-east1-c"
   tier                           = "db-custom-1-3840" # 1 vCPU, 3.75GB Memory
   has_readonly_user              = local.is_production
-  point_in_time_recovery_enabled = local.is_production
 }
 
 
