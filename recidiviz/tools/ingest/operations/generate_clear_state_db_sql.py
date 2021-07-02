@@ -18,7 +18,7 @@
 DB.
 
 Usage:
-    python -m recidiviz.tools.ingest.operations.generate_clear_state_db_sql --state-code US_MO
+    python -m recidiviz.tools.ingest.operations.generate_clear_state_db_sql --project-id recidiviz-staging --state-code US_MO --ingest-instance PRIMARY
 """
 
 import argparse
@@ -27,8 +27,19 @@ from typing import List
 
 import sqlalchemy
 
+from recidiviz.common.constants.states import StateCode
+from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema_utils import get_foreign_key_constraints
+from recidiviz.persistence.database.sqlalchemy_database_key import (
+    SQLAlchemyDatabaseKey,
+    SQLAlchemyStateDatabaseVersion,
+)
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 ASSOCIATION_TABLE_NAME_SUFFIX = "_association"
 
@@ -45,18 +56,35 @@ def _format_deletion_command(state_code: str, command: str) -> str:
     return str(command).replace(SQLALCHEMY_STATE_CODE_VAR, f"'{state_code}'") + ";"
 
 
-def _commands_for_table(state_code: str, table: sqlalchemy.Table) -> List[str]:
-    if hasattr(table.c, "state_code"):
-        return [
-            _format_deletion_command(
-                state_code, table.delete().where(table.c.state_code == state_code)
-            )
-        ]
+def _commands_for_table(
+    state_code: str, table: sqlalchemy.Table, db_version: SQLAlchemyStateDatabaseVersion
+) -> List[str]:
+    """Returns a list of commands that should be run to fully delete data out of the
+    given table.
+    """
+    if (
+        hasattr(table.c, "state_code")
+        or db_version != SQLAlchemyStateDatabaseVersion.LEGACY
+    ):
+        if db_version == SQLAlchemyStateDatabaseVersion.LEGACY:
+            query = table.delete().where(table.c.state_code == state_code)
+        elif db_version in {
+            SQLAlchemyStateDatabaseVersion.PRIMARY,
+            SQLAlchemyStateDatabaseVersion.SECONDARY,
+        }:
+            query = table.delete()
+        else:
+            raise ValueError(f"Unexpected db_version: {db_version}")
+
+        return [_format_deletion_command(state_code, query)]
 
     if not table.name.endswith(ASSOCIATION_TABLE_NAME_SUFFIX):
         raise ValueError(
             f"Unexpected non-association table is missing a state_code field: [{table.name}]"
         )
+
+    if db_version != SQLAlchemyStateDatabaseVersion.LEGACY:
+        raise ValueError("Only expected db_version LEGACY at this point")
 
     foreign_key_constraints = get_foreign_key_constraints(table)
 
@@ -77,25 +105,35 @@ def _commands_for_table(state_code: str, table: sqlalchemy.Table) -> List[str]:
     return table_commands
 
 
-def generate_region_deletion_commands(state_code: str) -> List[str]:
+def generate_region_deletion_commands(
+    state_code: str, db_version: SQLAlchemyStateDatabaseVersion
+) -> List[str]:
     commands = []
 
     for table in reversed(StateBase.metadata.sorted_tables):
-        commands.extend(_commands_for_table(state_code, table))
+        commands.extend(_commands_for_table(state_code, table, db_version))
 
     return commands
 
 
-def main(state_code: str) -> None:
+def main(state_code: StateCode, ingest_instance: DirectIngestInstance) -> None:
     """Executes the main flow of the script."""
     print(
-        f"RUN THE FOLLOWING COMMANDS IN ORDER TO DELETE ALL DATA FOR REGION [{state_code}]"
+        f"RUN THE FOLLOWING COMMANDS IN ORDER TO DELETE ALL DATA FOR REGION [{state_code.value}]"
     )
     print(
         "********************************************************************************"
     )
+    db_version = ingest_instance.database_version(SystemLevel.STATE, state_code)
+    db_key = SQLAlchemyDatabaseKey.for_state_code(
+        state_code=state_code, db_version=db_version
+    )
 
-    for cmd in generate_region_deletion_commands(state_code):
+    # Connect to correct database for instance first
+    print(f"\\c {db_key.db_name}")
+
+    # Then run deletion commands
+    for cmd in generate_region_deletion_commands(state_code.value, db_version):
         print(cmd)
 
     print(
@@ -133,8 +171,29 @@ if __name__ == "__main__":
     parser.add_argument(
         "--state-code",
         required=True,
+        type=StateCode,
+        choices=list(StateCode),
         help="The state whose data we want to delete for a rerun.",
     )
+    parser.add_argument(
+        "--ingest-instance",
+        required=True,
+        type=DirectIngestInstance,
+        choices=list(DirectIngestInstance),
+        help="Defines which ingest instance we should be deleting data for.",
+    )
+
+    parser.add_argument(
+        "--project-id",
+        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
+        help="Used to select which GCP project you'll be running commands in.",
+        required=True,
+    )
+
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-    main(args.state_code.upper())
+    with local_project_id_override(args.project_id):
+        main(
+            args.state_code,
+            ingest_instance=args.ingest_instance,
+        )
