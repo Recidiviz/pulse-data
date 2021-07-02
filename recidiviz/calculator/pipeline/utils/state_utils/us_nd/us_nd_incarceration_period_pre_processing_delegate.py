@@ -144,24 +144,16 @@ def _us_nd_normalize_period_if_commitment_from_supervision(
     """Returns an updated version of the specified incarceration period if it is a
     commitment from supervision admission.
 
-    Updates the admission_reason to be a PROBATION_REVOCATION for the following
-    scenario:
+    Updates the admission_reason to be a PROBATION_REVOCATION or a PAROLE_REVOCATION
+    for the following scenarios:
         - The person was admitted to a state prison due to a NEW_ADMISSION (not a period
-      of TEMPORARY_CUSTODY in a county jail) and was previously in a PROBATION
-      supervision period that terminated due to a REVOCATION.
+      of TEMPORARY_CUSTODY in a county jail) and was previously in a PAROLE or
+          PROBATION supervision period that terminated due to a REVOCATION.
 
-    Note that the case above that refers specifically to PROBATION does not include
-    PAROLE supervision periods because 1) we think that PAROLE followed by NEW ADMISSION
-    is not actually reasonably interpretable as a parole revocation based on how
-    probation and parole are administered on the ground, i.e. probation is administered
-    differently and might habitually result in these particular data consistencies to
-    be dealt with here, and 2) we don’t have mass examples of this happening in the data
-    for PAROLE like we do for PROBATION.
-
-    Also note that in this PROBATION case, we also ensure that there was not an
-    intermediate period of incarceration in a state prison between the PROBATION
-    REVOCATION and this incarceration period under examination, to make sure we do not
-    mistakenly re-classify what is truly a NEW_ADMISSION as a PROBATION_REVOCATION.
+    Also note that in this case, we also ensure that there was not an intermediate
+    period of incarceration in a state prison between the supervision REVOCATION and
+    this incarceration period under examination, to make sure we do not mistakenly
+    re-classify what is truly a NEW_ADMISSION as a REVOCATION.
     """
     if supervision_period_index is None:
         raise ValueError(
@@ -190,7 +182,7 @@ def _us_nd_normalize_period_if_commitment_from_supervision(
             and most_recent_supervision_period.termination_reason
             == StateSupervisionPeriodTerminationReason.REVOCATION
             and most_recent_supervision_period.supervision_type
-            == StateSupervisionType.PROBATION
+            in (StateSupervisionType.PAROLE, StateSupervisionType.PROBATION)
         ):
             was_intermediate_state_prison_admission = (
                 _intermediate_state_prison_admission(
@@ -208,7 +200,12 @@ def _us_nd_normalize_period_if_commitment_from_supervision(
 
             return attr.evolve(
                 incarceration_period,
-                admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+                admission_reason=(
+                    StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+                    if most_recent_supervision_period.supervision_type
+                    == StateSupervisionType.PROBATION
+                    else StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+                ),
             )
 
     # This period does not require any updated values
