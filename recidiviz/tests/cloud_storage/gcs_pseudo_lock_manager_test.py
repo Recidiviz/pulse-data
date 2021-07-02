@@ -23,10 +23,12 @@ from unittest import mock
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     EXPIRATION_IN_SECONDS_KEY,
     LOCK_TIME_KEY,
+    MAX_UNLOCK_ATTEMPTS,
     PAYLOAD_KEY,
     GCSPseudoLockAlreadyExists,
     GCSPseudoLockBody,
     GCSPseudoLockDoesNotExist,
+    GCSPseudoLockFailedUnlock,
     GCSPseudoLockManager,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -102,6 +104,28 @@ class TestGCSPseudoLockContents(unittest.TestCase):
         )
 
 
+class _FailingDeleteFs(FakeGCSFileSystem):
+    """Fake FS implementation where delete always fails."""
+
+    def delete(self, path: GcsfsFilePath) -> None:
+        # Do nothing
+        pass
+
+
+class _MultipleAttemptDeleteFs(FakeGCSFileSystem):
+    """Fake FS implementation where delete only succeeds after some retries."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.delete_attempts = 0
+
+    def delete(self, path: GcsfsFilePath) -> None:
+        if self.delete_attempts < MAX_UNLOCK_ATTEMPTS - 1:
+            self.delete_attempts += 1
+            return
+        super().delete(path)
+
+
 class TestGCSPseudoLockManager(unittest.TestCase):
     """Class to test GCS Pseudo Lock Manager"""
 
@@ -155,6 +179,17 @@ class TestGCSPseudoLockManager(unittest.TestCase):
 
     def test_lock_unlock(self) -> None:
         """Locks then unlocks temp, checks if still locked"""
+        lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
+        lock_manager.lock(self.LOCK_NAME)
+        lock_manager.unlock(self.LOCK_NAME)
+        self.assertFalse(lock_manager.is_locked(self.LOCK_NAME))
+
+    def test_lock_unlock_with_retry(self) -> None:
+        """Locks then unlocks temp, checks if still locked"""
+
+        self.gcs_factory_patcher.stop()
+        self.gcs_factory_patcher.start().return_value = _MultipleAttemptDeleteFs()
+
         lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
         lock_manager.lock(self.LOCK_NAME)
         lock_manager.unlock(self.LOCK_NAME)
@@ -230,6 +265,26 @@ class TestGCSPseudoLockManager(unittest.TestCase):
         with self.assertRaises(GCSPseudoLockDoesNotExist):
             lock_manager.unlock(self.LOCK_NAME2)
         self.assertFalse(lock_manager.is_locked(self.LOCK_NAME))
+
+    def test_unlock_delete_fails(self) -> None:
+        self.gcs_factory_patcher.stop()
+        self.gcs_factory_patcher.start().return_value = _FailingDeleteFs()
+
+        lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
+        lock_manager.lock(self.LOCK_NAME)
+
+        with self.assertRaises(GCSPseudoLockFailedUnlock):
+            lock_manager.unlock(self.LOCK_NAME)
+
+    def test_unlock_delete_fails_using_lock(self) -> None:
+        self.gcs_factory_patcher.stop()
+        self.gcs_factory_patcher.start().return_value = _FailingDeleteFs()
+
+        lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
+
+        with self.assertRaises(GCSPseudoLockFailedUnlock):
+            with lock_manager.using_lock(self.LOCK_NAME):
+                pass
 
     def test_contents_of_lock_default(self) -> None:
         """Locks with default contents and asserts the lockfile contains correct time"""
@@ -314,22 +369,6 @@ class TestGCSPseudoLockManager(unittest.TestCase):
         lock_manager.lock(self.LOCK_NAME, self.CONTENTS)
         actual_body = lock_manager.get_lock_payload(self.LOCK_NAME)
         self.assertEqual(self.CONTENTS, actual_body)
-
-    def test_unlock_locks_with_prefix(self) -> None:
-        """Tests that all locks with prefix are unlocked"""
-        lock_manager = GCSPseudoLockManager()
-        lock_manager.lock(self.PREFIX + self.LOCK_NAME)
-        lock_manager.lock(self.PREFIX + self.LOCK_NAME2)
-        lock_manager.unlock_locks_with_prefix(self.PREFIX)
-        self.assertFalse(lock_manager.is_locked(self.PREFIX + self.LOCK_NAME))
-        self.assertFalse(lock_manager.is_locked(self.PREFIX + self.LOCK_NAME2))
-
-    def test_unlock_empty_locks_with_prefix(self) -> None:
-        """Tests that nonexistent locks with prefix, asserts error raised"""
-        lock_manager = GCSPseudoLockManager()
-        with self.assertRaises(GCSPseudoLockDoesNotExist):
-            lock_manager.unlock_locks_with_prefix(self.PREFIX)
-        self.assertTrue(lock_manager.no_active_locks_with_prefix(self.PREFIX))
 
     def test_using_lock(self) -> None:
         lock_manager = GCSPseudoLockManager()

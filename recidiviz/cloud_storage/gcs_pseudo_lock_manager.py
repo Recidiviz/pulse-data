@@ -38,6 +38,8 @@ EXPIRATION_IN_SECONDS_KEY = "expiration_in_seconds"
 
 POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME = "EXPORT_PROCESS_RUNNING_"
 
+MAX_UNLOCK_ATTEMPTS = 3
+
 
 def postgres_to_bq_lock_name_for_schema(schema: SchemaType) -> str:
     return POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME + schema.value.upper()
@@ -157,19 +159,6 @@ class GCSPseudoLockManager:
 
         return all(lock.is_expired() for lock in lock_bodies if lock is not None)
 
-    def unlock_locks_with_prefix(self, prefix: str) -> None:
-        locks_with_prefix = self.fs.ls_with_blob_prefix(
-            bucket_name=self.bucket_name, blob_prefix=prefix
-        )
-        if len(locks_with_prefix) == 0:
-            raise GCSPseudoLockDoesNotExist(
-                f"No locks with the prefix {prefix} exist in the bucket "
-                f"{self.bucket_name}"
-            )
-        for lock in locks_with_prefix:
-            if isinstance(lock, GcsfsFilePath):
-                self.fs.delete(lock)
-
     def lock(
         self,
         name: str,
@@ -203,14 +192,20 @@ class GCSPseudoLockManager:
 
         # We are not using `is_locked` here because we want to delete expired
         # locks explicitly.
-        if self.fs.exists(path):
-            self.fs.delete(path)
-            logging.debug("Deleting lock file with name: %s", name)
-        else:
+        if not self.fs.exists(path):
             raise GCSPseudoLockDoesNotExist(
                 f"Lock with the name {name} does not yet exist in the bucket "
                 f"{self.bucket_name}"
             )
+
+        for i in range(MAX_UNLOCK_ATTEMPTS):
+            logging.debug("Deleting lock file with name: %s (attempt %s)", name, i)
+            self.fs.delete(path)
+            if not self.fs.exists(path):
+                logging.debug("Successfully deleted lock file with name: %s", name)
+                return
+
+        raise GCSPseudoLockFailedUnlock(f"Failed to unlock lock file with name: {name}")
 
     def is_locked(self, name: str) -> bool:
         """Checks if @param name is locked by checking if file exists. Returns true if locked, false if unlocked"""
@@ -260,4 +255,8 @@ class GCSPseudoLockAlreadyExists(ValueError):
 
 
 class GCSPseudoLockDoesNotExist(ValueError):
+    pass
+
+
+class GCSPseudoLockFailedUnlock(ValueError):
     pass
