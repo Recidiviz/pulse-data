@@ -19,9 +19,6 @@ import itertools
 from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.big_query.selected_columns_big_query_view import (
-    SelectedColumnsBigQueryViewBuilder,
-)
 from recidiviz.calculator.query.state.views.dashboard.admissions import admissions_views
 from recidiviz.calculator.query.state.views.dashboard.population_projections import (
     population_projections_views,
@@ -44,9 +41,6 @@ from recidiviz.calculator.query.state.views.dashboard.supervision import (
 from recidiviz.calculator.query.state.views.dashboard.vitals_summaries import (
     vitals_views,
 )
-from recidiviz.calculator.query.state.views.reference.dashboard_user_restrictions import (
-    DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
-)
 
 CORE_DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = (
     admissions_views.ADMISSIONS_VIEW_BUILDERS
@@ -66,11 +60,6 @@ UP_DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = (
     population_projections_views.POPULATION_PROJECTION_VIEW_BUILDERS
     + vitals_views.VITALS_VIEW_BUILDERS
 )
-
-DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDERS: Sequence[
-    SelectedColumnsBigQueryViewBuilder
-] = [DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER]
-
 
 DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = list(
     itertools.chain.from_iterable(

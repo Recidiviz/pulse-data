@@ -34,7 +34,6 @@ from recidiviz.calculator.query.state.views.reference.dashboard_user_restriction
 )
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
-from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.export.export_config import (
@@ -197,11 +196,7 @@ def update_auth0_user_metadata() -> Tuple[str, HTTPStatus]:
     app_metadata.
 
     Query parameters:
-        bucket: (required) The bucket where the restrictions files are exported to,
-            e.g. recidiviz-{env}-dashboard-user-restrictions
         region_code: (required) The region code that has the updated user restrictions file, e.g. US_MO
-        filename: (required) The filename for the user restrictions file,
-            e.g. dashboard_user_restrictions.json
 
     Returns:
          Text indicating the results of the run and an HTTP status
@@ -209,18 +204,9 @@ def update_auth0_user_metadata() -> Tuple[str, HTTPStatus]:
     Raises:
         Nothing. Catch everything so that we can always return a response to the request
     """
-
-    bucket = get_only_str_param_value("bucket", request.args)
     region_code = get_only_str_param_value(
         "region_code", request.args, preserve_case=True
     )
-    filename = get_only_str_param_value("filename", request.args)
-
-    if filename != "dashboard_user_restrictions.json":
-        return (
-            f"Auth endpoint update_auth0_user_metadata called with unexpected filename: {filename}",
-            HTTPStatus.BAD_REQUEST,
-        )
 
     if not region_code:
         return (
@@ -235,27 +221,29 @@ def update_auth0_user_metadata() -> Tuple[str, HTTPStatus]:
         return str(error), HTTPStatus.BAD_REQUEST
 
     try:
-        path = GcsfsFilePath.from_absolute_path(f"{bucket}/{region_code}/{filename}")
-        gcsfs = GcsfsFactory.build()
-        temp_file_handler = gcsfs.download_to_temp_file(path)
+        database_key = SQLAlchemyDatabaseKey.for_schema(
+            schema_type=SchemaType.CASE_TRIAGE
+        )
+        session = SessionFactory.for_database(database_key=database_key)
 
-        if not temp_file_handler:
-            return (
-                f"GCS path does not exist: bucket={bucket}, region_code={region_code}, filename={filename}",
-                HTTPStatus.BAD_REQUEST,
+        user_restrictions = (
+            session.query(
+                DashboardUserRestrictions.restricted_user_email,
+                DashboardUserRestrictions.allowed_supervision_location_ids,
+                DashboardUserRestrictions.allowed_supervision_location_level,
             )
-
-        user_restrictions: List[Dict[str, Any]] = _load_json_lines(temp_file_handler)
+            .filter(DashboardUserRestrictions.state_code == region_code.upper())
+            .order_by(DashboardUserRestrictions.restricted_user_email)
+            .all()
+        )
         user_restrictions_by_email: Dict[str, Tuple[List[str], Optional[str]]] = {}
 
         for user_restriction in user_restrictions:
-            email = user_restriction.get("restricted_user_email", "").lower()
+            email = user_restriction.restricted_user_email.lower()
             allowed_ids = _format_user_restrictions(
-                user_restriction.get("allowed_supervision_location_ids", "")
+                user_restriction.allowed_supervision_location_ids
             )
-            allowed_level = user_restriction.get(
-                "allowed_supervision_location_level", None
-            )
+            allowed_level = user_restriction.allowed_supervision_location_level
             user_restrictions_by_email[email] = (allowed_ids, allowed_level)
 
         auth0 = Auth0Client()
