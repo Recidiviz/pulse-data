@@ -1,5 +1,0 @@
-{"restricted_user_email": "Test-User+0@test.org", "allowed_supervision_location_ids": "11,EP", "allowed_supervision_location_level": "level_1_supervision_location"}
-{"restricted_user_email": "Test-User+1@test.org", "allowed_supervision_location_ids": "23", "allowed_supervision_location_level": "level_1_supervision_location"}
-{"restricted_user_email": "Test-User+2@test.org", "allowed_supervision_location_ids": "11,EP,4E", "allowed_supervision_location_level": "level_1_supervision_location"}
-{"restricted_user_email": "Test-User+3@test.org", "allowed_supervision_location_ids": "12,54", "allowed_supervision_location_level": "level_1_supervision_location"}
-{"restricted_user_email": "Test-User+4@test.org", "allowed_supervision_location_ids": "4P", "allowed_supervision_location_level": "level_1_supervision_location"}

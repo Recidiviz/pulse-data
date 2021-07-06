@@ -27,6 +27,9 @@ from recidiviz.calculator.query.state.views.reference.augmented_agent_info impor
 from recidiviz.calculator.query.state.views.reference.covid_report_weeks import (
     COVID_REPORT_WEEKS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.dashboard_user_restrictions import (
+    DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.event_based_admissions import (
     EVENT_BASED_ADMISSIONS_VIEW_BUILDER,
 )
@@ -86,6 +89,7 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
 )
 
 REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
     EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_BUILDER,
     AUGMENTED_AGENT_INFO_VIEW_BUILDER,
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER,

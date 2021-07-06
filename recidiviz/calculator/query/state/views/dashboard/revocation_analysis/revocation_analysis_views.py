@@ -58,9 +58,6 @@ from recidiviz.calculator.query.state.views.dashboard.revocation_analysis.state_
 from recidiviz.calculator.query.state.views.dashboard.revocation_analysis.state_race_ethnicity_population import (
     STATE_RACE_ETHNICITY_POPULATION_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.reference.dashboard_user_restrictions import (
-    DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.reference.supervision_location_ids_to_names import (
     SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
 )
@@ -79,8 +76,6 @@ REVOCATION_ANALYSIS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_VIEW_BUILDER,
     REVOCATIONS_MATRIX_SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
     SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
-    # TODO(#7278): Move this view to the REFERENCE_VIEW_BUILDERS once it is no longer exported with Lantern views
-    DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
     STATE_RACE_ETHNICITY_POPULATION_VIEW_BUILDER,
     STATE_GENDER_POPULATION_VIEW_BUILDER,
 ]

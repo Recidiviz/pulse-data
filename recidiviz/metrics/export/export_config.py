@@ -16,21 +16,15 @@
 # =============================================================================
 """Config classes for exporting metric views to Google Cloud Storage."""
 import os
-from typing import Optional, Sequence, List, Dict, Set, TypedDict
+from typing import Dict, List, Optional, Sequence, Set, TypedDict
 
 import attr
 
-from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_views import (
-    VITALS_VIEW_BUILDERS,
-)
-from recidiviz.common.constants.states import StateCode
-from recidiviz.metrics import export as export_module
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.export.export_query_config import (
     ExportBigQueryViewConfig,
     ExportOutputFormatType,
 )
-from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 from recidiviz.calculator.query.justice_counts.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_EXPORT as JUSTICE_COUNTS_VIEW_BUILDERS,
 )
@@ -38,9 +32,11 @@ from recidiviz.calculator.query.state.views.covid_dashboard.covid_dashboard_view
     COVID_DASHBOARD_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.state.views.dashboard.dashboard_views import (
-    LANTERN_DASHBOARD_VIEW_BUILDERS,
     CORE_DASHBOARD_VIEW_BUILDERS,
-    DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDERS,
+    LANTERN_DASHBOARD_VIEW_BUILDERS,
+)
+from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_views import (
+    VITALS_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data import (
     PO_MONTHLY_REPORT_DATA_VIEW_BUILDER,
@@ -48,13 +44,19 @@ from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data imp
 from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_views import (
     PUBLIC_DASHBOARD_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.reference.dashboard_user_restrictions import (
+    DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
+)
 from recidiviz.case_triage.views.view_config import CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common import attr_validators
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.view_config import INGEST_METADATA_BUILDERS
+from recidiviz.metrics import export as export_module
 from recidiviz.utils import environment
 from recidiviz.utils.yaml_dict import YAMLDict
 from recidiviz.validation.views.view_config import VALIDATION_METADATA_BUILDERS
+from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 PRODUCTS_CONFIG_PATH = os.path.join(
     os.path.dirname(export_module.__file__),
@@ -404,13 +406,12 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
     ),
     # Unified Product - User Restrictions
     ExportViewCollectionConfig(
-        view_builders_to_export=DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDERS,
+        view_builders_to_export=[DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER],
         output_directory_uri_template=DASHBOARD_USER_RESTRICTIONS_OUTPUT_DIRECTORY_URI,
         export_name="DASHBOARD_USER_RESTRICTIONS",
         bq_view_namespace=BigQueryViewNamespace.STATE,
         export_output_formats=[
             ExportOutputFormatType.HEADERLESS_CSV,
-            ExportOutputFormatType.JSON,
         ],
     ),
 ]

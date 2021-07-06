@@ -17,7 +17,6 @@
 
 """Tests for auth/auth_endpoint.py."""
 import json
-import os
 from http import HTTPStatus
 from typing import Any, Dict, Optional
 from unittest import TestCase, mock
@@ -38,7 +37,6 @@ from recidiviz.tests.auth.helpers import (
     add_users_to_database_session,
     generate_fake_user_restrictions,
 )
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
@@ -75,11 +73,6 @@ class AuthEndpointTests(TestCase):
         self.region_code = "US_MO"
         self.bucket = "test-project-dashboard-user-restrictions"
         self.filename = "dashboard_user_restrictions.json"
-        self.update_query_params = {
-            "bucket": self.bucket,
-            "region_code": self.region_code,
-            "filename": self.filename,
-        }
         self.gcs_csv_uri = GcsfsFilePath.from_absolute_path(
             f"{self.bucket}/{self.region_code}/dashboard_user_restrictions.csv"
         )
@@ -94,22 +87,6 @@ class AuthEndpointTests(TestCase):
         self.mock_auth0_client = MagicMock()
         self.auth0_client_patcher.start().return_value = self.mock_auth0_client
 
-        # Mock GcsfsFactory
-        self.gcsfs_patcher = patch("recidiviz.auth.auth_endpoint.GcsfsFactory.build")
-        self.mock_gcsfs = self.gcsfs_patcher.start()
-        self.fake_gcsfs = FakeGCSFileSystem()
-        self.mock_gcsfs.return_value = self.fake_gcsfs
-        path = GcsfsFilePath.from_absolute_path(
-            f"{self.bucket}/{self.region_code}/{self.filename}"
-        )
-        self.fake_gcsfs.test_add_path(
-            path=path,
-            local_path=os.path.join(
-                os.path.dirname(os.path.realpath(__file__)),
-                "test_user_restrictions.jsonl",
-            ),
-        )
-
         with self.app.test_request_context():
             self.import_user_restrictions_csv_to_sql_url = flask.url_for(
                 "auth_endpoint_blueprint.import_user_restrictions_csv_to_sql"
@@ -123,7 +100,6 @@ class AuthEndpointTests(TestCase):
 
     def tearDown(self) -> None:
         self.auth0_client_patcher.stop()
-        self.gcsfs_patcher.stop()
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
 
     @patch("recidiviz.auth.auth_endpoint.import_gcs_csv_to_cloud_sql")
@@ -336,6 +312,18 @@ class AuthEndpointTests(TestCase):
 
     def test_update_auth0_user_metadata_should_update_level(self) -> None:
         with self.app.test_request_context():
+            user_1 = generate_fake_user_restrictions(
+                self.region_code,
+                "test-user+1@test.org",
+                allowed_supervision_location_ids="23",
+                allowed_supervision_location_level="level_1_supervision_location",
+            )
+            user_2 = generate_fake_user_restrictions(
+                self.region_code,
+                "test-user+0@test.org",
+                allowed_supervision_location_ids="11, EP",
+            )
+            add_users_to_database_session(self.database_key, [user_1, user_2])
             self.mock_auth0_client.get_all_users_by_email_addresses.return_value = [
                 {
                     "email": "test-user+0@test.org",
@@ -358,7 +346,7 @@ class AuthEndpointTests(TestCase):
             response = self.client.get(
                 self.update_auth0_user_metadata_url,
                 headers=self.headers,
-                query_string={**self.update_query_params},
+                query_string={"region_code": self.region_code},
             )
             self.mock_auth0_client.update_user_app_metadata.assert_has_calls(
                 [
@@ -379,6 +367,17 @@ class AuthEndpointTests(TestCase):
 
     def test_update_auth0_user_metadata_should_update_ids(self) -> None:
         with self.app.test_request_context():
+            user_1 = generate_fake_user_restrictions(
+                self.region_code,
+                "test-user+1@test.org",
+                allowed_supervision_location_ids="23",
+            )
+            user_2 = generate_fake_user_restrictions(
+                self.region_code,
+                "test-user+0@test.org",
+                allowed_supervision_location_ids="11, EP, 4E",
+            )
+            add_users_to_database_session(self.database_key, [user_1, user_2])
             self.mock_auth0_client.get_all_users_by_email_addresses.return_value = [
                 {
                     "email": "test-user+0@test.org",
@@ -402,21 +401,21 @@ class AuthEndpointTests(TestCase):
             response = self.client.get(
                 self.update_auth0_user_metadata_url,
                 headers=self.headers,
-                query_string={**self.update_query_params},
+                query_string={"region_code": self.region_code},
             )
             self.mock_auth0_client.update_user_app_metadata.assert_has_calls(
                 [
                     call(
-                        user_id="1",
+                        user_id="0",
                         app_metadata={
-                            "allowed_supervision_location_ids": ["23"],
+                            "allowed_supervision_location_ids": ["11", "EP", "4E"],
                             "allowed_supervision_location_level": "level_1_supervision_location",
                         },
                     ),
                     call(
-                        user_id="2",
+                        user_id="1",
                         app_metadata={
-                            "allowed_supervision_location_ids": ["11", "EP", "4E"],
+                            "allowed_supervision_location_ids": ["23"],
                             "allowed_supervision_location_level": "level_1_supervision_location",
                         },
                     ),
@@ -428,23 +427,6 @@ class AuthEndpointTests(TestCase):
                 response.data,
             )
 
-    def test_update_auth0_user_metadata_invalid_filename(self) -> None:
-        with self.app.test_request_context():
-            response = self.client.get(
-                self.update_auth0_user_metadata_url,
-                headers=self.headers,
-                query_string={
-                    **self.update_query_params,
-                    "filename": "invalid_filename",
-                },
-            )
-
-            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
-            self.assertEqual(
-                b"Auth endpoint update_auth0_user_metadata called with unexpected filename: invalid_filename",
-                response.data,
-            )
-
     def test_update_auth0_user_metadata_invalid_region_code(self) -> None:
         with self.app.test_request_context():
             for region_code in ["US_ZZ", "not a region code"]:
@@ -452,7 +434,6 @@ class AuthEndpointTests(TestCase):
                     self.update_auth0_user_metadata_url,
                     headers=self.headers,
                     query_string={
-                        **self.update_query_params,
                         "region_code": region_code,
                     },
                 )
@@ -466,28 +447,13 @@ class AuthEndpointTests(TestCase):
                     response.data,
                 )
 
-    def test_update_auth0_user_metadata_invalid_gcs_path(self) -> None:
-        with self.app.test_request_context():
-            response = self.client.get(
-                self.update_auth0_user_metadata_url,
-                headers=self.headers,
-                query_string={**self.update_query_params, "region_code": "US_PA"},
-            )
-
-            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
-            self.assertEqual(
-                b"GCS path does not exist: bucket=test-project-dashboard-user-restrictions, region_code=US_PA, "
-                b"filename=dashboard_user_restrictions.json",
-                response.data,
-            )
-
     def test_update_auth0_user_metadata_no_users_returned(self) -> None:
         with self.app.test_request_context():
             self.mock_auth0_client.get_all_users_by_email_addresses.return_value = []
             response = self.client.get(
                 self.update_auth0_user_metadata_url,
                 headers=self.headers,
-                query_string={**self.update_query_params},
+                query_string={"region_code": self.region_code},
             )
 
             self.assertEqual(HTTPStatus.OK, response.status_code)
@@ -504,7 +470,7 @@ class AuthEndpointTests(TestCase):
             response = self.client.get(
                 self.update_auth0_user_metadata_url,
                 headers=self.headers,
-                query_string={**self.update_query_params},
+                query_string={"region_code": self.region_code},
             )
             self.assertEqual(HTTPStatus.INTERNAL_SERVER_ERROR, response.status_code)
             self.assertEqual(
@@ -514,33 +480,33 @@ class AuthEndpointTests(TestCase):
 
     def test_update_auth0_user_metadata_with_users_returned(self) -> None:
         with self.app.test_request_context():
-            query_params = {
-                "bucket": self.bucket,
-                "region_code": self.region_code,
-                "filename": self.filename,
-            }
+            user_1 = generate_fake_user_restrictions(
+                self.region_code,
+                "test-user+0@test.org",
+                allowed_supervision_location_ids="23",
+            )
+            user_2 = generate_fake_user_restrictions(
+                self.region_code,
+                "test-user+1@test.org",
+                allowed_supervision_location_ids="11, EP, 4E",
+            )
+            add_users_to_database_session(self.database_key, [user_1, user_2])
 
             self.mock_auth0_client.get_all_users_by_email_addresses.return_value = [
                 {"email": "test-user+0@test.org", "user_id": "0"},
                 {"email": "test-user+1@test.org", "user_id": "1"},
-                {"email": "test-user+2@test.org", "user_id": "2"},
-                {"email": "test-user+3@test.org", "user_id": "3"},
-                {"email": "test-user+4@test.org", "user_id": "4"},
             ]
 
             response = self.client.get(
                 self.update_auth0_user_metadata_url,
                 headers=self.headers,
-                query_string={**query_params},
+                query_string={"region_code": self.region_code},
             )
 
             self.mock_auth0_client.get_all_users_by_email_addresses.assert_called_with(
                 [
                     "test-user+0@test.org",
                     "test-user+1@test.org",
-                    "test-user+2@test.org",
-                    "test-user+3@test.org",
-                    "test-user+4@test.org",
                 ]
             )
 
@@ -549,35 +515,14 @@ class AuthEndpointTests(TestCase):
                     call(
                         user_id="0",
                         app_metadata={
-                            "allowed_supervision_location_ids": ["11", "EP"],
+                            "allowed_supervision_location_ids": ["23"],
                             "allowed_supervision_location_level": "level_1_supervision_location",
                         },
                     ),
                     call(
                         user_id="1",
                         app_metadata={
-                            "allowed_supervision_location_ids": ["23"],
-                            "allowed_supervision_location_level": "level_1_supervision_location",
-                        },
-                    ),
-                    call(
-                        user_id="2",
-                        app_metadata={
                             "allowed_supervision_location_ids": ["11", "EP", "4E"],
-                            "allowed_supervision_location_level": "level_1_supervision_location",
-                        },
-                    ),
-                    call(
-                        user_id="3",
-                        app_metadata={
-                            "allowed_supervision_location_ids": ["12", "54"],
-                            "allowed_supervision_location_level": "level_1_supervision_location",
-                        },
-                    ),
-                    call(
-                        user_id="4",
-                        app_metadata={
-                            "allowed_supervision_location_ids": ["4P"],
                             "allowed_supervision_location_level": "level_1_supervision_location",
                         },
                     ),
@@ -585,6 +530,6 @@ class AuthEndpointTests(TestCase):
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.assertEqual(
-                b"Finished updating 5 auth0 users with restrictions for region US_MO",
+                b"Finished updating 2 auth0 users with restrictions for region US_MO",
                 response.data,
             )
