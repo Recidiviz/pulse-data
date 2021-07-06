@@ -68,8 +68,7 @@ _APP_ENGINE_PO_MONTHLY_REPORT_DELIVER_EMAILS_URL = (
 )
 
 _APP_ENGINE_UPDATE_AUTH0_USER_METADATA_URL = (
-    "https://{}.appspot.com/auth/update_auth0_user_metadata"
-    "?bucket={}&region_code={}&filename={}"
+    "https://{}.appspot.com/auth/update_auth0_user_metadata?region_code={}"
 )
 
 _APP_ENGINE_IMPORT_USER_RESTRICTIONS_CSV_TO_SQL_URL = (
@@ -179,8 +178,7 @@ def handle_state_dashboard_user_restrictions_file(
     If the file matches `dashboard_user_restrictions.csv`, then it makes a request to import the CSV
     to the Cloud SQL `dashboard_user_restrictions` table in the Case Triage schema.
 
-    If the file matches `dashboard_user_restrictions.json`, then it makes a request to update
-    Auth0 users with the user restrictions in the file.
+    Once the CSV import finishes, it makes a request to update the Auth0 users with the user restrictions.
 
     data: A cloud storage object that holds name information and other metadata
     related to the file that was dropped into the bucket.
@@ -191,7 +189,7 @@ def handle_state_dashboard_user_restrictions_file(
     if not project_id:
         logging.error("No project id set for call to update auth0 users, returning.")
         return
-    bucket = data["bucket"]
+
     path_delimiter = "/"
 
     # Skip temp files in the bucket
@@ -201,36 +199,42 @@ def handle_state_dashboard_user_restrictions_file(
 
     filepath = data["name"].split(path_delimiter)
 
-    # Expected file path structure is US_XX/dashboard_user_restrictions.json
+    # Expected file path structure is US_XX/dashboard_user_restrictions.csv
     if len(filepath) != 2:
         logging.info("Skipping filepath, too many nested directories: %s", filepath)
         return
 
     region_code, filename = filepath
-    json_file = "dashboard_user_restrictions.json"
     csv_file = "dashboard_user_restrictions.csv"
 
     if filename == csv_file:
-        url = _APP_ENGINE_IMPORT_USER_RESTRICTIONS_CSV_TO_SQL_URL.format(
-            project_id,
-            region_code,
+        import_user_restrictions_url = (
+            _APP_ENGINE_IMPORT_USER_RESTRICTIONS_CSV_TO_SQL_URL.format(
+                project_id,
+                region_code,
+            )
         )
-        logging.info("Calling URL: %s", url)
+        logging.info("Calling URL: %s", import_user_restrictions_url)
 
         # Hit the App Engine endpoint `auth/import_user_restrictions_csv_to_sql`.
-        response = make_iap_request(url, IAP_CLIENT_ID[project_id])
-        logging.info("The %s response status is %s", url, response.status_code)
-
-    # TODO(#7673): Use CloudSQL database to update users instead of JSON file
-    if filename == json_file:
-        url = _APP_ENGINE_UPDATE_AUTH0_USER_METADATA_URL.format(
-            project_id, bucket, region_code, filename
+        response = make_iap_request(
+            import_user_restrictions_url, IAP_CLIENT_ID[project_id]
         )
-        logging.info("Calling URL: %s", url)
+        logging.info(
+            "The %s response status is %s",
+            import_user_restrictions_url,
+            response.status_code,
+        )
 
-        # Hit the App Engine endpoint `auth/update_auth0_user_metadata`.
-        response = make_iap_request(url, IAP_CLIENT_ID[project_id])
-        logging.info("The %s response status is %s", url, response.status_code)
+        if response.status_code == HTTPStatus.OK:
+            update_users_url = _APP_ENGINE_UPDATE_AUTH0_USER_METADATA_URL.format(
+                project_id, region_code
+            )
+            # Hit the App Engine endpoint `auth/update_auth0_user_metadata`.
+            response = make_iap_request(update_users_url, IAP_CLIENT_ID[project_id])
+            logging.info(
+                "The %s response status is %s", update_users_url, response.status_code
+            )
 
     return
 
