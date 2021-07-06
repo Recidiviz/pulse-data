@@ -20,42 +20,25 @@ TODO(#5769): Move next_assessment_date to the calculation pipeline directly.
 TODO(#5809): Output the assessment score in the calculation pipeline directly.
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import (
-    DATAFLOW_METRICS_MATERIALIZED_DATASET,
-)
 from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-
 LATEST_ASSESSMENTS_QUERY_VIEW = """
-WITH latest_interaction_dates AS (
-  SELECT
-    person_id,
-    state_code,
-    MAX(most_recent_assessment_date) AS assessment_date
-  FROM
-    `{project_id}.{dataflow_metrics_materialized_dataset}.most_recent_supervision_case_compliance_metrics_materialized`
-  WHERE
-    person_external_id IS NOT NULL
-  GROUP BY person_id, state_code
-),
-latest_assessments AS (
+WITH latest_assessments AS (
   SELECT
     person_id,
     state_code,
     assessment_date,
-    -- This MAX is needed in instances where there are multiple assessments in a given day (likely because the
-    -- data sources that we get our info from create a new row every time an assessment is "saved"). We pick
-    -- the one with the highest id because we have no better way to sort, and there is likely a correlation
-    -- between higher external id and more recently saved.
-    MAX(external_id) AS external_id
+    assessment_score,
+    -- This ordering is needed in instances where there are multiple assessments in a given day
+    -- (likely because the data sources that we get our info from create a new row every time an
+    -- assessment is "saved"). We pick the one with the highest id because we have no better way
+    -- to sort, and there is likely a correlation between higher external id and more recently saved.
+    ROW_NUMBER()
+      OVER (PARTITION BY person_id ORDER BY assessment_date DESC, external_id DESC) AS row_number
   FROM
-    latest_interaction_dates
-  LEFT JOIN
     `{project_id}.state.state_assessment`
-  USING (person_id, state_code, assessment_date)
-  GROUP BY person_id, state_code, assessment_date
 )
 SELECT
     person_id,
@@ -64,9 +47,8 @@ SELECT
     assessment_score
 FROM
     latest_assessments
-INNER JOIN
-    `{project_id}.state.state_assessment`
-USING (person_id, state_code, assessment_date, external_id)
+WHERE
+  row_number = 1
 """
 
 LATEST_ASSESSMENTS_DESCRIPTION = """
@@ -79,7 +61,6 @@ LATEST_ASSESSMENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id="latest_assessments",
     description=LATEST_ASSESSMENTS_DESCRIPTION,
     view_query_template=LATEST_ASSESSMENTS_QUERY_VIEW,
-    dataflow_metrics_materialized_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 
 if __name__ == "__main__":
