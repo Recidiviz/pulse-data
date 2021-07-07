@@ -32,17 +32,17 @@ import recidiviz.calculator.pipeline.utils.supervision_period_utils
 import recidiviz.calculator.pipeline.utils.violation_response_utils
 import recidiviz.calculator.pipeline.utils.violation_utils
 from recidiviz.calculator.pipeline.supervision import identifier
-from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricType
-from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
-    SupervisionCaseCompliance,
-)
-from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
+from recidiviz.calculator.pipeline.supervision.events import (
     NonRevocationReturnSupervisionTimeBucket,
     ProjectedSupervisionCompletionBucket,
     RevocationReturnSupervisionTimeBucket,
     SupervisionStartBucket,
     SupervisionTerminationBucket,
     SupervisionTimeBucket,
+)
+from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricType
+from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
+    SupervisionCaseCompliance,
 )
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,

@@ -28,17 +28,17 @@ from recidiviz.calculator.pipeline.base_identifier import (
     BaseIdentifier,
     IdentifierContextT,
 )
-from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricType
-from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
-    SupervisionCaseCompliance,
-)
-from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
+from recidiviz.calculator.pipeline.supervision.events import (
     NonRevocationReturnSupervisionTimeBucket,
     ProjectedSupervisionCompletionBucket,
     RevocationReturnSupervisionTimeBucket,
     SupervisionStartBucket,
     SupervisionTerminationBucket,
     SupervisionTimeBucket,
+)
+from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricType
+from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
+    SupervisionCaseCompliance,
 )
 from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (

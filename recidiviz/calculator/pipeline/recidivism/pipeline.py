@@ -36,7 +36,7 @@ from recidiviz.calculator.pipeline.base_pipeline import (
 )
 from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.recidivism import identifier, metric_producer
-from recidiviz.calculator.pipeline.recidivism.release_event import ReleaseEvent
+from recidiviz.calculator.pipeline.recidivism.events import ReleaseEvent
 from recidiviz.calculator.pipeline.utils.beam_utils import (
     ImportTable,
     ImportTableAsKVTuples,

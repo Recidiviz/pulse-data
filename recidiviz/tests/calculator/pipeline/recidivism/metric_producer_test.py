@@ -27,6 +27,11 @@ from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.recidivism import metric_producer, pipeline
+from recidiviz.calculator.pipeline.recidivism.events import (
+    NonRecidivismReleaseEvent,
+    RecidivismReleaseEvent,
+    ReleaseEvent,
+)
 from recidiviz.calculator.pipeline.recidivism.metric_producer import FOLLOW_UP_PERIODS
 from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismCountMetric,
@@ -36,11 +41,6 @@ from recidiviz.calculator.pipeline.recidivism.metrics import (
 )
 from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
-)
-from recidiviz.calculator.pipeline.recidivism.release_event import (
-    NonRecidivismReleaseEvent,
-    RecidivismReleaseEvent,
-    ReleaseEvent,
 )
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.state.state_supervision_period import (

@@ -18,11 +18,11 @@
 import unittest
 from datetime import date
 
-from recidiviz.calculator.pipeline.program.program_event import ProgramReferralEvent
+from recidiviz.calculator.pipeline.program.events import ProgramReferralEvent
 from recidiviz.calculator.pipeline.utils.event_utils import AssessmentEventMixin
 from recidiviz.common.constants.state.state_assessment import (
-    StateAssessmentType,
     StateAssessmentLevel,
+    StateAssessmentType,
 )
 
 

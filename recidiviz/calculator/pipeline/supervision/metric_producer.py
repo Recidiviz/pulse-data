@@ -24,6 +24,14 @@ from typing import Any, Dict, List, Optional, Type
 
 from recidiviz.calculator.pipeline.base_metric_producer import BaseMetricProducer
 from recidiviz.calculator.pipeline.pipeline_type import PipelineType
+from recidiviz.calculator.pipeline.supervision.events import (
+    NonRevocationReturnSupervisionTimeBucket,
+    ProjectedSupervisionCompletionBucket,
+    RevocationReturnSupervisionTimeBucket,
+    SupervisionStartBucket,
+    SupervisionTerminationBucket,
+    SupervisionTimeBucket,
+)
 from recidiviz.calculator.pipeline.supervision.metrics import (
     SuccessfulSupervisionSentenceDaysServedMetric,
     SupervisionCaseComplianceMetric,
@@ -36,14 +44,6 @@ from recidiviz.calculator.pipeline.supervision.metrics import (
     SupervisionStartMetric,
     SupervisionSuccessMetric,
     SupervisionTerminationMetric,
-)
-from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
-    NonRevocationReturnSupervisionTimeBucket,
-    ProjectedSupervisionCompletionBucket,
-    RevocationReturnSupervisionTimeBucket,
-    SupervisionStartBucket,
-    SupervisionTerminationBucket,
-    SupervisionTimeBucket,
 )
 from recidiviz.calculator.pipeline.utils.calculator_utils import (
     build_metric,

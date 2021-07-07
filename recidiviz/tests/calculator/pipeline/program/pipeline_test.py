@@ -29,15 +29,15 @@ from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.base_pipeline import ClassifyEvents, ProduceMetrics
 from recidiviz.calculator.pipeline.program import identifier, pipeline
+from recidiviz.calculator.pipeline.program.events import (
+    ProgramParticipationEvent,
+    ProgramReferralEvent,
+)
 from recidiviz.calculator.pipeline.program.metrics import (
     ProgramMetric,
     ProgramMetricType,
     ProgramParticipationMetric,
     ProgramReferralMetric,
-)
-from recidiviz.calculator.pipeline.program.program_event import (
-    ProgramParticipationEvent,
-    ProgramReferralEvent,
 )
 from recidiviz.calculator.pipeline.utils.person_utils import (
     ExtractPersonEventsMetadata,

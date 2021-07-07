@@ -25,7 +25,7 @@ from recidiviz.calculator.pipeline.base_identifier import (
     BaseIdentifier,
     IdentifierContextT,
 )
-from recidiviz.calculator.pipeline.program.program_event import (
+from recidiviz.calculator.pipeline.program.events import (
     ProgramEvent,
     ProgramParticipationEvent,
     ProgramReferralEvent,

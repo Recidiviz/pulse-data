@@ -24,7 +24,7 @@ from typing import Dict, List, Type
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.incarceration import metric_producer, pipeline
-from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
+from recidiviz.calculator.pipeline.incarceration.events import (
     IncarcerationAdmissionEvent,
     IncarcerationCommitmentFromSupervisionAdmissionEvent,
     IncarcerationEvent,

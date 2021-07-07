@@ -169,7 +169,7 @@ class IncarcerationAdmissionMetric(IncarcerationMetric):
     ] = attr.ib(default=None)
 
     # Admission date
-    admission_date: Optional[date] = attr.ib(default=None)
+    admission_date: date = attr.ib(default=None)
 
 
 @attr.s
@@ -255,7 +255,7 @@ class IncarcerationReleaseMetric(IncarcerationMetric):
     )
 
     # Release date
-    release_date: Optional[date] = attr.ib(default=None)
+    release_date: date = attr.ib(default=None)
 
     # Release reason
     release_reason: Optional[StateIncarcerationPeriodReleaseReason] = attr.ib(

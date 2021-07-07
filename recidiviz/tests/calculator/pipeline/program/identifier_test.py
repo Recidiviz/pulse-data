@@ -25,7 +25,7 @@ from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.program import identifier
-from recidiviz.calculator.pipeline.program.program_event import (
+from recidiviz.calculator.pipeline.program.events import (
     ProgramParticipationEvent,
     ProgramReferralEvent,
 )
