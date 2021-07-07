@@ -2062,7 +2062,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 case_type=StateSupervisionCaseType.GENERAL,
                 specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
-                specialized_purpose_for_incarceration_subtype=SHOCK_INCARCERATION_9_MONTHS,
+                purpose_for_incarceration_subtype=SHOCK_INCARCERATION_9_MONTHS,
                 supervising_district_external_id="DISTRICT_1",
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",

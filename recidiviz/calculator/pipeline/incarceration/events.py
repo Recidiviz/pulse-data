@@ -136,7 +136,7 @@ class IncarcerationCommitmentFromSupervisionAdmissionEvent(
     # A string subtype to capture more information about the
     # specialized_purpose_for_incarceration, e.g. the length of stay for a
     # SHOCK_INCARCERATION admission
-    specialized_purpose_for_incarceration_subtype: Optional[str] = attr.ib(default=None)
+    purpose_for_incarceration_subtype: Optional[str] = attr.ib(default=None)
 
     # Type of supervision the person was committed from
     supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(

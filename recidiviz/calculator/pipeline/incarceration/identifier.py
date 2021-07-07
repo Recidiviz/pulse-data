@@ -706,7 +706,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             admission_reason_raw_text=incarceration_period.admission_reason_raw_text,
             supervision_type=commitment_details.supervision_type,
             specialized_purpose_for_incarceration=commitment_details.purpose_for_incarceration,
-            specialized_purpose_for_incarceration_subtype=commitment_details.purpose_for_incarceration_subtype,
+            purpose_for_incarceration_subtype=commitment_details.purpose_for_incarceration_subtype,
             county_of_residence=county_of_residence,
             case_type=commitment_details.case_type,
             supervision_level=commitment_details.supervision_level,
