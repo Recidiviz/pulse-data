@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import assertNever from "assert-never";
+import parsePhoneNumber from "libphonenumber-js";
 import { makeAutoObservable, runInAction, set } from "mobx";
 import moment from "moment";
 import { caseInsensitiveIncludes, titleCase } from "../../utils";
@@ -28,7 +29,7 @@ import type OpportunityStore from "../OpportunityStore";
 import { Opportunity, OpportunityType } from "../OpportunityStore/Opportunity";
 import type PolicyStore from "../PolicyStore";
 import type ClientsStore from "./ClientsStore";
-import { NoteData, Note } from "./Note";
+import { Note, NoteData } from "./Note";
 
 /* eslint-disable camelcase */
 interface ClientFullName {
@@ -88,6 +89,7 @@ export interface ClientData {
   mostRecentHomeVisitDate: APIDate;
   mostRecentAssessmentDate: APIDate;
   emailAddress?: string;
+  phoneNumber?: string;
   needsMet: NeedsMet;
   nextAssessmentDate: APIDate;
   nextFaceToFaceDate: APIDate;
@@ -181,6 +183,8 @@ export class Client {
 
   emailAddress?: string;
 
+  phoneNumber?: string;
+
   employer?: string;
 
   formalName: string;
@@ -252,6 +256,10 @@ export class Client {
     this.supervisionLevel = clientData.supervisionLevel;
     this.personExternalId = clientData.personExternalId;
     this.emailAddress = clientData.emailAddress;
+    this.phoneNumber =
+      clientData.phoneNumber !== undefined
+        ? parsePhoneNumber(clientData.phoneNumber, "US")?.formatNational()
+        : undefined;
     this.needsMet = clientData.needsMet;
     this.preferredName = clientData.preferredName;
     this.preferredContactMethod = clientData.preferredContactMethod;
