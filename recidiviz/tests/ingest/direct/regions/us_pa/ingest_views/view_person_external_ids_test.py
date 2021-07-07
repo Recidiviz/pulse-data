@@ -16,9 +16,8 @@
 # =============================================================================
 """Tests the PA external ids query functionality"""
 import datetime
-from typing import Any, List, Optional
+from typing import Any, List
 
-import attr
 import pandas as pd
 from mock import Mock, patch
 from more_itertools import one
@@ -30,27 +29,15 @@ from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
 )
 from recidiviz.ingest.direct.query_utils import get_region_raw_file_config
 from recidiviz.tests.big_query.view_test_util import BaseViewTest
+from recidiviz.tests.ingest.direct.regions.us_pa.ingest_views.test_util import (
+    ParoleCountIds,
+    RecidivizReferenceLinkingIds,
+    TblSearchInmateInfoIds,
+    create_id_tables,
+)
 from recidiviz.utils.regions import get_region
 
 STATE_CODE = StateCode.US_PA.value
-
-
-@attr.s(kw_only=True, frozen=True)
-class ParoleCountIds:
-    ParoleNumber: Optional[str] = attr.ib()
-    ParoleInstNumber: Optional[str] = attr.ib()
-
-
-@attr.s(kw_only=True, frozen=True)
-class TblSearchInmateInfoIds:
-    inmate_number: Optional[str] = attr.ib()
-    control_number: Optional[str] = attr.ib()
-
-
-@attr.s(kw_only=True, frozen=True)
-class RecidivizReferenceLinkingIds:
-    pseudo_linking_id: str = attr.ib()
-    control_number: str = attr.ib()
 
 
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="t"))
@@ -89,29 +76,13 @@ class ViewPersonExternalIdsTest(BaseViewTest):
         # Arrange
         raw_file_configs = get_region_raw_file_config(STATE_CODE).raw_file_configs
 
-        self.create_mock_raw_file(
-            STATE_CODE,
-            raw_file_configs["dbo_ParoleCount"],
-            [(ids.ParoleNumber, ids.ParoleInstNumber) for ids in dbo_parole_count_ids],
-            update_datetime=file_upload_time,
-        )
-        self.create_mock_raw_file(
-            STATE_CODE,
-            raw_file_configs["dbo_tblSearchInmateInfo"],
-            [
-                tuple([ids.inmate_number, ids.control_number] + [None] * 83)
-                for ids in dbo_tbl_search_inmate_info_ids
-            ],
-            update_datetime=file_upload_time,
-        )
-        self.create_mock_raw_file(
-            STATE_CODE,
-            raw_file_configs["RECIDIVIZ_REFERENCE_control_number_linking_ids"],
-            [
-                (ids.control_number, ids.pseudo_linking_id)
-                for ids in recidiviz_reference_linking_ids
-            ],
-            update_datetime=file_upload_time,
+        create_id_tables(
+            self,
+            dbo_parole_count_ids,
+            dbo_tbl_search_inmate_info_ids,
+            recidiviz_reference_linking_ids,
+            raw_file_configs,
+            file_upload_time,
         )
 
         # Act

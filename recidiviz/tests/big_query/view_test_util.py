@@ -581,6 +581,16 @@ class BaseViewTest(unittest.TestCase):
 
         query = self._rewrite_structs(query)
 
+        # Postgres doesn't support IGNORE NULLS in window functions and there isn't a
+        # straightforward way to implement it on top. This instead simply strips out the
+        # IGNORE NULL fragment. Note this is a significant behavior change.
+        query = _replace_iter(
+            query,
+            r"(?P<function>LEAD|LAG|FIRST_VALUE|LAST_VALUE|NTH_VALUE)\((?P<column>\w+?) IGNORE NULLS\)",
+            "{function}({column})",
+            flags=re.IGNORECASE,
+        )
+
         return query
 
     def _rewrite_table_references(self, query: str) -> str:
