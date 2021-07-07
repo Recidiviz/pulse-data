@@ -25,7 +25,6 @@ import json
 import logging
 from typing import Dict, List, Optional
 
-import recidiviz.reporting.email_generation as email_generation
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.case_triage.querier.querier import CaseTriageQuerier
@@ -39,6 +38,7 @@ from recidiviz.common.results import MultiRequestResult
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.reporting import email_generation
 from recidiviz.reporting.context.available_context import get_report_context
 from recidiviz.reporting.context.po_monthly_report.constants import (
     OFFICER_GIVEN_NAME,

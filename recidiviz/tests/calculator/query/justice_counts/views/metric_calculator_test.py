@@ -307,6 +307,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                 time_aggregation=metric_calculator.TimeAggregation.MONTHLY,
             ),
             data_types={
+                "date_partition": _npd,
                 "time_window_start": _npd,
                 "time_window_end": _npd,
                 "value": int,
@@ -555,6 +556,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                 time_aggregation=metric_calculator.TimeAggregation.MONTHLY,
             ),
             data_types={
+                "date_partition": _npd,
                 "time_window_start": _npd,
                 "time_window_end": _npd,
                 "value": int,
@@ -882,6 +884,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                 time_aggregation=metric_calculator.TimeAggregation.MONTHLY,
             ),
             data_types={
+                "date_partition": _npd,
                 "time_window_start": _npd,
                 "time_window_end": _npd,
                 "value": int,
@@ -1174,6 +1177,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                 time_aggregation=metric_calculator.TimeAggregation.MONTHLY,
             ),
             data_types={
+                "date_partition": _npd,
                 "time_window_start": _npd,
                 "time_window_end": _npd,
                 "value": int,
@@ -1337,6 +1341,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                 time_aggregation=metric_calculator.TimeAggregation.MONTHLY,
             ),
             data_types={
+                "date_partition": _npd,
                 "time_window_start": _npd,
                 "time_window_end": _npd,
                 "value": int,
@@ -1494,6 +1499,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                 time_aggregation=metric_calculator.TimeAggregation.MONTHLY,
             ),
             data_types={
+                "date_partition": _npd,
                 "time_window_start": _npd,
                 "time_window_end": _npd,
                 "value": int,
@@ -1639,6 +1645,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                 time_aggregation=metric_calculator.TimeAggregation.MONTHLY,
             ),
             data_types={
+                "date_partition": _npd,
                 "time_window_start": _npd,
                 "time_window_end": _npd,
                 "value": int,
@@ -1838,6 +1845,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                 time_aggregation=metric_calculator.TimeAggregation.MONTHLY,
             ),
             data_types={
+                "date_partition": _npd,
                 "time_window_start": _npd,
                 "time_window_end": _npd,
                 "value": int,
@@ -1997,6 +2005,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                 time_aggregation=metric_calculator.TimeAggregation.MONTHLY,
             ),
             data_types={
+                "date_partition": _npd,
                 "time_window_start": _npd,
                 "time_window_end": _npd,
                 "value": int,
@@ -2005,12 +2014,7 @@ class MonthlyMetricViewTest(BaseViewTest):
         )
 
         # Assert
-        expected = pd.DataFrame([], columns=METRIC_CALCULATOR_SCHEMA.data_types.keys())
-        expected = expected.astype(
-            {"time_window_start": _npd, "time_window_end": _npd, "value": int}
-        )
-        expected = expected.set_index(dimensions)
-        assert_frame_equal(expected, results)
+        self.assertTrue(results.empty)
 
     def test_average_less_than_month(self) -> None:
         """Tests that average metrics covering windows less than a month are dropped"""
@@ -2158,6 +2162,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                 time_aggregation=metric_calculator.TimeAggregation.MONTHLY,
             ),
             data_types={
+                "date_partition": _npd,
                 "time_window_start": _npd,
                 "time_window_end": _npd,
                 "value": int,
@@ -2319,6 +2324,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                 time_aggregation=metric_calculator.TimeAggregation.MONTHLY,
             ),
             data_types={
+                "date_partition": _npd,
                 "time_window_start": _npd,
                 "time_window_end": _npd,
                 "value": int,
@@ -2457,6 +2463,7 @@ class MonthlyMetricViewTest(BaseViewTest):
                 time_aggregation=metric_calculator.TimeAggregation.MONTHLY,
             ),
             data_types={
+                "date_partition": _npd,
                 "time_window_start": _npd,
                 "time_window_end": _npd,
                 "value": int,
@@ -2955,6 +2962,7 @@ class AnnualMetricViewTest(BaseViewTest):
                 ),
             ),
             data_types={
+                "date_partition": _npd,
                 "time_window_start": _npd,
                 "time_window_end": _npd,
                 "value": int,
@@ -3157,6 +3165,7 @@ class AnnualMetricViewTest(BaseViewTest):
                 ),
             ),
             data_types={
+                "date_partition": _npd,
                 "time_window_start": _npd,
                 "time_window_end": _npd,
                 "value": int,
@@ -3364,6 +3373,7 @@ class AnnualMetricViewTest(BaseViewTest):
                 ),
             ),
             data_types={
+                "date_partition": _npd,
                 "time_window_start": _npd,
                 "time_window_end": _npd,
                 "value": int,

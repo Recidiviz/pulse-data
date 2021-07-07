@@ -16,15 +16,15 @@
 # =============================================================================
 """Utils for using StatePerson entities in calculations."""
 
-from typing import List, Optional, Union, Tuple, Dict, Iterable, Any, cast
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, cast
 
-import attr
 import apache_beam as beam
+import attr
 from more_itertools import one
 
 from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.common.constants.person_characteristics import Race, Ethnicity
+from recidiviz.common.constants.person_characteristics import Ethnicity, Race
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 # Race and ethnicity values that we do not track in the state_race_ethnicity_population_counts table
@@ -68,7 +68,9 @@ class BuildPersonMetadata(beam.DoFn):
     def process(
         self,
         person_id_person: Tuple[int, BuildableAttr],
+        *_args: Tuple[Any, ...],
         state_race_ethnicity_population_counts: List[Dict[str, Any]],
+        **_kwargs: Dict[str, Any],
     ) -> Iterable[Tuple[int, PersonMetadata]]:
         """Returns a tuple containing the person_id and the PersonMetadata containing information about the given
         StatePerson."""
@@ -97,13 +99,15 @@ class BuildPersonMetadata(beam.DoFn):
 
 
 class ExtractPersonEventsMetadata(beam.DoFn):
-    # pylint: disable=arguments-differ
     def process(
-        self, person_event_element: Tuple[int, Dict[str, Iterable[Any]]]
+        self,
+        element: Tuple[int, Dict[str, Iterable[Any]]],
+        *_args: Tuple[Any, ...],
+        **_kwargs: Dict[str, Any],
     ) -> Iterable[Tuple[StatePerson, List[IdentifierEvent], PersonMetadata]]:
         """Extracts the StatePerson, PersonMetadata, and list of pipeline-specific events for use in the calculator
         step of the pipeline."""
-        _, element_data = person_event_element
+        _, element_data = element
 
         person_events = element_data.get("person_events")
         person_metadata_group = element_data.get("person_metadata")

@@ -18,7 +18,7 @@
 data parsing, i.e. both scrapers and direct ingest controllers.
 """
 
-from typing import cast, Optional
+from typing import Optional, cast
 
 from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.charge import ChargeStatus
@@ -41,10 +41,10 @@ def get_standard_enum_overrides() -> EnumOverrides:
     mappings instead.
     """
     overrides_builder = EnumOverrides.Builder()
-    for ethnicity_string in ETHNICITY_MAP:
+    for ethnicity_string, ethnicity in ETHNICITY_MAP.items():
         # mypy is unable to correctly type the EntityEnums in constants.person. See
         # https://github.com/python/mypy/issues/3327
-        ethnicity_enum = cast(Ethnicity, ETHNICITY_MAP[ethnicity_string])
+        ethnicity_enum = cast(Ethnicity, ethnicity)
         if ethnicity_enum is Ethnicity.HISPANIC:
             overrides_builder.add(ethnicity_string, ethnicity_enum, Race)
 

@@ -16,23 +16,22 @@
 # =============================================================================
 """Composition object for PopulationSimulation."""
 import logging
-from typing import Dict, List, Any, Callable, Optional
-from time import time
 from functools import partial
+from time import time
+from typing import Any, Callable, Dict, List, Optional
+
 import pandas as pd
 
-from recidiviz.calculator.modeling.population_projection.sub_simulation.sub_simulation_factory import (
-    SubSimulationFactory,
-)
 from recidiviz.calculator.modeling.population_projection.population_simulation.population_simulation import (
     PopulationSimulation,
 )
+from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 from recidiviz.calculator.modeling.population_projection.sub_simulation.sub_simulation import (
     SubSimulation,
 )
-
-from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
-
+from recidiviz.calculator.modeling.population_projection.sub_simulation.sub_simulation_factory import (
+    SubSimulationFactory,
+)
 from recidiviz.calculator.modeling.population_projection.transition_table import (
     TransitionTable,
 )
@@ -100,7 +99,7 @@ class PopulationSimulationFactory:
         if should_initialize_compartment_populations:
 
             # add to `policy_list to switch from remaining sentences data to transitions data
-            for sub_group_id, group_attributes in sub_group_ids_dict.items():
+            for group_attributes in sub_group_ids_dict.values():
                 disaggregated_microsim_data = microsim_data[
                     (
                         microsim_data[disaggregation_axes]
@@ -124,7 +123,7 @@ class PopulationSimulationFactory:
                                 retroactive=False,
                             ),
                             spark_compartment=full_comp,
-                            sub_population=sub_group_ids_dict[sub_group_id],
+                            sub_population=group_attributes,
                             policy_ts=user_inputs["start_time_step"] + 1,
                             apply_retroactive=False,
                         )

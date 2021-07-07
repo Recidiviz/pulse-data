@@ -18,9 +18,9 @@
 This module contains various pieces related to the Case Triage authentication / authorization flow
 """
 import json
-from http import HTTPStatus
 from functools import wraps
-from typing import Dict, List, Optional, Callable, Any
+from http import HTTPStatus
+from typing import Any, Callable, Dict, List, Optional
 from urllib.request import urlopen
 
 import jwt
@@ -33,14 +33,14 @@ from recidiviz.utils.flask_exception import FlaskException
 
 
 class AuthorizationError(FlaskException):
-    """ Exception for when the authorization flow fails."""
+    """Exception for when the authorization flow fails."""
 
     def __init__(self, code: str, description: str) -> None:
         super().__init__(code, description, HTTPStatus.UNAUTHORIZED)
 
 
 class Auth0Config:
-    """ Data object for wrapping/validating our Auth0 configuration JSON"""
+    """Data object for wrapping/validating our Auth0 configuration JSON"""
 
     def __init__(self, config_json: Dict[str, Any]) -> None:
         self.config_json = config_json
@@ -64,10 +64,8 @@ class Auth0Config:
         # If presented with a token that was not issued by this value, we will raise an `AuthorizationError` exception
         self.issuer: str = f"https://{self.domain}/"
 
-        jwks = PyJWKSet.from_json(
-            urlopen(f"https://{self.domain}/.well-known/jwks.json").read()
-        )
-
+        with urlopen(f"https://{self.domain}/.well-known/jwks.json") as json_response:
+            jwks = PyJWKSet.from_json(json_response.read())
         self.jwks: Dict[str, RSAPublicKey] = {jwk.key_id: jwk.key for jwk in jwks.keys}
 
         # Validate `algorithms` input value
@@ -123,7 +121,7 @@ def get_token_auth_header() -> str:
 def build_auth0_authorization_decorator(
     authorization_config: Auth0Config, on_successful_authorization: Callable
 ) -> Callable:
-    """ Decorator builder for Auth0 authorization """
+    """Decorator builder for Auth0 authorization"""
 
     def decorated(route: Callable) -> Callable:
         @wraps(route)
@@ -184,7 +182,7 @@ def build_auth0_authorization_decorator(
 
 
 def get_userinfo(domain: str, token: str) -> Dict[str, str]:
-    """ Fetch the user's information from Auth0 """
+    """Fetch the user's information from Auth0"""
     response = requests.get(
         f"https://{domain}/userinfo", headers={"Authorization": f"Bearer {token}"}
     )

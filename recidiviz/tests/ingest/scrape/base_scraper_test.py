@@ -54,9 +54,8 @@ class FakeScraper(BaseScraper):
     ) -> ScrapedData:
         return super().populate_data(content, task, ingest_info)
 
-    #  pylint: disable=arguments-differ
-    def add_task(self, _: str, task: QueueRequest) -> None:
-        self.tasks.append(task)
+    def add_task(self, task_name: str, request: QueueRequest) -> None:
+        self.tasks.append(request)
 
     def get_enum_overrides(self) -> EnumOverrides:
         return EnumOverrides.empty()
