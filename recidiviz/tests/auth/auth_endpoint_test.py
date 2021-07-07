@@ -288,12 +288,13 @@ class AuthEndpointTests(TestCase):
 
     @mock.patch(
         "recidiviz.auth.auth_endpoint.SessionFactory.for_database",
-        side_effect=Exception("Session error"),
+        return_value=MagicMock(),
     )
     def test_dashboard_user_restrictions_by_email_internal_error(
         self, mockSession: MagicMock
     ) -> None:
         with self.app.test_request_context():
+            mockSession.return_value.query.side_effect = Exception("Session error")
             response = self.client.get(
                 self.dashboard_user_restrictions_by_email_url,
                 headers=self.headers,

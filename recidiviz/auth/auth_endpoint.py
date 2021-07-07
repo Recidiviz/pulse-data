@@ -142,12 +142,9 @@ def dashboard_user_restrictions_by_email() -> Tuple[
         logging.error(error)
         return str(error), HTTPStatus.BAD_REQUEST
 
+    database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
+    session = SessionFactory.for_database(database_key=database_key)
     try:
-        database_key = SQLAlchemyDatabaseKey.for_schema(
-            schema_type=SchemaType.CASE_TRIAGE
-        )
-        session = SessionFactory.for_database(database_key=database_key)
-
         user_restrictions = (
             session.query(
                 DashboardUserRestrictions.allowed_supervision_location_ids,
@@ -183,6 +180,9 @@ def dashboard_user_restrictions_by_email() -> Tuple[
             f"region_code {region_code}: {error}",
             HTTPStatus.INTERNAL_SERVER_ERROR,
         )
+
+    finally:
+        session.close()
 
 
 @auth_endpoint_blueprint.route("/update_auth0_user_metadata", methods=["GET"])
@@ -220,12 +220,9 @@ def update_auth0_user_metadata() -> Tuple[str, HTTPStatus]:
         logging.error(error)
         return str(error), HTTPStatus.BAD_REQUEST
 
+    database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
+    session = SessionFactory.for_database(database_key=database_key)
     try:
-        database_key = SQLAlchemyDatabaseKey.for_schema(
-            schema_type=SchemaType.CASE_TRIAGE
-        )
-        session = SessionFactory.for_database(database_key=database_key)
-
         user_restrictions = (
             session.query(
                 DashboardUserRestrictions.restricted_user_email,
@@ -293,6 +290,8 @@ def update_auth0_user_metadata() -> Tuple[str, HTTPStatus]:
             f"Error using Auth0 management API to update users: {error}",
             HTTPStatus.INTERNAL_SERVER_ERROR,
         )
+    finally:
+        session.close()
 
 
 def _format_user_restrictions(user_restrictions: str) -> List[str]:
