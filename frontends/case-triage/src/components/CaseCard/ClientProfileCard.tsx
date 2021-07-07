@@ -14,34 +14,34 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import React from "react";
 import { Icon, IconSVG, spacing, Tab, TabList } from "@recidiviz/design-system";
-import moment from "moment";
 import { observer } from "mobx-react-lite";
-import TEST_IDS from "../TestIDs";
-import { CaseCardProps } from "./CaseCard.types";
-import { Caption, CloseButton } from "./CaseCard.styles";
-import { titleCase } from "../../utils";
+import moment from "moment";
+import React from "react";
 import { useRootStore } from "../../stores";
-import { NotInCaseloadDropdown } from "./NotInCaseloadDropdown";
-import { getContactFrequencyText } from "./strings";
-import { PreferredContactMethodSelector } from "./PreferredContactMethodSelector";
-import { PreferredNameInput } from "./PreferredNameInput";
+import { titleCase } from "../../utils";
+import TEST_IDS from "../TestIDs";
+import { Caption, CloseButton } from "./CaseCard.styles";
+import { CaseCardProps } from "./CaseCard.types";
 import {
+  ClientInfo,
   ClientName,
   ClientProfileHeading,
   ClientProfileTabPanel,
+  ClientProfileTabs,
   ClientProfileWrapper,
-  ClientInfo,
   DetailsLabel,
   DetailsLineItem,
   DetailsPanelHeading,
   DetailsPanelSection,
   Summary,
   SummaryIcon,
-  ClientProfileTabs,
 } from "./ClientProfileCard.styles";
 import { NewItems } from "./NewItems";
+import { NotInCaseloadDropdown } from "./NotInCaseloadDropdown";
+import { PreferredContactMethodSelector } from "./PreferredContactMethodSelector";
+import { PreferredNameInput } from "./PreferredNameInput";
+import { getContactFrequencyText } from "./strings";
 
 interface SummaryItemProps {
   icon?: typeof IconSVG[keyof typeof IconSVG];
@@ -84,7 +84,7 @@ const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
 
         <SummaryItem icon={IconSVG.Envelope}>
           {client.emailAddress || "No email on file"} /{" "}
-          {/* TODO(#8055): Add phone number: `client.phoneNumber || "No phone number on file"` */}
+          {client.phoneNumber || "No phone number on file"}
         </SummaryItem>
       </DetailsPanelSection>
       <DetailsPanelSection>
