@@ -18,15 +18,14 @@
 (SCIs), extracted from multiple PADOC files.
 """
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
-)
 from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids_v2 import (
     MASTER_STATE_IDS_FRAGMENT_V2,
 )
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
 
 VIEW_QUERY_TEMPLATE = f"""
 WITH 
@@ -70,7 +69,7 @@ movements_base AS (
         ELSE m.mov_move_to_loc END
       AS move_location,
       m.mov_move_code IN ('D', 'DA', 'DIT') AS is_delete_movement,
-      m.parole_stat_cd IN ('TPV', 'CPV', 'TCV') AS is_confirmed_parole_violator_parole_status,
+      m.parole_stat_cd IN ('TPV', 'CPV', 'TCV') AS is_confirmed_parole_violator_parole_status
   FROM {{dbo_Movrec}} m
   LEFT OUTER JOIN (
     SELECT DISTINCT recidiviz_master_person_id, control_number 
@@ -104,19 +103,22 @@ movements_with_inflection_indicators AS (
       *,
       CASE WHEN sequence_number - previous_sequence_number_within_location = 1 THEN 0 ELSE 1 END AS new_location,
       (NOT previous_is_confirmed_parole_violator_parole_status 
-        AND is_confirmed_parole_violator_parole_status) AS is_new_revocation,
+        AND is_confirmed_parole_violator_parole_status) AS is_new_revocation
     FROM (
       SELECT 
         *,
-        LAG(sequence_number) OVER person_row_ordering AS previous_sequence_number_within_location,
+        LAG(sequence_number) OVER (
+            PARTITION BY recidiviz_master_person_id, location
+            ORDER BY sequence_number
+        ) AS previous_sequence_number_within_location,
         LAG(is_delete_movement) OVER person_row_ordering AS prev_is_delete_movement,
         LAG(move_date) OVER person_row_ordering AS prev_move_date,
-        LEAD(move_date) OVER person_row_ordering AS next_move_date,
+        LEAD(move_date) OVER person_row_ordering AS next_move_date
       FROM movements 
       WINDOW person_row_ordering AS (
           PARTITION BY recidiviz_master_person_id ORDER BY sequence_number
       )
-    )
+    ) windowed_movements
 ),
 critical_movements AS (
   SELECT
@@ -162,7 +164,7 @@ periods AS (
     start_movement.is_new_revocation AS start_is_new_revocation,
     start_movement.is_administrative_edge AS start_is_admin_edge,
     end_movement.is_administrative_edge AS end_is_admin_edge,
-    sentence_types.sentence_type,
+    sentence_types.sentence_type
   FROM 
     critical_movements start_movement
   LEFT OUTER JOIN
