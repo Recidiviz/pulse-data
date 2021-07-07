@@ -17,6 +17,7 @@
 """table containing probabilities of transition to other FullCompartments used by CompartmentTransitions object"""
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
+
 import numpy as np
 import pandas as pd
 
@@ -295,14 +296,10 @@ class TransitionTable:
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, TransitionTable):
             return False
-        for state in self.transition_dfs:
-            if set(self.transition_dfs[state].columns) != set(
-                other.transition_dfs[state].columns
-            ):
+        for state, frame in self.transition_dfs.items():
+            if set(frame.columns) != set(other.transition_dfs[state].columns):
                 return False
-            matching_order_self = self.transition_dfs[state][
-                other.transition_dfs[state].columns
-            ]
+            matching_order_self = frame[other.transition_dfs[state].columns]
             if (matching_order_self != other.transition_dfs[state]).all().all():
                 return False
         return True
@@ -353,27 +350,25 @@ class TransitionTable:
         doesn't shorten max sentence if new_max_sentence is smaller than self.max_sentence
         """
         # Ensure none of the transition tables have been normalized before they are extended
-        for state in self.transition_dfs:
-            if not self.transition_dfs[state].empty:
+        for state, frame in self.transition_dfs.items():
+            if not frame.empty:
                 self._check_table_invariant_before_normalization(state)
 
         if new_max_sentence <= self.max_sentence:
             return
 
-        for state in self.transition_dfs:
+        for state, frame in self.transition_dfs.items():
             # Extend the populated transition tables
-            if not self.transition_dfs[state].empty:
+            if not frame.empty:
                 extended_index = pd.Index(
                     data=range(self.max_sentence + 1, new_max_sentence + 1),
-                    name=self.transition_dfs[state].index.name,
+                    name=frame.index.name,
                 )
                 extended_df = pd.DataFrame(
                     index=extended_index,
-                    columns=self.transition_dfs[state].columns,
+                    columns=frame.columns,
                 )
-                self.transition_dfs[state] = (
-                    self.transition_dfs[state].append(extended_df).fillna(0)
-                )
+                self.transition_dfs[state] = frame.append(extended_df).fillna(0)
 
         self.max_sentence = new_max_sentence
 

@@ -18,7 +18,6 @@
 import json
 import unittest
 from typing import Any, Dict, Optional, Tuple
-from unittest.mock import Mock
 
 import jwt
 from cryptography.hazmat.backends import default_backend as crypto_default_backend
@@ -68,9 +67,10 @@ class Auth0ModuleTest(unittest.TestCase):
 
         # Mock our `/.well-known/jwks.json` response
         self.urlopen_patcher = patch("recidiviz.utils.auth.auth0.urlopen")
-        self.urlopen_patcher.start().return_value = Mock(
-            read=lambda: json.dumps({"keys": [self.public_jwk]})
+        mock_urlopen_result = (
+            self.urlopen_patcher.start().return_value.__enter__.return_value
         )
+        mock_urlopen_result.read.return_value = json.dumps({"keys": [self.public_jwk]})
 
         self.test_app = Flask(__name__)
         self.test_client = self.test_app.test_client()

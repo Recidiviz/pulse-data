@@ -18,26 +18,25 @@
 calculations."""
 import abc
 import logging
-from typing import Any, Dict, Optional, Type, Tuple, Set, TypeVar, Iterable
-
-from apache_beam import Pipeline
-from more_itertools import one
+from typing import Any, Dict, Iterable, Optional, Set, Tuple, Type, TypeVar
 
 import apache_beam as beam
+from apache_beam import Pipeline
 from apache_beam.typehints import with_input_types, with_output_types
+from more_itertools import one
 from sqlalchemy.orm.relationships import RelationshipProperty
 
 from recidiviz.calculator.pipeline.utils.execution_utils import select_all_query
 from recidiviz.common.attr_mixins import BuildableAttr
+from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.entity import entity_utils
 from recidiviz.persistence.entity.entity_utils import (
     SchemaEdgeDirectionChecker,
-    is_property_list,
     is_property_forward_ref,
+    is_property_list,
 )
 from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.database import schema_utils
 
 
 class BuildRootEntity(beam.PTransform):
@@ -193,7 +192,7 @@ class ReadFromBigQuery(beam.PTransform):
         super().__init__()
         self._query = query
 
-    # pylint: disable=arguments-differ
+    # pylint: disable=arguments-renamed
     def expand(self, pipeline: Pipeline):
         return (
             pipeline

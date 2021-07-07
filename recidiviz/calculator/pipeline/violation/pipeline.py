@@ -145,7 +145,10 @@ class ViolationPipeline(BasePipeline):
             persons
             | "Build the person_metadata dictionary"
             >> beam.ParDo(
-                BuildPersonMetadata(), AsList(state_race_ethnicity_population_counts)
+                BuildPersonMetadata(),
+                state_race_ethnicity_population_counts=AsList(
+                    state_race_ethnicity_population_counts
+                ),
             )
         )
 

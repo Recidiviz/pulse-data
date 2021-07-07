@@ -13,11 +13,13 @@
 # =============================================================================
 """SuperSimulation composed object for initializing simulations."""
 import logging
-from typing import Dict, Any, List
 from datetime import datetime
+from typing import Any, Dict, List
+
 import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
+import pandas as pd
+
 from recidiviz.calculator.modeling.population_projection.population_simulation.population_simulation import (
     PopulationSimulation,
 )
@@ -78,8 +80,8 @@ class Simulator:
         self.pop_simulations["control"].simulate_policies()
 
         results = {
-            scenario: self.pop_simulations[scenario].get_population_projections()
-            for scenario in self.pop_simulations
+            scenario: simulation.get_population_projections()
+            for scenario, simulation in self.pop_simulations.items()
         }
         results = {
             i: results[i][results[i]["time_step"] >= user_inputs["start_time_step"]]
