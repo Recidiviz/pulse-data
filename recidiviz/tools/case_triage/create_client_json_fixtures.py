@@ -68,6 +68,7 @@ def csv_row_to_etl_client_json(row: List[str]) -> Dict[str, Any]:
         "days_with_current_po": int(row[19]),
         "email_address": treat_empty_as_null(row[20]),
         "days_on_current_supervision_level": int(row[21]),
+        "phone_number": treat_empty_as_null(row[22]),
     }
 
 
