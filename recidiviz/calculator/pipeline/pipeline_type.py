@@ -14,27 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Events modeling violations and their responses."""
-import attr
-
-from recidiviz.calculator.pipeline.utils.event_utils import (
-    IdentifierEvent,
-    ViolationResponseMixin,
-)
+"""Stores enums related to various calculation pipelines"""
+from enum import Enum
 
 
-@attr.s(frozen=True)
-class ViolationEvent(IdentifierEvent):
-    """Models details of an event related to a violation while on supervision."""
+class PipelineType(Enum):
+    """Enums that represent the type of calculation pipeline"""
 
-    # Violation Id
-    supervision_violation_id: int = attr.ib()
-
-
-@attr.s(frozen=True)
-class ViolationWithResponseEvent(ViolationEvent, ViolationResponseMixin):
-    """Models violations that have responses.
-
-    Describes a date in which a person incurred the first action related to a violation.
-    This will be the first response date for a given violation.
-    """
+    INCARCERATION = "INCARCERATION"
+    PROGRAM = "PROGRAM"
+    RECIDIVISM = "RECIDIVISM"
+    SUPERVISION = "SUPERVISION"
+    VIOLATION = "VIOLATION"

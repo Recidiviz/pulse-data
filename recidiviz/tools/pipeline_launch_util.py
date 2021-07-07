@@ -43,7 +43,7 @@ def get_pipeline(pipeline: str) -> BasePipeline:
     """Returns the calculation pipeline module corresponding to the given pipeline type."""
     for subclass in BasePipeline.__subclasses__():
         instance = subclass()  # type: ignore
-        if instance.name == pipeline.lower():
+        if instance.pipeline_config.pipeline_type.value.lower() == pipeline:
             return instance
 
     raise ValueError(f"Unexpected pipeline {pipeline}")

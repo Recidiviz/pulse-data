@@ -31,7 +31,8 @@ from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
-from recidiviz.calculator.pipeline.recidivism import pipeline
+from recidiviz.calculator.pipeline.base_pipeline import ClassifyEvents, ProduceMetrics
+from recidiviz.calculator.pipeline.recidivism import identifier, pipeline
 from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismCountMetric,
     ReincarcerationRecidivismMetric,
@@ -525,6 +526,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         self.mock_pre_processing_delegate.return_value = (
             UsXxIncarcerationPreProcessingDelegate()
         )
+        self.identifier = identifier.RecidivismIdentifier()
 
     def tearDown(self) -> None:
         self.pre_processing_delegate_patcher.stop()
@@ -637,7 +639,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             test_pipeline
             | beam.Create([(fake_person_id, person_incarceration_periods)])
             | "Identify Recidivism Events"
-            >> beam.ParDo(pipeline.ClassifyReleaseEvents())
+            >> beam.ParDo(ClassifyEvents(), identifier=self.identifier)
         )
 
         assert_that(output, equal_to(correct_output))
@@ -711,7 +713,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             test_pipeline
             | beam.Create([(fake_person_id, person_incarceration_periods)])
             | "Identify Recidivism Events"
-            >> beam.ParDo(pipeline.ClassifyReleaseEvents())
+            >> beam.ParDo(ClassifyEvents(), identifier=self.identifier)
         )
 
         assert_that(output, equal_to(correct_output))
@@ -755,7 +757,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             test_pipeline
             | beam.Create([(fake_person_id, person_incarceration_periods)])
             | "Identify Recidivism Events"
-            >> beam.ParDo(pipeline.ClassifyReleaseEvents())
+            >> beam.ParDo(ClassifyEvents(), identifier=self.identifier)
         )
 
         assert_that(output, equal_to(correct_output))
@@ -868,7 +870,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             test_pipeline
             | beam.Create([(fake_person_id, person_incarceration_periods)])
             | "Identify Recidivism Events"
-            >> beam.ParDo(pipeline.ClassifyReleaseEvents())
+            >> beam.ParDo(ClassifyEvents(), identifier=self.identifier)
         )
 
         assert_that(output, equal_to(correct_output))
@@ -983,7 +985,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             test_pipeline
             | beam.Create([(fake_person_id, person_incarceration_periods)])
             | "Identify Recidivism Events"
-            >> beam.ParDo(pipeline.ClassifyReleaseEvents())
+            >> beam.ParDo(ClassifyEvents(), identifier=self.identifier)
         )
 
         assert_that(output, equal_to(correct_output))
@@ -999,6 +1001,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
         self.fake_person_id = 12345
 
         self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
+        self.pipeline_config = pipeline.RecidivismPipeline().pipeline_config
 
     # TODO(#4813): This fails on dates after 2020-12-03 - is this a bug in the pipeline or in the test code?
     @freeze_time("2020-12-03")
@@ -1086,9 +1089,12 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
             | beam.ParDo(pipeline.ExtractPersonReleaseEventsMetadata())
             | "Produce Metric Combinations"
             >> beam.ParDo(
-                pipeline.ProduceRecidivismMetrics(),
-                ALL_METRIC_INCLUSIONS_DICT,
-                test_pipeline_options(),
+                ProduceMetrics(),
+                pipeline_config=self.pipeline_config,
+                metric_inclusions=ALL_METRIC_INCLUSIONS_DICT,
+                pipeline_options=test_pipeline_options(),
+                calculation_end_month=None,
+                calculation_month_count=-1,
             )
         )
 
@@ -1130,9 +1136,12 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
             | beam.ParDo(pipeline.ExtractPersonReleaseEventsMetadata())
             | "Produce Metric Combinations"
             >> beam.ParDo(
-                pipeline.ProduceRecidivismMetrics(),
-                ALL_METRIC_INCLUSIONS_DICT,
-                test_pipeline_options(),
+                ProduceMetrics(),
+                pipeline_config=self.pipeline_config,
+                metric_inclusions=ALL_METRIC_INCLUSIONS_DICT,
+                pipeline_options=test_pipeline_options(),
+                calculation_end_month=None,
+                calculation_month_count=-1,
             )
         )
 
@@ -1154,9 +1163,12 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
             | beam.ParDo(pipeline.ExtractPersonReleaseEventsMetadata())
             | "Produce Metric Combinations"
             >> beam.ParDo(
-                pipeline.ProduceRecidivismMetrics(),
-                ALL_METRIC_INCLUSIONS_DICT,
-                test_pipeline_options(),
+                ProduceMetrics(),
+                pipeline_config=self.pipeline_config,
+                metric_inclusions=ALL_METRIC_INCLUSIONS_DICT,
+                pipeline_options=test_pipeline_options(),
+                calculation_end_month=None,
+                calculation_month_count=-1,
             )
         )
 

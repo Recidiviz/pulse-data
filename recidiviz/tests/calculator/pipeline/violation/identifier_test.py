@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+# pylint: disable=protected-access
 """Tests for violation/identifier.py"""
 import unittest
 from datetime import date
@@ -40,6 +41,9 @@ from recidiviz.persistence.entity.state.entities import (
 
 class TestFindViolationEvents(unittest.TestCase):
     """Tests the find_violation_events function."""
+
+    def setUp(self) -> None:
+        self.identifier = identifier.ViolationIdentifier()
 
     def test_find_violation_events(self) -> None:
         violation_type = StateSupervisionViolationTypeEntry.new_with_defaults(
@@ -72,7 +76,7 @@ class TestFindViolationEvents(unittest.TestCase):
         violation_response.supervision_violation = violation
         violation_type.supervision_violation = violation
 
-        violation_events = identifier.find_violation_events([violation])
+        violation_events = self.identifier._find_violation_events([violation])
 
         expected = [
             ViolationWithResponseEvent(
@@ -92,7 +96,7 @@ class TestFindViolationEvents(unittest.TestCase):
         self.assertEqual(expected, violation_events)
 
     def test_find_violation_events_no_violations(self) -> None:
-        violation_events = identifier.find_violation_events([])
+        violation_events = self.identifier._find_violation_events([])
 
         self.assertEqual([], violation_events)
 
@@ -130,10 +134,11 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         self.violation_decision.supervision_violation_response = self.violation_response
         self.violation_response.supervision_violation = self.violation
         self.violation_type.supervision_violation = self.violation
+        self.identifier = identifier.ViolationIdentifier()
 
     def test_find_violation_with_response_events(self) -> None:
-        violation_with_response_events = identifier.find_violation_with_response_events(
-            self.violation
+        violation_with_response_events = (
+            self.identifier._find_violation_with_response_events(self.violation)
         )
 
         expected = [
@@ -160,15 +165,15 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         self.violation.supervision_violation_id = None
 
         with self.assertRaises(ValueError):
-            _ = identifier.find_violation_with_response_events(self.violation)
+            _ = self.identifier._find_violation_with_response_events(self.violation)
 
     def test_find_violation_with_response_events_needs_response_date(
         self,
     ) -> None:
         self.violation_response.response_date = None
 
-        violation_with_response_events = identifier.find_violation_with_response_events(
-            self.violation
+        violation_with_response_events = (
+            self.identifier._find_violation_with_response_events(self.violation)
         )
         self.assertEqual([], violation_with_response_events)
 
@@ -239,8 +244,8 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
             ),
         ]
 
-        violation_with_response_events = identifier.find_violation_with_response_events(
-            violation
+        violation_with_response_events = (
+            self.identifier._find_violation_with_response_events(violation)
         )
 
         self.assertEqual(expected, violation_with_response_events)
@@ -318,8 +323,8 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
             ),
         ]
 
-        violation_with_response_events = identifier.find_violation_with_response_events(
-            violation
+        violation_with_response_events = (
+            self.identifier._find_violation_with_response_events(violation)
         )
 
         self.assertEqual(expected, violation_with_response_events)
@@ -399,8 +404,8 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
             ),
         ]
 
-        violation_with_response_events = identifier.find_violation_with_response_events(
-            violation
+        violation_with_response_events = (
+            self.identifier._find_violation_with_response_events(violation)
         )
 
         self.assertEqual(expected, violation_with_response_events)
@@ -473,8 +478,8 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
             ),
         ]
-        violation_with_response_events = identifier.find_violation_with_response_events(
-            violation
+        violation_with_response_events = (
+            self.identifier._find_violation_with_response_events(violation)
         )
 
         self.assertEqual(expected, violation_with_response_events)
@@ -542,8 +547,8 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
             ),
         ]
 
-        violation_with_response_events = identifier.find_violation_with_response_events(
-            violation
+        violation_with_response_events = (
+            self.identifier._find_violation_with_response_events(violation)
         )
 
         self.assertEqual(expected, violation_with_response_events)
@@ -554,6 +559,7 @@ class TestUsMoFindViolationWithResponseEvents(unittest.TestCase):
 
     def setUp(self) -> None:
         self.state_code = "US_MO"
+        self.identifier = identifier.ViolationIdentifier()
 
     def test_find_violation_with_response_events_populates_violation_subtypes_correctly_for_conditions(
         self,
@@ -597,8 +603,8 @@ class TestUsMoFindViolationWithResponseEvents(unittest.TestCase):
         violation_decision.supervision_violation_response = violation_response
         violation_response.supervision_violation = violation
 
-        violation_with_response_events = identifier.find_violation_with_response_events(
-            violation
+        violation_with_response_events = (
+            self.identifier._find_violation_with_response_events(violation)
         )
 
         expected = [
@@ -689,8 +695,8 @@ class TestUsMoFindViolationWithResponseEvents(unittest.TestCase):
         violation_decision.supervision_violation_response = violation_response
         violation_response.supervision_violation = violation
 
-        violation_with_response_events = identifier.find_violation_with_response_events(
-            violation
+        violation_with_response_events = (
+            self.identifier._find_violation_with_response_events(violation)
         )
 
         expected = [
@@ -773,7 +779,7 @@ class TestUsMoFindViolationWithResponseEvents(unittest.TestCase):
         for subtype in ["SUP", "HOF", "MOS", "ORI"]:
             violation_response.response_subtype = subtype
             violation_with_response_events = (
-                identifier.find_violation_with_response_events(violation)
+                self.identifier._find_violation_with_response_events(violation)
             )
             self.assertEqual([], violation_with_response_events)
 
@@ -819,8 +825,10 @@ class TestUsMoFindViolationWithResponseEvents(unittest.TestCase):
             )
         ]
 
-        violation_with_response_events = identifier.find_violation_with_response_events(
-            violation_with_no_types
+        violation_with_response_events = (
+            self.identifier._find_violation_with_response_events(
+                violation_with_no_types
+            )
         )
 
         self.assertEqual(expected, violation_with_response_events)
@@ -882,8 +890,8 @@ class TestUsMoFindViolationWithResponseEvents(unittest.TestCase):
         violation_decision.supervision_violation_response = violation_response
         violation_response.supervision_violation = violation
 
-        violation_with_response_events = identifier.find_violation_with_response_events(
-            violation
+        violation_with_response_events = (
+            self.identifier._find_violation_with_response_events(violation)
         )
 
         expected = [
@@ -936,6 +944,7 @@ class TestUsPaFindViolationWithResponseEvents(unittest.TestCase):
 
     def setUp(self) -> None:
         self.state_code = "US_PA"
+        self.identifier = identifier.ViolationIdentifier()
 
     def test_find_violation_with_response_events_populates_violation_subtypes_correctly_for_technical(
         self,
@@ -1069,8 +1078,8 @@ class TestUsPaFindViolationWithResponseEvents(unittest.TestCase):
             ),
         ]
 
-        violation_with_response_events = identifier.find_violation_with_response_events(
-            violation
+        violation_with_response_events = (
+            self.identifier._find_violation_with_response_events(violation)
         )
         self.assertEqual(expected, violation_with_response_events)
 
@@ -1080,6 +1089,7 @@ class TestUsNdFindViolationWithResponseEvents(unittest.TestCase):
 
     def setUp(self) -> None:
         self.state_code = "US_ND"
+        self.identifier = identifier.ViolationIdentifier()
 
     def test_find_violation_with_response_events_uses_permanent_decision_only(
         self,
@@ -1152,7 +1162,7 @@ class TestUsNdFindViolationWithResponseEvents(unittest.TestCase):
             )
         ]
 
-        violation_with_response_events = identifier.find_violation_with_response_events(
-            violation
+        violation_with_response_events = (
+            self.identifier._find_violation_with_response_events(violation)
         )
         self.assertEqual(expected, violation_with_response_events)

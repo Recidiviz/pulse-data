@@ -24,8 +24,11 @@ from typing import List
 from freezegun.api import freeze_time
 
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
-from recidiviz.calculator.pipeline.violation import metric_producer
-from recidiviz.calculator.pipeline.violation.metrics import ViolationMetricType
+from recidiviz.calculator.pipeline.violation import metric_producer, pipeline
+from recidiviz.calculator.pipeline.violation.metrics import (
+    ViolationMetric,
+    ViolationMetricType,
+)
 from recidiviz.calculator.pipeline.violation.violation_event import (
     ViolationEvent,
     ViolationWithResponseEvent,
@@ -73,6 +76,8 @@ class TestProduceViolationMetrics(unittest.TestCase):
         )
 
         self.person.ethnicities = [self.ethnicity]
+        self.metric_producer = metric_producer.ViolationMetricProducer()
+        self.pipeline_config = pipeline.ViolationPipeline().pipeline_config
 
     @freeze_time("2030-11-02")
     def test_produce_violation_metrics(self) -> None:
@@ -92,7 +97,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_violation_metrics(
+        metrics = self.metric_producer.produce_metrics(
             self.person,
             violation_events,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -100,6 +105,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         self.assertEqual(1, len(metrics))
@@ -134,7 +140,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
         )
         violation_events: List[ViolationEvent] = [included_event, not_included_event]
 
-        metrics = metric_producer.produce_violation_metrics(
+        metrics: List[ViolationMetric] = self.metric_producer.produce_metrics(
             self.person,
             violation_events,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -142,6 +148,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         self.assertEqual(1, len(metrics))
@@ -180,7 +187,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
         )
         violation_events: List[ViolationEvent] = [included_event, not_included_event]
 
-        metrics = metric_producer.produce_violation_metrics(
+        metrics = self.metric_producer.produce_metrics(
             self.person,
             violation_events,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -188,6 +195,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
             calculation_month_count=36,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         self.assertEqual(1, len(metrics))

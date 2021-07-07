@@ -52,7 +52,7 @@ import logging
 import sys
 from typing import List, Optional, Tuple
 
-from recidiviz.calculator.pipeline.base_pipeline import BasePipeline
+from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.tools.pipeline_launch_util import (
     get_pipeline,
@@ -69,7 +69,7 @@ def parse_run_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]
         "--pipeline",
         dest="pipeline",
         type=str,
-        choices=[subclass().name for subclass in BasePipeline.__subclasses__()],  # type: ignore
+        choices=[pipeline_type.value.lower() for pipeline_type in PipelineType],  # type: ignore
         help="The type of pipeline that should be run.",
         required=True,
     )

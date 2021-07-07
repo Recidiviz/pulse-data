@@ -19,91 +19,42 @@
 This contains the core logic for calculating incarceration metrics on a person-by-person
 basis. It transforms IncarcerationEvents into IncarcerationMetrics.
 """
-from typing import List, Dict, Type, Optional
+from typing import List
 
+from recidiviz.calculator.pipeline.base_metric_producer import BaseMetricProducer
 from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
+    IncarcerationCommitmentFromSupervisionAdmissionEvent,
     IncarcerationEvent,
     IncarcerationReleaseEvent,
-    IncarcerationStayEvent,
-    IncarcerationCommitmentFromSupervisionAdmissionEvent,
     IncarcerationStandardAdmissionEvent,
+    IncarcerationStayEvent,
 )
 from recidiviz.calculator.pipeline.incarceration.metrics import (
-    IncarcerationMetricType,
-    IncarcerationMetric,
     IncarcerationAdmissionMetric,
+    IncarcerationCommitmentFromSupervisionMetric,
+    IncarcerationMetric,
+    IncarcerationMetricType,
     IncarcerationPopulationMetric,
     IncarcerationReleaseMetric,
-    IncarcerationCommitmentFromSupervisionMetric,
 )
-from recidiviz.calculator.pipeline.utils.calculator_utils import (
-    produce_standard_metrics,
-)
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
-from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
-from recidiviz.persistence.entity.state.entities import StatePerson
-
-EVENT_TO_METRIC_CLASSES: Dict[
-    Type[IncarcerationEvent], List[Type[RecidivizMetric[IncarcerationMetricType]]]
-] = {
-    IncarcerationStandardAdmissionEvent: [IncarcerationAdmissionMetric],
-    IncarcerationCommitmentFromSupervisionAdmissionEvent: [
-        IncarcerationAdmissionMetric,
-        IncarcerationCommitmentFromSupervisionMetric,
-    ],
-    IncarcerationStayEvent: [IncarcerationPopulationMetric],
-    IncarcerationReleaseEvent: [IncarcerationReleaseMetric],
-}
 
 
-def produce_incarceration_metrics(
-    person: StatePerson,
-    incarceration_events: List[IncarcerationEvent],
-    metric_inclusions: Dict[IncarcerationMetricType, bool],
-    calculation_end_month: Optional[str],
-    calculation_month_count: int,
-    person_metadata: PersonMetadata,
-    pipeline_job_id: str,
-) -> List[IncarcerationMetric]:
-    """Transforms IncarcerationEvents and a StatePerson into IncarcerationMetrics.
+class IncarcerationMetricProducer(
+    BaseMetricProducer[
+        List[IncarcerationEvent], IncarcerationMetricType, IncarcerationMetric
+    ]
+):
+    """Calculates IncarcerationMetrics from IncarcerationEvents."""
 
-    This translates a particular incarceration event, e.g. admission or release, into an incarceration metric.
-
-    Args:
-        person: the StatePerson
-        incarceration_events: A list of IncarcerationEvents for the given StatePerson.
-        metric_inclusions: A dictionary where the keys are each IncarcerationMetricType, and the values are boolean
-            flags for whether or not to include that metric type in the calculations
-        calculation_end_month: The year and month in YYYY-MM format of the last month for which metrics should be
-            calculated. If unset, ends with the current month.
-        calculation_month_count: The number of months (including the month of the calculation_month_upper_bound) to
-            limit the monthly calculation output to. If set to -1, does not limit the calculations.
-        person_metadata: Contains information about the StatePerson that is necessary for the metrics.
-        pipeline_job_id: The job_id of the pipeline that is currently running.
-
-    Returns:
-        A list of IncarcerationMetrics.
-    """
-    metrics = produce_standard_metrics(
-        pipeline="incarceration",
-        person=person,
-        identifier_events=incarceration_events,
-        metric_inclusions=metric_inclusions,
-        calculation_end_month=calculation_end_month,
-        calculation_month_count=calculation_month_count,
-        person_metadata=person_metadata,
-        event_to_metric_classes=EVENT_TO_METRIC_CLASSES,
-        pipeline_job_id=pipeline_job_id,
-    )
-
-    incarceration_metrics: List[IncarcerationMetric] = []
-
-    for metric in metrics:
-        if not isinstance(metric, IncarcerationMetric):
-            raise ValueError(
-                f"Unexpected metric type {type(metric)}."
-                f" All metrics should be IncarcerationMetrics."
-            )
-        incarceration_metrics.append(metric)
-
-    return incarceration_metrics
+    def __init__(self) -> None:
+        # TODO(python/mypy#5374): Remove the ignore type when abstract class assignments are supported.
+        self.metric_class = IncarcerationMetric  # type: ignore
+        self.event_to_metric_classes = {
+            IncarcerationStandardAdmissionEvent: [IncarcerationAdmissionMetric],
+            IncarcerationCommitmentFromSupervisionAdmissionEvent: [
+                IncarcerationAdmissionMetric,
+                IncarcerationCommitmentFromSupervisionMetric,
+            ],
+            IncarcerationStayEvent: [IncarcerationPopulationMetric],
+            IncarcerationReleaseEvent: [IncarcerationReleaseMetric],
+        }

@@ -36,16 +36,11 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 
 @attr.s
 class IdentifierEvent(BuildableAttr):
-    """Base class for events created by the identifier step of each pipeline."""
+    """Base class for events created by the identifier step of each pipeline. The event should have an event_date,
+    although other dates may be present."""
 
     # The state where the event took place
     state_code: str = attr.ib()
-
-
-@attr.s
-class IdentifierEventWithSingularDate(IdentifierEvent):
-    """Base class for events created by the identifier step of each pipeline, where the event has a singular date it
-    can be associated with."""
 
     # Date of the event
     event_date: datetime.date = attr.ib()

@@ -22,10 +22,7 @@ from typing import Dict, List, Type
 
 from freezegun import freeze_time
 
-from recidiviz.calculator.pipeline.program import metric_producer
-from recidiviz.calculator.pipeline.program.metric_producer import (
-    EVENT_TO_METRIC_CLASSES,
-)
+from recidiviz.calculator.pipeline.program import metric_producer, pipeline
 from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
 from recidiviz.calculator.pipeline.program.program_event import (
     ProgramEvent,
@@ -52,6 +49,10 @@ PIPELINE_JOB_ID = "TEST_JOB_ID"
 
 class TestProduceProgramMetrics(unittest.TestCase):
     """Tests the produce_program_metrics function."""
+
+    def setUp(self) -> None:
+        self.metric_producer = metric_producer.ProgramMetricProducer()
+        self.pipeline_config = pipeline.ProgramPipeline().pipeline_config
 
     @freeze_time("2030-11-02")
     def test_produce_program_metrics(self) -> None:
@@ -81,7 +82,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_program_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             program_events,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -89,6 +90,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(program_events)
@@ -135,7 +137,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_program_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             program_events,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -143,6 +145,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(program_events)
@@ -189,7 +192,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_program_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             program_events,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -197,6 +200,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(program_events)
@@ -260,7 +264,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_program_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             program_events,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -268,6 +272,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(program_events)
@@ -306,7 +311,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             not_included_event,
         ]
 
-        metrics = metric_producer.produce_program_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             program_events,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -314,6 +319,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count([included_event])
@@ -349,7 +355,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
 
         program_events: List[ProgramEvent] = [included_event, not_included_event]
 
-        metrics = metric_producer.produce_program_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             program_events,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -357,6 +363,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
             calculation_month_count=36,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count([included_event])
@@ -371,7 +378,9 @@ def expected_metrics_count(program_events: List[ProgramEvent]) -> int:
     ] = defaultdict(int)
 
     for event in program_events:
-        metric_classes = EVENT_TO_METRIC_CLASSES[type(event)]
+        metric_classes = (
+            metric_producer.ProgramMetricProducer().event_to_metric_classes[type(event)]
+        )
 
         for metric_class in metric_classes:
             output_count_by_metric_class[metric_class] += 1

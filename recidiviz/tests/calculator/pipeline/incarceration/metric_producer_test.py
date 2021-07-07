@@ -19,42 +19,43 @@
 import unittest
 from collections import defaultdict
 from datetime import date
-from typing import List, Dict, Type
+from typing import Dict, List, Type
 
 from freezegun import freeze_time
 
-from recidiviz.calculator.pipeline.incarceration.metric_producer import (
-    EVENT_TO_METRIC_CLASSES,
-)
+from recidiviz.calculator.pipeline.incarceration import metric_producer, pipeline
 from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
-    IncarcerationEvent,
     IncarcerationAdmissionEvent,
-    IncarcerationReleaseEvent,
-    IncarcerationStayEvent,
     IncarcerationCommitmentFromSupervisionAdmissionEvent,
+    IncarcerationEvent,
+    IncarcerationReleaseEvent,
     IncarcerationStandardAdmissionEvent,
+    IncarcerationStayEvent,
 )
-from recidiviz.calculator.pipeline.incarceration import metric_producer
 from recidiviz.calculator.pipeline.incarceration.metrics import (
+    IncarcerationMetric,
     IncarcerationMetricType,
     IncarcerationPopulationMetric,
-    IncarcerationMetric,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
-from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
+from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason as AdmissionReason,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
-    StateIncarcerationPeriodAdmissionReason,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
-    StatePersonRace,
     StatePersonEthnicity,
+    StatePersonRace,
 )
 
 ALL_METRICS_INCLUSIONS_DICT = {
@@ -74,6 +75,10 @@ PIPELINE_JOB_ID = "TEST_JOB_ID"
 
 class TestProduceIncarcerationMetrics(unittest.TestCase):
     """Tests the produce_incarceration_metrics function."""
+
+    def setUp(self) -> None:
+        self.metric_producer = metric_producer.IncarcerationMetricProducer()
+        self.pipeline_config = pipeline.IncarcerationPipeline().pipeline_config
 
     def test_produce_incarceration_metrics(self):
         person = StatePerson.new_with_defaults(
@@ -104,17 +109,18 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
         incarceration_events = [incarceration_event]
 
-        metrics = metric_producer.produce_incarceration_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person=person,
-            incarceration_events=incarceration_events,
+            identifier_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month="2000-03",
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
-        expected_count = expected_metrics_count(incarceration_events)
+        expected_count = self.expected_metrics_count(incarceration_events)
 
         self.assertEqual(expected_count, len(metrics))
 
@@ -179,17 +185,18 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_incarceration_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person=person,
-            incarceration_events=incarceration_events,
+            identifier_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
-        expected_count = expected_metrics_count(incarceration_events)
+        expected_count = self.expected_metrics_count(incarceration_events)
 
         self.assertEqual(expected_count, len(metrics))
 
@@ -228,17 +235,18 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_incarceration_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person=person,
-            incarceration_events=incarceration_events,
+            identifier_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
-        expected_count = expected_metrics_count(incarceration_events)
+        expected_count = self.expected_metrics_count(incarceration_events)
 
         self.assertEqual(expected_count, len(metrics))
 
@@ -273,17 +281,18 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_incarceration_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person=person,
-            incarceration_events=incarceration_events,
+            identifier_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
-        expected_count = expected_metrics_count(incarceration_events)
+        expected_count = self.expected_metrics_count(incarceration_events)
 
         # Assert that the IncarcerationCommitmentFromSupervisionAdmissionEvent produces both an
         # INCARCERATION_ADMISSION and INCARCERATION_COMMITMENT_FROM_SUPERVISION metric
@@ -331,17 +340,18 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_incarceration_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person=person,
-            incarceration_events=incarceration_events,
+            identifier_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
-        expected_count = expected_metrics_count(incarceration_events)
+        expected_count = self.expected_metrics_count(incarceration_events)
 
         self.assertEqual(expected_count, len(metrics))
 
@@ -389,17 +399,18 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_incarceration_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person=person,
-            incarceration_events=incarceration_events,
+            identifier_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
-        expected_count = expected_metrics_count(incarceration_events)
+        expected_count = self.expected_metrics_count(incarceration_events)
 
         self.assertEqual(expected_count, len(metrics))
 
@@ -444,17 +455,18 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_incarceration_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person=person,
-            incarceration_events=incarceration_events,
+            identifier_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
-        expected_count = expected_metrics_count(incarceration_events)
+        expected_count = self.expected_metrics_count(incarceration_events)
 
         self.assertEqual(expected_count, len(metrics))
 
@@ -500,17 +512,18 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_incarceration_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person=person,
-            incarceration_events=incarceration_events,
+            identifier_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
-        expected_count = expected_metrics_count(incarceration_events)
+        expected_count = self.expected_metrics_count(incarceration_events)
 
         self.assertEqual(expected_count, len(metrics))
 
@@ -556,17 +569,18 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_incarceration_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person=person,
-            incarceration_events=incarceration_events,
+            identifier_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
-        expected_count = expected_metrics_count(incarceration_events)
+        expected_count = self.expected_metrics_count(incarceration_events)
 
         self.assertEqual(expected_count, len(metrics))
 
@@ -612,17 +626,18 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_incarceration_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person=person,
-            incarceration_events=incarceration_events,
+            identifier_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
-        expected_count = expected_metrics_count(incarceration_events)
+        expected_count = self.expected_metrics_count(incarceration_events)
 
         self.assertEqual(expected_count, len(metrics))
 
@@ -654,17 +669,18 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
         incarceration_events = [incarceration_event]
 
-        metrics = metric_producer.produce_incarceration_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person=person,
-            incarceration_events=incarceration_events,
+            identifier_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month="2000-03",
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
-        expected_count = expected_metrics_count(incarceration_events)
+        expected_count = self.expected_metrics_count(incarceration_events)
 
         self.assertEqual(expected_count, len(metrics))
 
@@ -699,14 +715,15 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
         incarceration_events = [incarceration_event]
 
-        metrics = metric_producer.produce_incarceration_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person=person,
-            incarceration_events=incarceration_events,
+            identifier_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         self.assertEqual(0, len(metrics))
@@ -749,17 +766,18 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             incarceration_event_exclude,
         ]
 
-        metrics = metric_producer.produce_incarceration_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person=person,
-            incarceration_events=incarceration_events,
+            identifier_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=36,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
-        expected_count = expected_metrics_count([incarceration_event_include])
+        expected_count = self.expected_metrics_count([incarceration_event_include])
 
         self.assertEqual(expected_count, len(metrics))
 
@@ -796,17 +814,18 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
         incarceration_events = [incarceration_event]
 
-        metrics = metric_producer.produce_incarceration_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person=person,
-            incarceration_events=incarceration_events,
+            identifier_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=37,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
-        expected_count = expected_metrics_count(incarceration_events)
+        expected_count = self.expected_metrics_count(incarceration_events)
 
         self.assertEqual(expected_count, len(metrics))
 
@@ -861,17 +880,18 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_incarceration_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person=person,
-            incarceration_events=incarceration_events,
+            identifier_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
-        expected_count = expected_metrics_count(incarceration_events)
+        expected_count = self.expected_metrics_count(incarceration_events)
 
         self.assertEqual(expected_count, len(metrics))
 
@@ -882,18 +902,19 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             if metric.person_id is not None
         )
 
+    def expected_metrics_count(
+        self, incarceration_events: List[IncarcerationEvent]
+    ) -> int:
+        """Calculates the expected number of characteristic combinations given the
+        incarceration events."""
+        output_count_by_metric_class: Dict[
+            Type[RecidivizMetric[IncarcerationMetricType]], int
+        ] = defaultdict(int)
 
-def expected_metrics_count(incarceration_events: List[IncarcerationEvent]) -> int:
-    """Calculates the expected number of characteristic combinations given the
-    incarceration events."""
-    output_count_by_metric_class: Dict[
-        Type[RecidivizMetric[IncarcerationMetricType]], int
-    ] = defaultdict(int)
+        for event in incarceration_events:
+            metric_classes = self.metric_producer.event_to_metric_classes[type(event)]
 
-    for event in incarceration_events:
-        metric_classes = EVENT_TO_METRIC_CLASSES[type(event)]
+            for metric_class in metric_classes:
+                output_count_by_metric_class[metric_class] += 1
 
-        for metric_class in metric_classes:
-            output_count_by_metric_class[metric_class] += 1
-
-    return sum(value for value in output_count_by_metric_class.values())
+        return sum(value for value in output_count_by_metric_class.values())
