@@ -25,15 +25,41 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 CLIENT_CONTACT_INFO_QUERY_TEMPLATE = """
+WITH phone_numbers AS (
+  SELECT
+    docno,
+    phonenumber AS phone_number
+  FROM (
+    SELECT
+      offender.offendernumber AS docno,
+      phonenumber,
+      ROW_NUMBER() OVER (PARTITION BY offender.offendernumber ORDER BY numbers.insdate DESC) AS rn
+    FROM
+      `{project_id}.us_id_raw_data_up_to_date_views.cis_offender_latest` offender
+    INNER JOIN
+      `{project_id}.us_id_raw_data_up_to_date_views.cis_personphonenumber_latest` person_number
+    ON
+      (offender.id = person_number.personid)
+    INNER JOIN
+      `{project_id}.us_id_raw_data_up_to_date_views.cis_phonenumber_latest` numbers
+    ON
+      (numbers.id = person_number.phonenumberid) )
+  WHERE
+    rn = 1
+)
 SELECT
   'US_ID' AS state_code,
   offenders.offendernumber AS person_external_id,
-  email AS email_address
+  email AS email_address,
+  phone_number
 FROM
-    `{project_id}.us_id_raw_data_up_to_date_views.cis_offender_latest` offenders
+  `{project_id}.us_id_raw_data_up_to_date_views.cis_offender_latest` offenders
 LEFT JOIN
   `{project_id}.us_id_raw_data_up_to_date_views.cis_personemailaddress_latest` emails
 ON emails.personid = offenders.id
+LEFT JOIN
+  phone_numbers
+ON offenders.offendernumber = phone_numbers.docno
 WHERE
   iscurrent = 'T'
 """
@@ -45,7 +71,7 @@ Currently only generates data for Idaho and only contains email addresses."""
 
 CLIENT_CONTACT_INFO_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=VIEWS_DATASET,
-    view_id="contact_info",
+    view_id="client_contact_info",
     description=CLIENT_CONTACT_INFO_DESCRIPTION,
     view_query_template=CLIENT_CONTACT_INFO_QUERY_TEMPLATE,
 )
