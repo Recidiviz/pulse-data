@@ -28,15 +28,13 @@ from recidiviz.calculator.pipeline.utils.person_utils import (
     ExtractPersonEventsMetadata,
     PersonMetadata,
 )
+from recidiviz.calculator.pipeline.violation.events import ViolationWithResponseEvent
 from recidiviz.calculator.pipeline.violation.identifier import ViolationIdentifier
 from recidiviz.calculator.pipeline.violation.metrics import (
     ViolationMetric,
     ViolationMetricType,
 )
 from recidiviz.calculator.pipeline.violation.pipeline import ViolationPipeline
-from recidiviz.calculator.pipeline.violation.violation_event import (
-    ViolationWithResponseEvent,
-)
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,

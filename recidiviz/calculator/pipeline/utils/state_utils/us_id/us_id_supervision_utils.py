@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
+from recidiviz.calculator.pipeline.supervision.events import (
     NonRevocationReturnSupervisionTimeBucket,
     RevocationReturnSupervisionTimeBucket,
 )

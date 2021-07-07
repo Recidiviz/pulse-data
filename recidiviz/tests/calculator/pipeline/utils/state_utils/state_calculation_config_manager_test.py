@@ -21,7 +21,7 @@ from typing import Any, Dict, Optional, Tuple
 
 import attr
 
-from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
+from recidiviz.calculator.pipeline.supervision.events import (
     RevocationReturnSupervisionTimeBucket,
 )
 from recidiviz.calculator.pipeline.utils.state_utils import (

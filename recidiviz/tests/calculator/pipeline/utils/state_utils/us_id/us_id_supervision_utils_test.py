@@ -22,7 +22,7 @@ from typing import Optional
 from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
-from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
+from recidiviz.calculator.pipeline.supervision.events import (
     RevocationReturnSupervisionTimeBucket,
 )
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (

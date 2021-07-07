@@ -22,7 +22,7 @@ import sys
 from datetime import date
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
-from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
+from recidiviz.calculator.pipeline.supervision.events import (
     NonRevocationReturnSupervisionTimeBucket,
     RevocationReturnSupervisionTimeBucket,
 )

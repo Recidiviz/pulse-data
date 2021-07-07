@@ -23,12 +23,12 @@ from typing import Dict, List, Type
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.program import metric_producer, pipeline
-from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
-from recidiviz.calculator.pipeline.program.program_event import (
+from recidiviz.calculator.pipeline.program.events import (
     ProgramEvent,
     ProgramParticipationEvent,
     ProgramReferralEvent,
 )
+from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race

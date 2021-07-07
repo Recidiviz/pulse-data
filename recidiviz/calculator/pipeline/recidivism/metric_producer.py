@@ -31,16 +31,16 @@ from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.base_metric_producer import BaseMetricProducer
 from recidiviz.calculator.pipeline.pipeline_type import PipelineType
+from recidiviz.calculator.pipeline.recidivism.events import (
+    NonRecidivismReleaseEvent,
+    RecidivismReleaseEvent,
+    ReleaseEvent,
+)
 from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismCountMetric,
     ReincarcerationRecidivismMetric,
     ReincarcerationRecidivismMetricType,
     ReincarcerationRecidivismRateMetric,
-)
-from recidiviz.calculator.pipeline.recidivism.release_event import (
-    NonRecidivismReleaseEvent,
-    RecidivismReleaseEvent,
-    ReleaseEvent,
 )
 from recidiviz.calculator.pipeline.utils.calculator_utils import build_metric
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata

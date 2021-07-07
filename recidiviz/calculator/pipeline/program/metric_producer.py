@@ -22,16 +22,16 @@ It transforms ProgramEvents into ProgramMetrics.
 from typing import List
 
 from recidiviz.calculator.pipeline.base_metric_producer import BaseMetricProducer
+from recidiviz.calculator.pipeline.program.events import (
+    ProgramEvent,
+    ProgramParticipationEvent,
+    ProgramReferralEvent,
+)
 from recidiviz.calculator.pipeline.program.metrics import (
     ProgramMetric,
     ProgramMetricType,
     ProgramParticipationMetric,
     ProgramReferralMetric,
-)
-from recidiviz.calculator.pipeline.program.program_event import (
-    ProgramEvent,
-    ProgramParticipationEvent,
-    ProgramReferralEvent,
 )
 
 

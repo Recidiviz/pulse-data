@@ -296,7 +296,7 @@ class SupervisionTerminationMetric(
     )
 
     # The date the supervision was terminated
-    termination_date: Optional[date] = attr.ib(default=None)
+    termination_date: date = attr.ib(default=None)
 
 
 @attr.s
@@ -325,7 +325,7 @@ class SupervisionStartMetric(SupervisionMetric, PersonLevelMetric, InPopulationM
     )
 
     # The date the supervision was started
-    start_date: Optional[date] = attr.ib(default=None)
+    start_date: date = attr.ib(default=None)
 
 
 @attr.s

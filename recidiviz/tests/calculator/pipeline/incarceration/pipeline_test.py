@@ -28,7 +28,7 @@ from mock import patch
 
 from recidiviz.calculator.pipeline.base_pipeline import ClassifyEvents, ProduceMetrics
 from recidiviz.calculator.pipeline.incarceration import identifier, pipeline
-from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
+from recidiviz.calculator.pipeline.incarceration.events import (
     IncarcerationCommitmentFromSupervisionAdmissionEvent,
     IncarcerationReleaseEvent,
     IncarcerationStandardAdmissionEvent,

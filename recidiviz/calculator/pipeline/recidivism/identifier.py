@@ -31,7 +31,7 @@ from recidiviz.calculator.pipeline.base_identifier import (
     BaseIdentifier,
     IdentifierContextT,
 )
-from recidiviz.calculator.pipeline.recidivism.release_event import (
+from recidiviz.calculator.pipeline.recidivism.events import (
     NonRecidivismReleaseEvent,
     RecidivismReleaseEvent,
     ReleaseEvent,

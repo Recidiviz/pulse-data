@@ -27,7 +27,7 @@ from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.incarceration import identifier
-from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
+from recidiviz.calculator.pipeline.incarceration.events import (
     IncarcerationAdmissionEvent,
     IncarcerationCommitmentFromSupervisionAdmissionEvent,
     IncarcerationEvent,

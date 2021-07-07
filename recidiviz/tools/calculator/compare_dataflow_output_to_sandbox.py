@@ -86,8 +86,9 @@ This can be run on-demand whenever locally with the following command:
 import argparse
 import logging
 import sys
-from typing import List, Tuple, Type
+from typing import List, Tuple, Type, Union, get_origin
 
+import attr
 from google.cloud import bigquery
 from google.cloud.bigquery import QueryJob
 from more_itertools import peekable
@@ -147,8 +148,6 @@ OUTPUT_COMPARISON_TEMPLATE = """
 DATE_COLUMNS_TO_EXCLUDE = [
     "created_on",
     "updated_on",
-    # This date is often null, and null values don't join on each other in BigQuery
-    "projected_end_date",
 ]
 
 
@@ -332,9 +331,14 @@ def _get_dimension_columns_for_metric_class(
     state_code, the person_id, and any date fields specific to the metric (e.g. date_of_supervision)."""
     dimension_columns: List[str] = ["state_code", "person_id"]
 
+    attr_fields = attr.fields_dict(metric_class)
     schema_fields = metric_class.bq_schema_for_metric_table()
     for field in schema_fields:
-        if field.field_type == "DATE" and field.name not in DATE_COLUMNS_TO_EXCLUDE:
+        if (
+            field.field_type == "DATE"
+            and field.name not in DATE_COLUMNS_TO_EXCLUDE
+            and get_origin(attr_fields[field.name].type) is not Union
+        ):
             dimension_columns.append(field.name)
 
     return dimension_columns
