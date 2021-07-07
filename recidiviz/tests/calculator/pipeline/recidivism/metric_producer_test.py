@@ -26,12 +26,21 @@ from typing import Dict, List
 from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
-from recidiviz.calculator.pipeline.recidivism import metric_producer
+from recidiviz.calculator.pipeline.recidivism import metric_producer, pipeline
 from recidiviz.calculator.pipeline.recidivism.metric_producer import FOLLOW_UP_PERIODS
+from recidiviz.calculator.pipeline.recidivism.metrics import (
+    ReincarcerationRecidivismCountMetric,
+)
+from recidiviz.calculator.pipeline.recidivism.metrics import (
+    ReincarcerationRecidivismMetricType as MetricType,
+)
+from recidiviz.calculator.pipeline.recidivism.metrics import (
+    ReincarcerationRecidivismRateMetric,
+)
 from recidiviz.calculator.pipeline.recidivism.release_event import (
-    ReleaseEvent,
-    RecidivismReleaseEvent,
     NonRecidivismReleaseEvent,
+    RecidivismReleaseEvent,
+    ReleaseEvent,
 )
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -41,17 +50,12 @@ from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.persistence.entity.state.entities import (
-    StatePerson,
-    Gender,
-    StatePersonRace,
-    Race,
-    StatePersonEthnicity,
     Ethnicity,
-)
-from recidiviz.calculator.pipeline.recidivism.metrics import (
-    ReincarcerationRecidivismMetricType as MetricType,
-    ReincarcerationRecidivismRateMetric,
-    ReincarcerationRecidivismCountMetric,
+    Gender,
+    Race,
+    StatePerson,
+    StatePersonEthnicity,
+    StatePersonRace,
 )
 
 _COUNTY_OF_RESIDENCE = "county"
@@ -60,6 +64,9 @@ _PIPELINE_JOB_ID = "TEST_JOB_ID"
 
 class TestReincarcerations(unittest.TestCase):
     """Tests the reincarcerations() function in the metric_producer."""
+
+    def setUp(self) -> None:
+        self.metric_producer = metric_producer.RecidivismMetricProducer()
 
     def test_reincarcerations(self):
         release_date = date(2018, 1, 1)
@@ -87,7 +94,7 @@ class TestReincarcerations(unittest.TestCase):
 
         expected_reincarcerations = {reincarceration_date: first_event}
 
-        reincarcerations = metric_producer.reincarcerations(release_events)
+        reincarcerations = self.metric_producer.reincarcerations(release_events)
         self.assertEqual(expected_reincarcerations, reincarcerations)
 
     def test_reincarcerations_two_releases_same_reincarceration(self):
@@ -120,16 +127,19 @@ class TestReincarcerations(unittest.TestCase):
         # The second event is prioritized because it has fewer days between release and reincarceration
         expected_reincarcerations = {reincarceration_date: second_event}
 
-        reincarcerations = metric_producer.reincarcerations(release_events)
+        reincarcerations = self.metric_producer.reincarcerations(release_events)
         self.assertEqual(expected_reincarcerations, reincarcerations)
 
     def test_reincarcerations_empty(self):
-        reincarcerations = metric_producer.reincarcerations({})
+        reincarcerations = self.metric_producer.reincarcerations({})
         self.assertEqual({}, reincarcerations)
 
 
 class TestReincarcerationsInWindow(unittest.TestCase):
     """Tests the reincarcerations_in_window() function in the metric_producer."""
+
+    def setUp(self) -> None:
+        self.metric_producer = metric_producer.RecidivismMetricProducer()
 
     def test_reincarcerations_in_window(self):
         return_dates = [
@@ -155,7 +165,7 @@ class TestReincarcerationsInWindow(unittest.TestCase):
 
         start_date = date(2016, 5, 13)
 
-        reincarcerations = metric_producer.reincarcerations_in_window(
+        reincarcerations = self.metric_producer.reincarcerations_in_window(
             start_date, start_date + relativedelta(years=6), all_reincarcerations
         )
         self.assertEqual(3, len(reincarcerations))
@@ -182,7 +192,7 @@ class TestReincarcerationsInWindow(unittest.TestCase):
 
         start_date = date(2026, 5, 13)
 
-        reincarcerations = metric_producer.reincarcerations_in_window(
+        reincarcerations = self.metric_producer.reincarcerations_in_window(
             start_date, start_date + relativedelta(years=6), all_reincarcerations
         )
 
@@ -210,7 +220,7 @@ class TestReincarcerationsInWindow(unittest.TestCase):
 
         start_date = date(2004, 5, 13)
 
-        reincarcerations = metric_producer.reincarcerations_in_window(
+        reincarcerations = self.metric_producer.reincarcerations_in_window(
             start_date, start_date + relativedelta(years=5), all_reincarcerations
         )
 
@@ -322,6 +332,10 @@ _DEFAULT_PERSON_METADATA = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
 class TestMapRecidivismCombinations(unittest.TestCase):
     """Tests the produce_recidivism_metrics function."""
 
+    def setUp(self) -> None:
+        self.metric_producer = metric_producer.RecidivismMetricProducer()
+        self.pipeline_config = pipeline.RecidivismPipeline().pipeline_config
+
     @staticmethod
     def expected_metric_counts(
         release_events_by_cohort: Dict[int, List[ReleaseEvent]]
@@ -377,11 +391,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         days_at_liberty = (date(2014, 5, 12) - date(2008, 9, 19)).days
 
-        metrics = metric_producer.produce_recidivism_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
+            self.pipeline_config.pipeline_type,
             _PIPELINE_JOB_ID,
         )
 
@@ -449,11 +464,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         days_at_liberty_1 = (date(1910, 8, 12) - date(1908, 9, 19)).days
         days_at_liberty_2 = (date(1914, 7, 15) - date(1912, 8, 19)).days
 
-        metrics = metric_producer.produce_recidivism_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
+            self.pipeline_config.pipeline_type,
             _PIPELINE_JOB_ID,
         )
 
@@ -529,11 +545,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             ],
         }
 
-        metrics = metric_producer.produce_recidivism_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
+            self.pipeline_config.pipeline_type,
             _PIPELINE_JOB_ID,
         )
 
@@ -598,11 +615,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         days_at_liberty_1 = (date(1908, 5, 12) - date(1908, 1, 19)).days
 
-        metrics = metric_producer.produce_recidivism_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
+            self.pipeline_config.pipeline_type,
             _PIPELINE_JOB_ID,
         )
 
@@ -671,11 +689,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         days_at_liberty_2 = (date(1913, 8, 12) - date(1912, 9, 19)).days
 
-        metrics = metric_producer.produce_recidivism_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
+            self.pipeline_config.pipeline_type,
             _PIPELINE_JOB_ID,
         )
 
@@ -737,11 +756,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         days_at_liberty = (date(2009, 9, 19) - date(2008, 9, 19)).days
 
-        metrics = metric_producer.produce_recidivism_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
+            self.pipeline_config.pipeline_type,
             _PIPELINE_JOB_ID,
         )
 
@@ -794,11 +814,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             ]
         }
 
-        metrics = metric_producer.produce_recidivism_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
+            self.pipeline_config.pipeline_type,
             _PIPELINE_JOB_ID,
         )
 
@@ -850,11 +871,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         days_at_liberty = (date(2008, 10, 12) - date(1998, 9, 19)).days
 
-        metrics = metric_producer.produce_recidivism_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
+            self.pipeline_config.pipeline_type,
             _PIPELINE_JOB_ID,
         )
 
@@ -915,11 +937,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         days_at_liberty = (date(2014, 5, 12) - date(2008, 9, 19)).days
 
-        metrics = metric_producer.produce_recidivism_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
+            self.pipeline_config.pipeline_type,
             _PIPELINE_JOB_ID,
         )
 
@@ -980,11 +1003,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         days_at_liberty = (date(2014, 5, 12) - date(2008, 9, 19)).days
 
-        metrics = metric_producer.produce_recidivism_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
+            self.pipeline_config.pipeline_type,
             _PIPELINE_JOB_ID,
         )
 
@@ -1049,11 +1073,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         days_at_liberty = (date(2014, 5, 12) - date(2008, 9, 19)).days
 
-        metrics = metric_producer.produce_recidivism_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
+            self.pipeline_config.pipeline_type,
             _PIPELINE_JOB_ID,
         )
 
@@ -1111,11 +1136,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         days_at_liberty = (date(2014, 5, 12) - date(2008, 9, 19)).days
 
-        metrics = metric_producer.produce_recidivism_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
+            self.pipeline_config.pipeline_type,
             _PIPELINE_JOB_ID,
         )
         expected_count = self.expected_metric_counts(release_events_by_cohort)
@@ -1172,11 +1198,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         days_at_liberty = (date(2014, 5, 12) - date(2008, 9, 19)).days
 
-        metrics = metric_producer.produce_recidivism_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
+            self.pipeline_config.pipeline_type,
             _PIPELINE_JOB_ID,
         )
 
@@ -1235,11 +1262,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         days_at_liberty = (date(2014, 5, 12) - date(2008, 9, 19)).days
 
-        metrics = metric_producer.produce_recidivism_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
+            self.pipeline_config.pipeline_type,
             _PIPELINE_JOB_ID,
         )
 
@@ -1293,11 +1321,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             ]
         }
 
-        metrics = metric_producer.produce_recidivism_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
+            self.pipeline_config.pipeline_type,
             _PIPELINE_JOB_ID,
         )
 
@@ -1335,16 +1364,20 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         release_events_by_cohort = {
             2008: [
                 NonRecidivismReleaseEvent(
-                    "CA", date(2005, 7, 19), date(2008, 9, 19), "Hudson"
+                    "CA",
+                    date(2005, 7, 19),
+                    date(2008, 9, 19),
+                    "Hudson",
                 )
             ]
         }
 
-        metrics = metric_producer.produce_recidivism_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
+            self.pipeline_config.pipeline_type,
             _PIPELINE_JOB_ID,
         )
 
@@ -1401,11 +1434,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         days_at_liberty_1 = (date(1914, 3, 12) - date(1908, 9, 19)).days
         days_at_liberty_2 = (date(1914, 9, 1) - date(1914, 7, 3)).days
 
-        metrics = metric_producer.produce_recidivism_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
+            self.pipeline_config.pipeline_type,
             _PIPELINE_JOB_ID,
         )
 
@@ -1485,11 +1519,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         days_at_liberty_1 = (date(1914, 3, 12) - date(1908, 9, 19)).days
         days_at_liberty_2 = (date(1914, 3, 30) - date(1914, 3, 19)).days
 
-        metrics = metric_producer.produce_recidivism_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             release_events_by_cohort,
             _ALL_METRIC_INCLUSIONS_DICT,
             _DEFAULT_PERSON_METADATA,
+            self.pipeline_config.pipeline_type,
             _PIPELINE_JOB_ID,
         )
 
@@ -1528,6 +1563,9 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 class TestReincarcerationsByPeriod(unittest.TestCase):
     """Tests the reincarcerations_by_period function."""
 
+    def setUp(self) -> None:
+        self.metric_producer = metric_producer.RecidivismMetricProducer()
+
     def test_reincarcerations_by_period(self):
         first_return = RecidivismReleaseEvent(
             state_code="US_XX",
@@ -1548,7 +1586,7 @@ class TestReincarcerationsByPeriod(unittest.TestCase):
             date(1914, 7, 15): second_return,
         }
 
-        reincarcerations_by_period = metric_producer.reincarcerations_by_period(
+        reincarcerations_by_period = self.metric_producer.reincarcerations_by_period(
             date(1908, 9, 19), all_reincarcerations
         )
 
@@ -1570,7 +1608,7 @@ class TestReincarcerationsByPeriod(unittest.TestCase):
     def test_reincarcerations_by_period_no_recidivism(self):
         all_reincarcerations = {}
 
-        reincarcerations_by_period = metric_producer.reincarcerations_by_period(
+        reincarcerations_by_period = self.metric_producer.reincarcerations_by_period(
             date(1908, 9, 19), all_reincarcerations
         )
 
@@ -1599,7 +1637,7 @@ class TestReincarcerationsByPeriod(unittest.TestCase):
             date(1999, 7, 15): second_return,
         }
 
-        reincarcerations_by_period = metric_producer.reincarcerations_by_period(
+        reincarcerations_by_period = self.metric_producer.reincarcerations_by_period(
             date(1998, 9, 19), all_reincarcerations
         )
 
@@ -1607,31 +1645,30 @@ class TestReincarcerationsByPeriod(unittest.TestCase):
 
         self.assertEqual(expected_output, reincarcerations_by_period)
 
+    def test_relevant_follow_up_periods(self):
+        today = date(2018, 1, 26)
 
-def test_relevant_follow_up_periods():
-    today = date(2018, 1, 26)
-
-    assert metric_producer.relevant_follow_up_periods(
-        date(2015, 1, 5), today, metric_producer.FOLLOW_UP_PERIODS
-    ) == [1, 2, 3, 4]
-    assert metric_producer.relevant_follow_up_periods(
-        date(2015, 1, 26), today, metric_producer.FOLLOW_UP_PERIODS
-    ) == [1, 2, 3, 4]
-    assert metric_producer.relevant_follow_up_periods(
-        date(2015, 1, 27), today, metric_producer.FOLLOW_UP_PERIODS
-    ) == [1, 2, 3]
-    assert metric_producer.relevant_follow_up_periods(
-        date(2016, 1, 5), today, metric_producer.FOLLOW_UP_PERIODS
-    ) == [1, 2, 3]
-    assert metric_producer.relevant_follow_up_periods(
-        date(2017, 4, 10), today, metric_producer.FOLLOW_UP_PERIODS
-    ) == [1]
-    assert metric_producer.relevant_follow_up_periods(
-        date(2018, 1, 5), today, metric_producer.FOLLOW_UP_PERIODS
-    ) == [1]
-    assert (
-        metric_producer.relevant_follow_up_periods(
-            date(2018, 2, 5), today, metric_producer.FOLLOW_UP_PERIODS
+        assert self.metric_producer.relevant_follow_up_periods(
+            date(2015, 1, 5), today, metric_producer.FOLLOW_UP_PERIODS
+        ) == [1, 2, 3, 4]
+        assert self.metric_producer.relevant_follow_up_periods(
+            date(2015, 1, 26), today, metric_producer.FOLLOW_UP_PERIODS
+        ) == [1, 2, 3, 4]
+        assert self.metric_producer.relevant_follow_up_periods(
+            date(2015, 1, 27), today, metric_producer.FOLLOW_UP_PERIODS
+        ) == [1, 2, 3]
+        assert self.metric_producer.relevant_follow_up_periods(
+            date(2016, 1, 5), today, metric_producer.FOLLOW_UP_PERIODS
+        ) == [1, 2, 3]
+        assert self.metric_producer.relevant_follow_up_periods(
+            date(2017, 4, 10), today, metric_producer.FOLLOW_UP_PERIODS
+        ) == [1]
+        assert self.metric_producer.relevant_follow_up_periods(
+            date(2018, 1, 5), today, metric_producer.FOLLOW_UP_PERIODS
+        ) == [1]
+        assert (
+            self.metric_producer.relevant_follow_up_periods(
+                date(2018, 2, 5), today, metric_producer.FOLLOW_UP_PERIODS
+            )
+            == []
         )
-        == []
-    )

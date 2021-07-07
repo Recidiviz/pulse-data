@@ -23,19 +23,17 @@ import apache_beam as beam
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 
+from recidiviz.calculator.pipeline.base_pipeline import ClassifyEvents, ProduceMetrics
 from recidiviz.calculator.pipeline.utils.person_utils import (
     ExtractPersonEventsMetadata,
     PersonMetadata,
 )
+from recidiviz.calculator.pipeline.violation.identifier import ViolationIdentifier
 from recidiviz.calculator.pipeline.violation.metrics import (
     ViolationMetric,
     ViolationMetricType,
 )
-from recidiviz.calculator.pipeline.violation.pipeline import (
-    ClassifyViolationEvents,
-    ProduceViolationMetrics,
-    ViolationPipeline,
-)
+from recidiviz.calculator.pipeline.violation.pipeline import ViolationPipeline
 from recidiviz.calculator.pipeline.violation.violation_event import (
     ViolationWithResponseEvent,
 )
@@ -280,6 +278,7 @@ class TestClassifyViolationEvents(unittest.TestCase):
             gender=Gender.FEMALE,
             birthdate=date(1985, 2, 1),
         )
+        self.identifier = ViolationIdentifier()
 
     def testClassifyViolationEvents(self) -> None:
         """Tests the ClassifyViolationEvents DoFn."""
@@ -338,7 +337,8 @@ class TestClassifyViolationEvents(unittest.TestCase):
         output = (
             test_pipeline
             | beam.Create([(self.fake_person_id, person_violations)])
-            | "Identify Violation Events" >> beam.ParDo(ClassifyViolationEvents())
+            | "Identify Violation Events"
+            >> beam.ParDo(ClassifyEvents(), self.identifier)
         )
 
         assert_that(output, equal_to(correct_output))
@@ -356,7 +356,8 @@ class TestClassifyViolationEvents(unittest.TestCase):
         output = (
             test_pipeline
             | beam.Create([(self.fake_person_id, person_violations)])
-            | "Identify Violation Events" >> beam.ParDo(ClassifyViolationEvents())
+            | "Identify Violation Events"
+            >> beam.ParDo(ClassifyEvents(), self.identifier)
         )
         assert_that(output, equal_to(correct_output))
         test_pipeline.run()
@@ -386,7 +387,8 @@ class TestClassifyViolationEvents(unittest.TestCase):
         output = (
             test_pipeline
             | beam.Create([(self.fake_person_id, person_violations)])
-            | "Identify Violation Events" >> beam.ParDo(ClassifyViolationEvents())
+            | "Identify Violation Events"
+            >> beam.ParDo(ClassifyEvents(), self.identifier)
         )
         assert_that(output, equal_to(correct_output))
         test_pipeline.run()
@@ -400,6 +402,7 @@ class TestProduceViolationMetrics(unittest.TestCase):
         self.fake_supervision_violation_id = 23456
 
         self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity="ASIAN")
+        self.pipeline_config = ViolationPipeline().pipeline_config
 
     def testProduceViolationMetrics(self) -> None:
         """Tests the ProduceViolationMetrics DoFn."""
@@ -445,11 +448,12 @@ class TestProduceViolationMetrics(unittest.TestCase):
             | beam.ParDo(ExtractPersonEventsMetadata())
             | "Produce Violation Metrics"
             >> beam.ParDo(
-                ProduceViolationMetrics(),
-                None,
-                -1,
+                ProduceMetrics(),
+                self.pipeline_config,
                 ALL_METRIC_INCLUSIONS_DICT,
                 test_pipeline_options(),
+                None,
+                -1,
             )
         )
 
@@ -472,11 +476,12 @@ class TestProduceViolationMetrics(unittest.TestCase):
             | beam.ParDo(ExtractPersonEventsMetadata())
             | "Produce ViolationMetrics"
             >> beam.ParDo(
-                ProduceViolationMetrics(),
-                None,
-                -1,
+                ProduceMetrics(),
+                self.pipeline_config,
                 ALL_METRIC_INCLUSIONS_DICT,
                 test_pipeline_options(),
+                None,
+                -1,
             )
         )
 

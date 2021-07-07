@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-# pylint: disable=unused-import,wrong-import-order
+# pylint: disable=unused-import,wrong-import-order,protected-access
 
 """Tests for recidivism/identifier.py."""
 import unittest
@@ -69,17 +69,18 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         self.mock_pre_processing_delegate.return_value = (
             UsXxIncarcerationPreProcessingDelegate()
         )
+        self.identifier = identifier.RecidivismIdentifier()
 
     def tearDown(self) -> None:
         self.pre_processing_delegate_patcher.stop()
 
-    @staticmethod
     def _test_find_release_events_by_cohort_year(
+        self,
         incarceration_periods: List[StateIncarcerationPeriod],
         supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
         persons_to_recent_county_of_residence: Optional[List[Dict[str, Any]]] = None,
     ):
-        return identifier.find_release_events_by_cohort_year(
+        return self.identifier._find_release_events_by_cohort_year(
             incarceration_periods=incarceration_periods,
             supervision_periods=(supervision_periods or []),
             persons_to_recent_county_of_residence=(
@@ -940,6 +941,9 @@ RELEASE_REASON_INCLUSION: Dict[ReleaseReason, bool] = {
 class TestShouldIncludeInReleaseCohort(unittest.TestCase):
     """Tests the should_include_in_release_cohort function."""
 
+    def setUp(self) -> None:
+        self.identifier = identifier.RecidivismIdentifier()
+
     def test_should_include_in_release_cohort(self):
         """Tests the should_include_in_release_cohort_function for all
         possible combinations of release reason and admission reason."""
@@ -947,7 +951,7 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
         status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
 
         for release_reason in ReleaseReason:
-            should_include = identifier.should_include_in_release_cohort(
+            should_include = self.identifier._should_include_in_release_cohort(
                 status, release_date, release_reason, None
             )
             self.assertEqual(
@@ -956,7 +960,7 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
 
     def test_should_include_in_release_cohort_in_custody(self):
         status = StateIncarcerationPeriodStatus.IN_CUSTODY
-        should_include = identifier.should_include_in_release_cohort(
+        should_include = self.identifier._should_include_in_release_cohort(
             status, None, None, None
         )
         self.assertFalse(should_include)
@@ -964,7 +968,7 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
     def test_should_include_in_release_cohort_no_release_reason(self):
         status = StateIncarcerationPeriodStatus.IN_CUSTODY
         release_date = date(2000, 1, 1)
-        should_include = identifier.should_include_in_release_cohort(
+        should_include = self.identifier._should_include_in_release_cohort(
             status, release_date, release_reason=None, next_incarceration_period=None
         )
         self.assertFalse(should_include)
@@ -983,7 +987,7 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
             release_reason=ReleaseReason.SENTENCE_SERVED,
         )
 
-        should_include = identifier.should_include_in_release_cohort(
+        should_include = self.identifier._should_include_in_release_cohort(
             status,
             release_date=release_date,
             release_reason=ReleaseReason.SENTENCE_SERVED,
@@ -1007,13 +1011,16 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
 
         for release_reason in ReleaseReason:
             # Assert that no error is raised
-            identifier.should_include_in_release_cohort(
+            self.identifier._should_include_in_release_cohort(
                 status, release_date, release_reason, None
             )
 
 
 class TestFindValidReincarcerationPeriod(unittest.TestCase):
     """Tests the find_valid_reincarceration_period function."""
+
+    def setUp(self) -> None:
+        self.identifier = identifier.RecidivismIdentifier()
 
     def test_find_valid_reincarceration_period(self):
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -1040,7 +1047,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
 
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
-        reincarceration = identifier.find_valid_reincarceration_period(
+        reincarceration = self.identifier._find_valid_reincarceration_period(
             incarceration_periods,
             index=0,
             release_date=incarceration_periods[0].release_date,
@@ -1076,7 +1083,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
         # The release on incarceration_period_1 overlaps with incarceration_period_2, and should be excluded from the
         # release cohort
         with pytest.raises(ValueError):
-            _ = identifier.find_valid_reincarceration_period(
+            _ = self.identifier._find_valid_reincarceration_period(
                 incarceration_periods,
                 index=0,
                 release_date=incarceration_periods[0].release_date,
@@ -1108,7 +1115,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
 
             incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
-            reincarceration = identifier.find_valid_reincarceration_period(
+            reincarceration = self.identifier._find_valid_reincarceration_period(
                 incarceration_periods,
                 index=0,
                 release_date=incarceration_periods[0].release_date,
@@ -1143,7 +1150,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
             incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
             # Assert that this does not fail for all admission_reasons
-            _ = identifier.find_valid_reincarceration_period(
+            _ = self.identifier._find_valid_reincarceration_period(
                 incarceration_periods,
                 index=0,
                 release_date=incarceration_periods[0].release_date,

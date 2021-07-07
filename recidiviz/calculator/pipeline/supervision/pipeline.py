@@ -18,22 +18,19 @@
 for details on how to launch a local run.
 """
 import datetime
-import logging
-from typing import Any, Dict, Generator, Iterable, List, Optional, Set, Tuple, cast
+from typing import Any, Dict, List, Optional, Set
 
 import apache_beam as beam
 from apache_beam.pvalue import AsList
-from apache_beam.typehints import with_input_types, with_output_types
 
-from recidiviz.calculator.pipeline.base_pipeline import BasePipeline, job_id
+from recidiviz.calculator.pipeline.base_pipeline import (
+    BasePipeline,
+    ClassifyEvents,
+    GetMetrics,
+    PipelineConfig,
+)
+from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.supervision import identifier, metric_producer
-from recidiviz.calculator.pipeline.supervision.metrics import (
-    SupervisionMetric,
-    SupervisionMetricType,
-)
-from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
-    SupervisionTimeBucket,
-)
 from recidiviz.calculator.pipeline.utils.beam_utils import (
     ConvertDictToKVTuple,
     ImportTable,
@@ -43,9 +40,7 @@ from recidiviz.calculator.pipeline.utils.entity_hydration_utils import (
     ConvertSentencesToStateSpecificType,
     SetViolationOnViolationsResponse,
 )
-from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.calculator.pipeline.utils.execution_utils import (
-    person_and_kwargs_for_identifier,
     select_all_by_person_query,
 )
 from recidiviz.calculator.pipeline.utils.extractor_utils import (
@@ -55,7 +50,6 @@ from recidiviz.calculator.pipeline.utils.extractor_utils import (
 from recidiviz.calculator.pipeline.utils.person_utils import (
     BuildPersonMetadata,
     ExtractPersonEventsMetadata,
-    PersonMetadata,
 )
 from recidiviz.calculator.query.state.views.reference.supervision_period_judicial_district_association import (
     SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
@@ -67,176 +61,17 @@ from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses im
     US_MO_SENTENCE_STATUSES_VIEW_NAME,
 )
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import StatePerson
-
-
-@with_input_types(
-    beam.typehints.Tuple[entities.StatePerson, List[IdentifierEvent], PersonMetadata]
-)
-@with_output_types(SupervisionMetric)
-class GetSupervisionMetrics(beam.PTransform):
-    """Transforms a StatePerson and their SupervisionTimeBuckets into SupervisionMetrics."""
-
-    def __init__(
-        self,
-        pipeline_options: Dict[str, str],
-        metric_types: Set[str],
-        calculation_month_count: int,
-        calculation_end_month: Optional[str] = None,
-    ):
-        super().__init__()
-        self._pipeline_options = pipeline_options
-        self._calculation_end_month = calculation_end_month
-        self._calculation_month_count = calculation_month_count
-
-        month_count_string = (
-            str(calculation_month_count) if calculation_month_count != -1 else "all"
-        )
-        end_month_string = (
-            calculation_end_month if calculation_end_month else "the current month"
-        )
-        logging.info(
-            "Producing metric output for %s month(s) up to %s",
-            month_count_string,
-            end_month_string,
-        )
-
-        self._metric_inclusions: Dict[SupervisionMetricType, bool] = {}
-
-        for metric_option in SupervisionMetricType:
-            if metric_option.value in metric_types or "ALL" in metric_types:
-                self._metric_inclusions[metric_option] = True
-                logging.info("Producing %s metrics", metric_option.value)
-            else:
-                self._metric_inclusions[metric_option] = False
-
-    def expand(self, input_or_inputs: List[Any]) -> List[SupervisionMetric]:
-        # Produce SupervisionMetrics
-        supervision_metrics = (
-            input_or_inputs
-            | "Produce SupervisionMetrics"
-            >> beam.ParDo(
-                ProduceSupervisionMetrics(),
-                self._calculation_end_month,
-                self._calculation_month_count,
-                self._metric_inclusions,
-                self._pipeline_options,
-            )
-        )
-
-        # Return SupervisionMetrics objects
-        return supervision_metrics
-
-
-@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
-@with_output_types(
-    beam.typehints.Tuple[int, Tuple[entities.StatePerson, List[SupervisionTimeBucket]]]
-)
-class ClassifySupervisionTimeBuckets(beam.DoFn):
-    """Classifies time on supervision according to multiple types of measurement."""
-
-    # pylint: disable=arguments-differ
-    def process(
-        self, element: Tuple[int, Dict[str, Iterable[Any]]]
-    ) -> Generator[
-        Tuple[Optional[int], Tuple[StatePerson, List[SupervisionTimeBucket]]],
-        None,
-        None,
-    ]:
-        """Identifies various events related to supervision relevant to calculations."""
-        _, person_entities = element
-
-        person, kwargs = person_and_kwargs_for_identifier(person_entities)
-
-        # Find the SupervisionTimeBuckets from the supervision and incarceration
-        # periods
-        supervision_time_buckets = identifier.find_supervision_time_buckets(
-            person=person, **kwargs
-        )
-
-        if not supervision_time_buckets:
-            logging.info(
-                "No valid supervision time buckets for person with id: %d. Excluding them from the "
-                "calculations.",
-                person.person_id,
-            )
-        else:
-            yield person.person_id, (person, supervision_time_buckets)
-
-    def to_runner_api_parameter(self, unused_context: Any) -> None:
-        pass  # Passing unused abstract method.
-
-
-@with_input_types(
-    beam.typehints.Tuple[entities.StatePerson, List[IdentifierEvent], PersonMetadata],
-    beam.typehints.Optional[str],
-    beam.typehints.Optional[int],
-    beam.typehints.Dict[SupervisionMetricType, bool],
-    beam.typehints.Dict[str, Any],
-)
-@with_output_types(SupervisionMetric)
-class ProduceSupervisionMetrics(beam.DoFn):
-    """Produces supervision metrics."""
-
-    # pylint: disable=arguments-differ
-    def process(
-        self,
-        element: Tuple[StatePerson, List[SupervisionTimeBucket], PersonMetadata],
-        calculation_end_month: Optional[str],
-        calculation_month_count: int,
-        metric_inclusions: Dict[SupervisionMetricType, bool],
-        pipeline_options: Dict[str, str],
-    ) -> Generator[SupervisionMetric, None, None]:
-        """Produces various SupervisionMetrics.
-
-        Sends the metric_producer the StatePerson entity and their corresponding SupervisionTimeBuckets for mapping all
-        supervision metrics.
-
-        Args:
-            element: Dictionary containing the person, SupervisionTimeBuckets, and person_metadata
-            calculation_end_month: The year and month of the last month for which metrics should be calculated.
-            calculation_month_count: The number of months to limit the monthly calculation output to.
-            metric_inclusions: A dictionary where the keys are each SupervisionMetricType, and the values are boolean
-                values for whether or not to include that metric type in the calculations
-            pipeline_options: A dictionary storing configuration details for the pipeline.
-        Yields:
-            Each supervision metric.
-        """
-        person, supervision_time_buckets, person_metadata = element
-
-        pipeline_job_id = job_id(pipeline_options)
-
-        # Assert all events are of type SupervisionTimeBucket
-        supervision_time_buckets = cast(
-            List[SupervisionTimeBucket], supervision_time_buckets
-        )
-
-        # Produce supervision metrics for this person and their supervision time buckets
-        metrics = metric_producer.produce_supervision_metrics(
-            person,
-            supervision_time_buckets,
-            metric_inclusions,
-            calculation_end_month,
-            calculation_month_count,
-            person_metadata,
-            pipeline_job_id,
-        )
-
-        # Return each of the supervision metrics
-        for metric in metrics:
-            yield metric
-
-    def to_runner_api_parameter(self, unused_context: Any) -> None:
-        pass  # Passing unused abstract method.
 
 
 class SupervisionPipeline(BasePipeline):
     """Defines the supervision calculation pipeline."""
 
     def __init__(self) -> None:
-        self.name = "supervision"
-        self.metric_type_class = SupervisionMetricType  # type: ignore
-        self.metric_class = SupervisionMetric  # type: ignore
+        self.pipeline_config = PipelineConfig(
+            pipeline_type=PipelineType.SUPERVISION,
+            identifier=identifier.SupervisionIdentifier(),
+            metric_producer=metric_producer.SupervisionMetricProducer(),
+        )
         self.include_calculation_limit_args = True
 
     def execute_pipeline(
@@ -484,7 +319,7 @@ class SupervisionPipeline(BasePipeline):
         person_time_buckets = (
             person_entities
             | "Get SupervisionTimeBuckets"
-            >> beam.ParDo(ClassifySupervisionTimeBuckets())
+            >> beam.ParDo(ClassifyEvents(), identifier=self.pipeline_config.identifier)
         )
 
         person_metadata = (
@@ -514,9 +349,10 @@ class SupervisionPipeline(BasePipeline):
         supervision_metrics = (
             person_time_buckets_with_metadata
             | "Get Supervision Metrics"
-            >> GetSupervisionMetrics(
+            >> GetMetrics(
                 pipeline_options=all_pipeline_options,
-                metric_types=metric_types_set,
+                pipeline_config=self.pipeline_config,
+                metric_types_to_include=metric_types_set,
                 calculation_end_month=calculation_end_month,
                 calculation_month_count=calculation_month_count,
             )

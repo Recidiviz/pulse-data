@@ -22,7 +22,7 @@ import attr
 
 from recidiviz.calculator.pipeline.utils.event_utils import (
     AssessmentEventMixin,
-    IdentifierEventWithSingularDate,
+    IdentifierEvent,
 )
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
@@ -31,7 +31,7 @@ from recidiviz.common.constants.state.state_supervision import StateSupervisionT
 
 
 @attr.s(frozen=True)
-class ProgramEvent(IdentifierEventWithSingularDate):
+class ProgramEvent(IdentifierEvent):
     """Models details related to an event related to a program.
 
     Describes a date on which a person interacted with a

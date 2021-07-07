@@ -29,7 +29,8 @@ from freezegun import freeze_time
 from mock import patch
 from more_itertools import one
 
-from recidiviz.calculator.pipeline.supervision import pipeline
+from recidiviz.calculator.pipeline.base_pipeline import ClassifyEvents, ProduceMetrics
+from recidiviz.calculator.pipeline.supervision import identifier, pipeline
 from recidiviz.calculator.pipeline.supervision.metrics import (
     SupervisionMetric,
     SupervisionMetricType,
@@ -1642,6 +1643,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         self.mock_pre_processing_delegate.return_value = (
             UsXxIncarcerationPreProcessingDelegate()
         )
+        self.identifier = identifier.SupervisionIdentifier()
 
         self.commitment_from_supervision_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.supervision.identifier"
@@ -1872,7 +1874,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             test_pipeline
             | beam.Create([(fake_person_id, person_entities)])
             | "Identify Supervision Time Buckets"
-            >> beam.ParDo(pipeline.ClassifySupervisionTimeBuckets())
+            >> beam.ParDo(ClassifyEvents(), identifier=self.identifier)
         )
 
         assert_that(output, equal_to(correct_output))
@@ -2070,7 +2072,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             test_pipeline
             | beam.Create([(fake_person_id, person_entities)])
             | "Identify Supervision Time Buckets"
-            >> beam.ParDo(pipeline.ClassifySupervisionTimeBuckets())
+            >> beam.ParDo(ClassifyEvents(), identifier=self.identifier)
         )
 
         assert_that(output, equal_to(correct_output))
@@ -2299,7 +2301,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             test_pipeline
             | beam.Create([(fake_person_id, person_entities)])
             | "Identify Supervision Time Buckets"
-            >> beam.ParDo(pipeline.ClassifySupervisionTimeBuckets())
+            >> beam.ParDo(ClassifyEvents(), identifier=self.identifier)
         )
 
         assert_that(output, equal_to(correct_output))
@@ -2498,7 +2500,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             test_pipeline
             | beam.Create([(fake_person_id, person_entities)])
             | "Identify Supervision Time Buckets"
-            >> beam.ParDo(pipeline.ClassifySupervisionTimeBuckets())
+            >> beam.ParDo(ClassifyEvents(), identifier=self.identifier)
         )
 
         assert_that(output, equal_to(correct_output))
@@ -2710,7 +2712,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             test_pipeline
             | beam.Create([(fake_person_id, person_entities)])
             | "Identify Supervision Time Buckets"
-            >> beam.ParDo(pipeline.ClassifySupervisionTimeBuckets())
+            >> beam.ParDo(ClassifyEvents(), identifier=self.identifier)
         )
 
         assert_that(output, equal_to(correct_output))
@@ -2828,7 +2830,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             test_pipeline
             | beam.Create([(fake_person_id, person_entities)])
             | "Identify Supervision Time Buckets"
-            >> beam.ParDo(pipeline.ClassifySupervisionTimeBuckets())
+            >> beam.ParDo(ClassifyEvents(), identifier=self.identifier)
         )
 
         assert_that(output, equal_to(correct_output))
@@ -2935,7 +2937,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             test_pipeline
             | beam.Create([(fake_person_id, person_entities)])
             | "Identify Supervision Time Buckets"
-            >> beam.ParDo(pipeline.ClassifySupervisionTimeBuckets())
+            >> beam.ParDo(ClassifyEvents(), identifier=self.identifier)
         )
 
         assert_that(output, equal_to(correct_output))
@@ -2995,7 +2997,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             test_pipeline
             | beam.Create([(fake_person_id, person_entities)])
             | "Identify Supervision Time Buckets"
-            >> beam.ParDo(pipeline.ClassifySupervisionTimeBuckets())
+            >> beam.ParDo(ClassifyEvents(), identifier=self.identifier)
         )
 
         assert_that(output, equal_to(correct_output))
@@ -3014,6 +3016,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         }
 
         self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
+        self.pipeline_config = pipeline.SupervisionPipeline().pipeline_config
 
     def testProduceSupervisionMetrics(self) -> None:
         """Tests the ProduceSupervisionMetrics DoFn."""
@@ -3068,11 +3071,12 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             | beam.ParDo(ExtractPersonEventsMetadata())
             | "Calculate Supervision Metrics"
             >> beam.ParDo(
-                pipeline.ProduceSupervisionMetrics(),
+                ProduceMetrics(),
                 calculation_end_month=None,
                 calculation_month_count=-1,
                 metric_inclusions=self.metric_inclusions_dict,
                 pipeline_options=test_pipeline_options(),
+                pipeline_config=self.pipeline_config,
             )
         )
 
@@ -3141,11 +3145,12 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             | beam.ParDo(ExtractPersonEventsMetadata())
             | "Calculate Supervision Metrics"
             >> beam.ParDo(
-                pipeline.ProduceSupervisionMetrics(),
+                ProduceMetrics(),
                 calculation_end_month=None,
                 calculation_month_count=-1,
                 metric_inclusions=self.metric_inclusions_dict,
                 pipeline_options=test_pipeline_options(),
+                pipeline_config=self.pipeline_config,
             )
         )
 
@@ -3187,11 +3192,12 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             | beam.ParDo(ExtractPersonEventsMetadata())
             | "Calculate Supervision Metrics"
             >> beam.ParDo(
-                pipeline.ProduceSupervisionMetrics(),
+                ProduceMetrics(),
                 calculation_end_month=None,
                 calculation_month_count=-1,
                 metric_inclusions=self.metric_inclusions_dict,
                 pipeline_options=test_pipeline_options(),
+                pipeline_config=self.pipeline_config,
             )
         )
 
@@ -3211,11 +3217,12 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             | beam.ParDo(ExtractPersonEventsMetadata())
             | "Calculate Supervision Metrics"
             >> beam.ParDo(
-                pipeline.ProduceSupervisionMetrics(),
+                ProduceMetrics(),
                 calculation_end_month=None,
                 calculation_month_count=-1,
                 metric_inclusions=self.metric_inclusions_dict,
                 pipeline_options=test_pipeline_options(),
+                pipeline_config=self.pipeline_config,
             )
         )
 
