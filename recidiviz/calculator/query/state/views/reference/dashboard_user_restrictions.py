@@ -16,8 +16,6 @@
 # =============================================================================
 """Reference table for UP Dashboard user restrictions.
 """
-
-# pylint: disable=trailing-whitespace
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
@@ -62,17 +60,27 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
     id_restricted_access AS (
         SELECT
             'US_ID' AS state_code,
-            LOWER(email_address) AS restricted_user_email,
+            LOWER(IF(leadership.email_address IS NULL,
+                    case_triage.email_address,
+                    leadership.email_address)) AS restricted_user_email,
             '' AS allowed_level_1_supervision_location_ids,
             '' AS allowed_supervision_location_ids,
             CAST(NULL AS STRING) as allowed_supervision_location_level,
-            internal_role,
+            IF(internal_role IS NULL,
+                'case_triage_user',
+                internal_role) AS internal_role,
             CASE
                 WHEN internal_role LIKE '%leadership_role%' THEN TRUE
                 ELSE FALSE
             END AS can_access_leadership_dashboard,
-            FALSE AS can_access_case_triage
-        FROM `{project_id}.{static_reference_dataset_id}.us_id_leadership_users`
+            IF(received_access IS NULL,
+                FALSE,
+                received_access <= CURRENT_DATE) AS can_access_case_triage
+        FROM
+            `{project_id}.{static_reference_dataset_id}.us_id_leadership_users` leadership
+        FULL OUTER JOIN
+            `{project_id}.{static_reference_dataset_id}.case_triage_users` case_triage
+        USING (state_code, email_address)
     )
     SELECT {columns} FROM mo_restricted_access
     UNION ALL
