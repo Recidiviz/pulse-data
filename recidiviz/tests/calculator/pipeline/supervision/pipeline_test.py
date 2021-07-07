@@ -31,19 +31,19 @@ from more_itertools import one
 
 from recidiviz.calculator.pipeline.base_pipeline import ClassifyEvents, ProduceMetrics
 from recidiviz.calculator.pipeline.supervision import identifier, pipeline
+from recidiviz.calculator.pipeline.supervision.events import (
+    NonRevocationReturnSupervisionTimeBucket,
+    ProjectedSupervisionCompletionBucket,
+    RevocationReturnSupervisionTimeBucket,
+    SupervisionTerminationBucket,
+    SupervisionTimeBucket,
+)
 from recidiviz.calculator.pipeline.supervision.metrics import (
     SupervisionMetric,
     SupervisionMetricType,
 )
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
-)
-from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
-    NonRevocationReturnSupervisionTimeBucket,
-    ProjectedSupervisionCompletionBucket,
-    RevocationReturnSupervisionTimeBucket,
-    SupervisionTerminationBucket,
-    SupervisionTimeBucket,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import (
     RecidivizMetric,

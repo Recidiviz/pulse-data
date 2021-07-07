@@ -28,6 +28,14 @@ from recidiviz.calculator.pipeline.supervision import (
     metric_producer,
     pipeline,
 )
+from recidiviz.calculator.pipeline.supervision.events import (
+    NonRevocationReturnSupervisionTimeBucket,
+    ProjectedSupervisionCompletionBucket,
+    RevocationReturnSupervisionTimeBucket,
+    SupervisionStartBucket,
+    SupervisionTerminationBucket,
+    SupervisionTimeBucket,
+)
 from recidiviz.calculator.pipeline.supervision.metrics import (
     SuccessfulSupervisionSentenceDaysServedMetric,
     SupervisionMetricType,
@@ -39,14 +47,6 @@ from recidiviz.calculator.pipeline.supervision.metrics import (
 )
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
-)
-from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import (
-    NonRevocationReturnSupervisionTimeBucket,
-    ProjectedSupervisionCompletionBucket,
-    RevocationReturnSupervisionTimeBucket,
-    SupervisionStartBucket,
-    SupervisionTerminationBucket,
-    SupervisionTimeBucket,
 )
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race

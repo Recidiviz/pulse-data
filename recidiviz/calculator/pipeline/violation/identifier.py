@@ -36,7 +36,7 @@ from recidiviz.calculator.pipeline.utils.violation_response_utils import (
 from recidiviz.calculator.pipeline.utils.violation_utils import (
     DEFAULT_VIOLATION_SUBTYPE_SEVERITY_ORDER,
 )
-from recidiviz.calculator.pipeline.violation.violation_event import (
+from recidiviz.calculator.pipeline.violation.events import (
     ViolationEvent,
     ViolationWithResponseEvent,
 )

@@ -20,9 +20,7 @@ import unittest
 from datetime import date
 
 from recidiviz.calculator.pipeline.violation import identifier
-from recidiviz.calculator.pipeline.violation.violation_event import (
-    ViolationWithResponseEvent,
-)
+from recidiviz.calculator.pipeline.violation.events import ViolationWithResponseEvent
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )

@@ -22,7 +22,7 @@ basis. It transforms IncarcerationEvents into IncarcerationMetrics.
 from typing import List
 
 from recidiviz.calculator.pipeline.base_metric_producer import BaseMetricProducer
-from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
+from recidiviz.calculator.pipeline.incarceration.events import (
     IncarcerationCommitmentFromSupervisionAdmissionEvent,
     IncarcerationEvent,
     IncarcerationReleaseEvent,

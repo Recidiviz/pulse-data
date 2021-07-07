@@ -25,13 +25,13 @@ from freezegun.api import freeze_time
 
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.calculator.pipeline.violation import metric_producer, pipeline
+from recidiviz.calculator.pipeline.violation.events import (
+    ViolationEvent,
+    ViolationWithResponseEvent,
+)
 from recidiviz.calculator.pipeline.violation.metrics import (
     ViolationMetric,
     ViolationMetricType,
-)
-from recidiviz.calculator.pipeline.violation.violation_event import (
-    ViolationEvent,
-    ViolationWithResponseEvent,
 )
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.state_supervision_violation import (

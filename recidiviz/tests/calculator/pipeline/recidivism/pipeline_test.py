@@ -33,6 +33,10 @@ from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.base_pipeline import ClassifyEvents, ProduceMetrics
 from recidiviz.calculator.pipeline.recidivism import identifier, pipeline
+from recidiviz.calculator.pipeline.recidivism.events import (
+    NonRecidivismReleaseEvent,
+    RecidivismReleaseEvent,
+)
 from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismCountMetric,
     ReincarcerationRecidivismMetric,
@@ -45,10 +49,6 @@ from recidiviz.calculator.pipeline.recidivism.metrics import (
 )
 from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
-)
-from recidiviz.calculator.pipeline.recidivism.release_event import (
-    NonRecidivismReleaseEvent,
-    RecidivismReleaseEvent,
 )
 from recidiviz.calculator.pipeline.utils.beam_utils import RecidivizMetricWritableDict
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata

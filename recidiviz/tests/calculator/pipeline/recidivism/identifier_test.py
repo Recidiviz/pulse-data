@@ -26,7 +26,7 @@ from unittest import mock
 import pytest
 
 from recidiviz.calculator.pipeline.recidivism import identifier
-from recidiviz.calculator.pipeline.recidivism.release_event import (
+from recidiviz.calculator.pipeline.recidivism.events import (
     NonRecidivismReleaseEvent,
     RecidivismReleaseEvent,
 )

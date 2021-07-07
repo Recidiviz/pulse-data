@@ -18,7 +18,7 @@
 import unittest
 from datetime import date
 
-from recidiviz.calculator.pipeline.program.program_event import (
+from recidiviz.calculator.pipeline.program.events import (
     ProgramEvent,
     ProgramReferralEvent,
 )

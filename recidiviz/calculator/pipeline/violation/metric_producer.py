@@ -19,14 +19,14 @@ from typing import Dict, List, Type
 
 from recidiviz.calculator.pipeline.base_metric_producer import BaseMetricProducer
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
+from recidiviz.calculator.pipeline.violation.events import (
+    ViolationEvent,
+    ViolationWithResponseEvent,
+)
 from recidiviz.calculator.pipeline.violation.metrics import (
     ViolationMetric,
     ViolationMetricType,
     ViolationWithResponseMetric,
-)
-from recidiviz.calculator.pipeline.violation.violation_event import (
-    ViolationEvent,
-    ViolationWithResponseEvent,
 )
 
 EVENT_TO_METRIC_CLASSES: Dict[

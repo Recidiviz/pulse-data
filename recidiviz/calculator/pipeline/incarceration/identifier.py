@@ -25,7 +25,7 @@ from recidiviz.calculator.pipeline.base_identifier import (
     BaseIdentifier,
     IdentifierContextT,
 )
-from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
+from recidiviz.calculator.pipeline.incarceration.events import (
     IncarcerationAdmissionEvent,
     IncarcerationCommitmentFromSupervisionAdmissionEvent,
     IncarcerationEvent,
