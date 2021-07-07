@@ -167,7 +167,8 @@ class Drive:
         Note this will remove all other worksheets and replace the first worksheet in
         the given sheet.
         """
-        self.gc.import_csv(sheet_item.id, open(csv_path).read())
+        with open(csv_path) as csv_data:
+            self.gc.import_csv(sheet_item.id, csv_data.read())
         sheet = self.gc.open_by_key(sheet_item.id)
         [worksheet] = sheet.worksheets()
         worksheet.update_title(sheet_name)

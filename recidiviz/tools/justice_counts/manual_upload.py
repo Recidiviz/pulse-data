@@ -64,7 +64,6 @@ from sqlalchemy import cast
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql.schema import UniqueConstraint
 
-import recidiviz.common.constants.person_characteristics as person_characteristics
 from recidiviz.cloud_functions.cloud_function_utils import (
     IAP_CLIENT_ID,
     make_iap_request,
@@ -76,7 +75,7 @@ from recidiviz.cloud_storage.gcs_file_system import (
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common import fips
-from recidiviz.common.constants import states
+from recidiviz.common.constants import person_characteristics, states
 from recidiviz.common.constants.entity_enum import (
     EntityEnum,
     EntityEnumMeta,

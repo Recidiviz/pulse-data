@@ -26,11 +26,9 @@ from typing import List, Optional, Tuple
 
 from flask import Blueprint, request
 
-import recidiviz.reporting.data_retrieval as data_retrieval
-import recidiviz.reporting.email_delivery as email_delivery
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.results import MultiRequestResult
-from recidiviz.reporting import email_reporting_utils
+from recidiviz.reporting import data_retrieval, email_delivery, email_reporting_utils
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
 from recidiviz.reporting.email_reporting_utils import (
     EmailMetadataReportDateError,

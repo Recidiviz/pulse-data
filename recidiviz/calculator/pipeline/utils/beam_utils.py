@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for beam calculations."""
-# pylint: disable=abstract-method, arguments-differ, redefined-builtin
+# pylint: disable=abstract-method,redefined-builtin
 from typing import Any, Dict, NamedTuple, Optional, Set
 
 import apache_beam as beam
@@ -31,7 +31,6 @@ from recidiviz.calculator.pipeline.utils.metric_utils import (
     json_serializable_metric_key,
 )
 
-
 AverageFnResult = NamedTuple(
     "AverageFnResult",
     [("average_of_inputs", float), ("input_count", int), ("sum_of_inputs", int)],
@@ -41,22 +40,23 @@ AverageFnResult = NamedTuple(
 class AverageFn(beam.CombineFn):
     """Combine function that calculates the average of the input values."""
 
+    # pylint: disable=arguments-differ
     def create_accumulator(self):
         return 0, 0
 
-    def add_input(self, accumulator, input):
-        (sum_of_inputs, input_count) = accumulator
+    def add_input(self, mutable_accumulator, element):
+        (sum_of_elements, element_count) = mutable_accumulator
 
-        sum_of_inputs += input
-        input_count += 1
-        return sum_of_inputs, input_count
+        sum_of_elements += element
+        element_count += 1
+        return sum_of_elements, element_count
 
     def merge_accumulators(self, accumulators):
         sums_of_inputs, input_counts = zip(*accumulators)
         return sum(sums_of_inputs), sum(input_counts)
 
-    def extract_output(self, sum_count):
-        (sum_of_inputs, input_count) = sum_count
+    def extract_output(self, accumulator):
+        (sum_of_inputs, input_count) = accumulator
 
         avg_of_inputs = (
             (sum_of_inputs + 0.0) / input_count if input_count else float("NaN")
@@ -72,12 +72,13 @@ class AverageFn(beam.CombineFn):
 class SumFn(beam.CombineFn):
     """Combine function that calculates the sum of the input values."""
 
+    # pylint: disable=arguments-differ
     def create_accumulator(self):
         return 0
 
-    def add_input(self, accumulator, input):
-        accumulator += input
-        return accumulator
+    def add_input(self, mutable_accumulator, element):
+        mutable_accumulator += element
+        return mutable_accumulator
 
     def merge_accumulators(self, accumulators):
         return sum(accumulators)
@@ -159,6 +160,7 @@ class ImportTable(beam.PTransform):
         self.state_code_filter = state_code_filter
         self.person_id_filter_set = person_id_filter_set
 
+    # pylint: disable=arguments-renamed
     def expand(self, pipeline: Pipeline):
         # Bring in the table from BigQuery
         table_query = select_all_by_person_query(
@@ -198,6 +200,7 @@ class ImportTableAsKVTuples(beam.PTransform):
         self.state_code_filter = state_code_filter
         self.person_id_filter_set = person_id_filter_set
 
+    # pylint: disable=arguments-renamed
     def expand(self, pipeline: Pipeline):
         # Read in the table from BigQuery
         table_contents = (

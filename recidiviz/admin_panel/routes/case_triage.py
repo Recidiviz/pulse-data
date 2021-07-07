@@ -23,8 +23,6 @@ from typing import Optional, Tuple
 
 from flask import Blueprint, jsonify, request
 
-import recidiviz.reporting.data_retrieval as data_retrieval
-import recidiviz.reporting.email_delivery as email_delivery
 from recidiviz.admin_panel.admin_stores import fetch_state_codes
 from recidiviz.admin_panel.case_triage_helpers import (
     columns_for_case_triage_view,
@@ -43,6 +41,7 @@ from recidiviz.persistence.database.schema.case_triage.schema import CaseUpdate
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.reporting import data_retrieval, email_delivery
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
 from recidiviz.reporting.email_reporting_utils import (
     EmailMetadataReportDateError,
