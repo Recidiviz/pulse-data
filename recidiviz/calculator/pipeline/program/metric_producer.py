@@ -19,84 +19,31 @@
 This contains the core logic for calculating program metrics on a person-by-person basis.
 It transforms ProgramEvents into ProgramMetrics.
 """
-from typing import List, Dict, Optional, Type
+from typing import List
 
+from recidiviz.calculator.pipeline.base_metric_producer import BaseMetricProducer
 from recidiviz.calculator.pipeline.program.metrics import (
-    ProgramMetricType,
     ProgramMetric,
+    ProgramMetricType,
     ProgramParticipationMetric,
     ProgramReferralMetric,
 )
 from recidiviz.calculator.pipeline.program.program_event import (
     ProgramEvent,
-    ProgramReferralEvent,
     ProgramParticipationEvent,
+    ProgramReferralEvent,
 )
-from recidiviz.calculator.pipeline.utils.calculator_utils import (
-    produce_standard_metrics,
-)
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
-from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
-from recidiviz.persistence.entity.state.entities import StatePerson
-
-EVENT_TO_METRIC_CLASSES: Dict[
-    Type[ProgramEvent], List[Type[RecidivizMetric[ProgramMetricType]]]
-] = {
-    ProgramReferralEvent: [ProgramReferralMetric],
-    ProgramParticipationEvent: [ProgramParticipationMetric],
-}
 
 
-def produce_program_metrics(
-    person: StatePerson,
-    program_events: List[ProgramEvent],
-    metric_inclusions: Dict[ProgramMetricType, bool],
-    calculation_end_month: Optional[str],
-    calculation_month_count: int,
-    person_metadata: PersonMetadata,
-    pipeline_job_id: str,
-) -> List[ProgramMetric]:
-    """Transforms ProgramEvents and a StatePerson into metrics.
+class ProgramMetricProducer(
+    BaseMetricProducer[List[ProgramEvent], ProgramMetricType, ProgramMetric]
+):
+    """Calculates ProgramMetrics from ProgramEvents."""
 
-    Takes in a StatePerson and all of her ProgramEvents and returns a list of
-    ProgramMetrics by translating a particular interaction with a program into a
-    program metric.
-
-    Args:
-        person: the StatePerson
-        program_events: A list of ProgramEvents for the given StatePerson.
-        metric_inclusions: A dictionary where the keys are each ProgramMetricType, and the values are boolean
-            flags for whether or not to include that metric type in the calculations
-        calculation_end_month: The year and month in YYYY-MM format of the last month for which metrics should be
-            calculated. If unset, ends with the current month.
-        calculation_month_count: The number of months (including the month of the calculation_end_month) to
-            limit the monthly calculation output to. If set to -1, does not limit the calculations.
-        person_metadata: Contains information about the StatePerson that is necessary for the metrics.
-        pipeline_job_id: The job_id of the pipeline that is currently running.
-
-    Returns:
-        A list of ProgramMetrics.
-    """
-    metrics = produce_standard_metrics(
-        pipeline="program",
-        person=person,
-        identifier_events=program_events,
-        metric_inclusions=metric_inclusions,
-        calculation_end_month=calculation_end_month,
-        calculation_month_count=calculation_month_count,
-        person_metadata=person_metadata,
-        event_to_metric_classes=EVENT_TO_METRIC_CLASSES,
-        pipeline_job_id=pipeline_job_id,
-    )
-
-    program_metrics: List[ProgramMetric] = []
-
-    for metric in metrics:
-        if not isinstance(metric, ProgramMetric):
-            raise ValueError(
-                f"Unexpected metric type {type(metric)}."
-                f" All metrics should be ProgramMetrics."
-            )
-        program_metrics.append(metric)
-
-    return program_metrics
+    def __init__(self) -> None:
+        # TODO(python/mypy#5374): Remove the ignore type when abstract class assignments are supported.
+        self.metric_class = ProgramMetric  # type: ignore
+        self.event_to_metric_classes = {
+            ProgramReferralEvent: [ProgramReferralMetric],
+            ProgramParticipationEvent: [ProgramParticipationMetric],
+        }

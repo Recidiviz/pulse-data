@@ -19,8 +19,7 @@ import argparse
 import datetime
 import logging
 from collections import defaultdict
-
-from typing import Dict, Tuple, Any, List, Iterable, Set, Optional
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 from googleapiclient.discovery import build
 from more_itertools import one
@@ -178,7 +177,7 @@ def calculation_end_month_arg(value: str) -> str:
 
 def person_and_kwargs_for_identifier(
     arg_to_entities_map: Dict[str, Iterable[Any]]
-) -> Tuple[StatePerson, Dict[str, List]]:
+) -> Tuple[StatePerson, Dict[str, Any]]:
     """In the calculation pipelines we use the CoGroupByKey function to group StatePerson entities with their associated
     entities. The output of CoGroupByKey is a dictionary where the keys are the variable names expected in the
     identifier step of the pipeline, and the values are iterables of the associated entities.

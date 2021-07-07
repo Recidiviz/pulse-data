@@ -25,7 +25,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_case_compliance impor
 )
 from recidiviz.calculator.pipeline.utils.event_utils import (
     AssessmentEventMixin,
-    IdentifierEventWithSingularDate,
+    IdentifierEvent,
     InPopulationMixin,
     SupervisionLocationMixin,
     ViolationHistoryMixin,
@@ -52,7 +52,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 # TODO(#5307): Convert all "bucket" language to use "event"
 @attr.s(frozen=True)
 class SupervisionTimeBucket(
-    IdentifierEventWithSingularDate, SupervisionLocationMixin, AssessmentEventMixin
+    IdentifierEvent, SupervisionLocationMixin, AssessmentEventMixin
 ):
     """Models details related to a bucket of time on supervision.
 

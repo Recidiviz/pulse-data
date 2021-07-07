@@ -16,7 +16,7 @@
 # =============================================================================
 """Utils for the various calculation pipelines."""
 import datetime
-from typing import Any, Dict, List, Optional, Type, TypeVar
+from typing import Any, Dict, List, Optional, Type
 
 import attr
 from dateutil.relativedelta import relativedelta
@@ -25,10 +25,7 @@ from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
     DATAFLOW_TABLES_TO_METRIC_TYPES,
 )
-from recidiviz.calculator.pipeline.utils.event_utils import (
-    IdentifierEvent,
-    IdentifierEventWithSingularDate,
-)
+from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.calculator.pipeline.utils.metric_utils import (
     RecidivizMetric,
     RecidivizMetricTypeT,
@@ -63,11 +60,6 @@ PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
         "US_ND": US_ND_SID,
     },
 }
-
-IdentifierEventT = TypeVar("IdentifierEventT", bound=IdentifierEvent)
-IdentifierEventWithSingularDateT = TypeVar(
-    "IdentifierEventWithSingularDateT", bound=IdentifierEventWithSingularDate
-)
 
 
 def person_characteristics(
@@ -265,13 +257,13 @@ def safe_list_index(list_of_values: List[Any], value: Any, default: int) -> int:
 def produce_standard_metrics(
     pipeline: str,
     person: StatePerson,
-    identifier_events: List[IdentifierEventWithSingularDateT],
+    identifier_events: List[IdentifierEvent],
     metric_inclusions: Dict[RecidivizMetricTypeT, bool],
     calculation_end_month: Optional[str],
     calculation_month_count: int,
     person_metadata: PersonMetadata,
     event_to_metric_classes: Dict[
-        Type[IdentifierEventWithSingularDateT],
+        Type[IdentifierEvent],
         List[Type[RecidivizMetric[RecidivizMetricTypeT]]],
     ],
     pipeline_job_id: str,
@@ -326,7 +318,7 @@ def produce_standard_metrics(
 
 def build_metric(
     pipeline: str,
-    event: IdentifierEventT,
+    event: IdentifierEvent,
     metric_class: Type[RecidivizMetric],
     person: StatePerson,
     event_date: datetime.date,

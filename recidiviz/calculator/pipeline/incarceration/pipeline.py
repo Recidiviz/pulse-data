@@ -21,22 +21,19 @@ for details on how to launch a local run.
 from __future__ import absolute_import
 
 import datetime
-import logging
-from typing import Any, Dict, Generator, Iterable, List, Optional, Set, Tuple, cast
+from typing import Any, Dict, List, Optional, Set
 
 import apache_beam as beam
 from apache_beam.pvalue import AsList
-from apache_beam.typehints import with_input_types, with_output_types
 
-from recidiviz.calculator.pipeline.base_pipeline import BasePipeline, job_id
+from recidiviz.calculator.pipeline.base_pipeline import (
+    BasePipeline,
+    ClassifyEvents,
+    GetMetrics,
+    PipelineConfig,
+)
 from recidiviz.calculator.pipeline.incarceration import identifier, metric_producer
-from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
-    IncarcerationEvent,
-)
-from recidiviz.calculator.pipeline.incarceration.metrics import (
-    IncarcerationMetric,
-    IncarcerationMetricType,
-)
+from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.utils.beam_utils import (
     ConvertDictToKVTuple,
     ImportTable,
@@ -47,9 +44,7 @@ from recidiviz.calculator.pipeline.utils.entity_hydration_utils import (
     SetSentencesOnSentenceGroup,
     SetViolationOnViolationsResponse,
 )
-from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.calculator.pipeline.utils.execution_utils import (
-    person_and_kwargs_for_identifier,
     select_all_by_person_query,
 )
 from recidiviz.calculator.pipeline.utils.extractor_utils import (
@@ -59,7 +54,6 @@ from recidiviz.calculator.pipeline.utils.extractor_utils import (
 from recidiviz.calculator.pipeline.utils.person_utils import (
     BuildPersonMetadata,
     ExtractPersonEventsMetadata,
-    PersonMetadata,
 )
 from recidiviz.calculator.query.state.views.reference.incarceration_period_judicial_district_association import (
     INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
@@ -74,169 +68,17 @@ from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses im
     US_MO_SENTENCE_STATUSES_VIEW_NAME,
 )
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import StatePerson
-
-
-@with_input_types(
-    beam.typehints.Tuple[entities.StatePerson, List[IdentifierEvent], PersonMetadata]
-)
-@with_output_types(IncarcerationMetric)
-class GetIncarcerationMetrics(beam.PTransform):
-    """Transforms a StatePerson and IncarcerationEvents into IncarcerationMetrics."""
-
-    def __init__(
-        self,
-        pipeline_options: Dict[str, Any],
-        metric_types: Set[str],
-        calculation_month_count: int,
-        calculation_end_month: Optional[str] = None,
-    ):
-        super().__init__()
-        self._pipeline_options = pipeline_options
-        self._calculation_end_month = calculation_end_month
-        self._calculation_month_count = calculation_month_count
-
-        month_count_string = (
-            str(calculation_month_count) if calculation_month_count != -1 else "all"
-        )
-        end_month_string = (
-            calculation_end_month if calculation_end_month else "the current month"
-        )
-        logging.info(
-            "Producing metric output for %s month(s) up to %s",
-            month_count_string,
-            end_month_string,
-        )
-
-        self._metric_inclusions: Dict[IncarcerationMetricType, bool] = {}
-
-        for metric_option in IncarcerationMetricType:
-            if metric_option.value in metric_types or "ALL" in metric_types:
-                self._metric_inclusions[metric_option] = True
-                logging.info("Producing %s metrics", metric_option.value)
-            else:
-                self._metric_inclusions[metric_option] = False
-
-    def expand(self, input_or_inputs: List[Any]) -> List[IncarcerationMetric]:
-        # Produce IncarcerationMetrics
-        incarceration_metrics = (
-            input_or_inputs
-            | "Produce IncarcerationMetrics"
-            >> beam.ParDo(
-                ProduceIncarcerationMetrics(),
-                self._calculation_end_month,
-                self._calculation_month_count,
-                self._metric_inclusions,
-                self._pipeline_options,
-            )
-        )
-
-        # Return IncarcerationMetric objects
-        return incarceration_metrics
-
-
-@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
-@with_output_types(
-    beam.typehints.Tuple[int, Tuple[entities.StatePerson, List[IncarcerationEvent]]]
-)
-class ClassifyIncarcerationEvents(beam.DoFn):
-    """Classifies incarceration periods as admission and release events."""
-
-    # pylint: disable=arguments-differ
-    def process(
-        self, element: Tuple[int, Dict[str, Iterable[Any]]]
-    ) -> Generator[
-        Tuple[Optional[int], Tuple[StatePerson, List[IncarcerationEvent]]], None, None
-    ]:
-        """Identifies instances of admission and release from incarceration."""
-        _, person_entities = element
-
-        person, kwargs = person_and_kwargs_for_identifier(person_entities)
-
-        # Find the IncarcerationEvents
-        incarceration_events = identifier.find_incarceration_events(**kwargs)
-
-        if not incarceration_events:
-            logging.info(
-                "No valid incarceration events for person with id: %d. Excluding them from the "
-                "calculations.",
-                person.person_id,
-            )
-        else:
-            yield person.person_id, (person, incarceration_events)
-
-    def to_runner_api_parameter(self, unused_context: Any) -> None:
-        pass  # Passing unused abstract method.
-
-
-@with_input_types(
-    beam.typehints.Tuple[entities.StatePerson, List[IdentifierEvent], PersonMetadata],
-    beam.typehints.Optional[str],
-    beam.typehints.Optional[int],
-    beam.typehints.Dict[IncarcerationMetricType, bool],
-    beam.typehints.Dict[str, Any],
-)
-@with_output_types(IncarcerationMetric)
-class ProduceIncarcerationMetrics(beam.DoFn):
-    """Produces IncarcerationMetrics."""
-
-    # pylint: disable=arguments-differ
-    def process(
-        self,
-        element: Tuple[StatePerson, List[IncarcerationEvent], PersonMetadata],
-        calculation_end_month: Optional[str],
-        calculation_month_count: int,
-        metric_inclusions: Dict[IncarcerationMetricType, bool],
-        pipeline_options: Dict[str, str],
-    ) -> Generator[IncarcerationMetric, None, None]:
-        """Produces various incarceration metrics.
-
-        Sends the metric producer the StatePerson entity and their corresponding IncarcerationEvents for mapping all
-        incarceration metrics.
-
-        Args:
-            element: Tuple containing a StatePerson and their IncarcerationEvents
-            calculation_end_month: The year and month of the last month for which metrics should be calculated.
-            calculation_month_count: The number of months to limit the monthly calculation output to.
-            metric_inclusions: A dictionary where the keys are each IncarcerationMetricType, and the values are boolean
-                flags for whether or not to include that metric type in the calculations
-            pipeline_options: A dictionary storing configuration details for the pipeline.
-        Yields:
-            Each IncarcerationMetric.
-        """
-        person, incarceration_events, person_metadata = element
-
-        pipeline_job_id = job_id(pipeline_options)
-
-        # Assert all events are of type IncarcerationEvent
-        incarceration_events = cast(List[IncarcerationEvent], incarceration_events)
-
-        # Produce incarceration metrics for this person and events
-        metrics = metric_producer.produce_incarceration_metrics(
-            person,
-            incarceration_events,
-            metric_inclusions,
-            calculation_end_month,
-            calculation_month_count,
-            person_metadata,
-            pipeline_job_id,
-        )
-
-        # Return each of the IncarcerationMetrics
-        for metric in metrics:
-            yield metric
-
-    def to_runner_api_parameter(self, unused_context: Any) -> None:
-        pass  # Passing unused abstract method.
 
 
 class IncarcerationPipeline(BasePipeline):
     """Defines the incarceration calculation pipeline."""
 
     def __init__(self) -> None:
-        self.name = "incarceration"
-        self.metric_type_class = IncarcerationMetricType  # type: ignore
-        self.metric_class = IncarcerationMetric  # type: ignore
+        self.pipeline_config = PipelineConfig(
+            pipeline_type=PipelineType.INCARCERATION,
+            identifier=identifier.IncarcerationIdentifier(),
+            metric_producer=metric_producer.IncarcerationMetricProducer(),
+        )
         self.include_calculation_limit_args = True
 
     def execute_pipeline(
@@ -477,7 +319,7 @@ class IncarcerationPipeline(BasePipeline):
         person_incarceration_events = (
             person_entities
             | "Classify Incarceration Events"
-            >> beam.ParDo(ClassifyIncarcerationEvents())
+            >> beam.ParDo(ClassifyEvents(), identifier=self.pipeline_config.identifier)
         )
 
         person_metadata = (
@@ -510,9 +352,10 @@ class IncarcerationPipeline(BasePipeline):
         incarceration_metrics = (
             person_incarceration_events_with_metadata
             | "Get Incarceration Metrics"
-            >> GetIncarcerationMetrics(
+            >> GetMetrics(
                 pipeline_options=all_pipeline_options,
-                metric_types=metric_types_set,
+                pipeline_config=self.pipeline_config,
+                metric_types_to_include=metric_types_set,
                 calculation_end_month=calculation_end_month,
                 calculation_month_count=calculation_month_count,
             )

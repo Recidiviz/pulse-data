@@ -14,8 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-# pylint: disable=unused-import,wrong-import-order
-
 """Tests for incarceration/pipeline.py"""
 import unittest
 from datetime import date
@@ -23,15 +21,14 @@ from typing import Any, Dict, List, Optional, Set
 from unittest import mock
 
 import apache_beam as beam
-from apache_beam.pvalue import AsDict
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from freezegun import freeze_time
 from mock import patch
 
-from recidiviz.calculator.pipeline.incarceration import pipeline
+from recidiviz.calculator.pipeline.base_pipeline import ClassifyEvents, ProduceMetrics
+from recidiviz.calculator.pipeline.incarceration import identifier, pipeline
 from recidiviz.calculator.pipeline.incarceration.incarceration_event import (
-    IncarcerationAdmissionEvent,
     IncarcerationCommitmentFromSupervisionAdmissionEvent,
     IncarcerationReleaseEvent,
     IncarcerationStandardAdmissionEvent,
@@ -709,7 +706,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
 
 class TestClassifyIncarcerationEvents(unittest.TestCase):
-    """Tests the ClassifyIncarcerationEvents DoFn in the pipeline."""
+    """Tests the ClassifyEvents DoFn in the pipeline."""
 
     def setUp(self) -> None:
         self.pre_processing_delegate_patcher = mock.patch(
@@ -719,6 +716,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         self.mock_pre_processing_delegate.return_value = (
             UsXxIncarcerationPreProcessingDelegate()
         )
+        self.identifier = identifier.IncarcerationIdentifier()
 
         self.commitment_from_supervision_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_commitment_from_supervision_delegate"
@@ -907,7 +905,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             test_pipeline
             | beam.Create([(fake_person_id, person_entities)])
             | "Identify Incarceration Events"
-            >> beam.ParDo(pipeline.ClassifyIncarcerationEvents())
+            >> beam.ParDo(ClassifyEvents(), self.identifier)
         )
 
         assert_that(output, equal_to(correct_output))
@@ -934,7 +932,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             test_pipeline
             | beam.Create([(fake_person.person_id, person_entities)])
             | "Identify Incarceration Events"
-            >> beam.ParDo(pipeline.ClassifyIncarcerationEvents())
+            >> beam.ParDo(ClassifyEvents(), self.identifier)
         )
 
         assert_that(output, equal_to([]))
@@ -1094,7 +1092,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             test_pipeline
             | beam.Create([(fake_person_id, person_entities)])
             | "Identify Incarceration Events"
-            >> beam.ParDo(pipeline.ClassifyIncarcerationEvents())
+            >> beam.ParDo(ClassifyEvents(), self.identifier)
         )
 
         assert_that(output, equal_to(correct_output))
@@ -1103,13 +1101,13 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
 
 
 class TestProduceIncarcerationMetrics(unittest.TestCase):
-    """Tests the ProduceIncarcerationMetrics DoFn
-    in the pipeline."""
+    """Tests the ProduceMetrics DoFn in the pipeline."""
 
     def setUp(self) -> None:
         self.fake_person_id = 12345
 
         self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
+        self.pipeline_config = pipeline.IncarcerationPipeline().pipeline_config
 
     def testProduceIncarcerationMetrics(self):
         """Tests the ProduceIncarcerationMetrics DoFn."""
@@ -1163,11 +1161,12 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             | beam.ParDo(ExtractPersonEventsMetadata())
             | "Produce Incarceration Metrics"
             >> beam.ParDo(
-                pipeline.ProduceIncarcerationMetrics(),
-                None,
-                -1,
+                ProduceMetrics(),
+                self.pipeline_config,
                 ALL_METRICS_INCLUSIONS_DICT,
                 test_pipeline_options(),
+                None,
+                -1,
             )
         )
 
@@ -1209,11 +1208,12 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             | beam.ParDo(ExtractPersonEventsMetadata())
             | "Produce Incarceration Metrics"
             >> beam.ParDo(
-                pipeline.ProduceIncarcerationMetrics(),
-                None,
-                -1,
+                ProduceMetrics(),
+                self.pipeline_config,
                 ALL_METRICS_INCLUSIONS_DICT,
                 test_pipeline_options(),
+                None,
+                -1,
             )
         )
 
@@ -1232,11 +1232,12 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             | beam.Create([])
             | "Produce Incarceration Metrics"
             >> beam.ParDo(
-                pipeline.ProduceIncarcerationMetrics(),
-                None,
-                -1,
+                ProduceMetrics(),
+                self.pipeline_config,
                 ALL_METRICS_INCLUSIONS_DICT,
                 test_pipeline_options(),
+                None,
+                -1,
             )
         )
 

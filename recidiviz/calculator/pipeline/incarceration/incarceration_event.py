@@ -16,15 +16,15 @@
 # =============================================================================
 """Events related to incarceration."""
 from datetime import date
-from typing import Optional, List
+from typing import List, Optional
 
 import attr
 
 from recidiviz.calculator.pipeline.utils.event_utils import (
-    IdentifierEventWithSingularDate,
     AssessmentEventMixin,
-    ViolationHistoryMixin,
+    IdentifierEvent,
     SupervisionLocationMixin,
+    ViolationHistoryMixin,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -33,8 +33,8 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodSupervisionType,
     StateSupervisionLevel,
+    StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
@@ -42,7 +42,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 
 
 @attr.s(frozen=True)
-class IncarcerationEvent(IdentifierEventWithSingularDate):
+class IncarcerationEvent(IdentifierEvent):
     """Models details related to an incarceration event.
 
     Describes a date on which a person interacted with incarceration. This includes the information pertaining to the

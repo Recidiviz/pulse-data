@@ -14,10 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-# pylint: disable=unused-import,wrong-import-order,protected-access
-
+# pylint: disable=protected-access
 """Tests for incarceration/identifier.py."""
-
 import unittest
 from datetime import date
 from typing import Any, Dict, List, Optional
@@ -151,6 +149,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         self.mock_pre_processing_delegate.return_value = (
             UsXxIncarcerationPreProcessingDelegate()
         )
+        self.identifier = identifier.IncarcerationIdentifier()
 
         self.commitment_from_supervision_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_commitment_from_supervision_delegate"
@@ -169,8 +168,8 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         self.pre_processing_delegate_patcher.stop()
         self.commitment_from_supervision_delegate_patcher.stop()
 
-    @staticmethod
     def _run_find_incarceration_events(
+        self,
         sentence_groups: Optional[List[StateSentenceGroup]] = None,
         assessments: Optional[List[StateAssessment]] = None,
         violation_responses: Optional[List[StateSupervisionViolationResponse]] = None,
@@ -184,7 +183,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             or _DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST
         )
 
-        return identifier.find_incarceration_events(
+        return self.identifier._find_incarceration_events(
             sentence_groups,
             assessments,
             violation_responses,
@@ -2118,9 +2117,11 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 class TestFindIncarcerationStays(unittest.TestCase):
     """Tests the find_incarceration_stays function."""
 
-    @staticmethod
+    def setUp(self) -> None:
+        self.identifier = identifier.IncarcerationIdentifier()
+
     def _run_find_incarceration_stays_with_no_sentences(
-        incarceration_period: StateIncarcerationPeriod, county_of_residence: str
+        self, incarceration_period: StateIncarcerationPeriod, county_of_residence: str
     ):
         """Runs `find_incarceration_stays` without providing sentence information.
         Sentence information is only used in `US_MO` to inform information about
@@ -2142,7 +2143,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             ),
         )
 
-        return identifier.find_incarceration_stays(
+        return self.identifier._find_incarceration_stays(
             incarceration_sentences,
             supervision_sentences,
             incarceration_period,
@@ -2218,7 +2219,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
         )
 
         incarceration_sentences = []
-        incarceration_events = identifier.find_incarceration_stays(
+        incarceration_events = self.identifier._find_incarceration_stays(
             incarceration_sentences,
             [supervision_sentence],
             incarceration_period,
@@ -2748,7 +2749,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
         )
 
         incarceration_sentences = []
-        incarceration_events = identifier.find_incarceration_stays(
+        incarceration_events = self.identifier._find_incarceration_stays(
             incarceration_sentences,
             [],
             incarceration_period_2,
@@ -2828,7 +2829,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
         )
 
         incarceration_sentences = []
-        incarceration_events = identifier.find_incarceration_stays(
+        incarceration_events = self.identifier._find_incarceration_stays(
             incarceration_sentences,
             [],
             incarceration_period_2,
@@ -2857,12 +2858,13 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         self.mock_commitment_from_supervision_delegate.return_value = (
             UsXxCommitmentFromSupervisionDelegate()
         )
+        self.identifier = identifier.IncarcerationIdentifier()
 
     def tearDown(self) -> None:
         self.commitment_from_supervision_delegate_patcher.stop()
 
-    @staticmethod
     def _run_admission_event_for_period(
+        self,
         incarceration_period: StateIncarcerationPeriod,
         incarceration_period_index: Optional[
             PreProcessedIncarcerationPeriodIndex
@@ -2902,7 +2904,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             else []
         )
 
-        return identifier.admission_event_for_period(
+        return self.identifier._admission_event_for_period(
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
             incarceration_period=incarceration_period,
@@ -3145,8 +3147,11 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
 class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
     """Tests the _commitment_from_supervision_event_for_period function."""
 
-    @staticmethod
+    def setUp(self) -> None:
+        self.identifier = identifier.IncarcerationIdentifier()
+
     def _run_commitment_from_supervision_event_for_period(
+        self,
         incarceration_period: StateIncarcerationPeriod,
         pre_commitment_supervision_period: Optional[StateSupervisionPeriod],
         incarceration_period_index: Optional[
@@ -3193,7 +3198,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             )
         )
 
-        return identifier._commitment_from_supervision_event_for_period(
+        return self.identifier._commitment_from_supervision_event_for_period(
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
             incarceration_period=incarceration_period,
@@ -3752,9 +3757,11 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
 class TestReleaseEventForPeriod(unittest.TestCase):
     """Tests the release_event_for_period function."""
 
-    @staticmethod
+    def setUp(self) -> None:
+        self.identifier = identifier.IncarcerationIdentifier()
+
     def _run_release_for_period_with_no_sentences(
-        incarceration_period, county_of_residence
+        self, incarceration_period, county_of_residence
     ):
         """Runs `release_event_for_period` without providing sentence information. Sentence information
         is only used to inform supervision_type_at_release for US_MO and US_ID. All tests using this method should
@@ -3772,7 +3779,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             ),
         )
 
-        return identifier.release_event_for_period(
+        return self.identifier._release_event_for_period(
             incarceration_sentences,
             supervision_sentences,
             incarceration_period,
@@ -3916,7 +3923,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             ),
         )
 
-        release_event = identifier.release_event_for_period(
+        release_event = self.identifier._release_event_for_period(
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
             incarceration_period=incarceration_period,
@@ -3990,7 +3997,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             ),
         )
 
-        release_event = identifier.release_event_for_period(
+        release_event = self.identifier._release_event_for_period(
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=[supervision_sentence],
             incarceration_period=incarceration_period,
@@ -4058,6 +4065,9 @@ class TestReleaseEventForPeriod(unittest.TestCase):
 
 class TestGetUniquePeriodsFromSentenceGroupAndAddBackedges(unittest.TestCase):
     """Tests the get_unique_periods_from_sentence_groups_and_add_backedges function."""
+
+    def setUp(self) -> None:
+        self.identifier = identifier.IncarcerationIdentifier()
 
     def test_get_unique_periods_from_sentence_groups_and_add_backedges(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -4147,7 +4157,7 @@ class TestGetUniquePeriodsFromSentenceGroupAndAddBackedges(unittest.TestCase):
         (
             incarceration_periods,
             supervision_periods,
-        ) = identifier.get_unique_periods_from_sentence_groups_and_add_backedges(
+        ) = self.identifier._get_unique_periods_from_sentence_groups_and_add_backedges(
             sentence_groups
         )
 
@@ -4176,7 +4186,7 @@ class TestGetUniquePeriodsFromSentenceGroupAndAddBackedges(unittest.TestCase):
         (
             incarceration_periods,
             supervision_periods,
-        ) = identifier.get_unique_periods_from_sentence_groups_and_add_backedges(
+        ) = self.identifier._get_unique_periods_from_sentence_groups_and_add_backedges(
             sentence_groups
         )
 
@@ -4192,7 +4202,9 @@ class TestGetUniquePeriodsFromSentenceGroupAndAddBackedges(unittest.TestCase):
         (
             incarceration_periods,
             supervision_periods,
-        ) = identifier.get_unique_periods_from_sentence_groups_and_add_backedges([])
+        ) = self.identifier._get_unique_periods_from_sentence_groups_and_add_backedges(
+            []
+        )
 
         expected_incarceration_periods = []
         expected_supervision_periods = []
@@ -4203,6 +4215,9 @@ class TestGetUniquePeriodsFromSentenceGroupAndAddBackedges(unittest.TestCase):
 
 class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
     """Tests the find_most_serious_prior_charge_in_sentence_group function,"""
+
+    def setUp(self) -> None:
+        self.identifier = identifier.IncarcerationIdentifier()
 
     def test_find_most_serious_prior_charge_in_sentence_group(self):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -4257,7 +4272,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         incarceration_sentence.sentence_group = sentence_group
 
         most_serious_statute = (
-            identifier.find_most_serious_prior_charge_in_sentence_group(
+            self.identifier._find_most_serious_prior_charge_in_sentence_group(
                 incarceration_period, date(2008, 12, 31)
             ).statute
         )
@@ -4365,7 +4380,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         incarceration_sentence_2.sentence_group = sentence_group
 
         most_serious_statute = (
-            identifier.find_most_serious_prior_charge_in_sentence_group(
+            self.identifier._find_most_serious_prior_charge_in_sentence_group(
                 incarceration_period_1, date(2008, 12, 31)
             ).statute
         )
@@ -4440,7 +4455,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         incarceration_sentence_2.sentence_group = sentence_group
 
         most_serious_statute = (
-            identifier.find_most_serious_prior_charge_in_sentence_group(
+            self.identifier._find_most_serious_prior_charge_in_sentence_group(
                 incarceration_period, date(2008, 12, 31)
             ).statute
         )
@@ -4498,7 +4513,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         incarceration_sentence.sentence_group = sentence_group
 
         most_serious_charge = (
-            identifier.find_most_serious_prior_charge_in_sentence_group(
+            self.identifier._find_most_serious_prior_charge_in_sentence_group(
                 incarceration_period, date(2008, 12, 31)
             )
         )
@@ -4560,7 +4575,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         incarceration_sentence.sentence_group = sentence_group
 
         most_serious_statute = (
-            identifier.find_most_serious_prior_charge_in_sentence_group(
+            self.identifier._find_most_serious_prior_charge_in_sentence_group(
                 incarceration_period, date(2008, 12, 31)
             ).statute
         )
@@ -4617,7 +4632,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         incarceration_sentence.sentence_group = sentence_group
 
         most_serious_statute = (
-            identifier.find_most_serious_prior_charge_in_sentence_group(
+            self.identifier._find_most_serious_prior_charge_in_sentence_group(
                 incarceration_period, date(2008, 12, 31)
             ).statute
         )
@@ -4680,7 +4695,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         incarceration_sentence.sentence_group = sentence_group
 
         most_serious_charge = (
-            identifier.find_most_serious_prior_charge_in_sentence_group(
+            self.identifier._find_most_serious_prior_charge_in_sentence_group(
                 incarceration_period, date(2008, 12, 31)
             )
         )
@@ -4743,7 +4758,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         incarceration_sentence.sentence_group = sentence_group
 
         most_serious_statute = (
-            identifier.find_most_serious_prior_charge_in_sentence_group(
+            self.identifier._find_most_serious_prior_charge_in_sentence_group(
                 incarceration_period, date(2008, 12, 31)
             ).statute
         )

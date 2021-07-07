@@ -27,7 +27,8 @@ from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from freezegun import freeze_time
 
-from recidiviz.calculator.pipeline.program import pipeline
+from recidiviz.calculator.pipeline.base_pipeline import ClassifyEvents, ProduceMetrics
+from recidiviz.calculator.pipeline.program import identifier, pipeline
 from recidiviz.calculator.pipeline.program.metrics import (
     ProgramMetric,
     ProgramMetricType,
@@ -432,6 +433,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         self.mock_pre_processing_delegate.return_value = (
             UsXxIncarcerationPreProcessingDelegate()
         )
+        self.identifier = identifier.ProgramIdentifier()
 
     def tearDown(self) -> None:
         self.assessment_types_patcher.stop()
@@ -523,8 +525,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         output = (
             test_pipeline
             | beam.Create([(fake_person_id, person_periods)])
-            | "Identify Program Events"
-            >> beam.ParDo(pipeline.ClassifyProgramAssignments())
+            | "Identify Program Events" >> beam.ParDo(ClassifyEvents(), self.identifier)
         )
 
         assert_that(output, equal_to(correct_output))
@@ -617,8 +618,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         output = (
             test_pipeline
             | beam.Create([(fake_person_id, person_periods)])
-            | "Identify Program Events"
-            >> beam.ParDo(pipeline.ClassifyProgramAssignments())
+            | "Identify Program Events" >> beam.ParDo(ClassifyEvents(), self.identifier)
         )
 
         assert_that(output, equal_to(correct_output))
@@ -678,8 +678,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         output = (
             test_pipeline
             | beam.Create([(fake_person_id, person_periods)])
-            | "Identify Program Events"
-            >> beam.ParDo(pipeline.ClassifyProgramAssignments())
+            | "Identify Program Events" >> beam.ParDo(ClassifyEvents(), self.identifier)
         )
 
         assert_that(output, equal_to(correct_output))
@@ -751,8 +750,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         output = (
             test_pipeline
             | beam.Create([(fake_person_id, person_periods)])
-            | "Identify Program Events"
-            >> beam.ParDo(pipeline.ClassifyProgramAssignments())
+            | "Identify Program Events" >> beam.ParDo(ClassifyEvents(), self.identifier)
         )
 
         assert_that(output, equal_to(correct_output))
@@ -813,8 +811,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         output = (
             test_pipeline
             | beam.Create([(fake_person_id, person_periods)])
-            | "Identify Program Events"
-            >> beam.ParDo(pipeline.ClassifyProgramAssignments())
+            | "Identify Program Events" >> beam.ParDo(ClassifyEvents(), self.identifier)
         )
 
         assert_that(output, equal_to(correct_output))
@@ -829,6 +826,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
         self.fake_person_id = 12345
 
         self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
+        self.pipeline_config = pipeline.ProgramPipeline().pipeline_config
 
     def testProduceProgramMetrics(self):
         """Tests the ProduceProgramMetrics DoFn."""
@@ -878,11 +876,12 @@ class TestProduceProgramMetrics(unittest.TestCase):
             | beam.ParDo(ExtractPersonEventsMetadata())
             | "Produce Program Metrics"
             >> beam.ParDo(
-                pipeline.ProduceProgramMetrics(),
-                None,
-                -1,
+                ProduceMetrics(),
+                self.pipeline_config,
                 ALL_METRIC_INCLUSIONS_DICT,
                 test_pipeline_options(),
+                None,
+                -1,
             )
         )
 
@@ -924,11 +923,12 @@ class TestProduceProgramMetrics(unittest.TestCase):
             | beam.ParDo(ExtractPersonEventsMetadata())
             | "Produce Program Metrics"
             >> beam.ParDo(
-                pipeline.ProduceProgramMetrics(),
-                None,
-                -1,
+                ProduceMetrics(),
+                self.pipeline_config,
                 ALL_METRIC_INCLUSIONS_DICT,
                 test_pipeline_options(),
+                None,
+                -1,
             )
         )
 
@@ -948,11 +948,12 @@ class TestProduceProgramMetrics(unittest.TestCase):
             | beam.ParDo(ExtractPersonEventsMetadata())
             | "Produce Program Metrics"
             >> beam.ParDo(
-                pipeline.ProduceProgramMetrics(),
-                None,
-                -1,
+                ProduceMetrics(),
+                self.pipeline_config,
                 ALL_METRIC_INCLUSIONS_DICT,
                 test_pipeline_options(),
+                None,
+                -1,
             )
         )
 

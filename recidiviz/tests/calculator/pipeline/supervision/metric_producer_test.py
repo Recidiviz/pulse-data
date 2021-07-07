@@ -23,8 +23,11 @@ from unittest import mock
 
 from freezegun import freeze_time
 
-from recidiviz.calculator.pipeline.supervision import metric_producer
-from recidiviz.calculator.pipeline.supervision.identifier import BUCKET_TYPES_FOR_METRIC
+from recidiviz.calculator.pipeline.supervision import (
+    identifier,
+    metric_producer,
+    pipeline,
+)
 from recidiviz.calculator.pipeline.supervision.metrics import (
     SuccessfulSupervisionSentenceDaysServedMetric,
     SupervisionMetricType,
@@ -90,6 +93,11 @@ _PIPELINE_JOB_ID = "TEST_JOB_ID"
 class TestProduceSupervisionMetrics(unittest.TestCase):
     """Tests the produce_supervision_metrics function."""
 
+    def setUp(self) -> None:
+        self.metric_producer = metric_producer.SupervisionMetricProducer()
+        self.identifier = identifier.SupervisionIdentifier()
+        self.pipeline_config = pipeline.SupervisionPipeline().pipeline_config
+
     def test_produce_supervision_metrics(self) -> None:
         """Tests the produce_supervision_metrics function."""
         person = StatePerson.new_with_defaults(
@@ -136,7 +144,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -144,6 +152,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(supervision_time_buckets)
@@ -198,7 +207,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -206,6 +215,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(supervision_time_buckets)
@@ -261,7 +271,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -269,6 +279,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(supervision_time_buckets)
@@ -326,7 +337,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -334,6 +345,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(supervision_time_buckets)
@@ -388,7 +400,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             )
         ]
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -396,6 +408,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(supervision_time_buckets)
@@ -467,7 +480,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -475,6 +488,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(supervision_time_buckets)
@@ -545,7 +559,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -553,6 +567,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(supervision_time_buckets)
@@ -632,7 +647,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -640,6 +655,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(supervision_time_buckets)
@@ -716,7 +732,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -724,6 +740,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(supervision_time_buckets)
@@ -809,7 +826,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -817,6 +834,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(supervision_time_buckets)
@@ -890,7 +908,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -898,6 +916,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(supervision_time_buckets)
@@ -954,7 +973,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -962,6 +981,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(supervision_time_buckets)
@@ -1027,7 +1047,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -1035,6 +1055,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(
@@ -1120,7 +1141,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -1128,6 +1149,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(
@@ -1181,7 +1203,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -1189,6 +1211,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(
@@ -1227,7 +1250,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         supervision_time_buckets: List[SupervisionTimeBucket] = [start_bucket]
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -1235,6 +1258,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(supervision_time_buckets)
@@ -1277,7 +1301,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         supervision_time_buckets: List[SupervisionTimeBucket] = [termination_bucket]
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -1285,6 +1309,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(supervision_time_buckets)
@@ -1330,7 +1355,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         supervision_time_buckets: List[SupervisionTimeBucket] = [termination_bucket]
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -1338,6 +1363,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count([termination_bucket])
@@ -1398,7 +1424,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             second_termination_bucket,
         ]
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -1406,6 +1432,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(supervision_time_buckets)
@@ -1487,7 +1514,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric_type in SupervisionMetricType
         }
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             inclusions_dict,
@@ -1495,6 +1522,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(
@@ -1578,7 +1606,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric_type in SupervisionMetricType
         }
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             inclusions_dict,
@@ -1586,6 +1614,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(
@@ -1672,7 +1701,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric_type in SupervisionMetricType
         }
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             inclusions_dict,
@@ -1680,6 +1709,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(
@@ -1762,7 +1792,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric_type in SupervisionMetricType
         }
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             inclusions_dict,
@@ -1770,6 +1800,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(
@@ -1850,7 +1881,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric_type in SupervisionMetricType
         }
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             inclusions_dict,
@@ -1858,6 +1889,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(
@@ -1926,7 +1958,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric_type in SupervisionMetricType
         }
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             inclusions_dict,
@@ -1934,6 +1966,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(
@@ -2005,7 +2038,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -2013,6 +2046,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(supervision_time_buckets)
@@ -2059,7 +2093,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric_type in SupervisionMetricType
         }
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             inclusions_dict,
@@ -2067,6 +2101,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(
@@ -2122,7 +2157,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric_type in SupervisionMetricType
         }
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             inclusions_dict,
@@ -2130,6 +2165,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(
@@ -2185,7 +2221,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric_type in SupervisionMetricType
         }
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             inclusions_dict,
@@ -2193,6 +2229,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = 0
@@ -2239,7 +2276,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric_type in SupervisionMetricType
         }
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             inclusions_dict,
@@ -2247,6 +2284,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = 0
@@ -2302,7 +2340,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ),
         ]
 
-        metrics = metric_producer.produce_supervision_metrics(
+        metrics = self.metric_producer.produce_metrics(
             person,
             supervision_time_buckets,
             ALL_METRICS_INCLUSIONS_DICT,
@@ -2310,6 +2348,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
         )
 
         expected_count = expected_metrics_count(supervision_time_buckets)
@@ -2319,6 +2358,9 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
 class TestIncludeEventInMetric(unittest.TestCase):
     """Tests the include_event_in_metric function."""
+
+    def setUp(self) -> None:
+        self.metric_producer = metric_producer.SupervisionMetricProducer()
 
     def test_include_event_in_metric_compliance_no_compliance(self) -> None:
         event = NonRevocationReturnSupervisionTimeBucket(
@@ -2335,7 +2377,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
         )
 
         self.assertFalse(
-            metric_producer.include_event_in_metric(
+            self.metric_producer.include_event_in_metric(
                 event, SupervisionMetricType.SUPERVISION_COMPLIANCE
             )
         )
@@ -2360,7 +2402,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
         )
 
         self.assertTrue(
-            metric_producer.include_event_in_metric(
+            self.metric_producer.include_event_in_metric(
                 event, SupervisionMetricType.SUPERVISION_COMPLIANCE
             )
         )
@@ -2381,7 +2423,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
         )
 
         self.assertFalse(
-            metric_producer.include_event_in_metric(
+            self.metric_producer.include_event_in_metric(
                 event, SupervisionMetricType.SUPERVISION_DOWNGRADE
             )
         )
@@ -2402,7 +2444,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
         )
 
         self.assertTrue(
-            metric_producer.include_event_in_metric(
+            self.metric_producer.include_event_in_metric(
                 event, SupervisionMetricType.SUPERVISION_DOWNGRADE
             )
         )
@@ -2429,7 +2471,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
         )
 
         self.assertFalse(
-            metric_producer.include_event_in_metric(
+            self.metric_producer.include_event_in_metric(
                 event, SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION
             )
         )
@@ -2457,7 +2499,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
         )
 
         self.assertTrue(
-            metric_producer.include_event_in_metric(
+            self.metric_producer.include_event_in_metric(
                 event, SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION
             )
         )
@@ -2484,7 +2526,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
         )
 
         self.assertFalse(
-            metric_producer.include_event_in_metric(
+            self.metric_producer.include_event_in_metric(
                 event, SupervisionMetricType.SUPERVISION_POPULATION
             )
         )
@@ -2512,7 +2554,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
         )
 
         self.assertTrue(
-            metric_producer.include_event_in_metric(
+            self.metric_producer.include_event_in_metric(
                 event, SupervisionMetricType.SUPERVISION_POPULATION
             )
         )
@@ -2533,7 +2575,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
         )
 
         self.assertTrue(
-            metric_producer.include_event_in_metric(
+            self.metric_producer.include_event_in_metric(
                 event, SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
             )
         )
@@ -2556,7 +2598,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
         )
 
         self.assertFalse(
-            metric_producer.include_event_in_metric(
+            self.metric_producer.include_event_in_metric(
                 event, SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
             )
         )
@@ -2579,7 +2621,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
         )
 
         self.assertFalse(
-            metric_producer.include_event_in_metric(
+            self.metric_producer.include_event_in_metric(
                 event, SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
             )
         )
@@ -2601,7 +2643,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
         )
 
         self.assertFalse(
-            metric_producer.include_event_in_metric(
+            self.metric_producer.include_event_in_metric(
                 event, SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
             )
         )
@@ -2684,7 +2726,11 @@ def expected_metrics_count(
                 ]
             )
         else:
-            for bucket_type in BUCKET_TYPES_FOR_METRIC[metric_type]:
+            for (
+                bucket_type
+            ) in identifier.SupervisionIdentifier().BUCKET_TYPES_FOR_METRIC[
+                metric_type
+            ]:
                 output_count_by_metric_type[metric_type] += len(
                     [
                         bucket

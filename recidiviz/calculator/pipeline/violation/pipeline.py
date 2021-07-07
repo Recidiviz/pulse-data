@@ -17,191 +17,41 @@
 """The violations calculation pipeline. See recidiviz/tools/run_sandbox_calculation_pipeline.py
 for details on how to launch a local run.
 """
-import logging
 from datetime import datetime
-from typing import Any, Dict, Generator, Iterable, List, Optional, Set, Tuple, cast
+from typing import Any, Dict, List, Optional, Set
 
 import apache_beam as beam
 from apache_beam.pvalue import AsList
-from apache_beam.runners.pipeline_context import PipelineContext
-from apache_beam.typehints.decorators import with_input_types, with_output_types
 
-from recidiviz.calculator.pipeline.base_pipeline import BasePipeline, job_id
+from recidiviz.calculator.pipeline.base_pipeline import (
+    BasePipeline,
+    ClassifyEvents,
+    GetMetrics,
+    PipelineConfig,
+)
+from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.utils.beam_utils import ImportTable
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import (
     SetViolationResponsesOntoViolations,
-)
-from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
-from recidiviz.calculator.pipeline.utils.execution_utils import (
-    person_and_kwargs_for_identifier,
 )
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
 from recidiviz.calculator.pipeline.utils.person_utils import (
     BuildPersonMetadata,
     ExtractPersonEventsMetadata,
-    PersonMetadata,
 )
 from recidiviz.calculator.pipeline.violation import identifier, metric_producer
-from recidiviz.calculator.pipeline.violation.metrics import (
-    ViolationMetric,
-    ViolationMetricType,
-)
-from recidiviz.calculator.pipeline.violation.violation_event import ViolationEvent
 from recidiviz.persistence.entity.state import entities
-
-
-@with_input_types(beam.typehints.Tuple[int, Dict[str, Iterable[Any]]])
-@with_output_types(
-    beam.typehints.Tuple[int, Tuple[entities.StatePerson, List[ViolationEvent]]]
-)
-class ClassifyViolationEvents(beam.DoFn):
-    """Classifies violation events based on various attributes."""
-
-    # pylint: disable=arguments-differ
-    def process(
-        self, element: Tuple[int, Dict[str, Iterable[Any]]]
-    ) -> Generator[
-        Tuple[Optional[int], Tuple[entities.StatePerson, List[ViolationEvent]]],
-        None,
-        None,
-    ]:
-        """Identifies various events related to violation relevant to calculations."""
-        _, person_entities = element
-
-        person, kwargs = person_and_kwargs_for_identifier(person_entities)
-
-        violation_events = identifier.find_violation_events(**kwargs)
-
-        if not violation_events:
-            logging.info(
-                "No valid violation events for person with id: %d. Excluding them from the calculations.",
-                person.person_id,
-            )
-        else:
-            yield person.person_id, (person, violation_events)
-
-    def to_runner_api_parameter(
-        self, _unused_context: PipelineContext
-    ) -> Tuple[str, Any]:
-        pass
-
-
-@with_input_types(
-    beam.typehints.Tuple[entities.StatePerson, List[IdentifierEvent], PersonMetadata],
-    beam.typehints.Optional[str],
-    beam.typehints.Optional[int],
-    beam.typehints.Dict[ViolationMetricType, bool],
-    beam.typehints.Dict[str, Any],
-)
-@with_output_types(ViolationMetric)
-class ProduceViolationMetrics(beam.DoFn):
-    """Produces violation metrics."""
-
-    # pylint: disable=arguments-differ
-    def process(
-        self,
-        element: Tuple[entities.StatePerson, List[ViolationEvent], PersonMetadata],
-        calculation_end_month: Optional[str],
-        calculation_month_count: int,
-        metric_inclusions: Dict[ViolationMetricType, bool],
-        pipeline_options: Dict[str, str],
-    ) -> Generator[ViolationMetric, None, None]:
-        """Produces various ViolationMetrics.
-        Sends the metric_producer the StatePerson entity and their corresponding ViolationEvents for all metrics.
-        Args:
-            element: Dictionary containing the person, ViolationEvents, and person_metadata
-            calculation_end_month: The year and month of the last month for which metrics should be calculated.
-            calculation_month_count: The number of months to limit the monthly calculation output to.
-            metric_inclusions: A dictionary where the keys are each ViolationMetricType, and the values are boolean
-                values for whether or not to include that metric type in the calculations
-            pipeline_options: A dictionary storing configuration details for the pipeline.
-        Yields:
-            Each violation metric.
-        """
-        person, violation_events, person_metadata = element
-
-        pipeline_job_id = job_id(pipeline_options)
-
-        violation_events = cast(List[ViolationEvent], violation_events)
-
-        metrics = metric_producer.produce_violation_metrics(
-            person,
-            violation_events,
-            metric_inclusions,
-            calculation_end_month,
-            calculation_month_count,
-            person_metadata,
-            pipeline_job_id,
-        )
-
-        for metric in metrics:
-            yield metric
-
-    def to_runner_api_parameter(
-        self, _unused_context: PipelineContext
-    ) -> Tuple[str, Any]:
-        pass
-
-
-@with_input_types(
-    beam.typehints.Tuple[entities.StatePerson, List[IdentifierEvent], PersonMetadata]
-)
-@with_output_types(ViolationMetric)
-class GetViolationMetrics(beam.PTransform):
-    """Transforms a StatePerson and their ViolationEvents into ViolationMetrics."""
-
-    def __init__(
-        self,
-        pipeline_options: Dict[str, str],
-        metric_types: Set[str],
-        calculation_month_count: int,
-        calculation_end_month: Optional[str] = None,
-    ) -> None:
-        super().__init__()
-        self._pipeline_options = pipeline_options
-        self._calculation_end_month = calculation_end_month
-        self._calculation_month_count = calculation_month_count
-
-        month_count_string = (
-            str(calculation_month_count) if calculation_month_count != -1 else "all"
-        )
-        end_month_string = (
-            calculation_end_month if calculation_end_month else "the current month"
-        )
-        logging.info(
-            "Producing metric output for %s month(s) up to %s",
-            month_count_string,
-            end_month_string,
-        )
-
-        self._metric_inclusions: Dict[ViolationMetricType, bool] = {}
-
-        for metric_option in ViolationMetricType:
-            if metric_option.value in metric_types or "ALL" in metric_types:
-                self._metric_inclusions[metric_option] = True
-                logging.info("Producing %s metrics", metric_option.value)
-            else:
-                self._metric_inclusions[metric_option] = False
-
-    def expand(self, input_or_inputs: List[Any]) -> List[ViolationMetric]:
-        violation_metrics = input_or_inputs | "Produce ViolationMetrics" >> beam.ParDo(
-            ProduceViolationMetrics(),
-            self._calculation_end_month,
-            self._calculation_month_count,
-            self._metric_inclusions,
-            self._pipeline_options,
-        )
-
-        return violation_metrics
 
 
 class ViolationPipeline(BasePipeline):
     """Defines the violation calculation pipeline."""
 
     def __init__(self) -> None:
-        self.name = "violation"
-        self.metric_type_class = ViolationMetricType  # type: ignore
-        self.metric_class = ViolationMetric  # type: ignore
+        self.pipeline_config = PipelineConfig(
+            pipeline_type=PipelineType.VIOLATION,
+            identifier=identifier.ViolationIdentifier(),
+            metric_producer=metric_producer.ViolationMetricProducer(),
+        )
         self.include_calculation_limit_args = True
 
     def execute_pipeline(
@@ -288,7 +138,7 @@ class ViolationPipeline(BasePipeline):
         } | "Group StatePerson to violation entities" >> beam.CoGroupByKey()
 
         person_violation_events = person_entities | "Get ViolationEvents" >> beam.ParDo(
-            ClassifyViolationEvents()
+            ClassifyEvents(), identifier=self.pipeline_config.identifier
         )
 
         person_metadata = (
@@ -317,9 +167,10 @@ class ViolationPipeline(BasePipeline):
         violation_metrics = (
             person_violation_events_with_metadata
             | "Get Violation Metrics"
-            >> GetViolationMetrics(
+            >> GetMetrics(
                 pipeline_options=all_pipeline_options,
-                metric_types=metric_types_set,
+                pipeline_config=self.pipeline_config,
+                metric_types_to_include=metric_types_set,
                 calculation_end_month=calculation_end_month,
                 calculation_month_count=calculation_month_count,
             )

@@ -32,7 +32,6 @@ import recidiviz.calculator.pipeline.utils.supervision_period_utils
 import recidiviz.calculator.pipeline.utils.violation_response_utils
 import recidiviz.calculator.pipeline.utils.violation_utils
 from recidiviz.calculator.pipeline.supervision import identifier
-from recidiviz.calculator.pipeline.supervision.identifier import _get_projected_end_date
 from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
@@ -182,6 +181,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         self.mock_pre_processing_delegate.return_value = (
             UsXxIncarcerationPreProcessingDelegate()
         )
+        self.identifier = identifier.SupervisionIdentifier()
 
         self.commitment_from_supervision_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.supervision.identifier"
@@ -304,7 +304,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -380,7 +380,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -489,7 +489,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -601,7 +601,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -716,7 +716,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -827,7 +827,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -958,7 +958,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_events: List[
             SupervisionTimeBucket
-        ] = identifier.find_supervision_time_buckets(
+        ] = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -1063,7 +1063,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -1201,7 +1201,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -1373,7 +1373,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -1503,7 +1503,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -1600,7 +1600,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 ),
             )
         )
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -1662,7 +1662,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
 
         expected_events: List[SupervisionTimeBucket] = []
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -1727,7 +1727,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
 
         expected_events: List[SupervisionTimeBucket] = []
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -1838,7 +1838,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -1949,7 +1949,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -2095,7 +2095,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -2251,7 +2251,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -2372,7 +2372,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -2511,7 +2511,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -2623,7 +2623,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -2731,7 +2731,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -2885,7 +2885,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -3001,7 +3001,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -3116,7 +3116,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -3232,7 +3232,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -3328,7 +3328,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -3424,7 +3424,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -3585,7 +3585,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -3789,7 +3789,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -3893,7 +3893,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -4024,7 +4024,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -4126,7 +4126,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -4244,7 +4244,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -4309,7 +4309,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             }
         ]
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -4473,7 +4473,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             }
         ]
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -4663,7 +4663,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             }
         ]
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -4879,7 +4879,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -4989,7 +4989,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -5128,7 +5128,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -5215,7 +5215,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -5384,7 +5384,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -5437,7 +5437,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -5530,7 +5530,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -5654,7 +5654,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             [],
             [incarceration_sentence],
@@ -5821,7 +5821,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             [supervision_sentence],
             [],
@@ -5995,7 +5995,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ]
         supervision_contacts: List[StateSupervisionContact] = []
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             [supervision_sentence],
             incarceration_sentences,
@@ -6251,7 +6251,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ]
         supervision_contacts: List[StateSupervisionContact] = []
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             [supervision_sentence],
             incarceration_sentences,
@@ -6523,7 +6523,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ]
         supervision_contacts: List[StateSupervisionContact] = []
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             [supervision_sentence],
             incarceration_sentences,
@@ -6751,7 +6751,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ]
         supervision_contacts: List[StateSupervisionContact] = []
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             [supervision_sentence],
             incarceration_sentences,
@@ -7074,7 +7074,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             [supervision_sentence],
             incarceration_sentences,
@@ -7158,7 +7158,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             [supervision_sentence],
             incarceration_sentences,
@@ -7258,7 +7258,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             [supervision_sentence],
             incarceration_sentences,
@@ -7352,7 +7352,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             [supervision_sentence],
             incarceration_sentences,
@@ -7417,7 +7417,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_sentences: List[StateIncarcerationSentence] = []
         incarceration_periods: List[StateIncarcerationPeriod] = []
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             [supervision_sentence],
             incarceration_sentences,
@@ -7506,7 +7506,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             [supervision_sentence],
             incarceration_sentences,
@@ -7603,7 +7603,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_time_buckets(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -7633,12 +7633,13 @@ class TestFindRevocationReturnBuckets(unittest.TestCase):
         self.mock_commitment_from_supervision_delegate.return_value = (
             UsXxCommitmentFromSupervisionDelegate()
         )
+        self.identifier = identifier.SupervisionIdentifier()
 
     def tearDown(self) -> None:
         self.commitment_from_supervision_delegate_patcher.stop()
 
-    @staticmethod
     def _find_revocation_return_buckets(
+        self,
         supervision_periods: List[StateSupervisionPeriod],
         incarceration_periods: List[StateIncarcerationPeriod],
         supervision_sentences: Optional[List[StateSupervisionSentence]] = None,
@@ -7670,7 +7671,7 @@ class TestFindRevocationReturnBuckets(unittest.TestCase):
             supervision_periods
         )
 
-        return identifier.find_revocation_return_buckets(
+        return self.identifier._find_revocation_return_buckets(
             supervision_sentences=supervision_sentences,
             incarceration_sentences=incarceration_sentences,
             supervision_period_index=supervision_period_index,
@@ -8148,6 +8149,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             StateAssessmentType.ORAS,
             StateAssessmentType.LSIR,
         ]
+        self.identifier = identifier.SupervisionIdentifier()
 
         self.person = StatePerson.new_with_defaults(state_code="US_XX")
 
@@ -8209,7 +8211,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
 
-        supervision_events = identifier.find_time_buckets_for_supervision_period(
+        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -8313,7 +8315,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             ),
         )
 
-        supervision_events = identifier.find_time_buckets_for_supervision_period(
+        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -8419,7 +8421,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_time_buckets_for_supervision_period(
+        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -8503,7 +8505,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             ),
         )
 
-        supervision_events = identifier.find_time_buckets_for_supervision_period(
+        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -8602,7 +8604,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_time_buckets_for_supervision_period(
+        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -8681,7 +8683,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             ),
         )
 
-        supervision_events = identifier.find_time_buckets_for_supervision_period(
+        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -8760,7 +8762,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             ),
         )
 
-        supervision_events = identifier.find_time_buckets_for_supervision_period(
+        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -8811,7 +8813,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences: List[StateSupervisionSentence] = [supervision_sentence]
 
-        supervision_events = identifier.find_time_buckets_for_supervision_period(
+        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -8925,7 +8927,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             )
         )
 
-        supervision_events = identifier.find_time_buckets_for_supervision_period(
+        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -9006,7 +9008,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             ),
         )
 
-        supervision_events = identifier.find_time_buckets_for_supervision_period(
+        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -9092,7 +9094,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             ),
         )
 
-        supervision_events = identifier.find_time_buckets_for_supervision_period(
+        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -9159,7 +9161,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        supervision_events = identifier.find_time_buckets_for_supervision_period(
+        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
             self.person,
             [supervision_sentence],
             incarceration_sentences,
@@ -9199,6 +9201,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 0
             ]
         }
+        self.identifier = identifier.SupervisionIdentifier()
 
     def test_classify_supervision_success(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -9229,7 +9232,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         supervision_sentences = [supervision_sentence]
 
-        projected_completion_buckets = identifier.classify_supervision_success(
+        projected_completion_buckets = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [supervision_period],
@@ -9308,7 +9311,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         incarceration_periods = [incarceration_period]
 
-        projected_completion_buckets = identifier.classify_supervision_success(
+        projected_completion_buckets = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [supervision_period],
@@ -9393,7 +9396,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         incarceration_periods: List[StateIncarcerationPeriod] = []
 
-        projected_completion_buckets = identifier.classify_supervision_success(
+        projected_completion_buckets = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [first_supervision_period, second_supervision_period],
@@ -9496,7 +9499,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         ]
         incarceration_periods: List[StateIncarcerationPeriod] = []
 
-        projected_completion_buckets = identifier.classify_supervision_success(
+        projected_completion_buckets = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [first_supervision_period, second_supervision_period],
@@ -9618,7 +9621,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         ]
         incarceration_periods: List[StateIncarcerationPeriod] = []
 
-        projected_completion_buckets = identifier.classify_supervision_success(
+        projected_completion_buckets = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [first_supervision_period, second_supervision_period],
@@ -9724,7 +9727,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         incarceration_periods: List[StateIncarcerationPeriod] = []
 
-        projected_completion_buckets = identifier.classify_supervision_success(
+        projected_completion_buckets = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [supervision_period],
@@ -9814,7 +9817,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         incarceration_periods: List[StateIncarcerationPeriod] = []
 
-        projected_completion_buckets = identifier.classify_supervision_success(
+        projected_completion_buckets = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [supervision_period],
@@ -9892,7 +9895,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         incarceration_periods: List[StateIncarcerationPeriod] = []
 
-        projected_completion_buckets = identifier.classify_supervision_success(
+        projected_completion_buckets = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [supervision_period],
@@ -9964,7 +9967,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             ip_id_to_pfi_subtype={},
         )
 
-        projected_completion_buckets = identifier.classify_supervision_success(
+        projected_completion_buckets = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [supervision_period],
@@ -10005,7 +10008,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             ip_id_to_pfi_subtype={},
         )
 
-        projected_completion_buckets = identifier.classify_supervision_success(
+        projected_completion_buckets = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [supervision_period],
@@ -10047,7 +10050,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             ip_id_to_pfi_subtype={},
         )
 
-        projected_completion_buckets = identifier.classify_supervision_success(
+        projected_completion_buckets = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [supervision_period],
@@ -10099,7 +10102,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         incarceration_periods = [incarceration_period]
 
-        projected_completion_buckets = identifier.classify_supervision_success(
+        projected_completion_buckets = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [supervision_period],
@@ -10171,7 +10174,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             incarceration_sentence
         ]
 
-        projected_completion_buckets = identifier.classify_supervision_success(
+        projected_completion_buckets = self.identifier._classify_supervision_success(
             [],
             incarceration_sentences,
             [supervision_period],
@@ -10237,7 +10240,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             incarceration_sentence
         ]
 
-        projected_completion_buckets = identifier.classify_supervision_success(
+        projected_completion_buckets = self.identifier._classify_supervision_success(
             [],
             incarceration_sentences,
             [supervision_period],
@@ -10279,7 +10282,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             incarceration_sentence
         ]
 
-        projected_completion_buckets = identifier.classify_supervision_success(
+        projected_completion_buckets = self.identifier._classify_supervision_success(
             [],
             incarceration_sentences,
             [supervision_period],
@@ -10322,7 +10325,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             incarceration_sentence
         ]
 
-        projected_completion_buckets = identifier.classify_supervision_success(
+        projected_completion_buckets = self.identifier._classify_supervision_success(
             [],
             incarceration_sentences,
             [supervision_period],
@@ -10395,7 +10398,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             incarceration_sentence
         ]
 
-        projected_completion_buckets = identifier.classify_supervision_success(
+        projected_completion_buckets = self.identifier._classify_supervision_success(
             supervision_sentences,
             incarceration_sentences,
             [supervision_period, incarceration_supervision_period],
@@ -10448,6 +10451,9 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
 class TestFindSupervisionTerminationBucket(unittest.TestCase):
     """Tests the find_supervision_termination_bucket function."""
+
+    def setUp(self) -> None:
+        self.identifier = identifier.SupervisionIdentifier()
 
     def test_find_supervision_termination_bucket(self) -> None:
         supervision_period_termination_date = date(2019, 5, 19)
@@ -10510,7 +10516,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
-        termination_bucket = identifier.find_supervision_termination_bucket(
+        termination_bucket = self.identifier._find_supervision_termination_bucket(
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
@@ -10581,7 +10587,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
-        termination_bucket = identifier.find_supervision_termination_bucket(
+        termination_bucket = self.identifier._find_supervision_termination_bucket(
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
@@ -10657,7 +10663,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
-        termination_bucket = identifier.find_supervision_termination_bucket(
+        termination_bucket = self.identifier._find_supervision_termination_bucket(
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
@@ -10722,7 +10728,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
-        termination_bucket = identifier.find_supervision_termination_bucket(
+        termination_bucket = self.identifier._find_supervision_termination_bucket(
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
@@ -10815,7 +10821,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
-        termination_bucket = identifier.find_supervision_termination_bucket(
+        termination_bucket = self.identifier._find_supervision_termination_bucket(
             supervision_sentences,
             incarceration_sentences,
             first_supervision_period,
@@ -10881,7 +10887,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             incarceration_periods=[], ip_id_to_pfi_subtype={}
         )
 
-        termination_bucket = identifier.find_supervision_termination_bucket(
+        termination_bucket = self.identifier._find_supervision_termination_bucket(
             supervision_sentences=[supervision_sentence],
             incarceration_sentences=[],
             supervision_period=supervision_period,
@@ -11025,7 +11031,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
-        termination_bucket = identifier.find_supervision_termination_bucket(
+        termination_bucket = self.identifier._find_supervision_termination_bucket(
             supervision_sentences,
             incarceration_sentences,
             first_supervision_period,
@@ -11136,7 +11142,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
-        termination_bucket = identifier.find_supervision_termination_bucket(
+        termination_bucket = self.identifier._find_supervision_termination_bucket(
             supervision_sentences,
             incarceration_sentences,
             first_supervision_period,
@@ -11235,7 +11241,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
-        termination_bucket = identifier.find_supervision_termination_bucket(
+        termination_bucket = self.identifier._find_supervision_termination_bucket(
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
@@ -11275,6 +11281,9 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
 
 class TestFindSupervisionStartBucket(unittest.TestCase):
     """Tests the find_supervision_start_bucket function."""
+
+    def setUp(self) -> None:
+        self.identifier = identifier.SupervisionIdentifier()
 
     def test_find_supervision_start_bucket_overlapping_incarceration(self) -> None:
         """Tests that the SupervisionStartBucket has in_incarceration_population_on_date=True
@@ -11401,7 +11410,7 @@ class TestFindSupervisionStartBucket(unittest.TestCase):
         supervision_sentences: List[StateSupervisionSentence] = [supervision_sentence]
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        start_bucket = identifier.find_supervision_start_bucket(
+        start_bucket = self.identifier._find_supervision_start_bucket(
             supervision_sentences,
             incarceration_sentences,
             first_supervision_period,
@@ -11502,7 +11511,7 @@ class TestFindSupervisionStartBucket(unittest.TestCase):
         supervision_sentences: List[StateSupervisionSentence] = [supervision_sentence]
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        start_bucket = identifier.find_supervision_start_bucket(
+        start_bucket = self.identifier._find_supervision_start_bucket(
             supervision_sentences,
             incarceration_sentences,
             first_supervision_period,
@@ -11593,7 +11602,7 @@ class TestFindSupervisionStartBucket(unittest.TestCase):
         supervision_sentences: List[StateSupervisionSentence] = [supervision_sentence]
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        start_bucket = identifier.find_supervision_start_bucket(
+        start_bucket = self.identifier._find_supervision_start_bucket(
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
@@ -11624,6 +11633,9 @@ class TestFindSupervisionStartBucket(unittest.TestCase):
 
 class TestGetMostSevereResponseDecision(unittest.TestCase):
     """Tests the _get_most_severe_response_decision function."""
+
+    def setUp(self) -> None:
+        self.identifier = identifier.SupervisionIdentifier()
 
     def test_get_most_severe_response_decision(self) -> None:
         supervision_violation = StateSupervisionViolation.new_with_defaults(
@@ -11672,6 +11684,9 @@ class TestGetMostSevereResponseDecision(unittest.TestCase):
 class TestConvertBucketsToDual(unittest.TestCase):
     """Tests the _convert_buckets_to_dual function."""
 
+    def setUp(self) -> None:
+        self.identifier = identifier.SupervisionIdentifier()
+
     def test_convert_buckets_to_dual_us_mo(self) -> None:
         supervision_events: List[SupervisionTimeBucket] = [
             NonRevocationReturnSupervisionTimeBucket(
@@ -11692,7 +11707,7 @@ class TestConvertBucketsToDual(unittest.TestCase):
             ),
         ]
 
-        updated_buckets = identifier._convert_buckets_to_dual(
+        updated_buckets = self.identifier._convert_buckets_to_dual(
             supervision_time_buckets=supervision_events
         )
 
@@ -11737,7 +11752,7 @@ class TestConvertBucketsToDual(unittest.TestCase):
             ),
         ]
 
-        updated_buckets = identifier._convert_buckets_to_dual(
+        updated_buckets = self.identifier._convert_buckets_to_dual(
             supervision_time_buckets=supervision_events
         )
 
@@ -11793,7 +11808,7 @@ class TestConvertBucketsToDual(unittest.TestCase):
             ),
         ]
 
-        updated_buckets = identifier._convert_buckets_to_dual(
+        updated_buckets = self.identifier._convert_buckets_to_dual(
             supervision_time_buckets=supervision_events
         )
 
@@ -11859,7 +11874,7 @@ class TestConvertBucketsToDual(unittest.TestCase):
             ),
         ]
 
-        updated_buckets = identifier._convert_buckets_to_dual(
+        updated_buckets = self.identifier._convert_buckets_to_dual(
             supervision_time_buckets=supervision_events
         )
 
@@ -11918,7 +11933,7 @@ class TestConvertBucketsToDual(unittest.TestCase):
             ),
         ]
 
-        updated_buckets = identifier._convert_buckets_to_dual(
+        updated_buckets = self.identifier._convert_buckets_to_dual(
             supervision_time_buckets=supervision_events
         )
 
@@ -11948,7 +11963,7 @@ class TestConvertBucketsToDual(unittest.TestCase):
     def test_convert_buckets_to_dual_empty_input(self) -> None:
         supervision_events: List[SupervisionTimeBucket] = []
 
-        updated_buckets = identifier._convert_buckets_to_dual(
+        updated_buckets = self.identifier._convert_buckets_to_dual(
             supervision_time_buckets=supervision_events
         )
 
@@ -11959,15 +11974,22 @@ class TestConvertBucketsToDual(unittest.TestCase):
     def test_convert_buckets_to_dual_metric_type_coverage(self) -> None:
         """Asserts all SupervisionMetricTypes are handled in the function."""
         for metric_type in SupervisionMetricType:
-            self.assertTrue(metric_type in identifier.BUCKET_TYPES_FOR_METRIC.keys())
+            self.assertTrue(
+                metric_type in self.identifier.BUCKET_TYPES_FOR_METRIC.keys()
+            )
 
 
 class TestIncludeTerminationInSuccessMetric(unittest.TestCase):
     """Tests for _include_termination_in_success_metric function."""
 
+    def setUp(self) -> None:
+        self.identifier = identifier.SupervisionIdentifier()
+
     def test_include_termination_in_success_metric(self) -> None:
         for termination_reason in StateSupervisionPeriodTerminationReason:
-            _ = identifier._include_termination_in_success_metric(termination_reason)
+            _ = self.identifier._include_termination_in_success_metric(
+                termination_reason
+            )
 
 
 def expected_non_revocation_return_time_buckets(
@@ -12078,19 +12100,25 @@ def expected_non_revocation_return_time_buckets(
 class TestSupervisionLevelDowngradeOccurred(unittest.TestCase):
     """Tests the _supervision_level_downgrade_occurred function."""
 
+    def setUp(self) -> None:
+        self.identifier = identifier.SupervisionIdentifier()
+
     def test_supervision_level_downgrade_occurred_covers_all_supervision_levels(
         self,
     ) -> None:
         """Ensures that all values in StateSupervisionLevel are covered by _supervision_level_downgrade_occurred."""
 
         for level in StateSupervisionLevel:
-            identifier._supervision_level_downgrade_occurred(
+            self.identifier._supervision_level_downgrade_occurred(
                 level, StateSupervisionLevel.MAXIMUM
             )
 
 
 class TestFindAssessmentScoreChange(unittest.TestCase):
     """Tests the find_assessment_score_change function."""
+
+    def setUp(self) -> None:
+        self.identifier = identifier.SupervisionIdentifier()
 
     def test_find_assessment_score_change(self) -> None:
         assessment_1 = StateAssessment.new_with_defaults(
@@ -12127,7 +12155,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             end_assessment_score,
             end_assessment_level,
             end_assessment_type,
-        ) = identifier.find_assessment_score_change(
+        ) = self.identifier._find_assessment_score_change(
             assessment_1.state_code, start_date, termination_date, assessments
         )
 
@@ -12161,7 +12189,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             end_assessment_score,
             end_assessment_level,
             end_assessment_type,
-        ) = identifier.find_assessment_score_change(
+        ) = self.identifier._find_assessment_score_change(
             assessment_1.state_code, start_date, termination_date, assessments
         )
 
@@ -12203,7 +12231,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             end_assessment_score,
             end_assessment_level,
             end_assessment_type,
-        ) = identifier.find_assessment_score_change(
+        ) = self.identifier._find_assessment_score_change(
             assessment_1.state_code, start_date, termination_date, assessments
         )
 
@@ -12244,7 +12272,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             end_assessment_score,
             end_assessment_level,
             end_assessment_type,
-        ) = identifier.find_assessment_score_change(
+        ) = self.identifier._find_assessment_score_change(
             assessment_1.state_code, start_date, termination_date, assessments
         )
 
@@ -12285,7 +12313,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             end_assessment_score,
             end_assessment_level,
             end_assessment_type,
-        ) = identifier.find_assessment_score_change(
+        ) = self.identifier._find_assessment_score_change(
             assessment_1.state_code, start_date, termination_date, assessments
         )
 
@@ -12305,7 +12333,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             end_assessment_score,
             end_assessment_level,
             end_assessment_type,
-        ) = identifier.find_assessment_score_change(
+        ) = self.identifier._find_assessment_score_change(
             "US_XX", start_date, termination_date, assessments
         )
 
@@ -12346,7 +12374,7 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             end_assessment_score,
             end_assessment_level,
             end_assessment_type,
-        ) = identifier.find_assessment_score_change(
+        ) = self.identifier._find_assessment_score_change(
             assessment_1.state_code, start_date, termination_date, assessments
         )
 
@@ -12358,6 +12386,9 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
 
 class TestProjectedCompletionDate(unittest.TestCase):
     """Tests for _get_projected_end_date function."""
+
+    def setUp(self) -> None:
+        self.identifier = identifier.SupervisionIdentifier()
 
     def test_get_projected_end_date_supervision_period_not_in_sentence(self) -> None:
         """Tests the _get_projected_completion function. The supervision periods extends past
@@ -12395,7 +12426,7 @@ class TestProjectedCompletionDate(unittest.TestCase):
         )
 
         self.assertEqual(
-            _get_projected_end_date(
+            self.identifier._get_projected_end_date(
                 period=supervision_period,
                 supervision_sentences=[supervision_sentence],
                 incarceration_sentences=[],
@@ -12426,7 +12457,7 @@ class TestProjectedCompletionDate(unittest.TestCase):
         )
 
         self.assertIsNone(
-            _get_projected_end_date(
+            self.identifier._get_projected_end_date(
                 period=supervision_period,
                 supervision_sentences=[],
                 incarceration_sentences=[],
@@ -12471,7 +12502,7 @@ class TestProjectedCompletionDate(unittest.TestCase):
         )
 
         self.assertEqual(
-            _get_projected_end_date(
+            self.identifier._get_projected_end_date(
                 period=supervision_period,
                 supervision_sentences=[supervision_sentence],
                 incarceration_sentences=[],
@@ -12516,7 +12547,7 @@ class TestProjectedCompletionDate(unittest.TestCase):
         )
 
         self.assertEqual(
-            _get_projected_end_date(
+            self.identifier._get_projected_end_date(
                 period=supervision_period,
                 incarceration_sentences=[incarceration_sentence],
                 supervision_sentences=[],
@@ -12575,7 +12606,7 @@ class TestProjectedCompletionDate(unittest.TestCase):
         )
 
         self.assertEqual(
-            _get_projected_end_date(
+            self.identifier._get_projected_end_date(
                 period=supervision_period,
                 incarceration_sentences=[incarceration_sentence],
                 supervision_sentences=[supervision_sentence],
