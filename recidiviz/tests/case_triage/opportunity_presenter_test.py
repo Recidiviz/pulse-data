@@ -16,50 +16,59 @@
 # =============================================================================
 """Implements tests for the OpportunityPresenter class."""
 from datetime import datetime, timedelta
+from typing import List
 from unittest.case import TestCase
 
 import pytz
 
-from recidiviz.case_triage.opportunities.types import OpportunityDeferralType
+from recidiviz.case_triage.opportunities.types import Opportunity
 from recidiviz.case_triage.querier.opportunity_presenter import OpportunityPresenter
-from recidiviz.persistence.database.schema.case_triage.schema import OpportunityDeferral
-from recidiviz.tests.case_triage.case_triage_helpers import generate_fake_opportunity
+from recidiviz.tests.case_triage.case_triage_helpers import (
+    generate_fake_computed_opportunity,
+    generate_fake_etl_opportunity,
+    generate_fake_reminder,
+)
 
 
 class TestOpportunityPresenter(TestCase):
     """Implements tests for the OpportunityPresenter class."""
 
     def setUp(self) -> None:
-        self.mock_opportunity = generate_fake_opportunity(
+        self.mock_etl_opportunity = generate_fake_etl_opportunity(
             officer_id="officer_id_1", person_external_id="person_id_1"
         )
 
-    def test_no_deferral(self) -> None:
-        presenter = OpportunityPresenter(self.mock_opportunity, None)
-        now = datetime.now()
-        self.assertEqual(
-            presenter.to_json(now),
-            {
-                "personExternalId": self.mock_opportunity.person_external_id,
-                "supervisingOfficerExternalId": self.mock_opportunity.supervising_officer_external_id,
-                "stateCode": self.mock_opportunity.state_code,
-                "opportunityType": self.mock_opportunity.opportunity_type,
-                "opportunityMetadata": self.mock_opportunity.opportunity_metadata,
-            },
+        self.mock_opportunity = generate_fake_computed_opportunity(
+            officer_id="officer_id_1", person_external_id="person_id_1"
         )
+
+        self.mock_opportunities: List[Opportunity] = [
+            self.mock_etl_opportunity,
+            self.mock_opportunity,
+        ]
+
+    def test_no_deferral(self) -> None:
+        for opportunity in self.mock_opportunities:
+            presenter = OpportunityPresenter(opportunity, None)
+            now = datetime.now()
+            self.assertEqual(
+                presenter.to_json(now),
+                {
+                    "personExternalId": opportunity.person_external_id,
+                    "supervisingOfficerExternalId": opportunity.supervising_officer_external_id,
+                    "stateCode": opportunity.state_code,
+                    "opportunityType": opportunity.opportunity_type,
+                    "opportunityMetadata": opportunity.opportunity_metadata,
+                },
+            )
 
     def test_deferral(self) -> None:
         now = datetime.now(tz=pytz.UTC)
         tomorrow = now + timedelta(days=1)
         day_after_tomorrow = now + timedelta(days=2)
 
-        deferral = OpportunityDeferral.from_etl_opportunity(
-            self.mock_opportunity,
-            OpportunityDeferralType.REMINDER.value,
-            tomorrow,
-            True,
-        )
-        presenter = OpportunityPresenter(self.mock_opportunity, deferral)
+        deferral = generate_fake_reminder(self.mock_etl_opportunity, tomorrow)
+        presenter = OpportunityPresenter(self.mock_etl_opportunity, deferral)
 
         self.assertTrue("deferredUntil" in presenter.to_json(now))
         self.assertFalse("deferredUntil" in presenter.to_json(day_after_tomorrow))

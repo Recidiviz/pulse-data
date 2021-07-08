@@ -53,16 +53,25 @@ export const clientData: ClientData = {
   supervisionType: "PAROLE",
 };
 
-export const clientOpportunity: Opportunity = {
-  opportunityMetadata: {
-    assessmentScore: 1,
-    latestAssessmentDate: "2019-10-26",
+export const clientOpportunities: Opportunity[] = [
+  {
+    opportunityMetadata: {
+      assessmentScore: 1,
+      latestAssessmentDate: "2019-10-26",
+    },
+    opportunityType: OpportunityType.OVERDUE_DOWNGRADE,
+    personExternalId: "100",
+    stateCode: "US_TEST",
+    supervisingOfficerExternalId: "TESTID",
   },
-  opportunityType: OpportunityType.OVERDUE_DOWNGRADE,
-  personExternalId: "100",
-  stateCode: "US_TEST",
-  supervisingOfficerExternalId: "TESTID",
-};
+  {
+    opportunityMetadata: {},
+    opportunityType: OpportunityType.EMPLOYMENT,
+    personExternalId: "100",
+    stateCode: "US_TEST",
+    supervisingOfficerExternalId: "TESTID",
+  },
+];
 
 export const statePolicy: Policy = {
   assessmentScoreCutoffs: {
@@ -91,6 +100,7 @@ export const statePolicy: Policy = {
   omsName: "TEST",
   policyReferencesForOpportunities: {
     OVERDUE_DOWNGRADE: "http://example.com",
+    EMPLOYMENT: "http://example.com",
   },
   supervisionContactFrequencies: {
     GENERAL: {

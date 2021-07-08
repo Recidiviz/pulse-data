@@ -20,7 +20,7 @@ for Unified Products related entities.
 
 """
 import uuid
-from datetime import date, datetime
+from datetime import date
 from typing import Any, Dict, Optional
 
 import dateutil.parser
@@ -347,24 +347,6 @@ class OpportunityDeferral(CaseTriageBase):
     deferred_until = Column(DateTime, nullable=False)
     reminder_was_requested = Column(Boolean, nullable=False)
     opportunity_metadata = Column(JSONB, nullable=False)
-
-    @staticmethod
-    def from_etl_opportunity(
-        etl_opportunity: ETLOpportunity,
-        deferral_type: str,
-        deferred_until: datetime,
-        reminder_was_requested: bool,
-    ) -> "OpportunityDeferral":
-        return OpportunityDeferral(
-            state_code=etl_opportunity.state_code,
-            supervising_officer_external_id=etl_opportunity.supervising_officer_external_id,
-            person_external_id=etl_opportunity.person_external_id,
-            opportunity_type=etl_opportunity.opportunity_type,
-            deferral_type=deferral_type,
-            deferred_until=deferred_until,
-            reminder_was_requested=reminder_was_requested,
-            opportunity_metadata=etl_opportunity.opportunity_metadata,
-        )
 
 
 class DashboardUserRestrictions(CaseTriageBase):

@@ -20,7 +20,7 @@ import MockDate from "mockdate";
 import { runInAction } from "mobx";
 import API from "../API";
 import RootStore from "../RootStore";
-import { clientData, clientOpportunity, statePolicy } from "./__fixtures__";
+import { clientData, clientOpportunities, statePolicy } from "./__fixtures__";
 import type ClientsStore from "./ClientsStore";
 import { ClientData } from "./Client";
 import { KNOWN_EXPERIMENTS } from "../UserStore";
@@ -66,21 +66,30 @@ afterEach(() => {
 });
 
 test("sort by relevance (default)", async () => {
-  // clients 2, 4 have opportunities
   rootStore.opportunityStore.opportunities = [
+    // clients 0, 2, 3 are unemployed
     {
-      ...clientOpportunity,
+      ...clientOpportunities[1],
+      personExternalId: "0",
+    },
+    {
+      ...clientOpportunities[1],
       personExternalId: "2",
     },
     {
-      ...clientOpportunity,
+      ...clientOpportunities[1],
+      personExternalId: "3",
+    },
+    // clients 2, 4 are eligible for downgrade
+    {
+      ...clientOpportunities[0],
+      personExternalId: "2",
+    },
+    {
+      ...clientOpportunities[0],
       personExternalId: "4",
     },
   ];
-  // clients 0, 2, 3 are unemployed
-  apiData[0].needsMet.employment = false;
-  apiData[2].needsMet.employment = false;
-  apiData[0].needsMet.employment = false;
 
   // clients 1, 2 have contact alerts
   apiData[1].nextFaceToFaceDate = "2021-01-03";

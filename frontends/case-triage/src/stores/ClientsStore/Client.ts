@@ -134,7 +134,7 @@ function getDueDateStatus({
 
 export const AlertKindList = [
   OpportunityType.OVERDUE_DOWNGRADE,
-  "EMPLOYMENT",
+  OpportunityType.EMPLOYMENT,
   "ASSESSMENT_OVERDUE",
   "ASSESSMENT_UPCOMING",
   "CONTACT_OVERDUE",
@@ -405,7 +405,8 @@ export class Client {
   get alerts(): Alert[] {
     const alerts: (Alert | undefined)[] = AlertKindList.map((kind) => {
       switch (kind) {
-        case OpportunityType.OVERDUE_DOWNGRADE: {
+        case OpportunityType.OVERDUE_DOWNGRADE:
+        case OpportunityType.EMPLOYMENT: {
           const opportunity = this.opportunities.find(
             (opp) => opp.opportunityType === kind
           );
@@ -414,11 +415,6 @@ export class Client {
           }
           break;
         }
-        case "EMPLOYMENT":
-          if (!this.needsMet.employment) {
-            return { kind, priority: ALERT_PRIORITIES[kind] };
-          }
-          break;
         case "ASSESSMENT_OVERDUE":
           if (
             this.riskAssessmentStatus === "OVERDUE" &&
