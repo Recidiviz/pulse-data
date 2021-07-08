@@ -262,7 +262,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_date=date(2017, 12, 4),
             # This status indicates a sanction admission for treatment
             admission_reason_raw_text="50N1060",
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
             # It's common for this status to not be correctly associated with a
             # TREATMENT pfi
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
@@ -309,7 +309,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             admission_date=date(2017, 12, 4),
             # This status indicates a sanction admission for shock incarceration
             admission_reason_raw_text="20I1010,40I7000,45O7000",
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
             # It's common for this status to not be correctly associated with a
             # SHOCK_INCARCERATION pfi
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
@@ -342,6 +342,9 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
     ) -> None:
         state_code = "US_MO"
 
+        # This is an admission to TREATMENT_IN_PRISON, where all of the admission
+        # statuses indicate that this person is in on a board hold. These should get an
+        # admission_reason and release_reason override of INTERNAL_UNKNOWN
         not_board_hold = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id="222",
@@ -350,18 +353,16 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             state_code=state_code,
             admission_date=date(2016, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-            # This admission reason will get mapped as a PAROLE_REVOCATION. Periods
-            # that were previously mapped to TEMPORARY_CUSTODY that are now mapped to
-            # PAROLE_REVOCATION should get an override of INTERNAL_UNKNOWN.
-            admission_reason_raw_text="50N1020",
+            admission_reason_raw_text="40I0050,45O0050,65N9999",
             release_date=date(2017, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
         )
 
         updated_period = attr.evolve(
             not_board_hold,
             admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
         )
 
         incarceration_periods = [not_board_hold]
@@ -376,3 +377,648 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             )
 
             self.assertEqual([updated_period], validated_incarceration_periods)
+
+    def test_prepare_incarceration_periods_for_calculations_irregular_board_hold(
+        self,
+    ) -> None:
+        state_code = "US_MO"
+
+        board_hold = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="111",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2017, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason_raw_text="50N1010",
+            release_date=date(2017, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        revocation_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="222",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2017, 12, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason_raw_text="50N1050",
+            release_date=date(2020, 1, 14),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        updated_period = attr.evolve(
+            board_hold,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+        )
+
+        incarceration_periods = [board_hold, revocation_period]
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+
+            validated_incarceration_periods = (
+                self._pre_processed_incarceration_periods_for_calculations(
+                    incarceration_periods=ips_for_test,
+                )
+            )
+
+            self.assertEqual(
+                [updated_period, revocation_period], validated_incarceration_periods
+            )
+
+    def test_prepare_incarceration_periods_for_calculations_irregular_board_hold_before_other_hold(
+        self,
+    ) -> None:
+        state_code = "US_MO"
+
+        # This gets cast as a parole board hold because it has a release
+        # reason of RELEASED_FROM_TEMPORARY_CUSTODY and it immediately precedes a
+        # standard parole board hold
+        irregular_board_hold = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="111",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2017, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason_raw_text="50N1010",
+            release_date=date(2017, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        regular_board_hold = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="222",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2017, 12, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason_raw_text="40I0050,45O0050,65N9999",
+            release_date=date(2017, 12, 31),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        revocation_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=333,
+            external_id="333",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2017, 12, 31),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason_raw_text="50N1050",
+            release_date=date(2020, 1, 14),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        updated_irregular_board_hold_period = attr.evolve(
+            irregular_board_hold,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+        )
+
+        updated_regular_board_hold_period = attr.evolve(
+            regular_board_hold,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+        )
+
+        incarceration_periods = [
+            irregular_board_hold,
+            regular_board_hold,
+            revocation_period,
+        ]
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+
+            validated_incarceration_periods = (
+                self._pre_processed_incarceration_periods_for_calculations(
+                    incarceration_periods=ips_for_test,
+                )
+            )
+
+            self.assertEqual(
+                [
+                    updated_irregular_board_hold_period,
+                    updated_regular_board_hold_period,
+                    revocation_period,
+                ],
+                validated_incarceration_periods,
+            )
+
+    def test_prepare_incarceration_periods_for_calculations_irregular_board_hold_before_multiple_holds_revocation(
+        self,
+    ) -> None:
+        state_code = "US_MO"
+
+        # This gets cast as a parole board hold because it has a release
+        # reason of RELEASED_FROM_TEMPORARY_CUSTODY and it immediately precedes another
+        # irregular board hold
+        irregular_board_hold_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="111",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2017, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason_raw_text="50N1010",
+            release_date=date(2017, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        # This gets cast as a parole board hold because it has a release
+        # reason of RELEASED_FROM_TEMPORARY_CUSTODY and it immediately precedes a
+        # standard parole board hold
+        irregular_board_hold_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="222",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2017, 12, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason_raw_text="50N1010",
+            release_date=date(2017, 12, 10),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        regular_board_hold = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=333,
+            external_id="333",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2017, 12, 10),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason_raw_text="40I0050,45O0050,65N9999",
+            release_date=date(2017, 12, 31),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        revocation_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=333,
+            external_id="333",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2017, 12, 31),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason_raw_text="50N1050",
+            release_date=date(2020, 1, 14),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        updated_irregular_board_hold_1_period = attr.evolve(
+            irregular_board_hold_1,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+        )
+
+        updated_irregular_board_hold_2_period = attr.evolve(
+            irregular_board_hold_2,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+        )
+
+        updated_regular_board_hold_period = attr.evolve(
+            regular_board_hold,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+        )
+
+        incarceration_periods = [
+            irregular_board_hold_1,
+            irregular_board_hold_2,
+            regular_board_hold,
+            revocation_period,
+        ]
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+
+            validated_incarceration_periods = (
+                self._pre_processed_incarceration_periods_for_calculations(
+                    incarceration_periods=ips_for_test,
+                )
+            )
+
+            self.assertEqual(
+                [
+                    updated_irregular_board_hold_1_period,
+                    updated_irregular_board_hold_2_period,
+                    updated_regular_board_hold_period,
+                    revocation_period,
+                ],
+                validated_incarceration_periods,
+            )
+
+    def test_prepare_incarceration_periods_for_calculations_irregular_board_hold_before_multipls_holds(
+        self,
+    ) -> None:
+        """Tests that the recursive logic that identifies board holds in US_MO can
+        safely iterate through all periods."""
+        state_code = "US_MO"
+
+        # This gets cast as a parole board hold because it has a release
+        # reason of RELEASED_FROM_TEMPORARY_CUSTODY and it immediately precedes another
+        # irregular board hold
+        irregular_board_hold_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="111",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2017, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason_raw_text="50N1010",
+            release_date=date(2017, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        # This gets cast as a parole board hold because it has a release
+        # reason of RELEASED_FROM_TEMPORARY_CUSTODY and it immediately precedes a
+        # standard parole board hold
+        irregular_board_hold_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="222",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2017, 12, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason_raw_text="50N1010",
+            release_date=date(2017, 12, 10),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        regular_board_hold = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=333,
+            external_id="333",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2017, 12, 10),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason_raw_text="40I0050,45O0050,65N9999",
+            release_date=date(2017, 12, 31),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        updated_irregular_board_hold_1_period = attr.evolve(
+            irregular_board_hold_1,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+        )
+
+        updated_irregular_board_hold_2_period = attr.evolve(
+            irregular_board_hold_2,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+        )
+
+        updated_regular_board_hold_period = attr.evolve(
+            regular_board_hold,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+        )
+
+        incarceration_periods = [
+            irregular_board_hold_1,
+            irregular_board_hold_2,
+            regular_board_hold,
+        ]
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+
+            validated_incarceration_periods = (
+                self._pre_processed_incarceration_periods_for_calculations(
+                    incarceration_periods=ips_for_test,
+                )
+            )
+
+            self.assertEqual(
+                [
+                    updated_irregular_board_hold_1_period,
+                    updated_irregular_board_hold_2_period,
+                    updated_regular_board_hold_period,
+                ],
+                validated_incarceration_periods,
+            )
+
+    # TODO(#7965): Remove this test once we've done a re-run for MO in prod with
+    #  updated enum mappings
+    def test_prepare_incarceration_periods_for_calculations_irregular_board_hold_before_sanction_OLD_ENUM_MAPPINGS(
+        self,
+    ) -> None:
+        state_code = "US_MO"
+
+        # This gets cast as a parole board hold because it has a release
+        # reason of RELEASED_FROM_TEMPORARY_CUSTODY and it immediately precedes a
+        # sanction admission
+        irregular_board_hold = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="111",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2017, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason_raw_text="40I1010,45O1010",
+            release_date=date(2017, 12, 31),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            release_reason_raw_text="50N1060",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        revocation_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="222",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2017, 12, 31),
+            # This will get re-mapped as a SANCTION_ADMISSION
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason_raw_text="50N1060",
+            release_date=date(2020, 1, 14),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            release_reason_raw_text="IC-IC",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        updated_irregular_board_hold_period = attr.evolve(
+            irregular_board_hold,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+        )
+
+        updated_revocation_period = attr.evolve(
+            revocation_period,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+        )
+
+        incarceration_periods = [
+            irregular_board_hold,
+            revocation_period,
+        ]
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+
+            validated_incarceration_periods = (
+                self._pre_processed_incarceration_periods_for_calculations(
+                    incarceration_periods=ips_for_test,
+                )
+            )
+
+            self.assertEqual(
+                [updated_irregular_board_hold_period, updated_revocation_period],
+                validated_incarceration_periods,
+            )
+
+    def test_prepare_incarceration_periods_for_calculations_irregular_board_hold_before_sanction(
+        self,
+    ) -> None:
+        state_code = "US_MO"
+
+        # This gets cast as a parole board hold because it has a release
+        # reason of RELEASED_FROM_TEMPORARY_CUSTODY and it immediately precedes a
+        # sanction admission
+        irregular_board_hold = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="111",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2017, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason_raw_text="40I1010,45O1010",
+            release_date=date(2017, 12, 31),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            release_reason_raw_text="50N1060",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        revocation_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="222",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2017, 12, 31),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+            admission_reason_raw_text="50N1060",
+            release_date=date(2020, 1, 14),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            release_reason_raw_text="IC-IC",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        updated_irregular_board_hold_period = attr.evolve(
+            irregular_board_hold,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+        )
+
+        updated_revocation_period = attr.evolve(
+            revocation_period,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+        )
+
+        incarceration_periods = [
+            irregular_board_hold,
+            revocation_period,
+        ]
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+
+            validated_incarceration_periods = (
+                self._pre_processed_incarceration_periods_for_calculations(
+                    incarceration_periods=ips_for_test,
+                )
+            )
+
+            self.assertEqual(
+                [updated_irregular_board_hold_period, updated_revocation_period],
+                validated_incarceration_periods,
+            )
+
+    # TODO(#7965): Remove this test once we've done a re-run for MO in prod with
+    #  updated enum mappings
+    def test_prepare_incarceration_periods_for_calculations_irregular_board_hold_OLD_ENUM_MAPPING(
+        self,
+    ) -> None:
+        state_code = "US_MO"
+
+        board_hold = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id="111",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2016, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason_raw_text="50N1010",
+            release_date=date(2017, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        revocation_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="222",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2017, 12, 4),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason_raw_text="50N1050",
+            release_date=date(2020, 1, 14),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        updated_period = attr.evolve(
+            board_hold,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+        )
+
+        incarceration_periods = [board_hold, revocation_period]
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+
+            validated_incarceration_periods = (
+                self._pre_processed_incarceration_periods_for_calculations(
+                    incarceration_periods=ips_for_test,
+                )
+            )
+
+            self.assertEqual(
+                [updated_period, revocation_period], validated_incarceration_periods
+            )
+
+    # TODO(#7965): Remove this test once we've done a re-run for MO in prod with
+    #  updated enum mappings
+    def test_prepare_incarceration_periods_for_calculations_sanction_admission_treatment_OLD_ENUM_MAPPINGS(
+        self,
+    ) -> None:
+        state_code = "US_MO"
+
+        board_hold = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="222",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2016, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason_raw_text="40I0050",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            release_date=date(2017, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        treatment_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=333,
+            external_id="333",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2017, 12, 4),
+            # This status will get re-mapped to SANCTION_ADMISSION
+            admission_reason_raw_text="50N1060",
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            # It's common for this status to not be correctly associated with a
+            # TREATMENT pfi
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        incarceration_periods = [board_hold, treatment_period]
+
+        updated_board_hold = attr.evolve(
+            board_hold,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+        )
+
+        updated_treatment_period = attr.evolve(
+            treatment_period,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+        )
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+
+            validated_incarceration_periods = (
+                self._pre_processed_incarceration_periods_for_calculations(
+                    incarceration_periods=ips_for_test,
+                )
+            )
+
+            self.assertEqual(
+                validated_incarceration_periods,
+                [updated_board_hold, updated_treatment_period],
+            )
+
+    def test_prepare_incarceration_periods_for_calculations_sanction_admission_shock_OLD_ENUM_MAPPINGS(
+        self,
+    ) -> None:
+        state_code = "US_MO"
+
+        shock_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=333,
+            external_id="333",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2017, 12, 4),
+            admission_reason_raw_text="20I1010,40I7000,45O7000",
+            # This will get re-mapped to SHOCK_INCARCERATION
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            # It's common for this status to not be correctly associated with a
+            # SHOCK_INCARCERATION pfi
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        incarceration_periods = [shock_period]
+
+        updated_shock_period = attr.evolve(
+            shock_period,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+        )
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+
+            validated_incarceration_periods = (
+                self._pre_processed_incarceration_periods_for_calculations(
+                    incarceration_periods=ips_for_test,
+                )
+            )
+
+            self.assertEqual(
+                [updated_shock_period],
+                validated_incarceration_periods,
+            )
