@@ -25,7 +25,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-
 INCARCERATION_ADMISSION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_NAME = (
     "incarceration_admission_person_level_external_comparison"
 )
@@ -46,6 +45,8 @@ WITH external_data AS (
     FROM external_data
     LEFT JOIN `{project_id}.{state_base_dataset}.state_person_external_id` all_state_person_ids
     ON region_code = all_state_person_ids.state_code AND external_data.person_external_id = all_state_person_ids.external_id
+    -- Limit to 'US_PA_CONT' id_type for US_PA
+    WHERE region_code != 'US_PA' or id_type = 'US_PA_CONT'
 ), internal_data AS (
     SELECT state_code as region_code, person_external_id, person_id, admission_date
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_materialized`
