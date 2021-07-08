@@ -16,13 +16,14 @@
 # =============================================================================
 
 """Tests for email_reporting_utils.py."""
-
 from unittest import TestCase
 from unittest.mock import MagicMock, Mock, patch
 
 import recidiviz.reporting.email_reporting_utils as utils
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 _MOCK_PROJECT_ID = "RECIDIVIZ_TEST"
 
@@ -157,3 +158,90 @@ class EmailReportingUtilsTests(TestCase):
         """Given an empty string, it does raise a ValueError."""
         with self.assertRaises(ValueError):
             utils.validate_email_address("")
+
+
+class TestGCSEmails(TestCase):
+    """Class to test GCS actions for monthly report emails"""
+
+    STATE_CODE_STR = "US_ID"
+    STAGE_PROJECT_ID = "recidiviz-staging"
+    PROD_PROJECT_ID = "recidiviz-123"
+
+    def setUp(self) -> None:
+        self.project_id_patcher = patch(
+            "recidiviz.reporting.email_reporting_utils.metadata.project_id"
+        )
+        self.project_id_patcher.start().return_value = "recidiviz-staging"
+        self.gcs_factory_patcher = patch(
+            "recidiviz.reporting.email_reporting_utils.GcsfsFactory.build"
+        )
+        fake_gcs = FakeGCSFileSystem()
+        self.gcs_factory_patcher.start().return_value = fake_gcs
+        self.fs = fake_gcs
+
+    def tearDown(self) -> None:
+        self.gcs_factory_patcher.stop()
+        self.project_id_patcher.stop()
+
+    def _upload_fake_email_buckets(self) -> None:
+        """
+        Creates fake email buckets in the appropriate project ids and state buckets.
+        """
+        # staging, US_ID buckets
+        bucket_name = f"{self.STAGE_PROJECT_ID}-report-html"
+        for x in range(3):
+            batch_id = f"2021070120202{x}"
+            path = GcsfsFilePath.from_absolute_path(
+                f"gs://{bucket_name}/{self.STATE_CODE_STR}/{batch_id}/html/empty.txt"
+            )
+            self.fs.upload_from_string(
+                path=path,
+                contents="this is an email",
+                content_type="text/text",
+            )
+
+        # staging, US_PA bucket
+        batch_id = "20210701202027"
+        path = GcsfsFilePath.from_absolute_path(
+            f"gs://{bucket_name}/US_PA/{batch_id}/html/empty.txt"
+        )
+        self.fs.upload_from_string(
+            path=path,
+            contents="this is an email",
+            content_type="text/text",
+        )
+
+        # production, US_PA bucket
+        bucket_name = f"{self.PROD_PROJECT_ID}-report-html"
+        batch_id = "20210701202028"
+        path = GcsfsFilePath.from_absolute_path(
+            f"gs://{bucket_name}/US_PA/{batch_id}/html/empty.txt"
+        )
+        self.fs.upload_from_string(
+            path=path,
+            contents="this is an email",
+            content_type="text/text",
+        )
+
+    def test_get_batch_ids_valid_arguments(self) -> None:
+        """Given all valid arguments, should have a list of batch ids, ordered in descending order,
+        since we want the most recent batch to be at the top of the list"""
+        self._upload_fake_email_buckets()
+        batch_list = utils.get_batch_ids(state_code=StateCode(self.STATE_CODE_STR))
+
+        self.assertEqual(
+            ["20210701202022", "20210701202021", "20210701202020"], batch_list
+        )
+
+    def test_get_batch_ids_invalid_state(self) -> None:
+        """Given an invalid state code, should have an empty list"""
+        self._upload_fake_email_buckets()
+        batch_list = utils.get_batch_ids(state_code=StateCode.US_XX)
+        self.assertEqual(0, len(batch_list))
+
+    def test_get_batch_ids_state_with_single(self) -> None:
+        """Given valid arguments, should pick correct state and given a list of only one batch id"""
+        self._upload_fake_email_buckets()
+        batch_list = utils.get_batch_ids(state_code=StateCode.US_PA)
+        self.assertEqual(1, len(batch_list))
+        self.assertEqual("20210701202027", batch_list[0])

@@ -18,6 +18,7 @@ import { Button, Card, Form, Input, message, Select, Spin } from "antd";
 import * as React from "react";
 import {
   fetchEmailStateCodes,
+  getBatchIds,
   sendEmails,
 } from "../../AdminPanelAPI/LineStaffTools";
 import useFetchedData from "../../hooks";
@@ -39,6 +40,8 @@ const SendEmails = (): JSX.Element => {
   const [formData, setFormData] =
     React.useState<SendFormData | undefined>(undefined);
   const [showSpinner, setShowSpinner] = React.useState(false);
+  const [batchIdList, setBatchIdList] =
+    React.useState<string[] | undefined>(undefined);
   const [isConfirmationModalVisible, setIsConfirmationModalVisible] =
     React.useState(false);
 
@@ -81,6 +84,12 @@ const SendEmails = (): JSX.Element => {
     setIsConfirmationModalVisible(true);
   };
 
+  const getBatches = async (sCode: string) => {
+    const r = await getBatchIds(sCode);
+    const json = await r.json();
+    setBatchIdList(json.batchIds);
+  };
+
   return (
     <>
       <Card title="Send Emails" style={{ margin: 10, height: "95%" }}>
@@ -92,14 +101,31 @@ const SendEmails = (): JSX.Element => {
           }}
         >
           <Form.Item label="State" name="state" rules={[{ required: true }]}>
-            <StateSelector loading={loading} data={data} />
+            <StateSelector
+              loading={loading}
+              data={data}
+              onChange={(sCode) => {
+                getBatches(sCode);
+              }}
+            />
           </Form.Item>
           <Form.Item
             label="Batch ID"
             name="batchId"
             rules={[{ required: true }]}
           >
-            <Input placeholder="ex. 20210609161306" />
+            {batchIdList ? (
+              <Select
+                placeholder="20210701130005"
+                defaultValue={batchIdList[0]}
+              >
+                {batchIdList?.map((item) => (
+                  <Select.Option key={item} label={item} value={item}>
+                    {item}
+                  </Select.Option>
+                ))}
+              </Select>
+            ) : null}
           </Form.Item>
           <Form.Item
             label="Redirect Address"

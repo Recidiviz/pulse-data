@@ -22,7 +22,7 @@ import datetime
 import json
 import os
 import re
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -248,3 +248,18 @@ def _gcsfs_path_for_batch_metadata(
     return GcsfsFilePath.from_absolute_path(
         f"gs://{get_email_content_bucket_name()}/{state_code.value}/{batch_id}/metadata.json"
     )
+
+
+def get_batch_ids(state_code: StateCode) -> List[str]:
+    """Returns a sorted list of batch id numbers from the a specific state bucket from GCS"""
+    project_id = metadata.project_id()
+    gcsfs = GcsfsFactory.build()
+    buckets = gcsfs.ls_with_blob_prefix(
+        bucket_name=f"{project_id}-report-html",
+        blob_prefix=state_code.value,
+    )
+    files = [file for file in buckets if isinstance(file, GcsfsFilePath)]
+    batch_ids = list({batch_id.blob_name.split("/")[1] for batch_id in files})
+    batch_ids.sort(reverse=True)
+
+    return batch_ids

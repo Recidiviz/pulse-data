@@ -91,7 +91,7 @@ const GenerateEmails = (): JSX.Element => {
       environment === "production" ? "recidiviz-123" : "recidiviz-staging";
     return (
       <p>
-        Bucket link to {projectName}-report-html for {formData?.state}, batch #
+        Bucket link to {projectName}-report-html for {formData?.state}, batch
         <a
           style={{ margin: 10 }}
           href={`https://console.cloud.google.com/storage/browser/${projectName}-report-html/${formData?.state}/${batchId}`}
