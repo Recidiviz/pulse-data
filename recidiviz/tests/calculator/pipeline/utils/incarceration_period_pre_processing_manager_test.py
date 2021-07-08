@@ -375,6 +375,44 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             validated_incarceration_periods,
         )
 
+    def test_pre_processed_incarceration_periods_for_calculations_not_board_hold_other_temp_custody(
+        self,
+    ):
+        state_code = "US_XX"
+
+        not_board_hold = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+            release_date=date(2010, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        incarceration_periods = [not_board_hold]
+
+        updated_period = attr.evolve(
+            not_board_hold,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            release_reason=StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
+        )
+
+        validated_incarceration_periods = (
+            self._pre_processed_incarceration_periods_for_calculations(
+                incarceration_periods=incarceration_periods,
+                collapse_transfers=True,
+                overwrite_facility_information_in_transfers=True,
+            )
+        )
+
+        self.assertEqual(
+            [updated_period],
+            validated_incarceration_periods,
+        )
+
     def test_pre_processed_incarceration_periods_for_calculations_deepcopy(self):
         """Tests that the same IncarcerationPreProcessingManager instance can be
         re-used for different configurations of pre-processing, since the original
