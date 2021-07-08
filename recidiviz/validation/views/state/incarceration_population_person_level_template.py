@@ -30,6 +30,8 @@ external_data AS (
     FROM external_data
     LEFT JOIN `{{project_id}}.{{state_base_dataset}}.state_person_external_id` all_state_person_ids
     ON region_code = all_state_person_ids.state_code AND external_data.person_external_id = all_state_person_ids.external_id
+    -- Limit to 'US_PA_CONT' id_type for US_PA
+    WHERE region_code != 'US_PA' or id_type = 'US_PA_CONT'
 ),
 sanitized_internal_metrics AS (
   SELECT
