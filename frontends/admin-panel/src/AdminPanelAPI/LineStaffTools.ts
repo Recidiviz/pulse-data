@@ -76,3 +76,9 @@ export const sendEmails = async (
     subjectOverride,
   });
 };
+
+export const getBatchIds = async (stateCode: string): Promise<Response> => {
+  return postWithURLAndBody("/api/line_staff_tools/batch_ids", {
+    stateCode,
+  });
+};

@@ -48,6 +48,7 @@ from recidiviz.reporting.email_reporting_utils import (
     InvalidReportTypeError,
     generate_batch_id,
     generate_report_date,
+    get_batch_ids,
     get_report_type,
     validate_email_address,
 )
@@ -282,7 +283,7 @@ def add_case_triage_routes(bp: Blueprint) -> None:
             data = request.json
             state_code = StateCode(state_code_str)
             if state_code not in EMAIL_STATE_CODES:
-                raise ValueError("State code is invalid for PO monthly reports")
+                raise ValueError("State code is invalid for the monthly reports")
             batch_id = data.get("batchId")
             redirect_address = data.get("redirectAddress")
             cc_addresses = data.get("ccAddresses")
@@ -364,3 +365,20 @@ def add_case_triage_routes(bp: Blueprint) -> None:
                 HTTPStatus.MULTI_STATUS,
             )
         return (f"{success_text}"), HTTPStatus.OK
+
+    @bp.route("/api/line_staff_tools/batch_ids", methods=["POST"])
+    @requires_gae_auth
+    def _batch_ids() -> Tuple[str, HTTPStatus]:
+        try:
+            data = request.json
+            state_code = StateCode(data.get("stateCode"))
+            if state_code not in EMAIL_STATE_CODES:
+                raise ValueError("State code is invalid for retrieving batch ids")
+
+        except ValueError as error:
+            logging.error(error)
+            return str(error), HTTPStatus.BAD_REQUEST
+
+        gcsfs_batch_ids = get_batch_ids(state_code)
+
+        return (jsonify({"batchIds": gcsfs_batch_ids}), HTTPStatus.OK)
