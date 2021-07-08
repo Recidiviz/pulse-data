@@ -230,34 +230,42 @@ PROBATION_REVOCATION_SECONDARY_STATUS_CODES: List[str] = [
     "40I7001",  # Field Supv to DAI-Same Sentence
 ]
 
-SUPERVISION_SANCTION_COMMITMENT_FOR_TREATMENT_OR_SHOCK_STATUS_CODES: List[str] = [
-    #  All commitment for treatment / shock additional sentences (20I10*) statuses from TAK026 (except 20I1000, which
-    #  is always NEW_ADMISSION). These statuses may show up on the same day as another new admission status, but if they
-    #  do not, then we can treat them as a sanction admission from supervision.
-    "20I1010",  # Court Comm-120 Day-Addl Charge
-    "20I1020",  # Court Comm-Lng Tm Trt-Addl Chg
-    "20I1030",  # Court Comm-Reg Dis Pgm-Addl Ch
-    "20I1040",  # Court Comm-120 Day Treat-Addl
-    "20I1050",  # Court Comm-SOAU-Addl Charge
-    "20I1060",  # Court Comm-MH 120 Day-Addl Chg
-    #  Parole returns for shock/treatment
-    "40I1060",  # Parole Ret-Treatment Center
+TREATMENT_SANCTION_STATUS_CODES: List[str] = [
     # Probation sanction admission for treatment
+    "20I1020",  # Court Comm-Lng Tm Trt-Addl Chg
+    "20I1040",  # Court Comm-120 Day Treat-Addl
+    "20I1060",  # Court Comm-MH 120 Day-Addl Chg
     "40I2100",  # Prob Rev-Tech-120 Day Treat
-    #  All other probation returns for shock/treatment (40I70*)
-    "40I7010",  # Prob Adm-Shock Incarceration
-    "40I7020",  # Prob Adm-Ct Order Det Sanction
-    "40I7030",  # Prob Adm-Mental Health 120 Day
     "40I7060",  # Prob Adm-Post Conv-Trt Pgm
-    "40I7065",  # Prob Adm-Post Conv-RDP
+    "40I7030",  # Prob Adm-Mental Health 120 Day
+    #  Parole returns for treatment
+    "40I1060",  # Parole Ret-Treatment Center
     *MID_INCARCERATION_TREATMENT_COMMITMENT_STATUSES,
 ]
+
+SHOCK_SANCTION_STATUS_CODES: List[str] = [
+    # Probation sanction admissions for shock incarceration
+    "20I1010",  # Court Comm-120 Day-Addl Charge
+    "20I1030",  # Court Comm-Reg Dis Pgm-Addl Ch
+    "20I1050",  # Court Comm-SOAU-Addl Charge
+    "40I7010",  # Prob Adm-Shock Incarceration
+    "40I7020",  # Prob Adm-Ct Order Det Sanction
+    "40I7065",  # Prob Adm-Post Conv-RDP
+]
+
+SUPERVISION_SANCTION_COMMITMENT_FOR_TREATMENT_OR_SHOCK_STATUS_CODES: List[str] = (
+    #  All commitment for treatment / shock additional sentences (20I10*) statuses from
+    #  TAK026 (except 20I1000, which is always NEW_ADMISSION). These statuses may
+    #  show up on the same day as another new admission status, but if they
+    #  do not, then we can treat them as a sanction admission from supervision.
+    TREATMENT_SANCTION_STATUS_CODES
+    + SHOCK_SANCTION_STATUS_CODES
+)
+
 
 BOARD_HOLDOVER_ENTRY_STATUS_CODES: List[str] = [
     #  All Board Holdover incarceration admission statuses (40I*)
     "40I0050",  # Board Holdover
-    # TODO(#7442): Confirm these should be board holds and not regular temporary
-    #  custody periods
     "40I1040",  # Parole Ret-OTST Decision Pend
     "40I3040",  # CR Ret-OTST Decision Pend
 ]

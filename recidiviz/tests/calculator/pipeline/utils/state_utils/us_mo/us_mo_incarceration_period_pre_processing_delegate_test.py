@@ -234,6 +234,109 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
                 validated_incarceration_periods, [updated_board_hold, revocation_period]
             )
 
+    def test_prepare_incarceration_periods_for_calculations_sanction_admission_treatment(
+        self,
+    ) -> None:
+        state_code = "US_MO"
+
+        board_hold = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id="222",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2016, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason_raw_text="40I0050",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            release_date=date(2017, 12, 4),
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        treatment_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=333,
+            external_id="333",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2017, 12, 4),
+            # This status indicates a sanction admission for treatment
+            admission_reason_raw_text="50N1060",
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            # It's common for this status to not be correctly associated with a
+            # TREATMENT pfi
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        incarceration_periods = [board_hold, treatment_period]
+
+        updated_board_hold = attr.evolve(
+            board_hold,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+        )
+
+        updated_treatment_period = attr.evolve(
+            treatment_period,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+        )
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+
+            validated_incarceration_periods = (
+                self._pre_processed_incarceration_periods_for_calculations(
+                    incarceration_periods=ips_for_test,
+                )
+            )
+
+            self.assertEqual(
+                validated_incarceration_periods,
+                [updated_board_hold, updated_treatment_period],
+            )
+
+    def test_prepare_incarceration_periods_for_calculations_sanction_admission_shock(
+        self,
+    ) -> None:
+        state_code = "US_MO"
+
+        shock_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=333,
+            external_id="333",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2017, 12, 4),
+            # This status indicates a sanction admission for shock incarceration
+            admission_reason_raw_text="20I1010,40I7000,45O7000",
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            # It's common for this status to not be correctly associated with a
+            # SHOCK_INCARCERATION pfi
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        incarceration_periods = [shock_period]
+
+        updated_shock_period = attr.evolve(
+            shock_period,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+        )
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+
+            validated_incarceration_periods = (
+                self._pre_processed_incarceration_periods_for_calculations(
+                    incarceration_periods=ips_for_test,
+                )
+            )
+
+            self.assertEqual(
+                [updated_shock_period],
+                validated_incarceration_periods,
+            )
+
     def test_prepare_incarceration_periods_for_calculations_temp_custody_not_parole_board_hold(
         self,
     ) -> None:
