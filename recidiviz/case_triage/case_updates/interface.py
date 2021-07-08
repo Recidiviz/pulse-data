@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements interface for querying case_updates."""
-from datetime import datetime
 from typing import Optional
 
 import sqlalchemy.orm.exc
@@ -24,92 +23,15 @@ from sqlalchemy.orm import Session
 
 from recidiviz.case_triage.case_updates.serializers import serialize_client_case_version
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
-from recidiviz.case_triage.demo_helpers import (
-    fake_officer_id_for_demo_user,
-    fake_person_id_for_demo_user,
-)
+from recidiviz.case_triage.user_context import UserContext
 from recidiviz.persistence.database.schema.case_triage.schema import (
     CaseUpdate,
     ETLClient,
-    ETLOfficer,
 )
 
 
 class CaseUpdateDoesNotExistError(ValueError):
     pass
-
-
-def _update_case_for_person(
-    session: Session,
-    officer_id: str,
-    person_external_id: str,
-    client: ETLClient,
-    action_type: CaseUpdateActionType,
-    comment: Optional[str] = None,
-    action_ts: Optional[datetime] = None,
-) -> CaseUpdate:
-    """This method updates the case_updates table with the newly provided actions.
-    This private method can be used liberally without regards for foreign key constraints,
-    as it creates a series of CaseUpdate objects (one for each action) associated with the
-    given officer_id and client. If other_text is provided, it's stored on the comment field.
-    """
-    action_ts = datetime.now() if action_ts is None else action_ts
-    last_version = serialize_client_case_version(action_type, client).to_json()
-    insert_statement = (
-        insert(CaseUpdate)
-        .values(
-            person_external_id=person_external_id,
-            officer_external_id=officer_id,
-            state_code=client.state_code,
-            action_type=action_type.value,
-            action_ts=action_ts,
-            last_version=last_version,
-            comment=comment,
-        )
-        .on_conflict_do_update(
-            constraint="unique_person_officer_action_triple",
-            set_={
-                "last_version": last_version,
-                "action_ts": action_ts,
-                "comment": comment,
-            },
-        )
-    )
-    session.execute(insert_statement)
-    session.commit()
-
-    return (
-        session.query(CaseUpdate)
-        .filter(
-            CaseUpdate.person_external_id == person_external_id,
-            CaseUpdate.officer_external_id == officer_id,
-            CaseUpdate.action_type == action_type.value,
-        )
-        .one()
-    )
-
-
-def _delete_case_update(
-    session: Session, officer_external_id: str, update_id: str
-) -> CaseUpdate:
-    try:
-        case_update = (
-            session.query(CaseUpdate)
-            .filter(
-                CaseUpdate.officer_external_id == officer_external_id,
-                CaseUpdate.update_id == update_id,
-            )
-            .one()
-        )
-    except sqlalchemy.orm.exc.NoResultFound as e:
-        raise CaseUpdateDoesNotExistError(
-            f"Could not find update for officer: {officer_external_id} update_id: {update_id}"
-        ) from e
-
-    session.delete(case_update)
-    session.commit()
-
-    return case_update
 
 
 class CaseUpdatesInterface:
@@ -118,7 +40,7 @@ class CaseUpdatesInterface:
     @staticmethod
     def update_case_for_person(
         session: Session,
-        officer: ETLOfficer,
+        user_context: UserContext,
         client: ETLClient,
         action: CaseUpdateActionType,
         comment: Optional[str] = None,
@@ -128,53 +50,63 @@ class CaseUpdatesInterface:
         Because the underlying table does not have foreign key constraints, independent
         validation must be provided before calling this method.
         """
-        return _update_case_for_person(
-            session,
-            officer.external_id,
-            client.person_external_id,
-            client,
-            action,
-            comment,
+        action_ts = user_context.now()
+        last_version = serialize_client_case_version(action, client).to_json()
+        officer_id = user_context.officer_id
+        person_external_id = user_context.person_id(client)
+        insert_statement = (
+            insert(CaseUpdate)
+            .values(
+                person_external_id=person_external_id,
+                officer_external_id=officer_id,
+                state_code=client.state_code,
+                action_type=action.value,
+                action_ts=action_ts,
+                last_version=last_version,
+                comment=comment,
+            )
+            .on_conflict_do_update(
+                constraint="unique_person_officer_action_triple",
+                set_={
+                    "last_version": last_version,
+                    "action_ts": action_ts,
+                    "comment": comment,
+                },
+            )
+        )
+        session.execute(insert_statement)
+        session.commit()
+
+        return (
+            session.query(CaseUpdate)
+            .filter(
+                CaseUpdate.person_external_id == person_external_id,
+                CaseUpdate.officer_external_id == officer_id,
+                CaseUpdate.action_type == action.value,
+            )
+            .one()
         )
 
     @staticmethod
     def delete_case_update(
-        session: Session, officer: ETLOfficer, update_id: str
+        session: Session, user_context: UserContext, update_id: str
     ) -> CaseUpdate:
-        return _delete_case_update(session, officer.external_id, update_id)
+        officer_external_id = user_context.officer_id
+        try:
+            case_update = (
+                session.query(CaseUpdate)
+                .filter(
+                    CaseUpdate.officer_external_id == officer_external_id,
+                    CaseUpdate.update_id == update_id,
+                )
+                .one()
+            )
+        except sqlalchemy.orm.exc.NoResultFound as e:
+            raise CaseUpdateDoesNotExistError(
+                f"Could not find update for officer: {officer_external_id} update_id: {update_id}"
+            ) from e
 
+        session.delete(case_update)
+        session.commit()
 
-class DemoCaseUpdatesInterface:
-    """Implements interface for updating demo users."""
-
-    @staticmethod
-    def update_case_for_person(
-        session: Session,
-        user_email: str,
-        client: ETLClient,
-        action: CaseUpdateActionType,
-        comment: Optional[str] = None,
-        action_ts: Optional[datetime] = None,
-    ) -> CaseUpdate:
-        """This method updates the case_updates table for demo users.
-
-        No checking is provided to ensure that the provided officer ids or person ids map
-        back to anything.
-        """
-        return _update_case_for_person(
-            session,
-            fake_officer_id_for_demo_user(user_email),
-            fake_person_id_for_demo_user(user_email, client.person_external_id),
-            client,
-            action,
-            comment,
-            action_ts,
-        )
-
-    @staticmethod
-    def delete_case_update(
-        session: Session, user_email: str, case_update_id: str
-    ) -> CaseUpdate:
-        return _delete_case_update(
-            session, fake_officer_id_for_demo_user(user_email), case_update_id
-        )
+        return case_update

@@ -16,7 +16,7 @@
 # =============================================================================
 """Implements an abstraction around Segment's client to make it easier for us
 to use in development and tests."""
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from analytics import Client
 
@@ -38,5 +38,8 @@ class SegmentClient:
             debug=is_local,
         )
 
-    def track(self, user_id: str, event_name: str, metadata: Dict[str, Any]) -> None:
-        self.client.track(user_id, event_name, metadata)
+    def track(
+        self, user_id: Optional[str], event_name: str, metadata: Dict[str, Any]
+    ) -> None:
+        if user_id:
+            self.client.track(user_id, event_name, metadata)

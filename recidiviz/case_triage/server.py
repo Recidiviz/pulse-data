@@ -29,17 +29,15 @@ from recidiviz.case_triage.admin_flask_views import (
     ImpersonateUser,
     RefreshAuthStore,
 )
-from recidiviz.case_triage.analytics import (
-    CaseTriageSegmentClient,
-    segment_user_id_for_email,
-)
+from recidiviz.case_triage.analytics import CaseTriageSegmentClient
 from recidiviz.case_triage.api_routes import create_api_blueprint
-from recidiviz.case_triage.authorization import KNOWN_EXPERIMENTS, AuthorizationStore
+from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.e2e_routes import e2e_blueprint
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.exceptions import CaseTriageAuthorizationError
 from recidiviz.case_triage.querier.querier import CaseTriageQuerier
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
+from recidiviz.case_triage.user_context import UserContext
 from recidiviz.case_triage.util import get_local_secret
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -151,23 +149,18 @@ def fetch_user_info() -> None:
     set, then they can make requests as if they were the impersonated user.
     """
     email = session["user_info"]["email"].lower()
-    g.email = email
-    g.known_experiments = {
-        exp: authorization_store.get_feature_variant(exp, email)
-        for exp in KNOWN_EXPERIMENTS
-    }
-    g.segment_user_id = segment_user_id_for_email(email)
-    g.can_impersonate = authorization_store.can_impersonate_others(email)
-    g.can_see_demo_data = authorization_store.can_see_demo_data(email)
+    g.user_context = UserContext.base_context_for_email(email, authorization_store)
     try:
-        if IMPERSONATED_EMAIL_KEY in session and g.can_impersonate:
-            g.current_user = CaseTriageQuerier.officer_for_email(
+        if IMPERSONATED_EMAIL_KEY in session and g.user_context.can_impersonate:
+            g.user_context.current_user = CaseTriageQuerier.officer_for_email(
                 current_session, session[IMPERSONATED_EMAIL_KEY]
             )
         else:
-            g.current_user = CaseTriageQuerier.officer_for_email(current_session, email)
+            g.user_context.current_user = CaseTriageQuerier.officer_for_email(
+                current_session, email
+            )
     except NoResultFound as e:
-        if not g.can_see_demo_data:
+        if not g.user_context.can_see_demo_data:
             raise CaseTriageAuthorizationError(
                 code="no_app_access",
                 description="You are not authorized to access this application",

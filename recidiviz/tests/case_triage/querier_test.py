@@ -26,6 +26,7 @@ from recidiviz.case_triage.querier.querier import (
     CaseTriageQuerier,
     PersonDoesNotExistError,
 )
+from recidiviz.case_triage.user_context import UserContext
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -90,6 +91,15 @@ class TestCaseTriageQuerier(TestCase):
         officer_1 = generate_fake_officer("id_1")
         officer_2 = generate_fake_officer("id_2")
         officer_3 = generate_fake_officer("id_3")
+        user_context_1 = UserContext(
+            email=officer_1.email_address, current_user=officer_1
+        )
+        user_context_2 = UserContext(
+            email=officer_2.email_address, current_user=officer_2
+        )
+        user_context_3 = UserContext(
+            email=officer_3.email_address, current_user=officer_3
+        )
         client_1 = generate_fake_client("client_1", supervising_officer_id="id_1")
         client_2 = generate_fake_client("client_2", supervising_officer_id="id_1")
         client_3 = generate_fake_client("client_3", supervising_officer_id="id_2")
@@ -104,21 +114,27 @@ class TestCaseTriageQuerier(TestCase):
 
         read_session = SessionFactory.for_database(self.database_key)
         self.assertEqual(
-            len(CaseTriageQuerier.clients_for_officer(read_session, officer_1)),
+            len(CaseTriageQuerier.clients_for_officer(read_session, user_context_1)),
             2,
         )
         self.assertEqual(
-            len(CaseTriageQuerier.clients_for_officer(read_session, officer_2)),
+            len(CaseTriageQuerier.clients_for_officer(read_session, user_context_2)),
             1,
         )
         self.assertEqual(
-            len(CaseTriageQuerier.clients_for_officer(read_session, officer_3)),
+            len(CaseTriageQuerier.clients_for_officer(read_session, user_context_3)),
             0,
         )
 
     def test_etl_client_for_officer(self) -> None:
         officer_1 = generate_fake_officer("officer_1")
         officer_2 = generate_fake_officer("officer_2")
+        user_context_1 = UserContext(
+            email=officer_1.email_address, current_user=officer_1
+        )
+        user_context_2 = UserContext(
+            email=officer_2.email_address, current_user=officer_2
+        )
         client_1 = generate_fake_client(
             "client_1", supervising_officer_id=officer_1.external_id
         )
@@ -133,20 +149,23 @@ class TestCaseTriageQuerier(TestCase):
         # Client does not exist at all
         with self.assertRaises(PersonDoesNotExistError):
             CaseTriageQuerier.etl_client_for_officer(
-                read_session, officer_1, "nonexistent"
+                read_session, user_context_1, "nonexistent"
             )
 
         # Client does not exist for the officer
         with self.assertRaises(PersonDoesNotExistError):
             CaseTriageQuerier.etl_client_for_officer(
-                read_session, officer_2, "client_1"
+                read_session, user_context_2, "client_1"
             )
 
         # Should not raise an error
-        CaseTriageQuerier.etl_client_for_officer(read_session, officer_1, "client_1")
+        CaseTriageQuerier.etl_client_for_officer(
+            read_session, user_context_1, "client_1"
+        )
 
     def test_opportunities_for_officer(self) -> None:
         officer = generate_fake_officer("officer_1")
+        user_context = UserContext(current_user=officer, email=officer.email_address)
         client = generate_fake_client(
             "client_1", supervising_officer_id=officer.external_id
         )
@@ -166,14 +185,14 @@ class TestCaseTriageQuerier(TestCase):
         # expect a non-etl opportunity that we want to mark as deferred
         reminder = generate_fake_reminder(
             opportunity=CaseTriageQuerier.opportunities_for_officer(
-                read_session, officer
+                read_session, user_context
             )[1].opportunity
         )
         session.add(reminder)
         session.commit()
 
         queried_opps = CaseTriageQuerier.opportunities_for_officer(
-            read_session, officer
+            read_session, user_context
         )
 
         self.assertEqual(len(queried_opps), 2)

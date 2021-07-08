@@ -24,11 +24,9 @@ import sqlalchemy.orm.exc
 from sqlalchemy.orm import Session, joinedload
 
 from recidiviz.case_triage.demo_helpers import (
-    DEMO_STATE_CODE,
-    fake_officer_id_for_demo_user,
-    fake_person_id_for_demo_user,
     get_fixture_clients,
     get_fixture_opportunities,
+    unconvert_fake_person_id_for_demo_user,
 )
 from recidiviz.case_triage.opportunities.models import ComputedOpportunity
 from recidiviz.case_triage.opportunities.types import (
@@ -38,6 +36,7 @@ from recidiviz.case_triage.opportunities.types import (
 )
 from recidiviz.case_triage.querier.case_presenter import CasePresenter
 from recidiviz.case_triage.querier.opportunity_presenter import OpportunityPresenter
+from recidiviz.case_triage.user_context import UserContext
 from recidiviz.persistence.database.schema.case_triage.schema import (
     CaseUpdate,
     ClientInfo,
@@ -76,22 +75,38 @@ class CaseTriageQuerier:
 
     @staticmethod
     def etl_client_for_officer(
-        session: Session, officer: ETLOfficer, person_external_id: str
+        session: Session, user_context: UserContext, person_external_id: str
     ) -> ETLClient:
-        try:
-            return (
-                session.query(ETLClient)
-                .filter(
-                    ETLClient.state_code == officer.state_code,
-                    ETLClient.supervising_officer_external_id == officer.external_id,
-                    ETLClient.person_external_id == person_external_id,
-                )
-                .one()
+        """Finds the appropriate client context for a given officer."""
+        if user_context.should_see_demo:
+            clients = get_fixture_clients()
+
+            unconverted_person_id = unconvert_fake_person_id_for_demo_user(
+                person_external_id
             )
-        except sqlalchemy.orm.exc.NoResultFound as e:
-            raise PersonDoesNotExistError(
-                f"could not find id: {person_external_id}"
-            ) from e
+
+            for client in clients:
+                if client.person_external_id == unconverted_person_id:
+                    return client
+
+            raise PersonDoesNotExistError(f"could not find id: {person_external_id}")
+        if user_context.current_user:
+            try:
+                return (
+                    session.query(ETLClient)
+                    .filter(
+                        ETLClient.state_code == user_context.officer_state_code,
+                        ETLClient.supervising_officer_external_id
+                        == user_context.officer_id,
+                        ETLClient.person_external_id == person_external_id,
+                    )
+                    .one()
+                )
+            except sqlalchemy.orm.exc.NoResultFound as e:
+                raise PersonDoesNotExistError(
+                    f"could not find id: {person_external_id}"
+                ) from e
+        raise ValueError("Not authorized to view clients")
 
     @staticmethod
     def case_for_client_and_officer(
@@ -113,21 +128,77 @@ class CaseTriageQuerier:
 
     @staticmethod
     def clients_for_officer(
-        session: Session, officer: ETLOfficer
+        session: Session, user_context: UserContext
     ) -> List[CasePresenter]:
         """Outputs the list of clients for a given officer in CasePresenter form."""
-        clients = (
-            session.query(ETLClient)
-            .filter(
-                ETLClient.etl_officer == officer,
-                ETLClient.state_code == officer.state_code,
+        if user_context.should_see_demo:
+            # Organize CaseUpdates
+            case_updates = (
+                session.query(CaseUpdate)
+                .filter(CaseUpdate.officer_external_id == user_context.officer_id)
+                .all()
             )
-            .options(joinedload(ETLClient.case_updates))
-            .options(joinedload(ETLClient.client_info))
-            .all()
-        )
+            client_ids_to_case_updates = defaultdict(list)
+            for case_update in case_updates:
+                client_ids_to_case_updates[case_update.person_external_id].append(
+                    case_update
+                )
 
-        return [CasePresenter(client, client.case_updates) for client in clients]
+            clients = get_fixture_clients()
+            for client in clients:
+                client.person_external_id = user_context.person_id(client)
+
+            # Organize ClientInfo structs
+            client_infos = (
+                session.query(ClientInfo)
+                .filter(
+                    ClientInfo.person_external_id.in_(
+                        (client.person_external_id for client in clients)
+                    )
+                )
+                .all()
+            )
+            client_ids_to_client_info = {}
+            for client_info in client_infos:
+                client_ids_to_client_info[client_info.person_external_id] = client_info
+
+            # Organize OfficerNotes
+            notes = session.query(OfficerNote).filter(
+                OfficerNote.person_external_id.in_(
+                    (client.person_external_id for client in clients)
+                )
+            )
+            client_ids_to_notes = defaultdict(list)
+            for note in notes:
+                client_ids_to_notes[note.person_external_id].append(note)
+
+            for client in clients:
+                if client_info := client_ids_to_client_info.get(
+                    client.person_external_id
+                ):
+                    client.client_info = client_info
+                client.notes = client_ids_to_notes[client.person_external_id]
+
+            return [
+                CasePresenter(
+                    client, client_ids_to_case_updates[client.person_external_id]
+                )
+                for client in clients
+            ]
+        if user_context.current_user:
+            clients = (
+                session.query(ETLClient)
+                .filter(
+                    ETLClient.etl_officer == user_context.current_user,
+                    ETLClient.state_code == user_context.officer_state_code,
+                )
+                .options(joinedload(ETLClient.case_updates))
+                .options(joinedload(ETLClient.client_info))
+                .all()
+            )
+            return [CasePresenter(client, client.case_updates) for client in clients]
+
+        raise ValueError("Not authorized to view clients")
 
     @staticmethod
     def officer_for_email(session: Session, officer_email: str) -> ETLOfficer:
@@ -136,252 +207,180 @@ class CaseTriageQuerier:
 
     @staticmethod
     def opportunities_for_officer(
-        session: Session, officer: ETLOfficer
+        session: Session, user_context: UserContext
     ) -> List[OpportunityPresenter]:
-        """Outputs opportunities for all clients on the officer's caseload."""
-        etl_opportunity_info = (
-            session.query(ETLOpportunity, OpportunityDeferral)
-            .outerjoin(
-                OpportunityDeferral,
-                (
-                    ETLOpportunity.person_external_id
-                    == OpportunityDeferral.person_external_id
+        """Fetches all opportunities for an officer."""
+        if user_context.should_see_demo:
+            opportunity_deferrals = (
+                session.query(OpportunityDeferral)
+                .filter(
+                    OpportunityDeferral.supervising_officer_external_id
+                    == user_context.officer_id
                 )
-                & (ETLOpportunity.state_code == OpportunityDeferral.state_code)
-                & (
-                    ETLOpportunity.supervising_officer_external_id
-                    == OpportunityDeferral.supervising_officer_external_id
+                .all()
+            )
+
+            # Map from person -> opportunity type -> optional deferral
+            opportunity_to_deferral: Dict[
+                str, Dict[str, Optional[OpportunityDeferral]]
+            ] = defaultdict(dict)
+            for deferral in opportunity_deferrals:
+                opportunity_to_deferral[deferral.person_external_id][
+                    deferral.opportunity_type
+                ] = deferral
+
+            etl_opportunities = get_fixture_opportunities()
+            for opportunity in etl_opportunities:
+                opportunity.person_external_id = user_context.opportunity_id(
+                    opportunity
                 )
-                & (
-                    ETLOpportunity.opportunity_type
-                    == OpportunityDeferral.opportunity_type
-                ),
-            )
-            .filter(
-                ETLOpportunity.supervising_officer_external_id == officer.external_id,
-                ETLOpportunity.state_code == officer.state_code,
-            )
-            .all()
-        )
-
-        # we'll fill this with opportunities computed on the fly based on client conditions
-        computed_opportunity_info: List[
-            Tuple[ComputedOpportunity, Optional[OpportunityDeferral]]
-        ] = []
-
-        # one query to fetch all clients and their associated opportunity deferrals
-        client_opportunities: List[Tuple[ETLClient, Optional[OpportunityDeferral]]] = (
-            session.query(ETLClient, OpportunityDeferral)
-            .filter(
-                ETLClient.state_code == officer.state_code,
-                ETLClient.supervising_officer_external_id == officer.external_id,
-            )
-            .outerjoin(
-                OpportunityDeferral,
-                OpportunityDeferral.person_external_id == ETLClient.person_external_id,
-            )
-            .order_by(ETLClient.person_external_id)
-            .all()
-        )
-
-        # deferrals are not grouped in DB result because there isn't a proper relationship
-        # to clients; now we group them and iterate over clients to find opportunities
-        for client, client_rows in groupby(client_opportunities, lambda row: row[0]):
-            deferrals = [row[1] for row in client_rows if row[1] is not None]
-            # employment opportunities
-            if client.employer is None:
-                opp = ComputedOpportunity(
-                    state_code=officer.state_code,
-                    supervising_officer_external_id=officer.external_id,
-                    person_external_id=client.person_external_id,
+            # TODO(#8077): Unify computed and augmented opportunities.
+            unemployed = [
+                ComputedOpportunity(
+                    state_code=user_context.officer_state_code,
+                    supervising_officer_external_id=user_context.officer_id,
+                    person_external_id=user_context.person_id(c),
                     opportunity_type=OpportunityType.EMPLOYMENT.value,
                     opportunity_metadata={},
                 )
-                deferral = next(
-                    (
-                        d
-                        for d in deferrals
-                        if d.opportunity_type == OpportunityType.EMPLOYMENT.value
-                    ),
-                    None,
-                )
-                computed_opportunity_info.append((opp, deferral))
-            # TODO(#8077): compare time since contact and assessment dates to us_id_policy_requirements
-            # to generate opportunities for upcoming/overdue contact and assessment
+                for c in get_fixture_clients()
+                if c.employer is None
+            ]
 
-        return [
-            *[
-                OpportunityPresenter(*info)
-                for info in [*etl_opportunity_info, *computed_opportunity_info]
-            ],
-        ]
+            opportunities: List[Opportunity] = [*etl_opportunities, *unemployed]
+
+            return [
+                OpportunityPresenter(
+                    opportunity,
+                    opportunity_to_deferral[opportunity.person_external_id].get(
+                        opportunity.opportunity_type
+                    ),
+                )
+                for opportunity in opportunities
+            ]
+        if user_context.current_user:
+            etl_opportunity_info = (
+                session.query(ETLOpportunity, OpportunityDeferral)
+                .outerjoin(
+                    OpportunityDeferral,
+                    (
+                        ETLOpportunity.person_external_id
+                        == OpportunityDeferral.person_external_id
+                    )
+                    & (ETLOpportunity.state_code == OpportunityDeferral.state_code)
+                    & (
+                        ETLOpportunity.supervising_officer_external_id
+                        == OpportunityDeferral.supervising_officer_external_id
+                    )
+                    & (
+                        ETLOpportunity.opportunity_type
+                        == OpportunityDeferral.opportunity_type
+                    ),
+                )
+                .filter(
+                    ETLOpportunity.supervising_officer_external_id
+                    == user_context.officer_id,
+                    ETLOpportunity.state_code == user_context.officer_state_code,
+                )
+                .all()
+            )
+            # we'll fill this with opportunities computed on the fly based on client conditions
+            computed_opportunity_info: List[
+                Tuple[ComputedOpportunity, Optional[OpportunityDeferral]]
+            ] = []
+
+            # one query to fetch all clients and their associated opportunity deferrals
+            client_opportunities: List[
+                Tuple[ETLClient, Optional[OpportunityDeferral]]
+            ] = (
+                session.query(ETLClient, OpportunityDeferral)
+                .filter(
+                    ETLClient.state_code == user_context.officer_state_code,
+                    ETLClient.supervising_officer_external_id
+                    == user_context.officer_id,
+                )
+                .outerjoin(
+                    OpportunityDeferral,
+                    OpportunityDeferral.person_external_id
+                    == ETLClient.person_external_id,
+                )
+                .order_by(ETLClient.person_external_id)
+                .all()
+            )
+            # deferrals are not grouped in DB result because there isn't a proper relationship
+            # to clients; now we group them and iterate over clients to find opportunities
+            for client, client_rows in groupby(
+                client_opportunities, lambda row: row[0]
+            ):
+                deferrals = [row[1] for row in client_rows if row[1] is not None]
+                # employment opportunities
+                if client.employer is None:
+                    opp = ComputedOpportunity(
+                        state_code=user_context.officer_state_code,
+                        supervising_officer_external_id=user_context.officer_id,
+                        person_external_id=user_context.person_id(client),
+                        opportunity_type=OpportunityType.EMPLOYMENT.value,
+                        opportunity_metadata={},
+                    )
+                    deferral = next(
+                        (
+                            d
+                            for d in deferrals
+                            if d.opportunity_type == OpportunityType.EMPLOYMENT.value
+                        ),
+                        None,
+                    )
+                    computed_opportunity_info.append((opp, deferral))
+                # TODO(#8077): compare time since contact and assessment dates to us_id_policy_requirements
+                # to generate opportunities for upcoming/overdue contact and assessment
+
+            return [
+                *[
+                    OpportunityPresenter(*info)
+                    for info in [*etl_opportunity_info, *computed_opportunity_info]
+                ],
+            ]
+
+        raise ValueError("Not authorized to view client opportunities.")
 
     @staticmethod
     def fetch_etl_opportunity(
         session: Session,
-        officer: ETLOfficer,
+        user_context: UserContext,
         client: ETLClient,
         opportunity_type: OpportunityType,
     ) -> ETLOpportunity:
-        try:
-            return (
-                session.query(ETLOpportunity)
-                .filter(
-                    ETLOpportunity.state_code == client.state_code,
-                    ETLOpportunity.supervising_officer_external_id
-                    == officer.external_id,
-                    ETLOpportunity.person_external_id == client.person_external_id,
-                    ETLOpportunity.opportunity_type == opportunity_type.value,
+        """Fetches a given opportunity for an officer and client."""
+        if user_context.should_see_demo:
+            opportunities = get_fixture_opportunities()
+            for opp in opportunities:
+                if (
+                    opp.person_external_id == client.person_external_id
+                    and opp.opportunity_type == opportunity_type.value
+                ):
+                    return opp
+        elif user_context.current_user and client:
+            try:
+                return (
+                    session.query(ETLOpportunity)
+                    .filter(
+                        ETLOpportunity.state_code
+                        == user_context.client_state_code(client),
+                        ETLOpportunity.supervising_officer_external_id
+                        == user_context.officer_id,
+                        ETLOpportunity.person_external_id
+                        == user_context.person_id(client),
+                        ETLOpportunity.opportunity_type == opportunity_type.value,
+                    )
+                    .one()
                 )
-                .one()
-            )
-        except sqlalchemy.orm.exc.NoResultFound as e:
-            raise OpportunityDoesNotExistError(
-                f"Could not find opportunity for officer: {officer.external_id}, "
-                f"person: {client.person_external_id}, opportunity_type: {opportunity_type}"
-            ) from e
+            except sqlalchemy.orm.exc.NoResultFound as e:
+                raise OpportunityDoesNotExistError(
+                    f"Could not find opportunity for officer: {user_context.officer_id}, "
+                    f"person: {user_context.person_id(client)}, opportunity_type: {opportunity_type}"
+                ) from e
 
-
-class DemoCaseTriageQuerier:
-    """Implements some querying abstractions for use by demo users."""
-
-    @staticmethod
-    def clients_for_demo_user(
-        session: Session, user_email_address: str
-    ) -> List[CasePresenter]:
-        """Retrieves the list of clients for demo users and associates related objects."""
-
-        # Organize CaseUpdates
-        case_updates = (
-            session.query(CaseUpdate)
-            .filter(
-                CaseUpdate.officer_external_id
-                == fake_officer_id_for_demo_user(user_email_address)
-            )
-            .all()
-        )
-        client_ids_to_case_updates = defaultdict(list)
-        for case_update in case_updates:
-            client_ids_to_case_updates[case_update.person_external_id].append(
-                case_update
-            )
-
-        clients = get_fixture_clients()
-        for client in clients:
-            client.person_external_id = fake_person_id_for_demo_user(
-                user_email_address, client.person_external_id
-            )
-
-        # Organize ClientInfo structs
-        client_infos = (
-            session.query(ClientInfo)
-            .filter(
-                ClientInfo.person_external_id.in_(
-                    (client.person_external_id for client in clients)
-                )
-            )
-            .all()
-        )
-        client_ids_to_client_info = {}
-        for client_info in client_infos:
-            client_ids_to_client_info[client_info.person_external_id] = client_info
-
-        # Organize OfficerNotes
-        notes = session.query(OfficerNote).filter(
-            OfficerNote.person_external_id.in_(
-                (client.person_external_id for client in clients)
-            )
-        )
-        client_ids_to_notes = defaultdict(list)
-        for note in notes:
-            client_ids_to_notes[note.person_external_id].append(note)
-
-        for client in clients:
-            if client_info := client_ids_to_client_info.get(client.person_external_id):
-                client.client_info = client_info
-            client.notes = client_ids_to_notes[client.person_external_id]
-
-        return [
-            CasePresenter(client, client_ids_to_case_updates[client.person_external_id])
-            for client in clients
-        ]
-
-    @staticmethod
-    def etl_client_with_id(person_external_id: str) -> ETLClient:
-        clients = get_fixture_clients()
-
-        for client in clients:
-            if client.person_external_id == person_external_id:
-                return client
-
-        raise PersonDoesNotExistError(f"could not find id: {person_external_id}")
-
-    @staticmethod
-    def opportunities_for_demo_user(
-        session: Session, user_email_address: str
-    ) -> List[OpportunityPresenter]:
-        """Outputs opportunities for all clients on the officer's caseload."""
-        officer_id = fake_officer_id_for_demo_user(user_email_address)
-
-        opportunity_deferrals = (
-            session.query(OpportunityDeferral)
-            .filter(OpportunityDeferral.supervising_officer_external_id == officer_id)
-            .all()
-        )
-
-        # Map from person -> opportunity type -> optional deferral
-        opportunity_to_deferral: Dict[
-            str, Dict[str, Optional[OpportunityDeferral]]
-        ] = defaultdict(dict)
-        for deferral in opportunity_deferrals:
-            opportunity_to_deferral[deferral.person_external_id][
-                deferral.opportunity_type
-            ] = deferral
-
-        etl_opportunities = get_fixture_opportunities()
-        for opportunity in etl_opportunities:
-            opportunity.person_external_id = fake_person_id_for_demo_user(
-                user_email_address, opportunity.person_external_id
-            )
-
-        unemployed = [
-            ComputedOpportunity(
-                state_code=DEMO_STATE_CODE,
-                supervising_officer_external_id=officer_id,
-                person_external_id=fake_person_id_for_demo_user(
-                    user_email_address, c.person_external_id
-                ),
-                opportunity_type=OpportunityType.EMPLOYMENT.value,
-                opportunity_metadata={},
-            )
-            for c in get_fixture_clients()
-            if c.employer is None
-        ]
-
-        opportunities: List[Opportunity] = [*etl_opportunities, *unemployed]
-
-        return [
-            OpportunityPresenter(
-                opportunity,
-                opportunity_to_deferral[opportunity.person_external_id].get(
-                    opportunity.opportunity_type
-                ),
-            )
-            for opportunity in opportunities
-        ]
-
-    @staticmethod
-    def fetch_etl_opportunity(
-        client: ETLClient, opportunity_type: OpportunityType
-    ) -> ETLOpportunity:
-        opportunities = get_fixture_opportunities()
-        for opp in opportunities:
-            if (
-                opp.person_external_id == client.person_external_id
-                and opp.opportunity_type == opportunity_type.value
-            ):
-                return opp
         raise OpportunityDoesNotExistError(
             f"No opportunity exists with type {opportunity_type} and "
-            f"for person {client.person_external_id}"
+            f"for person {user_context.person_id(client)}"
         )
