@@ -24,10 +24,8 @@ from typing import Any, Dict, Optional
 import pytz
 
 from recidiviz.case_triage.demo_helpers import unconvert_fake_person_id_for_demo_user
-from recidiviz.persistence.database.schema.case_triage.schema import (
-    ETLOpportunity,
-    OpportunityDeferral,
-)
+from recidiviz.case_triage.opportunities.types import Opportunity
+from recidiviz.persistence.database.schema.case_triage.schema import OpportunityDeferral
 
 
 class OpportunityPresenter:
@@ -35,10 +33,10 @@ class OpportunityPresenter:
 
     def __init__(
         self,
-        etl_opportunity: ETLOpportunity,
+        opportunity: Opportunity,
         opportunity_deferral: Optional[OpportunityDeferral],
     ):
-        self.etl_opportunity = etl_opportunity
+        self.opportunity = opportunity
         self.opportunity_deferral = opportunity_deferral
 
     def is_deferred(self, query_time: Optional[datetime] = None) -> bool:
@@ -53,13 +51,14 @@ class OpportunityPresenter:
     def to_json(self, query_time: Optional[datetime]) -> Dict[str, Any]:
         base = {
             "personExternalId": unconvert_fake_person_id_for_demo_user(
-                self.etl_opportunity.person_external_id
+                self.opportunity.person_external_id
             ),
-            "stateCode": self.etl_opportunity.state_code,
-            "supervisingOfficerExternalId": self.etl_opportunity.supervising_officer_external_id,
-            "opportunityType": self.etl_opportunity.opportunity_type,
-            "opportunityMetadata": self.etl_opportunity.opportunity_metadata,
+            "stateCode": self.opportunity.state_code,
+            "supervisingOfficerExternalId": self.opportunity.supervising_officer_external_id,
+            "opportunityType": self.opportunity.opportunity_type,
+            "opportunityMetadata": self.opportunity.opportunity_metadata,
         }
+
         if self.opportunity_deferral is not None and self.is_deferred(query_time):
             # TODO(#5708): Check the metadata as well to see if the deferral is
             # still active

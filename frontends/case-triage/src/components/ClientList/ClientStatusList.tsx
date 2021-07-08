@@ -19,13 +19,21 @@ import moment from "moment";
 import { observer } from "mobx-react-lite";
 import assertNever from "assert-never";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
-import { OPPORTUNITY_TITLES } from "../../stores/OpportunityStore/Opportunity";
-import { Pill } from "../Pill";
+import {
+  OpportunityType,
+  OPPORTUNITY_TITLES,
+} from "../../stores/OpportunityStore/Opportunity";
+import { Pill, PillKind } from "../Pill";
 import { ClientProps } from "./ClientList.types";
 import { StatusList } from "./ClientList.styles";
 import AlertPreview from "../AlertPreview";
 import { DueDateAlert } from "../DueDate/DueDateAlert";
 import { getTimeDifference } from "../../utils";
+
+const opportunityToPillKind: Record<OpportunityType, PillKind> = {
+  EMPLOYMENT: "warn",
+  OVERDUE_DOWNGRADE: "highlight",
+};
 
 export const ClientStatusList: React.FC<ClientProps> = observer(
   ({ client }: ClientProps): JSX.Element => {
@@ -58,7 +66,7 @@ export const ClientStatusList: React.FC<ClientProps> = observer(
         if ("opportunity" in alert) {
           const { kind, opportunity } = alert;
           statusPills.push(
-            <AlertPreview key={kind} kind="highlight">
+            <AlertPreview key={kind} kind={opportunityToPillKind[kind]}>
               {OPPORTUNITY_TITLES[opportunity.opportunityType]}
             </AlertPreview>
           );

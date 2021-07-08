@@ -40,7 +40,6 @@ from recidiviz.case_triage.opportunities.types import (
 )
 from recidiviz.case_triage.querier.case_update_presenter import CaseUpdateStatus
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
-from recidiviz.persistence.database.schema.case_triage.schema import OpportunityDeferral
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.case_triage.api_test_helpers import CaseTriageTestHelpers
@@ -48,8 +47,9 @@ from recidiviz.tests.case_triage.case_triage_helpers import (
     generate_fake_case_update,
     generate_fake_client,
     generate_fake_client_info,
+    generate_fake_etl_opportunity,
     generate_fake_officer,
-    generate_fake_opportunity,
+    generate_fake_reminder,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.flask_exception import FlaskException
@@ -134,18 +134,18 @@ class TestCaseTriageAPIRoutes(TestCase):
         )
         self.client_2.most_recent_assessment_date = date(2022, 2, 2)
 
-        self.opportunity_1 = generate_fake_opportunity(
+        self.opportunity_1 = generate_fake_etl_opportunity(
             officer_id=self.officer.external_id,
             person_external_id=self.client_1.person_external_id,
         )
         tomorrow = datetime.now() + timedelta(days=1)
-        self.deferral_1 = OpportunityDeferral.from_etl_opportunity(
-            self.opportunity_1, OpportunityDeferralType.REMINDER.value, tomorrow, True
-        )
-        self.opportunity_2 = generate_fake_opportunity(
+        self.deferral_1 = generate_fake_reminder(self.opportunity_1, tomorrow)
+        self.opportunity_2 = generate_fake_etl_opportunity(
             officer_id=self.officer.external_id,
             person_external_id=self.client_2.person_external_id,
         )
+        # all generated fake clients have no employer
+        self.num_unemployed_opportunities = 3
 
         self.session.add_all(
             [
@@ -200,11 +200,17 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.assertEqual([], self.helpers.get_opportunities())
 
     def test_get_opportunities(self) -> None:
+
         with self.helpers.as_officer(self.officer):
-            # Only one of the opportunities should be active, but there should be
-            # two total.
-            self.assertEqual(len(self.helpers.get_opportunities()), 2)
-            self.assertEqual(len(self.helpers.get_undeferred_opportunities()), 1)
+            # Two ETL opportunities exist but one is inactive
+            self.assertEqual(
+                len(self.helpers.get_opportunities()),
+                2 + self.num_unemployed_opportunities,
+            )
+            self.assertEqual(
+                len(self.helpers.get_undeferred_opportunities()),
+                1 + self.num_unemployed_opportunities,
+            )
 
     def test_defer_opportunity_malformed_input(self) -> None:
         with self.helpers.as_officer(self.officer):
@@ -240,8 +246,18 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.helpers.defer_opportunity(person_external_id, opportunity_type)
             self.mock_segment_client.track_opportunity_deferred.assert_called()
 
-            # Verify that all opportunities are deferred
-            self.assertEqual(len(self.helpers.get_undeferred_opportunities()), 0)
+            # Verify that the opportunity is deferred
+            self.assertEqual(
+                len(
+                    [
+                        o
+                        for o in self.helpers.get_undeferred_opportunities()
+                        if o["opportunityType"] == opportunity_type
+                        and o["personExternalId"] == person_external_id
+                    ]
+                ),
+                0,
+            )
 
     def test_delete_opportunity_deferral(self) -> None:
         with self.helpers.as_officer(self.officer):
@@ -250,7 +266,10 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.mock_segment_client.track_opportunity_deferral_deleted.assert_called()
 
             # Verify that all opportunities are undeferred
-            self.assertEqual(len(self.helpers.get_undeferred_opportunities()), 2)
+            self.assertEqual(
+                len(self.helpers.get_undeferred_opportunities()),
+                2 + self.num_unemployed_opportunities,
+            )
 
     def test_cannot_delete_anothers_opportunity_deferral(self) -> None:
         # Fetch original deferral id

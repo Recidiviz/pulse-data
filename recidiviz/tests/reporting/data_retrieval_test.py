@@ -40,8 +40,8 @@ from recidiviz.reporting.recipient import Recipient
 from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
 from recidiviz.tests.case_triage.case_triage_helpers import (
     generate_fake_client,
+    generate_fake_etl_opportunity,
     generate_fake_officer,
-    generate_fake_opportunity,
 )
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.postgres import local_postgres_helpers
@@ -123,7 +123,7 @@ class EmailGenerationTests(TestCase):
             assessment_score=100,
         )
         opportunities = [
-            generate_fake_opportunity(
+            generate_fake_etl_opportunity(
                 officer_id=self.officer.external_id,
                 person_external_id=client.person_external_id,
                 opportunity_type=OpportunityType.OVERDUE_DOWNGRADE,

@@ -14,31 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Implements common types for opportunities."""
-from enum import Enum
-from typing import Protocol
+"""Implements data models for opportunities that are not part of a database schema."""
+import attr
+
+from recidiviz.case_triage.opportunities.types import Opportunity
 
 
-class OpportunityDoesNotExistError(ValueError):
-    pass
-
-
-class OpportunityType(Enum):
-    OVERDUE_DISCHARGE = "OVERDUE_DISCHARGE"
-    OVERDUE_DOWNGRADE = "OVERDUE_DOWNGRADE"
-    EARLY_DISCHARGE = "EARLY_DISCHARGE"
-    LIMITED_SUPERVISION_UNIT = "LIMITED_SUPERVISION_UNIT"
-    EMPLOYMENT = "EMPLOYMENT"
-
-
-class OpportunityDeferralType(Enum):
-    REMINDER = "REMINDER"
-    ACTION_TAKEN = "ACTION_TAKEN"
-    INCORRECT_DATA = "INCORRECT_DATA"
-
-
-class Opportunity(Protocol):
-    """Protocol for opportunity entities derived from various data sources."""
+@attr.s(auto_attribs=True)
+class ComputedOpportunity(Opportunity):
+    """An opportunity not backed by an underlying database entity."""
 
     state_code: str
     supervising_officer_external_id: str

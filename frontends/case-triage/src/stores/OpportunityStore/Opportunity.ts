@@ -22,10 +22,12 @@ export enum OpportunityDeferralType {
 
 export enum OpportunityType {
   OVERDUE_DOWNGRADE = "OVERDUE_DOWNGRADE",
+  EMPLOYMENT = "EMPLOYMENT",
 }
 
 export const OPPORTUNITY_TITLES: Record<OpportunityType, string> = {
   [OpportunityType.OVERDUE_DOWNGRADE]: "Supervision level mismatch",
+  [OpportunityType.EMPLOYMENT]: "Unemployed",
 };
 
 export const OPPORTUNITY_PRIORITY: Record<
@@ -33,6 +35,7 @@ export const OPPORTUNITY_PRIORITY: Record<
   number
 > = {
   [OpportunityType.OVERDUE_DOWNGRADE]: 1,
+  [OpportunityType.EMPLOYMENT]: 2,
 };
 
 export const opportunityPriorityComparator = (

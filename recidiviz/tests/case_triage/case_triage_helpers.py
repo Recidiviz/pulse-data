@@ -16,12 +16,17 @@
 # =============================================================================
 """Implements helper functions for use in Case Triage tests."""
 import json
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Any, Dict, Optional
 
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.client_info.types import PreferredContactMethod
-from recidiviz.case_triage.opportunities.types import OpportunityType
+from recidiviz.case_triage.opportunities.models import ComputedOpportunity
+from recidiviz.case_triage.opportunities.types import (
+    Opportunity,
+    OpportunityDeferralType,
+    OpportunityType,
+)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
@@ -31,6 +36,7 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLClient,
     ETLOfficer,
     ETLOpportunity,
+    OpportunityDeferral,
 )
 
 
@@ -73,7 +79,7 @@ def generate_fake_client(
     )
 
 
-def generate_fake_opportunity(
+def generate_fake_etl_opportunity(
     *,
     officer_id: str,
     person_external_id: str = "person_id_1",
@@ -89,6 +95,45 @@ def generate_fake_opportunity(
         opportunity_type=opportunity_type.value,
         opportunity_metadata=opportunity_metadata,
     )
+
+
+def generate_fake_computed_opportunity(
+    *,
+    officer_id: str,
+    person_external_id: str = "person_id_1",
+    opportunity_type: OpportunityType = OpportunityType.EMPLOYMENT,
+    opportunity_metadata: Optional[Dict[str, Any]] = None,
+) -> ComputedOpportunity:
+    if not opportunity_metadata:
+        opportunity_metadata = {}
+    return ComputedOpportunity(
+        supervising_officer_external_id=officer_id,
+        person_external_id=person_external_id,
+        state_code="US_XX",
+        opportunity_type=opportunity_type.value,
+        opportunity_metadata=opportunity_metadata,
+    )
+
+
+def generate_fake_reminder(
+    opportunity: Opportunity,
+    deferred_until: datetime = None,
+) -> OpportunityDeferral:
+    if deferred_until is None:
+        deferred_until = datetime.now() + timedelta(days=7)
+
+    reminder_args = {
+        "state_code": "US_XX",
+        "deferral_type": OpportunityDeferralType.REMINDER.value,
+        "deferred_until": deferred_until,
+        "reminder_was_requested": True,
+        "supervising_officer_external_id": opportunity.supervising_officer_external_id,
+        "person_external_id": opportunity.person_external_id,
+        "opportunity_type": opportunity.opportunity_type,
+        "opportunity_metadata": opportunity.opportunity_metadata,
+    }
+
+    return OpportunityDeferral(**reminder_args)
 
 
 def generate_fake_case_update(

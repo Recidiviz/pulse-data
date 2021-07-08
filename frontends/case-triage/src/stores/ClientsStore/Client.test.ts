@@ -22,7 +22,7 @@ import { OpportunityType } from "../OpportunityStore/Opportunity";
 import RootStore from "../RootStore";
 import { AlertKindList, Client, PENDING_ID } from "./Client";
 import { Note } from "./Note";
-import { clientData, clientOpportunity } from "./__fixtures__";
+import { clientData, clientOpportunities } from "./__fixtures__";
 
 jest.mock("../API");
 const APIMock = API as jest.MockedClass<typeof API>;
@@ -95,18 +95,6 @@ describe("alerts", () => {
     );
   });
 
-  test("employment", () => {
-    expect(
-      testClient.alerts.find((alert) => alert.kind === "EMPLOYMENT")
-    ).toBeDefined();
-
-    testClient.needsMet.employment = true;
-
-    expect(
-      testClient.alerts.find((alert) => alert.kind === "EMPLOYMENT")
-    ).toBeUndefined();
-  });
-
   test("from opportunities", () => {
     expect(
       testClient.alerts.find(
@@ -114,11 +102,23 @@ describe("alerts", () => {
       )
     ).toBeUndefined();
 
-    rootStore.opportunityStore.opportunities = [clientOpportunity];
+    expect(
+      testClient.alerts.find(
+        (alert) => alert.kind === OpportunityType.EMPLOYMENT
+      )
+    ).toBeUndefined();
+
+    rootStore.opportunityStore.opportunities = [...clientOpportunities];
 
     expect(
       testClient.alerts.find(
         (alert) => alert.kind === OpportunityType.OVERDUE_DOWNGRADE
+      )
+    ).toBeDefined();
+
+    expect(
+      testClient.alerts.find(
+        (alert) => alert.kind === OpportunityType.EMPLOYMENT
       )
     ).toBeDefined();
   });
