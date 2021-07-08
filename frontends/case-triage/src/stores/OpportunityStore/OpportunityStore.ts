@@ -22,7 +22,7 @@ import {
   opportunityPriorityComparator,
   OpportunityType,
 } from "./Opportunity";
-import UserStore from "../UserStore";
+import UserStore, { KNOWN_EXPERIMENTS } from "../UserStore";
 import API from "../API";
 import { Client } from "../ClientsStore";
 import RootStore from "../RootStore";
@@ -78,6 +78,16 @@ class OpportunityStore {
             OPPORTUNITY_PRIORITY[opportunity.opportunityType] !== undefined
           );
         });
+
+        // this flag gives users access to more opportunities;
+        // outside of it, a more limited list powers the "top opportunities" feature
+        if (!this.userStore.isInExperiment(KNOWN_EXPERIMENTS.NewClientList)) {
+          opportunities = opportunities.filter(
+            (opportunity) =>
+              // this is in fact the only supported "top opportunity"
+              opportunity.opportunityType === OpportunityType.OVERDUE_DOWNGRADE
+          );
+        }
 
         runInAction(() => {
           this.opportunities = opportunities;

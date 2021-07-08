@@ -149,13 +149,21 @@ class TestDemoUser(TestCase):
             self.assertTrue(len(new_client["caseUpdates"]) == 0)
 
     def test_get_opportunities(self) -> None:
+        # these numbers reflect the conditions represented in data fixtures
+        # that result in opportunities
+        num_unemployed = 58
+
+        expected_opportunity_count = len(self.demo_opportunities) + num_unemployed
+
         with self.helpers.as_demo_user():
             self.assertEqual(
-                len(self.helpers.get_opportunities()), len(self.demo_opportunities)
+                len(self.helpers.get_opportunities()), expected_opportunity_count
             )
 
     def test_defer_opportunity(self) -> None:
         with self.helpers.as_demo_user():
+            prior_opportunity_count = len(self.helpers.get_undeferred_opportunities())
+
             opportunity = self.demo_opportunities[0]
             self.helpers.defer_opportunity(
                 opportunity.person_external_id,
@@ -165,7 +173,7 @@ class TestDemoUser(TestCase):
             # There should be one fewer available opportunity post-deferral
             self.assertEqual(
                 len(self.helpers.get_undeferred_opportunities()),
-                len(self.demo_opportunities) - 1,
+                prior_opportunity_count - 1,
             )
 
     def test_delete_opportunity_deferral(self) -> None:
@@ -176,9 +184,9 @@ class TestDemoUser(TestCase):
                 opportunity.opportunity_type,
             )
 
-            api_opportunies = self.helpers.get_opportunities()
+            api_opportunities = self.helpers.get_opportunities()
             deferral_id = None
-            for api_opp in api_opportunies:
+            for api_opp in api_opportunities:
                 if deferral_id := api_opp.get("deferralId"):
                     break
             assert deferral_id is not None
@@ -188,7 +196,7 @@ class TestDemoUser(TestCase):
             # After deleting the deferral, all opportunities should be available
             self.assertEqual(
                 len(self.helpers.get_undeferred_opportunities()),
-                len(self.demo_opportunities),
+                len(api_opportunities),
             )
 
     def test_set_preferred_name(self) -> None:

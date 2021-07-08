@@ -21,6 +21,7 @@ from unittest.case import TestCase
 import pytest
 import sqlalchemy.orm.exc
 
+from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.case_triage.querier.querier import (
     CaseTriageQuerier,
     PersonDoesNotExistError,
@@ -30,7 +31,9 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.case_triage.case_triage_helpers import (
     generate_fake_client,
+    generate_fake_etl_opportunity,
     generate_fake_officer,
+    generate_fake_reminder,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
 
@@ -141,3 +144,44 @@ class TestCaseTriageQuerier(TestCase):
 
         # Should not raise an error
         CaseTriageQuerier.etl_client_for_officer(read_session, officer_1, "client_1")
+
+    def test_opportunities_for_officer(self) -> None:
+        officer = generate_fake_officer("officer_1")
+        client = generate_fake_client(
+            "client_1", supervising_officer_id=officer.external_id
+        )
+        etl_opp = generate_fake_etl_opportunity(
+            officer_id=officer.external_id, person_external_id=client.person_external_id
+        )
+        etl_reminder = generate_fake_reminder(etl_opp)
+        session = SessionFactory.for_database(self.database_key)
+        session.add(officer)
+        session.add(client)
+        session.add(etl_opp)
+        session.add(etl_reminder)
+        session.commit()
+
+        read_session = SessionFactory.for_database(self.database_key)
+
+        # expect a non-etl opportunity that we want to mark as deferred
+        reminder = generate_fake_reminder(
+            opportunity=CaseTriageQuerier.opportunities_for_officer(
+                read_session, officer
+            )[1].opportunity
+        )
+        session.add(reminder)
+        session.commit()
+
+        queried_opps = CaseTriageQuerier.opportunities_for_officer(
+            read_session, officer
+        )
+
+        self.assertEqual(len(queried_opps), 2)
+
+        employment_opp = queried_opps[1]
+
+        self.assertEqual(
+            employment_opp.opportunity.opportunity_type,
+            OpportunityType.EMPLOYMENT.value,
+        )
+        self.assertTrue(employment_opp.is_deferred())

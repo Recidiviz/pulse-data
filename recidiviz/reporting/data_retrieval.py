@@ -222,7 +222,7 @@ def _retrieve_data_for_top_opportunities(state_code: StateCode) -> List[Recipien
             opp
             for opp in CaseTriageQuerier.opportunities_for_officer(session, officer)
             if not opp.is_deferred()
-            and opp.etl_opportunity.opportunity_type
+            and opp.opportunity.opportunity_type
             == OpportunityType.OVERDUE_DOWNGRADE.value
         ]
         mismatches: Dict[str, List[Dict[str, str]]] = {
@@ -231,7 +231,7 @@ def _retrieve_data_for_top_opportunities(state_code: StateCode) -> List[Recipien
         }
         for opp in opportunities:
             client = CaseTriageQuerier.etl_client_for_officer(
-                session, officer, opp.etl_opportunity.person_external_id
+                session, officer, opp.opportunity.person_external_id
             )
             key = None
             if client.supervision_level == StateSupervisionLevel.HIGH.value:
@@ -257,10 +257,10 @@ def _retrieve_data_for_top_opportunities(state_code: StateCode) -> List[Recipien
                 {
                     "name": full_name,
                     "person_external_id": client.person_external_id,
-                    "last_score": opp.etl_opportunity.opportunity_metadata[
+                    "last_score": opp.opportunity.opportunity_metadata[
                         "assessmentScore"
                     ],
-                    "last_assessment_date": opp.etl_opportunity.opportunity_metadata[
+                    "last_assessment_date": opp.opportunity.opportunity_metadata[
                         "latestAssessmentDate"
                     ],
                 }

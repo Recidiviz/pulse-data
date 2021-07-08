@@ -17,18 +17,22 @@
 """Implements the Querier abstraction that is responsible for considering multiple
 data sources and coalescing answers for downstream consumers."""
 from collections import defaultdict
-from typing import Dict, List, Optional
+from itertools import groupby
+from typing import Dict, List, Optional, Tuple
 
 import sqlalchemy.orm.exc
 from sqlalchemy.orm import Session, joinedload
 
 from recidiviz.case_triage.demo_helpers import (
+    DEMO_STATE_CODE,
     fake_officer_id_for_demo_user,
     fake_person_id_for_demo_user,
     get_fixture_clients,
     get_fixture_opportunities,
 )
+from recidiviz.case_triage.opportunities.models import ComputedOpportunity
 from recidiviz.case_triage.opportunities.types import (
+    Opportunity,
     OpportunityDoesNotExistError,
     OpportunityType,
 )
@@ -134,7 +138,8 @@ class CaseTriageQuerier:
     def opportunities_for_officer(
         session: Session, officer: ETLOfficer
     ) -> List[OpportunityPresenter]:
-        opportunity_info = (
+        """Outputs opportunities for all clients on the officer's caseload."""
+        etl_opportunity_info = (
             session.query(ETLOpportunity, OpportunityDeferral)
             .outerjoin(
                 OpportunityDeferral,
@@ -158,7 +163,58 @@ class CaseTriageQuerier:
             )
             .all()
         )
-        return [OpportunityPresenter(info[0], info[1]) for info in opportunity_info]
+
+        # we'll fill this with opportunities computed on the fly based on client conditions
+        computed_opportunity_info: List[
+            Tuple[ComputedOpportunity, Optional[OpportunityDeferral]]
+        ] = []
+
+        # one query to fetch all clients and their associated opportunity deferrals
+        client_opportunities: List[Tuple[ETLClient, Optional[OpportunityDeferral]]] = (
+            session.query(ETLClient, OpportunityDeferral)
+            .filter(
+                ETLClient.state_code == officer.state_code,
+                ETLClient.supervising_officer_external_id == officer.external_id,
+            )
+            .outerjoin(
+                OpportunityDeferral,
+                OpportunityDeferral.person_external_id == ETLClient.person_external_id,
+            )
+            .order_by(ETLClient.person_external_id)
+            .all()
+        )
+
+        # deferrals are not grouped in DB result because there isn't a proper relationship
+        # to clients; now we group them and iterate over clients to find opportunities
+        for client, client_rows in groupby(client_opportunities, lambda row: row[0]):
+            deferrals = [row[1] for row in client_rows if row[1] is not None]
+            # employment opportunities
+            if client.employer is None:
+                opp = ComputedOpportunity(
+                    state_code=officer.state_code,
+                    supervising_officer_external_id=officer.external_id,
+                    person_external_id=client.person_external_id,
+                    opportunity_type=OpportunityType.EMPLOYMENT.value,
+                    opportunity_metadata={},
+                )
+                deferral = next(
+                    (
+                        d
+                        for d in deferrals
+                        if d.opportunity_type == OpportunityType.EMPLOYMENT.value
+                    ),
+                    None,
+                )
+                computed_opportunity_info.append((opp, deferral))
+            # TODO(#8077): compare time since contact and assessment dates to us_id_policy_requirements
+            # to generate opportunities for upcoming/overdue contact and assessment
+
+        return [
+            *[
+                OpportunityPresenter(*info)
+                for info in [*etl_opportunity_info, *computed_opportunity_info]
+            ],
+        ]
 
     @staticmethod
     def fetch_etl_opportunity(
@@ -264,12 +320,12 @@ class DemoCaseTriageQuerier:
     def opportunities_for_demo_user(
         session: Session, user_email_address: str
     ) -> List[OpportunityPresenter]:
+        """Outputs opportunities for all clients on the officer's caseload."""
+        officer_id = fake_officer_id_for_demo_user(user_email_address)
+
         opportunity_deferrals = (
             session.query(OpportunityDeferral)
-            .filter(
-                OpportunityDeferral.supervising_officer_external_id
-                == fake_officer_id_for_demo_user(user_email_address)
-            )
+            .filter(OpportunityDeferral.supervising_officer_external_id == officer_id)
             .all()
         )
 
@@ -282,11 +338,28 @@ class DemoCaseTriageQuerier:
                 deferral.opportunity_type
             ] = deferral
 
-        opportunities = get_fixture_opportunities()
-        for opportunity in opportunities:
+        etl_opportunities = get_fixture_opportunities()
+        for opportunity in etl_opportunities:
             opportunity.person_external_id = fake_person_id_for_demo_user(
                 user_email_address, opportunity.person_external_id
             )
+
+        unemployed = [
+            ComputedOpportunity(
+                state_code=DEMO_STATE_CODE,
+                supervising_officer_external_id=officer_id,
+                person_external_id=fake_person_id_for_demo_user(
+                    user_email_address, c.person_external_id
+                ),
+                opportunity_type=OpportunityType.EMPLOYMENT.value,
+                opportunity_metadata={},
+            )
+            for c in get_fixture_clients()
+            if c.employer is None
+        ]
+
+        opportunities: List[Opportunity] = [*etl_opportunities, *unemployed]
+
         return [
             OpportunityPresenter(
                 opportunity,

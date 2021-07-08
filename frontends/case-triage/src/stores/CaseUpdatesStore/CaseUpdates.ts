@@ -57,4 +57,8 @@ export const CASE_UPDATE_OPPORTUNITY_ASSOCIATION: Record<
     CaseUpdateActionType.DOWNGRADE_INITIATED,
     CaseUpdateActionType.INCORRECT_SUPERVISION_LEVEL_DATA,
   ],
+  [OpportunityType.EMPLOYMENT]: [
+    CaseUpdateActionType.FOUND_EMPLOYMENT,
+    CaseUpdateActionType.INCORRECT_EMPLOYMENT_DATA,
+  ],
 };
