@@ -28,6 +28,7 @@ from typing import Dict, List, Optional
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.case_triage.querier.querier import CaseTriageQuerier
+from recidiviz.case_triage.user_context import UserContext
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -218,9 +219,12 @@ def _retrieve_data_for_top_opportunities(state_code: StateCode) -> List[Recipien
     )
     for officer_email in _top_opps_email_recipient_addresses():
         officer = CaseTriageQuerier.officer_for_email(session, officer_email)
+        user_context = UserContext(email=officer_email, current_user=officer)
         opportunities = [
             opp
-            for opp in CaseTriageQuerier.opportunities_for_officer(session, officer)
+            for opp in CaseTriageQuerier.opportunities_for_officer(
+                session, user_context
+            )
             if not opp.is_deferred()
             and opp.opportunity.opportunity_type
             == OpportunityType.OVERDUE_DOWNGRADE.value
@@ -231,7 +235,7 @@ def _retrieve_data_for_top_opportunities(state_code: StateCode) -> List[Recipien
         }
         for opp in opportunities:
             client = CaseTriageQuerier.etl_client_for_officer(
-                session, officer, opp.opportunity.person_external_id
+                session, user_context, opp.opportunity.person_external_id
             )
             key = None
             if client.supervision_level == StateSupervisionLevel.HIGH.value:
