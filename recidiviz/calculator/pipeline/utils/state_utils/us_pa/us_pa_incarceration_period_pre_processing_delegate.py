@@ -95,7 +95,7 @@ class UsPaIncarcerationPreProcessingDelegate(
         )
 
     # TODO(#7222): Use default behavior once we've done an ingest re-run for US_PA
-    def pre_processing_incarceration_period_admission_reason_map(
+    def pre_processing_incarceration_period_admission_reason_mapper(
         self,
         incarceration_period: StateIncarcerationPeriod,
     ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
@@ -137,9 +137,13 @@ class UsPaIncarcerationPreProcessingDelegate(
         )
 
     def period_is_parole_board_hold(
-        self, incarceration_period: StateIncarcerationPeriod
+        self,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
     ) -> bool:
-        return self._default_period_is_parole_board_hold(incarceration_period)
+        return self._default_period_is_parole_board_hold(
+            sorted_incarceration_periods[incarceration_period_list_index]
+        )
 
     def period_is_non_board_hold_temporary_custody(
         self, incarceration_period: StateIncarcerationPeriod

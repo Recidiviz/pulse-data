@@ -37,7 +37,6 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
-    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -81,12 +80,13 @@ class UsNdIncarcerationPreProcessingDelegate(
         )
 
     def period_is_parole_board_hold(
-        self, incarceration_period: StateIncarcerationPeriod
+        self,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
     ) -> bool:
         """There are no parole board hold incarceration periods in US_ND."""
-        if (
-            incarceration_period.specialized_purpose_for_incarceration
-            == StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
+        if self._default_period_is_parole_board_hold(
+            sorted_incarceration_periods[incarceration_period_list_index]
         ):
             raise ValueError(
                 "Unexpected "
@@ -96,7 +96,7 @@ class UsNdIncarcerationPreProcessingDelegate(
             )
         return False
 
-    def pre_processing_incarceration_period_admission_reason_map(
+    def pre_processing_incarceration_period_admission_reason_mapper(
         self,
         incarceration_period: StateIncarcerationPeriod,
     ) -> Optional[StateIncarcerationPeriodAdmissionReason]:

@@ -30,6 +30,7 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     SANCTION_ADMISSION_PURPOSE_FOR_INCARCERATION_VALUES,
     StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.str_field_utils import normalize
@@ -71,18 +72,77 @@ class UsMoIncarcerationPreProcessingDelegate(
         )
 
     def period_is_parole_board_hold(
-        self, incarceration_period: StateIncarcerationPeriod
+        self,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
     ) -> bool:
-        """In US_MO, we can infer that an incarceration period with an admission_reason
-        of TEMPORARY_CUSTODY is a parole board hold if the period has a
-        specialized_purpose_for_incarceration value of GENERAL.
+        """In US_MO, we can infer that an incarceration period is a parole board hold
+        period in a number of ways:
+
+            1. The period has an admission_reason of TEMPORARY_CUSTODY, and a
+                purpose_for_incarceration value of GENERAL
+            2. The period does not start with an admission_reason of TEMPORARY_CUSTODY,
+                but it has a release_reason of RELEASED_FROM_TEMPORARY_CUSTODY, and
+                the next period is a parole revocation or sanction admission on the
+                same day as the release from temporary custody
+            3.  The period does not start with an admission_reason of TEMPORARY_CUSTODY,
+                but it has a release_reason of RELEASED_FROM_TEMPORARY_CUSTODY, and
+                the next period is a standard parole board hold
         """
-        return (
+        incarceration_period = sorted_incarceration_periods[
+            incarceration_period_list_index
+        ]
+
+        if (
             incarceration_period.admission_reason
             == StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
             and incarceration_period.specialized_purpose_for_incarceration
             == StateSpecializedPurposeForIncarceration.GENERAL
-        )
+        ):
+            # This is the standard representation of parole board holds in US_MO
+            return True
+
+        if (
+            incarceration_period.admission_reason
+            != StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
+            and incarceration_period.release_reason
+            == StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY
+        ):
+            next_period = (
+                sorted_incarceration_periods[incarceration_period_list_index + 1]
+                if incarceration_period_list_index
+                < (len(sorted_incarceration_periods) - 1)
+                else None
+            )
+
+            if not next_period:
+                # We're not quite sure what's going on here, and don't have enough
+                # information to confidently classify this as a board hold.
+                return False
+
+            if (
+                incarceration_period.release_date
+                and next_period.admission_date
+                and incarceration_period.release_date == next_period.admission_date
+                and (
+                    next_period.admission_reason
+                    in (
+                        StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+                        StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+                    )
+                    or self.period_is_parole_board_hold(
+                        incarceration_period_list_index=incarceration_period_list_index
+                        + 1,
+                        sorted_incarceration_periods=sorted_incarceration_periods,
+                    )
+                )
+            ):
+                # It's safe to assume this is a parole board hold since this period is
+                # either directly followed by a parole revocation/sanction admission,
+                # or by a parole board hold.
+                return True
+
+        return False
 
     def period_is_non_board_hold_temporary_custody(
         self, incarceration_period: StateIncarcerationPeriod
@@ -90,8 +150,9 @@ class UsMoIncarcerationPreProcessingDelegate(
         """The only periods of temporary custody in US_MO are parole board holds."""
         return False
 
-    # TODO(#7965): Use default behavior once we've done an ingest re-run for US_MO
-    def pre_processing_incarceration_period_admission_reason_map(
+    # TODO(#7965): Use default behavior once we've done an ingest re-run for US_MO in
+    #  production
+    def pre_processing_incarceration_period_admission_reason_mapper(
         self,
         incarceration_period: StateIncarcerationPeriod,
     ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
@@ -103,34 +164,12 @@ class UsMoIncarcerationPreProcessingDelegate(
         if not incarceration_period.admission_reason_raw_text:
             return incarceration_period.admission_reason
 
-        current_admission_reason = incarceration_period.admission_reason
-        re_mapped_admission_reason = (
-            us_mo_enum_helpers.incarceration_period_admission_reason_mapper(
-                normalize(
-                    incarceration_period.admission_reason_raw_text,
-                    remove_punctuation=True,
-                )
+        return us_mo_enum_helpers.incarceration_period_admission_reason_mapper(
+            normalize(
+                incarceration_period.admission_reason_raw_text,
+                remove_punctuation=True,
             )
         )
-
-        # TODO(#7442): Handle double revocation admissions when normalizing commitment
-        #  from supervision admissions in IP pre-processing
-        if (
-            current_admission_reason
-            == StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
-            and re_mapped_admission_reason
-            in (
-                StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
-                StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-                StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-            )
-        ):
-            # This admission was previously classified as a board hold, but is now
-            # getting cast as a revocation admission. We're not actually sure what's
-            # going on here, so let's return INTERNAL_UNKNOWN to be safe.
-            return StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN
-
-        return re_mapped_admission_reason
 
     def pre_processing_relies_on_supervision_periods(self) -> bool:
         """IP pre-processing for US_MO does not rely on StateSupervisionPeriod
