@@ -86,22 +86,6 @@ const GenerateEmails = (): JSX.Element => {
     setIsConfirmationModalVisible(true);
   };
 
-  const bucketLink = (environment: string) => {
-    const projectName =
-      environment === "production" ? "recidiviz-123" : "recidiviz-staging";
-    return (
-      <p>
-        Bucket link to {projectName}-report-html for {formData?.state}, batch
-        <a
-          style={{ margin: 10 }}
-          href={`https://console.cloud.google.com/storage/browser/${projectName}-report-html/${formData?.state}/${batchId}`}
-        >
-          {batchId}
-        </a>
-      </p>
-    );
-  };
-
   return (
     <>
       <Card title="Generate Emails" style={{ margin: 10, height: "95%" }}>
@@ -149,7 +133,17 @@ const GenerateEmails = (): JSX.Element => {
         </Form>
         {showSpinner ? <Spin /> : null}
       </Card>
-      {batchId ? bucketLink(projectId) : null}
+      {batchId ? (
+        <p>
+          Bucket link to {projectId}-report-html for {formData?.state}, batch
+          <a
+            style={{ margin: 10 }}
+            href={`https://console.cloud.google.com/storage/browser/${projectId}-report-html/${formData?.state}/${batchId}`}
+          >
+            {batchId}
+          </a>
+        </p>
+      ) : null}
       {formData?.state ? (
         <ActionRegionConfirmationForm
           visible={isConfirmationModalVisible}
