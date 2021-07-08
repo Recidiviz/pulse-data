@@ -26,6 +26,7 @@ from flask import Flask, g
 from flask.testing import FlaskClient
 
 from recidiviz.case_triage.client_info.types import PreferredContactMethod
+from recidiviz.case_triage.user_context import UserContext
 from recidiviz.persistence.database.schema.case_triage.schema import ETLOfficer
 
 
@@ -40,18 +41,21 @@ class CaseTriageTestHelpers:
     @contextlib.contextmanager
     def as_demo_user(self) -> Generator[None, None, None]:
         with self.test_app.test_request_context():
-            g.current_user = None
-            g.email = "demo_user@recidiviz.org"
-            g.can_see_demo_data = True
+            g.user_context = UserContext(
+                email="demo_user@recidiviz.org",
+                can_see_demo_data=True,
+            )
 
             yield
 
     @contextlib.contextmanager
     def as_officer(self, officer: ETLOfficer) -> Generator[None, None, None]:
         with self.test_app.test_request_context():
-            g.current_user = officer
-            g.email = "demo_user@recidiviz.org"
-            g.can_see_demo_data = True
+            g.user_context = UserContext(
+                email="demo_user@recidiviz.org",
+                can_see_demo_data=True,
+                current_user=officer,
+            )
 
             yield
 

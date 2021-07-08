@@ -26,6 +26,7 @@ from recidiviz.case_triage.case_updates.types import (
     CaseUpdateActionType,
     CaseUpdateMetadataKeys,
 )
+from recidiviz.case_triage.user_context import UserContext
 from recidiviz.persistence.database.schema.case_triage.schema import CaseUpdate
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -57,6 +58,9 @@ class TestCaseUpdatesInterface(TestCase):
             "person_id_1",
             last_assessment_date=date(2021, 2, 1),
         )
+        self.mock_context = UserContext(
+            email=self.mock_officer.email_address, current_user=self.mock_officer
+        )
 
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
@@ -72,7 +76,7 @@ class TestCaseUpdatesInterface(TestCase):
 
         CaseUpdatesInterface.update_case_for_person(
             commit_session,
-            self.mock_officer,
+            self.mock_context,
             self.mock_client,
             CaseUpdateActionType.DISCHARGE_INITIATED,
         )
@@ -85,7 +89,7 @@ class TestCaseUpdatesInterface(TestCase):
 
         CaseUpdatesInterface.update_case_for_person(
             commit_session,
-            self.mock_officer,
+            self.mock_context,
             self.mock_client,
             CaseUpdateActionType.DOWNGRADE_INITIATED,
         )
@@ -103,7 +107,7 @@ class TestCaseUpdatesInterface(TestCase):
 
         CaseUpdatesInterface.update_case_for_person(
             commit_session,
-            self.mock_officer,
+            self.mock_context,
             self.mock_client,
             CaseUpdateActionType.DOWNGRADE_INITIATED,
         )

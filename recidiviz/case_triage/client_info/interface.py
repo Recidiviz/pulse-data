@@ -21,7 +21,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from recidiviz.case_triage.client_info.types import PreferredContactMethod
-from recidiviz.case_triage.demo_helpers import fake_person_id_for_demo_user
+from recidiviz.case_triage.user_context import UserContext
 from recidiviz.persistence.database.schema.case_triage.schema import (
     ClientInfo,
     ETLClient,
@@ -34,21 +34,15 @@ class ClientInfoInterface:
     @staticmethod
     def set_preferred_contact_method(
         session: Session,
+        user_context: UserContext,
         client: ETLClient,
         contact_method: PreferredContactMethod,
-        *,
-        demo_user_email: Optional[str] = None
     ) -> None:
-        person_external_id = (
-            fake_person_id_for_demo_user(demo_user_email, client.person_external_id)
-            if demo_user_email
-            else client.person_external_id
-        )
         insert_statement = (
             insert(ClientInfo)
             .values(
-                person_external_id=person_external_id,
-                state_code=client.state_code,
+                person_external_id=user_context.person_id(client),
+                state_code=user_context.client_state_code(client),
                 preferred_contact_method=contact_method.value,
             )
             .on_conflict_do_update(
@@ -62,21 +56,15 @@ class ClientInfoInterface:
     @staticmethod
     def set_preferred_name(
         session: Session,
+        user_context: UserContext,
         client: ETLClient,
         name: Optional[str],
-        *,
-        demo_user_email: Optional[str] = None
     ) -> None:
-        person_external_id = (
-            fake_person_id_for_demo_user(demo_user_email, client.person_external_id)
-            if demo_user_email
-            else client.person_external_id
-        )
         insert_statement = (
             insert(ClientInfo)
             .values(
-                person_external_id=person_external_id,
-                state_code=client.state_code,
+                person_external_id=user_context.person_id(client),
+                state_code=user_context.client_state_code(client),
                 preferred_name=name,
             )
             .on_conflict_do_update(
@@ -86,26 +74,3 @@ class ClientInfoInterface:
         )
         session.execute(insert_statement)
         session.commit()
-
-
-class DemoClientInfoInterface:
-    """Contains methods for setting and getting preferred client info for demo users."""
-
-    @staticmethod
-    def set_preferred_contact_method(
-        session: Session,
-        user_email: str,
-        client: ETLClient,
-        contact_method: PreferredContactMethod,
-    ) -> None:
-        ClientInfoInterface.set_preferred_contact_method(
-            session, client, contact_method, demo_user_email=user_email
-        )
-
-    @staticmethod
-    def set_preferred_name(
-        session: Session, user_email: str, client: ETLClient, name: Optional[str]
-    ) -> None:
-        ClientInfoInterface.set_preferred_name(
-            session, client, name, demo_user_email=user_email
-        )

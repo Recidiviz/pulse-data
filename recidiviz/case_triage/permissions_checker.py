@@ -16,25 +16,26 @@
 # =============================================================================
 """Implements basic permissions safeguards."""
 
-
+from recidiviz.case_triage.user_context import UserContext
 from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLClient,
-    ETLOfficer,
     OfficerNote,
 )
 
 
 class PermissionsChecker:
     @staticmethod
-    def is_on_caseload(client: ETLClient, officer: ETLOfficer) -> bool:
-        return (
-            client.state_code == officer.state_code
-            and client.supervising_officer_external_id == officer.external_id
+    def is_on_caseload(client: ETLClient, user_context: UserContext) -> bool:
+        return user_context.should_see_demo or (
+            user_context.current_user is not None
+            and client.state_code == user_context.client_state_code(client)
+            and client.supervising_officer_external_id == user_context.officer_id
         )
 
     @staticmethod
-    def note_belongs_to(note: OfficerNote, officer: ETLOfficer) -> bool:
-        return (
-            note.state_code == officer.state_code
-            and note.officer_external_id == officer.external_id
+    def note_belongs_to(note: OfficerNote, user_context: UserContext) -> bool:
+        return user_context.should_see_demo or (
+            user_context.current_user is not None
+            and note.state_code == user_context.officer_state_code
+            and note.officer_external_id == user_context.officer_id
         )
