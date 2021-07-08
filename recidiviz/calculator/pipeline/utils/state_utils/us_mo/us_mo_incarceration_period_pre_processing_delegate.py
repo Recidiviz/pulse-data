@@ -28,11 +28,16 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
+    SANCTION_ADMISSION_PURPOSE_FOR_INCARCERATION_VALUES,
     StateIncarcerationPeriodAdmissionReason,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.ingest.direct.regions.us_mo import us_mo_enum_helpers
+from recidiviz.ingest.direct.regions.us_mo.us_mo_enum_helpers import (
+    SHOCK_SANCTION_STATUS_CODES,
+    TREATMENT_SANCTION_STATUS_CODES,
+)
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionViolationResponse,
@@ -53,6 +58,17 @@ class UsMoIncarcerationPreProcessingDelegate(
             for t in StateIncarcerationType
             if t != StateIncarcerationType.STATE_PRISON
         }
+
+    def get_pfi_info_for_period_if_commitment_from_supervision(
+        self,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
+        violation_responses: Optional[List[StateSupervisionViolationResponse]],
+    ) -> PurposeForIncarcerationInfo:
+        return _us_mo_get_pfi_info_for_period_if_commitment_from_supervision(
+            incarceration_period_list_index,
+            sorted_incarceration_periods,
+        )
 
     def period_is_parole_board_hold(
         self, incarceration_period: StateIncarcerationPeriod
@@ -127,16 +143,6 @@ class UsMoIncarcerationPreProcessingDelegate(
     ) -> Set[StateIncarcerationPeriodAdmissionReason]:
         return self._default_admission_reasons_to_filter()
 
-    def get_pfi_info_for_period_if_commitment_from_supervision(
-        self,
-        incarceration_period_list_index: int,
-        sorted_incarceration_periods: List[StateIncarcerationPeriod],
-        violation_responses: Optional[List[StateSupervisionViolationResponse]],
-    ) -> PurposeForIncarcerationInfo:
-        return self._default_get_pfi_info_for_period_if_commitment_from_supervision(
-            sorted_incarceration_periods[incarceration_period_list_index]
-        )
-
     def normalize_period_if_commitment_from_supervision(
         self,
         incarceration_period_list_index: int,
@@ -149,3 +155,62 @@ class UsMoIncarcerationPreProcessingDelegate(
 
     def pre_processing_relies_on_violation_responses(self) -> bool:
         return self._default_pre_processing_relies_on_violation_responses()
+
+
+# TODO(#8118): Move this logic to ingest once we're putting the status codes in the
+#  PFI raw text
+def _us_mo_get_pfi_info_for_period_if_commitment_from_supervision(
+    incarceration_period_list_index: int,
+    sorted_incarceration_periods: List[StateIncarcerationPeriod],
+) -> PurposeForIncarcerationInfo:
+    """Infers the correct purpose_for_incarceration values for sanction admissions to
+    periods that don't have the correct values added at ingest-time. Looks at the
+    treatment and shock incarceration codes in the admission_reason_raw_text to
+    determine what kind of sanction admission occurred."""
+    ip = sorted_incarceration_periods[incarceration_period_list_index]
+    pfi_override = None
+
+    if (
+        ip.admission_reason
+        == StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION
+        and ip.specialized_purpose_for_incarceration
+        not in SANCTION_ADMISSION_PURPOSE_FOR_INCARCERATION_VALUES
+        and ip.admission_reason_raw_text is not None
+    ):
+        # Find the correct pfi for this sanction admission
+        status_codes = normalize(
+            ip.admission_reason_raw_text,
+            remove_punctuation=True,
+        ).split(" ")
+
+        num_treatment_status_codes = 0
+        num_shock_status_codes = 0
+
+        for code in status_codes:
+            if code in TREATMENT_SANCTION_STATUS_CODES:
+                num_treatment_status_codes += 1
+            if code in SHOCK_SANCTION_STATUS_CODES:
+                num_shock_status_codes += 1
+
+        if num_treatment_status_codes == 0 and num_shock_status_codes == 0:
+            raise ValueError(
+                "admission_reason_raw_text: "
+                f"[{ip.admission_reason_raw_text}] is being "
+                "mapped to a SANCTION_ADMISSION without containing "
+                "any sanction admission status codes."
+            )
+
+        pfi_override = (
+            StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
+            # We don't ever expect to see a mix of treatment and shock codes,
+            # but we handle this rare case by prioritizing TREATMENT_IN_PRISON
+            if num_shock_status_codes > num_treatment_status_codes
+            else StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
+        )
+    return PurposeForIncarcerationInfo(
+        purpose_for_incarceration=(
+            pfi_override or ip.specialized_purpose_for_incarceration
+        ),
+        # There are no defined pfi subtypes for US_MO
+        purpose_for_incarceration_subtype=None,
+    )
