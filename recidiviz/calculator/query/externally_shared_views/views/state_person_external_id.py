@@ -49,7 +49,7 @@ STATE_PERSON_EXTERNAL_ID_QUERY_TEMPLATE = """
         person_id,
         id_type,
         external_id,
-    FROM `{staging_only_project}.{origin_dataset_id}.state_person_external_id`
+    FROM `{project_id}.{origin_dataset_id}.state_person_external_id`
     WHERE state_code IN ({allowed_states})
 """
 
@@ -75,7 +75,6 @@ for view_prefix, destination_dataset_id, allowed_states in EXTERNAL_ID_VIEW_CONF
             view_id=view_prefix + STATE_PERSON_EXTERNAL_ID_VIEW_NAME,
             view_query_template=STATE_PERSON_EXTERNAL_ID_QUERY_TEMPLATE,
             description=STATE_PERSON_EXTERNAL_ID_VIEW_DESCRIPTION,
-            staging_only_project=GCP_PROJECT_STAGING,
             origin_dataset_id=STATE_BASE_DATASET,
             allowed_states=str(allowed_states)[1:-1],
             should_materialize=True,

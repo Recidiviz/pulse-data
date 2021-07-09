@@ -52,7 +52,7 @@ PROGRAM_PARTICIPATION_QUERY_TEMPLATE = """
         supervision_type,
         is_first_day_in_program,
     FROM
-        `{staging_only_project}.{origin_dataset_id}.most_recent_program_participation_metrics_materialized`
+        `{project_id}.{origin_dataset_id}.most_recent_program_participation_metrics_materialized`
     WHERE
         state_code IN ({allowed_states})
     ORDER BY
@@ -82,7 +82,6 @@ for view_prefix, destination_dataset_id, allowed_states in EXTERNAL_ID_VIEW_CONF
             view_id=view_prefix + PROGRAM_PARTICIPATION_VIEW_NAME,
             view_query_template=PROGRAM_PARTICIPATION_QUERY_TEMPLATE,
             description=PROGRAM_PARTICIPATION_VIEW_DESCRIPTION,
-            staging_only_project=GCP_PROJECT_STAGING,
             origin_dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
             allowed_states=str(allowed_states)[1:-1],
             should_materialize=True,
