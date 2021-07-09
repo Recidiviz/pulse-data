@@ -280,6 +280,7 @@ class ClientInfo(CaseTriageBase):
     preferred_contact_method = Column(
         Enum("EMAIL", "CALL", "TEXT", name="client_into_preferred_contact_method")
     )
+    receiving_ssi_or_disability_income = Column(Boolean, nullable=False, default=False)
 
     etl_client = relationship(
         "ETLClient",
