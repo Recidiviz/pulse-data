@@ -93,7 +93,9 @@ class UsIdIncarcerationPreProcessingDelegate(
         violation_responses: Optional[List[StateSupervisionViolationResponse]],
     ) -> PurposeForIncarcerationInfo:
         return self._default_get_pfi_info_for_period_if_commitment_from_supervision(
-            sorted_incarceration_periods[incarceration_period_list_index]
+            incarceration_period_list_index,
+            sorted_incarceration_periods,
+            violation_responses,
         )
 
     def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:
@@ -105,14 +107,17 @@ class UsIdIncarcerationPreProcessingDelegate(
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
     ) -> bool:
         return self._default_period_is_parole_board_hold(
-            sorted_incarceration_periods[incarceration_period_list_index]
+            incarceration_period_list_index, sorted_incarceration_periods
         )
 
     def period_is_non_board_hold_temporary_custody(
-        self, incarceration_period: StateIncarcerationPeriod
+        self,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
     ) -> bool:
         return self._default_period_is_non_board_hold_temporary_custody(
-            incarceration_period
+            incarceration_period_list_index,
+            sorted_incarceration_periods,
         )
 
     def pre_processing_incarceration_period_admission_reason_mapper(

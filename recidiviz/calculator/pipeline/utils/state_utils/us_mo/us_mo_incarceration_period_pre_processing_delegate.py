@@ -145,7 +145,9 @@ class UsMoIncarcerationPreProcessingDelegate(
         return False
 
     def period_is_non_board_hold_temporary_custody(
-        self, incarceration_period: StateIncarcerationPeriod
+        self,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
     ) -> bool:
         """The only periods of temporary custody in US_MO are parole board holds."""
         return False
@@ -189,7 +191,9 @@ class UsMoIncarcerationPreProcessingDelegate(
         supervision_period_index: Optional[PreProcessedSupervisionPeriodIndex],
     ) -> StateIncarcerationPeriod:
         return self._default_normalize_period_if_commitment_from_supervision(
-            sorted_incarceration_periods[incarceration_period_list_index]
+            incarceration_period_list_index,
+            sorted_incarceration_periods,
+            supervision_period_index,
         )
 
     def pre_processing_relies_on_violation_responses(self) -> bool:
