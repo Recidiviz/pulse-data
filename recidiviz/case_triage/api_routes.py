@@ -29,6 +29,7 @@ from recidiviz.case_triage.api_schemas import (
     PolicyRequirementsSchema,
     PreferredContactMethodSchema,
     PreferredNameSchema,
+    ReceivingSSIOrDisabilityIncomeSchema,
     ResolveNoteSchema,
     UpdateNoteSchema,
     requires_api_schema,
@@ -244,6 +245,19 @@ def create_api_blueprint(segment_client: CaseTriageSegmentClient) -> Blueprint:
             raise CaseTriagePersonNotOnCaseloadException
         ClientInfoInterface.set_preferred_contact_method(
             current_session, g.user_context, etl_client, g.api_data["contact_method"]
+        )
+
+        return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+
+    @api.route("/set_receiving_ssi_or_disability_income", methods=["POST"])
+    @requires_api_schema(ReceivingSSIOrDisabilityIncomeSchema)
+    def _set_receiving_ssi_or_disability_income() -> Response:
+        etl_client = load_client(g.api_data["person_external_id"])
+
+        if not PermissionsChecker.is_on_caseload(etl_client, g.user_context):
+            raise CaseTriagePersonNotOnCaseloadException
+        ClientInfoInterface.set_receiving_ssi_or_disability_income(
+            current_session, g.user_context, etl_client, g.api_data["mark_receiving"]
         )
 
         return jsonify({"status": "ok", "status_code": HTTPStatus.OK})

@@ -74,3 +74,25 @@ class ClientInfoInterface:
         )
         session.execute(insert_statement)
         session.commit()
+
+    @staticmethod
+    def set_receiving_ssi_or_disability_income(
+        session: Session,
+        user_context: UserContext,
+        client: ETLClient,
+        mark_receiving: bool,
+    ) -> None:
+        insert_statement = (
+            insert(ClientInfo)
+            .values(
+                person_external_id=user_context.person_id(client),
+                state_code=user_context.client_state_code(client),
+                receiving_ssi_or_disability_income=mark_receiving,
+            )
+            .on_conflict_do_update(
+                constraint="unique_person",
+                set_={"receiving_ssi_or_disability_income": mark_receiving},
+            )
+        )
+        session.execute(insert_statement)
+        session.commit()

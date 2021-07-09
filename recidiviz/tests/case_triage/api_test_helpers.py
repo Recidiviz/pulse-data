@@ -180,6 +180,19 @@ class CaseTriageTestHelpers:
 
         self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
 
+    def set_receiving_ssi_or_disability_income(
+        self, person_external_id: str, mark_receiving: bool
+    ) -> None:
+        response = self.test_client.post(
+            "/set_receiving_ssi_or_disability_income",
+            json={
+                "personExternalId": person_external_id,
+                "markReceiving": mark_receiving,
+            },
+        )
+
+        self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+
     def update_note(self, note_id: str, text: str) -> None:
         response = self.test_client.post(
             "/update_note",
