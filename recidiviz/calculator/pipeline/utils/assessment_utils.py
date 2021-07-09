@@ -16,12 +16,12 @@
 # =============================================================================
 """Utils for dealing with assessment data in the calculation pipelines."""
 from datetime import date
-from typing import List, Tuple, Optional, Dict
+from typing import Dict, List, Optional, Tuple
 
 from recidiviz.common.constants.state.state_assessment import (
-    StateAssessmentType,
-    StateAssessmentLevel,
     StateAssessmentClass,
+    StateAssessmentLevel,
+    StateAssessmentType,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StateAssessment
@@ -71,6 +71,15 @@ def _assessment_types_of_class_for_state(
     return None
 
 
+def _assessment_external_ids_are_ints(assessments: List[StateAssessment]) -> bool:
+    for assessment in assessments:
+        if (
+            assessment_id := assessment.external_id
+        ) is not None and not assessment_id.isdigit():
+            return False
+    return True
+
+
 def find_most_recent_applicable_assessment_of_class_for_state(
     cutoff_date: date,
     assessments: List[StateAssessment],
@@ -82,30 +91,38 @@ def find_most_recent_applicable_assessment_of_class_for_state(
     assessments without set assessment_score attributes.
 
     Returns the assessment."""
-    if assessments:
-        assessment_types_to_include = _assessment_types_of_class_for_state(
-            assessment_class, state_code
+    assessment_types_to_include = _assessment_types_of_class_for_state(
+        assessment_class, state_code
+    )
+
+    if not assessment_types_to_include:
+        return None
+
+    applicable_assessments_before_date = [
+        assessment
+        for assessment in assessments
+        if assessment.assessment_type in assessment_types_to_include
+        and assessment.assessment_score is not None
+        and assessment.assessment_date is not None
+        and assessment.assessment_date <= cutoff_date
+    ]
+
+    if _assessment_external_ids_are_ints(assessments):
+        key = lambda a: (
+            a.assessment_date if a and a.assessment_date else date.min,
+            int(a.external_id) if a and a.external_id else 0,
+        )
+    else:
+        key = lambda a: (
+            a.assessment_date if a and a.assessment_date else date.min,
+            a.external_id if a and a.external_id else "",
         )
 
-        if assessment_types_to_include:
-            applicable_assessments_before_date = [
-                assessment
-                for assessment in assessments
-                if assessment.assessment_type in assessment_types_to_include
-                and assessment.assessment_score is not None
-                and assessment.assessment_date is not None
-                and assessment.assessment_date <= cutoff_date
-            ]
-
-            return max(
-                applicable_assessments_before_date,
-                key=lambda a: a.assessment_date
-                if a and a.assessment_date
-                else date.min,
-                default=None,
-            )
-
-    return None
+    return max(
+        applicable_assessments_before_date,
+        key=key,
+        default=None,
+    )
 
 
 def most_recent_applicable_assessment_attributes_for_class(
