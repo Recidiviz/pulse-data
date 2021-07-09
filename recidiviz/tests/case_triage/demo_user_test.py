@@ -250,6 +250,33 @@ class TestDemoUser(TestCase):
             )
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
+    def test_set_receiving_ssi_or_disability_income(self) -> None:
+        with self.helpers.as_demo_user():
+            client = self.demo_clients[0]
+
+            client_info = self.helpers.find_client_in_api_response(
+                client.person_external_id
+            )
+            self.assertFalse(client_info["receivingSSIOrDisabilityIncome"])
+
+            # Set receiving SSI/disability income
+            self.helpers.set_receiving_ssi_or_disability_income(
+                client.person_external_id, True
+            )
+            client_info = self.helpers.find_client_in_api_response(
+                client.person_external_id
+            )
+            self.assertTrue(client_info["receivingSSIOrDisabilityIncome"])
+
+            # Unset receiving SSI/disability income
+            self.helpers.set_receiving_ssi_or_disability_income(
+                client.person_external_id, False
+            )
+            client_info = self.helpers.find_client_in_api_response(
+                client.person_external_id
+            )
+            self.assertFalse(client_info["receivingSSIOrDisabilityIncome"])
+
     def test_notes(self) -> None:
         with self.helpers.as_demo_user():
             client = self.demo_clients[0]

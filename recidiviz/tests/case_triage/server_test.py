@@ -421,7 +421,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             )
             self.assertTrue("preferredContactMethod" not in client_info)
 
-            # Set preferred name
+            # Set preferred contact method
             self.helpers.set_preferred_contact_method(
                 self.client_1.person_external_id, PreferredContactMethod.Call
             )
@@ -439,6 +439,31 @@ class TestCaseTriageAPIRoutes(TestCase):
                 },
             )
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+
+    def test_set_receiving_ssi_or_disability_income(self) -> None:
+        with self.helpers.as_officer(self.officer):
+            client_info = self.helpers.find_client_in_api_response(
+                self.client_1.person_external_id
+            )
+            self.assertFalse(client_info["receivingSSIOrDisabilityIncome"])
+
+            # Set receiving SSI/disability income
+            self.helpers.set_receiving_ssi_or_disability_income(
+                self.client_1.person_external_id, True
+            )
+            client_info = self.helpers.find_client_in_api_response(
+                self.client_1.person_external_id
+            )
+            self.assertTrue(client_info["receivingSSIOrDisabilityIncome"])
+
+            # Unset receiving SSI/disability income
+            self.helpers.set_receiving_ssi_or_disability_income(
+                self.client_1.person_external_id, False
+            )
+            client_info = self.helpers.find_client_in_api_response(
+                self.client_1.person_external_id
+            )
+            self.assertFalse(client_info["receivingSSIOrDisabilityIncome"])
 
     def test_cannot_set_preferred_values_for_non_clients(self) -> None:
         with self.helpers.as_officer(self.officer_without_clients):
@@ -458,6 +483,16 @@ class TestCaseTriageAPIRoutes(TestCase):
                 json={
                     "personExternalId": self.client_1.person_external_id,
                     "name": "Preferred",
+                },
+            )
+            self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+
+            # Test that you cannot mark as receiving SSI/disability income
+            response = self.test_client.post(
+                "/set_receiving_ssi_or_disability_income",
+                json={
+                    "personExternalId": self.client_1.person_external_id,
+                    "markReceiving": True,
                 },
             )
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)

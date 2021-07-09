@@ -77,6 +77,11 @@ class PreferredNameSchema(CamelCaseSchema):
     name = fields.Str(required=True, allow_none=True)
 
 
+class ReceivingSSIOrDisabilityIncomeSchema(CamelCaseSchema):
+    person_external_id = fields.Str(required=True)
+    mark_receiving = fields.Boolean(required=True)
+
+
 class CreateNoteSchema(CamelCaseSchema):
     person_external_id = fields.Str(required=True)
     text = fields.Str(required=True, validate=non_empty_string)
