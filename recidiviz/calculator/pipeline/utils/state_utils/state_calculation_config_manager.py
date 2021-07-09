@@ -112,9 +112,6 @@ from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     default_filtered_violation_responses_for_violation_history,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodAdmissionReason,
-)
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
@@ -670,29 +667,6 @@ def state_specific_violation_response_pre_processing_function(
         return us_nd_violation_utils.us_nd_prepare_violation_responses_for_calculations
 
     return None
-
-
-# TODO(#7441): Move this logic to the UsIdIncarcerationPreProcessingManager, and don't
-#  allow mid-calculation admission_reason overrides
-def state_specific_incarceration_admission_reason_override(
-    incarceration_period: StateIncarcerationPeriod,
-    original_admission_reason: StateIncarcerationPeriodAdmissionReason,
-    supervision_type_at_admission: Optional[StateSupervisionPeriodSupervisionType],
-) -> StateIncarcerationPeriodAdmissionReason:
-    """Returns a (potentially) updated admission reason to be used in calculations, given the provided
-    |incarceration_period|, |admission_reason|, |supervision_type_at_admission|, |previous_incarceration_period|
-    """
-    if incarceration_period.state_code == "US_ID":
-        # If a person was on an investigative supervision period prior to incarceration, their admission reason
-        # should be considered a new admission.
-        if (
-            supervision_type_at_admission
-            and supervision_type_at_admission
-            == StateSupervisionPeriodSupervisionType.INVESTIGATION
-        ):
-            return StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
-
-    return original_admission_reason
 
 
 def supervision_period_is_out_of_state(

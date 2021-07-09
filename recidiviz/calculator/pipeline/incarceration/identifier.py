@@ -55,11 +55,9 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_post_incarceration_supervision_type,
-    get_pre_incarceration_supervision_type,
     get_state_specific_commitment_from_supervision_delegate,
     get_state_specific_supervising_officer_and_location_info_function,
     include_decisions_on_follow_up_responses_for_most_severe_response,
-    state_specific_incarceration_admission_reason_override,
     state_specific_violation_response_pre_processing_function,
     state_specific_violation_responses_for_violation_history,
 )
@@ -197,8 +195,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
         incarceration_events.extend(
             self._find_all_stay_events(
-                incarceration_sentences=incarceration_sentences,
-                supervision_sentences=supervision_sentences,
                 ip_pre_processing_manager=ip_pre_processing_manager,
                 incarceration_period_to_judicial_district=incarceration_period_to_judicial_district,
                 county_of_residence=county_of_residence,
@@ -288,8 +284,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
     def _find_all_stay_events(
         self,
-        incarceration_sentences: List[StateIncarcerationSentence],
-        supervision_sentences: List[StateSupervisionSentence],
         ip_pre_processing_manager: IncarcerationPreProcessingManager,
         incarceration_period_to_judicial_district: Dict[int, Dict[Any, Any]],
         county_of_residence: Optional[str],
@@ -308,8 +302,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             period_stay_events: List[
                 IncarcerationStayEvent
             ] = self._find_incarceration_stays(
-                incarceration_sentences,
-                supervision_sentences,
                 incarceration_period,
                 incarceration_period_index,
                 incarceration_period_to_judicial_district,
@@ -323,8 +315,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
     def _find_incarceration_stays(
         self,
-        incarceration_sentences: List[StateIncarcerationSentence],
-        supervision_sentences: List[StateSupervisionSentence],
         incarceration_period: StateIncarcerationPeriod,
         incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
         incarceration_period_to_judicial_district: Dict[int, Dict[Any, Any]],
@@ -349,12 +339,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
         if admission_date is None:
             return incarceration_stay_events
-
-        supervision_type_at_admission: Optional[
-            StateSupervisionPeriodSupervisionType
-        ] = get_pre_incarceration_supervision_type(
-            incarceration_sentences, supervision_sentences, incarceration_period
-        )
 
         sentence_group: StateSentenceGroup = (
             self._get_sentence_group_for_incarceration_period(incarceration_period)
@@ -382,14 +366,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             original_admission_reason,
             original_admission_reason_raw_text,
         ) = original_admission_reasons_by_period_id[incarceration_period_id]
-
-        original_admission_reason = (
-            state_specific_incarceration_admission_reason_override(
-                incarceration_period,
-                original_admission_reason,
-                supervision_type_at_admission,
-            )
-        )
 
         while stay_date < release_date:
             most_serious_charge: Optional[
@@ -541,19 +517,8 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         admission_reason: Optional[
             StateIncarcerationPeriodAdmissionReason
         ] = incarceration_period.admission_reason
-        supervision_type_at_admission: Optional[
-            StateSupervisionPeriodSupervisionType
-        ] = get_pre_incarceration_supervision_type(
-            incarceration_sentences, supervision_sentences, incarceration_period
-        )
 
         if admission_date and admission_reason:
-            admission_reason = state_specific_incarceration_admission_reason_override(
-                incarceration_period,
-                admission_reason,
-                supervision_type_at_admission,
-            )
-
             commitment_from_supervision_delegate = (
                 get_state_specific_commitment_from_supervision_delegate(
                     state_code=incarceration_period.state_code
@@ -744,11 +709,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         release_reason: Optional[
             StateIncarcerationPeriodReleaseReason
         ] = incarceration_period.release_reason
-        supervision_type_at_admission: Optional[
-            StateSupervisionPeriodSupervisionType
-        ] = get_pre_incarceration_supervision_type(
-            incarceration_sentences, supervision_sentences, incarceration_period
-        )
 
         incarceration_period_id: Optional[
             int
@@ -766,11 +726,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         admission_reason, _ = original_admission_reasons_by_period_id[
             incarceration_period_id
         ]
-
-        if incarceration_period.admission_reason:
-            admission_reason = state_specific_incarceration_admission_reason_override(
-                incarceration_period, admission_reason, supervision_type_at_admission
-            )
 
         if release_date and release_reason:
             supervision_type_at_release: Optional[
