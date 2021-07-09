@@ -142,6 +142,7 @@ class CasePresenter:
             or bool(next_assessment_date > today),
         }
 
+        base_dict["receivingSSIOrDisabilityIncome"] = False
         if (client_info := self.etl_client.client_info) is not None:
             if client_info.preferred_name is not None:
                 base_dict["preferredName"] = client_info.preferred_name
@@ -149,6 +150,9 @@ class CasePresenter:
                 base_dict[
                     "preferredContactMethod"
                 ] = client_info.preferred_contact_method
+            base_dict[
+                "receivingSSIOrDisabilityIncome"
+            ] = client_info.receiving_ssi_or_disability_income
 
         return _json_map_dates_to_strings(base_dict, timedelta_shift)
 
