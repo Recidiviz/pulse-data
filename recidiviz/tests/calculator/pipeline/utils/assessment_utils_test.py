@@ -20,11 +20,11 @@ from datetime import date
 from unittest import mock
 
 from recidiviz.calculator.pipeline.utils import assessment_utils
-from recidiviz.persistence.entity.state.entities import StateAssessment
 from recidiviz.common.constants.state.state_assessment import (
-    StateAssessmentType,
     StateAssessmentClass,
+    StateAssessmentType,
 )
+from recidiviz.persistence.entity.state.entities import StateAssessment
 
 
 # pylint: disable=protected-access
@@ -215,3 +215,27 @@ class TestFindMostRecentApplicableAssessment(unittest.TestCase):
                 )
 
                 self.assertEqual(most_recent_assessment, oras_assessment)
+
+    def test_same_dates(self) -> None:
+        assessment_1 = StateAssessment.new_with_defaults(
+            state_code="US_XX",
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=date(2018, 4, 28),
+            assessment_score=17,
+            external_id="2",
+        )
+
+        assessment_2 = StateAssessment.new_with_defaults(
+            state_code="US_XX",
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=date(2018, 4, 28),
+            assessment_score=21,
+            external_id="10",
+        )
+
+        for pipeline in assessment_utils._ASSESSMENT_TYPES_TO_INCLUDE_FOR_CLASS:
+            most_recent_assessment = assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
+                date(2018, 4, 30), [assessment_1, assessment_2], pipeline, "US_XX"
+            )
+
+            self.assertEqual(most_recent_assessment, assessment_2)
