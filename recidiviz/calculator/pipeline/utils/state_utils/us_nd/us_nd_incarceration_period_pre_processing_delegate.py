@@ -86,7 +86,7 @@ class UsNdIncarcerationPreProcessingDelegate(
     ) -> bool:
         """There are no parole board hold incarceration periods in US_ND."""
         if self._default_period_is_parole_board_hold(
-            sorted_incarceration_periods[incarceration_period_list_index]
+            incarceration_period_list_index, sorted_incarceration_periods
         ):
             raise ValueError(
                 "Unexpected "
@@ -119,17 +119,22 @@ class UsNdIncarcerationPreProcessingDelegate(
         violation_responses: Optional[List[StateSupervisionViolationResponse]],
     ) -> PurposeForIncarcerationInfo:
         return self._default_get_pfi_info_for_period_if_commitment_from_supervision(
-            sorted_incarceration_periods[incarceration_period_list_index]
+            incarceration_period_list_index,
+            sorted_incarceration_periods,
+            violation_responses,
         )
 
     def incarceration_types_to_filter(self) -> Set[StateIncarcerationType]:
         return self._default_incarceration_types_to_filter()
 
     def period_is_non_board_hold_temporary_custody(
-        self, incarceration_period: StateIncarcerationPeriod
+        self,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
     ) -> bool:
         return self._default_period_is_non_board_hold_temporary_custody(
-            incarceration_period
+            incarceration_period_list_index,
+            sorted_incarceration_periods,
         )
 
     def pre_processing_relies_on_violation_responses(self) -> bool:

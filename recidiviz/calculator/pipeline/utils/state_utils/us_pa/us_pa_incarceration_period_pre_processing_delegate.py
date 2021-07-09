@@ -133,7 +133,9 @@ class UsPaIncarcerationPreProcessingDelegate(
         supervision_period_index: Optional[PreProcessedSupervisionPeriodIndex],
     ) -> StateIncarcerationPeriod:
         return self._default_normalize_period_if_commitment_from_supervision(
-            sorted_incarceration_periods[incarceration_period_list_index]
+            incarceration_period_list_index,
+            sorted_incarceration_periods,
+            supervision_period_index,
         )
 
     def period_is_parole_board_hold(
@@ -142,19 +144,20 @@ class UsPaIncarcerationPreProcessingDelegate(
         sorted_incarceration_periods: List[StateIncarcerationPeriod],
     ) -> bool:
         return self._default_period_is_parole_board_hold(
-            sorted_incarceration_periods[incarceration_period_list_index]
+            incarceration_period_list_index, sorted_incarceration_periods
         )
 
     def period_is_non_board_hold_temporary_custody(
-        self, incarceration_period: StateIncarcerationPeriod
+        self,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
     ) -> bool:
         return self._default_period_is_non_board_hold_temporary_custody(
-            incarceration_period
+            incarceration_period_list_index,
+            sorted_incarceration_periods,
         )
 
     def pre_processing_relies_on_supervision_periods(self) -> bool:
-        # TODO(#7441): Return True once we implement the US_PA IP pre-processing that
-        #  relies on supervision periods
         return self._default_pre_processing_relies_on_supervision_periods()
 
 

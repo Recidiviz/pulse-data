@@ -114,13 +114,15 @@ class StateSpecificIncarcerationPreProcessingDelegate:
 
     @staticmethod
     def _default_normalize_period_if_commitment_from_supervision(
-        incarceration_period: StateIncarcerationPeriod,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
+        _supervision_period_index: Optional[PreProcessedSupervisionPeriodIndex],
     ) -> StateIncarcerationPeriod:
         """Default behavior of normalize_period_if_commitment_from_supervision.
 
         By default, returns the original period unchanged.
         """
-        return incarceration_period
+        return sorted_incarceration_periods[incarceration_period_list_index]
 
     @abc.abstractmethod
     def get_pfi_info_for_period_if_commitment_from_supervision(
@@ -137,7 +139,9 @@ class StateSpecificIncarcerationPreProcessingDelegate:
 
     @staticmethod
     def _default_get_pfi_info_for_period_if_commitment_from_supervision(
-        incarceration_period,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
+        _violation_responses: Optional[List[StateSupervisionViolationResponse]],
     ) -> PurposeForIncarcerationInfo:
         """Default behavior of the
         get_pfi_info_for_period_if_commitment_from_supervision function.
@@ -146,7 +150,9 @@ class StateSpecificIncarcerationPreProcessingDelegate:
         purpose_for_incarceration value and an unset
         purpose_for_incarceration_subtype."""
         return PurposeForIncarcerationInfo(
-            purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration,
+            purpose_for_incarceration=sorted_incarceration_periods[
+                incarceration_period_list_index
+            ].specialized_purpose_for_incarceration,
             purpose_for_incarceration_subtype=None,
         )
 
@@ -174,11 +180,14 @@ class StateSpecificIncarcerationPreProcessingDelegate:
 
     @staticmethod
     def _default_period_is_parole_board_hold(
-        incarceration_period: StateIncarcerationPeriod,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
     ) -> bool:
         """Default behavior of period_is_parole_board_hold function."""
         return (
-            incarceration_period.specialized_purpose_for_incarceration
+            sorted_incarceration_periods[
+                incarceration_period_list_index
+            ].specialized_purpose_for_incarceration
             == StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
         )
 
@@ -205,7 +214,9 @@ class StateSpecificIncarcerationPreProcessingDelegate:
 
     @abc.abstractmethod
     def period_is_non_board_hold_temporary_custody(
-        self, incarceration_period: StateIncarcerationPeriod
+        self,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
     ) -> bool:
         """State-specific implementations of this class should return True if the
         |incarceration_period| represents a period of time spent in a form of
@@ -214,11 +225,17 @@ class StateSpecificIncarcerationPreProcessingDelegate:
 
     def _default_period_is_non_board_hold_temporary_custody(
         self,
-        incarceration_period: StateIncarcerationPeriod,
+        incarceration_period_list_index: int,
+        sorted_incarceration_periods: List[StateIncarcerationPeriod],
     ) -> bool:
         """Default behavior of period_is_non_board_hold_temporary_custody function."""
+        incarceration_period = sorted_incarceration_periods[
+            incarceration_period_list_index
+        ]
         return (
-            not self._default_period_is_parole_board_hold(incarceration_period)
+            not self._default_period_is_parole_board_hold(
+                incarceration_period_list_index, sorted_incarceration_periods
+            )
             and incarceration_period.admission_reason
             == StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
             and incarceration_period.specialized_purpose_for_incarceration
@@ -774,7 +791,10 @@ class IncarcerationPreProcessingManager:
                 sorted_incarceration_periods=incarceration_periods,
             )
             period_is_non_board_hold_temp_custody = (
-                self.delegate.period_is_non_board_hold_temporary_custody(ip)
+                self.delegate.period_is_non_board_hold_temporary_custody(
+                    incarceration_period_list_index=index,
+                    sorted_incarceration_periods=incarceration_periods,
+                )
             )
 
             if period_is_non_board_hold_temp_custody and period_is_board_hold:
@@ -966,8 +986,6 @@ class IncarcerationPreProcessingManager:
 
         return updated_periods, ip_id_to_pfi_subtype
 
-    # TODO(#7441): Update this function to also propagate purpose_for_incarceration
-    #  values from commitment from supervision admissions across TRANSFER edges
     @staticmethod
     def _standardize_purpose_for_incarceration_values(
         incarceration_periods: List[StateIncarcerationPeriod],
@@ -975,14 +993,32 @@ class IncarcerationPreProcessingManager:
         """For any period that doesn't have a set purpose_for_incarceration value,
         sets the default value of GENERAL.
         """
+
         updated_ips: List[StateIncarcerationPeriod] = []
 
-        for ip in incarceration_periods:
+        for index, ip in enumerate(incarceration_periods):
+            pfi_override = None
+
+            if index > 0:
+                previous_ip = updated_ips[-1]
+
+                if period_edges_are_valid_transfer(
+                    first_incarceration_period=previous_ip,
+                    second_incarceration_period=ip,
+                ):
+                    # We propagate the pfi from the previous period if the edge
+                    # between these two periods is a valid transfer. All edges that
+                    # are valid STATUS_CHANGE edges have already been updated at this
+                    # point.
+                    pfi_override = previous_ip.specialized_purpose_for_incarceration
+
+            if not pfi_override and not ip.specialized_purpose_for_incarceration:
+                pfi_override = StateSpecializedPurposeForIncarceration.GENERAL
+
             updated_ip = attr.evolve(
                 ip,
                 specialized_purpose_for_incarceration=(
-                    ip.specialized_purpose_for_incarceration
-                    or StateSpecializedPurposeForIncarceration.GENERAL
+                    pfi_override or ip.specialized_purpose_for_incarceration
                 ),
             )
             updated_ips.append(updated_ip)
@@ -1057,7 +1093,6 @@ class IncarcerationPreProcessingManager:
     def _combine_incarceration_periods(
         start: StateIncarcerationPeriod,
         end: StateIncarcerationPeriod,
-        overwrite_admission_reason: bool = False,
         overwrite_facility_information: bool = False,
     ) -> StateIncarcerationPeriod:
         """Combines two StateIncarcerationPeriods.
@@ -1077,12 +1112,6 @@ class IncarcerationPreProcessingManager:
         """
 
         collapsed_incarceration_period = deepcopy(start)
-
-        if overwrite_admission_reason:
-            collapsed_incarceration_period.admission_reason = end.admission_reason
-            collapsed_incarceration_period.admission_reason_raw_text = (
-                end.admission_reason_raw_text
-            )
 
         if overwrite_facility_information:
             collapsed_incarceration_period.facility = end.facility
