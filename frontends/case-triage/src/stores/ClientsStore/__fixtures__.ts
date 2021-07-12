@@ -49,6 +49,7 @@ export const clientData: ClientData = {
   notes: [],
   personExternalId: "100",
   projectedEndDate: null,
+  phoneNumber: null,
   receivingSSIOrDisabilityIncome: false,
   supervisionLevel: "MEDIUM",
   supervisionStartDate: "2020-01-26",
