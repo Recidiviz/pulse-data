@@ -42,6 +42,7 @@ from recidiviz.calculator.pipeline.utils.beam_utils import (
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import (
     ConvertSentencesToStateSpecificType,
     SetSentencesOnSentenceGroup,
+    SetSupervisionPeriodsOnSentences,
     SetViolationOnViolationsResponse,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
@@ -141,6 +142,20 @@ class IncarcerationPipeline(BasePipeline):
             )
         )
 
+        # Get StateSupervisionPeriods
+        supervision_periods = (
+            pipeline
+            | "Load StateSupervisionPeriods"
+            >> BuildRootEntity(
+                dataset=input_dataset,
+                root_entity_class=entities.StateSupervisionPeriod,
+                unifying_id_field=entities.StatePerson.get_class_id_name(),
+                build_related_entities=True,
+                unifying_id_field_filter_set=person_id_filter_set,
+                state_code=state_code,
+            )
+        )
+
         # Get StateAssessments
         assessments = pipeline | "Load Assessments" >> BuildRootEntity(
             dataset=input_dataset,
@@ -224,10 +239,34 @@ class IncarcerationPipeline(BasePipeline):
             )
         )
 
+        # Set hydrated supervision periods on the corresponding incarceration sentences
+        incarceration_sentences_with_hydrated_sps = (
+            {
+                "supervision_periods": supervision_periods,
+                "sentences": sentences_converted.incarceration_sentences,
+            }
+            | "Group supervision periods to incarceration sentences"
+            >> beam.CoGroupByKey()
+            | "Set hydrated supervision periods on incarceration sentences"
+            >> beam.ParDo(SetSupervisionPeriodsOnSentences())
+        )
+
+        # Set hydrated supervision periods on the corresponding supervision sentences
+        supervision_sentences_with_hydrated_sps = (
+            {
+                "supervision_periods": supervision_periods,
+                "sentences": sentences_converted.supervision_sentences,
+            }
+            | "Group supervision periods to supervision sentences"
+            >> beam.CoGroupByKey()
+            | "Set hydrated supervision periods on supervision sentences"
+            >> beam.ParDo(SetSupervisionPeriodsOnSentences())
+        )
+
         sentences_and_sentence_groups = {
             "sentence_groups": sentence_groups,
-            "incarceration_sentences": sentences_converted.incarceration_sentences,
-            "supervision_sentences": sentences_converted.supervision_sentences,
+            "incarceration_sentences": incarceration_sentences_with_hydrated_sps,
+            "supervision_sentences": supervision_sentences_with_hydrated_sps,
         } | "Group sentences to sentence groups" >> beam.CoGroupByKey()
 
         # Set hydrated sentences on the corresponding sentence groups
