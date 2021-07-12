@@ -124,6 +124,13 @@ class ETLClient(CaseTriageBase):
         ")",
     )
 
+    @property
+    def receiving_ssi_or_disability_income(self) -> bool:
+        return (
+            self.client_info is not None
+            and self.client_info.receiving_ssi_or_disability_income
+        )
+
     @staticmethod
     def from_json(json_client: Dict[str, Any]) -> "ETLClient":
         return ETLClient(

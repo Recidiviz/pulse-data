@@ -497,6 +497,44 @@ class TestCaseTriageAPIRoutes(TestCase):
             )
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
+    def test_ssi_disability_satisfies_employment_opportunity(self) -> None:
+        with self.helpers.as_officer(self.officer):
+            client_info = self.helpers.find_client_in_api_response(
+                self.client_1.person_external_id
+            )
+            self.assertFalse(client_info["receivingSSIOrDisabilityIncome"])
+
+            # Check that an employment opportunity exists
+            opportunities = self.helpers.get_opportunities()
+            employment_opportunity = None
+            for opportunity in opportunities:
+                if (
+                    opportunity["personExternalId"] == self.client_1.person_external_id
+                    and opportunity["opportunityType"]
+                    == OpportunityType.EMPLOYMENT.value
+                ):
+                    employment_opportunity = opportunity
+                    break
+            self.assertIsNotNone(employment_opportunity)
+
+            # Set receiving SSI/disability income
+            self.helpers.set_receiving_ssi_or_disability_income(
+                self.client_1.person_external_id, True
+            )
+
+            # Check that employment opportunity does not exist
+            opportunities = self.helpers.get_opportunities()
+            employment_opportunity = None
+            for opportunity in opportunities:
+                if (
+                    opportunity["personExternalId"] == self.client_1.person_external_id
+                    and opportunity["opportunityType"]
+                    == OpportunityType.EMPLOYMENT.value
+                ):
+                    employment_opportunity = opportunity
+                    break
+            self.assertIsNone(employment_opportunity)
+
     def test_create_note(self) -> None:
         with self.helpers.as_officer(self.officer):
             client_info = self.helpers.find_client_in_api_response(
