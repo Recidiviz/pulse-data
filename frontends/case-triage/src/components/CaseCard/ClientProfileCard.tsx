@@ -41,6 +41,7 @@ import { NewItems } from "./NewItems";
 import { NotInCaseloadDropdown } from "./NotInCaseloadDropdown";
 import { PreferredContactMethodSelector } from "./PreferredContactMethodSelector";
 import { PreferredNameInput } from "./PreferredNameInput";
+import { ReceivingSSIOrDisabilityIncomeSelector } from "./ReceivingSSIOrDisabilityIncomeSelector";
 import { getContactFrequencyText } from "./strings";
 
 interface SummaryItemProps {
@@ -79,7 +80,8 @@ const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
         <SummaryItem icon={IconSVG.Briefcase}>
           {client.needsMet.employment
             ? `Employed at ${client.employer}`
-            : "Unemployed"}
+            : "Unemployed"}{" "}
+          / <ReceivingSSIOrDisabilityIncomeSelector client={client} />
         </SummaryItem>
 
         <SummaryItem icon={IconSVG.Envelope}>
