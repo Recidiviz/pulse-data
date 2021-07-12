@@ -126,4 +126,5 @@ export const statePolicy: Policy = {
     MEDIUM: "Moderate",
     MINIMUM: "Low",
   },
+  supervisionPolicyReference: "http://example.com",
 };
