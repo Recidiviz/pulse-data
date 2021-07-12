@@ -22,7 +22,7 @@ import threading
 import time
 from copy import deepcopy
 from datetime import date, datetime, timedelta
-from typing import Callable, Optional, Dict
+from typing import Callable, Dict, Optional
 from unittest import TestCase
 
 import attr
@@ -30,7 +30,7 @@ import mock
 import psycopg2
 import pytest
 import sqlalchemy
-from mock import call, create_autospec, patch, Mock
+from mock import Mock, call, create_autospec, patch
 from opencensus.stats.measurement_map import MeasurementMap
 from psycopg2.errorcodes import NOT_NULL_VIOLATION, SERIALIZATION_FAILURE
 
@@ -49,22 +49,16 @@ from recidiviz.ingest.models.ingest_info import (
     StatePersonRace,
     StateSentenceGroup,
 )
-from recidiviz.ingest.models.ingest_info_pb2 import (
-    IngestInfo as IngestInfoProto,
-    Charge,
-    Sentence,
-)
+from recidiviz.ingest.models.ingest_info_pb2 import Charge
+from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo as IngestInfoProto
+from recidiviz.ingest.models.ingest_info_pb2 import Sentence
 from recidiviz.ingest.models.serialization import convert_ingest_info_to_proto
 from recidiviz.persistence import persistence
 from recidiviz.persistence.database import database
-from recidiviz.persistence.database.schema.county import (
-    schema as county_schema,
-    dao as county_dao,
-)
-from recidiviz.persistence.database.schema.state import (
-    schema as state_schema,
-    dao as state_dao,
-)
+from recidiviz.persistence.database.schema.county import dao as county_dao
+from recidiviz.persistence.database.schema.county import schema as county_schema
+from recidiviz.persistence.database.schema.state import dao as state_dao
+from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
@@ -78,10 +72,10 @@ from recidiviz.persistence.ingest_info_converter.base_converter import (
     IngestInfoConversionResult,
 )
 from recidiviz.persistence.persistence import (
-    OVERALL_THRESHOLD,
-    ENUM_THRESHOLD,
-    ENTITY_MATCHING_THRESHOLD,
     DATABASE_INVARIANT_THRESHOLD,
+    ENTITY_MATCHING_THRESHOLD,
+    ENUM_THRESHOLD,
+    OVERALL_THRESHOLD,
 )
 from recidiviz.tests.persistence.database.database_test_utils import FakeIngestMetadata
 from recidiviz.tests.utils import fakes
@@ -184,9 +178,10 @@ class TestPersistence(TestCase):
 
             # Act
             persistence.write(ingest_info, DEFAULT_METADATA)
-            result = county_dao.read_people(
-                SessionFactory.for_database(self.database_key)
-            )
+            with SessionFactory.using_database(
+                self.database_key, autocommit=False
+            ) as session:
+                result = county_dao.read_people(session)
 
             # Assert
             assert not result
@@ -201,9 +196,10 @@ class TestPersistence(TestCase):
 
             # Act
             persistence.write(ingest_info, DEFAULT_METADATA)
-            result = county_dao.read_people(
-                SessionFactory.for_database(self.database_key)
-            )
+            with SessionFactory.using_database(
+                self.database_key, autocommit=False
+            ) as session:
+                result = county_dao.read_people(session)
 
             # Assert
             assert len(result) == 1
@@ -287,7 +283,10 @@ class TestPersistence(TestCase):
 
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
-        result = county_dao.read_people(SessionFactory.for_database(self.database_key))
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            result = county_dao.read_people(session)
 
         # Assert
         assert len(result) == 2
@@ -303,7 +302,10 @@ class TestPersistence(TestCase):
 
         # Act
         self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
-        result = county_dao.read_people(SessionFactory.for_database(self.database_key))
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            result = county_dao.read_people(session)
 
         # Assert
         assert not result
@@ -328,7 +330,10 @@ class TestPersistence(TestCase):
 
         # Act
         self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
-        result = county_dao.read_people(SessionFactory.for_database(self.database_key))
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            result = county_dao.read_people(session)
 
         # Assert
         assert not result
@@ -360,7 +365,10 @@ class TestPersistence(TestCase):
 
         # Act
         self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
-        result = county_dao.read_people(SessionFactory.for_database(self.database_key))
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            result = county_dao.read_people(session)
 
         # Assert
         assert not result
@@ -378,7 +386,10 @@ class TestPersistence(TestCase):
 
         # Act
         self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
-        result = county_dao.read_people(SessionFactory.for_database(self.database_key))
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            result = county_dao.read_people(session)
 
         # Assert
         assert not result
@@ -403,7 +414,10 @@ class TestPersistence(TestCase):
 
         # Act
         self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
-        result = county_dao.read_people(SessionFactory.for_database(self.database_key))
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            result = county_dao.read_people(session)
 
         # Assert
         assert not result
@@ -429,7 +443,10 @@ class TestPersistence(TestCase):
 
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
-        result = county_dao.read_people(SessionFactory.for_database(self.database_key))
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            result = county_dao.read_people(session)
 
         # Assert
         assert len(result) == 2
@@ -450,10 +467,12 @@ class TestPersistence(TestCase):
 
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
-        result = county_dao.read_people(
-            SessionFactory.for_database(self.database_key),
-            full_name=_format_full_name(FULL_NAME_1),
-        )
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            result = county_dao.read_people(
+                session, full_name=_format_full_name(FULL_NAME_1)
+            )
 
         # Assert
         assert len(result) == 1
@@ -520,7 +539,10 @@ class TestPersistence(TestCase):
 
         # Act
         persistence.write(ingest_info, metadata)
-        result = county_dao.read_people(SessionFactory.for_database(self.database_key))
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            result = county_dao.read_people(session)
 
         # Assert
         assert len(result) == 1
@@ -574,9 +596,8 @@ class TestPersistence(TestCase):
             bookings=[schema_booking],
         )
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(schema_person)
-        session.commit()
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(schema_person)
 
         ingest_info = IngestInfoProto()
         ingest_info.people.add(
@@ -609,10 +630,13 @@ class TestPersistence(TestCase):
             jurisdiction_id=JURISDICTION_ID,
             bookings=[expected_booking],
         )
-        self.assertEqual(
-            [expected_person],
-            county_dao.read_people(SessionFactory.for_database(self.database_key)),
-        )
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            self.assertEqual(
+                [expected_person],
+                county_dao.read_people(session),
+            )
 
     def test_write_preexisting_person_duplicate_charges(self):
         # Arrange
@@ -650,9 +674,8 @@ class TestPersistence(TestCase):
             bookings=[schema_booking],
         )
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(schema_person)
-        session.commit()
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(schema_person)
 
         ingest_info = IngestInfoProto()
         ingest_info.people.add(
@@ -696,10 +719,13 @@ class TestPersistence(TestCase):
             jurisdiction_id=JURISDICTION_ID,
             bookings=[expected_booking],
         )
-        self.assertEqual(
-            [expected_person],
-            county_dao.read_people(SessionFactory.for_database(self.database_key)),
-        )
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            self.assertEqual(
+                [expected_person],
+                county_dao.read_people(session),
+            )
 
     def test_write_noPeople(self):
         # Arrange
@@ -716,8 +742,11 @@ class TestPersistence(TestCase):
         persistence.write(ingest_info, metadata)
 
         # Assert
-        people = county_dao.read_people(SessionFactory.for_database(self.database_key))
-        self.assertFalse(people)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            people = county_dao.read_people(session)
+            self.assertFalse(people)
 
     def test_inferReleaseDateOnOpenBookings(self):
         # Arrange
@@ -783,16 +812,14 @@ class TestPersistence(TestCase):
             bookings=[booking_open_most_recent_scrape],
         )
 
-        session = SessionFactory.for_database(self.database_key)
-        database.write_people(
-            session,
-            converter.convert_entity_people_to_schema_people(
-                [person, person_unmatched]
-            ),
-            DEFAULT_METADATA,
-        )
-        session.commit()
-        session.close()
+        with SessionFactory.using_database(self.database_key) as session:
+            database.write_people(
+                session,
+                converter.convert_entity_people_to_schema_people(
+                    [person, person_unmatched]
+                ),
+                DEFAULT_METADATA,
+            )
 
         expected_hold = attr.evolve(
             hold, status=HoldStatus.REMOVED_WITHOUT_INFO, status_raw_text=None
@@ -829,7 +856,10 @@ class TestPersistence(TestCase):
         )
 
         # Assert
-        people = county_dao.read_people(SessionFactory.for_database(self.database_key))
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            people = county_dao.read_people(session)
         self.assertCountEqual(people, [expected_person, person_unmatched])
 
     def test_write_different_arrest(self):
@@ -861,9 +891,8 @@ class TestPersistence(TestCase):
             bookings=[schema_booking],
         )
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(schema_person)
-        session.commit()
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(schema_person)
 
         ingest_info = IngestInfoProto()
         ingest_info.people.add(
@@ -903,10 +932,10 @@ class TestPersistence(TestCase):
             bookings=[expected_booking],
         )
 
-        self.assertEqual(
-            [expected_person],
-            county_dao.read_people(SessionFactory.for_database(self.database_key)),
-        )
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            self.assertEqual([expected_person], county_dao.read_people(session))
 
     def test_write_new_empty_arrest(self):
         # Arrange
@@ -937,9 +966,8 @@ class TestPersistence(TestCase):
             bookings=[schema_booking],
         )
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(schema_person)
-        session.commit()
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(schema_person)
 
         ingest_info = IngestInfoProto()
         ingest_info.people.add(
@@ -978,10 +1006,10 @@ class TestPersistence(TestCase):
         )
 
         self.maxDiff = None
-        self.assertEqual(
-            [expected_person],
-            county_dao.read_people(SessionFactory.for_database(self.database_key)),
-        )
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            self.assertEqual([expected_person], county_dao.read_people(session))
 
 
 def _format_full_name(full_name: str) -> str:
@@ -1074,9 +1102,8 @@ class MultipleStateTestMixin:
         # Arrange
         # Write initial placeholder person to database
         placeholder_person = state_schema.StatePerson(person_id=0, state_code="US_ND")
-        session = SessionFactory.for_database(self.database_key)
-        session.add(placeholder_person)
-        session.commit()
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(placeholder_person)
 
         # Act
         self.run_transactions(
@@ -1085,7 +1112,10 @@ class MultipleStateTestMixin:
         )
 
         # Assert
-        result = state_dao.read_people(SessionFactory.for_database(self.database_key))
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            result = state_dao.read_people(session)
 
         assert len(result) == 3
         names = {person.full_name for person in result}
@@ -1098,10 +1128,11 @@ class MultipleStateTestMixin:
     def test_insertOverlappingTypes_succeeds(self):
         # Arrange
         # Write initial placeholder person to database
-        session = SessionFactory.for_database(self.database_key)
-        placeholder_person = state_schema.StatePerson(person_id=0, state_code="US_ND")
-        session.add(placeholder_person)
-        session.commit()
+        with SessionFactory.using_database(self.database_key) as session:
+            placeholder_person = state_schema.StatePerson(
+                person_id=0, state_code="US_ND"
+            )
+            session.add(placeholder_person)
 
         # Write persons to be updated
         persistence.write(
@@ -1131,7 +1162,10 @@ class MultipleStateTestMixin:
         )
 
         # Assert
-        result = state_dao.read_people(SessionFactory.for_database(self.database_key))
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            result = state_dao.read_people(session)
 
         assert len(result) == 3
         assert result[0].full_name is None
@@ -1143,10 +1177,11 @@ class MultipleStateTestMixin:
     def test_insertNonOverlappingTypes_succeeds(self):
         # Arrange
         # Write initial placeholder person to database
-        session = SessionFactory.for_database(self.database_key)
-        placeholder_person = state_schema.StatePerson(person_id=0, state_code="US_ND")
-        session.add(placeholder_person)
-        session.commit()
+        with SessionFactory.using_database(self.database_key) as session:
+            placeholder_person = state_schema.StatePerson(
+                person_id=0, state_code="US_ND"
+            )
+            session.add(placeholder_person)
 
         # Write persons to be updated
         persistence.write(
@@ -1176,7 +1211,10 @@ class MultipleStateTestMixin:
         )
 
         # Assert
-        result = state_dao.read_people(SessionFactory.for_database(self.database_key))
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            result = state_dao.read_people(session)
 
         assert len(result) == 3
         assert result[0].full_name is None
@@ -1188,10 +1226,11 @@ class MultipleStateTestMixin:
     def test_updateOverlappingTypes_succeeds(self):
         # Arrange
         # Write initial placeholder person to database
-        session = SessionFactory.for_database(self.database_key)
-        placeholder_person = state_schema.StatePerson(person_id=0, state_code="US_ND")
-        session.add(placeholder_person)
-        session.commit()
+        with SessionFactory.using_database(self.database_key) as session:
+            placeholder_person = state_schema.StatePerson(
+                person_id=0, state_code="US_ND"
+            )
+            session.add(placeholder_person)
 
         # Write persons to be updated
         persistence.write(
@@ -1221,7 +1260,10 @@ class MultipleStateTestMixin:
         )
 
         # Assert
-        result = state_dao.read_people(SessionFactory.for_database(self.database_key))
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            result = state_dao.read_people(session)
 
         assert len(result) == 3
         assert result[0].full_name is None
@@ -1235,10 +1277,11 @@ class MultipleStateTestMixin:
     def test_updateNonOverlappingTypes_succeeds(self):
         # Arrange
         # Write initial placeholder person to database
-        session = SessionFactory.for_database(self.database_key)
-        placeholder_person = state_schema.StatePerson(person_id=0, state_code="US_ND")
-        session.add(placeholder_person)
-        session.commit()
+        with SessionFactory.using_database(self.database_key) as session:
+            placeholder_person = state_schema.StatePerson(
+                person_id=0, state_code="US_ND"
+            )
+            session.add(placeholder_person)
 
         # Write persons to be updated
         persistence.write(
@@ -1268,7 +1311,10 @@ class MultipleStateTestMixin:
         )
 
         # Assert
-        result = state_dao.read_people(SessionFactory.for_database(self.database_key))
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            result = state_dao.read_people(session)
 
         assert len(result) == 3
         assert result[0].full_name is None

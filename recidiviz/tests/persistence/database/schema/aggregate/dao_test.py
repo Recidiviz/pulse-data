@@ -73,20 +73,25 @@ class TestDao(TestCase):
         dao.write_df(FlCountyAggregate, subject)
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
-        query = session.query(FlCountyAggregate).filter(
-            FlCountyAggregate.county_name == "Bay"
-        )
-        result = one(query.all())
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = session.query(FlCountyAggregate).filter(
+                FlCountyAggregate.county_name == "Bay"
+            )
+            result = one(query.all())
 
-        self.assertEqual(result.county_name, "Bay")
-        self.assertEqual(result.county_population, 176016)
-        self.assertEqual(result.average_daily_population, 1015)
-        self.assertEqual(result.date_reported, datetime.date(year=2017, month=9, day=1))
-        self.assertEqual(result.fips, "00002")
-        self.assertEqual(result.report_date, DATE_SCRAPED)
-        self.assertEqual(result.aggregation_window, enum_strings.monthly_granularity)
-        session.close()
+            self.assertEqual(result.county_name, "Bay")
+            self.assertEqual(result.county_population, 176016)
+            self.assertEqual(result.average_daily_population, 1015)
+            self.assertEqual(
+                result.date_reported, datetime.date(year=2017, month=9, day=1)
+            )
+            self.assertEqual(result.fips, "00002")
+            self.assertEqual(result.report_date, DATE_SCRAPED)
+            self.assertEqual(
+                result.aggregation_window, enum_strings.monthly_granularity
+            )
 
     def testWriteDf_doesNotOverrideMatchingColumnNames(self):
         # Arrange
@@ -127,16 +132,17 @@ class TestDao(TestCase):
         dao.write_df(FlFacilityAggregate, subject)
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
-        query = session.query(FlCountyAggregate).filter(
-            FlCountyAggregate.county_name == "Bay"
-        )
-        result = one(query.all())
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = session.query(FlCountyAggregate).filter(
+                FlCountyAggregate.county_name == "Bay"
+            )
+            result = one(query.all())
 
-        fips_not_overridden_by_facility_table = "00002"
-        self.assertEqual(result.county_name, "Bay")
-        self.assertEqual(result.fips, fips_not_overridden_by_facility_table)
-        session.close()
+            fips_not_overridden_by_facility_table = "00002"
+            self.assertEqual(result.county_name, "Bay")
+            self.assertEqual(result.fips, fips_not_overridden_by_facility_table)
 
     def testWriteDf_rowsWithSameColumnsThatMustBeUnique_onlyWritesOnce(self):
         # Arrange
@@ -158,10 +164,11 @@ class TestDao(TestCase):
         dao.write_df(FlCountyAggregate, subject)
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
-        query = session.query(FlCountyAggregate)
-        self.assertEqual(len(query.all()), 1)
-        session.close()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = session.query(FlCountyAggregate)
+            self.assertEqual(len(query.all()), 1)
 
     def testWriteDf_OverlappingData_WritesNewAndIgnoresDuplicateRows(self):
         # Arrange
@@ -202,12 +209,13 @@ class TestDao(TestCase):
         dao.write_df(FlCountyAggregate, subject)
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
-        query = session.query(func.sum(FlCountyAggregate.county_population))
-        result = one(one(query.all()))
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = session.query(func.sum(FlCountyAggregate.county_population))
+            result = one(one(query.all()))
 
-        # This sum includes intial_df + NewCounty and ignores other changes in
-        # the subject (eg. county_population = 0 for 'Alachua')
-        expected_sum_county_populations = 1001056402
-        self.assertEqual(result, expected_sum_county_populations)
-        session.close()
+            # This sum includes intial_df + NewCounty and ignores other changes in
+            # the subject (eg. county_population = 0 for 'Alachua')
+            expected_sum_county_populations = 1001056402
+            self.assertEqual(result, expected_sum_county_populations)

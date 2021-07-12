@@ -92,7 +92,6 @@ class EmailGenerationTests(TestCase):
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
         local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
-        session = SessionFactory.for_database(self.database_key)
         self.officer = generate_fake_officer("officer_id_1", "officer1@recidiviz.org")
         self.client_downgradable_high = generate_fake_client(
             client_id="client_1",
@@ -139,17 +138,18 @@ class EmailGenerationTests(TestCase):
             ]
         ]
 
-        session.add_all(
-            [
-                self.officer,
-                self.client_downgradable_high,
-                self.client_downgradable_medium_1,
-                self.client_downgradable_medium_2,
-                self.client_no_downgrade,
-                *opportunities,
-            ]
-        )
-        session.commit()
+        with SessionFactory.using_database(self.database_key) as session:
+            session.expire_on_commit = False
+            session.add_all(
+                [
+                    self.officer,
+                    self.client_downgradable_high,
+                    self.client_downgradable_medium_1,
+                    self.client_downgradable_medium_2,
+                    self.client_no_downgrade,
+                    *opportunities,
+                ]
+            )
 
         self.top_opps_email_recipient_patcher = patch(
             "recidiviz.reporting.data_retrieval._top_opps_email_recipient_addresses"

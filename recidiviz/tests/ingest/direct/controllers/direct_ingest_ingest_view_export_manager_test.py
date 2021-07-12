@@ -17,7 +17,7 @@
 """Tests for direct_ingest_ingest_view_export_manager.py."""
 import datetime
 import unittest
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
 
 import attr
 import mock
@@ -572,24 +572,22 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=_DATE_2,
         )
 
-        session = SessionFactory.for_database(self.database_key)
-        metadata = schema.DirectIngestIngestFileMetadata(
-            file_id=_ID,
-            region_code=region.region_code,
-            file_tag=export_args.ingest_view_name,
-            normalized_file_name="normalized_file_name",
-            is_invalidated=False,
-            is_file_split=False,
-            job_creation_time=_DATE_1,
-            export_time=_DATE_2,
-            datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
-            datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
-            ingest_database_name=self.ingest_database_name,
-        )
-        expected_metadata = self.to_entity(metadata)
-        session.add(metadata)
-        session.commit()
-        session.close()
+        with SessionFactory.using_database(self.database_key) as session:
+            metadata = schema.DirectIngestIngestFileMetadata(
+                file_id=_ID,
+                region_code=region.region_code,
+                file_tag=export_args.ingest_view_name,
+                normalized_file_name="normalized_file_name",
+                is_invalidated=False,
+                is_file_split=False,
+                job_creation_time=_DATE_1,
+                export_time=_DATE_2,
+                datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
+                datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
+                ingest_database_name=self.ingest_database_name,
+            )
+            expected_metadata = self.to_entity(metadata)
+            session.add(metadata)
 
         # Act
         export_manager.export_view_for_args(export_args)
@@ -598,12 +596,13 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         self.mock_client.run_query_async.assert_not_called()
         self.mock_client.export_query_results_to_cloud_storage.assert_not_called()
         self.mock_client.delete_table.assert_not_called()
-        assert_session = SessionFactory.for_database(self.database_key)
-        found_metadata = self.to_entity(
-            one(assert_session.query(schema.DirectIngestIngestFileMetadata).all())
-        )
-        self.assertEqual(expected_metadata, found_metadata)
-        assert_session.close()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as assert_session:
+            found_metadata = self.to_entity(
+                one(assert_session.query(schema.DirectIngestIngestFileMetadata).all())
+            )
+            self.assertEqual(expected_metadata, found_metadata)
 
     def test_exportViewForArgs_noLowerBound(self) -> None:
         # Arrange
@@ -616,25 +615,25 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=_DATE_2,
         )
 
-        session = SessionFactory.for_database(self.database_key)
-        metadata = schema.DirectIngestIngestFileMetadata(
-            file_id=_ID,
-            region_code=region.region_code,
-            file_tag=export_args.ingest_view_name,
-            normalized_file_name="normalized_file_name",
-            is_invalidated=False,
-            is_file_split=False,
-            job_creation_time=_DATE_1,
-            export_time=None,
-            datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
-            datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
-            ingest_database_name=self.ingest_database_name,
-        )
-        expected_metadata = attr.evolve(self.to_entity(metadata), export_time=_DATE_4)
+        with SessionFactory.using_database(self.database_key) as session:
+            metadata = schema.DirectIngestIngestFileMetadata(
+                file_id=_ID,
+                region_code=region.region_code,
+                file_tag=export_args.ingest_view_name,
+                normalized_file_name="normalized_file_name",
+                is_invalidated=False,
+                is_file_split=False,
+                job_creation_time=_DATE_1,
+                export_time=None,
+                datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
+                datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
+                ingest_database_name=self.ingest_database_name,
+            )
+            expected_metadata = attr.evolve(
+                self.to_entity(metadata), export_time=_DATE_4
+            )
 
-        session.add(metadata)
-        session.commit()
-        session.close()
+            session.add(metadata)
 
         # Act
         with freeze_time(_DATE_4.isoformat()):
@@ -668,12 +667,13 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
                 )
             ]
         )
-        assert_session = SessionFactory.for_database(self.database_key)
-        found_metadata = self.to_entity(
-            one(assert_session.query(schema.DirectIngestIngestFileMetadata).all())
-        )
-        self.assertEqual(expected_metadata, found_metadata)
-        assert_session.close()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as assert_session:
+            found_metadata = self.to_entity(
+                one(assert_session.query(schema.DirectIngestIngestFileMetadata).all())
+            )
+            self.assertEqual(expected_metadata, found_metadata)
 
     def test_exportViewForArgs(self) -> None:
         # Arrange
@@ -686,24 +686,24 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=_DATE_2,
         )
 
-        session = SessionFactory.for_database(self.database_key)
-        metadata = schema.DirectIngestIngestFileMetadata(
-            file_id=_ID,
-            region_code=region.region_code,
-            file_tag=export_args.ingest_view_name,
-            normalized_file_name="normalized_file_name",
-            is_invalidated=False,
-            is_file_split=False,
-            job_creation_time=_DATE_1,
-            export_time=None,
-            datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
-            datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
-            ingest_database_name=self.ingest_database_name,
-        )
-        expected_metadata = attr.evolve(self.to_entity(metadata), export_time=_DATE_4)
-        session.add(metadata)
-        session.commit()
-        session.close()
+        with SessionFactory.using_database(self.database_key) as session:
+            metadata = schema.DirectIngestIngestFileMetadata(
+                file_id=_ID,
+                region_code=region.region_code,
+                file_tag=export_args.ingest_view_name,
+                normalized_file_name="normalized_file_name",
+                is_invalidated=False,
+                is_file_split=False,
+                job_creation_time=_DATE_1,
+                export_time=None,
+                datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
+                datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
+                ingest_database_name=self.ingest_database_name,
+            )
+            expected_metadata = attr.evolve(
+                self.to_entity(metadata), export_time=_DATE_4
+            )
+            session.add(metadata)
 
         # Act
         with freeze_time(_DATE_4.isoformat()):
@@ -753,12 +753,13 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             ]
         )
 
-        assert_session = SessionFactory.for_database(self.database_key)
-        found_metadata = self.to_entity(
-            one(assert_session.query(schema.DirectIngestIngestFileMetadata).all())
-        )
-        self.assertEqual(expected_metadata, found_metadata)
-        assert_session.close()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as assert_session:
+            found_metadata = self.to_entity(
+                one(assert_session.query(schema.DirectIngestIngestFileMetadata).all())
+            )
+            self.assertEqual(expected_metadata, found_metadata)
 
     def test_exportViewForArgsMaterializedViews(self) -> None:
         # Arrange
@@ -775,24 +776,24 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=_DATE_2,
         )
 
-        session = SessionFactory.for_database(self.database_key)
-        metadata = schema.DirectIngestIngestFileMetadata(
-            file_id=_ID,
-            region_code=region.region_code,
-            file_tag=export_args.ingest_view_name,
-            normalized_file_name="normalized_file_name",
-            is_invalidated=False,
-            is_file_split=False,
-            job_creation_time=_DATE_1,
-            export_time=None,
-            datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
-            datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
-            ingest_database_name=self.ingest_database_name,
-        )
-        expected_metadata = attr.evolve(self.to_entity(metadata), export_time=_DATE_4)
-        session.add(metadata)
-        session.commit()
-        session.close()
+        with SessionFactory.using_database(self.database_key) as session:
+            metadata = schema.DirectIngestIngestFileMetadata(
+                file_id=_ID,
+                region_code=region.region_code,
+                file_tag=export_args.ingest_view_name,
+                normalized_file_name="normalized_file_name",
+                is_invalidated=False,
+                is_file_split=False,
+                job_creation_time=_DATE_1,
+                export_time=None,
+                datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
+                datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
+                ingest_database_name=self.ingest_database_name,
+            )
+            expected_metadata = attr.evolve(
+                self.to_entity(metadata), export_time=_DATE_4
+            )
+            session.add(metadata)
 
         # Act
         with freeze_time(_DATE_4.isoformat()):
@@ -838,12 +839,13 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             ]
         )
 
-        assert_session = SessionFactory.for_database(self.database_key)
-        found_metadata = self.to_entity(
-            one(assert_session.query(schema.DirectIngestIngestFileMetadata).all())
-        )
-        self.assertEqual(expected_metadata, found_metadata)
-        assert_session.close()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as assert_session:
+            found_metadata = self.to_entity(
+                one(assert_session.query(schema.DirectIngestIngestFileMetadata).all())
+            )
+            self.assertEqual(expected_metadata, found_metadata)
 
     def test_exportViewForArgs_detectRowDeletionView_noLowerBound(self) -> None:
         # Arrange
@@ -858,25 +860,25 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=_DATE_2,
         )
 
-        session = SessionFactory.for_database(self.database_key)
-        metadata = schema.DirectIngestIngestFileMetadata(
-            file_id=_ID,
-            region_code=region.region_code,
-            file_tag=export_args.ingest_view_name,
-            normalized_file_name="normalized_file_name",
-            is_invalidated=False,
-            is_file_split=False,
-            job_creation_time=_DATE_1,
-            export_time=None,
-            datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
-            datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
-            ingest_database_name=self.ingest_database_name,
-        )
-        expected_metadata = attr.evolve(self.to_entity(metadata), export_time=_DATE_4)
+        with SessionFactory.using_database(self.database_key) as session:
+            metadata = schema.DirectIngestIngestFileMetadata(
+                file_id=_ID,
+                region_code=region.region_code,
+                file_tag=export_args.ingest_view_name,
+                normalized_file_name="normalized_file_name",
+                is_invalidated=False,
+                is_file_split=False,
+                job_creation_time=_DATE_1,
+                export_time=None,
+                datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
+                datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
+                ingest_database_name=self.ingest_database_name,
+            )
+            expected_metadata = attr.evolve(
+                self.to_entity(metadata), export_time=_DATE_4
+            )
 
-        session.add(metadata)
-        session.commit()
-        session.close()
+            session.add(metadata)
 
         # Act
         with freeze_time(_DATE_4.isoformat()):
@@ -887,12 +889,13 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         self.mock_client.export_query_results_to_cloud_storage.assert_not_called()
         self.mock_client.delete_table.assert_not_called()
 
-        assert_session = SessionFactory.for_database(self.database_key)
-        found_metadata = self.to_entity(
-            one(assert_session.query(schema.DirectIngestIngestFileMetadata).all())
-        )
-        self.assertEqual(expected_metadata, found_metadata)
-        assert_session.close()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as assert_session:
+            found_metadata = self.to_entity(
+                one(assert_session.query(schema.DirectIngestIngestFileMetadata).all())
+            )
+            self.assertEqual(expected_metadata, found_metadata)
 
     def test_exportViewForArgs_detectRowDeletionView(self) -> None:
         # Arrange
@@ -907,24 +910,24 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             upper_bound_datetime_to_export=_DATE_2,
         )
 
-        session = SessionFactory.for_database(self.database_key)
-        metadata = schema.DirectIngestIngestFileMetadata(
-            file_id=_ID,
-            region_code=region.region_code,
-            file_tag=export_args.ingest_view_name,
-            normalized_file_name="normalized_file_name",
-            is_invalidated=False,
-            is_file_split=False,
-            job_creation_time=_DATE_1,
-            export_time=None,
-            datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
-            datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
-            ingest_database_name=self.ingest_database_name,
-        )
-        expected_metadata = attr.evolve(self.to_entity(metadata), export_time=_DATE_4)
-        session.add(metadata)
-        session.commit()
-        session.close()
+        with SessionFactory.using_database(self.database_key) as session:
+            metadata = schema.DirectIngestIngestFileMetadata(
+                file_id=_ID,
+                region_code=region.region_code,
+                file_tag=export_args.ingest_view_name,
+                normalized_file_name="normalized_file_name",
+                is_invalidated=False,
+                is_file_split=False,
+                job_creation_time=_DATE_1,
+                export_time=None,
+                datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
+                datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export,
+                ingest_database_name=self.ingest_database_name,
+            )
+            expected_metadata = attr.evolve(
+                self.to_entity(metadata), export_time=_DATE_4
+            )
+            session.add(metadata)
 
         # Act
         with freeze_time(_DATE_4.isoformat()):
@@ -969,12 +972,13 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             ]
         )
 
-        assert_session = SessionFactory.for_database(self.database_key)
-        found_metadata = self.to_entity(
-            one(assert_session.query(schema.DirectIngestIngestFileMetadata).all())
-        )
-        self.assertEqual(expected_metadata, found_metadata)
-        assert_session.close()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as assert_session:
+            found_metadata = self.to_entity(
+                one(assert_session.query(schema.DirectIngestIngestFileMetadata).all())
+            )
+            self.assertEqual(expected_metadata, found_metadata)
 
     def test_debugQueryForArgs(self) -> None:
         # Arrange

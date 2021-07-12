@@ -22,12 +22,10 @@ defined.
 from typing import Optional
 
 import attr
-from sqlalchemy import null, Column
+from sqlalchemy import Column, null
 from sqlalchemy.orm import Query
 
-from recidiviz.persistence.database.schema_utils import SchemaType
-from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.database.session import Session
 
 
 @attr.s(frozen=True, kw_only=True, auto_attribs=True)
@@ -124,7 +122,7 @@ class Mappings:
     total_held_for_other_male: Optional[Column]
     total_held_for_other_female: Optional[Column]
 
-    def to_query(self) -> Query:
+    def to_query(self, session: Session) -> Query:
         """Create a query to SELECT each column based on the Mapping's name."""
         select_statements = []
         for new_view_column_name, source_column in attr.asdict(self).items():
@@ -136,6 +134,4 @@ class Mappings:
 
             select_statements.append(select_statement)
 
-        return SessionFactory.for_database(
-            SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
-        ).query(*select_statements)
+        return session.query(*select_statements)

@@ -111,27 +111,29 @@ class TestCountyEntityMatcher(TestCase):
             external_id=_EXTERNAL_ID_ANOTHER,
         )
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(schema_person)
-        session.add(schema_person_another)
-        session.commit()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(schema_person)
+            session.add(schema_person_another)
+            session.commit()
 
-        ingested_booking = attr.evolve(
-            converter.convert_schema_object_to_entity(schema_booking),
-            booking_id=None,
-            custody_status=CustodyStatus.RELEASED,
-        )
+            ingested_booking = attr.evolve(
+                converter.convert_schema_object_to_entity(schema_booking),
+                booking_id=None,
+                custody_status=CustodyStatus.RELEASED,
+            )
 
-        ingested_person = attr.evolve(
-            converter.convert_schema_object_to_entity(schema_person),
-            person_id=None,
-            bookings=[ingested_booking],
-        )
+            ingested_person = attr.evolve(
+                converter.convert_schema_object_to_entity(schema_person),
+                person_id=None,
+                bookings=[ingested_booking],
+            )
 
-        ingested_person_another = attr.evolve(
-            converter.convert_schema_object_to_entity(schema_person_another),
-            person_id=None,
-        )
+            ingested_person_another = attr.evolve(
+                converter.convert_schema_object_to_entity(schema_person_another),
+                person_id=None,
+            )
 
         # Act
         out = entity_matching.match(
@@ -150,7 +152,6 @@ class TestCountyEntityMatcher(TestCase):
             converter.convert_schema_objects_to_entity(out.orphaned_entities), []
         )
         self.assertEqual(out.error_count, 1)
-        session.close()
 
     def test_matchPerson_updateStatusOnOrphanedEntities(self):
         # Arrange
@@ -178,26 +179,28 @@ class TestCountyEntityMatcher(TestCase):
             bookings=[schema_booking],
         )
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(schema_person)
-        session.commit()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(schema_person)
+            session.commit()
 
-        ingested_charge_no_bond = attr.evolve(
-            converter.convert_schema_object_to_entity(schema_charge),
-            charge_id=None,
-            bond=None,
-        )
-        ingested_booking = attr.evolve(
-            converter.convert_schema_object_to_entity(schema_booking),
-            booking_id=None,
-            custody_status=CustodyStatus.RELEASED,
-            charges=[ingested_charge_no_bond],
-        )
-        ingested_person = attr.evolve(
-            converter.convert_schema_object_to_entity(schema_person),
-            person_id=None,
-            bookings=[ingested_booking],
-        )
+            ingested_charge_no_bond = attr.evolve(
+                converter.convert_schema_object_to_entity(schema_charge),
+                charge_id=None,
+                bond=None,
+            )
+            ingested_booking = attr.evolve(
+                converter.convert_schema_object_to_entity(schema_booking),
+                booking_id=None,
+                custody_status=CustodyStatus.RELEASED,
+                charges=[ingested_charge_no_bond],
+            )
+            ingested_person = attr.evolve(
+                converter.convert_schema_object_to_entity(schema_person),
+                person_id=None,
+                bookings=[ingested_booking],
+            )
 
         # Act
         out = entity_matching.match(session, _REGION, [ingested_person])
@@ -229,7 +232,6 @@ class TestCountyEntityMatcher(TestCase):
             [expected_orphaned_bond],
         )
         self.assertEqual(out.error_count, 0)
-        session.close()
 
     def test_matchPeople_differentBookingIds(self):
         # Arrange
@@ -267,30 +269,33 @@ class TestCountyEntityMatcher(TestCase):
             bookings=[schema_booking_another],
         )
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(schema_person)
-        session.add(schema_person_another)
-        session.commit()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(schema_person)
+            session.add(schema_person_another)
+            session.commit()
 
-        ingested_booking = attr.evolve(
-            converter.convert_schema_object_to_entity(schema_booking), booking_id=None
-        )
+            ingested_booking = attr.evolve(
+                converter.convert_schema_object_to_entity(schema_booking),
+                booking_id=None,
+            )
 
-        ingested_person = attr.evolve(
-            converter.convert_schema_object_to_entity(schema_person),
-            person_id=None,
-            bookings=[ingested_booking],
-        )
+            ingested_person = attr.evolve(
+                converter.convert_schema_object_to_entity(schema_person),
+                person_id=None,
+                bookings=[ingested_booking],
+            )
 
-        ingested_booking_another = attr.evolve(
-            converter.convert_schema_object_to_entity(schema_booking_another),
-            booking_id=None,
-        )
-        ingested_person_another = attr.evolve(
-            converter.convert_schema_object_to_entity(schema_person_another),
-            person_id=None,
-            bookings=[ingested_booking_another],
-        )
+            ingested_booking_another = attr.evolve(
+                converter.convert_schema_object_to_entity(schema_booking_another),
+                booking_id=None,
+            )
+            ingested_person_another = attr.evolve(
+                converter.convert_schema_object_to_entity(schema_person_another),
+                person_id=None,
+                bookings=[ingested_booking_another],
+            )
 
         # Act
         out = entity_matching.match(
@@ -318,7 +323,6 @@ class TestCountyEntityMatcher(TestCase):
             converter.convert_schema_objects_to_entity(out.orphaned_entities), []
         )
         self.assertEqual(out.error_count, 0)
-        session.close()
 
     def test_matchPeople(self):
         # Arrange
@@ -358,32 +362,34 @@ class TestCountyEntityMatcher(TestCase):
             bookings=[schema_booking_external_id],
         )
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(schema_person)
-        session.add(schema_person_external_id)
-        session.commit()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(schema_person)
+            session.add(schema_person_external_id)
+            session.commit()
 
-        ingested_booking = attr.evolve(
-            converter.convert_schema_object_to_entity(schema_booking),
-            booking_id=None,
-            custody_status=CustodyStatus.RELEASED,
-        )
-        ingested_person = attr.evolve(
-            converter.convert_schema_object_to_entity(schema_person),
-            person_id=None,
-            bookings=[ingested_booking],
-        )
+            ingested_booking = attr.evolve(
+                converter.convert_schema_object_to_entity(schema_booking),
+                booking_id=None,
+                custody_status=CustodyStatus.RELEASED,
+            )
+            ingested_person = attr.evolve(
+                converter.convert_schema_object_to_entity(schema_person),
+                person_id=None,
+                bookings=[ingested_booking],
+            )
 
-        ingested_booking_external_id = attr.evolve(
-            converter.convert_schema_object_to_entity(schema_booking_external_id),
-            booking_id=None,
-            facility=_FACILITY,
-        )
-        ingested_person_external_id = attr.evolve(
-            converter.convert_schema_object_to_entity(schema_person_external_id),
-            person_id=None,
-            bookings=[ingested_booking_external_id],
-        )
+            ingested_booking_external_id = attr.evolve(
+                converter.convert_schema_object_to_entity(schema_booking_external_id),
+                booking_id=None,
+                facility=_FACILITY,
+            )
+            ingested_person_external_id = attr.evolve(
+                converter.convert_schema_object_to_entity(schema_person_external_id),
+                person_id=None,
+                bookings=[ingested_booking_external_id],
+            )
 
         # Act
         out = entity_matching.match(
@@ -412,7 +418,6 @@ class TestCountyEntityMatcher(TestCase):
             converter.convert_schema_objects_to_entity(out.orphaned_entities), []
         )
         self.assertEqual(out.error_count, 0)
-        session.close()
 
     def test_matchPeople_twoMatchingPeople_PicksMostSimilar(self):
         # Arrange
@@ -430,18 +435,21 @@ class TestCountyEntityMatcher(TestCase):
         schema_person_mismatch.person_id = _PERSON_ID_ANOTHER
         schema_person_mismatch.gender = Gender.FEMALE.value
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(schema_person)
-        session.add(schema_person_mismatch)
-        session.commit()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.expire_on_commit = False
+            session.add(schema_person)
+            session.add(schema_person_mismatch)
+            session.commit()
 
-        ingested_person = attr.evolve(
-            converter.convert_schema_object_to_entity(schema_person), person_id=None
-        )
+            ingested_person = attr.evolve(
+                converter.convert_schema_object_to_entity(schema_person), person_id=None
+            )
 
-        expected_person = attr.evolve(
-            ingested_person, person_id=schema_person.person_id
-        )
+            expected_person = attr.evolve(
+                ingested_person, person_id=schema_person.person_id
+            )
 
         # Act
         matched_entities = entity_matching.match(session, _REGION, [ingested_person])
@@ -462,7 +470,6 @@ class TestCountyEntityMatcher(TestCase):
         self.assertEqual(matched_entities.error_count, 0)
         self.assertEqual(len(matched_entities.orphaned_entities), 0)
         self.assertEqual(ingested_person, expected_person)
-        session.close()
 
     def test_matchBooking_duplicateMatch_throws(self):
         db_booking = entities.Booking.new_with_defaults(

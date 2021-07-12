@@ -48,7 +48,7 @@ from recidiviz.tools.postgres import local_postgres_helpers
 )
 @pytest.mark.uses_db
 class AuthEndpointTests(TestCase):
-    """ Integration tests of our flask auth endpoints """
+    """Integration tests of our flask auth endpoints"""
 
     # Stores the location of the postgres DB for this test run
     temp_db_dir: Optional[str]
@@ -287,7 +287,8 @@ class AuthEndpointTests(TestCase):
             )
 
     @mock.patch(
-        "recidiviz.auth.auth_endpoint.SessionFactory.for_database",
+        # TODO(#8046): Don't use the deprecated session fetcher
+        "recidiviz.auth.auth_endpoint.SessionFactory.deprecated__for_database",
         return_value=MagicMock(),
     )
     def test_dashboard_user_restrictions_by_email_internal_error(

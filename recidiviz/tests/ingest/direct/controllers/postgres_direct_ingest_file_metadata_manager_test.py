@@ -489,9 +489,11 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
                 args, self.metadata_manager, ingest_view_unprocessed_path
             )
 
-        session = SessionFactory.for_database(self.database_key)
-        results = session.query(schema.DirectIngestIngestFileMetadata).all()
-        self.assertEqual(1, len(results))
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            results = session.query(schema.DirectIngestIngestFileMetadata).all()
+            self.assertEqual(1, len(results))
 
     def test_ingest_view_file_same_args_after_invalidation(self) -> None:
         args = GcsfsIngestViewExportArgs(
@@ -509,11 +511,10 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         )
 
         # Invalidate the previous row
-        session = SessionFactory.for_database(self.database_key)
-        results = session.query(schema.DirectIngestIngestFileMetadata).all()
-        result = one(results)
-        result.is_invalidated = True
-        session.commit()
+        with SessionFactory.using_database(self.database_key) as session:
+            results = session.query(schema.DirectIngestIngestFileMetadata).all()
+            result = one(results)
+            result.is_invalidated = True
 
         # Now we can rerun with the same args
         ingest_view_unprocessed_path = self._make_unprocessed_path(
@@ -559,8 +560,10 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             args, self.metadata_manager, ingest_view_unprocessed_path_2
         )
 
-        session = SessionFactory.for_database(self.database_key)
-        results = session.query(schema.DirectIngestIngestFileMetadata).all()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            results = session.query(schema.DirectIngestIngestFileMetadata).all()
 
         self.assertEqual(
             {
@@ -880,15 +883,14 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
         )
 
         # Invalidate the row that was just returned
-        session = SessionFactory.for_database(self.database_key)
-        results = (
-            session.query(schema.DirectIngestIngestFileMetadata)
-            .filter_by(file_id=most_recent_valid_job.file_id)
-            .all()
-        )
-        result = one(results)
-        result.is_invalidated = True
-        session.commit()
+        with SessionFactory.using_database(self.database_key) as session:
+            results = (
+                session.query(schema.DirectIngestIngestFileMetadata)
+                .filter_by(file_id=most_recent_valid_job.file_id)
+                .all()
+            )
+            result = one(results)
+            result.is_invalidated = True
 
         most_recent_valid_job = (
             self.metadata_manager.get_ingest_view_metadata_for_most_recent_valid_job(

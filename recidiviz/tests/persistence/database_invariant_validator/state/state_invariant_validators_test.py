@@ -70,169 +70,175 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
         )
 
     def test_clean_session(self) -> None:
-        # Arrange
-        session = SessionFactory.for_database(self.database_key)
-
-        # Act
-        errors = validate_invariants(session, self.system_level, self.state_code, [])
-
-        # Assert
-        self.assertEqual(0, errors)
-        session.commit()
-
-    def test_add_person_simple_no_flush(self) -> None:
-        # Arrange
-        session = SessionFactory.for_database(self.database_key)
-
-        db_external_id = generate_external_id(
-            state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
-        )
-
-        db_person = generate_person(
-            state_code=self.state_code, external_ids=[db_external_id]
-        )
-
-        session.add(db_person)
-
-        output_people = [db_person]
-
-        # Act
-        with self.assertRaises(SessionIsDirtyError) as e:
-            _ = validate_invariants(
-                session, self.system_level, self.state_code, output_people
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            # Act
+            errors = validate_invariants(
+                session, self.system_level, self.state_code, []
             )
 
-        # Assert
-        self.assertEqual(
-            str(e.exception),
-            "Session unexpectedly dirty - flush before querying the database.",
-        )
+            # Assert
+            self.assertEqual(0, errors)
+
+    def test_add_person_simple_no_flush(self) -> None:
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            # Arrange
+            db_external_id = generate_external_id(
+                state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
+            )
+
+            db_person = generate_person(
+                state_code=self.state_code, external_ids=[db_external_id]
+            )
+
+            session.add(db_person)
+
+            output_people = [db_person]
+
+            # Act
+            with self.assertRaises(SessionIsDirtyError) as e:
+                _ = validate_invariants(
+                    session, self.system_level, self.state_code, output_people
+                )
+
+            # Assert
+            self.assertEqual(
+                str(e.exception),
+                "Session unexpectedly dirty - flush before querying the database.",
+            )
 
     def test_add_person_simple(self) -> None:
         # Arrange
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            db_external_id = generate_external_id(
+                state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
+            )
 
-        db_external_id = generate_external_id(
-            state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
-        )
+            db_person = generate_person(
+                state_code=self.state_code, external_ids=[db_external_id]
+            )
 
-        db_person = generate_person(
-            state_code=self.state_code, external_ids=[db_external_id]
-        )
+            session.add(db_person)
+            session.flush()
 
-        session.add(db_person)
-        session.flush()
+            output_people = [db_person]
 
-        output_people = [db_person]
+            # Act
+            errors = validate_invariants(
+                session, self.system_level, self.state_code, output_people
+            )
 
-        # Act
-        errors = validate_invariants(
-            session, self.system_level, self.state_code, output_people
-        )
-
-        # Assert
-        self.assertEqual(0, errors)
-        session.commit()
+            # Assert
+            self.assertEqual(0, errors)
 
     def test_add_person_two_ids_same_type(self) -> None:
-        # Arrange
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            # Arrange
+            db_external_id = generate_external_id(
+                state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
+            )
 
-        db_external_id = generate_external_id(
-            state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
-        )
+            db_external_id_2 = generate_external_id(
+                state_code=self.state_code, external_id=EXTERNAL_ID_2, id_type=ID_TYPE_1
+            )
 
-        db_external_id_2 = generate_external_id(
-            state_code=self.state_code, external_id=EXTERNAL_ID_2, id_type=ID_TYPE_1
-        )
+            db_person = generate_person(
+                state_code=self.state_code,
+                external_ids=[db_external_id, db_external_id_2],
+            )
 
-        db_person = generate_person(
-            state_code=self.state_code, external_ids=[db_external_id, db_external_id_2]
-        )
+            session.add(db_person)
+            session.flush()
 
-        session.add(db_person)
-        session.flush()
+            output_people = [db_person]
 
-        output_people = [db_person]
+            # Act
+            errors = validate_invariants(
+                session, self.system_level, self.state_code, output_people
+            )
 
-        # Act
-        errors = validate_invariants(
-            session, self.system_level, self.state_code, output_people
-        )
-
-        # Assert
-        self.assertEqual(1, errors)
-        session.rollback()
+            # Assert
+            self.assertEqual(1, errors)
 
     def test_add_person_two_ids_same_type_us_pa(self) -> None:
-        # Arrange
-        self.state_code = "US_PA"
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            # Arrange
+            self.state_code = "US_PA"
 
-        db_external_id = generate_external_id(
-            state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
-        )
+            db_external_id = generate_external_id(
+                state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
+            )
 
-        db_external_id_2 = generate_external_id(
-            state_code=self.state_code, external_id=EXTERNAL_ID_2, id_type=ID_TYPE_1
-        )
+            db_external_id_2 = generate_external_id(
+                state_code=self.state_code, external_id=EXTERNAL_ID_2, id_type=ID_TYPE_1
+            )
 
-        db_person = generate_person(
-            state_code=self.state_code, external_ids=[db_external_id, db_external_id_2]
-        )
+            db_person = generate_person(
+                state_code=self.state_code,
+                external_ids=[db_external_id, db_external_id_2],
+            )
 
-        session.add(db_person)
-        session.flush()
+            session.add(db_person)
+            session.flush()
 
-        output_people = [db_person]
+            output_people = [db_person]
 
-        # Act
-        errors = validate_invariants(
-            session, self.system_level, self.state_code, output_people
-        )
+            # Act
+            errors = validate_invariants(
+                session, self.system_level, self.state_code, output_people
+            )
 
-        # Assert
-        self.assertEqual(0, errors)
-        session.commit()
+            # Assert
+            self.assertEqual(0, errors)
 
     def test_add_person_update_with_new_id(self) -> None:
-        # Arrange
-        arrange_session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as arrange_session:
+            # Arrange
+            db_external_id = generate_external_id(
+                state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
+            )
 
-        db_external_id = generate_external_id(
-            state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
-        )
+            db_person = generate_person(
+                state_code=self.state_code, external_ids=[db_external_id]
+            )
 
-        db_person = generate_person(
-            state_code=self.state_code, external_ids=[db_external_id]
-        )
+            arrange_session.add(db_person)
+            arrange_session.commit()
 
-        arrange_session.add(db_person)
-        arrange_session.commit()
-
-        db_external_id_2 = generate_external_id(
-            state_code=self.state_code, external_id=EXTERNAL_ID_2, id_type=ID_TYPE_1
-        )
+            db_external_id_2 = generate_external_id(
+                state_code=self.state_code, external_id=EXTERNAL_ID_2, id_type=ID_TYPE_1
+            )
 
         # Act
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            result = session.query(schema.StatePerson).all()
 
-        result = session.query(schema.StatePerson).all()
+            person_to_update = one(result)
 
-        person_to_update = one(result)
+            person_to_update.external_ids.append(db_external_id_2)
+            session.flush()
 
-        person_to_update.external_ids.append(db_external_id_2)
-        session.flush()
+            output_people = [person_to_update]
 
-        output_people = [person_to_update]
+            errors = validate_invariants(
+                session, self.system_level, self.state_code, output_people
+            )
 
-        errors = validate_invariants(
-            session, self.system_level, self.state_code, output_people
-        )
-
-        # Assert
-        self.assertEqual(1, errors)
-        session.rollback()
+            # Assert
+            self.assertEqual(1, errors)
 
     def test_add_two_people_same_id_type(self) -> None:
         # Arrange
@@ -252,19 +258,19 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
             state_code=self.state_code, external_ids=[db_external_id_2]
         )
 
-        # Act
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            # Act
+            session.add(db_person)
+            session.add(db_person_2)
+            session.flush()
 
-        session.add(db_person)
-        session.add(db_person_2)
-        session.flush()
+            output_people = [db_person, db_person_2]
 
-        output_people = [db_person, db_person_2]
+            errors = validate_invariants(
+                session, self.system_level, self.state_code, output_people
+            )
 
-        errors = validate_invariants(
-            session, self.system_level, self.state_code, output_people
-        )
-
-        # Assert
-        self.assertEqual(0, errors)
-        session.commit()
+            # Assert
+            self.assertEqual(0, errors)

@@ -150,13 +150,14 @@ class TestFlAggregateIngest(TestCase):
             dao.write_df(table, df)
 
         # Assert
-        query = (
-            SessionFactory.for_database(self.database_key)
-            .query(FlCountyAggregate)
-            .filter(FlCountyAggregate.county_name == "Hernando")
-        )
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = session.query(FlCountyAggregate).filter(
+                FlCountyAggregate.county_name == "Hernando"
+            )
 
-        hernando_row = one(query.all())
+            hernando_row = one(query.all())
 
         self.assertEqual(hernando_row.county_name, "Hernando")
         self.assertEqual(hernando_row.county_population, 179503)
@@ -174,10 +175,9 @@ class TestFlAggregateIngest(TestCase):
             dao.write_df(table, df)
 
         # Assert
-        query = SessionFactory.for_database(self.database_key).query(
-            func.sum(FlCountyAggregate.county_population)
-        )
-        result = one(one(query.all()))
+        with SessionFactory.using_database(self.database_key) as session:
+            query = session.query(func.sum(FlCountyAggregate.county_population))
+            result = one(one(query.all()))
 
         expected_sum_county_populations = 20148654
         self.assertEqual(result, expected_sum_county_populations)
@@ -266,10 +266,11 @@ class TestFlAggregateIngest(TestCase):
             dao.write_df(table, df)
 
         # Assert
-        query = SessionFactory.for_database(self.database_key).query(
-            func.sum(FlFacilityAggregate.average_daily_population)
-        )
-        result = one(one(query.all()))
+        with SessionFactory.using_database(self.database_key) as session:
+            query = session.query(
+                func.sum(FlFacilityAggregate.average_daily_population)
+            )
+            result = one(one(query.all()))
 
         expected_sum_facility_adp = 52388
         self.assertEqual(result, expected_sum_facility_adp)

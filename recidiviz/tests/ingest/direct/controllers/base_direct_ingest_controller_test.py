@@ -265,8 +265,9 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         ):
             self.fail(f"Unexpected file_metadata_manager type {file_metadata_manager}")
 
-        session = SessionFactory.for_database(self.operations_database_key)
-        try:
+        with SessionFactory.using_database(
+            self.operations_database_key, autocommit=False
+        ) as session:
             raw_file_results = session.query(schema.DirectIngestRawFileMetadata).all()
 
             raw_file_metadata_list = [
@@ -288,12 +289,6 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                 )
                 for metadata in ingest_file_results
             ]
-
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            session.close()
 
         actual_raw_metadata_tags_with_is_processed = [
             (metadata.file_tag, bool(metadata.processed_time))

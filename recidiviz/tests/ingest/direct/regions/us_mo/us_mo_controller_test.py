@@ -4044,12 +4044,14 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence.csv"
         )
 
-        session = SessionFactory.for_database(self.main_database_key)
-        found_people_from_db = dao.read_people(session)
-        found_people = cast(
-            List[entities.StatePerson],
-            self.convert_and_clear_db_ids(found_people_from_db),
-        )
+        with SessionFactory.using_database(
+            self.main_database_key, autocommit=False
+        ) as session:
+            found_people_from_db = dao.read_people(session)
+            found_people = cast(
+                List[entities.StatePerson],
+                self.convert_and_clear_db_ids(found_people_from_db),
+            )
 
         compliant_periods = 0
         for person in found_people:

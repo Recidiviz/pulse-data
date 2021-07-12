@@ -230,10 +230,11 @@ class TestHiAggregateIngest(TestCase):
             dao.write_df(table, df)
 
         # Assert
-        query = SessionFactory.for_database(self.database_key).query(
-            func.sum(HiFacilityAggregate.total_population)
-        )
-        result = one(one(query.all()))
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = session.query(func.sum(HiFacilityAggregate.total_population))
+            result = one(one(query.all()))
 
         expected_sum_total_population = 5241
         self.assertEqual(result, expected_sum_total_population)
