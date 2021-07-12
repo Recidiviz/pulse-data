@@ -101,6 +101,15 @@ from recidiviz.validation.views.state.incarceration_release_reason_no_release_da
 from recidiviz.validation.views.state.incarceration_releases_by_type_by_period_internal_consistency import (
     INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.invalid_admission_reasons_for_temporary_custody import (
+    INVALID_ADMISSION_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.invalid_admitted_from_supervision_admission_reason import (
+    INVALID_ADMITTED_FROM_SUPERVISION_ADMISSION_REASON_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.invalid_pfi_for_temporary_custody_admissions import (
+    INVALID_PFI_FOR_TEMPORARY_CUSTODY_ADMISSIONS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.overlapping_incarceration_periods import (
     OVERLAPPING_INCARCERATION_PERIODS_VIEW_BUILDER,
 )
@@ -289,6 +298,18 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view=ACTIVE_IN_POPULATION_AFTER_DEATH_DATE_VIEW_BUILDER.build(),
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view=INVALID_ADMISSION_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER.build(),
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view=INVALID_ADMITTED_FROM_SUPERVISION_ADMISSION_REASON_VIEW_BUILDER.build(),
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view=INVALID_PFI_FOR_TEMPORARY_CUSTODY_ADMISSIONS_VIEW_BUILDER.build(),
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
