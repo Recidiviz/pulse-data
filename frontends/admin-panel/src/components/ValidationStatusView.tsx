@@ -14,13 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Empty, List, PageHeader, Spin, Table } from "antd";
+
+import { Anchor, Empty, List, PageHeader, Spin, Table, Typography } from "antd";
 import { ColumnsType, ColumnType } from "antd/es/table";
 import * as React from "react";
-
 import { fetchValidationStatus } from "../AdminPanelAPI";
 import useFetchedData from "../hooks";
 import uniqueStates from "./Utilities/UniqueStates";
+
+const { Title } = Typography;
+const { Link } = Anchor;
 
 interface MetadataItem {
   key: string;
@@ -44,26 +47,33 @@ const ValidationStatusView = (): JSX.Element => {
     );
   }
 
-  const records = Object.keys(data.results)
-    .sort()
-    .map((name: string): MetadataRecord<ValidationStatus> => {
-      return {
-        name,
-        resultsByState: data.results[name],
-      };
-    });
+  const validationNames = Object.keys(data.results).sort();
+
+  const dictOfCategoriesToRecords = validationNames.reduce((acc, name) => {
+    const result = data.results[name];
+    const metadataRecord: MetadataRecord<ValidationStatus> = {
+      name,
+      resultsByState: result.resultsByState,
+    };
+    const recordsForCategory = acc[result.validationCategory] || [];
+    acc[result.validationCategory] = [...recordsForCategory, metadataRecord];
+    return acc;
+  }, {} as { [category: string]: MetadataRecord<ValidationStatus>[] });
 
   const labelColumns: ColumnsType<MetadataRecord<ValidationStatus>> = [
     {
       title: "Validation Name",
       key: "validation",
       fixed: "left",
+      width: "55%",
       render: (_: string, record: MetadataRecord<ValidationStatus>) => (
         <div>{record.name}</div>
       ),
     },
   ];
-  const allStates = uniqueStates(records);
+  const allStates = uniqueStates(
+    Object.values(dictOfCategoriesToRecords).flat()
+  );
 
   const columns = labelColumns.concat(
     allStates.map((s) => columnTypeForState(s))
@@ -74,6 +84,9 @@ const ValidationStatusView = (): JSX.Element => {
     { key: "Run Datetime", value: data.runDatetime },
     { key: "System Version", value: data.systemVersion },
   ];
+
+  const categories = Object.keys(dictOfCategoriesToRecords).sort();
+
   return (
     <>
       <PageHeader
@@ -89,19 +102,39 @@ const ValidationStatusView = (): JSX.Element => {
           </List.Item>
         )}
       />
-      <Table
-        className="metadata-table"
-        columns={columns}
-        dataSource={records}
-        pagination={{
-          hideOnSinglePage: true,
-          showSizeChanger: true,
-          pageSize: 50,
-          size: "small",
-        }}
-        rowClassName="metadata-table-row"
-        rowKey="validation"
-      />
+      <Title level={3}>Category Links</Title>
+      <Anchor affix={false}>
+        {categories.map((category) => {
+          return (
+            <Link
+              href={`#${chooseIDNameForCategory(category)}`}
+              title={readableNameForCategory(category)}
+            />
+          );
+        })}
+      </Anchor>
+      {categories.sort().map((category) => {
+        return (
+          <>
+            <Title id={chooseIDNameForCategory(category)} level={2}>
+              {readableNameForCategory(category)}
+            </Title>
+            <Table
+              className="metadata-table"
+              columns={columns}
+              dataSource={dictOfCategoriesToRecords[category]}
+              pagination={{
+                hideOnSinglePage: true,
+                showSizeChanger: true,
+                pageSize: 50,
+                size: "small",
+              }}
+              rowClassName="metadata-table-row"
+              rowKey="validation"
+            />
+          </>
+        );
+      })}
     </>
   );
 };
@@ -131,4 +164,34 @@ const columnTypeForState = (
       return <div className="success">Passed ({status.errorAmount})</div>;
     },
   };
+};
+
+const readableNameForCategory = (category: string): string => {
+  switch (category) {
+    case "CONSISTENCY":
+      return "Consistency";
+    case "EXTERNAL_AGGREGATE":
+      return "External Aggregate";
+    case "EXTERNAL_INDIVIDUAL":
+      return "External Individual";
+    case "INVARIANT":
+      return "Invariant";
+    default:
+      return category;
+  }
+};
+
+const chooseIDNameForCategory = (category: string): string => {
+  switch (category) {
+    case "CONSISTENCY":
+      return "CONSISTENCY";
+    case "EXTERNAL_AGGREGATE":
+      return "EXTERNAL_AGGREGATE";
+    case "EXTERNAL_INDIVIDUAL":
+      return "EXTERNAL_INDIVIDUAL";
+    case "INVARIANT":
+      return "INVARIANT";
+    default:
+      return category;
+  }
 };

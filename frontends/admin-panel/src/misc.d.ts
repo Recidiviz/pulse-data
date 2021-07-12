@@ -42,17 +42,23 @@ interface DataFreshnessResult {
 }
 
 // Validation Status
+interface ValidationStatusResult {
+  validationCategory: string;
+  resultsByState: {
+    [stateCode: string]: ValidationStatus;
+  };
+}
+
 interface ValidationStatusResults {
   runId: string;
   runDatetime: string;
   systemVersion: string;
 
   results: {
-    [validationName: string]: {
-      [stateCode: string]: ValidationStatus;
-    };
+    [validationName: string]: ValidationStatusResult;
   };
 }
+
 interface ValidationStatus {
   didRun: boolean;
   wasSuccessful?: boolean;
