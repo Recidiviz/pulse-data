@@ -68,6 +68,34 @@ test("contact status", () => {
   expect(testClient.contactStatus).toBe(null);
 });
 
+test("phone number parsing", () => {
+  testClient = Client.build({
+    api: rootStore.api,
+    client: cloneDeep({
+      ...clientData,
+      phoneNumber: null,
+    }),
+    clientsStore: rootStore.clientsStore,
+    opportunityStore: rootStore.opportunityStore,
+    policyStore: rootStore.policyStore,
+  });
+
+  expect(testClient.phoneNumber).toBe(undefined);
+
+  testClient = Client.build({
+    api: rootStore.api,
+    client: cloneDeep({
+      ...clientData,
+      phoneNumber: "5108675309",
+    }),
+    clientsStore: rootStore.clientsStore,
+    opportunityStore: rootStore.opportunityStore,
+    policyStore: rootStore.policyStore,
+  });
+
+  expect(testClient.phoneNumber).toEqual("(510) 867-5309");
+});
+
 test("risk assessment status", () => {
   // date in fixture is 2020-10-23
   MockDate.set("2020-10-25");

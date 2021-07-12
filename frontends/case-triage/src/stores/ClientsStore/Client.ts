@@ -91,7 +91,7 @@ export interface ClientData {
   mostRecentHomeVisitDate: APIDate;
   mostRecentAssessmentDate: APIDate;
   emailAddress?: string;
-  phoneNumber?: string;
+  phoneNumber: null | string;
   needsMet: NeedsMet;
   nextAssessmentDate: APIDate;
   nextFaceToFaceDate: APIDate;
@@ -263,8 +263,9 @@ export class Client {
     this.supervisionLevel = clientData.supervisionLevel;
     this.personExternalId = clientData.personExternalId;
     this.emailAddress = clientData.emailAddress;
+
     this.phoneNumber =
-      clientData.phoneNumber !== undefined
+      typeof clientData.phoneNumber === "string"
         ? parsePhoneNumber(clientData.phoneNumber, "US")?.formatNational()
         : undefined;
     this.needsMet = clientData.needsMet;
