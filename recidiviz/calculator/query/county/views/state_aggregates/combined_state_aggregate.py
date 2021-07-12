@@ -17,6 +17,7 @@
 """Define views created by concatenating state-reported aggregate reports."""
 
 import sqlalchemy
+from sqlalchemy.sql.sqltypes import SchemaType
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
@@ -24,6 +25,8 @@ from recidiviz.calculator.query.county.views.state_aggregates import (
     state_aggregate_mappings,
 )
 from recidiviz.persistence.database import schema_utils
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
 
 def _to_bq_table(query_str: str) -> str:
@@ -39,9 +42,15 @@ def _to_bq_table(query_str: str) -> str:
     return query_str
 
 
-_QUERIES = [m.to_query() for m in state_aggregate_mappings.MAPPINGS]
-_UNIONED_STATEMENT = sqlalchemy.union_all(*_QUERIES)
-_BQ_UNIONED_STATEMENT_QUERY_TEMPLATE = _to_bq_table(str(_UNIONED_STATEMENT.compile()))
+with SessionFactory.using_database(
+    database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS),
+    autocommit=False,
+) as session:
+    _QUERIES = [m.to_query(session) for m in state_aggregate_mappings.MAPPINGS]
+    _UNIONED_STATEMENT = sqlalchemy.union_all(*_QUERIES)
+    _BQ_UNIONED_STATEMENT_QUERY_TEMPLATE = _to_bq_table(
+        str(_UNIONED_STATEMENT.compile())
+    )
 COMBINED_STATE_AGGREGATE_DESCRIPTION = """
 The concatenation of all 'state-reported aggregate reports' after mapping each column
 to a shared column_name."""

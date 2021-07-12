@@ -17,18 +17,18 @@
 """State tests for persistence.py."""
 
 from datetime import datetime
-from typing import Optional, Dict, List, Type
+from typing import Dict, List, Optional, Type
 from unittest import TestCase
 
 import pytest
-from mock import patch, Mock
+from mock import Mock, patch
 
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence import persistence
 from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.schema.state import schema, dao
+from recidiviz.persistence.database.schema.state import dao, schema
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
@@ -52,10 +52,10 @@ from recidiviz.persistence.entity_matching.state.state_matching_delegate_factory
 )
 from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.persistence.persistence import (
-    OVERALL_THRESHOLD,
+    DATABASE_INVARIANT_THRESHOLD,
     ENTITY_MATCHING_THRESHOLD,
     ENUM_THRESHOLD,
-    DATABASE_INVARIANT_THRESHOLD,
+    OVERALL_THRESHOLD,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
 
@@ -282,23 +282,23 @@ class TestStatePersistence(TestCase):
         expected_person = self.to_entity(db_person)
         expected_person_2 = self.to_entity(db_person_2)
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(db_person)
-        session.add(db_person_2)
-        session.commit()
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(db_person)
+            session.add(db_person_2)
 
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
-        session = SessionFactory.for_database(self.database_key)
-        persons = dao.read_people(session)
 
-        # Assert
-        self.assertEqual(
-            [expected_person, expected_person_2],
-            converter.convert_schema_objects_to_entity(persons),
-        )
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            # Assert
+            persons = dao.read_people(session)
 
-        session.close()
+            self.assertEqual(
+                [expected_person, expected_person_2],
+                converter.convert_schema_objects_to_entity(persons),
+            )
 
     @patch(
         "recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD",
@@ -385,10 +385,9 @@ class TestStatePersistence(TestCase):
         db_person_2.external_ids = [db_external_id_2]
         db_person_2.sentence_groups = [db_sentence_group_3]
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(db_person)
-        session.add(db_person_2)
-        session.commit()
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(db_person)
+            session.add(db_person_2)
 
         expected_person = StatePerson.new_with_defaults(
             person_id=ID,
@@ -449,11 +448,14 @@ class TestStatePersistence(TestCase):
 
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)
-        session = SessionFactory.for_database(self.database_key)
-        persons = dao.read_people(session)
 
-        # Assert
-        self.assertEqual(
-            [expected_person, expected_person_2],
-            converter.convert_schema_objects_to_entity(persons),
-        )
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            # Assert
+            persons = dao.read_people(session)
+
+            self.assertEqual(
+                [expected_person, expected_person_2],
+                converter.convert_schema_objects_to_entity(persons),
+            )

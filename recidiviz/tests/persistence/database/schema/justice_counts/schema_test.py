@@ -57,62 +57,59 @@ class TestSchema(TestCase):
 
     def testSchema_insertRows_returnedInQuery(self):
         # Create an object of each type with proper relationships
-        act_session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(self.database_key) as act_session:
+            source = schema.Source(name="Test Source")
+            act_session.add(source)
 
-        source = schema.Source(name="Test Source")
-        act_session.add(source)
+            report = schema.Report(
+                source=source,
+                type="Monthly Prison Report",
+                instance="September 2020",
+                publish_date=datetime.date(2020, 10, 1),
+                acquisition_method=schema.AcquisitionMethod.SCRAPED,
+            )
+            act_session.add(report)
 
-        report = schema.Report(
-            source=source,
-            type="Monthly Prison Report",
-            instance="September 2020",
-            publish_date=datetime.date(2020, 10, 1),
-            acquisition_method=schema.AcquisitionMethod.SCRAPED,
-        )
-        act_session.add(report)
+            table_definition = schema.ReportTableDefinition(
+                system=schema.System.CORRECTIONS,
+                metric_type=schema.MetricType.POPULATION,
+                measurement_type=schema.MeasurementType.INSTANT,
+                filtered_dimensions=["global/state", "global/population_type"],
+                filtered_dimension_values=["US_XX", "prison"],
+                aggregated_dimensions=["global/gender"],
+                label="",
+            )
+            act_session.add(table_definition)
 
-        table_definition = schema.ReportTableDefinition(
-            system=schema.System.CORRECTIONS,
-            metric_type=schema.MetricType.POPULATION,
-            measurement_type=schema.MeasurementType.INSTANT,
-            filtered_dimensions=["global/state", "global/population_type"],
-            filtered_dimension_values=["US_XX", "prison"],
-            aggregated_dimensions=["global/gender"],
-            label="",
-        )
-        act_session.add(table_definition)
+            table_instance = schema.ReportTableInstance(
+                report=report,
+                report_table_definition=table_definition,
+                time_window_start=datetime.date(2020, 9, 30),
+                time_window_end=datetime.date(2020, 9, 30),
+                methodology="Some methodological description",
+            )
+            act_session.add(table_instance)
 
-        table_instance = schema.ReportTableInstance(
-            report=report,
-            report_table_definition=table_definition,
-            time_window_start=datetime.date(2020, 9, 30),
-            time_window_end=datetime.date(2020, 9, 30),
-            methodology="Some methodological description",
-        )
-        act_session.add(table_instance)
-
-        cell = schema.Cell(
-            report_table_instance=table_instance,
-            aggregated_dimension_values=["female"],
-            value=123,
-        )
-        act_session.add(cell)
-
-        act_session.commit()
-        act_session.close()
+            cell = schema.Cell(
+                report_table_instance=table_instance,
+                aggregated_dimension_values=["female"],
+                value=123,
+            )
+            act_session.add(cell)
 
         # Query the cell and trace the relationships back up
-        assert_session = SessionFactory.for_database(self.database_key)
-
-        [cell] = assert_session.query(schema.Cell).all()
-        self.assertEqual(123, cell.value)
-        table_instance = cell.report_table_instance
-        self.assertEqual(datetime.date(2020, 9, 30), table_instance.time_window_start)
-        table_definition = table_instance.report_table_definition
-        self.assertEqual(schema.MetricType.POPULATION, table_definition.metric_type)
-        report = table_instance.report
-        self.assertEqual("Monthly Prison Report", report.type)
-        source = report.source
-        self.assertEqual("Test Source", source.name)
-
-        assert_session.close()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as assert_session:
+            [cell] = assert_session.query(schema.Cell).all()
+            self.assertEqual(123, cell.value)
+            table_instance = cell.report_table_instance
+            self.assertEqual(
+                datetime.date(2020, 9, 30), table_instance.time_window_start
+            )
+            table_definition = table_instance.report_table_definition
+            self.assertEqual(schema.MetricType.POPULATION, table_definition.metric_type)
+            report = table_instance.report
+            self.assertEqual("Monthly Prison Report", report.type)
+            source = report.source
+            self.assertEqual("Test Source", source.name)

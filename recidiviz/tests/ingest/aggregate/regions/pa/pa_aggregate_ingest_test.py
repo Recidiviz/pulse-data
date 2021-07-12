@@ -30,8 +30,8 @@ from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_
 from recidiviz.ingest.aggregate.regions.pa import pa_aggregate_ingest
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.persistence.database.schema.aggregate.schema import (
-    PaFacilityPopAggregate,
     PaCountyPreSentencedAggregate,
+    PaFacilityPopAggregate,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -150,10 +150,11 @@ class TestPaAggregateIngest(TestCase):
             dao.write_df(table, df)
 
         # Assert
-        query = SessionFactory.for_database(self.database_key).query(
-            func.sum(PaFacilityPopAggregate.housed_elsewhere_adp)
-        )
-        result = one(one(query.all()))
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = session.query(func.sum(PaFacilityPopAggregate.housed_elsewhere_adp))
+            result = one(one(query.all()))
 
         # Note: This report contains fractional averages
         expected_housed_elsewhere_adp = 1564.0257
@@ -165,10 +166,13 @@ class TestPaAggregateIngest(TestCase):
             dao.write_df(table, df)
 
         # Assert
-        query = SessionFactory.for_database(self.database_key).query(
-            func.sum(PaCountyPreSentencedAggregate.pre_sentenced_population)
-        )
-        result = one(one(query.all()))
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = session.query(
+                func.sum(PaCountyPreSentencedAggregate.pre_sentenced_population)
+            )
+            result = one(one(query.all()))
 
         expected_pretrial_population = 82521
         self.assertEqual(result, expected_pretrial_population)

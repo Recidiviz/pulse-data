@@ -67,10 +67,11 @@ class TestSingleCountIngest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Assert
-        query = SessionFactory.for_database(self.database_key).query(
-            SingleCountAggregate
-        )
-        result = one(query.all())
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = session.query(SingleCountAggregate)
+            result = one(query.all())
 
         self.assertEqual(result.count, params["count"])
         self.assertEqual(result.date, datetime.date.today())
@@ -89,10 +90,11 @@ class TestSingleCountIngest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Assert
-        query = SessionFactory.for_database(self.database_key).query(
-            SingleCountAggregate
-        )
-        result = one(query.all())
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = session.query(SingleCountAggregate)
+            result = one(query.all())
 
         self.assertEqual(result.count, params["count"])
         self.assertEqual(result.date, datetime.date.today())
@@ -112,10 +114,11 @@ class TestSingleCountIngest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Assert
-        query = SessionFactory.for_database(self.database_key).query(
-            SingleCountAggregate
-        )
-        result = one(query.all())
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = session.query(SingleCountAggregate)
+            result = one(query.all())
 
         self.assertEqual(result.count, params["count"])
         self.assertEqual(result.date, datetime.date.today())
@@ -135,10 +138,11 @@ class TestSingleCountIngest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Assert
-        query = SessionFactory.for_database(self.database_key).query(
-            SingleCountAggregate
-        )
-        result = one(query.all())
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = session.query(SingleCountAggregate)
+            result = one(query.all())
 
         self.assertEqual(result.count, params["count"])
         self.assertEqual(result.date, datetime.date.today())
@@ -158,10 +162,11 @@ class TestSingleCountIngest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Assert
-        query = SessionFactory.for_database(self.database_key).query(
-            SingleCountAggregate
-        )
-        result = one(query.all())
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = session.query(SingleCountAggregate)
+            result = one(query.all())
 
         self.assertEqual(result.count, params["count"])
 
@@ -187,10 +192,11 @@ class TestSingleCountIngest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Assert
-        query = SessionFactory.for_database(self.database_key).query(
-            SingleCountAggregate
-        )
-        result = one(query.all())
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = session.query(SingleCountAggregate)
+            result = one(query.all())
 
         self.assertEqual(result.count, params["count"])
         date_str = params["date"]

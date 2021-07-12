@@ -18,15 +18,12 @@
 """Base test class for testing subclasses of BaseHistoricalSnapshotUpdater"""
 import datetime
 from types import ModuleType
-from typing import Set, List
+from typing import List, Set
 from unittest import TestCase
 
 from more_itertools import one
 
-from recidiviz.common.ingest_metadata import (
-    IngestMetadata,
-    SystemLevel,
-)
+from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.history.historical_snapshot_update import (
     update_historical_snapshots,
@@ -36,11 +33,11 @@ from recidiviz.persistence.database.schema.history_table_shared_columns_mixin im
 )
 from recidiviz.persistence.database.schema.schema_person_type import SchemaPersonType
 from recidiviz.persistence.database.schema_utils import (
-    historical_table_class_from_obj,
-    _get_all_database_entities_in_module,
     HISTORICAL_TABLE_CLASS_SUFFIX,
-    schema_type_for_schema_module,
+    _get_all_database_entities_in_module,
+    historical_table_class_from_obj,
     schema_type_for_object,
+    schema_type_for_schema_module,
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -61,24 +58,18 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
         system_level: SystemLevel,
         ingest_time: datetime.datetime,
     ):
-        act_session = SessionFactory.for_database(
-            SQLAlchemyDatabaseKey.canonical_for_schema(system_level.schema_type())
-        )
-        merged_person = act_session.merge(person)
+        db_key = SQLAlchemyDatabaseKey.canonical_for_schema(system_level.schema_type())
+        with SessionFactory.using_database(db_key) as act_session:
+            merged_person = act_session.merge(person)
 
-        metadata = IngestMetadata(
-            region="somewhere",
-            jurisdiction_id="12345",
-            ingest_time=ingest_time,
-            system_level=system_level,
-            database_key=SQLAlchemyDatabaseKey.canonical_for_schema(
-                system_level.schema_type()
-            ),
-        )
-        update_historical_snapshots(act_session, [merged_person], [], metadata)
-
-        act_session.commit()
-        act_session.close()
+            metadata = IngestMetadata(
+                region="somewhere",
+                jurisdiction_id="12345",
+                ingest_time=ingest_time,
+                system_level=system_level,
+                database_key=db_key,
+            )
+            update_historical_snapshots(act_session, [merged_person], [], metadata)
 
     def _check_all_non_history_schema_object_types_in_list(
         self,
@@ -136,34 +127,35 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
             DB.
         """
 
-        session = SessionFactory.for_database(
+        with SessionFactory.using_database(
             SQLAlchemyDatabaseKey.canonical_for_schema(
                 schema_type_for_schema_module(schema)
-            )
-        )
-        person = one(session.query(schema_person_type).all())
+            ),
+            autocommit=False,
+        ) as session:
+            person = one(session.query(schema_person_type).all())
 
-        schema_objects: Set[DatabaseEntity] = {person}
-        unprocessed = list([person])
-        while unprocessed:
-            schema_object = unprocessed.pop()
+            schema_objects: Set[DatabaseEntity] = {person}
+            unprocessed = list([person])
+            while unprocessed:
+                schema_object = unprocessed.pop()
 
-            related_entities = []
-            for relationship_name in schema_object.get_relationship_property_names():
-                related = getattr(schema_object, relationship_name)
+                related_entities = []
+                for (
+                    relationship_name
+                ) in schema_object.get_relationship_property_names():
+                    related = getattr(schema_object, relationship_name)
 
-                # Relationship can return either a list or a single item
-                if isinstance(related, DatabaseEntity):
-                    related_entities.append(related)
-                if isinstance(related, list):
-                    related_entities.extend(related)
+                    # Relationship can return either a list or a single item
+                    if isinstance(related, DatabaseEntity):
+                        related_entities.append(related)
+                    if isinstance(related, list):
+                        related_entities.extend(related)
 
-                for obj in related_entities:
-                    if obj not in schema_objects:
-                        schema_objects.add(obj)
-                        unprocessed.append(obj)
-
-        session.close()
+                    for obj in related_entities:
+                        if obj not in schema_objects:
+                            schema_objects.add(obj)
+                            unprocessed.append(obj)
 
         self._check_all_non_history_schema_object_types_in_list(
             list(schema_objects), schema, schema_object_type_names_to_ignore
@@ -197,64 +189,63 @@ class BaseHistoricalSnapshotUpdaterTest(TestCase):
 
         self.assertIsNotNone(schema_obj_foreign_key_column_in_history_table)
 
-        assert_session = SessionFactory.for_database(
+        with SessionFactory.using_database(
             SQLAlchemyDatabaseKey.canonical_for_schema(
                 schema_type_for_object(expected_schema_object)
-            )
-        )
-        history_snapshots: List[DatabaseEntity] = (
-            assert_session.query(history_table_class)
-            .filter(
-                schema_obj_foreign_key_column_in_history_table
-                == schema_obj_primary_key_value
-            )
-            .all()
-        )
-
-        self.assertEqual(
-            len(history_snapshots),
-            len(ingest_times),
-            f"History snapshots do not correspond to ingest times "
-            f"for object of type "
-            f"[{expected_schema_object.__class__}]",
-        )
-
-        self.assertTrue(
-            all(isinstance(s, HistoryTableSharedColumns) for s in history_snapshots)
-        )
-
-        def as_history_cols(snapshot: DatabaseEntity) -> HistoryTableSharedColumns:
-            if not isinstance(snapshot, HistoryTableSharedColumns):
-                self.fail(
-                    f"Snapshot class [{type(snapshot)}] must be a "
-                    f"subclass of [{HistoryTableSharedColumns.__name__}]"
+            ),
+            autocommit=False,
+        ) as assert_session:
+            history_snapshots: List[DatabaseEntity] = (
+                assert_session.query(history_table_class)
+                .filter(
+                    schema_obj_foreign_key_column_in_history_table
+                    == schema_obj_primary_key_value
                 )
-            return snapshot
-
-        history_snapshots.sort(
-            key=lambda snapshot: as_history_cols(snapshot).valid_from
-        )
-
-        for i, history_snapshot in enumerate(history_snapshots):
-            expected_valid_from = ingest_times[i]
-            expected_valid_to = (
-                ingest_times[i + 1] if i < len(ingest_times) - 1 else None
+                .all()
             )
+
             self.assertEqual(
-                expected_valid_from, as_history_cols(history_snapshot).valid_from
+                len(history_snapshots),
+                len(ingest_times),
+                f"History snapshots do not correspond to ingest times "
+                f"for object of type "
+                f"[{expected_schema_object.__class__}]",
             )
-            self.assertEqual(
-                expected_valid_to, as_history_cols(history_snapshot).valid_to
+
+            self.assertTrue(
+                all(isinstance(s, HistoryTableSharedColumns) for s in history_snapshots)
             )
 
-        last_history_snapshot = history_snapshots[-1]
-        assert last_history_snapshot is not None
+            def as_history_cols(snapshot: DatabaseEntity) -> HistoryTableSharedColumns:
+                if not isinstance(snapshot, HistoryTableSharedColumns):
+                    self.fail(
+                        f"Snapshot class [{type(snapshot)}] must be a "
+                        f"subclass of [{HistoryTableSharedColumns.__name__}]"
+                    )
+                return snapshot
 
-        self._assert_schema_object_and_historical_snapshot_match(
-            expected_schema_object, last_history_snapshot
-        )
+            history_snapshots.sort(
+                key=lambda snapshot: as_history_cols(snapshot).valid_from
+            )
 
-        assert_session.close()
+            for i, history_snapshot in enumerate(history_snapshots):
+                expected_valid_from = ingest_times[i]
+                expected_valid_to = (
+                    ingest_times[i + 1] if i < len(ingest_times) - 1 else None
+                )
+                self.assertEqual(
+                    expected_valid_from, as_history_cols(history_snapshot).valid_from
+                )
+                self.assertEqual(
+                    expected_valid_to, as_history_cols(history_snapshot).valid_to
+                )
+
+            last_history_snapshot = history_snapshots[-1]
+            assert last_history_snapshot is not None
+
+            self._assert_schema_object_and_historical_snapshot_match(
+                expected_schema_object, last_history_snapshot
+            )
 
     def _assert_schema_object_and_historical_snapshot_match(
         self, schema_object: DatabaseEntity, historical_snapshot: DatabaseEntity

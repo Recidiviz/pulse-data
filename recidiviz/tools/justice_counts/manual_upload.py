@@ -2380,24 +2380,15 @@ def _convert_entities(
 
 
 def _persist_report(report: Report, report_metadata: Metadata) -> None:
-    session: Session = SessionFactory.for_database(
+    with SessionFactory.using_database(
         SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
-    )
-
-    try:
+    ) as session:
         _convert_entities(session, report, report_metadata)
         # TODO(#4475): Add sanity check validation of the data provided, either here or as part of objects above. E.g.:
         # - If there is only one value for a dimension in a table it should be a filter not an aggregated dimension
         # - Ensure the measurement type is valid with the window type
         # - Sanity check custom date ranges
         # Validation of dimension values should already be enforced by enums above.
-
-        session.commit()
-    except BaseException:
-        session.rollback()
-        raise
-    finally:
-        session.close()
 
 
 def ingest(gcs: GCSFileSystem, manifest_filepath: GcsfsFilePath) -> Set[str]:

@@ -17,7 +17,7 @@
 """Contains logic for communicating with the persistence layer."""
 import datetime
 import logging
-from typing import Callable, List, Optional, Union, Dict
+from typing import Callable, Dict, List, Optional, Union
 
 import psycopg2
 import sqlalchemy
@@ -30,10 +30,7 @@ from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
-from recidiviz.common.ingest_metadata import (
-    IngestMetadata,
-    SystemLevel,
-)
+from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence import persistence_utils
 from recidiviz.persistence.database import database
@@ -41,9 +38,7 @@ from recidiviz.persistence.database.schema.county import dao as county_dao
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
-from recidiviz.persistence.database.schema_utils import (
-    SchemaType,
-)
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -59,8 +54,8 @@ from recidiviz.persistence.ingest_info_converter.base_converter import (
 )
 from recidiviz.persistence.ingest_info_validator import ingest_info_validator
 from recidiviz.persistence.persistence_utils import should_persist
-from recidiviz.utils import monitoring, trace, metadata
-from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
+from recidiviz.utils import metadata, monitoring, trace
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 m_people = measure.MeasureInt(
     "persistence/num_people", "The number of people persisted", "1"
@@ -167,10 +162,9 @@ def infer_release_on_open_bookings(
             bookings. Defaults to INFERRED_RELEASE
     """
 
-    session = SessionFactory.for_database(
+    with SessionFactory.using_database(
         SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS)
-    )
-    try:
+    ) as session:
         logging.info("Reading all bookings that happened before [%s]", last_ingest_time)
         people = county_dao.read_people_with_open_bookings_scraped_before_time(
             session, region_code, last_ingest_time
@@ -197,12 +191,6 @@ def infer_release_on_open_bookings(
                 database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS),
             ),
         )
-        session.commit()
-    except Exception:
-        session.rollback()
-        raise
-    finally:
-        session.close()
 
 
 def _infer_release_date_for_bookings(
@@ -389,8 +377,9 @@ def retry_transaction(
 ) -> bool:
     """Retries the transaction if a serialization failure occurs.
 
-    Handles management of committing, rolling back, and closing the `session`. `txn_body` can return False to force the
-    transaction to be aborted, otherwise return True.
+    Handles management of committing and rolling back the `session`, without
+    closing it. `txn_body` can return False to force the transaction to be aborted,
+    otherwise return True.
 
     Returns:
         True, if the transaction succeeded.
@@ -427,7 +416,6 @@ def retry_transaction(
                 raise
     finally:
         measurements.measure_int_put(m_retries, num_retries)
-        session.close()
 
 
 @trace.span
@@ -560,14 +548,11 @@ def write(
             return True
 
         try:
-            if not run_txn_fn(
-                SessionFactory.for_database(ingest_metadata.database_key),
-                measurements,
-                match_and_write_people,
-                5,
-            ):
-                return False
-
+            with SessionFactory.using_database(
+                ingest_metadata.database_key, autocommit=False
+            ) as session:
+                if not run_txn_fn(session, measurements, match_and_write_people, 5):
+                    return False
             mtags[monitoring.TagKey.PERSISTED] = True
         except Exception as e:
             logging.exception(

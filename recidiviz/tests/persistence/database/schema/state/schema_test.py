@@ -24,23 +24,23 @@ from parameterized import parameterized
 
 import recidiviz.common.constants.state.shared_enums
 from recidiviz.common.constants.state import (
+    state_agent,
     state_assessment,
     state_charge,
-    state_sentence,
-    state_supervision,
+    state_court_case,
     state_fine,
     state_incarceration,
-    state_court_case,
-    state_agent,
-    state_incarceration_period,
-    state_supervision_period,
     state_incarceration_incident,
-    state_supervision_violation,
-    state_supervision_violation_response,
+    state_incarceration_period,
     state_parole_decision,
     state_person_alias,
     state_program_assignment,
+    state_sentence,
+    state_supervision,
     state_supervision_contact,
+    state_supervision_period,
+    state_supervision_violation,
+    state_supervision_violation_response,
 )
 from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecision,
@@ -51,9 +51,9 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database.schema import shared_enums
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import (
-    get_all_table_classes_in_module,
-    _get_all_database_entities_in_module,
     SchemaType,
+    _get_all_database_entities_in_module,
+    get_all_table_classes_in_module,
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -65,20 +65,20 @@ from recidiviz.tests.persistence.database.schema.schema_test import (
     TestSchemaTableConsistency,
 )
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
-    generate_person,
-    generate_external_id,
-    generate_supervision_violation,
-    generate_supervision_case_type_entry,
-    generate_incarceration_period,
-    generate_supervision_violation_response,
+    generate_agent,
     generate_bond,
     generate_charge,
-    generate_parole_decision,
-    generate_early_discharge,
-    generate_program_assignment,
-    generate_supervision_contact,
     generate_court_case,
-    generate_agent,
+    generate_early_discharge,
+    generate_external_id,
+    generate_incarceration_period,
+    generate_parole_decision,
+    generate_person,
+    generate_program_assignment,
+    generate_supervision_case_type_entry,
+    generate_supervision_contact,
+    generate_supervision_violation,
+    generate_supervision_violation_response,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
 
@@ -198,20 +198,21 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
 
     def test_add_person_conflicting_external_id(self) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as arrange_session:
+            db_external_id = generate_external_id(
+                state_code=self.state_code,
+                external_id=self.EXTERNAL_ID_1,
+                id_type=self.ID_TYPE_1,
+            )
 
-        db_external_id = generate_external_id(
-            state_code=self.state_code,
-            external_id=self.EXTERNAL_ID_1,
-            id_type=self.ID_TYPE_1,
-        )
+            db_person = generate_person(
+                state_code=self.state_code, external_ids=[db_external_id]
+            )
 
-        db_person = generate_person(
-            state_code=self.state_code, external_ids=[db_external_id]
-        )
-
-        arrange_session.add(db_person)
-        arrange_session.commit()
+            arrange_session.add(db_person)
+            arrange_session.commit()
 
         db_external_id_duplicated = generate_external_id(
             state_code=self.state_code,
@@ -224,30 +225,32 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(db_person_new)
+            session.flush()
 
-        session.add(db_person_new)
-        session.flush()
-
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
-            session.commit()
+            with self.assertRaises(sqlalchemy.exc.IntegrityError):
+                session.commit()
 
     def test_add_person_conflicting_external_id_no_flush(self) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as arrange_session:
+            db_external_id = generate_external_id(
+                state_code=self.state_code,
+                external_id=self.EXTERNAL_ID_1,
+                id_type=self.ID_TYPE_1,
+            )
 
-        db_external_id = generate_external_id(
-            state_code=self.state_code,
-            external_id=self.EXTERNAL_ID_1,
-            id_type=self.ID_TYPE_1,
-        )
+            db_person = generate_person(
+                state_code=self.state_code, external_ids=[db_external_id]
+            )
 
-        db_person = generate_person(
-            state_code=self.state_code, external_ids=[db_external_id]
-        )
-
-        arrange_session.add(db_person)
-        arrange_session.commit()
+            arrange_session.add(db_person)
+            arrange_session.commit()
 
         db_external_id_duplicated = generate_external_id(
             state_code=self.state_code,
@@ -260,27 +263,30 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_database(self.database_key)
-        session.add(db_person_new)
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
-            session.commit()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(db_person_new)
+            with self.assertRaises(sqlalchemy.exc.IntegrityError):
+                session.commit()
 
     def test_add_person_conflicting_external_id_different_type(self) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as arrange_session:
+            db_external_id = generate_external_id(
+                state_code=self.state_code,
+                external_id=self.EXTERNAL_ID_1,
+                id_type=self.ID_TYPE_1,
+            )
 
-        db_external_id = generate_external_id(
-            state_code=self.state_code,
-            external_id=self.EXTERNAL_ID_1,
-            id_type=self.ID_TYPE_1,
-        )
+            db_person = generate_person(
+                state_code=self.state_code, external_ids=[db_external_id]
+            )
 
-        db_person = generate_person(
-            state_code=self.state_code, external_ids=[db_external_id]
-        )
-
-        arrange_session.add(db_person)
-        arrange_session.commit()
+            arrange_session.add(db_person)
+            arrange_session.commit()
 
         db_external_id_duplicated = generate_external_id(
             state_code=self.state_code,
@@ -293,28 +299,27 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_database(self.database_key)
-
-        session.add(db_person_new)
-        session.flush()
-        session.commit()
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(db_person_new)
+            session.flush()
 
     def test_add_person_conflicting_external_id_different_state(self) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as arrange_session:
+            db_external_id = generate_external_id(
+                state_code="OTHER_STATE_CODE",
+                external_id=self.EXTERNAL_ID_1,
+                id_type=self.ID_TYPE_1,
+            )
 
-        db_external_id = generate_external_id(
-            state_code="OTHER_STATE_CODE",
-            external_id=self.EXTERNAL_ID_1,
-            id_type=self.ID_TYPE_1,
-        )
+            db_person = generate_person(
+                state_code="OTHER_STATE_CODE", external_ids=[db_external_id]
+            )
 
-        db_person = generate_person(
-            state_code="OTHER_STATE_CODE", external_ids=[db_external_id]
-        )
-
-        arrange_session.add(db_person)
-        arrange_session.commit()
+            arrange_session.add(db_person)
+            arrange_session.commit()
 
         db_external_id_duplicated = generate_external_id(
             state_code=self.state_code,
@@ -327,11 +332,9 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_database(self.database_key)
-
-        session.add(db_person_new)
-        session.flush()
-        session.commit()
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(db_person_new)
+            session.flush()
 
     def test_add_person_conflicting_external_id_same_session(self) -> None:
         # Arrange
@@ -356,14 +359,15 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(db_person)
+            session.add(db_person_2)
+            session.flush()
 
-        session.add(db_person)
-        session.add(db_person_2)
-        session.flush()
-
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
-            session.commit()
+            with self.assertRaises(sqlalchemy.exc.IntegrityError):
+                session.commit()
 
 
 @pytest.mark.uses_db
@@ -417,24 +421,25 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
     @parameterized.expand(generate_functions)
     def test_add_object_conflicting_external_id(self, generate_func) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as arrange_session:
+            db_external_id = generate_external_id(
+                state_code=self.state_code,
+                external_id=self.EXTERNAL_ID_1,
+                id_type=self.ID_TYPE_1,
+            )
+            db_person = generate_person(
+                state_code=self.state_code, external_ids=[db_external_id]
+            )
+            db_object_new = generate_func(
+                db_person,
+                external_id=self.EXTERNAL_ID_1,
+                state_code=self.state_code,
+            )
 
-        db_external_id = generate_external_id(
-            state_code=self.state_code,
-            external_id=self.EXTERNAL_ID_1,
-            id_type=self.ID_TYPE_1,
-        )
-        db_person = generate_person(
-            state_code=self.state_code, external_ids=[db_external_id]
-        )
-        db_object_new = generate_func(
-            db_person,
-            external_id=self.EXTERNAL_ID_1,
-            state_code=self.state_code,
-        )
-
-        arrange_session.add(db_object_new)
-        arrange_session.commit()
+            arrange_session.add(db_object_new)
+            arrange_session.commit()
 
         db_external_id_duplicated = generate_external_id(
             state_code=self.state_code,
@@ -451,33 +456,32 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(db_object_new)
+            session.flush()
 
-        session.add(db_object_new)
-        session.flush()
-
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
-            session.commit()
+            with self.assertRaises(sqlalchemy.exc.IntegrityError):
+                session.commit()
 
     @parameterized.expand(generate_functions)
     def test_add_object_conflicting_external_id_no_flush(self, generate_func) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(self.database_key) as arrange_session:
+            db_external_id = generate_external_id(
+                state_code=self.state_code,
+                external_id=self.EXTERNAL_ID_1,
+                id_type=self.ID_TYPE_1,
+            )
+            db_person = generate_person(
+                state_code=self.state_code, external_ids=[db_external_id]
+            )
+            db_object_new = generate_func(
+                db_person, external_id=self.EXTERNAL_ID_1, state_code=self.state_code
+            )
 
-        db_external_id = generate_external_id(
-            state_code=self.state_code,
-            external_id=self.EXTERNAL_ID_1,
-            id_type=self.ID_TYPE_1,
-        )
-        db_person = generate_person(
-            state_code=self.state_code, external_ids=[db_external_id]
-        )
-        db_object_new = generate_func(
-            db_person, external_id=self.EXTERNAL_ID_1, state_code=self.state_code
-        )
-
-        arrange_session.add(db_object_new)
-        arrange_session.commit()
+            arrange_session.add(db_object_new)
 
         db_external_id = generate_external_id(
             state_code=self.state_code,
@@ -492,35 +496,37 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_database(self.database_key)
-        session.add(db_object_new)
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
-            session.commit()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(db_object_new)
+            with self.assertRaises(sqlalchemy.exc.IntegrityError):
+                session.commit()
 
     @parameterized.expand(generate_functions)
     def test_add_object_conflicting_external_id_different_state(
         self, generate_func
     ) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as arrange_session:
+            db_external_id = generate_external_id(
+                state_code="OTHER_STATE_CODE",
+                external_id=self.EXTERNAL_ID_1,
+                id_type=self.ID_TYPE_1,
+            )
 
-        db_external_id = generate_external_id(
-            state_code="OTHER_STATE_CODE",
-            external_id=self.EXTERNAL_ID_1,
-            id_type=self.ID_TYPE_1,
-        )
+            db_person = generate_person(
+                state_code="OTHER_STATE_CODE", external_ids=[db_external_id]
+            )
 
-        db_person = generate_person(
-            state_code="OTHER_STATE_CODE", external_ids=[db_external_id]
-        )
-
-        db_object = generate_func(
-            db_person,
-            external_id=self.EXTERNAL_ID_1,
-            state_code="OTHER_STATE_CODE",
-        )
-        arrange_session.add(db_object)
-        arrange_session.commit()
+            db_object = generate_func(
+                db_person,
+                external_id=self.EXTERNAL_ID_1,
+                state_code="OTHER_STATE_CODE",
+            )
+            arrange_session.add(db_object)
 
         db_external_id_duplicated = generate_external_id(
             state_code=self.state_code,
@@ -538,11 +544,11 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_database(self.database_key)
-
-        session.add(db_object_new)
-        session.flush()
-        session.commit()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(db_object_new)
+            session.flush()
 
     @parameterized.expand(generate_functions)
     def test_add_object_conflicting_external_id_same_session(
@@ -578,37 +584,36 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(db_object_new)
+            session.add(db_object_new_2)
+            session.flush()
 
-        session.add(db_object_new)
-        session.add(db_object_new_2)
-        session.flush()
-
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
-            session.commit()
+            with self.assertRaises(sqlalchemy.exc.IntegrityError):
+                session.commit()
 
     @parameterized.expand(generate_functions)
     def test_add_object_diff_external_id_same_state(self, generate_func) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(self.database_key) as arrange_session:
+            db_external_id = generate_external_id(
+                state_code=self.state_code,
+                external_id=self.EXTERNAL_ID_2,
+                id_type=self.ID_TYPE_1,
+            )
 
-        db_external_id = generate_external_id(
-            state_code=self.state_code,
-            external_id=self.EXTERNAL_ID_2,
-            id_type=self.ID_TYPE_1,
-        )
+            db_person = generate_person(
+                state_code=self.state_code, external_ids=[db_external_id]
+            )
 
-        db_person = generate_person(
-            state_code=self.state_code, external_ids=[db_external_id]
-        )
-
-        db_object = generate_func(
-            db_person,
-            external_id=self.EXTERNAL_ID_2,
-            state_code=self.state_code,
-        )
-        arrange_session.add(db_object)
-        arrange_session.commit()
+            db_object = generate_func(
+                db_person,
+                external_id=self.EXTERNAL_ID_2,
+                state_code=self.state_code,
+            )
+            arrange_session.add(db_object)
 
         db_external_id_duplicated = generate_external_id(
             state_code=self.state_code,
@@ -626,11 +631,9 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_database(self.database_key)
-
-        session.add(db_object_new)
-        session.flush()
-        session.commit()
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(db_object_new)
+            session.flush()
 
 
 @pytest.mark.uses_db
@@ -675,35 +678,33 @@ class TestUniqueExternalIdConstraintOnFine(unittest.TestCase):
 
     def test_add_fine_conflicting_external_id(self) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(self.database_key) as arrange_session:
+            db_person = schema.StatePerson(
+                full_name=self.FULL_NAME, state_code=self.state_code
+            )
+            db_fine = schema.StateFine(
+                person=db_person,
+                status=StateFineStatus.EXTERNAL_UNKNOWN.value,
+                state_code=self.state_code,
+                external_id=self.EXTERNAL_ID_1,
+                county_code=self.COUNTY_CODE,
+            )
+            db_sentence_group = schema.StateSentenceGroup(
+                status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
+                external_id=self.EXTERNAL_ID_1,
+                state_code=self.state_code,
+                county_code=self.COUNTY_CODE,
+                fines=[db_fine],
+            )
+            db_external_id = schema.StatePersonExternalId(
+                state_code=self.state_code,
+                external_id=self.EXTERNAL_ID_1,
+                id_type=self.ID_TYPE_1,
+            )
+            db_person.sentence_groups = [db_sentence_group]
+            db_person.external_ids = [db_external_id]
 
-        db_person = schema.StatePerson(
-            full_name=self.FULL_NAME, state_code=self.state_code
-        )
-        db_fine = schema.StateFine(
-            person=db_person,
-            status=StateFineStatus.EXTERNAL_UNKNOWN.value,
-            state_code=self.state_code,
-            external_id=self.EXTERNAL_ID_1,
-            county_code=self.COUNTY_CODE,
-        )
-        db_sentence_group = schema.StateSentenceGroup(
-            status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
-            external_id=self.EXTERNAL_ID_1,
-            state_code=self.state_code,
-            county_code=self.COUNTY_CODE,
-            fines=[db_fine],
-        )
-        db_external_id = schema.StatePersonExternalId(
-            state_code=self.state_code,
-            external_id=self.EXTERNAL_ID_1,
-            id_type=self.ID_TYPE_1,
-        )
-        db_person.sentence_groups = [db_sentence_group]
-        db_person.external_ids = [db_external_id]
-
-        arrange_session.add(db_fine)
-        arrange_session.commit()
+            arrange_session.add(db_fine)
 
         db_person_dupe = schema.StatePerson(
             full_name=self.FULL_NAME, state_code=self.state_code
@@ -731,48 +732,49 @@ class TestUniqueExternalIdConstraintOnFine(unittest.TestCase):
         db_person_dupe.external_ids = [db_external_id_dupe]
 
         # Act
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(db_fine_dupe)
+            session.flush()
 
-        session.add(db_fine_dupe)
-        session.flush()
-
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
-            session.commit()
+            with self.assertRaises(sqlalchemy.exc.IntegrityError):
+                session.commit()
 
     def test_add_fine_conflicting_external_id_no_flush(self) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(self.database_key) as arrange_session:
+            db_person = schema.StatePerson(
+                person_id=self._ID_1,
+                full_name=self.FULL_NAME,
+                state_code=self.state_code,
+            )
+            db_fine = schema.StateFine(
+                person=db_person,
+                status=StateFineStatus.EXTERNAL_UNKNOWN.value,
+                fine_id=self._ID_1,
+                state_code=self.state_code,
+                external_id=self.EXTERNAL_ID_1,
+                county_code=self.COUNTY_CODE,
+            )
+            db_sentence_group = schema.StateSentenceGroup(
+                sentence_group_id=self._ID_1,
+                status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
+                external_id=self.EXTERNAL_ID_1,
+                state_code=self.state_code,
+                county_code=self.COUNTY_CODE,
+                fines=[db_fine],
+            )
+            db_external_id = schema.StatePersonExternalId(
+                person_external_id_id=self._ID_1,
+                state_code=self.state_code,
+                external_id=self.EXTERNAL_ID_1,
+                id_type=self.ID_TYPE_1,
+            )
+            db_person.sentence_groups = [db_sentence_group]
+            db_person.external_ids = [db_external_id]
 
-        db_person = schema.StatePerson(
-            person_id=self._ID_1, full_name=self.FULL_NAME, state_code=self.state_code
-        )
-        db_fine = schema.StateFine(
-            person=db_person,
-            status=StateFineStatus.EXTERNAL_UNKNOWN.value,
-            fine_id=self._ID_1,
-            state_code=self.state_code,
-            external_id=self.EXTERNAL_ID_1,
-            county_code=self.COUNTY_CODE,
-        )
-        db_sentence_group = schema.StateSentenceGroup(
-            sentence_group_id=self._ID_1,
-            status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
-            external_id=self.EXTERNAL_ID_1,
-            state_code=self.state_code,
-            county_code=self.COUNTY_CODE,
-            fines=[db_fine],
-        )
-        db_external_id = schema.StatePersonExternalId(
-            person_external_id_id=self._ID_1,
-            state_code=self.state_code,
-            external_id=self.EXTERNAL_ID_1,
-            id_type=self.ID_TYPE_1,
-        )
-        db_person.sentence_groups = [db_sentence_group]
-        db_person.external_ids = [db_external_id]
-
-        arrange_session.add(db_fine)
-        arrange_session.commit()
+            arrange_session.add(db_fine)
 
         db_person_dupe = schema.StatePerson(
             person_id=self._ID_2,
@@ -805,44 +807,47 @@ class TestUniqueExternalIdConstraintOnFine(unittest.TestCase):
         db_person_dupe.external_ids = [db_external_id_dupe]
 
         # Act
-        session = SessionFactory.for_database(self.database_key)
-        session.add(db_fine_dupe)
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
-            session.commit()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(db_fine_dupe)
+            with self.assertRaises(sqlalchemy.exc.IntegrityError):
+                session.commit()
 
     def test_add_fine_conflicting_external_id_different_state(self) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_database(self.database_key)
-        db_person = schema.StatePerson(
-            person_id=self._ID_1, full_name=self.FULL_NAME, state_code=self.state_code
-        )
-        db_fine = schema.StateFine(
-            person=db_person,
-            status=StateFineStatus.EXTERNAL_UNKNOWN.value,
-            fine_id=self._ID_1,
-            state_code=self.state_code,
-            external_id=self.EXTERNAL_ID_1,
-            county_code=self.COUNTY_CODE,
-        )
-        db_sentence_group = schema.StateSentenceGroup(
-            sentence_group_id=self._ID_1,
-            status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
-            external_id=self.EXTERNAL_ID_1,
-            state_code=self.state_code,
-            county_code=self.COUNTY_CODE,
-            fines=[db_fine],
-        )
-        db_external_id = schema.StatePersonExternalId(
-            person_external_id_id=self._ID_1,
-            state_code=self.state_code,
-            external_id=self.EXTERNAL_ID_1,
-            id_type=self.ID_TYPE_1,
-        )
-        db_person.sentence_groups = [db_sentence_group]
-        db_person.external_ids = [db_external_id]
+        with SessionFactory.using_database(self.database_key) as arrange_session:
+            db_person = schema.StatePerson(
+                person_id=self._ID_1,
+                full_name=self.FULL_NAME,
+                state_code=self.state_code,
+            )
+            db_fine = schema.StateFine(
+                person=db_person,
+                status=StateFineStatus.EXTERNAL_UNKNOWN.value,
+                fine_id=self._ID_1,
+                state_code=self.state_code,
+                external_id=self.EXTERNAL_ID_1,
+                county_code=self.COUNTY_CODE,
+            )
+            db_sentence_group = schema.StateSentenceGroup(
+                sentence_group_id=self._ID_1,
+                status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
+                external_id=self.EXTERNAL_ID_1,
+                state_code=self.state_code,
+                county_code=self.COUNTY_CODE,
+                fines=[db_fine],
+            )
+            db_external_id = schema.StatePersonExternalId(
+                person_external_id_id=self._ID_1,
+                state_code=self.state_code,
+                external_id=self.EXTERNAL_ID_1,
+                id_type=self.ID_TYPE_1,
+            )
+            db_person.sentence_groups = [db_sentence_group]
+            db_person.external_ids = [db_external_id]
 
-        arrange_session.add(db_fine)
-        arrange_session.commit()
+            arrange_session.add(db_fine)
 
         db_person_dupe = schema.StatePerson(
             person_id=self._ID_2,
@@ -875,11 +880,9 @@ class TestUniqueExternalIdConstraintOnFine(unittest.TestCase):
         db_person_dupe.external_ids = [db_external_id_dupe]
 
         # Act
-        session = SessionFactory.for_database(self.database_key)
-
-        session.add(db_fine_dupe)
-        session.flush()
-        session.commit()
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(db_fine_dupe)
+            session.flush()
 
     def test_add_fine_conflicting_external_id_same_session(self) -> None:
         # Arrange
@@ -934,48 +937,50 @@ class TestUniqueExternalIdConstraintOnFine(unittest.TestCase):
         db_person_dupe.external_ids = [db_external_id_dupe]
 
         # Act
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(db_fine)
+            session.add(db_fine_dupe)
+            session.flush()
 
-        session.add(db_fine)
-        session.add(db_fine_dupe)
-        session.flush()
-
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
-            session.commit()
+            with self.assertRaises(sqlalchemy.exc.IntegrityError):
+                session.commit()
 
     def test_add_fine_different_external_id_same_state(self) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_database(self.database_key)
-        db_person = schema.StatePerson(
-            person_id=self._ID_1, full_name=self.FULL_NAME, state_code=self.state_code
-        )
-        db_fine = schema.StateFine(
-            person=db_person,
-            status=StateFineStatus.EXTERNAL_UNKNOWN.value,
-            fine_id=self._ID_1,
-            state_code=self.state_code,
-            external_id=self.EXTERNAL_ID_1,
-            county_code=self.COUNTY_CODE,
-        )
-        db_sentence_group = schema.StateSentenceGroup(
-            sentence_group_id=self._ID_1,
-            status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
-            external_id=self.EXTERNAL_ID_1,
-            state_code=self.state_code,
-            county_code=self.COUNTY_CODE,
-            fines=[db_fine],
-        )
-        db_external_id = schema.StatePersonExternalId(
-            person_external_id_id=self._ID_1,
-            state_code=self.state_code,
-            external_id=self.EXTERNAL_ID_1,
-            id_type=self.ID_TYPE_1,
-        )
-        db_person.sentence_groups = [db_sentence_group]
-        db_person.external_ids = [db_external_id]
+        with SessionFactory.using_database(self.database_key) as arrange_session:
+            db_person = schema.StatePerson(
+                person_id=self._ID_1,
+                full_name=self.FULL_NAME,
+                state_code=self.state_code,
+            )
+            db_fine = schema.StateFine(
+                person=db_person,
+                status=StateFineStatus.EXTERNAL_UNKNOWN.value,
+                fine_id=self._ID_1,
+                state_code=self.state_code,
+                external_id=self.EXTERNAL_ID_1,
+                county_code=self.COUNTY_CODE,
+            )
+            db_sentence_group = schema.StateSentenceGroup(
+                sentence_group_id=self._ID_1,
+                status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
+                external_id=self.EXTERNAL_ID_1,
+                state_code=self.state_code,
+                county_code=self.COUNTY_CODE,
+                fines=[db_fine],
+            )
+            db_external_id = schema.StatePersonExternalId(
+                person_external_id_id=self._ID_1,
+                state_code=self.state_code,
+                external_id=self.EXTERNAL_ID_1,
+                id_type=self.ID_TYPE_1,
+            )
+            db_person.sentence_groups = [db_sentence_group]
+            db_person.external_ids = [db_external_id]
 
-        arrange_session.add(db_fine)
-        arrange_session.commit()
+            arrange_session.add(db_fine)
 
         db_person_dupe = schema.StatePerson(
             person_id=self._ID_2, full_name=self.FULL_NAME, state_code=self.state_code
@@ -1006,11 +1011,9 @@ class TestUniqueExternalIdConstraintOnFine(unittest.TestCase):
         db_person_dupe.external_ids = [db_external_id_dupe]
 
         # Act
-        session = SessionFactory.for_database(self.database_key)
-
-        session.add(db_fine_dupe)
-        session.flush()
-        session.commit()
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(db_fine_dupe)
+            session.flush()
 
 
 @pytest.mark.uses_db
@@ -1050,91 +1053,91 @@ class TestUniqueExternalIdConstraintOnCourtCase(unittest.TestCase):
 
     def test_add_court_case_conflicting_external_id_person_id(self) -> None:
         # Arrange
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            db_person = generate_person(
+                state_code=self.state_code, person_id=self.PERSON_ID_1
+            )
+            db_judge = generate_agent(
+                state_code=self.state_code, external_id=self.EXTERNAL_ID_1
+            )
+            db_court_case = generate_court_case(
+                person=db_person,
+                external_id=self.EXTERNAL_ID_1,
+                state_code=self.state_code,
+                judge=db_judge,
+            )
 
-        db_person = generate_person(
-            state_code=self.state_code, person_id=self.PERSON_ID_1
-        )
-        db_judge = generate_agent(
-            state_code=self.state_code, external_id=self.EXTERNAL_ID_1
-        )
-        db_court_case = generate_court_case(
-            person=db_person,
-            external_id=self.EXTERNAL_ID_1,
-            state_code=self.state_code,
-            judge=db_judge,
-        )
-
-        session.add(db_court_case)
-        session.commit()
-
-        db_judge = generate_agent(
-            state_code=self.state_code, external_id=self.EXTERNAL_ID_2
-        )
-        db_court_case_dupe = generate_court_case(
-            person=db_person,
-            external_id=self.EXTERNAL_ID_1,
-            state_code=self.state_code,
-            judge=db_judge,
-        )
-
-        # Act
-        session.add(db_court_case_dupe)
-        session.flush()
-
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+            session.add(db_court_case)
             session.commit()
+
+            db_judge = generate_agent(
+                state_code=self.state_code, external_id=self.EXTERNAL_ID_2
+            )
+            db_court_case_dupe = generate_court_case(
+                person=db_person,
+                external_id=self.EXTERNAL_ID_1,
+                state_code=self.state_code,
+                judge=db_judge,
+            )
+
+            # Act
+            session.add(db_court_case_dupe)
+            session.flush()
+
+            with self.assertRaises(sqlalchemy.exc.IntegrityError):
+                session.commit()
 
     def test_add_court_case_conflicting_external_id_person_id_no_flush(self) -> None:
         # Arrange
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            db_person = generate_person(
+                state_code=self.state_code, person_id=self.PERSON_ID_1
+            )
+            db_judge = generate_agent(
+                state_code=self.state_code, external_id=self.EXTERNAL_ID_1
+            )
+            db_court_case = generate_court_case(
+                person=db_person,
+                external_id=self.EXTERNAL_ID_1,
+                state_code=self.state_code,
+                judge=db_judge,
+            )
 
-        db_person = generate_person(
-            state_code=self.state_code, person_id=self.PERSON_ID_1
-        )
-        db_judge = generate_agent(
-            state_code=self.state_code, external_id=self.EXTERNAL_ID_1
-        )
-        db_court_case = generate_court_case(
-            person=db_person,
-            external_id=self.EXTERNAL_ID_1,
-            state_code=self.state_code,
-            judge=db_judge,
-        )
-
-        session.add(db_court_case)
-        session.commit()
-
-        db_judge = generate_agent(
-            state_code=self.state_code, external_id=self.EXTERNAL_ID_2
-        )
-        db_court_case_dupe = generate_court_case(
-            person=db_person,
-            external_id=self.EXTERNAL_ID_1,
-            state_code=self.state_code,
-            judge=db_judge,
-        )
-
-        # Act
-        session.add(db_court_case_dupe)
-        with self.assertRaises(sqlalchemy.exc.IntegrityError):
+            session.add(db_court_case)
             session.commit()
+
+            db_judge = generate_agent(
+                state_code=self.state_code, external_id=self.EXTERNAL_ID_2
+            )
+            db_court_case_dupe = generate_court_case(
+                person=db_person,
+                external_id=self.EXTERNAL_ID_1,
+                state_code=self.state_code,
+                judge=db_judge,
+            )
+
+            # Act
+            session.add(db_court_case_dupe)
+            with self.assertRaises(sqlalchemy.exc.IntegrityError):
+                session.commit()
 
     def test_add_court_case_conflicting_external_id_person_id_different_state(
         self,
     ) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(self.database_key) as arrange_session:
+            db_person = generate_person(state_code=self.state_code)
+            db_court_case = generate_court_case(
+                person=db_person,
+                external_id=self.EXTERNAL_ID_1,
+                state_code=self.state_code,
+            )
 
-        db_person = generate_person(state_code=self.state_code)
-        db_court_case = generate_court_case(
-            person=db_person,
-            external_id=self.EXTERNAL_ID_1,
-            state_code=self.state_code,
-        )
-
-        arrange_session.add(db_court_case)
-        arrange_session.commit()
+            arrange_session.add(db_court_case)
 
         db_person_other_state = generate_person(state_code=self.OTHER_STATE_CODE)
         db_court_case_dupe = generate_court_case(
@@ -1144,24 +1147,21 @@ class TestUniqueExternalIdConstraintOnCourtCase(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_database(self.database_key)
-
-        session.add(db_court_case_dupe)
-        session.flush()
-        session.commit()
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(db_court_case_dupe)
+            session.flush()
 
     def test_add_court_case_different_external_id_same_state(self) -> None:
         # Arrange
-        arrange_session = SessionFactory.for_database(self.database_key)
-        db_person = generate_person(state_code=self.state_code)
-        db_court_case = generate_court_case(
-            person=db_person,
-            external_id=self.EXTERNAL_ID_1,
-            state_code=self.state_code,
-        )
+        with SessionFactory.using_database(self.database_key) as arrange_session:
+            db_person = generate_person(state_code=self.state_code)
+            db_court_case = generate_court_case(
+                person=db_person,
+                external_id=self.EXTERNAL_ID_1,
+                state_code=self.state_code,
+            )
 
-        arrange_session.add(db_court_case)
-        arrange_session.commit()
+            arrange_session.add(db_court_case)
 
         db_person = generate_person(state_code=self.state_code)
         db_court_case_dupe = generate_court_case(
@@ -1171,8 +1171,6 @@ class TestUniqueExternalIdConstraintOnCourtCase(unittest.TestCase):
         )
 
         # Act
-        session = SessionFactory.for_database(self.database_key)
-
-        session.add(db_court_case_dupe)
-        session.flush()
-        session.commit()
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(db_court_case_dupe)
+            session.flush()

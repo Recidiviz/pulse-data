@@ -20,21 +20,20 @@ from unittest.case import TestCase
 
 import pytest
 
+from recidiviz.persistence.database.base_schema import StateBase
+from recidiviz.persistence.database.schema.state import dao, schema
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.schema.state import dao, schema
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.entity_utils import print_entity_trees
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
-    clear_db_ids,
     assert_no_unexpected_entities_in_db,
+    clear_db_ids,
 )
-
-from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.tests.utils.test_utils import print_visible_header_label
 from recidiviz.tools.postgres import local_postgres_helpers
 
@@ -114,13 +113,14 @@ class BaseStateEntityMatcherTest(TestCase):
         self.assertCountEqual(expected_with_backedges, converted_matched)
 
     def _session(self):
-        return SessionFactory.for_database(self.database_key)
+        # TODO(#8046): Figure out whether it makes sense to use `using_database` instead
+        # and what downstream would have to be refactored.
+        return SessionFactory.deprecated__for_database(self.database_key)
 
     def _commit_to_db(self, *persons: schema.StatePerson) -> None:
-        session = self._session()
-        for person in persons:
-            session.add(person)
-        session.commit()
+        with SessionFactory.using_database(self.database_key) as session:
+            for person in persons:
+                session.add(person)
 
 
 @pytest.mark.uses_db

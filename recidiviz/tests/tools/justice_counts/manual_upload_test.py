@@ -205,103 +205,102 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            [source] = session.query(schema.Source).all()
+            self.assertEqual("Colorado Department of Corrections", source.name)
 
-        [source] = session.query(schema.Source).all()
-        self.assertEqual("Colorado Department of Corrections", source.name)
+            [report] = session.query(schema.Report).all()
+            self.assertEqual(source, report.source)
+            self.assertEqual("Dashboard Measures", report.type)
+            self.assertEqual("2020-10-05", report.instance)
+            self.assertEqual(datetime.date(2020, 10, 5), report.publish_date)
+            self.assertEqual(
+                "https://www.colorado.gov/pacific/cdoc/departmental-reports-and-statistics",
+                report.url,
+            )
+            self.assertEqual(
+                schema.AcquisitionMethod.MANUALLY_ENTERED, report.acquisition_method
+            )
+            self.assertEqual("Solange Knowles", report.acquired_by)
 
-        [report] = session.query(schema.Report).all()
-        self.assertEqual(source, report.source)
-        self.assertEqual("Dashboard Measures", report.type)
-        self.assertEqual("2020-10-05", report.instance)
-        self.assertEqual(datetime.date(2020, 10, 5), report.publish_date)
-        self.assertEqual(
-            "https://www.colorado.gov/pacific/cdoc/departmental-reports-and-statistics",
-            report.url,
-        )
-        self.assertEqual(
-            schema.AcquisitionMethod.MANUALLY_ENTERED, report.acquisition_method
-        )
-        self.assertEqual("Solange Knowles", report.acquired_by)
+            [table_definition] = session.query(schema.ReportTableDefinition).all()
+            self.assertEqual(schema.System.CORRECTIONS, table_definition.system)
+            self.assertEqual(schema.MetricType.POPULATION, table_definition.metric_type)
+            self.assertEqual("Prison Population by Facility", table_definition.label)
+            self.assertEqual(
+                ["global/location/state", "metric/population/type"],
+                table_definition.filtered_dimensions,
+            )
+            self.assertEqual(
+                ["US_CO", "PRISON"], table_definition.filtered_dimension_values
+            )
+            self.assertEqual(
+                ["global/facility/raw"], table_definition.aggregated_dimensions
+            )
 
-        [table_definition] = session.query(schema.ReportTableDefinition).all()
-        self.assertEqual(schema.System.CORRECTIONS, table_definition.system)
-        self.assertEqual(schema.MetricType.POPULATION, table_definition.metric_type)
-        self.assertEqual("Prison Population by Facility", table_definition.label)
-        self.assertEqual(
-            ["global/location/state", "metric/population/type"],
-            table_definition.filtered_dimensions,
-        )
-        self.assertEqual(
-            ["US_CO", "PRISON"], table_definition.filtered_dimension_values
-        )
-        self.assertEqual(
-            ["global/facility/raw"], table_definition.aggregated_dimensions
-        )
+            tables = (
+                session.query(schema.ReportTableInstance)
+                .order_by(schema.ReportTableInstance.time_window_start)
+                .all()
+            )
+            # Ensure all the tables have the correct source and definition
+            for table in tables:
+                self.assertEqual(report, table.report)
+                self.assertEqual(table_definition, table.report_table_definition)
+                self.assertEqual("Unknown", table.methodology)
+            [table1, table2, table3] = tables
 
-        tables = (
-            session.query(schema.ReportTableInstance)
-            .order_by(schema.ReportTableInstance.time_window_start)
-            .all()
-        )
-        # Ensure all the tables have the correct source and definition
-        for table in tables:
-            self.assertEqual(report, table.report)
-            self.assertEqual(table_definition, table.report_table_definition)
-            self.assertEqual("Unknown", table.methodology)
-        [table1, table2, table3] = tables
+            # Look at the first table in detail
+            self.assertEqual(datetime.date(2020, 6, 30), table1.time_window_start)
+            self.assertEqual(datetime.date(2020, 7, 1), table1.time_window_end)
+            table1_cells = (
+                session.query(schema.Cell)
+                .filter(schema.Cell.report_table_instance == table1)
+                .all()
+            )
+            # Sort in Python, as postgres sort is platform dependent (case sensitivity)
+            table1_cells.sort(key=lambda cell: cell.aggregated_dimension_values)
+            summarized_cells = [
+                (cell.aggregated_dimension_values[0], int(cell.value))
+                for cell in table1_cells
+            ]
+            self.assertListEqual(
+                [
+                    ("Awaiting Transfer - Federal Tracking", 0),
+                    ("Community Furlough - COVID-19", 10),
+                    ("Escapee In Custody", 19),
+                    ("Fugitive", 159),
+                    ("ISP/Community - Hospital", 0),
+                    ("Intensive Supervision Program-Inmate", 316),
+                    ("Private prisons", 2842),
+                    ("Residential Transition Inmates", 747),
+                    ("State prisons", 12793),
+                    ("TPVs Awaiting Hearing/County Jail", 555),
+                ],
+                summarized_cells,
+            )
 
-        # Look at the first table in detail
-        self.assertEqual(datetime.date(2020, 6, 30), table1.time_window_start)
-        self.assertEqual(datetime.date(2020, 7, 1), table1.time_window_end)
-        table1_cells = (
-            session.query(schema.Cell)
-            .filter(schema.Cell.report_table_instance == table1)
-            .all()
-        )
-        # Sort in Python, as postgres sort is platform dependent (case sensitivity)
-        table1_cells.sort(key=lambda cell: cell.aggregated_dimension_values)
-        summarized_cells = [
-            (cell.aggregated_dimension_values[0], int(cell.value))
-            for cell in table1_cells
-        ]
-        self.assertListEqual(
-            [
-                ("Awaiting Transfer - Federal Tracking", 0),
-                ("Community Furlough - COVID-19", 10),
-                ("Escapee In Custody", 19),
-                ("Fugitive", 159),
-                ("ISP/Community - Hospital", 0),
-                ("Intensive Supervision Program-Inmate", 316),
-                ("Private prisons", 2842),
-                ("Residential Transition Inmates", 747),
-                ("State prisons", 12793),
-                ("TPVs Awaiting Hearing/County Jail", 555),
-            ],
-            summarized_cells,
-        )
-
-        # Ensure the sums of the cells for all of the tables are correct
-        table1_sum = (
-            session.query(sql.func.sum(schema.Cell.value))
-            .filter(schema.Cell.report_table_instance == table1)
-            .scalar()
-        )
-        self.assertEqual(17441, table1_sum)
-        table2_sum = (
-            session.query(sql.func.sum(schema.Cell.value))
-            .filter(schema.Cell.report_table_instance == table2)
-            .scalar()
-        )
-        self.assertEqual(17157, table2_sum)
-        table3_sum = (
-            session.query(sql.func.sum(schema.Cell.value))
-            .filter(schema.Cell.report_table_instance == table3)
-            .scalar()
-        )
-        self.assertEqual(16908, table3_sum)
-
-        session.close()
+            # Ensure the sums of the cells for all of the tables are correct
+            table1_sum = (
+                session.query(sql.func.sum(schema.Cell.value))
+                .filter(schema.Cell.report_table_instance == table1)
+                .scalar()
+            )
+            self.assertEqual(17441, table1_sum)
+            table2_sum = (
+                session.query(sql.func.sum(schema.Cell.value))
+                .filter(schema.Cell.report_table_instance == table2)
+                .scalar()
+            )
+            self.assertEqual(17157, table2_sum)
+            table3_sum = (
+                session.query(sql.func.sum(schema.Cell.value))
+                .filter(schema.Cell.report_table_instance == table3)
+                .scalar()
+            )
+            self.assertEqual(16908, table3_sum)
 
     def test_ingestAndUpdateReport_isPersisted(self) -> None:
         # Act
@@ -318,36 +317,37 @@ class ManualUploadTest(unittest.TestCase):
         # it each time
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            # There should still only be a single source, report, and table definition
+            [source] = session.query(schema.Source).all()
+            self.assertEqual("Colorado Department of Corrections", source.name)
+            [report] = session.query(schema.Report).all()
+            self.assertEqual(source, report.source)
+            self.assertEqual("Dashboard Measures", report.type)
+            [table_definition] = session.query(schema.ReportTableDefinition).all()
+            self.assertEqual(schema.System.CORRECTIONS, table_definition.system)
+            self.assertEqual(schema.MetricType.POPULATION, table_definition.metric_type)
+            self.assertEqual("Prison Population by Facility", table_definition.label)
 
-        # There should still only be a single source, report, and table definition
-        [source] = session.query(schema.Source).all()
-        self.assertEqual("Colorado Department of Corrections", source.name)
-        [report] = session.query(schema.Report).all()
-        self.assertEqual(source, report.source)
-        self.assertEqual("Dashboard Measures", report.type)
-        [table_definition] = session.query(schema.ReportTableDefinition).all()
-        self.assertEqual(schema.System.CORRECTIONS, table_definition.system)
-        self.assertEqual(schema.MetricType.POPULATION, table_definition.metric_type)
-        self.assertEqual("Prison Population by Facility", table_definition.label)
+            # There should only be one table
+            [table] = (
+                session.query(schema.ReportTableInstance)
+                .order_by(schema.ReportTableInstance.time_window_start)
+                .all()
+            )
+            self.assertEqual(report, table.report)
+            self.assertEqual(table_definition, table.report_table_definition)
+            self.assertEqual("Unknown", table.methodology)
+            table_sum = (
+                session.query(sql.func.sum(schema.Cell.value))
+                .filter(schema.Cell.report_table_instance == table)
+                .scalar()
+            )
+            self.assertEqual(17257, table_sum)
 
-        # There should only be one table
-        [table] = (
-            session.query(schema.ReportTableInstance)
-            .order_by(schema.ReportTableInstance.time_window_start)
-            .all()
-        )
-        self.assertEqual(report, table.report)
-        self.assertEqual(table_definition, table.report_table_definition)
-        self.assertEqual("Unknown", table.methodology)
-        table_sum = (
-            session.query(sql.func.sum(schema.Cell.value))
-            .filter(schema.Cell.report_table_instance == table)
-            .scalar()
-        )
-        self.assertEqual(17257, table_sum)
-
-        # TODO(#4476): Add a case where a row is dropped to ensure that is reflected.
+            # TODO(#4476): Add a case where a row is dropped to ensure that is reflected.
 
     def test_ingestMultiDimensionReport_isPersisted(self) -> None:
         # Act
@@ -359,135 +359,139 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
-
-        [facility_totals_definition, facility_demographics_definition] = (
-            session.query(schema.ReportTableDefinition)
-            .order_by(
-                sql.func.array_length(
-                    schema.ReportTableDefinition.aggregated_dimensions, 1
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            [facility_totals_definition, facility_demographics_definition] = (
+                session.query(schema.ReportTableDefinition)
+                .order_by(
+                    sql.func.array_length(
+                        schema.ReportTableDefinition.aggregated_dimensions, 1
+                    )
                 )
+                .all()
             )
-            .all()
-        )
-        self.assertEqual(
-            ["global/facility/raw"], facility_totals_definition.aggregated_dimensions
-        )
-        self.assertEqual(
-            [
-                "global/ethnicity",
-                "global/ethnicity/raw",
-                "global/facility/raw",
-                "global/gender",
-                "global/gender/raw",
-                "global/race",
-                "global/race/raw",
-            ],
-            facility_demographics_definition.aggregated_dimensions,
-        )
+            self.assertEqual(
+                ["global/facility/raw"],
+                facility_totals_definition.aggregated_dimensions,
+            )
+            self.assertEqual(
+                [
+                    "global/ethnicity",
+                    "global/ethnicity/raw",
+                    "global/facility/raw",
+                    "global/gender",
+                    "global/gender/raw",
+                    "global/race",
+                    "global/race/raw",
+                ],
+                facility_demographics_definition.aggregated_dimensions,
+            )
 
-        [facility_totals_table] = (
-            session.query(schema.ReportTableInstance)
-            .filter(
-                schema.ReportTableInstance.report_table_definition
-                == facility_totals_definition
+            [facility_totals_table] = (
+                session.query(schema.ReportTableInstance)
+                .filter(
+                    schema.ReportTableInstance.report_table_definition
+                    == facility_totals_definition
+                )
+                .all()
             )
-            .all()
-        )
-        [facility_demographics_table] = (
-            session.query(schema.ReportTableInstance)
-            .filter(
-                schema.ReportTableInstance.report_table_definition
-                == facility_demographics_definition
+            [facility_demographics_table] = (
+                session.query(schema.ReportTableInstance)
+                .filter(
+                    schema.ReportTableInstance.report_table_definition
+                    == facility_demographics_definition
+                )
+                .all()
             )
-            .all()
-        )
 
-        # Sort in Python, as postgres sort is platform dependent (case sensitivity)
-        facility_demographics_result = (
-            session.query(schema.Cell)
-            .filter(schema.Cell.report_table_instance == facility_demographics_table)
-            .all()
-        )
-        facility_demographics = [
-            (tuple(cell.aggregated_dimension_values), int(cell.value))
-            for cell in facility_demographics_result
-        ]
-        # There are 180 cells in the `facility_with_demographics` csv
-        self.assertEqual(180, len(facility_demographics))
-        self.assertEqual(
-            (
+            # Sort in Python, as postgres sort is platform dependent (case sensitivity)
+            facility_demographics_result = (
+                session.query(schema.Cell)
+                .filter(
+                    schema.Cell.report_table_instance == facility_demographics_table
+                )
+                .all()
+            )
+            facility_demographics = [
+                (tuple(cell.aggregated_dimension_values), int(cell.value))
+                for cell in facility_demographics_result
+            ]
+            # There are 180 cells in the `facility_with_demographics` csv
+            self.assertEqual(180, len(facility_demographics))
+            self.assertEqual(
                 (
-                    "EXTERNAL_UNKNOWN",
-                    "Data Unavailable",
-                    "CMCF",
-                    "FEMALE",
-                    "Female",
-                    "EXTERNAL_UNKNOWN",
-                    "Data Unavailable",
+                    (
+                        "EXTERNAL_UNKNOWN",
+                        "Data Unavailable",
+                        "CMCF",
+                        "FEMALE",
+                        "Female",
+                        "EXTERNAL_UNKNOWN",
+                        "Data Unavailable",
+                    ),
+                    0,
                 ),
-                0,
-            ),
-            facility_demographics[0],
-        )
-        self.assertEqual(
-            (
-                (
-                    None,
-                    "White",
-                    "Youthful Offender Facility",
-                    "MALE",
-                    "Male",
-                    "WHITE",
-                    "White",
-                ),
-                2,
-            ),
-            facility_demographics[-1],
-        )
-
-        facility_totals = {
-            cell.aggregated_dimension_values[0]: int(cell.value)
-            for cell in session.query(schema.Cell)
-            .filter(schema.Cell.report_table_instance == facility_totals_table)
-            .all()
-        }
-        facility_totals_from_demographics = {
-            result[0]: int(result[1])
-            for result in session.query(
-                schema.Cell.aggregated_dimension_values[3],
-                sql.func.sum(schema.Cell.value),
+                facility_demographics[0],
             )
-            .filter(schema.Cell.report_table_instance == facility_demographics_table)
-            .group_by(schema.Cell.aggregated_dimension_values[3])
-            .all()
-        }
+            self.assertEqual(
+                (
+                    (
+                        None,
+                        "White",
+                        "Youthful Offender Facility",
+                        "MALE",
+                        "Male",
+                        "WHITE",
+                        "White",
+                    ),
+                    2,
+                ),
+                facility_demographics[-1],
+            )
 
-        EXPECTED_TOTALS = {
-            "MSP": 2027,
-            "CMCF": 3125,
-            "SMCI": 2403,
-            "County Jails (approved)": 835,
-            "County Jails (unapproved)": 729,
-            "Youthful Offender Facility": 13,
-            "Private Prisons": 3489,
-            "Regional Correctional Facilities": 3946,
-            "Community Work Centers": 318,
-            "Community Trusties": 0,
-            "TVC": 134,
-            "Transitional Housing": 12,
-            "Pending File Review": 115,
-            "RRP": 26,
-            "Court Order": 141,
-        }
-        self.assertEqual(EXPECTED_TOTALS, facility_totals)
-        # The report itself has an inconsistency, the totals column has 729 for unapproved county jails, but summing
-        # across the demographics column yields 728. The ingest process simply persists the data provided but does not
-        # attempt to resolve inconsistencies.
-        EXPECTED_TOTALS["County Jails (unapproved)"] = 728
-        self.assertEqual(EXPECTED_TOTALS, facility_totals_from_demographics)
+            facility_totals = {
+                cell.aggregated_dimension_values[0]: int(cell.value)
+                for cell in session.query(schema.Cell)
+                .filter(schema.Cell.report_table_instance == facility_totals_table)
+                .all()
+            }
+            facility_totals_from_demographics = {
+                result[0]: int(result[1])
+                for result in session.query(
+                    schema.Cell.aggregated_dimension_values[3],
+                    sql.func.sum(schema.Cell.value),
+                )
+                .filter(
+                    schema.Cell.report_table_instance == facility_demographics_table
+                )
+                .group_by(schema.Cell.aggregated_dimension_values[3])
+                .all()
+            }
 
-        session.close()
+            EXPECTED_TOTALS = {
+                "MSP": 2027,
+                "CMCF": 3125,
+                "SMCI": 2403,
+                "County Jails (approved)": 835,
+                "County Jails (unapproved)": 729,
+                "Youthful Offender Facility": 13,
+                "Private Prisons": 3489,
+                "Regional Correctional Facilities": 3946,
+                "Community Work Centers": 318,
+                "Community Trusties": 0,
+                "TVC": 134,
+                "Transitional Housing": 12,
+                "Pending File Review": 115,
+                "RRP": 26,
+                "Court Order": 141,
+            }
+            self.assertEqual(EXPECTED_TOTALS, facility_totals)
+            # The report itself has an inconsistency, the totals column has 729 for unapproved county jails, but summing
+            # across the demographics column yields 728. The ingest process simply persists the data provided but does not
+            # attempt to resolve inconsistencies.
+            EXPECTED_TOTALS["County Jails (unapproved)"] = 728
+            self.assertEqual(EXPECTED_TOTALS, facility_totals_from_demographics)
 
     def test_ingestReport_dynamicDateSnapshot(self) -> None:
         self._test_ingestReport_dynamicSnapshot("report3_date_snapshot")
@@ -503,119 +507,120 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            [source] = session.query(schema.Source).all()
+            self.assertEqual("Colorado Department of Corrections", source.name)
+            [report] = session.query(schema.Report).all()
+            self.assertEqual(source, report.source)
+            self.assertEqual("Dashboard Measures", report.type)
 
-        [source] = session.query(schema.Source).all()
-        self.assertEqual("Colorado Department of Corrections", source.name)
-        [report] = session.query(schema.Report).all()
-        self.assertEqual(source, report.source)
-        self.assertEqual("Dashboard Measures", report.type)
+            [table_definition] = session.query(schema.ReportTableDefinition).all()
+            self.assertEqual(schema.System.CORRECTIONS, table_definition.system)
+            self.assertEqual(schema.MetricType.POPULATION, table_definition.metric_type)
+            self.assertEqual("", table_definition.label)
+            self.assertEqual([], table_definition.aggregated_dimensions)
 
-        [table_definition] = session.query(schema.ReportTableDefinition).all()
-        self.assertEqual(schema.System.CORRECTIONS, table_definition.system)
-        self.assertEqual(schema.MetricType.POPULATION, table_definition.metric_type)
-        self.assertEqual("", table_definition.label)
-        self.assertEqual([], table_definition.aggregated_dimensions)
-
-        tables = (
-            session.query(schema.ReportTableInstance)
-            .order_by(schema.ReportTableInstance.time_window_start)
-            .all()
-        )
-        self.assertEqual(13, len(tables))
-        self.assertListEqual(
-            [
-                datetime.date(2019, 9, 1)
-                + (n + 1) * relativedelta(months=1)
-                - relativedelta(days=1)
-                for n in range(13)
-            ],
-            [table.time_window_start for table in tables],
-        )
-        for table in tables:
-            self.assertEqual(report, table.report)
-            self.assertEqual(table_definition, table.report_table_definition)
-            self.assertEqual("Unknown", table.methodology)
-
-        results = (
-            session.query(
-                schema.ReportTableInstance.time_window_start,
-                schema.ReportTableInstance.time_window_end,
-                schema.Cell.value,
+            tables = (
+                session.query(schema.ReportTableInstance)
+                .order_by(schema.ReportTableInstance.time_window_start)
+                .all()
             )
-            .join(schema.Cell)
-            .order_by(schema.ReportTableInstance.time_window_start)
-            .all()
-        )
+            self.assertEqual(13, len(tables))
+            self.assertListEqual(
+                [
+                    datetime.date(2019, 9, 1)
+                    + (n + 1) * relativedelta(months=1)
+                    - relativedelta(days=1)
+                    for n in range(13)
+                ],
+                [table.time_window_start for table in tables],
+            )
+            for table in tables:
+                self.assertEqual(report, table.report)
+                self.assertEqual(table_definition, table.report_table_definition)
+                self.assertEqual("Unknown", table.methodology)
 
-        EXPECTED = [
-            (
-                datetime.date(2019, 9, 30),
-                datetime.date(2019, 10, 1),
-                decimal.Decimal(19748),
-            ),
-            (
-                datetime.date(2019, 10, 31),
-                datetime.date(2019, 11, 1),
-                decimal.Decimal(19690),
-            ),
-            (
-                datetime.date(2019, 11, 30),
-                datetime.date(2019, 12, 1),
-                decimal.Decimal(19738),
-            ),
-            (
-                datetime.date(2019, 12, 31),
-                datetime.date(2020, 1, 1),
-                decimal.Decimal(19714),
-            ),
-            (
-                datetime.date(2020, 1, 31),
-                datetime.date(2020, 2, 1),
-                decimal.Decimal(19668),
-            ),
-            (
-                datetime.date(2020, 2, 29),
-                datetime.date(2020, 3, 1),
-                decimal.Decimal(19586),
-            ),
-            (
-                datetime.date(2020, 3, 31),
-                datetime.date(2020, 4, 1),
-                decimal.Decimal(19357),
-            ),
-            (
-                datetime.date(2020, 4, 30),
-                datetime.date(2020, 5, 1),
-                decimal.Decimal(18419),
-            ),
-            (
-                datetime.date(2020, 5, 31),
-                datetime.date(2020, 6, 1),
-                decimal.Decimal(17808),
-            ),
-            (
-                datetime.date(2020, 6, 30),
-                datetime.date(2020, 7, 1),
-                decimal.Decimal(17441),
-            ),
-            (
-                datetime.date(2020, 7, 31),
-                datetime.date(2020, 8, 1),
-                decimal.Decimal(17157),
-            ),
-            (
-                datetime.date(2020, 8, 31),
-                datetime.date(2020, 9, 1),
-                decimal.Decimal(16908),
-            ),
-            (
-                datetime.date(2020, 9, 30),
-                datetime.date(2020, 10, 1),
-                decimal.Decimal(16673),
-            ),
-        ]
-        self.assertEqual(EXPECTED, results)
+            results = (
+                session.query(
+                    schema.ReportTableInstance.time_window_start,
+                    schema.ReportTableInstance.time_window_end,
+                    schema.Cell.value,
+                )
+                .join(schema.Cell)
+                .order_by(schema.ReportTableInstance.time_window_start)
+                .all()
+            )
+
+            EXPECTED = [
+                (
+                    datetime.date(2019, 9, 30),
+                    datetime.date(2019, 10, 1),
+                    decimal.Decimal(19748),
+                ),
+                (
+                    datetime.date(2019, 10, 31),
+                    datetime.date(2019, 11, 1),
+                    decimal.Decimal(19690),
+                ),
+                (
+                    datetime.date(2019, 11, 30),
+                    datetime.date(2019, 12, 1),
+                    decimal.Decimal(19738),
+                ),
+                (
+                    datetime.date(2019, 12, 31),
+                    datetime.date(2020, 1, 1),
+                    decimal.Decimal(19714),
+                ),
+                (
+                    datetime.date(2020, 1, 31),
+                    datetime.date(2020, 2, 1),
+                    decimal.Decimal(19668),
+                ),
+                (
+                    datetime.date(2020, 2, 29),
+                    datetime.date(2020, 3, 1),
+                    decimal.Decimal(19586),
+                ),
+                (
+                    datetime.date(2020, 3, 31),
+                    datetime.date(2020, 4, 1),
+                    decimal.Decimal(19357),
+                ),
+                (
+                    datetime.date(2020, 4, 30),
+                    datetime.date(2020, 5, 1),
+                    decimal.Decimal(18419),
+                ),
+                (
+                    datetime.date(2020, 5, 31),
+                    datetime.date(2020, 6, 1),
+                    decimal.Decimal(17808),
+                ),
+                (
+                    datetime.date(2020, 6, 30),
+                    datetime.date(2020, 7, 1),
+                    decimal.Decimal(17441),
+                ),
+                (
+                    datetime.date(2020, 7, 31),
+                    datetime.date(2020, 8, 1),
+                    decimal.Decimal(17157),
+                ),
+                (
+                    datetime.date(2020, 8, 31),
+                    datetime.date(2020, 9, 1),
+                    decimal.Decimal(16908),
+                ),
+                (
+                    datetime.date(2020, 9, 30),
+                    datetime.date(2020, 10, 1),
+                    decimal.Decimal(16673),
+                ),
+            ]
+            self.assertEqual(EXPECTED, results)
 
     def test_ingestReport_dynamicCustomRange(self) -> None:
         self._test_ingestReport_dynamicDateRange("report4_custom_range")
@@ -633,120 +638,121 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            [source] = session.query(schema.Source).all()
+            self.assertEqual("Colorado Department of Corrections", source.name)
+            [report] = session.query(schema.Report).all()
+            self.assertEqual(source, report.source)
+            self.assertEqual("Dashboard Measures", report.type)
 
-        [source] = session.query(schema.Source).all()
-        self.assertEqual("Colorado Department of Corrections", source.name)
-        [report] = session.query(schema.Report).all()
-        self.assertEqual(source, report.source)
-        self.assertEqual("Dashboard Measures", report.type)
+            [table_definition] = session.query(schema.ReportTableDefinition).all()
+            self.assertEqual(schema.System.CORRECTIONS, table_definition.system)
+            self.assertEqual(schema.MetricType.POPULATION, table_definition.metric_type)
+            self.assertEqual("", table_definition.label)
+            self.assertEqual([], table_definition.aggregated_dimensions)
 
-        [table_definition] = session.query(schema.ReportTableDefinition).all()
-        self.assertEqual(schema.System.CORRECTIONS, table_definition.system)
-        self.assertEqual(schema.MetricType.POPULATION, table_definition.metric_type)
-        self.assertEqual("", table_definition.label)
-        self.assertEqual([], table_definition.aggregated_dimensions)
-
-        tables = (
-            session.query(schema.ReportTableInstance)
-            .order_by(schema.ReportTableInstance.time_window_start)
-            .all()
-        )
-        self.assertEqual(13, len(tables))
-        self.assertListEqual(
-            [
-                (
-                    datetime.date(2019, 9, 1) + n * relativedelta(months=1),
-                    datetime.date(2019, 9, 1) + (n + 1) * relativedelta(months=1),
-                )
-                for n in range(13)
-            ],
-            [(table.time_window_start, table.time_window_end) for table in tables],
-        )
-        for table in tables:
-            self.assertEqual(report, table.report)
-            self.assertEqual(table_definition, table.report_table_definition)
-            self.assertEqual("Unknown", table.methodology)
-
-        results = (
-            session.query(
-                schema.ReportTableInstance.time_window_start,
-                schema.ReportTableInstance.time_window_end,
-                schema.Cell.value,
+            tables = (
+                session.query(schema.ReportTableInstance)
+                .order_by(schema.ReportTableInstance.time_window_start)
+                .all()
             )
-            .join(schema.Cell)
-            .order_by(schema.ReportTableInstance.time_window_start)
-            .all()
-        )
+            self.assertEqual(13, len(tables))
+            self.assertListEqual(
+                [
+                    (
+                        datetime.date(2019, 9, 1) + n * relativedelta(months=1),
+                        datetime.date(2019, 9, 1) + (n + 1) * relativedelta(months=1),
+                    )
+                    for n in range(13)
+                ],
+                [(table.time_window_start, table.time_window_end) for table in tables],
+            )
+            for table in tables:
+                self.assertEqual(report, table.report)
+                self.assertEqual(table_definition, table.report_table_definition)
+                self.assertEqual("Unknown", table.methodology)
 
-        EXPECTED = [
-            (
-                datetime.date(2019, 9, 1),
-                datetime.date(2019, 10, 1),
-                decimal.Decimal(19748),
-            ),
-            (
-                datetime.date(2019, 10, 1),
-                datetime.date(2019, 11, 1),
-                decimal.Decimal(19690),
-            ),
-            (
-                datetime.date(2019, 11, 1),
-                datetime.date(2019, 12, 1),
-                decimal.Decimal(19738),
-            ),
-            (
-                datetime.date(2019, 12, 1),
-                datetime.date(2020, 1, 1),
-                decimal.Decimal(19714),
-            ),
-            (
-                datetime.date(2020, 1, 1),
-                datetime.date(2020, 2, 1),
-                decimal.Decimal(19668),
-            ),
-            (
-                datetime.date(2020, 2, 1),
-                datetime.date(2020, 3, 1),
-                decimal.Decimal(19586),
-            ),
-            (
-                datetime.date(2020, 3, 1),
-                datetime.date(2020, 4, 1),
-                decimal.Decimal(19357),
-            ),
-            (
-                datetime.date(2020, 4, 1),
-                datetime.date(2020, 5, 1),
-                decimal.Decimal(18419),
-            ),
-            (
-                datetime.date(2020, 5, 1),
-                datetime.date(2020, 6, 1),
-                decimal.Decimal(17808),
-            ),
-            (
-                datetime.date(2020, 6, 1),
-                datetime.date(2020, 7, 1),
-                decimal.Decimal(17441),
-            ),
-            (
-                datetime.date(2020, 7, 1),
-                datetime.date(2020, 8, 1),
-                decimal.Decimal(17157),
-            ),
-            (
-                datetime.date(2020, 8, 1),
-                datetime.date(2020, 9, 1),
-                decimal.Decimal(16908),
-            ),
-            (
-                datetime.date(2020, 9, 1),
-                datetime.date(2020, 10, 1),
-                decimal.Decimal(16673),
-            ),
-        ]
-        self.assertEqual(EXPECTED, results)
+            results = (
+                session.query(
+                    schema.ReportTableInstance.time_window_start,
+                    schema.ReportTableInstance.time_window_end,
+                    schema.Cell.value,
+                )
+                .join(schema.Cell)
+                .order_by(schema.ReportTableInstance.time_window_start)
+                .all()
+            )
+
+            EXPECTED = [
+                (
+                    datetime.date(2019, 9, 1),
+                    datetime.date(2019, 10, 1),
+                    decimal.Decimal(19748),
+                ),
+                (
+                    datetime.date(2019, 10, 1),
+                    datetime.date(2019, 11, 1),
+                    decimal.Decimal(19690),
+                ),
+                (
+                    datetime.date(2019, 11, 1),
+                    datetime.date(2019, 12, 1),
+                    decimal.Decimal(19738),
+                ),
+                (
+                    datetime.date(2019, 12, 1),
+                    datetime.date(2020, 1, 1),
+                    decimal.Decimal(19714),
+                ),
+                (
+                    datetime.date(2020, 1, 1),
+                    datetime.date(2020, 2, 1),
+                    decimal.Decimal(19668),
+                ),
+                (
+                    datetime.date(2020, 2, 1),
+                    datetime.date(2020, 3, 1),
+                    decimal.Decimal(19586),
+                ),
+                (
+                    datetime.date(2020, 3, 1),
+                    datetime.date(2020, 4, 1),
+                    decimal.Decimal(19357),
+                ),
+                (
+                    datetime.date(2020, 4, 1),
+                    datetime.date(2020, 5, 1),
+                    decimal.Decimal(18419),
+                ),
+                (
+                    datetime.date(2020, 5, 1),
+                    datetime.date(2020, 6, 1),
+                    decimal.Decimal(17808),
+                ),
+                (
+                    datetime.date(2020, 6, 1),
+                    datetime.date(2020, 7, 1),
+                    decimal.Decimal(17441),
+                ),
+                (
+                    datetime.date(2020, 7, 1),
+                    datetime.date(2020, 8, 1),
+                    decimal.Decimal(17157),
+                ),
+                (
+                    datetime.date(2020, 8, 1),
+                    datetime.date(2020, 9, 1),
+                    decimal.Decimal(16908),
+                ),
+                (
+                    datetime.date(2020, 9, 1),
+                    datetime.date(2020, 10, 1),
+                    decimal.Decimal(16673),
+                ),
+            ]
+            self.assertEqual(EXPECTED, results)
 
     def test_ingestSubtypeNotStrict_isPersisted(self) -> None:
         # Act
@@ -756,29 +762,30 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            [table_definition] = session.query(schema.ReportTableDefinition).all()
+            self.assertEqual(
+                [
+                    "global/fake_subtype",
+                    "global/fake_subtype/raw",
+                    "global/fake_type",
+                    "global/fake_type/raw",
+                ],
+                table_definition.aggregated_dimensions,
+            )
 
-        [table_definition] = session.query(schema.ReportTableDefinition).all()
-        self.assertEqual(
-            [
-                "global/fake_subtype",
-                "global/fake_subtype/raw",
-                "global/fake_type",
-                "global/fake_type/raw",
-            ],
-            table_definition.aggregated_dimensions,
-        )
-
-        cells = session.query(schema.Cell).all()
-        self.assertEqual(
-            [
-                ([None, "A", "A", "A"], decimal.Decimal(111)),
-                (["B_1", "B_1", "B", "B_1"], decimal.Decimal(222)),
-                (["B_2", "B_2", "B", "B_2"], decimal.Decimal(333)),
-                ([None, "C", "C", "C"], decimal.Decimal(444)),
-            ],
-            [(cell.aggregated_dimension_values, cell.value) for cell in cells],
-        )
+            cells = session.query(schema.Cell).all()
+            self.assertEqual(
+                [
+                    ([None, "A", "A", "A"], decimal.Decimal(111)),
+                    (["B_1", "B_1", "B", "B_1"], decimal.Decimal(222)),
+                    (["B_2", "B_2", "B", "B_2"], decimal.Decimal(333)),
+                    ([None, "C", "C", "C"], decimal.Decimal(444)),
+                ],
+                [(cell.aggregated_dimension_values, cell.value) for cell in cells],
+            )
 
     def test_ingestSubtypeStrict_isNotPersisted(self) -> None:
         # Act
@@ -798,110 +805,115 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            [table_definition] = session.query(schema.ReportTableDefinition).all()
+            self.assertEqual(
+                [
+                    "global/facility/raw",
+                    "global/location/state",
+                    "metric/population/type",
+                ],
+                table_definition.filtered_dimensions,
+            )
+            self.assertEqual(
+                ["MSP", "US_CO", "PRISON"], table_definition.filtered_dimension_values
+            )
+            self.assertEqual(
+                [
+                    "global/ethnicity",
+                    "global/ethnicity/raw",
+                    "global/gender",
+                    "global/gender/raw",
+                    "global/race",
+                    "global/race/raw",
+                ],
+                table_definition.aggregated_dimensions,
+            )
 
-        [table_definition] = session.query(schema.ReportTableDefinition).all()
-        self.assertEqual(
-            ["global/facility/raw", "global/location/state", "metric/population/type"],
-            table_definition.filtered_dimensions,
-        )
-        self.assertEqual(
-            ["MSP", "US_CO", "PRISON"], table_definition.filtered_dimension_values
-        )
-        self.assertEqual(
-            [
-                "global/ethnicity",
-                "global/ethnicity/raw",
-                "global/gender",
-                "global/gender/raw",
-                "global/race",
-                "global/race/raw",
-            ],
-            table_definition.aggregated_dimensions,
-        )
-
-        cells = session.query(schema.Cell).all()
-        self.assertEqual(
-            [
-                (
-                    ["NOT_HISPANIC", "Black", "MALE", "Male", "BLACK", "Black"],
-                    decimal.Decimal(1370),
-                ),
-                (
-                    ["NOT_HISPANIC", "Black", "FEMALE", "Female", "BLACK", "Black"],
-                    decimal.Decimal(0),
-                ),
-                (
-                    ["NOT_HISPANIC", "White", "MALE", "Male", "WHITE", "White"],
-                    decimal.Decimal(638),
-                ),
-                (
-                    ["NOT_HISPANIC", "White", "FEMALE", "Female", "WHITE", "White"],
-                    decimal.Decimal(0),
-                ),
-                (
-                    ["HISPANIC", "Hispanic", "MALE", "Male", None, "Hispanic"],
-                    decimal.Decimal(15),
-                ),
-                (
-                    ["HISPANIC", "Hispanic", "FEMALE", "Female", None, "Hispanic"],
-                    decimal.Decimal(0),
-                ),
-                (
-                    [
-                        "NOT_HISPANIC",
-                        "Native American",
-                        "MALE",
-                        "Male",
-                        "AMERICAN_INDIAN_ALASKAN_NATIVE",
-                        "Native American",
-                    ],
-                    decimal.Decimal(0),
-                ),
-                (
-                    [
-                        "NOT_HISPANIC",
-                        "Native American",
-                        "FEMALE",
-                        "Female",
-                        "AMERICAN_INDIAN_ALASKAN_NATIVE",
-                        "Native American",
-                    ],
-                    decimal.Decimal(0),
-                ),
-                (
-                    ["NOT_HISPANIC", "Asian", "MALE", "Male", "ASIAN", "Asian"],
-                    decimal.Decimal(4),
-                ),
-                (
-                    ["NOT_HISPANIC", "Asian", "FEMALE", "Female", "ASIAN", "Asian"],
-                    decimal.Decimal(0),
-                ),
-                (
-                    [
-                        "EXTERNAL_UNKNOWN",
-                        "Data Unavailable",
-                        "MALE",
-                        "Male",
-                        "EXTERNAL_UNKNOWN",
-                        "Data Unavailable",
-                    ],
-                    decimal.Decimal(0),
-                ),
-                (
-                    [
-                        "EXTERNAL_UNKNOWN",
-                        "Data Unavailable",
-                        "FEMALE",
-                        "Female",
-                        "EXTERNAL_UNKNOWN",
-                        "Data Unavailable",
-                    ],
-                    decimal.Decimal(0),
-                ),
-            ],
-            [(cell.aggregated_dimension_values, cell.value) for cell in cells],
-        )
+            cells = session.query(schema.Cell).all()
+            self.assertEqual(
+                [
+                    (
+                        ["NOT_HISPANIC", "Black", "MALE", "Male", "BLACK", "Black"],
+                        decimal.Decimal(1370),
+                    ),
+                    (
+                        ["NOT_HISPANIC", "Black", "FEMALE", "Female", "BLACK", "Black"],
+                        decimal.Decimal(0),
+                    ),
+                    (
+                        ["NOT_HISPANIC", "White", "MALE", "Male", "WHITE", "White"],
+                        decimal.Decimal(638),
+                    ),
+                    (
+                        ["NOT_HISPANIC", "White", "FEMALE", "Female", "WHITE", "White"],
+                        decimal.Decimal(0),
+                    ),
+                    (
+                        ["HISPANIC", "Hispanic", "MALE", "Male", None, "Hispanic"],
+                        decimal.Decimal(15),
+                    ),
+                    (
+                        ["HISPANIC", "Hispanic", "FEMALE", "Female", None, "Hispanic"],
+                        decimal.Decimal(0),
+                    ),
+                    (
+                        [
+                            "NOT_HISPANIC",
+                            "Native American",
+                            "MALE",
+                            "Male",
+                            "AMERICAN_INDIAN_ALASKAN_NATIVE",
+                            "Native American",
+                        ],
+                        decimal.Decimal(0),
+                    ),
+                    (
+                        [
+                            "NOT_HISPANIC",
+                            "Native American",
+                            "FEMALE",
+                            "Female",
+                            "AMERICAN_INDIAN_ALASKAN_NATIVE",
+                            "Native American",
+                        ],
+                        decimal.Decimal(0),
+                    ),
+                    (
+                        ["NOT_HISPANIC", "Asian", "MALE", "Male", "ASIAN", "Asian"],
+                        decimal.Decimal(4),
+                    ),
+                    (
+                        ["NOT_HISPANIC", "Asian", "FEMALE", "Female", "ASIAN", "Asian"],
+                        decimal.Decimal(0),
+                    ),
+                    (
+                        [
+                            "EXTERNAL_UNKNOWN",
+                            "Data Unavailable",
+                            "MALE",
+                            "Male",
+                            "EXTERNAL_UNKNOWN",
+                            "Data Unavailable",
+                        ],
+                        decimal.Decimal(0),
+                    ),
+                    (
+                        [
+                            "EXTERNAL_UNKNOWN",
+                            "Data Unavailable",
+                            "FEMALE",
+                            "Female",
+                            "EXTERNAL_UNKNOWN",
+                            "Data Unavailable",
+                        ],
+                        decimal.Decimal(0),
+                    ),
+                ],
+                [(cell.aggregated_dimension_values, cell.value) for cell in cells],
+            )
 
     def test_supportCommaNumbers_isPersisted(self) -> None:
         # Act
@@ -911,47 +923,53 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            cells = session.query(schema.Cell).all()
 
-        cells = session.query(schema.Cell).all()
+            assertion_values = [
+                (["MALE", "Male", "BLACK", "Black"], decimal.Decimal(1370)),
+                (["FEMALE", "Female", "BLACK", "Black"], decimal.Decimal(0)),
+                (["MALE", "Male", "WHITE", "White"], decimal.Decimal(6384123)),
+                (["FEMALE", "Female", "WHITE", "White"], decimal.Decimal(0)),
+                (["MALE", "Male", None, "Hispanic"], decimal.Decimal(15)),
+                (["FEMALE", "Female", None, "Hispanic"], decimal.Decimal(0)),
+                (
+                    [
+                        "MALE",
+                        "Male",
+                        "AMERICAN_INDIAN_ALASKAN_NATIVE",
+                        "Native American",
+                    ],
+                    decimal.Decimal(0),
+                ),
+                (
+                    [
+                        "FEMALE",
+                        "Female",
+                        "AMERICAN_INDIAN_ALASKAN_NATIVE",
+                        "Native American",
+                    ],
+                    decimal.Decimal(0),
+                ),
+                (["MALE", "Male", "ASIAN", "Asian"], decimal.Decimal(4)),
+                (["FEMALE", "Female", "ASIAN", "Asian"], decimal.Decimal(0)),
+                (
+                    ["MALE", "Male", "EXTERNAL_UNKNOWN", "Data Unavailable"],
+                    decimal.Decimal(0),
+                ),
+                (
+                    ["FEMALE", "Female", "EXTERNAL_UNKNOWN", "Data Unavailable"],
+                    decimal.Decimal(0),
+                ),
+            ]
+            actual_values = [
+                (cell.aggregated_dimension_values, cell.value) for cell in cells
+            ]
 
-        assertion_values = [
-            (["MALE", "Male", "BLACK", "Black"], decimal.Decimal(1370)),
-            (["FEMALE", "Female", "BLACK", "Black"], decimal.Decimal(0)),
-            (["MALE", "Male", "WHITE", "White"], decimal.Decimal(6384123)),
-            (["FEMALE", "Female", "WHITE", "White"], decimal.Decimal(0)),
-            (["MALE", "Male", None, "Hispanic"], decimal.Decimal(15)),
-            (["FEMALE", "Female", None, "Hispanic"], decimal.Decimal(0)),
-            (
-                ["MALE", "Male", "AMERICAN_INDIAN_ALASKAN_NATIVE", "Native American"],
-                decimal.Decimal(0),
-            ),
-            (
-                [
-                    "FEMALE",
-                    "Female",
-                    "AMERICAN_INDIAN_ALASKAN_NATIVE",
-                    "Native American",
-                ],
-                decimal.Decimal(0),
-            ),
-            (["MALE", "Male", "ASIAN", "Asian"], decimal.Decimal(4)),
-            (["FEMALE", "Female", "ASIAN", "Asian"], decimal.Decimal(0)),
-            (
-                ["MALE", "Male", "EXTERNAL_UNKNOWN", "Data Unavailable"],
-                decimal.Decimal(0),
-            ),
-            (
-                ["FEMALE", "Female", "EXTERNAL_UNKNOWN", "Data Unavailable"],
-                decimal.Decimal(0),
-            ),
-        ]
-        actual_values = [
-            (cell.aggregated_dimension_values, cell.value) for cell in cells
-        ]
-
-        for assertion_value in assertion_values:
-            self.assertIn(assertion_value, actual_values)
+            for assertion_value in assertion_values:
+                self.assertIn(assertion_value, actual_values)
 
     def test_ingestReport_populationTypeDimension(self) -> None:
         # Act
@@ -963,23 +981,24 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
-
-        cells = session.query(schema.Cell).all()
-        self.assertEqual(
-            [
-                (["PRISON", "Inmates", None, "Inmates"], decimal.Decimal(1489)),
-                (
-                    ["SUPERVISION", "Parolees", "PAROLE", "Parolees"],
-                    decimal.Decimal(5592),
-                ),
-                (
-                    ["SUPERVISION", "Probationeers", "PROBATION", "Probationeers"],
-                    decimal.Decimal(200784),
-                ),
-            ],
-            [(cell.aggregated_dimension_values, cell.value) for cell in cells],
-        )
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            cells = session.query(schema.Cell).all()
+            self.assertEqual(
+                [
+                    (["PRISON", "Inmates", None, "Inmates"], decimal.Decimal(1489)),
+                    (
+                        ["SUPERVISION", "Parolees", "PAROLE", "Parolees"],
+                        decimal.Decimal(5592),
+                    ),
+                    (
+                        ["SUPERVISION", "Probationeers", "PROBATION", "Probationeers"],
+                        decimal.Decimal(200784),
+                    ),
+                ],
+                [(cell.aggregated_dimension_values, cell.value) for cell in cells],
+            )
 
     def test_ingestReport_parolePopulation(self) -> None:
         # Act
@@ -991,26 +1010,27 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            [table_definition] = session.query(schema.ReportTableDefinition).all()
+            self.assertEqual(
+                [
+                    "global/location/state",
+                    "metric/population/type",
+                    "metric/supervision/type",
+                ],
+                table_definition.filtered_dimensions,
+            )
+            self.assertEqual(
+                ["US_MS", "SUPERVISION", "PAROLE"],
+                table_definition.filtered_dimension_values,
+            )
+            self.assertEqual([], table_definition.aggregated_dimensions)
 
-        [table_definition] = session.query(schema.ReportTableDefinition).all()
-        self.assertEqual(
-            [
-                "global/location/state",
-                "metric/population/type",
-                "metric/supervision/type",
-            ],
-            table_definition.filtered_dimensions,
-        )
-        self.assertEqual(
-            ["US_MS", "SUPERVISION", "PAROLE"],
-            table_definition.filtered_dimension_values,
-        )
-        self.assertEqual([], table_definition.aggregated_dimensions)
-
-        [cell] = session.query(schema.Cell).all()
-        self.assertEqual([], cell.aggregated_dimension_values)
-        self.assertEqual(decimal.Decimal(5592), cell.value)
+            [cell] = session.query(schema.Cell).all()
+            self.assertEqual([], cell.aggregated_dimension_values)
+            self.assertEqual(decimal.Decimal(5592), cell.value)
 
     def test_raiseError_noPopulationTypeDimensionOrMetric(self) -> None:
         # Act
@@ -1046,112 +1066,115 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
-
-        [type_definition, total_definition] = (
-            session.query(schema.ReportTableDefinition)
-            .order_by(
-                sql.func.array_length(
-                    schema.ReportTableDefinition.aggregated_dimensions, 1
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            [type_definition, total_definition] = (
+                session.query(schema.ReportTableDefinition)
+                .order_by(
+                    sql.func.array_length(
+                        schema.ReportTableDefinition.aggregated_dimensions, 1
+                    )
                 )
+                .all()
             )
-            .all()
-        )
-        self.assertEqual(
-            [
-                "metric/admission/type",
-                "metric/admission/type/raw",
-                "metric/supervision/type",
-                "metric/supervision/type/raw",
-            ],
-            type_definition.aggregated_dimensions,
-        )
-        self.assertEqual([], total_definition.aggregated_dimensions)
-
-        self.assertEqual(schema.MeasurementType.DELTA, type_definition.measurement_type)
-        self.assertEqual(
-            schema.MeasurementType.DELTA, total_definition.measurement_type
-        )
-
-        [total_table] = (
-            session.query(schema.ReportTableInstance)
-            .filter(
-                schema.ReportTableInstance.report_table_definition == total_definition
+            self.assertEqual(
+                [
+                    "metric/admission/type",
+                    "metric/admission/type/raw",
+                    "metric/supervision/type",
+                    "metric/supervision/type/raw",
+                ],
+                type_definition.aggregated_dimensions,
             )
-            .all()
-        )
-        [type_table] = (
-            session.query(schema.ReportTableInstance)
-            .filter(
-                schema.ReportTableInstance.report_table_definition == type_definition
+            self.assertEqual([], total_definition.aggregated_dimensions)
+
+            self.assertEqual(
+                schema.MeasurementType.DELTA, type_definition.measurement_type
             )
-            .all()
-        )
-
-        raw_type_values = {
-            tuple(cell.aggregated_dimension_values): int(cell.value)
-            for cell in session.query(schema.Cell)
-            .filter(schema.Cell.report_table_instance == type_table)
-            .all()
-        }
-
-        EXPECTED_RAW_TYPE_TOTALS = {
-            (
-                "FROM_SUPERVISION",
-                "Probation Revocations",
-                "PROBATION",
-                "Probation Revocations",
-            ): 244,
-            ("NEW_COMMITMENT", "New Commitments", None, "New Commitments"): 125,
-            ("OTHER", "Other", None, "Other"): 27,
-            (
-                "FROM_SUPERVISION",
-                "Parole Re-Admissions",
-                "PAROLE",
-                "Parole Re-Admissions",
-            ): 128,
-            ("OTHER", "Returned Escapees", None, "Returned Escapees"): 53,
-            ("NEW_COMMITMENT", "Split Sentence", None, "Split Sentence"): 166,
-        }
-        self.assertEqual(EXPECTED_RAW_TYPE_TOTALS, raw_type_values)
-
-        type_values = {
-            (result[0], result[1]): int(result[2])
-            for result in session.query(
-                schema.Cell.aggregated_dimension_values[1],
-                schema.Cell.aggregated_dimension_values[3],
-                sql.func.sum(schema.Cell.value),
+            self.assertEqual(
+                schema.MeasurementType.DELTA, total_definition.measurement_type
             )
-            .filter(schema.Cell.report_table_instance == type_table)
-            .group_by(
-                schema.Cell.aggregated_dimension_values[1],
-                schema.Cell.aggregated_dimension_values[3],
+
+            [total_table] = (
+                session.query(schema.ReportTableInstance)
+                .filter(
+                    schema.ReportTableInstance.report_table_definition
+                    == total_definition
+                )
+                .all()
             )
-            .all()
-        }
-        EXPECTED_TYPE_TOTALS = {
-            ("FROM_SUPERVISION", "PAROLE"): 128,
-            ("FROM_SUPERVISION", "PROBATION"): 244,
-            ("NEW_COMMITMENT", None): 291,
-            ("OTHER", None): 80,
-        }
-        self.assertEqual(EXPECTED_TYPE_TOTALS, type_values)
+            [type_table] = (
+                session.query(schema.ReportTableInstance)
+                .filter(
+                    schema.ReportTableInstance.report_table_definition
+                    == type_definition
+                )
+                .all()
+            )
 
-        [[total_from_types]] = (
-            session.query(sql.func.sum(schema.Cell.value))
-            .filter(schema.Cell.report_table_instance == type_table)
-            .group_by()
-            .all()
-        )
-        self.assertEqual(decimal.Decimal(743), total_from_types)
-        [[total]] = (
-            session.query(schema.Cell.value)
-            .filter(schema.Cell.report_table_instance == total_table)
-            .all()
-        )
-        self.assertEqual(decimal.Decimal(743), total)
+            raw_type_values = {
+                tuple(cell.aggregated_dimension_values): int(cell.value)
+                for cell in session.query(schema.Cell)
+                .filter(schema.Cell.report_table_instance == type_table)
+                .all()
+            }
 
-        session.close()
+            EXPECTED_RAW_TYPE_TOTALS = {
+                (
+                    "FROM_SUPERVISION",
+                    "Probation Revocations",
+                    "PROBATION",
+                    "Probation Revocations",
+                ): 244,
+                ("NEW_COMMITMENT", "New Commitments", None, "New Commitments"): 125,
+                ("OTHER", "Other", None, "Other"): 27,
+                (
+                    "FROM_SUPERVISION",
+                    "Parole Re-Admissions",
+                    "PAROLE",
+                    "Parole Re-Admissions",
+                ): 128,
+                ("OTHER", "Returned Escapees", None, "Returned Escapees"): 53,
+                ("NEW_COMMITMENT", "Split Sentence", None, "Split Sentence"): 166,
+            }
+            self.assertEqual(EXPECTED_RAW_TYPE_TOTALS, raw_type_values)
+
+            type_values = {
+                (result[0], result[1]): int(result[2])
+                for result in session.query(
+                    schema.Cell.aggregated_dimension_values[1],
+                    schema.Cell.aggregated_dimension_values[3],
+                    sql.func.sum(schema.Cell.value),
+                )
+                .filter(schema.Cell.report_table_instance == type_table)
+                .group_by(
+                    schema.Cell.aggregated_dimension_values[1],
+                    schema.Cell.aggregated_dimension_values[3],
+                )
+                .all()
+            }
+            EXPECTED_TYPE_TOTALS = {
+                ("FROM_SUPERVISION", "PAROLE"): 128,
+                ("FROM_SUPERVISION", "PROBATION"): 244,
+                ("NEW_COMMITMENT", None): 291,
+                ("OTHER", None): 80,
+            }
+            self.assertEqual(EXPECTED_TYPE_TOTALS, type_values)
+
+            [[total_from_types]] = (
+                session.query(sql.func.sum(schema.Cell.value))
+                .filter(schema.Cell.report_table_instance == type_table)
+                .group_by()
+                .all()
+            )
+            self.assertEqual(decimal.Decimal(743), total_from_types)
+            [[total]] = (
+                session.query(schema.Cell.value)
+                .filter(schema.Cell.report_table_instance == total_table)
+                .all()
+            )
+            self.assertEqual(decimal.Decimal(743), total)
 
     def test_releasesMetric_isPersisted(self) -> None:
         # Act
@@ -1161,33 +1184,34 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            [type_definition] = session.query(schema.ReportTableDefinition).all()
+            self.assertEqual(
+                ["metric/release/type", "metric/release/type/raw"],
+                type_definition.aggregated_dimensions,
+            )
 
-        [type_definition] = session.query(schema.ReportTableDefinition).all()
-        self.assertEqual(
-            ["metric/release/type", "metric/release/type/raw"],
-            type_definition.aggregated_dimensions,
-        )
+            self.assertEqual(
+                schema.MeasurementType.DELTA, type_definition.measurement_type
+            )
 
-        self.assertEqual(schema.MeasurementType.DELTA, type_definition.measurement_type)
+            [type_table] = session.query(schema.ReportTableInstance).all()
 
-        [type_table] = session.query(schema.ReportTableInstance).all()
+            raw_type_values = {
+                tuple(cell.aggregated_dimension_values): int(cell.value)
+                for cell in session.query(schema.Cell)
+                .filter(schema.Cell.report_table_instance == type_table)
+                .all()
+            }
 
-        raw_type_values = {
-            tuple(cell.aggregated_dimension_values): int(cell.value)
-            for cell in session.query(schema.Cell)
-            .filter(schema.Cell.report_table_instance == type_table)
-            .all()
-        }
-
-        expected_totals = {
-            ("COMPLETED", "Discharged"): 125,
-            ("TO_SUPERVISION", "Parole"): 53,
-            ("OTHER", "Other"): 27,
-        }
-        self.assertEqual(expected_totals, raw_type_values)
-
-        session.close()
+            expected_totals = {
+                ("COMPLETED", "Discharged"): 125,
+                ("TO_SUPERVISION", "Parole"): 53,
+                ("OTHER", "Other"): 27,
+            }
+            self.assertEqual(expected_totals, raw_type_values)
 
     def test_supervisionStartsMetric_isPersisted(self) -> None:
         # Act
@@ -1199,35 +1223,36 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            type_definition: schema.ReportTableDefinition
+            [type_definition] = session.query(schema.ReportTableDefinition).all()
+            self.assertEqual(
+                ["global/location/state", "metric/supervision/type"],
+                type_definition.filtered_dimensions,
+            )
+            self.assertEqual(
+                ["US_AL", "PROBATION"], type_definition.filtered_dimension_values
+            )
 
-        type_definition: schema.ReportTableDefinition
-        [type_definition] = session.query(schema.ReportTableDefinition).all()
-        self.assertEqual(
-            ["global/location/state", "metric/supervision/type"],
-            type_definition.filtered_dimensions,
-        )
-        self.assertEqual(
-            ["US_AL", "PROBATION"], type_definition.filtered_dimension_values
-        )
+            self.assertEqual(
+                schema.MeasurementType.DELTA, type_definition.measurement_type
+            )
 
-        self.assertEqual(schema.MeasurementType.DELTA, type_definition.measurement_type)
+            [type_table] = session.query(schema.ReportTableInstance).all()
 
-        [type_table] = session.query(schema.ReportTableInstance).all()
+            values = {
+                tuple(cell.aggregated_dimension_values): int(cell.value)
+                for cell in session.query(schema.Cell)
+                .filter(schema.Cell.report_table_instance == type_table)
+                .all()
+            }
 
-        values = {
-            tuple(cell.aggregated_dimension_values): int(cell.value)
-            for cell in session.query(schema.Cell)
-            .filter(schema.Cell.report_table_instance == type_table)
-            .all()
-        }
-
-        expected: Dict[Tuple[str, ...], int] = {
-            tuple(): 125,
-        }
-        self.assertEqual(expected, values)
-
-        session.close()
+            expected: Dict[Tuple[str, ...], int] = {
+                tuple(): 125,
+            }
+            self.assertEqual(expected, values)
 
     def test_reincarcerationsWithViolationType_arePersisted(self) -> None:
         # Act
@@ -1239,50 +1264,50 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
-
-        [table_definition] = session.query(schema.ReportTableDefinition).all()
-        self.assertEqual(
-            [
-                "global/location/state",
-                "metric/admission/type",
-                "metric/supervision/type",
-            ],
-            table_definition.filtered_dimensions,
-        )
-        self.assertEqual(
-            ["US_MI", "FROM_SUPERVISION", "PAROLE"],
-            table_definition.filtered_dimension_values,
-        )
-        self.assertEqual(
-            [
-                "global/gender",
-                "global/gender/raw",
-                "metric/supervision_violation/type",
-                "metric/supervision_violation/type/raw",
-            ],
-            table_definition.aggregated_dimensions,
-        )
-
-        self.assertEqual(
-            schema.MeasurementType.DELTA, table_definition.measurement_type
-        )
-
-        violation_type_values = {
-            result[0]: int(result[1])
-            for result in session.query(
-                schema.Cell.aggregated_dimension_values[3],
-                sql.func.sum(schema.Cell.value),
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            [table_definition] = session.query(schema.ReportTableDefinition).all()
+            self.assertEqual(
+                [
+                    "global/location/state",
+                    "metric/admission/type",
+                    "metric/supervision/type",
+                ],
+                table_definition.filtered_dimensions,
             )
-            .group_by(schema.Cell.aggregated_dimension_values[3])
-            .all()
-        }
-        EXPECTED_TOTALS = {
-            "TECHNICAL": 19_926,
-            "NEW_CRIME": 13_625,
-        }
-        self.assertEqual(EXPECTED_TOTALS, violation_type_values)
-        session.close()
+            self.assertEqual(
+                ["US_MI", "FROM_SUPERVISION", "PAROLE"],
+                table_definition.filtered_dimension_values,
+            )
+            self.assertEqual(
+                [
+                    "global/gender",
+                    "global/gender/raw",
+                    "metric/supervision_violation/type",
+                    "metric/supervision_violation/type/raw",
+                ],
+                table_definition.aggregated_dimensions,
+            )
+
+            self.assertEqual(
+                schema.MeasurementType.DELTA, table_definition.measurement_type
+            )
+
+            violation_type_values = {
+                result[0]: int(result[1])
+                for result in session.query(
+                    schema.Cell.aggregated_dimension_values[3],
+                    sql.func.sum(schema.Cell.value),
+                )
+                .group_by(schema.Cell.aggregated_dimension_values[3])
+                .all()
+            }
+            EXPECTED_TOTALS = {
+                "TECHNICAL": 19_926,
+                "NEW_CRIME": 13_625,
+            }
+            self.assertEqual(EXPECTED_TOTALS, violation_type_values)
 
     def test_ingestReport_fixed_range_month(self) -> None:
         # Act
@@ -1294,15 +1319,16 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
-
-        report_table = session.query(schema.ReportTableInstance).all()
-        self.assertEqual(
-            [
-                (datetime.date(2020, 9, 1), datetime.date(2020, 10, 1)),
-            ],
-            [(row.time_window_start, row.time_window_end) for row in report_table],
-        )
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            report_table = session.query(schema.ReportTableInstance).all()
+            self.assertEqual(
+                [
+                    (datetime.date(2020, 9, 1), datetime.date(2020, 10, 1)),
+                ],
+                [(row.time_window_start, row.time_window_end) for row in report_table],
+            )
 
     def test_ingestReport_fixed_range_year(self) -> None:
         # Act
@@ -1314,15 +1340,16 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
-
-        report_table = session.query(schema.ReportTableInstance).all()
-        self.assertEqual(
-            [
-                (datetime.date(2019, 1, 1), datetime.date(2020, 1, 1)),
-            ],
-            [(row.time_window_start, row.time_window_end) for row in report_table],
-        )
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            report_table = session.query(schema.ReportTableInstance).all()
+            self.assertEqual(
+                [
+                    (datetime.date(2019, 1, 1), datetime.date(2020, 1, 1)),
+                ],
+                [(row.time_window_start, row.time_window_end) for row in report_table],
+            )
 
     def test_raiseError_race_not_properly_mapped(self) -> None:
         # Act
@@ -1347,27 +1374,31 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            cells = session.query(schema.Cell).all()
+            self.assertEqual(
+                [
+                    (["PRISON", "Inmates", "test1"], decimal.Decimal(1489)),
+                    (["SUPERVISION", "Parolees", "test2"], decimal.Decimal(5592)),
+                    (
+                        ["SUPERVISION", "Probationeers", "test3"],
+                        decimal.Decimal(200784),
+                    ),
+                ],
+                [(cell.aggregated_dimension_values, cell.value) for cell in cells],
+            )
 
-        cells = session.query(schema.Cell).all()
-        self.assertEqual(
-            [
-                (["PRISON", "Inmates", "test1"], decimal.Decimal(1489)),
-                (["SUPERVISION", "Parolees", "test2"], decimal.Decimal(5592)),
-                (["SUPERVISION", "Probationeers", "test3"], decimal.Decimal(200784)),
-            ],
-            [(cell.aggregated_dimension_values, cell.value) for cell in cells],
-        )
-
-        [table_definition] = session.query(schema.ReportTableDefinition).all()
-        self.assertEqual(
-            [
-                "metric/population/type",
-                "metric/population/type/raw",
-                "source/colorado_department_of_corrections/population_subtype/raw",
-            ],
-            table_definition.aggregated_dimensions,
-        )
+            [table_definition] = session.query(schema.ReportTableDefinition).all()
+            self.assertEqual(
+                [
+                    "metric/population/type",
+                    "metric/population/type/raw",
+                    "source/colorado_department_of_corrections/population_subtype/raw",
+                ],
+                table_definition.aggregated_dimensions,
+            )
 
     def test_ingestAgeRaw_isPersisted(self) -> None:
         # Act
@@ -1377,28 +1408,29 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            [table_definition] = session.query(schema.ReportTableDefinition).all()
+            self.assertEqual(
+                ["global/age/raw", "global/gender", "global/gender/raw"],
+                table_definition.aggregated_dimensions,
+            )
 
-        [table_definition] = session.query(schema.ReportTableDefinition).all()
-        self.assertEqual(
-            ["global/age/raw", "global/gender", "global/gender/raw"],
-            table_definition.aggregated_dimensions,
-        )
-
-        cells = session.query(schema.Cell).all()
-        self.assertEqual(
-            [
-                (["0-24", "MALE", "Male"], decimal.Decimal(1370)),
-                (["0-24", "FEMALE", "Female"], decimal.Decimal(0)),
-                (["25-34", "MALE", "Male"], decimal.Decimal(638)),
-                (["25-34", "FEMALE", "Female"], decimal.Decimal(0)),
-                (["35-44", "MALE", "Male"], decimal.Decimal(15)),
-                (["35-44", "FEMALE", "Female"], decimal.Decimal(0)),
-                (["45+", "MALE", "Male"], decimal.Decimal(0)),
-                (["45+", "FEMALE", "Female"], decimal.Decimal(0)),
-            ],
-            [(cell.aggregated_dimension_values, cell.value) for cell in cells],
-        )
+            cells = session.query(schema.Cell).all()
+            self.assertEqual(
+                [
+                    (["0-24", "MALE", "Male"], decimal.Decimal(1370)),
+                    (["0-24", "FEMALE", "Female"], decimal.Decimal(0)),
+                    (["25-34", "MALE", "Male"], decimal.Decimal(638)),
+                    (["25-34", "FEMALE", "Female"], decimal.Decimal(0)),
+                    (["35-44", "MALE", "Male"], decimal.Decimal(15)),
+                    (["35-44", "FEMALE", "Female"], decimal.Decimal(0)),
+                    (["45+", "MALE", "Male"], decimal.Decimal(0)),
+                    (["45+", "FEMALE", "Female"], decimal.Decimal(0)),
+                ],
+                [(cell.aggregated_dimension_values, cell.value) for cell in cells],
+            )
 
     def test_parse_date_range_raiseChronologicalError(self) -> None:
         range_input = YAMLDict({"type": "RANGE", "input": ["2020-11-01", "2020-10-01"]})
@@ -1495,33 +1527,38 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            [table_definition] = session.query(schema.ReportTableDefinition).all()
+            self.assertEqual(
+                ["global/location/state", "metric/population/type"],
+                table_definition.filtered_dimensions,
+            )
+            self.assertEqual(
+                ["US_MS", "JAIL"], table_definition.filtered_dimension_values
+            )
+            self.assertEqual(
+                [
+                    "global/location/county",
+                    "global/location/county-fips",
+                    "source/colorado_department_of_corrections/county/raw",
+                ],
+                table_definition.aggregated_dimensions,
+            )
 
-        [table_definition] = session.query(schema.ReportTableDefinition).all()
-        self.assertEqual(
-            ["global/location/state", "metric/population/type"],
-            table_definition.filtered_dimensions,
-        )
-        self.assertEqual(["US_MS", "JAIL"], table_definition.filtered_dimension_values)
-        self.assertEqual(
-            [
-                "global/location/county",
-                "global/location/county-fips",
-                "source/colorado_department_of_corrections/county/raw",
-            ],
-            table_definition.aggregated_dimensions,
-        )
-
-        cells = session.query(schema.Cell).all()
-        self.assertEqual(
-            [
-                (["US_MS_PIKE", "28113", "Pike County"], decimal.Decimal(1489)),
-                (["US_MS_RANKIN", "28121", "Rankin County"], decimal.Decimal(5592)),
-                (["US_MS_WINSTON", "28159", "Winston County"], decimal.Decimal(200784)),
-            ],
-            [(cell.aggregated_dimension_values, cell.value) for cell in cells],
-        )
-        session.close()
+            cells = session.query(schema.Cell).all()
+            self.assertEqual(
+                [
+                    (["US_MS_PIKE", "28113", "Pike County"], decimal.Decimal(1489)),
+                    (["US_MS_RANKIN", "28121", "Rankin County"], decimal.Decimal(5592)),
+                    (
+                        ["US_MS_WINSTON", "28159", "Winston County"],
+                        decimal.Decimal(200784),
+                    ),
+                ],
+                [(cell.aggregated_dimension_values, cell.value) for cell in cells],
+            )
 
     def test_jailPopulationAndFIPSMultipleStates_arePersisted(self) -> None:
         # Act
@@ -1533,46 +1570,46 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            [table_definition] = session.query(schema.ReportTableDefinition).all()
+            self.assertEqual(
+                ["metric/population/type"], table_definition.filtered_dimensions
+            )
+            self.assertEqual(["JAIL"], table_definition.filtered_dimension_values)
+            self.assertEqual(
+                [
+                    "global/location/county",
+                    "global/location/county-fips",
+                    "global/location/state",
+                    "source/colorado_department_of_corrections/county/raw",
+                ],
+                table_definition.aggregated_dimensions,
+            )
 
-        [table_definition] = session.query(schema.ReportTableDefinition).all()
-        self.assertEqual(
-            ["metric/population/type"], table_definition.filtered_dimensions
-        )
-        self.assertEqual(["JAIL"], table_definition.filtered_dimension_values)
-        self.assertEqual(
-            [
-                "global/location/county",
-                "global/location/county-fips",
-                "global/location/state",
-                "source/colorado_department_of_corrections/county/raw",
-            ],
-            table_definition.aggregated_dimensions,
-        )
-
-        cells = session.query(schema.Cell).all()
-        self.assertEqual(
-            [
-                (
-                    ["US_TN_MCMINN", "47107", "US_TN", "McMinn County"],
-                    decimal.Decimal("1489"),
-                ),
-                (
-                    ["US_OK_HARMON", "40057", "US_OK", "Harmon County"],
-                    decimal.Decimal("5592"),
-                ),
-                (
-                    ["US_MS_WINSTON", "28159", "US_MS", "Winston County"],
-                    decimal.Decimal("200784"),
-                ),
-                (
-                    ["US_AL_BALDWIN", "01003", "US_AL", "Baldwin County"],
-                    decimal.Decimal("20784"),
-                ),
-            ],
-            [(cell.aggregated_dimension_values, cell.value) for cell in cells],
-        )
-        session.close()
+            cells = session.query(schema.Cell).all()
+            self.assertEqual(
+                [
+                    (
+                        ["US_TN_MCMINN", "47107", "US_TN", "McMinn County"],
+                        decimal.Decimal("1489"),
+                    ),
+                    (
+                        ["US_OK_HARMON", "40057", "US_OK", "Harmon County"],
+                        decimal.Decimal("5592"),
+                    ),
+                    (
+                        ["US_MS_WINSTON", "28159", "US_MS", "Winston County"],
+                        decimal.Decimal("200784"),
+                    ),
+                    (
+                        ["US_AL_BALDWIN", "01003", "US_AL", "Baldwin County"],
+                        decimal.Decimal("20784"),
+                    ),
+                ],
+                [(cell.aggregated_dimension_values, cell.value) for cell in cells],
+            )
 
     def test_genericSpreadsheet_isParsed(self) -> None:
         # Act
@@ -1584,12 +1621,14 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
-        cells = session.query(schema.Cell).all()
-        self.assertEqual(
-            [([], decimal.Decimal(1000))],
-            [(cell.aggregated_dimension_values, cell.value) for cell in cells],
-        )
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            cells = session.query(schema.Cell).all()
+            self.assertEqual(
+                [([], decimal.Decimal(1000))],
+                [(cell.aggregated_dimension_values, cell.value) for cell in cells],
+            )
 
     def test_NaNs_fail(self) -> None:
         # Act
@@ -1613,53 +1652,58 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Initial Assert
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            cells = session.query(schema.Cell).all()
+            self.assertEqual(
+                [
+                    (["PRISON", "Inmates", "test1"], decimal.Decimal(1489)),
+                    (["SUPERVISION", "Parolees", "test2"], decimal.Decimal(5592)),
+                    (
+                        ["SUPERVISION", "Probationeers", "test3"],
+                        decimal.Decimal(200784),
+                    ),
+                ],
+                [(cell.aggregated_dimension_values, cell.value) for cell in cells],
+            )
 
-        cells = session.query(schema.Cell).all()
-        self.assertEqual(
-            [
-                (["PRISON", "Inmates", "test1"], decimal.Decimal(1489)),
-                (["SUPERVISION", "Parolees", "test2"], decimal.Decimal(5592)),
-                (["SUPERVISION", "Probationeers", "test3"], decimal.Decimal(200784)),
-            ],
-            [(cell.aggregated_dimension_values, cell.value) for cell in cells],
-        )
-
-        # Re-ingest
-        manual_upload.ingest(
-            self.fs,
-            test_utils.prepare_files(
-                self.fs, manifest_filepath("report_reingest/updated")
-            ),
-        )
+            # Re-ingest
+            manual_upload.ingest(
+                self.fs,
+                test_utils.prepare_files(
+                    self.fs, manifest_filepath("report_reingest/updated")
+                ),
+            )
 
         # Re-ingest Assert
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            cells = session.query(schema.Cell).all()
+            self.assertEqual(
+                [
+                    (["PRISON", "Inmates"], decimal.Decimal(1489)),
+                    (["SUPERVISION", "Probationeers"], decimal.Decimal(200784)),
+                ],
+                [(cell.aggregated_dimension_values, cell.value) for cell in cells],
+            )
 
-        cells = session.query(schema.Cell).all()
-        self.assertEqual(
-            [
-                (["PRISON", "Inmates"], decimal.Decimal(1489)),
-                (["SUPERVISION", "Probationeers"], decimal.Decimal(200784)),
-            ],
-            [(cell.aggregated_dimension_values, cell.value) for cell in cells],
-        )
-
-        [table_definition1, table_definition2] = session.query(
-            schema.ReportTableDefinition
-        ).all()
-        self.assertEqual(
-            [
-                "metric/population/type",
-                "metric/population/type/raw",
-                "source/colorado_department_of_corrections/population_subtype/raw",
-            ],
-            table_definition1.aggregated_dimensions,
-        )
-        self.assertEqual(
-            ["metric/population/type", "metric/population/type/raw"],
-            table_definition2.aggregated_dimensions,
-        )
+            [table_definition1, table_definition2] = session.query(
+                schema.ReportTableDefinition
+            ).all()
+            self.assertEqual(
+                [
+                    "metric/population/type",
+                    "metric/population/type/raw",
+                    "source/colorado_department_of_corrections/population_subtype/raw",
+                ],
+                table_definition1.aggregated_dimensions,
+            )
+            self.assertEqual(
+                ["metric/population/type", "metric/population/type/raw"],
+                table_definition2.aggregated_dimensions,
+            )
 
     def test_multipleTablesSameDimensions(self) -> None:
         # Act
@@ -1671,18 +1715,17 @@ class ManualUploadTest(unittest.TestCase):
         )
 
         # Assert
-        session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            [monthly_definition, ytd_definition] = (
+                session.query(schema.ReportTableDefinition)
+                .order_by(schema.ReportTableDefinition.label)
+                .all()
+            )
 
-        [monthly_definition, ytd_definition] = (
-            session.query(schema.ReportTableDefinition)
-            .order_by(schema.ReportTableDefinition.label)
-            .all()
-        )
-
-        self.assertEqual("Admissions Monthly", monthly_definition.label)
-        self.assertEqual("Admissions YTD", ytd_definition.label)
-
-        session.close()
+            self.assertEqual("Admissions Monthly", monthly_definition.label)
+            self.assertEqual("Admissions YTD", ytd_definition.label)
 
 
 class TestTableConverter(unittest.TestCase):

@@ -143,7 +143,8 @@ def dashboard_user_restrictions_by_email() -> Tuple[
         return str(error), HTTPStatus.BAD_REQUEST
 
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
-    session = SessionFactory.for_database(database_key=database_key)
+    # TODO(#8046): Don't use the deprecated session fetcher
+    session = SessionFactory.deprecated__for_database(database_key=database_key)
     try:
         user_restrictions = (
             session.query(
@@ -221,77 +222,77 @@ def update_auth0_user_metadata() -> Tuple[str, HTTPStatus]:
         return str(error), HTTPStatus.BAD_REQUEST
 
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
-    session = SessionFactory.for_database(database_key=database_key)
-    try:
-        user_restrictions = (
-            session.query(
-                DashboardUserRestrictions.restricted_user_email,
-                DashboardUserRestrictions.allowed_supervision_location_ids,
-                DashboardUserRestrictions.allowed_supervision_location_level,
+    with SessionFactory.using_database(
+        database_key=database_key, autocommit=False
+    ) as session:
+        try:
+            user_restrictions = (
+                session.query(
+                    DashboardUserRestrictions.restricted_user_email,
+                    DashboardUserRestrictions.allowed_supervision_location_ids,
+                    DashboardUserRestrictions.allowed_supervision_location_level,
+                )
+                .filter(DashboardUserRestrictions.state_code == region_code.upper())
+                .order_by(DashboardUserRestrictions.restricted_user_email)
+                .all()
             )
-            .filter(DashboardUserRestrictions.state_code == region_code.upper())
-            .order_by(DashboardUserRestrictions.restricted_user_email)
-            .all()
-        )
-        user_restrictions_by_email: Dict[str, Tuple[List[str], Optional[str]]] = {}
+            user_restrictions_by_email: Dict[str, Tuple[List[str], Optional[str]]] = {}
 
-        for user_restriction in user_restrictions:
-            email = user_restriction.restricted_user_email.lower()
-            allowed_ids = _format_user_restrictions(
-                user_restriction.allowed_supervision_location_ids
-            )
-            allowed_level = user_restriction.allowed_supervision_location_level
-            user_restrictions_by_email[email] = (allowed_ids, allowed_level)
+            for user_restriction in user_restrictions:
+                email = user_restriction.restricted_user_email.lower()
+                allowed_ids = _format_user_restrictions(
+                    user_restriction.allowed_supervision_location_ids
+                )
+                allowed_level = user_restriction.allowed_supervision_location_level
+                user_restrictions_by_email[email] = (allowed_ids, allowed_level)
 
-        auth0 = Auth0Client()
-        email_addresses = list(user_restrictions_by_email.keys())
-        users = auth0.get_all_users_by_email_addresses(email_addresses)
-        num_updated_users = 0
+            auth0 = Auth0Client()
+            email_addresses = list(user_restrictions_by_email.keys())
+            users = auth0.get_all_users_by_email_addresses(email_addresses)
+            num_updated_users = 0
 
-        for user in users:
-            email = user.get("email", "")
-            current_app_metadata = user.get("app_metadata", {})
-            new_restrictions: Tuple[
-                List[str], Optional[str]
-            ] = user_restrictions_by_email.get(email, ([], None))
+            for user in users:
+                email = user.get("email", "")
+                current_app_metadata = user.get("app_metadata", {})
+                new_restrictions: Tuple[
+                    List[str], Optional[str]
+                ] = user_restrictions_by_email.get(email, ([], None))
 
-            new_restrictions_ids, new_restrictions_level = new_restrictions
+                new_restrictions_ids, new_restrictions_level = new_restrictions
 
-            current_restrictions_ids: List[str] = current_app_metadata.get(
-                "allowed_supervision_location_ids", []
-            )
-            current_restrictions_level: Optional[str] = current_app_metadata.get(
-                "allowed_supervision_location_level", None
-            )
-
-            if _should_update_restrictions(
-                current_restrictions_ids,
-                current_restrictions_level,
-                new_restrictions_ids,
-                new_restrictions_level,
-            ):
-                num_updated_users += 1
-                app_metadata: Auth0AppMetadata = {
-                    "allowed_supervision_location_ids": new_restrictions_ids,
-                    "allowed_supervision_location_level": new_restrictions_level,
-                }
-                auth0.update_user_app_metadata(
-                    user_id=user.get("user_id", ""), app_metadata=app_metadata
+                current_restrictions_ids: List[str] = current_app_metadata.get(
+                    "allowed_supervision_location_ids", []
+                )
+                current_restrictions_level: Optional[str] = current_app_metadata.get(
+                    "allowed_supervision_location_level", None
                 )
 
-        return (
-            f"Finished updating {num_updated_users} auth0 users with restrictions for region {region_code}",
-            HTTPStatus.OK,
-        )
+                if _should_update_restrictions(
+                    current_restrictions_ids,
+                    current_restrictions_level,
+                    new_restrictions_ids,
+                    new_restrictions_level,
+                ):
+                    num_updated_users += 1
+                    app_metadata: Auth0AppMetadata = {
+                        "allowed_supervision_location_ids": new_restrictions_ids,
+                        "allowed_supervision_location_level": new_restrictions_level,
+                    }
+                    auth0.update_user_app_metadata(
+                        user_id=user.get("user_id", ""), app_metadata=app_metadata
+                    )
 
-    except Exception as error:
-        logging.error(error)
-        return (
-            f"Error using Auth0 management API to update users: {error}",
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
-    finally:
-        session.close()
+            return (
+                f"Finished updating {num_updated_users} auth0 users with restrictions for region {region_code}",
+                HTTPStatus.OK,
+            )
+
+        except Exception as error:
+            logging.error(error)
+            return (
+                f"Error using Auth0 management API to update users: {error}",
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
 
 
 def _format_user_restrictions(user_restrictions: str) -> List[str]:

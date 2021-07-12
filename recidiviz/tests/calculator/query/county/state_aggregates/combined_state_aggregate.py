@@ -90,21 +90,22 @@ class TestAggregateView(TestCase):
 
         # Act
         # pylint: disable=protected-access
-        query = SessionFactory.for_database(self.database_key).query(
-            combined_state_aggregate._UNIONED_STATEMENT
-        )
-        result = query.all()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = session.query(combined_state_aggregate._UNIONED_STATEMENT)
+            result = query.all()
 
-        # Assert
-        expected_custodial = [379, 2043, 749, 50, 478, 1015, 141]
-        result_custodial = [row.custodial for row in result]
-        self.assertCountEqual(result_custodial, expected_custodial)
+            # Assert
+            expected_custodial = [379, 2043, 749, 50, 478, 1015, 141]
+            result_custodial = [row.custodial for row in result]
+            self.assertCountEqual(result_custodial, expected_custodial)
 
-        expected_felony_pretrial = [None, None, 463, 4, 81, 307, 50]
-        result_felony_pretrial = [row.felony_pretrial for row in result]
-        self.assertCountEqual(result_felony_pretrial, expected_felony_pretrial)
+            expected_felony_pretrial = [None, None, 463, 4, 81, 307, 50]
+            result_felony_pretrial = [row.felony_pretrial for row in result]
+            self.assertCountEqual(result_felony_pretrial, expected_felony_pretrial)
 
-        # In CA: expected_male = sentenced_male_adp + unsentenced_male_adp
-        expected_male = [23 + 356, 301 + 1513, None, None, None, None, None]
-        result_male = [row.male for row in result]
-        self.assertCountEqual(result_male, expected_male)
+            # In CA: expected_male = sentenced_male_adp + unsentenced_male_adp
+            expected_male = [23 + 356, 301 + 1513, None, None, None, None, None]
+            result_male = [row.male for row in result]
+            self.assertCountEqual(result_male, expected_male)

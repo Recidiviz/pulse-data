@@ -124,10 +124,11 @@ class TestInAggregateIngest(TestCase):
             dao.write_df(table, df)
 
         # Assert
-        query = SessionFactory.for_database(self.database_key).query(
-            func.sum(InCountyAggregate.total_jail_population)
-        )
-        result = one(one(query.all()))
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = session.query(func.sum(InCountyAggregate.total_jail_population))
+            result = one(one(query.all()))
 
         # This is the expected sum, even though the excel file has a different sum.
         expected_sum = 17164
