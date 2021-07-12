@@ -8,10 +8,16 @@ exclusions:
   - validation_name: supervision_population_person_level_external_comparison_matching_people_supervising_officer
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: PA has not provided us with person-level validation data for supervising officers
-  # TODO(#7437) Adjust this once PO Monthly Report is fully launched.
+  # TODO(#7437): Adjust this once PO Monthly Report is fully launched.
   - validation_name: po_report_missing_fields
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: PA has not yet been launched for PO Monthly report, so we are excluding this currently. To be fixed in \#7437.
+  # TODO(#7443): Remove exclusion once US_PA IP pre-processing is complete
+  - validation_name: invalid_admitted_from_supervision_admission_reason
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: US_PA IP pre-processing hasn't fully implemented handling of
+      ADMITTED_FROM_SUPERVISION admission reasons. To be fixed in \#7443.
+    
 max_allowed_error_overrides:
   - validation_name: supervision_population_person_level_external_comparison
     max_allowed_error_override: 0.03
