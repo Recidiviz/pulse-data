@@ -22,6 +22,7 @@ import { ClientData } from "./Client";
 
 export const clientData: ClientData = {
   assessmentScore: 1,
+  birthdate: "1990-04-01",
   caseType: "GENERAL",
   caseUpdates: {},
   currentAddress: "",

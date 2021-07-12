@@ -88,6 +88,12 @@ const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
           {client.emailAddress || "No email on file"} /{" "}
           {client.phoneNumber || "No phone number on file"}
         </SummaryItem>
+
+        {client.hasUpcomingBirthday && (
+          <SummaryItem icon={IconSVG.Gift}>
+            Birthday coming up ({client.birthdate?.format("MMMM D")})
+          </SummaryItem>
+        )}
       </DetailsPanelSection>
       <DetailsPanelSection>
         <DetailsPanelHeading>Upcoming</DetailsPanelHeading>
