@@ -75,26 +75,28 @@ class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
             )
 
         # Commit an update to the StatePerson
-        update_session = SessionFactory.for_database(self.database_key)
-        person = one(update_session.query(state_schema.StatePerson).all())
-        person.full_name = "new name"
-        ingest_time_2 = datetime.datetime(2018, 7, 31)
-        self._commit_person(person, SystemLevel.STATE, ingest_time_2)
-        update_session.close()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as update_session:
+            person = one(update_session.query(state_schema.StatePerson).all())
+            person.full_name = "new name"
+            ingest_time_2 = datetime.datetime(2018, 7, 31)
+            self._commit_person(person, SystemLevel.STATE, ingest_time_2)
 
         # Check that StatePerson had a new history table row written, but not
         # its child SentenceGroup.
-        assert_session = SessionFactory.for_database(self.database_key)
-        person = one(assert_session.query(state_schema.StatePerson).all())
-        sentence_group = one(
-            assert_session.query(state_schema.StateSentenceGroup).all()
-        )
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as assert_session:
+            person = one(assert_session.query(state_schema.StatePerson).all())
+            sentence_group = one(
+                assert_session.query(state_schema.StateSentenceGroup).all()
+            )
 
-        self._assert_expected_snapshots_for_schema_object(
-            person, [ingest_time_1, ingest_time_2]
-        )
+            self._assert_expected_snapshots_for_schema_object(
+                person, [ingest_time_1, ingest_time_2]
+            )
 
-        self._assert_expected_snapshots_for_schema_object(
-            sentence_group, [ingest_time_1]
-        )
-        assert_session.close()
+            self._assert_expected_snapshots_for_schema_object(
+                sentence_group, [ingest_time_1]
+            )

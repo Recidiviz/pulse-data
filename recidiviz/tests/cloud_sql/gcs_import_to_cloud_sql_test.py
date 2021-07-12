@@ -89,18 +89,17 @@ class TestGCSImportToCloudSQL(TestCase):
     def _mock_load_data_from_csv(
         self, values: Optional[List[str]] = None, **_kwargs: Any
     ) -> str:
-        session = SessionFactory.for_database(self.database_key)
-        csv_values = [
-            f"('US_MO', '{self.user_1_email}', '', '{{1}}', 'level_1_supervision_location', 'level_1_access_role', true, false)",
-        ]
-        if values:
-            csv_values = csv_values + values
-        session.execute(
-            f"INSERT INTO tmp__{self.table_name} ({','.join(self.columns)}) "
-            f"VALUES {','.join(csv_values)}"
-        )
-        session.commit()
-        return "fake-id"
+        with SessionFactory.using_database(self.database_key) as session:
+            csv_values = [
+                f"('US_MO', '{self.user_1_email}', '', '{{1}}', 'level_1_supervision_location', 'level_1_access_role', true, false)",
+            ]
+            if values:
+                csv_values = csv_values + values
+            session.execute(
+                f"INSERT INTO tmp__{self.table_name} ({','.join(self.columns)}) "
+                f"VALUES {','.join(csv_values)}"
+            )
+            return "fake-id"
 
     def test_import_gcs_csv_to_cloud_sql_swaps_tables(self) -> None:
         """Assert that the temp table and destination are successfully swapped."""
@@ -121,8 +120,10 @@ class TestGCSImportToCloudSQL(TestCase):
             gcs_uri=self.gcs_uri,
             columns=self.columns,
         )
-        session = SessionFactory.for_database(self.database_key)
-        destination_table_rows = session.query(DashboardUserRestrictions).all()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            destination_table_rows = session.query(DashboardUserRestrictions).all()
 
         self.assertEqual(len(destination_table_rows), 1)
         self.assertEqual(
@@ -162,51 +163,59 @@ class TestGCSImportToCloudSQL(TestCase):
             columns=self.columns,
             region_code="US_MO",
         )
-        session = SessionFactory.for_database(self.database_key)
-        destination_table_rows = session.query(DashboardUserRestrictions).all()
-        state_codes = [row.state_code for row in destination_table_rows]
-        self.assertEqual(len(destination_table_rows), 4)
-        self.assertEqual(set(state_codes), {"US_MO", "US_PA"})
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            destination_table_rows = session.query(DashboardUserRestrictions).all()
+            state_codes = [row.state_code for row in destination_table_rows]
+            self.assertEqual(len(destination_table_rows), 4)
+            self.assertEqual(set(state_codes), {"US_MO", "US_PA"})
 
     def test_import_gcs_csv_to_cloud_sql_client_error(self) -> None:
         """Assert that CloudSQLClient errors raise an error and roll back the session."""
-        session = SessionFactory.for_database(self.database_key)
-        user_1 = generate_fake_user_restrictions(
-            "US_PA",
-            "user-3@test.gov",
-            allowed_supervision_location_ids="1,2",
-        )
-        add_users_to_database_session(self.database_key, [user_1])
-        self.mock_cloud_sql_client.import_gcs_csv.side_effect = Exception(
-            "Error while importing CSV to temp table"
-        )
-        with self.assertRaises(Exception) as e:
-            import_gcs_csv_to_cloud_sql(
-                schema_type=SchemaType.CASE_TRIAGE,
-                destination_table=self.table_name,
-                gcs_uri=self.gcs_uri,
-                columns=self.columns,
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            user_1 = generate_fake_user_restrictions(
+                "US_PA",
+                "user-3@test.gov",
+                allowed_supervision_location_ids="1,2",
             )
-        destination_table_rows = session.query(DashboardUserRestrictions).all()
-        self.assertEqual(len(destination_table_rows), 1)
-        self.assertEqual(str(e.exception), "Error while importing CSV to temp table")
+            add_users_to_database_session(self.database_key, [user_1])
+            self.mock_cloud_sql_client.import_gcs_csv.side_effect = Exception(
+                "Error while importing CSV to temp table"
+            )
+            with self.assertRaises(Exception) as e:
+                import_gcs_csv_to_cloud_sql(
+                    schema_type=SchemaType.CASE_TRIAGE,
+                    destination_table=self.table_name,
+                    gcs_uri=self.gcs_uri,
+                    columns=self.columns,
+                )
+            destination_table_rows = session.query(DashboardUserRestrictions).all()
+            self.assertEqual(len(destination_table_rows), 1)
+            self.assertEqual(
+                str(e.exception), "Error while importing CSV to temp table"
+            )
 
     def test_import_gcs_csv_to_cloud_sql_session_error(self) -> None:
         """Assert that session errors raise an error and roll back the session."""
-        session = SessionFactory.for_database(self.database_key)
-        user_1 = generate_fake_user_restrictions(
-            "US_PA",
-            "user-3@test.gov",
-            allowed_supervision_location_ids="1,2",
-        )
-        add_users_to_database_session(self.database_key, [user_1])
-        with self.assertRaises(Exception) as e:
-            import_gcs_csv_to_cloud_sql(
-                schema_type=SchemaType.CASE_TRIAGE,
-                destination_table="table_does_not_exist",
-                gcs_uri=self.gcs_uri,
-                columns=self.columns,
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            user_1 = generate_fake_user_restrictions(
+                "US_PA",
+                "user-3@test.gov",
+                allowed_supervision_location_ids="1,2",
             )
-        destination_table_rows = session.query(DashboardUserRestrictions).all()
-        self.assertEqual(len(destination_table_rows), 1)
-        assert 'relation "table_does_not_exist" does not exist' in str(e.exception)
+            add_users_to_database_session(self.database_key, [user_1])
+            with self.assertRaises(Exception) as e:
+                import_gcs_csv_to_cloud_sql(
+                    schema_type=SchemaType.CASE_TRIAGE,
+                    destination_table="table_does_not_exist",
+                    gcs_uri=self.gcs_uri,
+                    columns=self.columns,
+                )
+            destination_table_rows = session.query(DashboardUserRestrictions).all()
+            self.assertEqual(len(destination_table_rows), 1)
+            assert 'relation "table_does_not_exist" does not exist' in str(e.exception)

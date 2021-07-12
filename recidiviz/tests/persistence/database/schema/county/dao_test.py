@@ -104,26 +104,28 @@ class TestDao(TestCase):
             last_seen_time=date_in_past,
         )
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(person)
-        session.add(person_resolved_booking)
-        session.add(person_most_recent_scrape)
-        session.add(person_wrong_region)
-        session.add(open_booking_before_last_scrape)
-        session.add(open_booking_incorrect_region)
-        session.add(open_booking_most_recent_scrape)
-        session.add(resolved_booking)
-        session.commit()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(person)
+            session.add(person_resolved_booking)
+            session.add(person_most_recent_scrape)
+            session.add(person_wrong_region)
+            session.add(open_booking_before_last_scrape)
+            session.add(open_booking_incorrect_region)
+            session.add(open_booking_most_recent_scrape)
+            session.add(resolved_booking)
+            session.commit()
 
-        # Act
-        people = dao.read_people_with_open_bookings_scraped_before_time(
-            session, person.region, most_recent_scrape_date
-        )
+            # Act
+            people = dao.read_people_with_open_bookings_scraped_before_time(
+                session, person.region, most_recent_scrape_date
+            )
 
-        # Assert
-        self.assertEqual(people, [converter.convert_schema_object_to_entity(person)])
-
-        session.close()
+            # Assert
+            self.assertEqual(
+                people, [converter.convert_schema_object_to_entity(person)]
+            )
 
     def test_readPeopleByExternalId(self):
         admission_date = datetime.datetime(2018, 6, 20)
@@ -150,20 +152,24 @@ class TestDao(TestCase):
             external_id=_EXTERNAL_ID,
         )
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(person_no_match)
-        session.add(person_match_external_id)
-        session.commit()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(person_no_match)
+            session.add(person_match_external_id)
+            session.commit()
 
-        ingested_person = entities.Person.new_with_defaults(external_id=_EXTERNAL_ID)
-        people = dao.read_people_by_external_ids(session, _REGION, [ingested_person])
+            ingested_person = entities.Person.new_with_defaults(
+                external_id=_EXTERNAL_ID
+            )
+            people = dao.read_people_by_external_ids(
+                session, _REGION, [ingested_person]
+            )
 
-        expected_people = [
-            converter.convert_schema_object_to_entity(person_match_external_id)
-        ]
-        self.assertCountEqual(people, expected_people)
-
-        session.close()
+            expected_people = [
+                converter.convert_schema_object_to_entity(person_match_external_id)
+            ]
+            self.assertCountEqual(people, expected_people)
 
     def test_readPeopleWithOpenBookings(self):
         admission_date = datetime.datetime(2018, 6, 20)
@@ -204,20 +210,20 @@ class TestDao(TestCase):
             bookings=[closed_booking],
         )
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(person_no_match)
-        session.add(person_no_open_bookings)
-        session.add(person_match_full_name)
-        session.commit()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(person_no_match)
+            session.add(person_no_open_bookings)
+            session.add(person_match_full_name)
+            session.commit()
 
-        info = IngestInfo()
-        info.create_person(full_name=_FULL_NAME, person_id=_EXTERNAL_ID)
-        people = dao.read_people_with_open_bookings(session, _REGION, info.people)
+            info = IngestInfo()
+            info.create_person(full_name=_FULL_NAME, person_id=_EXTERNAL_ID)
+            people = dao.read_people_with_open_bookings(session, _REGION, info.people)
 
-        expected_people = [
-            converter.convert_schema_object_to_entity(p)
-            for p in [person_match_full_name]
-        ]
-        self.assertCountEqual(people, expected_people)
-
-        session.close()
+            expected_people = [
+                converter.convert_schema_object_to_entity(p)
+                for p in [person_match_full_name]
+            ]
+            self.assertCountEqual(people, expected_people)

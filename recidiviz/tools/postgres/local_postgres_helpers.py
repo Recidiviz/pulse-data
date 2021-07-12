@@ -317,15 +317,8 @@ def teardown_on_disk_postgresql_database(database_key: SQLAlchemyDatabaseKey) ->
     # Ensure all sessions are closed, otherwise the below may hang.
     close_all_sessions()
 
-    session = SessionFactory.for_database(database_key)
-    try:
+    with SessionFactory.using_database(database_key) as session:
         for table in reversed(database_key.declarative_meta.metadata.sorted_tables):
             session.execute(table.delete())
-        session.commit()
-    except Exception as e:
-        session.rollback()
-        raise e
-    finally:
-        session.close()
 
     SQLAlchemyEngineManager.teardown_engine_for_database_key(database_key=database_key)

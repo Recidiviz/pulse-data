@@ -242,17 +242,10 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
         return final_info
 
     def invalidate_ingest_view_metadata(self) -> None:
-        session = SessionFactory.for_database(self.operations_database_key)
-        try:
+        with SessionFactory.using_database(self.operations_database_key) as session:
             session.query(operations_schema.DirectIngestIngestFileMetadata).update(
                 {operations_schema.DirectIngestIngestFileMetadata.is_invalidated: True}
             )
-            session.commit()
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            session.close()
 
     def _run_ingest_job_for_filename(self, filename: str) -> None:
         """Runs ingest for a the ingest view file with the given unnormalized file name."""
@@ -336,11 +329,13 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
         if not self.schema_type() == SchemaType.STATE:
             raise ValueError(f"Unsupported schema type [{self.schema_type()}]")
 
-        session = SessionFactory.for_database(self.main_database_key)
-        found_people_from_db = dao.read_people(session)
-        found_people = cast(
-            List[StatePerson], self.convert_and_clear_db_ids(found_people_from_db)
-        )
+        with SessionFactory.using_database(
+            self.main_database_key, autocommit=False
+        ) as session:
+            found_people_from_db = dao.read_people(session)
+            found_people = cast(
+                List[StatePerson], self.convert_and_clear_db_ids(found_people_from_db)
+            )
 
         if ignore_dangling_placeholders:
             pruned_found_people = []

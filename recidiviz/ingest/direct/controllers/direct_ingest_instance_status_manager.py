@@ -48,31 +48,18 @@ class DirectIngestInstanceStatusManager:
         )
 
     def is_instance_paused(self) -> bool:
-        session = SessionFactory.for_database(self.db_key)
-        try:
+        with SessionFactory.using_database(self.db_key, autocommit=False) as session:
             return self._get_status_using_session(session).is_paused
-        finally:
-            session.close()
 
     def pause_instance(self) -> None:
-        session = SessionFactory.for_database(self.db_key)
-        try:
+        with SessionFactory.using_database(self.db_key) as session:
             status = self._get_status_using_session(session)
             status.is_paused = True
-            session.commit()
-        finally:
-            session.close()
 
     def unpause_instance(self) -> None:
-        session = SessionFactory.for_database(
-            SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
-        )
-        try:
+        with SessionFactory.using_database(self.db_key) as session:
             status = self._get_status_using_session(session)
             status.is_paused = False
-            session.commit()
-        finally:
-            session.close()
 
     # This one specifically for test setup!
     @staticmethod
@@ -80,10 +67,9 @@ class DirectIngestInstanceStatusManager:
     def add_instance(
         region_code: str, ingest_instance: DirectIngestInstance, is_paused: bool
     ) -> "DirectIngestInstanceStatusManager":
-        session = SessionFactory.for_database(
+        with SessionFactory.using_database(
             SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
-        )
-        try:
+        ) as session:
             session.add(
                 DirectIngestInstanceStatus(
                     region_code=region_code.upper(),
@@ -91,8 +77,5 @@ class DirectIngestInstanceStatusManager:
                     is_paused=is_paused,
                 )
             )
-            session.commit()
-        finally:
-            session.close()
 
         return DirectIngestInstanceStatusManager(region_code, ingest_instance)

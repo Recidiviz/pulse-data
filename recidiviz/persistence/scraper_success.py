@@ -41,10 +41,9 @@ def store_scraper_success(
         date=scraper_success.date,
     )
 
-    session = SessionFactory.for_database(
+    with SessionFactory.using_database(
         SQLAlchemyDatabaseKey.for_schema(SystemLevel.COUNTY.schema_type())
-    )
-    session.add(ss)
-    session.commit()
+    ) as session:
+        session.add(ss)
 
     return True

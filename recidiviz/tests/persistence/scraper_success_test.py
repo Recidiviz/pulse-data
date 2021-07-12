@@ -57,10 +57,11 @@ class TestScraperSuccessPersist(TestCase):
     def testWrite_SingleCount(self):
         store_scraper_success(ScraperSuccessModel(), "01001001")
 
-        query = SessionFactory.for_database(self.database_key).query(
-            ScraperSuccessTable
-        )
-        result = one(query.all())
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = session.query(ScraperSuccessTable)
+            result = one(query.all())
 
         self.assertEqual(result.jid, _JID)
         self.assertEqual(result.date, _TODAY)
@@ -68,10 +69,11 @@ class TestScraperSuccessPersist(TestCase):
     def testWrite_ScraperSuccessWithDate(self):
         store_scraper_success(ScraperSuccessModel(date=_TODAY), "01001001")
 
-        query = SessionFactory.for_database(self.database_key).query(
-            ScraperSuccessTable
-        )
-        result = one(query.all())
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = session.query(ScraperSuccessTable)
+            result = one(query.all())
 
         self.assertEqual(result.jid, _JID)
         self.assertEqual(result.date, _TODAY)

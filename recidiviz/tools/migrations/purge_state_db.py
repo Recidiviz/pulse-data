@@ -122,30 +122,21 @@ def main(
     db_key = SQLAlchemyDatabaseKey.for_state_code(state_code, database_version)
 
     # Run downgrade
-    session = None
-    try:
-        overriden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
-            database_key=db_key,
-            ssl_cert_path=ssl_cert_path,
-            migration_user=True,
-        )
-        config = alembic.config.Config(db_key.alembic_file)
-        alembic.command.downgrade(config, "base")
+    with SessionFactory.for_prod_data_client(db_key, ssl_cert_path) as session:
+        try:
+            overriden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
+                database_key=db_key,
+                ssl_cert_path=ssl_cert_path,
+                migration_user=True,
+            )
+            config = alembic.config.Config(db_key.alembic_file)
+            alembic.command.downgrade(config, "base")
 
-        # We need to manually delete alembic_version because it's leftover after
-        # the downgrade migrations
-        session = SessionFactory.for_prod_data_client(db_key, ssl_cert_path)
-        session.execute("DROP TABLE alembic_version;")
-        session.commit()
-    except Exception as e:
-        logging.error("Downgrade failed to run: %s", e)
-        if session is not None:
-            session.rollback()
-        sys.exit(1)
-    finally:
-        if session is not None:
-            session.close()
-        local_postgres_helpers.restore_local_env_vars(overriden_env_vars)
+            # We need to manually delete alembic_version because it's leftover after
+            # the downgrade migrations
+            session.execute("DROP TABLE alembic_version;")
+        finally:
+            local_postgres_helpers.restore_local_env_vars(overriden_env_vars)
 
 
 if __name__ == "__main__":

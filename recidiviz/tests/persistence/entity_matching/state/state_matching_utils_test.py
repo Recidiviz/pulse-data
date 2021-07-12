@@ -32,18 +32,18 @@ from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     _is_match,
-    generate_child_entity_trees,
     add_child_to_entity,
-    remove_child_from_entity,
+    default_merge_flat_fields,
+    generate_child_entity_trees,
+    get_all_entity_trees_of_cls,
+    get_external_ids_of_cls,
     get_root_entity_cls,
     get_total_entities_of_cls,
     nonnull_fields_entity_match,
-    get_external_ids_of_cls,
-    get_all_entity_trees_of_cls,
-    default_merge_flat_fields,
-    read_persons_by_root_entity_cls,
     read_db_entity_trees_of_cls_to_merge,
     read_persons,
+    read_persons_by_root_entity_cls,
+    remove_child_from_entity,
 )
 from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.tests.persistence.entity_matching.state.base_state_entity_matcher_test_classes import (
@@ -524,14 +524,16 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
     def test_readPersons_default(self) -> None:
         schema_person = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
         schema_person_2 = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
-        session = SessionFactory.for_database(self.database_key)
-        session.add(schema_person)
-        session.add(schema_person_2)
-        session.commit()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(schema_person)
+            session.add(schema_person_2)
+            session.commit()
 
-        expected_people = [schema_person, schema_person_2]
-        people = read_persons(session, _STATE_CODE, [])
-        self.assert_schema_object_lists_equal(expected_people, people)
+            expected_people = [schema_person, schema_person_2]
+            people = read_persons(session, _STATE_CODE, [])
+            self.assert_schema_object_lists_equal(expected_people, people)
 
     def test_isPlaceholder(self) -> None:
         entity = schema.StateSentenceGroup(
@@ -603,26 +605,33 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         )
         schema_person_other_state.external_ids = [schema_external_id_other_state]
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(schema_person_with_root_entity)
-        session.add(placeholder_schema_person)
-        session.add(schema_person_other_state)
-        session.commit()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(schema_person_with_root_entity)
+            session.add(placeholder_schema_person)
+            session.add(schema_person_other_state)
+            session.commit()
 
-        ingested_sentence_group = schema.StateSentenceGroup(
-            state_code=_STATE_CODE, external_id=_EXTERNAL_ID
-        )
-        ingested_person = schema.StatePerson(sentence_groups=[ingested_sentence_group])
+            ingested_sentence_group = schema.StateSentenceGroup(
+                state_code=_STATE_CODE, external_id=_EXTERNAL_ID
+            )
+            ingested_person = schema.StatePerson(
+                sentence_groups=[ingested_sentence_group]
+            )
 
-        expected_people = [schema_person_with_root_entity, placeholder_schema_person]
+            expected_people = [
+                schema_person_with_root_entity,
+                placeholder_schema_person,
+            ]
 
-        people = read_persons_by_root_entity_cls(
-            session,
-            _STATE_CODE,
-            [ingested_person],
-            allowed_root_entity_classes=[schema.StateSentenceGroup],
-        )
-        self.assert_schema_object_lists_equal(expected_people, people)
+            people = read_persons_by_root_entity_cls(
+                session,
+                _STATE_CODE,
+                [ingested_person],
+                allowed_root_entity_classes=[schema.StateSentenceGroup],
+            )
+            self.assert_schema_object_lists_equal(expected_people, people)
 
     def test_readPersons_unexpectedRoot_raises(self) -> None:
         ingested_supervision_sentence = schema.StateSupervisionSentence(
@@ -634,13 +643,15 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         ingested_person = schema.StatePerson(sentence_groups=[ingested_sentence_group])
 
         with pytest.raises(ValueError):
-            session = SessionFactory.for_database(self.database_key)
-            read_persons_by_root_entity_cls(
-                session,
-                "us_nd",
-                [ingested_person],
-                allowed_root_entity_classes=[schema.StateSentenceGroup],
-            )
+            with SessionFactory.using_database(
+                self.database_key, autocommit=False
+            ) as session:
+                read_persons_by_root_entity_cls(
+                    session,
+                    "us_nd",
+                    [ingested_person],
+                    allowed_root_entity_classes=[schema.StateSentenceGroup],
+                )
 
     def test_readDbEntitiesOfClsToMerge(self) -> None:
         person_1 = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
@@ -681,27 +692,29 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             placeholder_sentence_group,
         ]
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(person_1)
-        session.add(person_2)
-        session.flush()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(person_1)
+            session.add(person_2)
+            session.flush()
 
-        # Act
-        trees_to_merge = read_db_entity_trees_of_cls_to_merge(
-            session, _STATE_CODE, schema.StateSentenceGroup
-        )
+            # Act
+            trees_to_merge = read_db_entity_trees_of_cls_to_merge(
+                session, _STATE_CODE, schema.StateSentenceGroup
+            )
 
-        sentence_group_trees_to_merge = one(trees_to_merge)
-        self.assertEqual(len(sentence_group_trees_to_merge), 2)
+            sentence_group_trees_to_merge = one(trees_to_merge)
+            self.assertEqual(len(sentence_group_trees_to_merge), 2)
 
-        sentence_group_ids = set()
+            sentence_group_ids = set()
 
-        for entity_tree in sentence_group_trees_to_merge:
-            self.assertIsInstance(entity_tree, EntityTree)
-            entity = entity_tree.entity
-            if not isinstance(entity, schema.StateSentenceGroup):
-                self.fail(f"Expected StateSentenceGroup. Found {entity}")
-            self.assertEqual(entity.external_id, _EXTERNAL_ID)
-            sentence_group_ids.add(entity.sentence_group_id)
+            for entity_tree in sentence_group_trees_to_merge:
+                self.assertIsInstance(entity_tree, EntityTree)
+                entity = entity_tree.entity
+                if not isinstance(entity, schema.StateSentenceGroup):
+                    self.fail(f"Expected StateSentenceGroup. Found {entity}")
+                self.assertEqual(entity.external_id, _EXTERNAL_ID)
+                sentence_group_ids.add(entity.sentence_group_id)
 
-        self.assertEqual(sentence_group_ids, {1, 2})
+            self.assertEqual(sentence_group_ids, {1, 2})

@@ -157,10 +157,13 @@ class TestGaAggregateIngest(TestCase):
             dao.write_df(table, df)
 
         # Assert
-        query = SessionFactory.for_database(self.database_key).query(
-            func.sum(GaCountyAggregate.total_number_of_inmates_in_jail)
-        )
-        result = one(one(query.all()))
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = session.query(
+                func.sum(GaCountyAggregate.total_number_of_inmates_in_jail)
+            )
+            result = one(one(query.all()))
 
         expected_sum_county_populations = 37697
         self.assertEqual(result, expected_sum_county_populations)

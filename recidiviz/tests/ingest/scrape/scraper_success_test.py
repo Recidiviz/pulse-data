@@ -59,8 +59,11 @@ class TestScraperStop(TestCase):
 
         sessions.update_phase(session, scrape_phase.ScrapePhase.DONE)
 
-        query = SessionFactory.for_database(self.database_key).query(ScraperSuccess)
-        result = one(query.all())
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = session.query(ScraperSuccess)
+            result = one(query.all())
 
         region = regions.get_region(_REGION_CODE)
         self.assertEqual(result.jid, region.jurisdiction_id)

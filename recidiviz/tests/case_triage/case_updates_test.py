@@ -72,56 +72,65 @@ class TestCaseUpdatesInterface(TestCase):
         )
 
     def test_insert_case_update_for_person(self) -> None:
-        commit_session = SessionFactory.for_database(self.database_key)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as commit_session:
+            CaseUpdatesInterface.update_case_for_person(
+                commit_session,
+                self.mock_context,
+                self.mock_client,
+                CaseUpdateActionType.DISCHARGE_INITIATED,
+            )
 
-        CaseUpdatesInterface.update_case_for_person(
-            commit_session,
-            self.mock_context,
-            self.mock_client,
-            CaseUpdateActionType.DISCHARGE_INITIATED,
-        )
-
-        read_session = SessionFactory.for_database(self.database_key)
-        self.assertEqual(len(read_session.query(CaseUpdate).all()), 1)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as read_session:
+            self.assertEqual(len(read_session.query(CaseUpdate).all()), 1)
 
     def test_update_case_for_person(self) -> None:
-        commit_session = SessionFactory.for_database(self.database_key)
-
-        CaseUpdatesInterface.update_case_for_person(
-            commit_session,
-            self.mock_context,
-            self.mock_client,
-            CaseUpdateActionType.DOWNGRADE_INITIATED,
-        )
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as commit_session:
+            CaseUpdatesInterface.update_case_for_person(
+                commit_session,
+                self.mock_context,
+                self.mock_client,
+                CaseUpdateActionType.DOWNGRADE_INITIATED,
+            )
 
         # Validate initial insert
-        read_session = SessionFactory.for_database(self.database_key)
-        self.assertEqual(len(read_session.query(CaseUpdate).all()), 1)
-        case_update = read_session.query(CaseUpdate).one()
-        self.assertEqual(
-            case_update.action_type, CaseUpdateActionType.DOWNGRADE_INITIATED.value
-        )
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as read_session:
+            self.assertEqual(len(read_session.query(CaseUpdate).all()), 1)
+            case_update = read_session.query(CaseUpdate).one()
+            self.assertEqual(
+                case_update.action_type, CaseUpdateActionType.DOWNGRADE_INITIATED.value
+            )
 
         # Perform update
-        commit_session = SessionFactory.for_database(self.database_key)
-
-        CaseUpdatesInterface.update_case_for_person(
-            commit_session,
-            self.mock_context,
-            self.mock_client,
-            CaseUpdateActionType.DOWNGRADE_INITIATED,
-        )
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as commit_session:
+            CaseUpdatesInterface.update_case_for_person(
+                commit_session,
+                self.mock_context,
+                self.mock_client,
+                CaseUpdateActionType.DOWNGRADE_INITIATED,
+            )
 
         # Validate update as expected
-        read_session = SessionFactory.for_database(self.database_key)
-        self.assertEqual(len(read_session.query(CaseUpdate).all()), 1)
-        case_update = read_session.query(CaseUpdate).one()
-        self.assertEqual(
-            case_update.action_type, CaseUpdateActionType.DOWNGRADE_INITIATED.value
-        )
-        self.assertEqual(
-            case_update.last_version,
-            {
-                CaseUpdateMetadataKeys.LAST_SUPERVISION_LEVEL: self.mock_client.supervision_level,
-            },
-        )
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as read_session:
+            self.assertEqual(len(read_session.query(CaseUpdate).all()), 1)
+            case_update = read_session.query(CaseUpdate).one()
+            self.assertEqual(
+                case_update.action_type, CaseUpdateActionType.DOWNGRADE_INITIATED.value
+            )
+            self.assertEqual(
+                case_update.last_version,
+                {
+                    CaseUpdateMetadataKeys.LAST_SUPERVISION_LEVEL: self.mock_client.supervision_level,
+                },
+            )

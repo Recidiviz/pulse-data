@@ -47,10 +47,9 @@ def store_single_count(sc: SingleCount, jurisdiction_id: str) -> bool:
     if not should_persist():
         return True
 
-    session = SessionFactory.for_database(
+    with SessionFactory.using_database(
         SQLAlchemyDatabaseKey.for_schema(SystemLevel.COUNTY.schema_type())
-    )
-    session.add(sca)
-    session.commit()
+    ) as session:
+        session.add(sca)
 
     return True

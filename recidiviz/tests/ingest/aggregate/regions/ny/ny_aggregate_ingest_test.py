@@ -202,10 +202,11 @@ class TestNyAggregateIngest(TestCase):
             dao.write_df(table, df)
 
         # Assert
-        query = SessionFactory.for_database(self.database_key).query(
-            func.sum(NyFacilityAggregate.in_house)
-        )
-        result = one(one(query.all()))
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            query = session.query(func.sum(NyFacilityAggregate.in_house))
+            result = one(one(query.all()))
 
         expected_sum_in_house = 189012
         self.assertEqual(result, expected_sum_in_house)

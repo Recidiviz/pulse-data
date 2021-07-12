@@ -18,6 +18,9 @@
 Class for generating SQLAlchemy Sessions objects for the appropriate schema.
 """
 
+from contextlib import contextmanager
+from typing import Iterator
+
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.persistence.database.base_schema import OperationsBase
@@ -36,7 +39,31 @@ class SessionFactory:
     """Creates SQLAlchemy sessions for the given database schema"""
 
     @classmethod
-    def for_database(cls, database_key: SQLAlchemyDatabaseKey) -> Session:
+    @contextmanager
+    def using_database(
+        cls, database_key: SQLAlchemyDatabaseKey, *, autocommit: bool = True
+    ) -> Iterator[Session]:
+        try:
+            session = cls._for_database(database_key)
+            yield session
+            if autocommit:
+                try:
+                    session.commit()
+                except Exception as e:
+                    session.rollback()
+                    raise e
+        finally:
+            session.close()
+
+    # TODO(#8046): Eventually delete this method
+    @classmethod
+    def deprecated__for_database(cls, database_key: SQLAlchemyDatabaseKey) -> Session:
+        return cls._for_database(database_key)
+
+    @classmethod
+    def _for_database(cls, database_key: SQLAlchemyDatabaseKey) -> Session:
+        # TODO(#8046): When the above method is deleted, move this into `using_database`
+        # directly.
         engine = SQLAlchemyEngineManager.get_engine_for_database(
             database_key=database_key
         )
@@ -51,22 +78,37 @@ class SessionFactory:
         return session
 
     @classmethod
+    @contextmanager
     @environment.local_only
     def for_prod_data_client(
-        cls, database_key: SQLAlchemyDatabaseKey, ssl_cert_path: str
-    ) -> Session:
+        cls,
+        database_key: SQLAlchemyDatabaseKey,
+        ssl_cert_path: str,
+        *,
+        autocommit: bool = True,
+    ) -> Iterator[Session]:
+        """Implements a context manager for db sessions for use in prod-data-client."""
         engine = SQLAlchemyEngineManager.get_engine_for_database_with_ssl_certs(
             database_key=database_key, ssl_cert_path=ssl_cert_path
         )
         if engine is None:
             raise ValueError(f"No engine set for key [{database_key}]")
 
-        session = Session(bind=engine)
-        cls._alter_session_variables(session)
-        cls._apply_session_listener_for_schema_base(
-            database_key.declarative_meta, session
-        )
-        return session
+        try:
+            session = Session(bind=engine)
+            cls._alter_session_variables(session)
+            cls._apply_session_listener_for_schema_base(
+                database_key.declarative_meta, session
+            )
+            yield session
+            if autocommit:
+                try:
+                    session.commit()
+                except Exception as e:
+                    session.rollback()
+                    raise e
+        finally:
+            session.close()
 
     @classmethod
     def _apply_session_listener_for_schema_base(

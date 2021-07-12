@@ -161,26 +161,27 @@ def add_case_triage_routes(bp: Blueprint) -> None:
     @bp.route("/api/case_triage/get_po_feedback", methods=["POST"])
     @requires_gae_auth
     def _fetch_po_user_feedback() -> Tuple[str, HTTPStatus]:
-        session = SessionFactory.for_database(
-            SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
-        )
-        results = session.query(CaseUpdate).filter(CaseUpdate.comment.isnot(None)).all()
-
-        return (
-            jsonify(
-                [
-                    {
-                        "personExternalId": res.person_external_id,
-                        "officerExternalId": res.officer_external_id,
-                        "actionType": res.action_type,
-                        "comment": res.comment,
-                        "timestamp": str(res.action_ts),
-                    }
-                    for res in results
-                ]
-            ),
-            HTTPStatus.OK,
-        )
+        with SessionFactory.using_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE), autocommit=False
+        ) as session:
+            results = (
+                session.query(CaseUpdate).filter(CaseUpdate.comment.isnot(None)).all()
+            )
+            return (
+                jsonify(
+                    [
+                        {
+                            "personExternalId": res.person_external_id,
+                            "officerExternalId": res.officer_external_id,
+                            "actionType": res.action_type,
+                            "comment": res.comment,
+                            "timestamp": str(res.action_ts),
+                        }
+                        for res in results
+                    ]
+                ),
+                HTTPStatus.OK,
+            )
 
     @bp.route("/api/line_staff_tools/fetch_email_state_codes", methods=["POST"])
     @requires_gae_auth

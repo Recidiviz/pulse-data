@@ -47,7 +47,6 @@ def generate_fake_user_restrictions(
 def add_users_to_database_session(
     database_key: SQLAlchemyDatabaseKey, users: List[DashboardUserRestrictions]
 ) -> None:
-    session = SessionFactory.for_database(database_key)
-    for user in users:
-        session.add(user)
-    session.commit()
+    with SessionFactory.using_database(database_key) as session:
+        for user in users:
+            session.add(user)

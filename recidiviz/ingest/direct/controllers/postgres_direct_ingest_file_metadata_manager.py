@@ -84,9 +84,7 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
             raise ValueError("Expect only unprocessed paths in this function.")
 
         parts = filename_parts_from_path(path)
-        session = SessionFactory.for_database(self.database_key)
-
-        try:
+        with SessionFactory.using_database(self.database_key) as session:
             session.add(
                 schema.DirectIngestRawFileMetadata(
                     region_code=self.region_code,
@@ -97,29 +95,16 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
                     datetimes_contained_upper_bound_inclusive=parts.utc_upload_datetime,
                 )
             )
-            session.commit()
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            session.close()
 
     def get_raw_file_metadata(self, path: GcsfsFilePath) -> DirectIngestRawFileMetadata:
         self._check_is_raw_file_path(path)
-        session = SessionFactory.for_database(self.database_key)
-
-        try:
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
             metadata = dao.get_raw_file_metadata_row_for_path(
                 session, self.region_code, path
             )
-            metadata_entity = self._raw_file_schema_metadata_as_entity(metadata)
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            session.close()
-
-        return metadata_entity
+            return self._raw_file_schema_metadata_as_entity(metadata)
 
     def has_raw_file_been_processed(self, path: GcsfsFilePath) -> bool:
         self._check_is_raw_file_path(path)
@@ -143,29 +128,21 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
 
     def mark_raw_file_as_processed(self, path: GcsfsFilePath) -> None:
         self._check_is_raw_file_path(path)
-        session = SessionFactory.for_database(self.database_key)
-
-        try:
+        with SessionFactory.using_database(self.database_key) as session:
             metadata = dao.get_raw_file_metadata_row_for_path(
                 session, self.region_code, path
             )
 
             metadata.processed_time = datetime.datetime.now(tz=pytz.UTC)
-            session.commit()
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            session.close()
 
     def get_metadata_for_raw_files_discovered_after_datetime(
         self,
         raw_file_tag: str,
         discovery_time_lower_bound_exclusive: Optional[datetime.datetime],
     ) -> List[DirectIngestRawFileMetadata]:
-        session = SessionFactory.for_database(self.database_key)
-
-        try:
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
             results = dao.get_metadata_for_raw_files_discovered_after_datetime(
                 session=session,
                 region_code=self.region_code,
@@ -173,17 +150,10 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
                 discovery_time_lower_bound_exclusive=discovery_time_lower_bound_exclusive,
             )
 
-            metadata_entities = [
+            return [
                 self._raw_file_schema_metadata_as_entity(metadata)
                 for metadata in results
             ]
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            session.close()
-
-        return metadata_entities
 
     @staticmethod
     def _raw_file_schema_metadata_as_entity(
@@ -215,22 +185,15 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
                 f"not the secondary instance. "
             )
 
-        session = SessionFactory.for_database(self.database_key)
-
-        try:
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
             unprocessed_raw_files = (
                 dao.get_date_sorted_unprocessed_raw_files_for_region(
                     session, self.region_code
                 )
             )
-            num_unprocessed_raw_files = len(unprocessed_raw_files)
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            session.close()
-
-        return num_unprocessed_raw_files
+            return len(unprocessed_raw_files)
 
 
 class PostgresDirectIngestIngestFileMetadataManager(
@@ -248,9 +211,7 @@ class PostgresDirectIngestIngestFileMetadataManager(
     def register_ingest_file_export_job(
         self, ingest_view_job_args: GcsfsIngestViewExportArgs
     ) -> DirectIngestIngestFileMetadata:
-        session = SessionFactory.for_database(self.database_key)
-
-        try:
+        with SessionFactory.using_database(self.database_key) as session:
             metadata = schema.DirectIngestIngestFileMetadata(
                 region_code=self.region_code,
                 file_tag=ingest_view_job_args.ingest_view_name,
@@ -263,14 +224,7 @@ class PostgresDirectIngestIngestFileMetadataManager(
             )
             session.add(metadata)
             session.commit()
-            metadata_entity = self._ingest_file_schema_metadata_as_entity(metadata)
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            session.close()
-
-        return metadata_entity
+            return self._ingest_file_schema_metadata_as_entity(metadata)
 
     def register_ingest_file_split(
         self,
@@ -279,9 +233,7 @@ class PostgresDirectIngestIngestFileMetadataManager(
     ) -> DirectIngestIngestFileMetadata:
         self._check_is_ingest_view_file_path(path)
 
-        session = SessionFactory.for_database(self.database_key)
-
-        try:
+        with SessionFactory.using_database(self.database_key) as session:
             metadata = schema.DirectIngestIngestFileMetadata(
                 region_code=self.region_code,
                 file_tag=original_file_metadata.file_tag,
@@ -295,14 +247,7 @@ class PostgresDirectIngestIngestFileMetadataManager(
             )
             session.add(metadata)
             session.commit()
-            metadata_entity = self._ingest_file_schema_metadata_as_entity(metadata)
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            session.close()
-
-        return metadata_entity
+            return self._ingest_file_schema_metadata_as_entity(metadata)
 
     def has_ingest_view_file_been_discovered(self, path: GcsfsFilePath) -> bool:
         self._check_is_ingest_view_file_path(path)
@@ -324,9 +269,7 @@ class PostgresDirectIngestIngestFileMetadataManager(
         if not path.file_name.startswith(DIRECT_INGEST_UNPROCESSED_PREFIX):
             raise ValueError("Expect only unprocessed paths in this function.")
 
-        session = SessionFactory.for_database(self.database_key)
-
-        try:
+        with SessionFactory.using_database(self.database_key) as session:
             metadata = dao.get_ingest_file_metadata_row_for_path(
                 session,
                 self.region_code,
@@ -337,34 +280,21 @@ class PostgresDirectIngestIngestFileMetadataManager(
             if not metadata.export_time:
                 metadata.export_time = dt
             metadata.discovery_time = dt
-            session.commit()
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            session.close()
 
     def get_ingest_view_file_metadata(
         self, path: GcsfsFilePath
     ) -> DirectIngestIngestFileMetadata:
         self._check_is_ingest_view_file_path(path)
-        session = SessionFactory.for_database(self.database_key)
-
-        try:
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
             metadata = dao.get_ingest_file_metadata_row_for_path(
                 session,
                 self.region_code,
                 path,
                 ingest_database_name=self.ingest_database_name,
             )
-            metadata_entity = self._ingest_file_schema_metadata_as_entity(metadata)
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            session.close()
-
-        return metadata_entity
+            return self._ingest_file_schema_metadata_as_entity(metadata)
 
     def has_ingest_view_file_been_processed(self, path: GcsfsFilePath) -> bool:
         self._check_is_ingest_view_file_path(path)
@@ -383,31 +313,21 @@ class PostgresDirectIngestIngestFileMetadataManager(
 
     def mark_ingest_view_file_as_processed(self, path: GcsfsFilePath) -> None:
         self._check_is_ingest_view_file_path(path)
-        session = SessionFactory.for_database(self.database_key)
-
-        try:
+        with SessionFactory.using_database(self.database_key) as session:
             metadata = dao.get_ingest_file_metadata_row_for_path(
                 session,
                 self.region_code,
                 path,
                 ingest_database_name=self.ingest_database_name,
             )
-
             metadata.processed_time = datetime.datetime.now(tz=pytz.UTC)
-            session.commit()
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            session.close()
 
     def get_ingest_view_metadata_for_export_job(
         self, ingest_view_job_args: GcsfsIngestViewExportArgs
     ) -> DirectIngestIngestFileMetadata:
-
-        session = SessionFactory.for_database(self.database_key)
-
-        try:
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
             metadata = dao.get_ingest_view_metadata_for_export_job(
                 session=session,
                 region_code=self.region_code,
@@ -422,14 +342,7 @@ class PostgresDirectIngestIngestFileMetadataManager(
                     f"No metadata found for export job args [{ingest_view_job_args}]"
                 )
 
-            metadata_entity = self._ingest_file_schema_metadata_as_entity(metadata)
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            session.close()
-
-        return metadata_entity
+            return self._ingest_file_schema_metadata_as_entity(metadata)
 
     def register_ingest_view_export_file_name(
         self,
@@ -437,10 +350,7 @@ class PostgresDirectIngestIngestFileMetadataManager(
         exported_path: GcsfsFilePath,
     ) -> None:
         self._check_is_ingest_view_file_path(exported_path)
-
-        session = SessionFactory.for_database(self.database_key)
-
-        try:
+        with SessionFactory.using_database(self.database_key) as session:
             metadata = dao.get_ingest_file_metadata_row(
                 session=session,
                 file_id=metadata_entity.file_id,
@@ -454,38 +364,24 @@ class PostgresDirectIngestIngestFileMetadataManager(
                 )
 
             metadata.normalized_file_name = exported_path.file_name
-            session.commit()
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            session.close()
 
     def mark_ingest_view_exported(
         self, metadata_entity: DirectIngestIngestFileMetadata
     ) -> None:
-        session = SessionFactory.for_database(self.database_key)
-
-        try:
+        with SessionFactory.using_database(self.database_key) as session:
             metadata = dao.get_ingest_file_metadata_row(
                 session=session,
                 file_id=metadata_entity.file_id,
                 ingest_database_name=metadata_entity.ingest_database_name,
             )
             metadata.export_time = datetime.datetime.now(tz=pytz.UTC)
-            session.commit()
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            session.close()
 
     def get_ingest_view_metadata_for_most_recent_valid_job(
         self, ingest_view_tag: str
     ) -> Optional[DirectIngestIngestFileMetadata]:
-        session = SessionFactory.for_database(self.database_key)
-
-        try:
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
             metadata = dao.get_ingest_view_metadata_for_most_recent_valid_job(
                 session=session,
                 region_code=self.region_code,
@@ -493,42 +389,28 @@ class PostgresDirectIngestIngestFileMetadataManager(
                 ingest_database_name=self.ingest_database_name,
             )
 
-            metadata_entity = (
+            return (
                 self._ingest_file_schema_metadata_as_entity(metadata)
                 if metadata
                 else None
             )
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            session.close()
-
-        return metadata_entity
 
     def get_ingest_view_metadata_pending_export(
         self,
     ) -> List[DirectIngestIngestFileMetadata]:
-        session = SessionFactory.for_database(self.database_key)
-
-        try:
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
             results = dao.get_ingest_view_metadata_pending_export(
                 session=session,
                 region_code=self.region_code,
                 ingest_database_name=self.ingest_database_name,
             )
 
-            metadata_entities = [
+            return [
                 self._ingest_file_schema_metadata_as_entity(metadata)
                 for metadata in results
             ]
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            session.close()
-
-        return metadata_entities
 
     @staticmethod
     def _ingest_file_schema_metadata_as_entity(
@@ -553,30 +435,23 @@ class PostgresDirectIngestIngestFileMetadataManager(
 
     def get_num_unprocessed_ingest_files(self) -> int:
         """Returns the number of unprocessed ingest files in the operations table for this region"""
-        session = SessionFactory.for_database(self.database_key)
-
-        try:
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
             unprocessed_ingest_files = (
                 dao.get_date_sorted_unprocessed_ingest_view_files_for_region(
                     session, self.region_code, self.ingest_database_name
                 )
             )
-            num_unprocessed_ingest_files = len(unprocessed_ingest_files)
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            session.close()
-
-        return num_unprocessed_ingest_files
+            return len(unprocessed_ingest_files)
 
     def get_date_of_earliest_unprocessed_ingest_file(
         self,
     ) -> Optional[datetime.datetime]:
         """Returns the earliest unprocessed ingest file in the operations table for this region"""
-        session = SessionFactory.for_database(self.database_key)
-
-        try:
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
             # The unprocessed ingest files are returned from earliest to latest
             unprocessed_ingest_files = (
                 dao.get_date_sorted_unprocessed_ingest_view_files_for_region(
@@ -590,16 +465,7 @@ class PostgresDirectIngestIngestFileMetadataManager(
             earliest_unprocessed_ingest_file: schema.DirectIngestIngestFileMetadata = (
                 unprocessed_ingest_files[0]
             )
-            date_of_earliest_unprocessed_ingest_file = (
-                earliest_unprocessed_ingest_file.job_creation_time
-            )
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            session.close()
-
-        return date_of_earliest_unprocessed_ingest_file
+            return earliest_unprocessed_ingest_file.job_creation_time
 
 
 class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):

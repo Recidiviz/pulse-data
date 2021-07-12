@@ -84,20 +84,23 @@ class TestBaseSchemaEntityConverter(TestCase):
         self.database_key.poolclass = None
         fakes.use_in_memory_sqlite_database(self.database_key)
 
-        session = SessionFactory.for_database(self.database_key)
-        self.assertEqual(len(session.query(schema.Root).all()), 0)
-        self.assertEqual(len(session.query(schema.Parent).all()), 0)
-        self.assertEqual(len(session.query(schema.Child).all()), 0)
-        session.close()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            self.assertEqual(len(session.query(schema.Root).all()), 0)
+            self.assertEqual(len(session.query(schema.Parent).all()), 0)
+            self.assertEqual(len(session.query(schema.Child).all()), 0)
 
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
 
     def test_add_behavior(self):
-        session = SessionFactory.for_database(self.database_key)
-        self.assertEqual(len(session.query(schema.Root).all()), 0)
-        self.assertEqual(len(session.query(schema.Parent).all()), 0)
-        self.assertEqual(len(session.query(schema.Child).all()), 0)
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            self.assertEqual(len(session.query(schema.Root).all()), 0)
+            self.assertEqual(len(session.query(schema.Parent).all()), 0)
+            self.assertEqual(len(session.query(schema.Child).all()), 0)
 
         parent = entities.Parent.new_with_defaults(
             full_name="Krusty the Clown",
@@ -105,37 +108,38 @@ class TestBaseSchemaEntityConverter(TestCase):
         converter = _TestSchemaEntityConverter()
         schema_parent = converter.convert(parent)
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(schema_parent)
-        session.commit()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(schema_parent)
+            session.commit()
 
-        parents = session.query(schema.Parent).all()
-        self.assertEqual(len(parents), 1)
+            parents = session.query(schema.Parent).all()
+            self.assertEqual(len(parents), 1)
 
-        child = entities.Child.new_with_defaults(full_name="Child name")
+            child = entities.Child.new_with_defaults(full_name="Child name")
 
-        schema_child = converter.convert(child)
-        parents[0].children.append(schema_child)
-        session.commit()
+            schema_child = converter.convert(child)
+            parents[0].children.append(schema_child)
+            session.commit()
 
-        children = session.query(schema.Child).all()
-        self.assertEqual(len(children), 1)
-        self.assertEqual(len(children[0].parents), 1)
+            children = session.query(schema.Child).all()
+            self.assertEqual(len(children), 1)
+            self.assertEqual(len(children[0].parents), 1)
 
-        parent2 = entities.Parent.new_with_defaults(
-            full_name="Krusty the Clown 2",
-        )
-        children[0].parents = [converter.convert(parent2)]
+            parent2 = entities.Parent.new_with_defaults(
+                full_name="Krusty the Clown 2",
+            )
+            children[0].parents = [converter.convert(parent2)]
 
-        session.commit()
+            session.commit()
 
-        parents = session.query(schema.Parent).all()
-        self.assertEqual(len(parents), 2)
+            parents = session.query(schema.Parent).all()
+            self.assertEqual(len(parents), 2)
 
-        children = session.query(schema.Child).all()
-        self.assertEqual(len(children), 1)
-        self.assertEqual(len(children[0].parents), 1)
-        session.close()
+            children = session.query(schema.Child).all()
+            self.assertEqual(len(children), 1)
+            self.assertEqual(len(children[0].parents), 1)
 
     def test_add_behavior_2(self):
         parent = entities.Parent.new_with_defaults(
@@ -144,28 +148,29 @@ class TestBaseSchemaEntityConverter(TestCase):
         converter = _TestSchemaEntityConverter()
         schema_parent = converter.convert(parent)
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(schema_parent)
-        session.commit()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(schema_parent)
+            session.commit()
 
-        parents = session.query(schema.Parent).all()
-        self.assertEqual(len(parents), 1)
+            parents = session.query(schema.Parent).all()
+            self.assertEqual(len(parents), 1)
 
-        root = entities.Root.new_with_defaults(
-            type=RootType.SIMPSONS,
-        )
+            root = entities.Root.new_with_defaults(
+                type=RootType.SIMPSONS,
+            )
 
-        db_root = converter.convert(root)
-        db_root.parents.append(parents[0])
-        session.add(db_root)
-        session.commit()
+            db_root = converter.convert(root)
+            db_root.parents.append(parents[0])
+            session.add(db_root)
+            session.commit()
 
-        roots = session.query(schema.Root).all()
-        self.assertEqual(len(roots), 1)
+            roots = session.query(schema.Root).all()
+            self.assertEqual(len(roots), 1)
 
-        parents = session.query(schema.Parent).all()
-        self.assertEqual(len(parents), 1)
-        session.close()
+            parents = session.query(schema.Parent).all()
+            self.assertEqual(len(parents), 1)
 
     def test_convert_single_node(self):
         parent = entities.Parent.new_with_defaults(
@@ -174,20 +179,21 @@ class TestBaseSchemaEntityConverter(TestCase):
         converter = _TestSchemaEntityConverter()
         schema_parent = converter.convert(parent)
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(schema_parent)
-        session.commit()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(schema_parent)
+            session.commit()
 
-        parents = session.query(schema.Parent).all()
-        self.assertEqual(len(parents), 1)
+            parents = session.query(schema.Parent).all()
+            self.assertEqual(len(parents), 1)
 
-        children = session.query(schema.Child).all()
-        self.assertEqual(len(children), 0)
+            children = session.query(schema.Child).all()
+            self.assertEqual(len(children), 0)
 
-        converted_parent = _TestSchemaEntityConverter().convert(one(parents))
+            converted_parent = _TestSchemaEntityConverter().convert(one(parents))
 
-        self.assertEqual(parent, converted_parent)
-        session.close()
+            self.assertEqual(parent, converted_parent)
 
     def test_convert_single_node_no_primary_key(self):
         parent = entities.Parent.new_with_defaults(
@@ -200,24 +206,25 @@ class TestBaseSchemaEntityConverter(TestCase):
         # one already.
         self.assertIsNone(schema_parent.parent_id)
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(schema_parent)
-        session.commit()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(schema_parent)
+            session.commit()
 
-        parents = session.query(schema.Parent).all()
-        self.assertEqual(len(parents), 1)
+            parents = session.query(schema.Parent).all()
+            self.assertEqual(len(parents), 1)
 
-        children = session.query(schema.Child).all()
-        self.assertEqual(len(children), 0)
+            children = session.query(schema.Child).all()
+            self.assertEqual(len(children), 0)
 
-        converted_parent = _TestSchemaEntityConverter().convert(one(parents))
+            converted_parent = _TestSchemaEntityConverter().convert(one(parents))
 
-        # ...but there will be a primary key after adding to the DB
-        self.assertIsNotNone(converted_parent.parent_id)
+            # ...but there will be a primary key after adding to the DB
+            self.assertIsNotNone(converted_parent.parent_id)
 
-        self.assertEqual(parent.full_name, converted_parent.full_name)
-        self.assertEqual(parent.children, converted_parent.children)
-        session.close()
+            self.assertEqual(parent.full_name, converted_parent.full_name)
+            self.assertEqual(parent.children, converted_parent.children)
 
     def _check_children(self, parent, expected_children):
         self.assertEqual(len(expected_children), len(parent.children))
@@ -238,24 +245,25 @@ class TestBaseSchemaEntityConverter(TestCase):
     def _run_nuclear_family_test(self, parent_entities, child_entities):
         schema_parents = _TestSchemaEntityConverter().convert_all(parent_entities)
 
-        session = SessionFactory.for_database(self.database_key)
-        for parent in schema_parents:
-            session.add(parent)
-        session.commit()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            for parent in schema_parents:
+                session.add(parent)
+            session.commit()
 
-        db_parents = session.query(schema.Parent).all()
-        self.assertEqual(len(db_parents), len(parent_entities))
+            db_parents = session.query(schema.Parent).all()
+            self.assertEqual(len(db_parents), len(parent_entities))
 
-        db_children = session.query(schema.Child).all()
-        self.assertEqual(len(db_children), len(child_entities))
+            db_children = session.query(schema.Child).all()
+            self.assertEqual(len(db_children), len(child_entities))
 
-        converted_parents = _TestSchemaEntityConverter().convert_all(db_parents)
+            converted_parents = _TestSchemaEntityConverter().convert_all(db_parents)
 
-        for converted_parent in converted_parents:
-            self._check_children(converted_parent, child_entities)
-            for converted_child in converted_parent.children:
-                self._check_parents(converted_child, parent_entities)
-        session.close()
+            for converted_parent in converted_parents:
+                self._check_children(converted_parent, child_entities)
+                for converted_child in converted_parent.children:
+                    self._check_parents(converted_child, parent_entities)
 
     class SimpsonsFamily:
         """
@@ -362,20 +370,21 @@ class TestBaseSchemaEntityConverter(TestCase):
 
         schema_root = _TestSchemaEntityConverter().convert(family.root)
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(schema_root)
-        session.commit()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(schema_root)
+            session.commit()
 
-        db_roots = session.query(schema.Root).all()
-        self.assertEqual(len(db_roots), 1)
-        db_parents = session.query(schema.Parent).all()
-        self.assertEqual(len(db_parents), 1)
+            db_roots = session.query(schema.Root).all()
+            self.assertEqual(len(db_roots), 1)
+            db_parents = session.query(schema.Parent).all()
+            self.assertEqual(len(db_parents), 1)
 
-        converted_root = _TestSchemaEntityConverter().convert(one(db_roots))
-        self.assertEqual(len(converted_root.parents), 1)
-        self.assertEqual(converted_root.parents[0], family.homer)
-        self.assertEqual(converted_root.parents[0].children, [])
-        session.close()
+            converted_root = _TestSchemaEntityConverter().convert(one(db_roots))
+            self.assertEqual(len(converted_root.parents), 1)
+            self.assertEqual(converted_root.parents[0], family.homer)
+            self.assertEqual(converted_root.parents[0].children, [])
 
     def test_convert_rooted_graph(self):
         """
@@ -390,26 +399,27 @@ class TestBaseSchemaEntityConverter(TestCase):
 
         schema_root = _TestSchemaEntityConverter().convert(family.root)
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(schema_root)
-        session.commit()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(schema_root)
+            session.commit()
 
-        db_root = session.query(schema.Root).all()
-        self.assertEqual(len(db_root), 1)
+            db_root = session.query(schema.Root).all()
+            self.assertEqual(len(db_root), 1)
 
-        db_parents = session.query(schema.Parent).all()
-        self.assertEqual(len(db_parents), len(family.parent_entities))
+            db_parents = session.query(schema.Parent).all()
+            self.assertEqual(len(db_parents), len(family.parent_entities))
 
-        db_children = session.query(schema.Child).all()
-        self.assertEqual(len(db_children), len(family.child_entities))
+            db_children = session.query(schema.Child).all()
+            self.assertEqual(len(db_children), len(family.child_entities))
 
-        converted_root = _TestSchemaEntityConverter().convert(one(db_root))
+            converted_root = _TestSchemaEntityConverter().convert(one(db_root))
 
-        for converted_parent in converted_root.parents:
-            self._check_children(converted_parent, family.child_entities)
-            for converted_child in converted_parent.children:
-                self._check_parents(converted_child, family.parent_entities)
-        session.close()
+            for converted_parent in converted_root.parents:
+                self._check_children(converted_parent, family.child_entities)
+                for converted_child in converted_parent.children:
+                    self._check_parents(converted_child, family.parent_entities)
 
     def test_many_to_one_no_backref(self):
         family = self.SimpsonsFamily()
@@ -422,24 +432,25 @@ class TestBaseSchemaEntityConverter(TestCase):
 
         schema_root = _TestSchemaEntityConverter().convert(family.root)
 
-        session = SessionFactory.for_database(self.database_key)
-        session.add(schema_root)
-        session.commit()
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(schema_root)
+            session.commit()
 
-        db_roots = session.query(schema.Root).all()
-        self.assertEqual(len(db_roots), 1)
-        db_parents = session.query(schema.Parent).all()
-        self.assertEqual(len(db_parents), 1)
-        db_children = session.query(schema.Child).all()
-        self.assertEqual(len(db_children), 2)
-        db_toys = session.query(schema.Toy).all()
-        self.assertEqual(len(db_toys), 1)
+            db_roots = session.query(schema.Root).all()
+            self.assertEqual(len(db_roots), 1)
+            db_parents = session.query(schema.Parent).all()
+            self.assertEqual(len(db_parents), 1)
+            db_children = session.query(schema.Child).all()
+            self.assertEqual(len(db_children), 2)
+            db_toys = session.query(schema.Toy).all()
+            self.assertEqual(len(db_toys), 1)
 
-        converted_root = _TestSchemaEntityConverter().convert(one(db_roots))
-        self.assertEqual(len(converted_root.parents), 1)
-        self.assertEqual(len(converted_root.parents[0].children), 2)
-        self.assertEqual(converted_root.parents[0].children[0].favorite_toy, toy)
-        self.assertEqual(converted_root.parents[0].children[1].favorite_toy, toy)
-        session.close()
+            converted_root = _TestSchemaEntityConverter().convert(one(db_roots))
+            self.assertEqual(len(converted_root.parents), 1)
+            self.assertEqual(len(converted_root.parents[0].children), 2)
+            self.assertEqual(converted_root.parents[0].children[0].favorite_toy, toy)
+            self.assertEqual(converted_root.parents[0].children[1].favorite_toy, toy)
 
     # TODO(#1894): Write more unit tests for bugfixes in #1816
