@@ -14,30 +14,28 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import assertNever from "assert-never";
 import { action, autorun, makeAutoObservable, runInAction, set } from "mobx";
 import { parse } from "query-string";
-import assertNever from "assert-never";
+import API, { ErrorResponse } from "../API";
+import OpportunityStore from "../OpportunityStore";
 import PolicyStore from "../PolicyStore";
+import RootStore from "../RootStore";
 import UserStore, { KNOWN_EXPERIMENTS } from "../UserStore";
 import {
-  ClientData,
   Client,
-  SupervisionLevel,
+  ClientData,
   PreferredContactMethod,
+  SupervisionLevel,
 } from "./Client";
-
-import API, { ErrorResponse } from "../API";
-
 import {
-  CLIENT_LIST_KIND,
-  ClientListBuilder,
-  ClientListPriorityComparator,
-  ClientListContactComparator,
   ClientListAssessmentComparator,
+  ClientListBuilder,
+  ClientListContactComparator,
+  ClientListPriorityComparator,
   ClientListSupervisionStartComparator,
+  CLIENT_LIST_KIND,
 } from "./ClientListBuilder";
-import RootStore from "../RootStore";
-import OpportunityStore from "../OpportunityStore";
 
 interface ClientsStoreProps {
   api: API;

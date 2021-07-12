@@ -20,6 +20,7 @@ import { makeAutoObservable, runInAction, set } from "mobx";
 import moment from "moment";
 import { caseInsensitiveIncludes, titleCase } from "../../utils";
 import type API from "../API";
+import { ErrorResponse } from "../API";
 import {
   CaseUpdate,
   CaseUpdateActionType,
@@ -96,6 +97,7 @@ export interface ClientData {
   nextHomeVisitDate: APIDate;
   preferredName?: string;
   preferredContactMethod?: PreferredContactMethod;
+  receivingSSIOrDisabilityIncome: boolean;
   notes?: NoteData[];
 }
 
@@ -221,6 +223,8 @@ export class Client {
 
   projectedEndDate: moment.Moment | null;
 
+  receivingSSIOrDisabilityIncome: boolean;
+
   supervisionLevel: SupervisionLevel;
 
   supervisionStartDate: moment.Moment | null;
@@ -263,6 +267,8 @@ export class Client {
     this.needsMet = clientData.needsMet;
     this.preferredName = clientData.preferredName;
     this.preferredContactMethod = clientData.preferredContactMethod;
+    this.receivingSSIOrDisabilityIncome =
+      clientData.receivingSSIOrDisabilityIncome;
 
     // fields that require some processing
     this.notes = (clientData.notes || [])
@@ -507,5 +513,33 @@ export class Client {
 
   get activeNotes(): Note[] {
     return this.notes.filter((note) => !note.resolved);
+  }
+
+  async updateReceivingSSIOrDisabilityIncome(
+    markReceiving: boolean
+  ): Promise<void | ErrorResponse> {
+    const {
+      receivingSSIOrDisabilityIncome: previousExternalIncomeStatus,
+      personExternalId,
+    } = this;
+    runInAction(() =>
+      set(this, "receivingSSIOrDisabilityIncome", markReceiving)
+    );
+
+    return this.api
+      .post<void>("/api/set_receiving_ssi_or_disability_income", {
+        personExternalId,
+        markReceiving,
+      })
+      .catch((error) => {
+        runInAction(() =>
+          set(
+            this,
+            "receivingSSIOrDisabilityIncome",
+            previousExternalIncomeStatus
+          )
+        );
+        throw error;
+      });
   }
 }

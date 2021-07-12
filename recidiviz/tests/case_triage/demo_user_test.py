@@ -32,6 +32,7 @@ from recidiviz.case_triage.demo_helpers import (
     unconvert_fake_person_id_for_demo_user,
 )
 from recidiviz.case_triage.error_handlers import register_error_handlers
+from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -276,6 +277,46 @@ class TestDemoUser(TestCase):
                 client.person_external_id
             )
             self.assertFalse(client_info["receivingSSIOrDisabilityIncome"])
+
+    def test_ssi_disability_satisfies_employment_opportunity(self) -> None:
+        with self.helpers.as_demo_user():
+            client = self.demo_clients[0]
+
+            client_info = self.helpers.find_client_in_api_response(
+                client.person_external_id
+            )
+            self.assertFalse(client_info["receivingSSIOrDisabilityIncome"])
+
+            # Check that an employment opportunity exists
+            opportunities = self.helpers.get_opportunities()
+            employment_opportunity = None
+            for opportunity in opportunities:
+                if (
+                    opportunity["personExternalId"] == client.person_external_id
+                    and opportunity["opportunityType"]
+                    == OpportunityType.EMPLOYMENT.value
+                ):
+                    employment_opportunity = opportunity
+                    break
+            self.assertIsNotNone(employment_opportunity)
+
+            # Set receiving SSI/disability income
+            self.helpers.set_receiving_ssi_or_disability_income(
+                self.client_1.person_external_id, True
+            )
+
+            # Check that employment opportunity does not exist
+            opportunities = self.helpers.get_opportunities()
+            employment_opportunity = None
+            for opportunity in opportunities:
+                if (
+                    opportunity["personExternalId"] == client.person_external_id
+                    and opportunity["opportunityType"]
+                    == OpportunityType.EMPLOYMENT.value
+                ):
+                    employment_opportunity = opportunity
+                    break
+            self.assertIsNone(employment_opportunity)
 
     def test_notes(self) -> None:
         with self.helpers.as_demo_user():

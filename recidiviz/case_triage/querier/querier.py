@@ -234,17 +234,20 @@ class CaseTriageQuerier:
                 opportunity.person_external_id = user_context.opportunity_id(
                     opportunity
                 )
+
             # TODO(#8077): Unify computed and augmented opportunities.
+            clients = CaseTriageQuerier.clients_for_officer(session, user_context)
             unemployed = [
                 ComputedOpportunity(
                     state_code=user_context.officer_state_code,
                     supervising_officer_external_id=user_context.officer_id,
-                    person_external_id=user_context.person_id(c),
+                    person_external_id=user_context.person_id(c.etl_client),
                     opportunity_type=OpportunityType.EMPLOYMENT.value,
                     opportunity_metadata={},
                 )
-                for c in get_fixture_clients()
-                if c.employer is None
+                for c in clients
+                if c.etl_client.employer is None
+                and not c.etl_client.receiving_ssi_or_disability_income
             ]
 
             opportunities: List[Opportunity] = [*etl_opportunities, *unemployed]
@@ -314,7 +317,10 @@ class CaseTriageQuerier:
             ):
                 deferrals = [row[1] for row in client_rows if row[1] is not None]
                 # employment opportunities
-                if client.employer is None:
+                if (
+                    client.employer is None
+                    and not client.receiving_ssi_or_disability_income
+                ):
                     opp = ComputedOpportunity(
                         state_code=user_context.officer_state_code,
                         supervising_officer_external_id=user_context.officer_id,
