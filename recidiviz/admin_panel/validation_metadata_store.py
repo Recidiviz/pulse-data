@@ -17,8 +17,7 @@
 """Stores recent validation results to serve to the admin panel"""
 
 import datetime
-from collections import defaultdict
-from typing import Any, DefaultDict, Dict, Optional, TypeVar, cast
+from typing import Any, Dict, Optional, TypeVar, cast
 
 import attr
 import cattr
@@ -41,9 +40,15 @@ from recidiviz.validation.validation_result_storage import (
 class ValidationStatusRecord:
     didRun: bool = attr.ib()
     wasSuccessful: Optional[bool] = attr.ib()
-
     hasData: Optional[bool] = attr.ib()
     errorAmount: Optional[str] = attr.ib()
+
+
+@attr.s
+class ValidationStatusResult:
+    validationCategory: str = attr.ib()
+    # stateCode -> ValidationStatusRecord
+    resultsByState: Dict[str, ValidationStatusRecord] = attr.ib()
 
 
 @attr.s
@@ -51,8 +56,8 @@ class ValidationStatusResults:
     runId: str = attr.ib()
     runDatetime: datetime.datetime = attr.ib()
     systemVersion: str = attr.ib()
-
-    results: Dict[str, Dict[str, ValidationStatusRecord]] = attr.ib()
+    # validationName -> ValidationStatusResult
+    results: Dict[str, ValidationStatusResult] = attr.ib()
 
     def to_serializable(self) -> Dict[str, Any]:
         converter = serialization.with_datetime_hooks(cattr.Converter())
@@ -66,6 +71,7 @@ SELECT
     run_datetime,
     system_version,
     validation_name,
+    validation_category,
     region_code,
     did_run,
     was_successful,
@@ -124,7 +130,7 @@ class ValidationStatusStore(AdminPanelStore):
         )
 
         # Build up new results
-        results: DefaultDict[str, Dict[str, ValidationStatusRecord]] = defaultdict(dict)
+        results: Dict[str, ValidationStatusResult] = {}
 
         run_id: Optional[str] = None
         run_datetime: Optional[datetime.datetime] = None
@@ -136,7 +142,13 @@ class ValidationStatusStore(AdminPanelStore):
             run_datetime = _set_if_new(run_datetime, row.get("run_datetime"))
             system_version = _set_if_new(system_version, row.get("system_version"))
 
-            results[row.get("validation_name")][
+            if row.get("validation_name") not in results:
+                validation_status_result = ValidationStatusResult(
+                    validationCategory=row.get("validation_category"), resultsByState={}
+                )
+                results[row.get("validation_name")] = validation_status_result
+
+            results[row.get("validation_name")].resultsByState[
                 row.get("region_code")
             ] = ValidationStatusRecord(
                 didRun=row.get("did_run"),
