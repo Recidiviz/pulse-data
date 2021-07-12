@@ -125,6 +125,7 @@ class ConvertSentencesToStateSpecificType(beam.DoFn):
         pass  # Passing unused abstract method.
 
 
+# TODO(#2769): Remove this once entity hydration is recursive
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
 @with_output_types(
     beam.typehints.Tuple[int, entities.StateSupervisionViolationResponse]
@@ -180,6 +181,7 @@ class SetViolationOnViolationsResponse(beam.DoFn):
         pass  # Passing unused abstract method.
 
 
+# TODO(#2769): Remove this once entity hydration is recursive
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
 @with_output_types(beam.typehints.Tuple[int, entities.StateSupervisionViolation])
 class SetViolationResponsesOntoViolations(beam.DoFn):
@@ -233,6 +235,7 @@ class SetViolationResponsesOntoViolations(beam.DoFn):
         pass  # Passing unused abstract method.
 
 
+# TODO(#2769): Remove this once entity hydration is recursive
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
 @with_output_types(beam.typehints.Tuple[int, entities.StateSentenceGroup])
 class SetSentencesOnSentenceGroup(beam.DoFn):
@@ -280,7 +283,9 @@ class SetSentencesOnSentenceGroup(beam.DoFn):
                             sentence_group_incarceration_sentences
                         )
 
-                        for incarceration_sentence in incarceration_sentences:
+                        for (
+                            incarceration_sentence
+                        ) in sentence_group_incarceration_sentences:
                             incarceration_sentence.sentence_group = sentence_group
 
                 if sentence_group.supervision_sentences:
@@ -300,10 +305,64 @@ class SetSentencesOnSentenceGroup(beam.DoFn):
                             sentence_group_supervision_sentences
                         )
 
-                        for supervision_sentence in supervision_sentences:
+                        for (
+                            supervision_sentence
+                        ) in sentence_group_supervision_sentences:
                             supervision_sentence.sentence_group = sentence_group
 
                 yield person_id, sentence_group
+
+    def to_runner_api_parameter(self, _):
+        pass  # Passing unused abstract method.
+
+
+# TODO(#2769): Remove this once entity hydration is recursive
+@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
+@with_output_types(
+    beam.typehints.Tuple[
+        int,
+        Union[entities.StateIncarcerationSentence, entities.StateSupervisionSentence],
+    ]
+)
+class SetSupervisionPeriodsOnSentences(beam.DoFn):
+    """Sets a hydrated StateSupervisionPeriod entities onto StateIncarcerationSentences
+    and StateSupervisionSentences."""
+
+    def process(self, element, *_args, **_kwargs):
+        """For the incarceration sentences, supervision sentences, and supervision
+        periods of a given person, sets the hydrated supervision periods onto the
+        corresponding sentences.
+
+        Args:
+            element: a tuple containing person_id and a dictionary of the person's
+                StateSupervisionPeriods and either their StateIncarcerationSentences
+                or StateSupervisionSentences
+
+        Yields:
+            For each sentence, a tuple containing the person_id and the hydrated
+            sentence
+        """
+        person_id, person_entities = element
+
+        # Get the StateSupervisionPeriods in a list
+        supervision_periods = list(person_entities["supervision_periods"])
+
+        # Get the sentences in a list
+        sentences = list(person_entities["sentences"])
+
+        if sentences:
+            for sentence in sentences:
+                if supervision_periods and sentence.supervision_periods:
+                    supervision_period_ids = get_ids(sentence.supervision_periods)
+
+                    sentence_sps = [
+                        sp
+                        for sp in supervision_periods
+                        if sp.supervision_period_id in supervision_period_ids
+                    ]
+
+                    sentence.supervision_periods = sentence_sps
+                yield person_id, sentence
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.

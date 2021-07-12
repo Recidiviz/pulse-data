@@ -173,10 +173,15 @@ class TestIncarcerationPipeline(unittest.TestCase):
             schema.StateSupervisionViolationTypeEntry.__tablename__: [],
             schema.StateSupervisionViolatedConditionEntry.__tablename__: [],
             schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: [],
+            schema.StateSupervisionContact.__tablename__: [],
+            schema.StateSupervisionCaseTypeEntry.__tablename__: [],
             schema.state_charge_incarceration_sentence_association_table.name: [],
             schema.state_charge_supervision_sentence_association_table.name: [],
             schema.state_incarceration_sentence_supervision_period_association_table.name: [],
             schema.state_supervision_sentence_supervision_period_association_table.name: [],
+            schema.state_supervision_period_supervision_violation_association_table.name: [],
+            schema.state_supervision_period_program_assignment_association_table.name: [],
+            schema.state_supervision_period_supervision_contact_association_table.name: [],
         }
 
     def build_incarceration_pipeline_data_dict(
