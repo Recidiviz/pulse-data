@@ -15,15 +15,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { autorun, makeAutoObservable, runInAction } from "mobx";
-import UserStore from "../UserStore";
+import API from "../API";
 import { Client, SupervisionLevel } from "../ClientsStore";
+import { Gender, SupervisionLevels } from "../ClientsStore/Client";
+import UserStore from "../UserStore";
 import {
   Policy,
   ScoreMinMaxBySupervisionLevel,
   SupervisionContactFrequency,
 } from "./Policy";
-import API from "../API";
-import { Gender, SupervisionLevels } from "../ClientsStore/Client";
 
 interface PolicyStoreProps {
   api: API;

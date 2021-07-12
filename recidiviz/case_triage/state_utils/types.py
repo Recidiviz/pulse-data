@@ -57,6 +57,9 @@ class PolicyRequirements:
     # Mapping from state supervision level -> how they are named by the state
     supervision_level_names: Dict[StateSupervisionLevel, str]
 
+    # External reference to policy doc describing supervision policies
+    supervision_policy_reference: str
+
     def to_json(self) -> Dict[str, Any]:
         assessment_score_cutoff_dict = {
             gender.value: {
@@ -92,4 +95,5 @@ class PolicyRequirements:
             "supervisionContactFrequencies": supervision_contact_dict,
             "supervisionLevelNames": supervision_level_names,
             "supervisionHomeVisitFrequencies": supervision_home_visit_dict,
+            "supervisionPolicyReference": self.supervision_policy_reference,
         }

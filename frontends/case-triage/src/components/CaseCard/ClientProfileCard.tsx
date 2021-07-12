@@ -14,7 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Icon, IconSVG, spacing, Tab, TabList } from "@recidiviz/design-system";
+import {
+  Icon,
+  IconSVG,
+  Link,
+  spacing,
+  Tab,
+  TabList,
+} from "@recidiviz/design-system";
 import { observer } from "mobx-react-lite";
 import moment from "moment";
 import React from "react";
@@ -119,8 +126,15 @@ const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
               policyStore.findContactFrequencyForClient(client),
               "contact"
             )}
-
-            {/* TODO(#8056): Add policy link */}
+            .
+            {policyStore.policies?.supervisionPolicyReference && (
+              <>
+                {" "}
+                <Link href={policyStore.policies.supervisionPolicyReference}>
+                  Read {policyStore.getDOCName()} Policy
+                </Link>
+              </>
+            )}
           </Caption>
         </DetailsLineItem>
       </DetailsPanelSection>
