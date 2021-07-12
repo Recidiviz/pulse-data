@@ -29,22 +29,23 @@ VIOLATION_TYPE_DEDUP_PRIORITY_VIEW_DESCRIPTION = """Dedup priority for violation
     used in calculating dataflow supervision violation type"""
 
 VIOLATION_TYPE_DEDUP_PRIORITY_QUERY_TEMPLATE = """
+    # TODO(#7912): implement full violation type enum coverage
     /*{description}*/
-    WITH CTE as (
+   WITH CTE as (
         SELECT
             'US_MO' AS state_code,
             SPLIT(violation_type,'-')[OFFSET(0)] AS violation_type,
             SPLIT(violation_type,'-')[OFFSET(1)] AS violation_subtype_temp,
             ROW_NUMBER() OVER() AS priority
         FROM UNNEST([
-            'FELONY-',
-            'MISDEMEANOR-',
-            'TECHNICAL-LAW',
-            'ABSCONDED-',
-            'MUNICIPAL-',
-            'ESCAPED-',
-            'TECHNICAL-DRG',
-            'TECHNICAL-'
+            'FELONY-FELONY',
+            'MISDEMEANOR-MISDEMEANOR',
+            'TECHNICAL-LAW_CITATION',
+            'ABSCONDED-ABSCONDED',
+            'MUNICIPAL-MUNICIPAL',
+            'ESCAPED-ESCAPED',
+            'TECHNICAL-SUBSTANCE_ABUSE',
+            'TECHNICAL-TECHNICAL'
         ]) AS violation_type
             
         UNION ALL
@@ -55,9 +56,9 @@ VIOLATION_TYPE_DEDUP_PRIORITY_QUERY_TEMPLATE = """
             SPLIT(violation_type,'-')[OFFSET(1)] AS violation_subtype_temp,
             ROW_NUMBER() OVER() AS priority
         FROM UNNEST([
-            'LAW-',
+            'LAW-LAW',
             'TECHNICAL-HIGH_TECH',
-            'ABSCONDED-',
+            'ABSCONDED-ABSCONDED',
             'TECHNICAL-SUBSTANCE_ABUSE',
             'TECHNICAL-ELEC_MONITORING',
             'TECHNICAL-MED_TECH',
@@ -67,23 +68,29 @@ VIOLATION_TYPE_DEDUP_PRIORITY_QUERY_TEMPLATE = """
     
         UNION ALL
     
-        SELECT *, 
-            '' AS violation_subtype_temp,
+        SELECT state_code, 
+            SPLIT(violation_type,'-')[OFFSET(0)] AS violation_type,
+            SPLIT(violation_type,'-')[OFFSET(1)] AS violation_subtype_temp,
+            priority
+        FROM (
+            SELECT violation_type,
+                    state_code,
             ROW_NUMBER() OVER(partition by state_code) AS priority
-        FROM UNNEST(['US_ID','US_ND']) state_code CROSS JOIN 
-            UNNEST([
-            'FELONY',
-            'MISDEMEANOR',
-            'LAW',
-            'ABSCONDED',
-            'MUNICIPAL',
-            'ESCAPED',
-            'TECHNICAL']) violation_type  
+            FROM UNNEST(['US_ID','US_ND']) state_code CROSS JOIN 
+                UNNEST([
+                'FELONY-FELONY',
+                'MISDEMEANOR-MISDEMEANOR',
+                'LAW-LAW',
+                'ABSCONDED-ABSCONDED',
+                'MUNICIPAL-MUNICIPAL',
+                'ESCAPED-ESCAPED',
+                'TECHNICAL-TECHNICAL']) violation_type  
         )
+    )
         SELECT * EXCEPT(violation_subtype_temp ),
         CASE WHEN violation_subtype_temp = '' THEN 'NONE' 
         ELSE violation_subtype_temp 
-        END AS violation_sub_type
+        END AS violation_type_subtype
     FROM cte
     """
 

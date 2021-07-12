@@ -89,7 +89,7 @@ EVENT_BASED_METRICS_BY_SUPERVISION_OFFICER_QUERY_TEMPLATE = """
             supervising_officer_external_id,
             response_date,
             most_serious_violation_type,
-            response_decision
+            most_severe_response_decision as response_decision
         FROM `{project_id}.{analyst_dataset}.violations_sessions_materialized` violations
         LEFT JOIN `{project_id}.{analyst_dataset}.supervision_officer_sessions_materialized` officers
         ON violations.state_code = officers.state_code
