@@ -235,7 +235,6 @@ def is_official_admission(
         StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
-        StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
         StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
         StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
     ]
@@ -254,6 +253,14 @@ def is_official_admission(
         return True
     if admission_reason in non_official_admission_types:
         return False
+    if (
+        admission_reason
+        == StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION
+    ):
+        # TODO(#7070): Once we have guaranteed ADMITTED_FROM_SUPERVISION is an
+        #  ingest-only enum, and can expect to not see it after pre-processing,
+        #  raise an error here.
+        return True
 
     raise ValueError(
         f"Unsupported StateSupervisionPeriodAdmissionReason value: {admission_reason}"
