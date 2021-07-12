@@ -24,6 +24,7 @@ from werkzeug.exceptions import ServiceUnavailable
 
 from recidiviz.admin_panel.validation_metadata_store import (
     ValidationStatusRecord,
+    ValidationStatusResult,
     ValidationStatusResults,
     ValidationStatusStore,
 )
@@ -53,6 +54,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
                 "run_id": "abc123",
                 "run_datetime": datetime.datetime(2000, 1, 1, 0, 0, 0),
                 "system_version": "v1.0.0",
+                "validation_category": "EXTERNAL_INDIVIDUAL",
                 "validation_name": "test_view",
                 "region_code": "US_XX",
                 "did_run": True,
@@ -65,6 +67,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
                 "run_id": "abc123",
                 "run_datetime": datetime.datetime(2000, 1, 1, 0, 0, 0),
                 "system_version": "v1.0.0",
+                "validation_category": "EXTERNAL_INDIVIDUAL",
                 "validation_name": "test_view",
                 "region_code": "US_YY",
                 "did_run": True,
@@ -77,6 +80,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
                 "run_id": "abc123",
                 "run_datetime": datetime.datetime(2000, 1, 1, 0, 0, 0),
                 "system_version": "v1.0.0",
+                "validation_category": "CONSISTENCY",
                 "validation_name": "other_view",
                 "region_code": "US_XX",
                 "did_run": False,
@@ -98,28 +102,34 @@ class ValidationStatusStoreTest(unittest.TestCase):
                 runDatetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
                 systemVersion="v1.0.0",
                 results={
-                    "test_view": {
-                        "US_XX": ValidationStatusRecord(
-                            didRun=True,
-                            wasSuccessful=True,
-                            hasData=True,
-                            errorAmount="12.3%",
-                        ),
-                        "US_YY": ValidationStatusRecord(
-                            didRun=True,
-                            wasSuccessful=False,
-                            hasData=True,
-                            errorAmount="99.9%",
-                        ),
-                    },
-                    "other_view": {
-                        "US_XX": ValidationStatusRecord(
-                            didRun=False,
-                            wasSuccessful=None,
-                            hasData=None,
-                            errorAmount=None,
-                        )
-                    },
+                    "test_view": ValidationStatusResult(
+                        validationCategory="EXTERNAL_INDIVIDUAL",
+                        resultsByState={
+                            "US_XX": ValidationStatusRecord(
+                                didRun=True,
+                                wasSuccessful=True,
+                                hasData=True,
+                                errorAmount="12.3%",
+                            ),
+                            "US_YY": ValidationStatusRecord(
+                                didRun=True,
+                                wasSuccessful=False,
+                                hasData=True,
+                                errorAmount="99.9%",
+                            ),
+                        },
+                    ),
+                    "other_view": ValidationStatusResult(
+                        validationCategory="CONSISTENCY",
+                        resultsByState={
+                            "US_XX": ValidationStatusRecord(
+                                didRun=False,
+                                wasSuccessful=None,
+                                hasData=None,
+                                errorAmount=None,
+                            )
+                        },
+                    ),
                 },
             ),
         )
@@ -134,6 +144,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
                 "run_id": "abc123",
                 "run_datetime": datetime.datetime(2000, 1, 1, 0, 0, 0),
                 "system_version": "v1.0.0",
+                "validation_category": "EXTERNAL_INDIVIDUAL",
                 "validation_name": "test_view",
                 "region_code": "US_XX",
                 "did_run": True,
@@ -146,6 +157,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
                 "run_id": "def456",
                 "run_datetime": datetime.datetime(2000, 1, 1, 0, 0, 0),
                 "system_version": "v1.0.0",
+                "validation_category": "EXTERNAL_INDIVIDUAL",
                 "validation_name": "test_view",
                 "region_code": "US_YY",
                 "did_run": True,

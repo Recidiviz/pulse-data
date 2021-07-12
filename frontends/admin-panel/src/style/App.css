@@ -65,3 +65,7 @@ tr.metadata-table-row > td.ant-table-cell > div {
   color: #ffffff;
   background-color: #f5222d;
 }
+
+.ant-anchor-ink::before {
+  background-color: #c6c6c6;
+}
