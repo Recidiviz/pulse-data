@@ -75,6 +75,7 @@ type CaseUpdates = { [key in CaseUpdateActionType]?: CaseUpdate };
 
 export interface ClientData {
   assessmentScore: number | null;
+  birthdate: APIDate;
   caseType: CaseType;
   caseUpdates: CaseUpdates;
   currentAddress: string;
@@ -176,6 +177,8 @@ type Alert = PlainAlert | OpportunityAlert | DateAlert;
  */
 export class Client {
   assessmentScore: number | null;
+
+  birthdate: moment.Moment | null;
 
   caseType: CaseType;
 
@@ -287,6 +290,7 @@ export class Client {
 
     this.possessivePronoun = POSSESSIVE_PRONOUNS[clientData.gender] || "their";
 
+    this.birthdate = parseDate(clientData.birthdate);
     this.supervisionStartDate = parseDate(clientData.supervisionStartDate);
     this.projectedEndDate = parseDate(clientData.projectedEndDate);
     this.mostRecentFaceToFaceDate = parseDate(
@@ -378,6 +382,33 @@ export class Client {
         this.personExternalId ||
       this.clientsStore.activeClient?.personExternalId === this.personExternalId
     );
+  }
+
+  get hasUpcomingBirthday(): boolean {
+    if (this.birthdate === null) {
+      return false;
+    }
+
+    const today = moment();
+    const endPeriod = today.clone().add(31, "days");
+    const birthdayThisYear = moment(this.birthdate).year(today.year());
+    if (
+      today.isSameOrBefore(birthdayThisYear) &&
+      endPeriod.isSameOrAfter(birthdayThisYear)
+    ) {
+      return true;
+    }
+
+    // Handle wrap-around case
+    const birthdayNextYear = moment(this.birthdate).year(today.year() + 1);
+    if (
+      today.isSameOrBefore(birthdayNextYear) &&
+      endPeriod.isSameOrAfter(birthdayNextYear)
+    ) {
+      return true;
+    }
+
+    return false;
   }
 
   get nextContactDate(): moment.Moment | null {
