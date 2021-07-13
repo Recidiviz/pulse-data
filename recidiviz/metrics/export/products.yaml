@@ -39,11 +39,19 @@ products:
     description: Lantern is a dashboard for leadership and supervisors to understand the patterns and behaviors associated with revocations. Users can see over-time revocation trends, the violation history leading up to revocation, demographic and geographic breakdowns of revocations, and individual lists of people who were revoked.
     exports:
       - LANTERN
-      - DASHBOARD_USER_RESTRICTIONS
     states:
       - state_code: US_MO
         environment: production
       - state_code: US_PA
+        environment: production
+  - name: Dashboard User Restrictions
+    description: User restrictions for the UP dashboard, including Lantern and Case Triage.
+    exports:
+      - DASHBOARD_USER_RESTRICTIONS
+    states:
+      - state_code: US_MO
+        environment: production
+      - state_code: US_ID
         environment: production
   - name: PO Report
     description: Monthly Email Reports are sent regularly to parole and probation officers (line staff) to track and motivate progress towards improving client outcomes.

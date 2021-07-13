@@ -82,6 +82,8 @@ class Auth0ClientTest(TestCase):
         app_metadata: Auth0AppMetadata = {
             "allowed_supervision_location_ids": ["12", "AP"],
             "allowed_supervision_location_level": "level_1_supervision_location",
+            "can_access_leadership_dashboard": False,
+            "can_access_case_triage": False,
         }
         self.auth0_client.update_user_app_metadata(
             user_id="1", app_metadata=app_metadata
