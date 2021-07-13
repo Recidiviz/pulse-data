@@ -1,0 +1,10 @@
+file_tag: tagRowMissingColumns
+file_description: |-
+  tagRowMissingColumns file description
+primary_key_cols:
+  - id_column
+columns:
+  - name: id_column
+  - name: comment
+  - name: termination_code
+  - name: update_date

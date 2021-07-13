@@ -33,6 +33,7 @@ import csv
 import logging
 
 import pandas as pd
+
 from recidiviz.utils.params import str_to_bool
 
 
@@ -63,12 +64,10 @@ def main(
         sep=separator,
         dtype=str,
         index_col=False,
-        header=None,
-        skiprows=1,
+        header=0,
+        names=dfcolumns.columns,
         encoding=encoding,
         quoting=quoting,
-        usecols=list(range(len(dfcolumns.columns))),
-        names=dfcolumns.columns,
         keep_default_na=False,
     )
 

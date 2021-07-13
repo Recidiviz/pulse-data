@@ -1,0 +1,10 @@
+file_tag: tagRowExtraColumns
+file_description: |-
+  tagRowExtraColumns file description
+primary_key_cols:
+  - id_column
+columns:
+  - name: id_column
+  - name: comment
+  - name: termination_code
+  - name: update_date
