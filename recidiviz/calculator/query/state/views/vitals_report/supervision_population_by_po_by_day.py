@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Supervision population by PO and day"""
+from typing import Dict, Tuple
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
@@ -27,8 +28,40 @@ SUPERVISION_POPULATION_BY_PO_BY_DAY_DESCRIPTION = """
     Supervision population by PO by day
  """
 
-SUPERVISION_POPULATION_BY_PO_BY_DAY_QUERY_TEMPLATE = """
-    /*{description}*/
+contact_population_by_state = {
+    "US_ND": ("MINIMUM", "MEDIUM", "MAXIMUM"),
+    "US_ID": ("MINIMUM", "MEDIUM", "HIGH", "MAXIMUM"),
+}
+
+risk_assessment_population_by_state = {
+    "US_ND": ("MINIMUM", "MEDIUM", "MAXIMUM"),
+    "US_ID": ("MINIMUM", "MEDIUM", "HIGH", "MAXIMUM"),
+}
+
+enabled_states = tuple(
+    set(contact_population_by_state).union(set(risk_assessment_population_by_state))
+)
+
+
+def generate_state_specific_population(
+    populations_by_state: Dict[str, Tuple[str, ...]], field: str
+) -> str:
+    """Generates a field selector which only counts people in the specified supervision groups in each state.
+    Defaults to counting all supervised people for unlisted states.
+    """
+    state_clauses = "\n            ".join(
+        f"WHEN '{state}' THEN COUNT(DISTINCT(IF(supervision_level in {populations}, person_id, null)))"
+        for state, populations in populations_by_state.items()
+    )
+    return f"""
+        CASE state_code
+            {state_clauses}
+            ELSE COUNT(DISTINCT(person_id))
+        END as {field}"""
+
+
+SUPERVISION_POPULATION_BY_PO_BY_DAY_QUERY_TEMPLATE = f"""
+    /*{{description}}*/
    SELECT
         state_code,
         date_of_supervision,
@@ -36,12 +69,13 @@ SUPERVISION_POPULATION_BY_PO_BY_DAY_QUERY_TEMPLATE = """
         supervising_officer_external_id,
         COUNT(DISTINCT(person_id)) AS people_under_supervision,
         -- TODO(#7470): Expand contact population here once we process DIVERSION
-        COUNT(DISTINCT(IF(supervision_level in ('MINIMUM', 'MEDIUM', 'MAXIMUM'), person_id, null))) AS supervisees_requiring_contact,
-        COUNT(DISTINCT(IF(supervision_level in ('MINIMUM', 'MEDIUM', 'MAXIMUM'), person_id, null))) AS supervisees_requiring_risk_assessment,
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`,
+        {generate_state_specific_population(contact_population_by_state, 'supervisees_requiring_contact')},
+        {generate_state_specific_population(risk_assessment_population_by_state, 'supervisees_requiring_risk_assessment')},
+    FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_metrics_materialized`,
     UNNEST ([supervising_district_external_id, 'ALL']) AS supervising_district_external_id,
     UNNEST ([supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
     WHERE date_of_supervision > DATE_SUB(CURRENT_DATE(), INTERVAL 217 DAY) -- 217 = 210 days back for avgs + 7-day buffer for late data
+        AND state_code in {enabled_states}
     GROUP BY state_code, date_of_supervision, supervising_district_external_id, supervising_officer_external_id
     """
 
