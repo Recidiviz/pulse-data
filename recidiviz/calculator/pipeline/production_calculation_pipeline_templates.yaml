@@ -110,6 +110,14 @@ historical_pipelines:
     # This region value must stay in-sync with the REGION arg in the
     # historical-pipelines.tf config for this pipeline
     region: us-west1
+  - pipeline: violation
+    job_name: us-id-historical-violation-calculations-240
+    state_code: US_ID
+    calculation_month_count: 240
+    metric_types: VIOLATION
+    # This region value must stay in-sync with the REGION arg in the
+    # historical-pipelines.tf config for this pipeline
+    region: us-west1
   - pipeline: incarceration
     job_name: us-mo-historical-incarceration-calculations-240
     state_code: US_MO
@@ -123,6 +131,14 @@ historical_pipelines:
     state_code: US_MO
     calculation_month_count: 240
     metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
+    # This region value must stay in-sync with the REGION arg in the
+    # historical-pipelines.tf config for this pipeline
+    region: us-west3
+  - pipeline: violation
+    job_name: us-mo-historical-violation-calculations-240
+    state_code: US_MO
+    calculation_month_count: 240
+    metric_types: VIOLATION
     # This region value must stay in-sync with the REGION arg in the
     # historical-pipelines.tf config for this pipeline
     region: us-west3
@@ -155,6 +171,14 @@ historical_pipelines:
     state_code: US_PA
     calculation_month_count: 240
     metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
+    # This region value must stay in-sync with the REGION arg in the
+    # historical-pipelines.tf config for this pipeline
+    region: us-central1
+  - pipeline: violation
+    job_name: us-pa-historical-violation-calculations-240
+    state_code: US_PA
+    calculation_month_count: 240
+    metric_types: VIOLATION
     # This region value must stay in-sync with the REGION arg in the
     # historical-pipelines.tf config for this pipeline
     region: us-central1
