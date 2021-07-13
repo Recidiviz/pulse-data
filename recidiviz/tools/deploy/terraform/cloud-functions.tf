@@ -200,7 +200,29 @@ resource "google_cloudfunctions_function" "handle_state_dashboard_user_restricti
     resource   = "${var.project_id}-dashboard-user-restrictions"
   }
 
-  entry_point           = "handle_state_dashboard_user_restrictions_file"
+  entry_point = "handle_state_dashboard_user_restrictions_file"
+  environment_variables = {
+    "GCP_PROJECT" = var.project_id
+  }
+
+  source_repository {
+    url = local.repo_url
+  }
+}
+
+resource "google_cloudfunctions_function" "handle_new_case_triage_etl" {
+  name    = "handle_new_case_triage_etl"
+  runtime = "python38"
+  labels = {
+    "deployment-tool" = "terraform"
+  }
+
+  event_trigger {
+    event_type = "google.storage.object.finalize"
+    resource   = "${var.project_id}-case-triage-data"
+  }
+
+  entry_point = "handle_new_case_triage_etl"
   environment_variables = {
     "GCP_PROJECT" = var.project_id
   }

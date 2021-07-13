@@ -70,9 +70,11 @@ _APP_ENGINE_PO_MONTHLY_REPORT_DELIVER_EMAILS_URL = (
 _APP_ENGINE_UPDATE_AUTH0_USER_METADATA_URL = (
     "https://{}.appspot.com/auth/update_auth0_user_metadata?region_code={}"
 )
-
 _APP_ENGINE_IMPORT_USER_RESTRICTIONS_CSV_TO_SQL_URL = (
     "https://{}.appspot.com/auth/import_user_restrictions_csv_to_sql?region_code={}"
+)
+_APP_ENGINE_IMPORT_CASE_TRIAGE_ETL_CSV_TO_SQL_URL = (
+    "https://{}.appspot.com/case_triage_ops/run_standard_cron_gcs_imports"
 )
 
 
@@ -103,7 +105,7 @@ def parse_state_aggregate(
     # database.
     response = make_iap_request(url, IAP_CLIENT_ID[project_id])
     logging.info("The response status is %s", response.status_code)
-    return "", response.status_code
+    return "", HTTPStatus(response.status_code)
 
 
 def normalize_raw_file_path(
@@ -133,7 +135,7 @@ def normalize_raw_file_path(
     # data for unprocessed files in this bucket and persist to our database.
     response = make_iap_request(url, IAP_CLIENT_ID[project_id])
     logging.info("The response status is %s", response.status_code)
-    return "", response.status_code
+    return "", HTTPStatus(response.status_code)
 
 
 def handle_state_direct_ingest_file(
@@ -169,9 +171,30 @@ def handle_state_direct_ingest_file_rename_only(
     return _handle_state_direct_ingest_file(data, start_ingest=False)
 
 
+def handle_new_case_triage_etl(
+    data: Dict[str, Any], _: ContextType
+) -> Tuple[str, HTTPStatus]:
+    """This function is triggered when a file is dropped in the
+    `{project_id}-case-triage-data` bucket. If the file matches `etl_*.csv`,
+    then it makes a request to import the CSV to Cloud SQL.
+    """
+    project_id = os.environ.get(GCP_PROJECT_ID_KEY)
+    if not project_id:
+        logging.error("No project id set for call to update auth0 users, returning.")
+        return "", HTTPStatus.BAD_REQUEST
+
+    if not data["name"].startswith("etl_") or not data["name"].endswith(".csv"):
+        logging.info("Ignoring file %s", data["name"])
+        return "", HTTPStatus.OK
+
+    import_url = _APP_ENGINE_IMPORT_CASE_TRIAGE_ETL_CSV_TO_SQL_URL.format(project_id)
+    import_response = make_iap_request(import_url, IAP_CLIENT_ID[project_id])
+    return "", HTTPStatus(import_response.status_code)
+
+
 def handle_state_dashboard_user_restrictions_file(
     data: Dict[str, Any], _: ContextType
-) -> None:
+) -> Tuple[str, HTTPStatus]:
     """This function is triggered when a file is dropped in a
     `recidiviz-{project_id}-dashboard-user-restrictions/US_XX` bucket.
 
@@ -188,21 +211,16 @@ def handle_state_dashboard_user_restrictions_file(
     project_id = os.environ.get(GCP_PROJECT_ID_KEY)
     if not project_id:
         logging.error("No project id set for call to update auth0 users, returning.")
-        return
+        return "", HTTPStatus.BAD_REQUEST
 
-    path_delimiter = "/"
-
-    # Skip temp files in the bucket
-    if path_delimiter not in data["name"]:
-        logging.info("Skipping temp file: %s", data["name"])
-        return
-
-    filepath = data["name"].split(path_delimiter)
+    filepath = data["name"].split("/")
 
     # Expected file path structure is US_XX/dashboard_user_restrictions.csv
     if len(filepath) != 2:
-        logging.info("Skipping filepath, too many nested directories: %s", filepath)
-        return
+        logging.info(
+            "Skipping filepath, incorrect number of nested directories: %s", filepath
+        )
+        return "", HTTPStatus.OK
 
     region_code, filename = filepath
     csv_file = "dashboard_user_restrictions.csv"
@@ -236,7 +254,7 @@ def handle_state_dashboard_user_restrictions_file(
                 "The %s response status is %s", update_users_url, response.status_code
             )
 
-    return
+    return "", HTTPStatus.OK
 
 
 def _handle_state_direct_ingest_file(
@@ -270,7 +288,7 @@ def _handle_state_direct_ingest_file(
     # data for unprocessed files in this bucket and persist to our database.
     response = make_iap_request(url, IAP_CLIENT_ID[project_id])
     logging.info("The response status is %s", response.status_code)
-    return "", response.status_code
+    return "", HTTPStatus(response.status_code)
 
 
 def export_metric_view_data(
@@ -303,7 +321,7 @@ def export_metric_view_data(
     # Hit the cloud function backend, which exports view data to their assigned cloud storage bucket
     response = make_iap_request(url, IAP_CLIENT_ID[project_id])
     logging.info("The response status is %s", response.status_code)
-    return "", response.status_code
+    return "", HTTPStatus(response.status_code)
 
 
 def trigger_daily_calculation_pipeline_dag(
@@ -339,7 +357,7 @@ def trigger_daily_calculation_pipeline_dag(
         webserver_url, iap_client_id, method="POST", json={"conf": data}
     )
     logging.info("The monitoring Airflow response is %s", monitor_response)
-    return "", monitor_response.status_code
+    return "", HTTPStatus(monitor_response.status_code)
 
 
 def start_calculation_pipeline(
@@ -431,7 +449,7 @@ def handle_start_new_batch_email_reporting(request: Request) -> Tuple[str, HTTPS
     # Hit the App Engine endpoint `reporting/start_new_batch`.
     response = make_iap_request(url, IAP_CLIENT_ID[project_id])
     logging.info("The response status is %s", response.status_code)
-    return "", response.status_code
+    return "", HTTPStatus(response.status_code)
 
 
 def handle_deliver_emails_for_batch_email_reporting(
@@ -485,4 +503,4 @@ def handle_deliver_emails_for_batch_email_reporting(
     logging.info("Calling URL: %s", url)
     response = make_iap_request(url, IAP_CLIENT_ID[project_id])
     logging.info("The response status is %s", response.status_code)
-    return "", response.status_code
+    return "", HTTPStatus(response.status_code)
