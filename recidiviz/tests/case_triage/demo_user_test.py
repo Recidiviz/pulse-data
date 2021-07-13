@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests to enforce that demo users work."""
+from datetime import date
 from http import HTTPStatus
 from typing import Optional
 from unittest import TestCase
@@ -95,6 +96,14 @@ class TestDemoUser(TestCase):
             cls.temp_db_dir
         )
 
+    def test_fixture_time_shift(self) -> None:
+        """Spot-check that fixture data is properly time-shifted
+        relative to the current date."""
+        test_client = next(
+            (c for c in self.demo_clients if c.person_external_id == "227")
+        )
+        self.assertEqual(test_client.most_recent_face_to_face_date, date.today())
+
     def test_get_clients(self) -> None:
         with self.helpers.as_demo_user():
             self.assertEqual(len(self.helpers.get_clients()), len(self.demo_clients))
@@ -153,8 +162,21 @@ class TestDemoUser(TestCase):
         # these numbers reflect the conditions represented in data fixtures
         # that result in opportunities
         num_unemployed = 58
+        num_assessment_overdue = 31
+        num_assessment_upcoming = 2
+        num_contact_overdue = 4
+        num_contact_upcoming = 1
 
-        expected_opportunity_count = len(self.demo_opportunities) + num_unemployed
+        expected_opportunity_count = sum(
+            [
+                len(self.demo_opportunities),
+                num_unemployed,
+                num_assessment_overdue,
+                num_assessment_upcoming,
+                num_contact_overdue,
+                num_contact_upcoming,
+            ]
+        )
 
         with self.helpers.as_demo_user():
             self.assertEqual(

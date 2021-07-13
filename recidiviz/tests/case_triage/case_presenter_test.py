@@ -17,7 +17,7 @@
 """Implements tests for the CasePresenter class."""
 import json
 import uuid
-from datetime import date, timedelta
+from datetime import date
 from unittest.case import TestCase
 
 from freezegun import freeze_time
@@ -91,7 +91,6 @@ class TestCasePresenter(TestCase):
                     "notes": [],
                     "receivingSSIOrDisabilityIncome": False,
                 },
-                None,
             ),
         )
 
@@ -152,7 +151,6 @@ class TestCasePresenter(TestCase):
                     "receivingSSIOrDisabilityIncome": client_info.receiving_ssi_or_disability_income,
                     "notes": [officer_note.to_json()],
                 },
-                None,
             ),
         )
 
@@ -172,16 +170,4 @@ class TestCasePresenter(TestCase):
         self.assertEqual(len(case_json["caseUpdates"].keys()), 1)
         self.assertIn(
             CaseUpdateActionType.SCHEDULED_FACE_TO_FACE.value, case_json["caseUpdates"]
-        )
-
-    def test_json_mapping_offsets(self) -> None:
-        base_dict = {"field": date(2022, 2, 1)}
-
-        self.assertEqual(
-            _json_map_dates_to_strings(base_dict, timedelta(days=-1))["field"],
-            str(date(2022, 1, 31)),
-        )
-        self.assertEqual(
-            _json_map_dates_to_strings(base_dict, timedelta(days=28))["field"],
-            str(date(2022, 3, 1)),
         )

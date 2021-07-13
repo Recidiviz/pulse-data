@@ -17,7 +17,7 @@
 """Implements some querying abstractions for use by demo users."""
 import json
 import os
-from datetime import datetime
+from datetime import date, datetime
 from typing import List
 
 import pytz
@@ -49,7 +49,8 @@ _FIXTURE_PATH = os.path.abspath(
 def get_fixture_clients() -> List[ETLClient]:
     with open(os.path.join(_FIXTURE_PATH, "demo_clients.json")) as f:
         clients = json.load(f)
-    return [ETLClient.from_json(client) for client in clients]
+    shift = date.today() - DEMO_FROZEN_DATE
+    return [ETLClient.from_json(client, shift) for client in clients]
 
 
 def get_fixture_opportunities() -> List[ETLOpportunity]:

@@ -46,7 +46,7 @@ def generate_fake_officer(
     return ETLOfficer(
         external_id=officer_id,
         email_address=email,
-        state_code="US_XX",
+        state_code="US_ID",
         given_names="Test",
         surname="Officer",
     )
@@ -62,6 +62,13 @@ def generate_fake_client(
     supervision_level: StateSupervisionLevel = StateSupervisionLevel.MEDIUM,
     assessment_score: int = 1,
 ) -> ETLClient:
+    # these can trigger opportunities if they are overdue or upcoming;
+    # default them to today to prevent unexpected side effects
+    if last_assessment_date is None:
+        last_assessment_date = date.today()
+    if last_face_to_face_date is None:
+        last_face_to_face_date = date.today()
+
     return ETLClient(
         person_external_id=client_id,
         full_name=json.dumps({"given_names": "TEST", "surname": "NAME"}),
@@ -69,7 +76,7 @@ def generate_fake_client(
         supervision_type="PAROLE",
         case_type="GENERAL",
         supervision_level=supervision_level.value,
-        state_code="US_XX",
+        state_code="US_ID",
         supervision_start_date=date(2018, 1, 1),
         last_known_date_of_employment=date(2018, 2, 1),
         most_recent_assessment_date=last_assessment_date,
@@ -91,7 +98,7 @@ def generate_fake_etl_opportunity(
     return ETLOpportunity(
         supervising_officer_external_id=officer_id,
         person_external_id=person_external_id,
-        state_code="US_XX",
+        state_code="US_ID",
         opportunity_type=opportunity_type.value,
         opportunity_metadata=opportunity_metadata,
     )
@@ -109,7 +116,7 @@ def generate_fake_computed_opportunity(
     return ComputedOpportunity(
         supervising_officer_external_id=officer_id,
         person_external_id=person_external_id,
-        state_code="US_XX",
+        state_code="US_ID",
         opportunity_type=opportunity_type.value,
         opportunity_metadata=opportunity_metadata,
     )
@@ -123,7 +130,7 @@ def generate_fake_reminder(
         deferred_until = datetime.now() + timedelta(days=7)
 
     reminder_args = {
-        "state_code": "US_XX",
+        "state_code": "US_ID",
         "deferral_type": OpportunityDeferralType.REMINDER.value,
         "deferred_until": deferred_until,
         "reminder_was_requested": True,
