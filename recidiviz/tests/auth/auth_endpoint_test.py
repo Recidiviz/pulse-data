@@ -254,6 +254,8 @@ class AuthEndpointTests(TestCase):
             expected_restrictions = {
                 "allowed_supervision_location_ids": ["1", "2"],
                 "allowed_supervision_location_level": "level_1_supervision_location",
+                "can_access_case_triage": False,
+                "can_access_leadership_dashboard": True,
             }
             response = self.client.get(
                 self.dashboard_user_restrictions_by_email_url,
@@ -333,6 +335,8 @@ class AuthEndpointTests(TestCase):
                     "app_metadata": {
                         "allowed_supervision_location_ids": ["11", "EP"],
                         "allowed_supervision_location_level": "level_1_supervision_location",
+                        "can_access_case_triage": False,
+                        "can_access_leadership_dashboard": True,
                     },
                 },
                 {
@@ -341,6 +345,8 @@ class AuthEndpointTests(TestCase):
                     "app_metadata": {
                         "allowed_supervision_location_ids": ["23"],
                         "allowed_supervision_location_level": "level_2_supervision_location",
+                        "can_access_case_triage": False,
+                        "can_access_leadership_dashboard": False,
                     },
                 },
             ]
@@ -357,6 +363,8 @@ class AuthEndpointTests(TestCase):
                         app_metadata={
                             "allowed_supervision_location_ids": ["23"],
                             "allowed_supervision_location_level": "level_1_supervision_location",
+                            "can_access_case_triage": False,
+                            "can_access_leadership_dashboard": True,
                         },
                     ),
                 ]
@@ -397,7 +405,16 @@ class AuthEndpointTests(TestCase):
                         "allowed_supervision_location_level": "level_1_supervision_location",
                     },
                 },
-                {"email": "test-user+2@test.org", "user_id": "2", "app_metadata": {}},
+                {
+                    "email": "test-user+2@test.org",
+                    "user_id": "2",
+                    "app_metadata": {
+                        "allowed_supervision_location_ids": [],
+                        "allowed_supervision_location_level": None,
+                        "can_access_case_triage": False,
+                        "can_access_leadership_dashboard": False,
+                    },
+                },
             ]
 
             response = self.client.get(
@@ -412,6 +429,8 @@ class AuthEndpointTests(TestCase):
                         app_metadata={
                             "allowed_supervision_location_ids": ["11", "EP", "4E"],
                             "allowed_supervision_location_level": "level_1_supervision_location",
+                            "can_access_leadership_dashboard": True,
+                            "can_access_case_triage": False,
                         },
                     ),
                     call(
@@ -419,6 +438,8 @@ class AuthEndpointTests(TestCase):
                         app_metadata={
                             "allowed_supervision_location_ids": ["23"],
                             "allowed_supervision_location_level": "level_1_supervision_location",
+                            "can_access_leadership_dashboard": True,
+                            "can_access_case_triage": False,
                         },
                     ),
                 ]
@@ -519,6 +540,8 @@ class AuthEndpointTests(TestCase):
                         app_metadata={
                             "allowed_supervision_location_ids": ["23"],
                             "allowed_supervision_location_level": "level_1_supervision_location",
+                            "can_access_leadership_dashboard": True,
+                            "can_access_case_triage": False,
                         },
                     ),
                     call(
@@ -526,6 +549,8 @@ class AuthEndpointTests(TestCase):
                         app_metadata={
                             "allowed_supervision_location_ids": ["11", "EP", "4E"],
                             "allowed_supervision_location_level": "level_1_supervision_location",
+                            "can_access_leadership_dashboard": True,
+                            "can_access_case_triage": False,
                         },
                     ),
                 ]
