@@ -34,7 +34,6 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 
-
 case_triage_ops_blueprint = Blueprint("/case_triage_ops", __name__)
 
 
@@ -57,6 +56,7 @@ def _run_cron_gcs_import() -> Tuple[str, HTTPStatus]:
             builder.view_id,
             csv_path,
             builder.columns,
+            seconds_to_wait=180,
         )
         logging.info("View (%s) successfully imported", builder.view_id)
 
