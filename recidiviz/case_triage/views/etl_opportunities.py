@@ -42,7 +42,7 @@ WITH overdue_downgrades AS (
   FROM
     `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_case_compliance_metrics_materialized`
   INNER JOIN
-    `{{project_id}}.{{case_triage_dataset}}.etl_clients` clients
+    `{{project_id}}.{{case_triage_dataset}}.etl_clients_materialized` clients
   USING (person_external_id, state_code)
   WHERE
     date_of_supervision = CURRENT_DATE

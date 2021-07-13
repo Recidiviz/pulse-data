@@ -59,6 +59,7 @@ CURRENT_EMPLOYMENT_PERIODS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id="employment_periods",
     description=CURRENT_EMPLOYMENT_PERIODS_DESCRIPTION,
     view_query_template=CURRENT_EMPLOYMENT_PERIODS_QUERY_TEMPLATE,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

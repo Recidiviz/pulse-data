@@ -35,7 +35,7 @@ SELECT
     MAX(COALESCE(recorded_end_date, CURRENT_DATE()))
   ) AS last_known_date_of_employment
 FROM
-  `{project_id}.{case_triage_dataset}.employment_periods`
+  `{project_id}.{case_triage_dataset}.employment_periods_materialized`
 WHERE
   NOT is_unemployed
 GROUP BY state_code, person_external_id
@@ -51,6 +51,7 @@ LAST_KNOWN_DATE_OF_EMPLOYMENT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=LAST_KNOWN_DATE_OF_EMPLOYMENT_DESCRIPTION,
     view_query_template=LAST_KNOWN_DATE_OF_EMPLOYMENT_QUERY_TEMPLATE,
     case_triage_dataset=VIEWS_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":
