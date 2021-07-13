@@ -14,19 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-""" Querier utils """
-from datetime import date
-from typing import Any, Dict
-
-
-def _json_map_dates_to_strings(json_dict: Dict[str, Any]) -> Dict[str, Any]:
-    """This function is used to pre-emptively convert dates to strings. If
-    we don't do this, flask's jsonify tries to be helpful and turns our date
-    into a datetime with a GMT timezone, which causes problems downstream."""
-    results = {}
-    for k, v in json_dict.items():
-        if isinstance(v, date):
-            results[k] = str(v)
-        else:
-            results[k] = v
-    return results

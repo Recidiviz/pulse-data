@@ -16,7 +16,7 @@
 # =============================================================================
 """A UserContext for all of the operations for Case Triage"""
 from base64 import b64encode
-from datetime import date, datetime, timedelta
+from datetime import datetime
 from hashlib import sha256
 from typing import Dict, Optional
 
@@ -25,8 +25,6 @@ import pytz
 
 from recidiviz.case_triage.authorization import KNOWN_EXPERIMENTS, AuthorizationStore
 from recidiviz.case_triage.demo_helpers import (
-    DEMO_FROZEN_DATE,
-    DEMO_FROZEN_DATETIME,
     DEMO_STATE_CODE,
     fake_officer_id_for_demo_user,
     fake_person_id_for_demo_user,
@@ -101,27 +99,7 @@ class UserContext:
             return DEMO_STATE_CODE
         return self.current_user.state_code
 
-    @property
-    def demo_timedelta_shift_from_today(self) -> Optional[timedelta]:
-        if self.should_see_demo:
-            return date.today() - DEMO_FROZEN_DATE
-        return None
-
-    @property
-    def demo_timedelta_shift_to_today(self) -> Optional[timedelta]:
-        if self.should_see_demo:
-            return DEMO_FROZEN_DATE - date.today()
-        return None
-
-    @property
-    def demo_datetime(self) -> Optional[datetime]:
-        if self.should_see_demo:
-            return DEMO_FROZEN_DATETIME
-        return None
-
     def now(self) -> datetime:
-        if self.should_see_demo:
-            return DEMO_FROZEN_DATETIME
         return datetime.now(tz=pytz.UTC)
 
     @staticmethod

@@ -20,7 +20,7 @@ for Unified Products related entities.
 
 """
 import uuid
-from datetime import date
+from datetime import date, timedelta
 from typing import Any, Dict, Optional
 
 import dateutil.parser
@@ -46,6 +46,20 @@ def _get_json_field_as_date(json_data: Dict[str, Any], field: str) -> Optional[d
     if not (date_field := json_data.get(field)):
         return None
     return dateutil.parser.parse(date_field).date()
+
+
+def _timeshift_date_fields(
+    fields: Dict[str, Any], timedelta_shift: timedelta
+) -> Dict[str, Any]:
+    """Applies a delta to any date values in the fields dict. Primarily useful
+    in demo mode for time-shifting fixture files to the present day."""
+    results = {}
+    for k, v in fields.items():
+        if isinstance(v, date):
+            results[k] = v + timedelta_shift
+        else:
+            results[k] = v
+    return results
 
 
 class ETLClient(CaseTriageBase):
@@ -132,48 +146,58 @@ class ETLClient(CaseTriageBase):
         )
 
     @staticmethod
-    def from_json(json_client: Dict[str, Any]) -> "ETLClient":
-        return ETLClient(
-            person_external_id=json_client["person_external_id"],
-            state_code=json_client["state_code"],
-            supervising_officer_external_id=json_client[
+    def from_json(
+        json_client: Dict[str, Any], timedelta_shift: Optional[timedelta] = None
+    ) -> "ETLClient":
+        """Constructs an ETLClient from a corresponding dict (presumed to be from JSON)"""
+        client_args = {
+            "person_external_id": json_client["person_external_id"],
+            "state_code": json_client["state_code"],
+            "supervising_officer_external_id": json_client[
                 "supervising_officer_external_id"
             ],
-            full_name=json_client.get("full_name"),
-            gender=json_client.get("gender"),
-            current_address=json_client.get("current_address"),
-            birthdate=_get_json_field_as_date(json_client, "birthdate"),
-            birthdate_inferred_from_age=json_client.get("birthdate_inferred_from_age"),
-            supervision_start_date=_get_json_field_as_date(
+            "full_name": json_client.get("full_name"),
+            "gender": json_client.get("gender"),
+            "current_address": json_client.get("current_address"),
+            "birthdate": _get_json_field_as_date(json_client, "birthdate"),
+            "birthdate_inferred_from_age": json_client.get(
+                "birthdate_inferred_from_age"
+            ),
+            "supervision_start_date": _get_json_field_as_date(
                 json_client, "supervision_start_date"
             ),
-            projected_end_date=_get_json_field_as_date(
+            "projected_end_date": _get_json_field_as_date(
                 json_client, "projected_end_date"
             ),
-            supervision_type=json_client["supervision_type"],
-            case_type=json_client["case_type"],
-            supervision_level=json_client["supervision_level"],
-            employer=json_client.get("employer"),
-            last_known_date_of_employment=_get_json_field_as_date(
+            "supervision_type": json_client["supervision_type"],
+            "case_type": json_client["case_type"],
+            "supervision_level": json_client["supervision_level"],
+            "employer": json_client.get("employer"),
+            "last_known_date_of_employment": _get_json_field_as_date(
                 json_client, "last_known_date_of_employment"
             ),
-            most_recent_assessment_date=_get_json_field_as_date(
+            "most_recent_assessment_date": _get_json_field_as_date(
                 json_client, "most_recent_assessment_date"
             ),
-            assessment_score=json_client.get("assessment_score"),
-            most_recent_face_to_face_date=_get_json_field_as_date(
+            "assessment_score": json_client.get("assessment_score"),
+            "most_recent_face_to_face_date": _get_json_field_as_date(
                 json_client, "most_recent_face_to_face_date"
             ),
-            most_recent_home_visit_date=_get_json_field_as_date(
+            "most_recent_home_visit_date": _get_json_field_as_date(
                 json_client, "most_recent_home_visit_date"
             ),
-            days_with_current_po=json_client.get("days_with_current_po"),
-            email_address=json_client.get("email_address"),
-            days_on_current_supervision_level=json_client.get(
+            "days_with_current_po": json_client.get("days_with_current_po"),
+            "email_address": json_client.get("email_address"),
+            "days_on_current_supervision_level": json_client.get(
                 "days_on_current_supervision_level"
             ),
-            phone_number=json_client.get("phone_number"),
-        )
+            "phone_number": json_client.get("phone_number"),
+        }
+
+        if timedelta_shift:
+            client_args = _timeshift_date_fields(client_args, timedelta_shift)
+
+        return ETLClient(**client_args)
 
 
 class ETLOfficer(CaseTriageBase):

@@ -20,6 +20,7 @@ from typing import List
 from unittest.case import TestCase
 
 import pytz
+from freezegun import freeze_time
 
 from recidiviz.case_triage.opportunities.types import Opportunity
 from recidiviz.case_triage.querier.opportunity_presenter import OpportunityPresenter
@@ -50,9 +51,8 @@ class TestOpportunityPresenter(TestCase):
     def test_no_deferral(self) -> None:
         for opportunity in self.mock_opportunities:
             presenter = OpportunityPresenter(opportunity, None)
-            now = datetime.now()
             self.assertEqual(
-                presenter.to_json(now),
+                presenter.to_json(),
                 {
                     "personExternalId": opportunity.person_external_id,
                     "supervisingOfficerExternalId": opportunity.supervising_officer_external_id,
@@ -70,5 +70,7 @@ class TestOpportunityPresenter(TestCase):
         deferral = generate_fake_reminder(self.mock_etl_opportunity, tomorrow)
         presenter = OpportunityPresenter(self.mock_etl_opportunity, deferral)
 
-        self.assertTrue("deferredUntil" in presenter.to_json(now))
-        self.assertFalse("deferredUntil" in presenter.to_json(day_after_tomorrow))
+        self.assertTrue("deferredUntil" in presenter.to_json())
+
+        with freeze_time(day_after_tomorrow):
+            self.assertFalse("deferredUntil" in presenter.to_json())

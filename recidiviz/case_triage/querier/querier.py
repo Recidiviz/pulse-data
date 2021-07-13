@@ -17,7 +17,7 @@
 """Implements the Querier abstraction that is responsible for considering multiple
 data sources and coalescing answers for downstream consumers."""
 from collections import defaultdict
-from itertools import groupby
+from itertools import chain, groupby
 from typing import Dict, List, Optional, Tuple
 
 import sqlalchemy.orm.exc
@@ -235,22 +235,16 @@ class CaseTriageQuerier:
                     opportunity
                 )
 
-            # TODO(#8077): Unify computed and augmented opportunities.
-            clients = CaseTriageQuerier.clients_for_officer(session, user_context)
-            unemployed = [
-                ComputedOpportunity(
-                    state_code=user_context.officer_state_code,
-                    supervising_officer_external_id=user_context.officer_id,
-                    person_external_id=user_context.person_id(c.etl_client),
-                    opportunity_type=OpportunityType.EMPLOYMENT.value,
-                    opportunity_metadata={},
-                )
-                for c in clients
-                if c.etl_client.employer is None
-                and not c.etl_client.receiving_ssi_or_disability_income
+            computed_opps_by_client = [
+                ComputedOpportunity.build_all_for_client(c.etl_client).values()
+                for c in CaseTriageQuerier.clients_for_officer(session, user_context)
             ]
 
-            opportunities: List[Opportunity] = [*etl_opportunities, *unemployed]
+            opportunities: List[Opportunity] = [
+                *etl_opportunities,
+                # this flattens the list of lists
+                *chain.from_iterable(computed_opps_by_client),
+            ]
 
             return [
                 OpportunityPresenter(
@@ -316,29 +310,21 @@ class CaseTriageQuerier:
                 client_opportunities, lambda row: row[0]
             ):
                 deferrals = [row[1] for row in client_rows if row[1] is not None]
-                # employment opportunities
-                if (
-                    client.employer is None
-                    and not client.receiving_ssi_or_disability_income
-                ):
-                    opp = ComputedOpportunity(
-                        state_code=user_context.officer_state_code,
-                        supervising_officer_external_id=user_context.officer_id,
-                        person_external_id=user_context.person_id(client),
-                        opportunity_type=OpportunityType.EMPLOYMENT.value,
-                        opportunity_metadata={},
-                    )
+
+                computed_opps = ComputedOpportunity.build_all_for_client(
+                    client
+                ).values()
+
+                for opp in computed_opps:
                     deferral = next(
                         (
                             d
                             for d in deferrals
-                            if d.opportunity_type == OpportunityType.EMPLOYMENT.value
+                            if d.opportunity_type == opp.opportunity_type
                         ),
                         None,
                     )
                     computed_opportunity_info.append((opp, deferral))
-                # TODO(#8077): compare time since contact and assessment dates to us_id_policy_requirements
-                # to generate opportunities for upcoming/overdue contact and assessment
 
             return [
                 *[
