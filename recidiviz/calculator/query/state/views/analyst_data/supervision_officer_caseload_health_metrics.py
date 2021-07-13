@@ -96,11 +96,11 @@ SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_QUERY_TEMPLATE = """
             COUNTIF(dataflow.case_type = 'GENERAL')/COUNT(1) AS prop_general_caseload,
             COUNTIF(dataflow.case_type = 'SEX_OFFENSE')/COUNT(1) AS prop_sex_offense_caseload,
             COUNTIF(demographics.gender = 'FEMALE')/COUNT(1) AS prop_female_caseload,
-            COUNTIF(prioritized_race_or_ethnicity = 'WHITE')/COUNT(1) AS prop_white_caseload,
-            COUNTIF(prioritized_race_or_ethnicity = 'BLACK')/COUNT(1) AS prop_black_caseload,
+            COUNTIF(demographics.prioritized_race_or_ethnicity = 'WHITE')/COUNT(1) AS prop_white_caseload,
+            COUNTIF(demographics.prioritized_race_or_ethnicity = 'BLACK')/COUNT(1) AS prop_black_caseload,
             COUNTIF(dataflow.correctional_level = 'MINIMUM')/COUNT(1) AS prop_low_risk_caseload,
             AVG(assessment.assessment_score) AS avg_risk_score,
-            COUNTIF(assessment.assessment_score < risk_compliance.assessment_score_threshold) AS supervision_level_mismatch_count
+            COUNTIF(eligible_for_supervision_downgrade) AS supervision_level_mismatch_count
     
         FROM officers_unnested officers
         LEFT JOIN `{project_id}.{analyst_dataset}.person_demographics_materialized` demographics
@@ -113,13 +113,10 @@ SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_QUERY_TEMPLATE = """
             ON officers.state_code = assessment.state_code
             AND officers.person_id = assessment.person_id
             AND supervision_date BETWEEN assessment.assessment_date AND COALESCE(assessment.score_end_date, CURRENT_DATE())
-        # TODO(#7980): Update this logic once compliance dataflow metric is updated to include supervision level mismatches
-        LEFT JOIN `{project_id}.{analyst_dataset}.supervision_level_compliance_requirements` risk_compliance
+        LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics_materialized` risk_compliance
             ON officers.state_code = risk_compliance.state_code
-            AND dataflow.correctional_level = risk_compliance.supervision_level
-            AND demographics.gender = risk_compliance.gender
-            AND dataflow.case_type = risk_compliance.case_type
-            AND supervision_date BETWEEN risk_compliance.start_date AND risk_compliance.end_date
+            AND officers.person_id = risk_compliance.person_id
+            AND supervision_date = risk_compliance.date_of_evaluation
         GROUP BY 1,2,3
     )
     SELECT *, 
@@ -141,6 +138,7 @@ SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_VIEW_BUILDER = SimpleBigQueryViewBui
     description=SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_VIEW_DESCRIPTION,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     base_dataset=dataset_config.STATE_BASE_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     should_materialize=True,
 )
 
