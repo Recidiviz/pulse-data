@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements basic permissions safeguards."""
-
 from recidiviz.case_triage.user_context import UserContext
 from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLClient,

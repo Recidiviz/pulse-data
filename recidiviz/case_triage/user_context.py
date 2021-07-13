@@ -17,6 +17,7 @@
 """A UserContext for all of the operations for Case Triage"""
 from base64 import b64encode
 from datetime import datetime
+from enum import Enum
 from hashlib import sha256
 from typing import Dict, Optional
 
@@ -36,6 +37,16 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
 )
 
 
+class Permission(Enum):
+    """Identifies various permissions that a user should have."""
+
+    # User can perform all read and write operations.
+    READ_WRITE = "READ_WRITE"
+
+    # User can perform read operations only.
+    READ_ONLY = "READ_ONLY"
+
+
 @attr.s
 class UserContext:
     """Storing context and permissions for all of the operations for Case Triage"""
@@ -43,6 +54,7 @@ class UserContext:
     email: str = attr.ib()
     can_impersonate: bool = attr.ib(default=False)
     can_see_demo_data: bool = attr.ib(default=False)
+    permission: Permission = attr.ib(default=Permission.READ_WRITE)
     current_user: ETLOfficer = attr.ib(default=None)
     known_experiments: Dict[str, Optional[str]] = attr.ib(default=dict)
 
