@@ -18,7 +18,10 @@
 DB.
 
 Usage:
-    python -m recidiviz.tools.ingest.operations.generate_clear_state_db_sql --project-id recidiviz-staging --state-code US_MO --ingest-instance PRIMARY
+    python -m recidiviz.tools.ingest.operations.generate_clear_state_db_sql \
+        --project-id recidiviz-staging \
+        --state-code US_PA \
+        --ingest-instance PRIMARY
 """
 
 import argparse
@@ -68,15 +71,19 @@ def _commands_for_table(
     ):
         if db_version == SQLAlchemyStateDatabaseVersion.LEGACY:
             query = table.delete().where(table.c.state_code == state_code)
-        elif db_version in {
+            return [_format_deletion_command(state_code, query)]
+        if db_version in {
             SQLAlchemyStateDatabaseVersion.PRIMARY,
             SQLAlchemyStateDatabaseVersion.SECONDARY,
         }:
-            query = table.delete()
-        else:
-            raise ValueError(f"Unexpected db_version: {db_version}")
-
-        return [_format_deletion_command(state_code, query)]
+            return [
+                "BEGIN;"
+                f"ALTER TABLE {table.name} DISABLE TRIGGER ALL;"
+                f"DELETE FROM TABLE {table.name};"
+                f"ALTER TABLE {table.name} ENABLE TRIGGER ALL;"
+                "COMMIT;"
+            ]
+        raise ValueError(f"Unexpected db_version: {db_version}")
 
     if not table.name.endswith(ASSOCIATION_TABLE_NAME_SUFFIX):
         raise ValueError(
