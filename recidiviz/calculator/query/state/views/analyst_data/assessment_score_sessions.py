@@ -15,12 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Assessment scores with range of dates for each score"""
-# pylint: disable=trailing-whitespace
-
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
-    STATE_BASE_DATASET,
     ANALYST_VIEWS_DATASET,
+    STATE_BASE_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -32,8 +30,8 @@ ASSESSMENT_SCORE_SESSIONS_VIEW_DESCRIPTION = (
 )
 
 ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE = """
-    /*{description}*/   
-    SELECT 
+    /*{description}*/
+    SELECT
         person_id,
         assessment_id,
         state_code,
@@ -43,16 +41,24 @@ ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE = """
         assessment_class,
         assessment_score,
         assessment_level
-    FROM 
+    FROM
         (
         SELECT *,
-            ROW_NUMBER() OVER(PARTITION BY person_id, assessment_date ORDER BY assessment_score DESC) AS rn
-        FROM `{project_id}.{base_dataset}.state_assessment` 
-        WHERE assessment_date IS NOT NULL 
+            -- This ordering is needed in instances where there are multiple assessments in a given day
+            -- (likely because the data sources that we get our info from create a new row every time an
+            -- assessment is "saved"). We pick the one with the highest id because we have no better way
+            -- to sort, and there is likely a correlation between higher external id and more recently saved.
+            -- This ordering also bakes in the assumption that all assessment ids are fewer than 128
+            -- characters long and assumes that longer ids always come after shorter ones in our sorting.
+            ROW_NUMBER() OVER(
+                PARTITION BY person_id, assessment_date
+                ORDER BY FORMAT('%128s', external_id) DESC
+            ) AS rn
+        FROM `{project_id}.{base_dataset}.state_assessment`
+        WHERE assessment_date IS NOT NULL
             AND (assessment_type = 'LSIR' OR assessment_type LIKE 'ORAS%')
         )
     WHERE rn = 1
-    ORDER BY assessment_date
     """
 
 ASSESSMENT_SCORE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
