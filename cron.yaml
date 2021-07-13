@@ -294,6 +294,7 @@ cron:
       max_doublings: 5
       job_age_limit: 9h
 
+  # TODO(#8123): Delete this cron
   - description: "[Case Triage] Run Cloud SQL import"
     url: /case_triage_ops/run_standard_cron_gcs_imports
     schedule: every 4 hours
