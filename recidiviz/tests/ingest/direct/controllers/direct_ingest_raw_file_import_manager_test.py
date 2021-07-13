@@ -17,47 +17,46 @@
 """Tests for DirectIngestRawFileImportManager."""
 import datetime
 import unittest
-from typing import List, Any
+from typing import Any, List
 from unittest import mock
 
 import attr
 import pandas as pd
 from google.cloud import bigquery
-from mock import create_autospec, call, patch
+from mock import call, create_autospec, patch
 from more_itertools import one
+from pandas.errors import ParserError
 
 from recidiviz.big_query.big_query_client import BigQueryClient
+from recidiviz.cloud_storage.gcsfs_path import (
+    GcsfsBucketPath,
+    GcsfsDirectoryPath,
+    GcsfsFilePath,
+)
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
+    ColumnEnumValueInfo,
     DirectIngestRawFileImportManager,
     DirectIngestRegionRawFileConfig,
     RawTableColumnInfo,
-    ColumnEnumValueInfo,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     filename_parts_from_path,
 )
-from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsFilePath,
-    GcsfsDirectoryPath,
-    GcsfsBucketPath,
-)
-from recidiviz.persistence.entity.operations.entities import (
-    DirectIngestRawFileMetadata,
-)
+from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
+from recidiviz.tests.ingest.direct import fixture_util
+from recidiviz.tests.ingest.direct.direct_ingest_util import (
+    _TestSafeGcsCsvReader,
+    path_for_fixture_file_in_test_gcs_directory,
+)
 from recidiviz.tests.ingest.direct.fake_regions.us_xx.raw_data.migrations import (
     migrations_tagC,
 )
-from recidiviz.tests.ingest.direct.direct_ingest_util import (
-    path_for_fixture_file_in_test_gcs_directory,
-    _TestSafeGcsCsvReader,
-)
-from recidiviz.tests.ingest.direct import fixture_util
-from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tests.utils.fake_region import fake_region
 
 
@@ -93,7 +92,7 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
             region_code="us_xx",
             region_module=fake_regions_module,
         )
-        self.assertEqual(11, len(region_config.raw_file_configs))
+        self.assertEqual(13, len(region_config.raw_file_configs))
         self.assertEqual(
             {
                 "file_tag_first",
@@ -107,6 +106,8 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
                 "tagPipeSeparatedNonUTF8",
                 "tagDoubleDaggerWINDOWS1252",
                 "tagColumnsMissing",
+                "tagRowExtraColumns",
+                "tagRowMissingColumns",
             },
             set(region_config.raw_file_configs.keys()),
         )
@@ -437,6 +438,64 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
                 bigquery.SchemaField("COL1", "STRING", "NULLABLE"),
                 bigquery.SchemaField("COL2", "STRING", "NULLABLE"),
                 bigquery.SchemaField("COL3", "STRING", "NULLABLE"),
+                bigquery.SchemaField("file_id", "INTEGER", "REQUIRED"),
+                bigquery.SchemaField("update_datetime", "DATETIME", "REQUIRED"),
+            ],
+        )
+        self.assertEqual(2, self.num_lines_uploaded)
+        self._check_no_temp_files_remain()
+
+    def test_import_bq_file_with_row_extra_columns(self) -> None:
+        file_path = path_for_fixture_file_in_test_gcs_directory(
+            bucket_path=self.ingest_bucket_path,
+            filename="tagRowExtraColumns.csv",
+            should_normalize=True,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
+        )
+
+        fixture_util.add_direct_ingest_path(
+            self.fs.gcs_file_system, file_path, region_code=self.test_region.region_code
+        )
+
+        with self.assertRaisesRegex(ParserError, "Expected 4 fields in line 3, saw 5"):
+            self.import_manager.import_raw_file_to_big_query(
+                file_path, self._metadata_for_unprocessed_file_path(file_path)
+            )
+
+        self.assertEqual(0, len(self.fs.gcs_file_system.uploaded_paths))
+        self._check_no_temp_files_remain()
+
+    # TODO(#7318): This should fail because a row is missing values
+    def test_import_bq_file_with_row_missing_columns(self) -> None:
+        file_path = path_for_fixture_file_in_test_gcs_directory(
+            bucket_path=self.ingest_bucket_path,
+            filename="tagRowMissingColumns.csv",
+            should_normalize=True,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
+        )
+
+        fixture_util.add_direct_ingest_path(
+            self.fs.gcs_file_system, file_path, region_code=self.test_region.region_code
+        )
+
+        self.import_manager.import_raw_file_to_big_query(
+            file_path, self._metadata_for_unprocessed_file_path(file_path)
+        )
+
+        self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
+        path = one(self.fs.gcs_file_system.uploaded_paths)
+
+        self.mock_big_query_client.insert_into_table_from_cloud_storage_async.assert_called_with(
+            source_uri=path.uri(),
+            destination_dataset_ref=bigquery.DatasetReference(
+                self.project_id, "us_xx_raw_data"
+            ),
+            destination_table_id="tagRowMissingColumns",
+            destination_table_schema=[
+                bigquery.SchemaField("id_column", "STRING", "NULLABLE"),
+                bigquery.SchemaField("comment", "STRING", "NULLABLE"),
+                bigquery.SchemaField("termination_code", "STRING", "NULLABLE"),
+                bigquery.SchemaField("update_date", "STRING", "NULLABLE"),
                 bigquery.SchemaField("file_id", "INTEGER", "REQUIRED"),
                 bigquery.SchemaField("update_datetime", "DATETIME", "REQUIRED"),
             ],
