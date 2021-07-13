@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements API routes for the Case Triage app."""
+from functools import wraps
 from http import HTTPStatus
+from typing import Any, Callable, Dict, List
 
 from flask import Blueprint, Response, current_app, g, jsonify
 from flask_sqlalchemy_session import current_session
@@ -41,6 +43,7 @@ from recidiviz.case_triage.case_updates.interface import (
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.client_info.interface import ClientInfoInterface
 from recidiviz.case_triage.exceptions import (
+    CaseTriageAuthorizationError,
     CaseTriageBadRequestException,
     CaseTriagePersonNotOnCaseloadException,
 )
@@ -63,13 +66,8 @@ from recidiviz.case_triage.querier.querier import (
     PersonDoesNotExistError,
 )
 from recidiviz.case_triage.state_utils.requirements import policy_requirements_for_state
+from recidiviz.case_triage.user_context import Permission
 from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
-
-
-def _should_see_demo() -> bool:
-    """Returns true if the user who is logged in is not a parole officer, is not
-    impersonating a parole officer, and is allowed to see demo data."""
-    return getattr(g, "current_user", None) is None and g.can_see_demo_data
 
 
 def load_client(person_external_id: str) -> ETLClient:
@@ -81,16 +79,40 @@ def load_client(person_external_id: str) -> ETLClient:
         raise CaseTriagePersonNotOnCaseloadException from e
 
 
+def route_with_permissions(
+    blueprint: Blueprint, rule: str, permissions: List[Permission], **options: Any
+) -> Callable:
+    def inner(route: Callable) -> Callable:
+        @blueprint.route(rule, **options)
+        @wraps(route)
+        def decorated(*args: List[Any], **kwargs: Dict[str, Any]) -> Callable:
+            if g.user_context.permission not in permissions:
+                raise CaseTriageAuthorizationError(
+                    code="insufficient_permissions",
+                    description="You do not have sufficient permissions to perform this action.",
+                )
+            return route(*args, **kwargs)
+
+        return decorated
+
+    return inner
+
+
 def create_api_blueprint(segment_client: CaseTriageSegmentClient) -> Blueprint:
     """Creates Blueprint object that is parameterized with a SegmentClient."""
+
     api = Blueprint("api", __name__)
 
-    @api.route("/clients")
+    @route_with_permissions(
+        api, "/clients", [Permission.READ_WRITE, Permission.READ_ONLY]
+    )
     def _get_clients() -> str:
         clients = CaseTriageQuerier.clients_for_officer(current_session, g.user_context)
         return jsonify([client.to_json() for client in clients])
 
-    @api.route("/opportunities")
+    @route_with_permissions(
+        api, "/opportunities", [Permission.READ_WRITE, Permission.READ_ONLY]
+    )
     def _get_opportunities() -> str:
         opportunity_presenters = CaseTriageQuerier.opportunities_for_officer(
             current_session, g.user_context
@@ -99,7 +121,9 @@ def create_api_blueprint(segment_client: CaseTriageSegmentClient) -> Blueprint:
             [opportunity.to_json() for opportunity in opportunity_presenters]
         )
 
-    @api.route("/bootstrap")
+    @route_with_permissions(
+        api, "/bootstrap", [Permission.READ_WRITE, Permission.READ_ONLY]
+    )
     def _get_bootstrap() -> str:
         return jsonify(
             {
@@ -111,7 +135,9 @@ def create_api_blueprint(segment_client: CaseTriageSegmentClient) -> Blueprint:
             }
         )
 
-    @api.route("/opportunity_deferrals", methods=["POST"])
+    @route_with_permissions(
+        api, "/opportunity_deferrals", [Permission.READ_WRITE], methods=["POST"]
+    )
     @requires_api_schema(DeferOpportunitySchema)
     def _defer_opportunity() -> str:
         etl_client = load_client(g.api_data["person_external_id"])
@@ -141,7 +167,12 @@ def create_api_blueprint(segment_client: CaseTriageSegmentClient) -> Blueprint:
 
         return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
-    @api.route("/opportunity_deferrals/<deferral_id>", methods=["DELETE"])
+    @route_with_permissions(
+        api,
+        "/opportunity_deferrals/<deferral_id>",
+        [Permission.READ_WRITE],
+        methods=["DELETE"],
+    )
     def _delete_opportunity_deferral(deferral_id: str) -> Response:
         try:
             opportunity_deferral = OpportunitiesInterface.delete_opportunity_deferral(
@@ -162,7 +193,12 @@ def create_api_blueprint(segment_client: CaseTriageSegmentClient) -> Blueprint:
 
         return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
-    @api.route("/policy_requirements_for_state", methods=["POST"])
+    @route_with_permissions(
+        api,
+        "/policy_requirements_for_state",
+        [Permission.READ_WRITE, Permission.READ_ONLY],
+        methods=["POST"],
+    )
     @requires_api_schema(PolicyRequirementsSchema)
     def _get_policy_requirements_for_state() -> str:
         """Returns policy requirements for a given state. Expects input in the form:
@@ -172,7 +208,9 @@ def create_api_blueprint(segment_client: CaseTriageSegmentClient) -> Blueprint:
         """
         return jsonify(policy_requirements_for_state(g.api_data["state"]).to_json())
 
-    @api.route("/case_updates", methods=["POST"])
+    @route_with_permissions(
+        api, "/case_updates", [Permission.READ_WRITE], methods=["POST"]
+    )
     @requires_api_schema(CaseUpdateSchema)
     def _create_case_update() -> Response:
         """Records individual clients actions. Expects JSON body of CaseUpdateSchema"""
@@ -193,7 +231,9 @@ def create_api_blueprint(segment_client: CaseTriageSegmentClient) -> Blueprint:
         presenter = CaseUpdatePresenter(etl_client, case_update)
         return jsonify(presenter.to_json())
 
-    @api.route("/case_updates/<update_id>", methods=["DELETE"])
+    @route_with_permissions(
+        api, "/case_updates/<update_id>", [Permission.READ_WRITE], methods=["DELETE"]
+    )
     def _delete_case_update(update_id: str) -> Response:
         try:
             case_update = CaseUpdatesInterface.delete_case_update(
@@ -215,7 +255,9 @@ def create_api_blueprint(segment_client: CaseTriageSegmentClient) -> Blueprint:
         )
         return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
-    @api.route("/set_preferred_name", methods=["POST"])
+    @route_with_permissions(
+        api, "/set_preferred_name", [Permission.READ_WRITE], methods=["POST"]
+    )
     @requires_api_schema(PreferredNameSchema)
     def _set_preferred_name() -> Response:
         etl_client = load_client(g.api_data["person_external_id"])
@@ -227,7 +269,9 @@ def create_api_blueprint(segment_client: CaseTriageSegmentClient) -> Blueprint:
 
         return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
-    @api.route("/set_preferred_contact_method", methods=["POST"])
+    @route_with_permissions(
+        api, "/set_preferred_contact_method", [Permission.READ_WRITE], methods=["POST"]
+    )
     @requires_api_schema(PreferredContactMethodSchema)
     def _set_preferred_contact_method() -> Response:
         etl_client = load_client(g.api_data["person_external_id"])
@@ -240,7 +284,12 @@ def create_api_blueprint(segment_client: CaseTriageSegmentClient) -> Blueprint:
 
         return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
-    @api.route("/set_receiving_ssi_or_disability_income", methods=["POST"])
+    @route_with_permissions(
+        api,
+        "/set_receiving_ssi_or_disability_income",
+        [Permission.READ_WRITE],
+        methods=["POST"],
+    )
     @requires_api_schema(ReceivingSSIOrDisabilityIncomeSchema)
     def _set_receiving_ssi_or_disability_income() -> Response:
         etl_client = load_client(g.api_data["person_external_id"])
@@ -253,7 +302,9 @@ def create_api_blueprint(segment_client: CaseTriageSegmentClient) -> Blueprint:
 
         return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
-    @api.route("/create_note", methods=["POST"])
+    @route_with_permissions(
+        api, "/create_note", [Permission.READ_WRITE], methods=["POST"]
+    )
     @requires_api_schema(CreateNoteSchema)
     def _create_note() -> Response:
         etl_client = load_client(g.api_data["person_external_id"])
@@ -265,7 +316,9 @@ def create_api_blueprint(segment_client: CaseTriageSegmentClient) -> Blueprint:
         )
         return jsonify(officer_note.to_json())
 
-    @api.route("/resolve_note", methods=["POST"])
+    @route_with_permissions(
+        api, "/resolve_note", [Permission.READ_WRITE], methods=["POST"]
+    )
     @requires_api_schema(ResolveNoteSchema)
     def _resolve_note() -> Response:
         try:
@@ -283,7 +336,9 @@ def create_api_blueprint(segment_client: CaseTriageSegmentClient) -> Blueprint:
 
         return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
-    @api.route("/update_note", methods=["POST"])
+    @route_with_permissions(
+        api, "/update_note", [Permission.READ_WRITE], methods=["POST"]
+    )
     @requires_api_schema(UpdateNoteSchema)
     def _update_note() -> Response:
         try:

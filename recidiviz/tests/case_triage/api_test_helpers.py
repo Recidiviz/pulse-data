@@ -26,7 +26,7 @@ from flask import Flask, g
 from flask.testing import FlaskClient
 
 from recidiviz.case_triage.client_info.types import PreferredContactMethod
-from recidiviz.case_triage.user_context import UserContext
+from recidiviz.case_triage.user_context import Permission, UserContext
 from recidiviz.persistence.database.schema.case_triage.schema import ETLOfficer
 
 
@@ -54,6 +54,17 @@ class CaseTriageTestHelpers:
             g.user_context = UserContext(
                 email="demo_user@recidiviz.org",
                 can_see_demo_data=True,
+                current_user=officer,
+            )
+
+            yield
+
+    @contextlib.contextmanager
+    def as_readonly_user(self, officer: ETLOfficer) -> Generator[None, None, None]:
+        with self.test_app.test_request_context():
+            g.user_context = UserContext(
+                email="demo_user@recidiviz.org",
+                permission=Permission.READ_ONLY,
                 current_user=officer,
             )
 
