@@ -23,8 +23,10 @@ TODO(#6615): This view is currently specific to Idaho, and it should be evolved
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
+from recidiviz.calculator.query.state.dataset_config import (
+    DATAFLOW_METRICS_MATERIALIZED_DATASET,
+)
 from recidiviz.case_triage.opportunities.types import OpportunityType
-from recidiviz.case_triage.state_utils.us_id import CURRENT_US_ID_ASSESSMENT_SCORE_RANGE
 from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -33,18 +35,18 @@ TOP_OPPORTUNITIES_QUERY_VIEW = f"""
 WITH overdue_downgrades AS (
   SELECT
     state_code,
-    supervising_officer_external_id,
+    clients.supervising_officer_external_id,
     person_external_id,
     '{OpportunityType.OVERDUE_DOWNGRADE.value}' AS opportunity_type,
-    TO_JSON_STRING(STRUCT(assessment_score as assessmentScore, most_recent_assessment_date AS latestAssessmentDate)) AS opportunity_metadata
+    TO_JSON_STRING(STRUCT(assessment_score as assessmentScore, clients.most_recent_assessment_date AS latestAssessmentDate)) AS opportunity_metadata
   FROM
-    `{{project_id}}.{{case_triage_dataset}}.etl_clients`
+    `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_case_compliance_metrics_materialized`
+  INNER JOIN
+    `{{project_id}}.{{case_triage_dataset}}.etl_clients` clients
+  USING (person_external_id, state_code)
   WHERE
-    state_code = 'US_ID'
-    AND case_type = 'GENERAL'
-    AND assessment_score IS NOT NULL
-    AND supervision_type NOT IN ('INTERNAL_UNKNOWN', 'INFORMAL_PROBATION')
-    AND ({{assessment_scores_clause}})
+    date_of_supervision = CURRENT_DATE
+    AND eligible_for_supervision_downgrade
 ),
 earned_discharge_eligible AS (
   SELECT
@@ -122,26 +124,12 @@ FROM
 """
 
 
-def _get_assessment_score_clause() -> str:
-    """This outputs a clause that checks whether a person is at a supervision level that
-    is above what would be suggested by virtue of their assessment score and the state's
-    known policies.
-    """
-    return "\n  OR ".join(
-        [
-            f"(gender = '{gender.value}' AND supervision_level = '{level.value}' AND assessment_score < {score_range[0]})"
-            for gender, subdict in CURRENT_US_ID_ASSESSMENT_SCORE_RANGE.items()
-            for level, score_range in subdict.items()
-        ]
-    )
-
-
 TOP_OPPORTUNITIES_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=VIEWS_DATASET,
     view_id="etl_opportunities",
     view_query_template=TOP_OPPORTUNITIES_QUERY_VIEW,
     case_triage_dataset=VIEWS_DATASET,
-    assessment_scores_clause=_get_assessment_score_clause(),
+    materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     columns=[
         "state_code",
         "supervising_officer_external_id",

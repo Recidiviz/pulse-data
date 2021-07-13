@@ -35,8 +35,10 @@ WITH latest_assessments AS (
     -- (likely because the data sources that we get our info from create a new row every time an
     -- assessment is "saved"). We pick the one with the highest id because we have no better way
     -- to sort, and there is likely a correlation between higher external id and more recently saved.
+    -- This ordering also bakes in the assumption that all assessment ids are fewer than 128
+    -- characters long.
     ROW_NUMBER()
-      OVER (PARTITION BY person_id ORDER BY assessment_date DESC, external_id DESC) AS row_number
+      OVER (PARTITION BY person_id ORDER BY assessment_date DESC, FORMAT('%128s', external_id) DESC) AS row_number
   FROM
     `{project_id}.state.state_assessment`
 )
