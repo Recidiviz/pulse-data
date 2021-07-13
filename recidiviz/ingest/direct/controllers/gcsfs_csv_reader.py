@@ -18,7 +18,7 @@
 import abc
 import csv
 from contextlib import contextmanager
-from typing import Iterator, List, Optional, Any, TextIO, Union, Dict, Tuple
+from typing import Any, Dict, Iterator, List, Optional, TextIO, Tuple, Union
 
 import gcsfs
 import pandas as pd
