@@ -17,7 +17,7 @@
 """Implements tests for the Case Triage Flask server."""
 from datetime import date, datetime, timedelta
 from http import HTTPStatus
-from typing import Optional
+from typing import Any, Dict, List, Optional, Tuple
 from unittest import TestCase, mock
 from unittest.mock import MagicMock
 
@@ -641,6 +641,52 @@ class TestCaseTriageAPIRoutes(TestCase):
                 self.client_1.person_external_id, note_id
             )
             self.assertEqual(note["text"], attempted_injection)
+
+    def test_readonly_access_to_endpoints(self) -> None:
+        with self.helpers.as_readonly_user(self.officer):
+            read_operations: List[str] = ["/clients", "/opportunities"]
+            post_operations: List[Tuple[str, Dict[str, Any]]] = [
+                (
+                    "/create_note",
+                    {
+                        "personExternalId": self.client_1.person_external_id,
+                        "text": "test_text",
+                    },
+                ),
+                (
+                    "/opportunity_deferrals",
+                    {
+                        "personExternalId": self.client_2.person_external_id,
+                        "opportunityType": OpportunityType.EARLY_DISCHARGE.value,
+                        "deferralType": OpportunityDeferralType.REMINDER.value,
+                        "deferUntil": str(datetime.now() + timedelta(days=1)),
+                        "requestReminder": True,
+                    },
+                ),
+                (
+                    "/case_updates",
+                    {
+                        "personExternalId": self.client_3.person_external_id,
+                        "actionType": CaseUpdateActionType.COMPLETED_ASSESSMENT.value,
+                        "comment": "test",
+                    },
+                ),
+            ]
+            delete_operations: List[str] = [
+                f"/opportunity_deferrals/{self.deferral_1.deferral_id}",
+                f"/case_updates/{self.case_update_1.update_id}",
+            ]
+            for read_endpoint in read_operations:
+                response = self.test_client.get(read_endpoint)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
+
+            for post_endpoint, json in post_operations:
+                response = self.test_client.post(post_endpoint, json=json)
+                self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+
+            for delete_endpoint in delete_operations:
+                response = self.test_client.delete(delete_endpoint)
+                self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
 
 
 class TestUserImpersonation(TestCase):
