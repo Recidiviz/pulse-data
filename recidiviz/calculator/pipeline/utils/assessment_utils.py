@@ -71,15 +71,6 @@ def _assessment_types_of_class_for_state(
     return None
 
 
-def _assessment_external_ids_are_ints(assessments: List[StateAssessment]) -> bool:
-    for assessment in assessments:
-        if (
-            assessment_id := assessment.external_id
-        ) is not None and not assessment_id.isdigit():
-            return False
-    return True
-
-
 def find_most_recent_applicable_assessment_of_class_for_state(
     cutoff_date: date,
     assessments: List[StateAssessment],
@@ -107,20 +98,17 @@ def find_most_recent_applicable_assessment_of_class_for_state(
         and assessment.assessment_date <= cutoff_date
     ]
 
-    if _assessment_external_ids_are_ints(assessments):
-        key = lambda a: (
-            a.assessment_date if a and a.assessment_date else date.min,
-            int(a.external_id) if a and a.external_id else 0,
-        )
-    else:
-        key = lambda a: (
-            a.assessment_date if a and a.assessment_date else date.min,
-            a.external_id if a and a.external_id else "",
-        )
-
     return max(
         applicable_assessments_before_date,
-        key=key,
+        key=lambda a: (
+            # This key sorts by date and then by external id.
+            # In order to get something that behaves like integer sorting
+            # and to have consistent sorting between dataflow and sessions,
+            # we assume longer ids always come after shorter ones.
+            a.assessment_date if a and a.assessment_date else date.min,
+            len(a.external_id) if a and a.external_id else 0,
+            a.external_id if a else None,
+        ),
         default=None,
     )
 
