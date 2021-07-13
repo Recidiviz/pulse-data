@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 # =============================================================================
 """An implementation of bigquery.TableReference with extra functionality related to views."""
 import abc
-from typing import Any, Callable, Generic, Optional, Dict, TypeVar
+from typing import Any, Callable, Dict, Generic, Optional, TypeVar
 
 import attr
 from google.cloud import bigquery
@@ -31,10 +31,14 @@ _DEFAULT_MATERIALIZED_SUFFIX = "_materialized"
 
 @attr.s(frozen=True, kw_only=True)
 class BigQueryAddress:
-    """Represents the (dataset_id, table_id) address of a view or table. """
+    """Represents the (dataset_id, table_id) address of a view or table."""
 
     dataset_id: str = attr.ib(validator=attr_validators.is_str)
     table_id: str = attr.ib(validator=attr_validators.is_str)
+
+    @classmethod
+    def from_list_item(cls, table: bigquery.table.TableListItem) -> "BigQueryAddress":
+        return cls(dataset_id=table.dataset_id, table_id=table.table_id)
 
 
 class BigQueryView(bigquery.TableReference):
