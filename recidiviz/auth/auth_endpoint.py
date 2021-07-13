@@ -17,12 +17,10 @@
 
 """Endpoints related to auth operations.
 """
-import collections
-import json
 import logging
 import os
 from http import HTTPStatus
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
 
 import sqlalchemy.orm.exc
 from flask import Blueprint, request
@@ -33,7 +31,6 @@ from recidiviz.calculator.query.state.views.reference.dashboard_user_restriction
     DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
 )
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
-from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.export.export_config import (
@@ -109,7 +106,7 @@ def import_user_restrictions_csv_to_sql() -> Tuple[str, HTTPStatus]:
 @auth_endpoint_blueprint.route("/dashboard_user_restrictions_by_email", methods=["GET"])
 @requires_gae_auth
 def dashboard_user_restrictions_by_email() -> Tuple[
-    Union[str, Dict[str, Any]], HTTPStatus
+    Union[Auth0AppMetadata, str], HTTPStatus
 ]:
     """This endpoint is accessed by a service account used by an Auth0 hook that is called at the pre-registration when
     a user first signs up for an account. Given a user email address in the request, it responds with
@@ -150,6 +147,8 @@ def dashboard_user_restrictions_by_email() -> Tuple[
             session.query(
                 DashboardUserRestrictions.allowed_supervision_location_ids,
                 DashboardUserRestrictions.allowed_supervision_location_level,
+                DashboardUserRestrictions.can_access_leadership_dashboard,
+                DashboardUserRestrictions.can_access_case_triage,
             )
             .filter(
                 DashboardUserRestrictions.state_code == region_code.upper(),
@@ -159,12 +158,7 @@ def dashboard_user_restrictions_by_email() -> Tuple[
             .one()
         )
 
-        restrictions = {
-            "allowed_supervision_location_ids": _format_user_restrictions(
-                user_restrictions.allowed_supervision_location_ids
-            ),
-            "allowed_supervision_location_level": user_restrictions.allowed_supervision_location_level,
-        }
+        restrictions = _format_db_results(user_restrictions)
 
         return (restrictions, HTTPStatus.OK)
 
@@ -226,25 +220,24 @@ def update_auth0_user_metadata() -> Tuple[str, HTTPStatus]:
         database_key=database_key, autocommit=False
     ) as session:
         try:
-            user_restrictions = (
+            all_user_restrictions = (
                 session.query(
                     DashboardUserRestrictions.restricted_user_email,
                     DashboardUserRestrictions.allowed_supervision_location_ids,
                     DashboardUserRestrictions.allowed_supervision_location_level,
+                    DashboardUserRestrictions.can_access_leadership_dashboard,
+                    DashboardUserRestrictions.can_access_case_triage,
                 )
                 .filter(DashboardUserRestrictions.state_code == region_code.upper())
                 .order_by(DashboardUserRestrictions.restricted_user_email)
                 .all()
             )
-            user_restrictions_by_email: Dict[str, Tuple[List[str], Optional[str]]] = {}
-
-            for user_restriction in user_restrictions:
-                email = user_restriction.restricted_user_email.lower()
-                allowed_ids = _format_user_restrictions(
-                    user_restriction.allowed_supervision_location_ids
+            user_restrictions_by_email: Dict[str, Auth0AppMetadata] = {}
+            for user_restrictions in all_user_restrictions:
+                email = user_restrictions["restricted_user_email"].lower()
+                user_restrictions_by_email[email] = _format_db_results(
+                    user_restrictions
                 )
-                allowed_level = user_restriction.allowed_supervision_location_level
-                user_restrictions_by_email[email] = (allowed_ids, allowed_level)
 
             auth0 = Auth0Client()
             email_addresses = list(user_restrictions_by_email.keys())
@@ -254,32 +247,20 @@ def update_auth0_user_metadata() -> Tuple[str, HTTPStatus]:
             for user in users:
                 email = user.get("email", "")
                 current_app_metadata = user.get("app_metadata", {})
-                new_restrictions: Tuple[
-                    List[str], Optional[str]
-                ] = user_restrictions_by_email.get(email, ([], None))
-
-                new_restrictions_ids, new_restrictions_level = new_restrictions
-
-                current_restrictions_ids: List[str] = current_app_metadata.get(
-                    "allowed_supervision_location_ids", []
-                )
-                current_restrictions_level: Optional[str] = current_app_metadata.get(
-                    "allowed_supervision_location_level", None
+                new_restrictions: Optional[
+                    Auth0AppMetadata
+                ] = user_restrictions_by_email.get(email)
+                current_restrictions = _normalize_current_restrictions(
+                    current_app_metadata
                 )
 
-                if _should_update_restrictions(
-                    current_restrictions_ids,
-                    current_restrictions_level,
-                    new_restrictions_ids,
-                    new_restrictions_level,
+                if (
+                    new_restrictions is not None
+                    and current_restrictions != new_restrictions
                 ):
                     num_updated_users += 1
-                    app_metadata: Auth0AppMetadata = {
-                        "allowed_supervision_location_ids": new_restrictions_ids,
-                        "allowed_supervision_location_level": new_restrictions_level,
-                    }
                     auth0.update_user_app_metadata(
-                        user_id=user.get("user_id", ""), app_metadata=app_metadata
+                        user_id=user.get("user_id", ""), app_metadata=new_restrictions
                     )
 
             return (
@@ -295,12 +276,50 @@ def update_auth0_user_metadata() -> Tuple[str, HTTPStatus]:
             )
 
 
-def _format_user_restrictions(user_restrictions: str) -> List[str]:
-    if not user_restrictions:
+def _format_db_results(
+    user_restrictions: Dict[str, Any],
+) -> Auth0AppMetadata:
+    return {
+        "allowed_supervision_location_ids": _format_allowed_supervision_location_ids(
+            user_restrictions["allowed_supervision_location_ids"]
+        ),
+        "allowed_supervision_location_level": user_restrictions[
+            "allowed_supervision_location_level"
+        ],
+        "can_access_leadership_dashboard": user_restrictions[
+            "can_access_leadership_dashboard"
+        ],
+        "can_access_case_triage": user_restrictions["can_access_case_triage"],
+    }
+
+
+def _normalize_current_restrictions(
+    current_app_metadata: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    return {
+        "allowed_supervision_location_ids": current_app_metadata.get(
+            "allowed_supervision_location_ids", []
+        ),
+        "allowed_supervision_location_level": current_app_metadata.get(
+            "allowed_supervision_location_level", None
+        ),
+        "can_access_leadership_dashboard": current_app_metadata.get(
+            "can_access_leadership_dashboard", False
+        ),
+        "can_access_case_triage": current_app_metadata.get(
+            "can_access_case_triage", False
+        ),
+    }
+
+
+def _format_allowed_supervision_location_ids(
+    allowed_supervision_location_ids: str,
+) -> List[str]:
+    if not allowed_supervision_location_ids:
         return []
     return [
         restriction.strip()
-        for restriction in user_restrictions.split(",")
+        for restriction in allowed_supervision_location_ids.split(",")
         if restriction.strip()
     ]
 
@@ -310,30 +329,3 @@ def _validate_region_code(region_code: str) -> None:
         raise ValueError(
             f"Unknown region_code [{region_code}] received, must be a valid state code."
         )
-
-
-def _should_update_restrictions(
-    current_restrictions_ids: List[str],
-    current_restrictions_level: Optional[str],
-    new_restrictions_ids: List[str],
-    new_restrictions_level: Optional[str],
-) -> bool:
-    return bool(
-        len(new_restrictions_ids) > 0
-        and new_restrictions_level is not None
-        and (
-            collections.Counter(current_restrictions_ids)
-            != collections.Counter(new_restrictions_ids)
-            or current_restrictions_level != new_restrictions_level
-        )
-    )
-
-
-def _load_json_lines(
-    file_handler: GcsfsFileContentsHandle,
-) -> List[Dict[str, Union[str, List[str]]]]:
-    file_contents = file_handler.get_contents_iterator()
-    loaded_json = []
-    for json_line in file_contents:
-        loaded_json.append(json.loads(json_line))
-    return loaded_json
