@@ -73,7 +73,7 @@ CLIENT_ELIGIBILITY_CRITERIA_QUERY_TEMPLATE = """
         COUNT(DISTINCT IF (contact_reason = 'EMERGENCY_CONTACT' OR contacts.location IN ('JAIL', 'LAW_ENFORCEMENT_AGENCY'), contact_date, NULL)) OVER(PARTITION BY p.person_id) critical_contacts_count,
         ROW_NUMBER() OVER(PARTITION BY p.person_id) rn
         # TODO(#7303): Incorporate data about treatment enrollment or requirements as an additional elgibility criteria
-      FROM `{project_id}.{case_triage_dataset}.etl_clients` clients
+      FROM `{project_id}.{case_triage_dataset}.etl_clients_materialized` clients
       JOIN `{project_id}.{base_dataset}.state_person_external_id` p
       ON clients.person_external_id = p.external_id
         AND clients.state_code = p.state_code

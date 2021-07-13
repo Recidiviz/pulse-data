@@ -74,6 +74,7 @@ CLIENT_CONTACT_INFO_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id="client_contact_info",
     description=CLIENT_CONTACT_INFO_DESCRIPTION,
     view_query_template=CLIENT_CONTACT_INFO_QUERY_TEMPLATE,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

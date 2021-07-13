@@ -81,7 +81,7 @@ latest_employment AS (
             employment_periods.employer,
             ROW_NUMBER() over (PARTITION BY person_external_id ORDER BY recorded_start_date DESC) as row_num
          FROM
-            `{project_id}.{case_triage_dataset}.employment_periods` employment_periods
+            `{project_id}.{case_triage_dataset}.employment_periods_materialized` employment_periods
         WHERE
           NOT is_unemployed
           AND (recorded_end_date IS NULL OR recorded_end_date > CURRENT_DATE())
@@ -115,10 +115,10 @@ LEFT JOIN
   latest_employment
 USING (person_external_id, state_code)
 LEFT JOIN
-  `{project_id}.{case_triage_dataset}.client_contact_info`
+  `{project_id}.{case_triage_dataset}.client_contact_info_materialized`
 USING (person_external_id, state_code)
 LEFT JOIN
-  `{project_id}.{case_triage_dataset}.last_known_date_of_employment`
+  `{project_id}.{case_triage_dataset}.last_known_date_of_employment_materialized`
 USING (person_external_id, state_code)
 LEFT JOIN
   `{project_id}.{case_triage_dataset}.latest_assessments`
@@ -210,6 +210,7 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         # the ofndr_agnt table for Idaho.
         "supervising_officer_external_id",
     ],
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

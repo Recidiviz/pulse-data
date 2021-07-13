@@ -73,6 +73,7 @@ OFFICER_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     ],
     reference_views_dataset=REFERENCE_VIEWS_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

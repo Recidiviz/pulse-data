@@ -15,21 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Creates the view builder and view for metrics from case triage."""
-
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.experiments.dataset_config import (
-    EXPERIMENTS_DATASET,
     CASE_TRIAGE_SEGMENT_DATASET,
+    EXPERIMENTS_DATASET,
 )
 from recidiviz.calculator.query.state.dataset_config import (
-    DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    STATIC_REFERENCE_TABLES_DATASET,
     ANALYST_VIEWS_DATASET,
+    DATAFLOW_METRICS_MATERIALIZED_DATASET,
     PO_REPORT_DATASET,
+    STATIC_REFERENCE_TABLES_DATASET,
 )
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.case_triage.views.dataset_config import (
+    VIEWS_DATASET as CASE_TRIAGE_DATASET,
+)
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 
 CASE_TRIAGE_EVENTS_VIEW_NAME = "case_triage_metrics"
 
@@ -44,9 +45,9 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
         from `{case_triage_metrics_project}.{case_triage_segment}.frontend_person_action_taken`
         group by 1,2,3
      ),
-      
+
       action_set AS (
-            --updates that a PO makes on a given date 
+            --updates that a PO makes on a given date
             SELECT user_id
             , date_measurement
             , SUM(CASE WHEN action_taken = "FOUND_EMPLOYMENT" THEN 1 ELSE 0 END) AS actions_found_employment
@@ -56,10 +57,10 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
             , SUM(CASE WHEN action_taken = "COMPLETED_ASSESSMENT" THEN 1 ELSE 0 END) AS actions_completed_assessment
             , SUM(CASE WHEN action_taken = "OTHER_DISMISSAL" THEN 1 ELSE 0 END) AS actions_other_dismissal
             , SUM(CASE WHEN action_taken = "NOT_ON_CASELOAD" THEN 1 ELSE 0 END) AS actions_not_on_caseload
-      FROM column_wise 
+      FROM column_wise
       GROUP BY user_id, date_measurement
       ),
-      
+
       baseline AS (
           --match main events on page with POs
           SELECT recipients.state_code
@@ -76,12 +77,12 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
                 ON metrics.user_id = recipients.segment_id
           LEFT JOIN `{project_id}.{po_report_dataset}.officer_supervision_district_association_materialized` district
                 ON district.officer_external_id = recipients.officer_external_id
-                AND district.state_code = recipients.state_code 
+                AND district.state_code = recipients.state_code
                 AND EXTRACT(MONTH FROM metrics.timestamp) = district.month
                 AND EXTRACT(YEAR FROM metrics.timestamp) = district.year
            LEFT JOIN `{case_triage_metrics_project}.{case_triage_segment}.pages` page
                 ON page.user_id = recipients.segment_id
-           LEFT JOIN `{case_triage_metrics_project}.{case_triage_segment}.frontend_person_selected` selected 
+           LEFT JOIN `{case_triage_metrics_project}.{case_triage_segment}.frontend_person_selected` selected
                 ON selected.user_id = recipients.segment_id
                 AND EXTRACT(DATE FROM selected.timestamp) = EXTRACT(DATE FROM metrics.timestamp)
           LEFT JOIN `{case_triage_metrics_project}.{case_triage_segment}.frontend_scrolled_to_bottom` scrolled
@@ -90,7 +91,7 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
           LEFT JOIN `{case_triage_metrics_project}.{case_triage_segment}.frontend_person_case_updated` updated
                 ON updated.user_id = recipients.segment_id
                 AND EXTRACT(DATE FROM updated.timestamp) = EXTRACT(DATE FROM metrics.timestamp)
-    
+
           GROUP BY state_code, date, district, officer_external_id, segment_id
       ),
 
@@ -112,15 +113,15 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
                 , IFNULL(actions_doesnt_match_oms, 0) AS actions_doesnt_match_oms
                 , IFNULL(actions_other_dismissal, 0) AS actions_other_dismissal
                 , IFNULL(actions_not_on_caseload, 0) AS actions_not_on_caseload
-                , CASE WHEN (actions_filed_revocation + actions_doesnt_match_oms + actions_other_dismissal + actions_not_on_caseload > 0) 
+                , CASE WHEN (actions_filed_revocation + actions_doesnt_match_oms + actions_other_dismissal + actions_not_on_caseload > 0)
                             THEN 1 ELSE 0 END AS actions_any_feedback_given
           FROM baseline
-          LEFT JOIN action_set 
+          LEFT JOIN action_set
                 ON action_set.user_id = baseline.segment_id
                 AND action_set.date_measurement = baseline.date
           ORDER BY officer_external_id, date
       ),
-      
+
       -- number of persons under supervision of a PO grouped by supervision levels and types
       officer_caseload AS (
           WITH unnested_level AS (
@@ -129,11 +130,11 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
                   , supervision_level
                   , start_date
                   , end_date
-                  , date_of_supervision 
-            FROM `{project_id}.{analyst_dataset}.supervision_level_sessions_materialized` AS level, 
-            UNNEST(GENERATE_DATE_ARRAY(start_date, COALESCE(end_date, CURRENT_DATE()))) AS date_of_supervision 
+                  , date_of_supervision
+            FROM `{project_id}.{analyst_dataset}.supervision_level_sessions_materialized` AS level,
+            UNNEST(GENERATE_DATE_ARRAY(start_date, COALESCE(end_date, CURRENT_DATE()))) AS date_of_supervision
       ),
-      
+
       unnested_level_officer AS (
         SELECT state_code
             , person_id
@@ -142,7 +143,7 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
             , end_date
             , date_of_supervision
         FROM `{project_id}.{analyst_dataset}.supervision_officer_sessions_materialized` AS officer,
-        UNNEST(GENERATE_DATE_ARRAY(start_date, COALESCE(end_date, CURRENT_DATE()))) AS date_of_supervision 
+        UNNEST(GENERATE_DATE_ARRAY(start_date, COALESCE(end_date, CURRENT_DATE()))) AS date_of_supervision
       ),
 
       supervision_by_day AS (
@@ -164,7 +165,7 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
         SELECT officer.state_code
             , officer.person_id
             , officer.supervising_officer_external_id
-            , officer.date_of_supervision 
+            , officer.date_of_supervision
             , officer.supervision_level
             , compart.compartment_level_2
         FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized` compart
@@ -188,40 +189,40 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
       FROM officers_and_client
       GROUP BY state_code, supervising_officer_external_id, date_of_supervision
       ),
-      
+
       --employment periods of persons under supervision
       employ AS (
           SELECT state_code
           , person_external_id
           , recorded_start_date
-          -- verify that overlapping employment periods (new start date, but null end date on earlier emplyoment) 
+          -- verify that overlapping employment periods (new start date, but null end date on earlier emplyoment)
           -- is due to missing data and not multiple employers/jobs
           , IF((recorded_end_date IS NULL AND (recorded_start_date != MAX(recorded_start_date) OVER (PARTITION BY person_external_id) )),
             LEAD(recorded_start_date) OVER(PARTITION BY person_external_id ORDER BY recorded_start_date) - 1,
             recorded_end_date) AS recorded_end
-          FROM `{project_id}.case_triage.employment_periods` 
+          FROM `{project_id}.{case_triage_dataset}.employment_periods_materialized`
           GROUP BY state_code, person_external_id, recorded_start_date, recorded_end_date
       ),
-      
+
       correct_levels_select AS (
-          SELECT * 
+          SELECT *
           FROM (
             SELECT metrics.state_code
              , selected.person_external_id
              , EXTRACT(DATE FROM selected.timestamp) as date
              , ROW_NUMBER() OVER (PARTITION BY selected.person_external_id, EXTRACT(DATE FROM selected.timestamp) ORDER BY date_of_supervision desc) AS rn
              , metrics.supervision_type
-             , metrics.supervision_level 
-             FROM `{case_triage_metrics_project}.{case_triage_segment}.frontend_person_selected` selected 
+             , metrics.supervision_level
+             FROM `{case_triage_metrics_project}.{case_triage_segment}.frontend_person_selected` selected
              LEFT JOIN `{project_id}.{dataflow_metrics_materialized_dataset}.most_recent_supervision_population_metrics_materialized` metrics
-                ON selected.person_external_id = metrics.person_external_id 
+                ON selected.person_external_id = metrics.person_external_id
                 AND metrics.date_of_supervision < EXTRACT(DATE FROM selected.timestamp)
              ORDER BY person_external_id
-          )this 
+          )this
           WHERE rn = 1
       ),
 
-      --match the timing of click events of a PO with whether a person was employed 
+      --match the timing of click events of a PO with whether a person was employed
       selected_employment AS (
           SELECT selected.person_external_id
                 , EXTRACT(date from selected.timestamp) AS date_measurement
@@ -230,37 +231,37 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
                 , employ.recorded_end AS recorded_end_date
                 , correct_levels_select.supervision_type
                 , correct_levels_select.supervision_level
-            --if they have employment during the timestamp period 
-          FROM `{case_triage_metrics_project}.{case_triage_segment}.frontend_person_selected` selected 
+            --if they have employment during the timestamp period
+          FROM `{case_triage_metrics_project}.{case_triage_segment}.frontend_person_selected` selected
           LEFT JOIN employ
-                  ON employ.person_external_id = selected.person_external_id 
-                  AND employ.recorded_start_date <= EXTRACT(date from selected.timestamp) 
+                  ON employ.person_external_id = selected.person_external_id
+                  AND employ.recorded_start_date <= EXTRACT(date from selected.timestamp)
                   AND COALESCE(employ.recorded_end, CURRENT_DATE()) >= EXTRACT(date from selected.timestamp)
           LEFT JOIN correct_levels_select
-             ON selected.person_external_id = correct_levels_select.person_external_id 
+             ON selected.person_external_id = correct_levels_select.person_external_id
              AND correct_levels_select.date = EXTRACT(DATE FROM selected.timestamp)
       ),
-     
+
       client_narrow_select AS (
           SELECT selected.person_external_id
-                 , date_measurement  
+                 , date_measurement
                  , selected.user_id
                  , CASE WHEN (DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) > 30) THEN 1 ELSE 0 END AS months_last_face_to_face
-                 , CASE WHEN (DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) < 30 
-                   AND DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) > 0)  
+                 , CASE WHEN (DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) < 30
+                   AND DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) > 0)
                    THEN 1 ELSE 0 END AS weeks_last_face_to_face
                  , client.assessment_score
                  , selected.recorded_start_date
                  , selected.supervision_level
                  , selected.supervision_type
           FROM selected_employment selected
-          LEFT JOIN `{project_id}.case_triage.etl_clients` client
+          LEFT JOIN `{project_id}.{case_triage_dataset}.etl_clients_materialized` client
             ON client.person_external_id = selected.person_external_id
       ),
-      
-      --the number of click events of a PO for people with different attributes of supervision 
+
+      --the number of click events of a PO for people with different attributes of supervision
       selected_given AS (
-        SELECT client_narrow_select.user_id        
+        SELECT client_narrow_select.user_id
             , client_narrow_select.date_measurement
             , SUM(IF(recorded_start_date IS NULL, 1, 0)) AS persons_selected_given_no_employment_indicated
             , SUM(IF(assessment_score IS NULL, 1, 0)) AS persons_selected_given_no_assessment_indicated
@@ -275,23 +276,23 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
         FROM client_narrow_select
         GROUP BY user_id, date_measurement
       ),
-          
+
       correct_levels_update AS (
-          SELECT * 
+          SELECT *
           FROM (
-            SELECT 
+            SELECT
              updated.person_external_id,
              EXTRACT(DATE FROM updated.timestamp) as date,
-             ROW_NUMBER() OVER (PARTITION BY updated.person_external_id, 
+             ROW_NUMBER() OVER (PARTITION BY updated.person_external_id,
                 EXTRACT(DATE FROM updated.timestamp) ORDER BY date_of_supervision desc) AS rn,
-             metrics.supervision_type, 
-             metrics.supervision_level, 
-             FROM `{case_triage_metrics_project}.{case_triage_segment}.frontend_person_case_updated` updated 
+             metrics.supervision_type,
+             metrics.supervision_level,
+             FROM `{case_triage_metrics_project}.{case_triage_segment}.frontend_person_case_updated` updated
              LEFT JOIN `{project_id}.{dataflow_metrics_materialized_dataset}.most_recent_supervision_population_metrics_materialized` metrics
-                ON updated.person_external_id = metrics.person_external_id 
+                ON updated.person_external_id = metrics.person_external_id
                 AND metrics.date_of_supervision < EXTRACT(DATE FROM updated.timestamp)
              ORDER BY person_external_id
-          )this 
+          )this
           WHERE rn = 1
       ),
 
@@ -304,35 +305,35 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
                 , employ.recorded_end AS recorded_end_date
                 , correct_levels_update.supervision_type
                 , correct_levels_update.supervision_level
-            --if they have employment during the timestmap period 
+            --if they have employment during the timestmap period
           FROM `{case_triage_metrics_project}.{case_triage_segment}.frontend_person_case_updated` updated
           LEFT JOIN employ
-            ON employ.person_external_id = updated.person_external_id 
-            AND employ.recorded_start_date <= EXTRACT(date from updated.timestamp) 
+            ON employ.person_external_id = updated.person_external_id
+            AND employ.recorded_start_date <= EXTRACT(date from updated.timestamp)
             AND COALESCE(employ.recorded_end, CURRENT_DATE()) >= EXTRACT(date from updated.timestamp)
           LEFT JOIN correct_levels_update
-            ON updated.person_external_id = correct_levels_update.person_external_id 
+            ON updated.person_external_id = correct_levels_update.person_external_id
             AND correct_levels_update.date = EXTRACT(DATE FROM updated.timestamp)
       ),
 
       client_narrow_update AS (
          SELECT updated.person_external_id
-             , updated.date_measurement 
+             , updated.date_measurement
              , updated.user_id
              , CASE WHEN (DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) > 30) THEN 1 ELSE 0 END AS months_last_face_to_face
-             , CASE WHEN (DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) < 30 
+             , CASE WHEN (DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) < 30
               AND DATE_DIFF(CURRENT_DATE(), CAST(client.most_recent_face_to_face_date AS DATE), DAY) > 0)  THEN 1 ELSE 0 END AS weeks_last_face_to_face
              , client.assessment_score
              , updated.recorded_start_date
              , updated.supervision_level
              , updated.supervision_type
          FROM updated_employment updated
-         LEFT JOIN `{project_id}.case_triage.etl_clients` client
+         LEFT JOIN `{project_id}.{case_triage_dataset}.etl_clients_materialized` client
             ON client.person_external_id = updated.person_external_id
       ),
 
       updated_given AS (
-        SELECT client_narrow_update.user_id        
+        SELECT client_narrow_update.user_id
             , client_narrow_update.date_measurement
             , COUNTIF(recorded_start_date IS NULL) AS persons_updated_given_no_employment_indicated
             , COUNTIF(assessment_score IS NULL) AS persons_updated_given_no_assessment_indicated
@@ -347,40 +348,40 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
         FROM client_narrow_update
         GROUP BY user_id, date_measurement
       )
-      
-      --combine base user data, aggregated PO caseload, click events, update events, 
+
+      --combine base user data, aggregated PO caseload, click events, update events,
       SELECT *  EXCEPT(user_id, date_measurement, segment_id)
-      FROM one_rolling_window 
+      FROM one_rolling_window
       LEFT JOIN officer_caseload
             USING(officer_external_id, date, state_code)
       LEFT JOIN selected_given
-            ON selected_given.user_id = one_rolling_window.segment_id 
+            ON selected_given.user_id = one_rolling_window.segment_id
             AND selected_given.date_measurement = one_rolling_window.date
       LEFT JOIN updated_given
-            ON updated_given.user_id = one_rolling_window.segment_id 
+            ON updated_given.user_id = one_rolling_window.segment_id
             AND updated_given.date_measurement = one_rolling_window.date
       ORDER BY date, district, officer_external_id
 
       --for adding rolling windows later if desired
       /*
       total AS (
-      SELECT * 
-            , 1 AS rolling_window_days 
-      FROM one_rolling_window
-
-      UNION ALL
-      
-      SELECT * 
-            , 7 AS rolling_window_days 
+      SELECT *
+            , 1 AS rolling_window_days
       FROM one_rolling_window
 
       UNION ALL
 
-      SELECT * 
-            , 30 AS rolling_window_days 
+      SELECT *
+            , 7 AS rolling_window_days
+      FROM one_rolling_window
+
+      UNION ALL
+
+      SELECT *
+            , 30 AS rolling_window_days
       FROM one_rolling_window
       ORDER BY
-            officer_external_id, date, rolling_window_days 
+            officer_external_id, date, rolling_window_days
       )
 
       SELECT m1.state_code, m1.date, m1.district, m1.officer_external_id, m1.rolling_window_days, m1.segment_id
@@ -399,9 +400,9 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
       JOIN total m2
             USING (state_code, district, officer_external_id, rolling_window_days, segment_id)
       WHERE m1.date
-            BETWEEN m2.date AND DATE_ADD(m2.date, INTERVAL m1.rolling_window_days - 1 DAY) 
+            BETWEEN m2.date AND DATE_ADD(m2.date, INTERVAL m1.rolling_window_days - 1 DAY)
       GROUP BY m1.state_code, m1.date, m1.district, m1.officer_external_id, m1.rolling_window_days, m1.segment_id
-    
+
       */
 """
 
@@ -414,6 +415,7 @@ CASE_TRIAGE_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     static_reference_tables_dataset=STATIC_REFERENCE_TABLES_DATASET,
     po_report_dataset=PO_REPORT_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
+    case_triage_dataset=CASE_TRIAGE_DATASET,
     case_triage_segment=CASE_TRIAGE_SEGMENT_DATASET,
     case_triage_metrics_project=GCP_PROJECT_PRODUCTION,
     should_materialize=True,
