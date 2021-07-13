@@ -88,21 +88,15 @@ def create_api_blueprint(segment_client: CaseTriageSegmentClient) -> Blueprint:
     @api.route("/clients")
     def _get_clients() -> str:
         clients = CaseTriageQuerier.clients_for_officer(current_session, g.user_context)
-        return jsonify(
-            [
-                client.to_json(g.user_context.demo_timedelta_shift_from_today)
-                for client in clients
-            ]
-        )
+        return jsonify([client.to_json() for client in clients])
 
     @api.route("/opportunities")
     def _get_opportunities() -> str:
         opportunity_presenters = CaseTriageQuerier.opportunities_for_officer(
             current_session, g.user_context
         )
-        now = g.user_context.now()
         return jsonify(
-            [opportunity.to_json(now) for opportunity in opportunity_presenters]
+            [opportunity.to_json() for opportunity in opportunity_presenters]
         )
 
     @api.route("/bootstrap")
@@ -121,10 +115,7 @@ def create_api_blueprint(segment_client: CaseTriageSegmentClient) -> Blueprint:
     @requires_api_schema(DeferOpportunitySchema)
     def _defer_opportunity() -> str:
         etl_client = load_client(g.api_data["person_external_id"])
-        demo_timedelta_shift = g.user_context.demo_timedelta_shift_to_today
         deferred_until = g.api_data["defer_until"]
-        if demo_timedelta_shift:
-            deferred_until += demo_timedelta_shift
         try:
             OpportunitiesInterface.defer_opportunity(
                 current_session,
