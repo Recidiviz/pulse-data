@@ -16,21 +16,21 @@
 # =============================================================================
 """Tests for classes in big_query_view_dag_walker.py"""
 
-import re
 import unittest
 from typing import Dict, List, Set
-from unittest.mock import patch
+from unittest import mock
+
+from google.cloud import bigquery
+from mock import call, patch
 
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.view_update_manager_utils import (
+    delete_unmanaged_views_and_tables_from_dataset,
     get_managed_views_for_dataset_map,
 )
 from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
-
-LATEST_VIEW_DATASET_REGEX = re.compile(r"(us_[a-z]{2})_raw_data_up_to_date_views")
-MOCK_VIEW_PROCESS_TIME_SECONDS = 0.01
 
 
 class TestViewUpdateManagerUtils(unittest.TestCase):
@@ -124,6 +124,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             USING (col)""",
             )
         )
+
         self.multiple_views_one_dataset_list = [
             BigQueryView(
                 dataset_id="dataset_1",
@@ -178,6 +179,41 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                     USING (col)""",
             ),
         ]
+        self.project_id = "fake-recidiviz-project"
+        self.mock_view_dataset_name = "my_views_dataset"
+        self.mock_dataset_ref_ds_1 = bigquery.dataset.DatasetReference(
+            self.project_id, "dataset_1"
+        )
+        self.mock_table_resource_template = {
+            "tableReference": {
+                "projectId": self.project_id,
+                "datasetId": self.mock_view_dataset_name,
+                "tableId": "fake_table",
+            },
+        }
+        self.mock_table_resource_ds_1_table_1 = {
+            "tableReference": {
+                "projectId": self.project_id,
+                "datasetId": "dataset_1",
+                "tableId": "table_1",
+            },
+        }
+
+        self.mock_table_resource_ds_1_table_2 = {
+            "tableReference": {
+                "projectId": self.project_id,
+                "datasetId": "dataset_1",
+                "tableId": "table_2",
+            },
+        }
+
+        self.project_number_patcher = patch("recidiviz.utils.metadata.project_number")
+        self.project_number_patcher.start().return_value = "123456789"
+
+        self.bq_client_patcher = mock.patch(
+            "recidiviz.big_query.view_update_manager_utils.BigQueryClient"
+        )
+        self.mock_client = self.bq_client_patcher.start().return_value
 
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
@@ -263,3 +299,118 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             "dataset_4": {BigQueryAddress(dataset_id="dataset_4", table_id="table_4")},
         }
         self.assertEqual(expected_result, result_dict)
+
+    def test_delete_unmanaged_views_and_tables_simple(self) -> None:
+        managed_tables = {BigQueryAddress(dataset_id="dataset_1", table_id="table_1")}
+        self.mock_client.list_tables.return_value = [
+            bigquery.table.TableListItem(self.mock_table_resource_ds_1_table_1),
+            bigquery.table.TableListItem(self.mock_table_resource_ds_1_table_2),
+        ]
+        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset_ref_ds_1
+        self.mock_client.dataset_exists.return_value = True
+        expected_deleted_views: Set[BigQueryAddress] = {
+            BigQueryAddress(dataset_id="dataset_1", table_id="table_2")
+        }
+        deleted_views = delete_unmanaged_views_and_tables_from_dataset(
+            self.mock_client, "dataset_1", managed_tables, dry_run=False
+        )
+        self.mock_client.dataset_ref_for_id.assert_called()
+        self.mock_client.dataset_exists.assert_called()
+        self.mock_client.list_tables.assert_called()
+        self.mock_client.delete_table.assert_called_with("dataset_1", "table_2")
+        self.assertEqual(deleted_views, expected_deleted_views)
+
+    def test_delete_unmanaged_views_and_tables_no_unmanaged_views(self) -> None:
+        managed_tables = {
+            BigQueryAddress(dataset_id="dataset_1", table_id="table_1"),
+            BigQueryAddress(dataset_id="dataset_1", table_id="table_2"),
+        }
+        self.mock_client.list_tables.return_value = [
+            bigquery.table.TableListItem(self.mock_table_resource_ds_1_table_1),
+            bigquery.table.TableListItem(self.mock_table_resource_ds_1_table_2),
+        ]
+        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset_ref_ds_1
+        self.mock_client.dataset_exists.return_value = True
+        expected_deleted_views: Set[BigQueryAddress] = set()
+        deleted_views = delete_unmanaged_views_and_tables_from_dataset(
+            self.mock_client, "dataset_1", managed_tables, dry_run=False
+        )
+        self.mock_client.dataset_ref_for_id.assert_called()
+        self.mock_client.dataset_exists.assert_called()
+        self.mock_client.list_tables.assert_called()
+        self.mock_client.delete_table.assert_not_called()
+        self.assertEqual(deleted_views, expected_deleted_views)
+
+    def test_delete_unmanaged_views_and_tables_all_unmanaged_views(self) -> None:
+        managed_tables: Set[BigQueryAddress] = set()
+        self.mock_client.list_tables.return_value = [
+            bigquery.table.TableListItem(self.mock_table_resource_ds_1_table_1),
+            bigquery.table.TableListItem(self.mock_table_resource_ds_1_table_2),
+        ]
+        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset_ref_ds_1
+        self.mock_client.dataset_exists.return_value = True
+        expected_deleted_views: Set[BigQueryAddress] = {
+            BigQueryAddress(dataset_id="dataset_1", table_id="table_1"),
+            BigQueryAddress(dataset_id="dataset_1", table_id="table_2"),
+        }
+        deleted_views = delete_unmanaged_views_and_tables_from_dataset(
+            self.mock_client, "dataset_1", managed_tables, dry_run=False
+        )
+        self.mock_client.dataset_ref_for_id.assert_called()
+        self.mock_client.dataset_exists.assert_called()
+        delete_calls = [call("dataset_1", "table_1"), call("dataset_1", "table_2")]
+        self.mock_client.list_tables.assert_called()
+        self.mock_client.delete_table.assert_has_calls(delete_calls, any_order=True)
+        self.assertEqual(deleted_views, expected_deleted_views)
+
+    def test_delete_unmanaged_views_and_tables_no_views_existing_dataset(self) -> None:
+        managed_tables: Set[BigQueryAddress] = set()
+        self.mock_client.list_tables.return_value = []
+        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset_ref_ds_1
+        self.mock_client.dataset_exists.return_value = True
+        expected_deleted_views: Set[BigQueryAddress] = set()
+        deleted_views = delete_unmanaged_views_and_tables_from_dataset(
+            self.mock_client, "dataset_1", managed_tables, dry_run=False
+        )
+        self.mock_client.dataset_ref_for_id.assert_called()
+        self.mock_client.dataset_exists.assert_called()
+        self.mock_client.list_tables.assert_called()
+        self.mock_client.delete_table.assert_not_called()
+        self.assertEqual(deleted_views, expected_deleted_views)
+
+    def test_delete_unmanaged_views_and_tables_dry_run(self) -> None:
+        managed_tables = {BigQueryAddress(dataset_id="dataset_1", table_id="table_1")}
+        self.mock_client.list_tables.return_value = [
+            bigquery.table.TableListItem(self.mock_table_resource_ds_1_table_1),
+            bigquery.table.TableListItem(self.mock_table_resource_ds_1_table_2),
+        ]
+        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset_ref_ds_1
+        self.mock_client.dataset_exists.return_value = True
+        expected_deleted_views: Set[BigQueryAddress] = {
+            BigQueryAddress(dataset_id="dataset_1", table_id="table_2")
+        }
+        deleted_views = delete_unmanaged_views_and_tables_from_dataset(
+            self.mock_client, "dataset_1", managed_tables, dry_run=True
+        )
+        self.mock_client.dataset_ref_for_id.assert_called()
+        self.mock_client.dataset_exists.assert_called()
+        self.mock_client.list_tables.assert_called()
+        self.mock_client.delete_table.assert_not_called()
+        self.assertEqual(deleted_views, expected_deleted_views)
+
+    def test_delete_unmanaged_views_and_tables_dataset_doesnt_exist(self) -> None:
+        managed_tables = {BigQueryAddress(dataset_id="dataset_1", table_id="table_1")}
+        self.mock_client.list_tables.return_value = [
+            bigquery.table.TableListItem(self.mock_table_resource_ds_1_table_1),
+            bigquery.table.TableListItem(self.mock_table_resource_ds_1_table_2),
+        ]
+        self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset_ref_ds_1
+        self.mock_client.dataset_exists.return_value = False
+        with self.assertRaises(ValueError):
+            delete_unmanaged_views_and_tables_from_dataset(
+                self.mock_client, "dataset_bogus", managed_tables, dry_run=False
+            )
+        self.mock_client.dataset_ref_for_id.assert_called()
+        self.mock_client.dataset_exists.assert_called()
+        self.mock_client.list_tables.assert_not_called()
+        self.mock_client.delete_table.assert_not_called()
