@@ -20,6 +20,7 @@ from unittest import TestCase
 from unittest.mock import MagicMock, Mock, patch
 
 import recidiviz.reporting.email_reporting_utils as utils
+from recidiviz.admin_panel.admin_stores import AdminStores
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
@@ -169,15 +170,16 @@ class TestGCSEmails(TestCase):
 
     def setUp(self) -> None:
         self.project_id_patcher = patch(
-            "recidiviz.reporting.email_reporting_utils.metadata.project_id"
+            "recidiviz.admin_panel.admin_stores.metadata.project_id"
         )
         self.project_id_patcher.start().return_value = "recidiviz-staging"
         self.gcs_factory_patcher = patch(
-            "recidiviz.reporting.email_reporting_utils.GcsfsFactory.build"
+            "recidiviz.admin_panel.admin_stores.GcsfsFactory.build"
         )
         fake_gcs = FakeGCSFileSystem()
         self.gcs_factory_patcher.start().return_value = fake_gcs
         self.fs = fake_gcs
+        self.admin_stores = AdminStores()
 
     def tearDown(self) -> None:
         self.gcs_factory_patcher.stop()
@@ -227,7 +229,9 @@ class TestGCSEmails(TestCase):
         """Given all valid arguments, should have a list of batch ids, ordered in descending order,
         since we want the most recent batch to be at the top of the list"""
         self._upload_fake_email_buckets()
-        batch_list = utils.get_batch_ids(state_code=StateCode(self.STATE_CODE_STR))
+        batch_list = self.admin_stores.get_batch_ids(
+            state_code=StateCode(self.STATE_CODE_STR), override_fs=self.fs
+        )
 
         self.assertEqual(
             ["20210701202022", "20210701202021", "20210701202020"], batch_list
@@ -236,12 +240,16 @@ class TestGCSEmails(TestCase):
     def test_get_batch_ids_invalid_state(self) -> None:
         """Given an invalid state code, should have an empty list"""
         self._upload_fake_email_buckets()
-        batch_list = utils.get_batch_ids(state_code=StateCode.US_XX)
+        batch_list = self.admin_stores.get_batch_ids(
+            state_code=StateCode.US_XX, override_fs=self.fs
+        )
         self.assertEqual(0, len(batch_list))
 
     def test_get_batch_ids_state_with_single(self) -> None:
         """Given valid arguments, should pick correct state and given a list of only one batch id"""
         self._upload_fake_email_buckets()
-        batch_list = utils.get_batch_ids(state_code=StateCode.US_PA)
+        batch_list = self.admin_stores.get_batch_ids(
+            state_code=StateCode.US_PA, override_fs=self.fs
+        )
         self.assertEqual(1, len(batch_list))
         self.assertEqual("20210701202027", batch_list[0])

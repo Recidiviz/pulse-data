@@ -23,7 +23,7 @@ from typing import Optional, Tuple
 
 from flask import Blueprint, jsonify, request
 
-from recidiviz.admin_panel.admin_stores import fetch_state_codes
+from recidiviz.admin_panel.admin_stores import AdminStores, fetch_state_codes
 from recidiviz.admin_panel.case_triage_helpers import (
     columns_for_case_triage_view,
     get_importable_csvs,
@@ -48,7 +48,6 @@ from recidiviz.reporting.email_reporting_utils import (
     InvalidReportTypeError,
     generate_batch_id,
     generate_report_date,
-    get_batch_ids,
     get_report_type,
     validate_email_address,
 )
@@ -61,7 +60,7 @@ from recidiviz.utils.metadata import local_project_id_override
 EMAIL_STATE_CODES = [StateCode.US_ID, StateCode.US_PA]
 
 
-def add_case_triage_routes(bp: Blueprint) -> None:
+def add_case_triage_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     """Adds the relevant Case Triage API routes to an input Blueprint."""
 
     # Fetch ETL View Ids for GCS -> Cloud SQL Import
@@ -380,6 +379,6 @@ def add_case_triage_routes(bp: Blueprint) -> None:
             logging.error(error)
             return str(error), HTTPStatus.BAD_REQUEST
 
-        gcsfs_batch_ids = get_batch_ids(state_code)
+        gcsfs_batch_ids = admin_stores.get_batch_ids(state_code)
 
         return (jsonify({"batchIds": gcsfs_batch_ids}), HTTPStatus.OK)
