@@ -378,10 +378,13 @@ class SupervisionCaseComplianceMetric(SupervisionPopulationMetric):
     # home visit compliance standards for this person.
     home_visit_frequency_sufficient: Optional[bool] = attr.ib(default=None)
 
-    # Whether the person on supervision is eligible for a downgrade.
+    # If the person on supervision is eligible for a downgrade, the level they should be
+    # downgraded to.
     # This value is set to None if we do not know how to calculate recommended
     # supervision level status for this person.
-    eligible_for_supervision_downgrade: Optional[bool] = attr.ib(default=None)
+    recommended_supervision_downgrade_level: Optional[StateSupervisionLevel] = attr.ib(
+        default=None
+    )
 
 
 @attr.s

@@ -21,6 +21,9 @@ from typing import Optional
 import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+)
 
 
 @attr.s(frozen=True)
@@ -63,7 +66,10 @@ class SupervisionCaseCompliance(BuildableAttr):
     # home visit compliance standards for this person.
     home_visit_frequency_sufficient: Optional[bool] = attr.ib(default=None)
 
-    # Whether the person on supervision is eligible for a downgrade.
+    # If the person on supervision is eligible for a downgrade, this stores the level
+    # they should be downgraded to.
     # This value is set to None if we do not know how to calculate recommended
     # supervision level status for this person.
-    eligible_for_supervision_downgrade: Optional[bool] = attr.ib(default=None)
+    recommended_supervision_downgrade_level: Optional[StateSupervisionLevel] = attr.ib(
+        default=None
+    )
