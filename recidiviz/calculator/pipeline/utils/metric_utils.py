@@ -133,6 +133,14 @@ class PersonLevelMetric(BuildableAttr):
 
 
 @attr.s
+class SecondaryPersonExternalIdMetric(BuildableAttr):
+    """Base class for including secondary person external_id values on a metric."""
+
+    # An additional external_id of StatePerson for person-specific metrics
+    secondary_person_external_id: Optional[str] = attr.ib(default=None)
+
+
+@attr.s
 class AssessmentMetricMixin(BuildableAttr):
     """Set of attributes to store information about assessments on a metric."""
 

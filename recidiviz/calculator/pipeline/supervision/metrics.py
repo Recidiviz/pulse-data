@@ -66,7 +66,7 @@ class SupervisionMetricType(RecidivizMetricType):
 
 @attr.s
 class SupervisionMetric(
-    RecidivizMetric[SupervisionMetricType], SupervisionLocationMixin
+    RecidivizMetric[SupervisionMetricType], SupervisionLocationMixin, PersonLevelMetric
 ):
     """Models a single supervision metric.
 
@@ -121,7 +121,7 @@ class SupervisionMetric(
 
 @attr.s
 class SupervisionPopulationMetric(
-    SupervisionMetric, PersonLevelMetric, ViolationHistoryMixin, AssessmentMetricMixin
+    SupervisionMetric, ViolationHistoryMixin, AssessmentMetricMixin
 ):
     """Subclass of SupervisionMetric that contains supervision population information."""
 
@@ -170,7 +170,7 @@ class SupervisionOutOfStatePopulationMetric(SupervisionPopulationMetric):
 #  IncarcerationCommitmentFromSupervisionMetric
 @attr.s
 class SupervisionRevocationMetric(
-    SupervisionMetric, PersonLevelMetric, AssessmentMetricMixin, ViolationHistoryMixin
+    SupervisionMetric, AssessmentMetricMixin, ViolationHistoryMixin
 ):
     """Subclass of SupervisionMetric that contains supervision revocation information."""
 
@@ -218,7 +218,7 @@ class SupervisionRevocationMetric(
 
 
 @attr.s
-class SupervisionSuccessMetric(SupervisionMetric, PersonLevelMetric):
+class SupervisionSuccessMetric(SupervisionMetric):
     """Subclass of SupervisionMetric that contains supervision success and failure counts."""
 
     @classmethod
@@ -237,9 +237,7 @@ class SupervisionSuccessMetric(SupervisionMetric, PersonLevelMetric):
 
 
 @attr.s
-class SuccessfulSupervisionSentenceDaysServedMetric(
-    SupervisionMetric, PersonLevelMetric
-):
+class SuccessfulSupervisionSentenceDaysServedMetric(SupervisionMetric):
     """Subclass of SupervisionMetric that contains the average number of days served for successful supervision
     sentences with projected completion dates in the month of the metric, where the person did not spend any time
     incarcerated in the duration of the sentence."""
@@ -265,7 +263,6 @@ class SuccessfulSupervisionSentenceDaysServedMetric(
 @attr.s
 class SupervisionTerminationMetric(
     SupervisionMetric,
-    PersonLevelMetric,
     ViolationHistoryMixin,
     InPopulationMixin,
     AssessmentMetricMixin,
@@ -300,7 +297,7 @@ class SupervisionTerminationMetric(
 
 
 @attr.s
-class SupervisionStartMetric(SupervisionMetric, PersonLevelMetric, InPopulationMixin):
+class SupervisionStartMetric(SupervisionMetric, InPopulationMixin):
     """Subclass of SupervisionMetric that contains information about the start of supervision."""
 
     @classmethod
@@ -388,7 +385,7 @@ class SupervisionCaseComplianceMetric(SupervisionPopulationMetric):
 
 
 @attr.s
-class SupervisionDowngradeMetric(SupervisionMetric, PersonLevelMetric):
+class SupervisionDowngradeMetric(SupervisionMetric):
     """
     Subclass of SupervisionMetric for people whose supervision level has been downgraded.
 
