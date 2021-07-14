@@ -85,6 +85,7 @@ const SendEmails = (): JSX.Element => {
   };
 
   const getBatches = async (sCode: string) => {
+    setBatchIdList(undefined);
     const r = await getBatchIds(sCode);
     const json = await r.json();
     setBatchIdList(json.batchIds);
@@ -109,12 +110,13 @@ const SendEmails = (): JSX.Element => {
               }}
             />
           </Form.Item>
-          <Form.Item
-            label="Batch ID"
-            name="batchId"
-            rules={[{ required: true }]}
-          >
-            {batchIdList ? (
+          {batchIdList ? (
+            <Form.Item
+              label="Batch ID"
+              name="batchId"
+              rules={[{ required: true }]}
+              initialValue={batchIdList[0]}
+            >
               <Select
                 placeholder="20210701130005"
                 defaultValue={batchIdList[0]}
@@ -125,8 +127,8 @@ const SendEmails = (): JSX.Element => {
                   </Select.Option>
                 ))}
               </Select>
-            ) : null}
-          </Form.Item>
+            </Form.Item>
+          ) : null}
           <Form.Item
             label="Redirect Address"
             name="redirectAddress"
@@ -167,7 +169,7 @@ const SendEmails = (): JSX.Element => {
           {showSpinner ? <Spin /> : null}
         </Form>
       </Card>
-      {formData?.state ? (
+      {formData?.state && formData?.batchId ? (
         <ActionRegionConfirmationForm
           visible={isConfirmationModalVisible}
           onConfirm={onEmailActionConfirmation}
