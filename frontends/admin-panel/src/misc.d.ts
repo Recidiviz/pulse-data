@@ -37,7 +37,7 @@ interface MetadataCount {
 // Ingest Metadata Freshness
 interface DataFreshnessResult {
   state: string;
-  datetime: string;
+  date: string;
   ingestPaused: boolean;
 }
 
