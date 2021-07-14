@@ -17,10 +17,16 @@
 import { WarningFilled } from "@ant-design/icons";
 import { Alert, Col, PageHeader, Row } from "antd";
 import * as React from "react";
+import { fetchEmailStateCodes } from "../AdminPanelAPI/LineStaffTools";
+import useFetchedData from "../hooks";
+import { StateCodeInfo } from "./IngestOperationsView/constants";
 import GenerateEmails from "./POEmails/GenerateEmails";
 import SendEmails from "./POEmails/SendEmails";
+import ListBatches from "./POEmails/ListBatches";
 
 const POEmailsView = (): JSX.Element => {
+  const { data } = useFetchedData<StateCodeInfo[]>(fetchEmailStateCodes);
+
   return (
     <>
       <PageHeader title="PO Emails" />
@@ -40,6 +46,17 @@ const POEmailsView = (): JSX.Element => {
         <Col span={12}>
           <SendEmails />
         </Col>
+      </Row>
+      <Row gutter={[16, 16]} justify="center">
+        {data
+          ?.sort((a, b) => a.name.localeCompare(b.name))
+          .map((state: StateCodeInfo) => {
+            return (
+              <Col key={state.code} span={7}>
+                <ListBatches stateInfo={state} />
+              </Col>
+            );
+          })}
       </Row>
     </>
   );

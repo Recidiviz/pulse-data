@@ -50,7 +50,7 @@ static_folder = os.path.abspath(
 )
 
 admin_panel = Blueprint("admin_panel", __name__, static_folder=static_folder)
-add_case_triage_routes(admin_panel)
+add_case_triage_routes(admin_panel, admin_stores)
 add_data_discovery_routes(admin_panel)
 add_ingest_ops_routes(admin_panel, admin_stores)
 
