@@ -61,6 +61,17 @@ days_on_supervision_level AS (
   WHERE
     end_date IS NULL
 ),
+latest_assessments AS (
+  SELECT
+    person_id,
+    state_code,
+    assessment_date AS most_recent_assessment_date,
+    assessment_score
+  FROM
+    `{project_id}.{analyst_views_dataset}.assessment_score_sessions_materialized`
+  WHERE
+    score_end_date IS NULL
+),
 latest_contacts AS (
   SELECT
     person_id,
@@ -121,7 +132,7 @@ LEFT JOIN
   `{project_id}.{case_triage_dataset}.last_known_date_of_employment_materialized`
 USING (person_external_id, state_code)
 LEFT JOIN
-  `{project_id}.{case_triage_dataset}.latest_assessments`
+  latest_assessments
 USING (person_id, state_code)
 LEFT JOIN
   latest_contacts
