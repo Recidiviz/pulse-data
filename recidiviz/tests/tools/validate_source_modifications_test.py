@@ -39,7 +39,6 @@ class CheckAssertionsTest(unittest.TestCase):
             os.path.relpath(ingest_info_pb2.__file__),
             os.path.relpath(ingest_info_pb2.__file__) + "i",
         ]
-
         self._run_test(modified_files, [], [])
 
     def test_ingest_info_unhappy(self) -> None:
