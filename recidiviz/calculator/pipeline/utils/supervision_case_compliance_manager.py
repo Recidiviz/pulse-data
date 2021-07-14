@@ -39,6 +39,9 @@ from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactStatus,
     StateSupervisionContactType,
 )
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+)
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StatePerson,
@@ -140,7 +143,7 @@ class StateSupervisionCaseComplianceManager:
             ),
             home_visit_count=home_visit_count,
             home_visit_frequency_sufficient=home_visit_frequency_sufficient,
-            eligible_for_supervision_downgrade=self._is_eligible_for_supervision_downgrade(
+            recommended_supervision_downgrade_level=self._get_recommended_supervision_downgrade_level(
                 compliance_evaluation_date
             ),
         )
@@ -332,9 +335,9 @@ class StateSupervisionCaseComplianceManager:
 
         return max(contact_dates)
 
-    def _is_eligible_for_supervision_downgrade(
+    def _get_recommended_supervision_downgrade_level(
         self, evaluation_date: date
-    ) -> Optional[bool]:
+    ) -> Optional[StateSupervisionLevel]:
         """Determines whether the person under evaluation was eligible for a downgrade
         on this date."""
         policy = self._get_supervision_level_policy(evaluation_date)
@@ -364,10 +367,10 @@ class StateSupervisionCaseComplianceManager:
         recommended_level = policy.recommended_supervision_level_for_person(
             self.person, last_score
         )
-        if not recommended_level:
+        if not recommended_level or recommended_level >= current_level:
             return None
 
-        return recommended_level < current_level
+        return recommended_level
 
     @abc.abstractmethod
     def _guidelines_applicable_for_case(self, evaluation_date: date) -> bool:

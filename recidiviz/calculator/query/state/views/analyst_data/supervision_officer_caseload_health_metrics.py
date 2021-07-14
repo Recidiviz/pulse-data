@@ -100,7 +100,7 @@ SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_QUERY_TEMPLATE = """
             COUNTIF(demographics.prioritized_race_or_ethnicity = 'BLACK')/COUNT(1) AS prop_black_caseload,
             COUNTIF(dataflow.correctional_level = 'MINIMUM')/COUNT(1) AS prop_low_risk_caseload,
             AVG(assessment.assessment_score) AS avg_risk_score,
-            COUNTIF(eligible_for_supervision_downgrade) AS supervision_level_mismatch_count
+            COUNTIF(recommended_supervision_downgrade_level) AS supervision_level_mismatch_count
     
         FROM officers_unnested officers
         LEFT JOIN `{project_id}.{analyst_dataset}.person_demographics_materialized` demographics

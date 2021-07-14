@@ -38,7 +38,11 @@ WITH overdue_downgrades AS (
     clients.supervising_officer_external_id,
     person_external_id,
     '{OpportunityType.OVERDUE_DOWNGRADE.value}' AS opportunity_type,
-    TO_JSON_STRING(STRUCT(assessment_score as assessmentScore, clients.most_recent_assessment_date AS latestAssessmentDate)) AS opportunity_metadata
+    TO_JSON_STRING(STRUCT(
+      assessment_score AS assessmentScore,
+      clients.most_recent_assessment_date AS latestAssessmentDate,
+      recommended_supervision_downgrade_level AS recommendedSupervisionLevel
+    )) AS opportunity_metadata
   FROM
     `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_case_compliance_metrics_materialized`
   INNER JOIN
@@ -46,7 +50,7 @@ WITH overdue_downgrades AS (
   USING (person_external_id, state_code)
   WHERE
     date_of_supervision = CURRENT_DATE
-    AND eligible_for_supervision_downgrade
+    AND recommended_supervision_downgrade_level IS NOT NULL
 ),
 earned_discharge_eligible AS (
   SELECT
