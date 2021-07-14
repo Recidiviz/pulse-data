@@ -2216,8 +2216,8 @@ class TestSupervisionDowngrades(unittest.TestCase):
             ],  # No downgrade regardless of score
             supervision_contacts=[],
         )
-        self.assertFalse(
-            us_id_supervision_compliance._is_eligible_for_supervision_downgrade(
+        self.assertIsNone(
+            us_id_supervision_compliance._get_recommended_supervision_downgrade_level(
                 evaluation_date
             )
         )
@@ -2240,8 +2240,8 @@ class TestSupervisionDowngrades(unittest.TestCase):
             assessments=[self._assessment_with_score(score)],
             supervision_contacts=[],
         )
-        self.assertFalse(
-            compliance_no_downgrade._is_eligible_for_supervision_downgrade(
+        self.assertIsNone(
+            compliance_no_downgrade._get_recommended_supervision_downgrade_level(
                 date(2019, 12, 31)
             )
         )
@@ -2254,11 +2254,13 @@ class TestSupervisionDowngrades(unittest.TestCase):
             assessments=[self._assessment_with_score(score - 1)],
             supervision_contacts=[],
         )
-        self.assertTrue(
-            compliance_downgrade._is_eligible_for_supervision_downgrade(
+        recommended_level = (
+            compliance_downgrade._get_recommended_supervision_downgrade_level(
                 date(2019, 12, 31)
             )
         )
+        assert recommended_level is not None
+        self.assertTrue(recommended_level < level)
 
     @parameterized.expand(
         [
@@ -2288,8 +2290,8 @@ class TestSupervisionDowngrades(unittest.TestCase):
             assessments=[self._assessment_with_score(score)],
             supervision_contacts=[],
         )
-        self.assertFalse(
-            compliance_no_downgrade._is_eligible_for_supervision_downgrade(
+        self.assertIsNone(
+            compliance_no_downgrade._get_recommended_supervision_downgrade_level(
                 date(2020, 12, 31)
             )
         )
@@ -2302,8 +2304,10 @@ class TestSupervisionDowngrades(unittest.TestCase):
             assessments=[self._assessment_with_score(score - 1)],
             supervision_contacts=[],
         )
-        self.assertTrue(
-            compliance_downgrade._is_eligible_for_supervision_downgrade(
+        recommended_level = (
+            compliance_downgrade._get_recommended_supervision_downgrade_level(
                 date(2020, 12, 31)
             )
         )
+        assert recommended_level is not None
+        self.assertTrue(recommended_level < level)

@@ -248,10 +248,12 @@ class NonRevocationReturnSupervisionTimeBucket(
         return self.case_compliance.home_visit_frequency_sufficient
 
     @property
-    def eligible_for_supervision_downgrade(self) -> Optional[bool]:
+    def recommended_supervision_downgrade_level(
+        self,
+    ) -> Optional[StateSupervisionLevel]:
         if not self.case_compliance:
             return None
-        return self.case_compliance.eligible_for_supervision_downgrade
+        return self.case_compliance.recommended_supervision_downgrade_level
 
 
 @attr.s(frozen=True)
