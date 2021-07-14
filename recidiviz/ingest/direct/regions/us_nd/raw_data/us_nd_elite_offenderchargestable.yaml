@@ -3,6 +3,12 @@ file_description: |-
   Each row represents a different offense that a person was charged with prior to being sentenced under DOCR jurisdiction.
   This includes metadata about the charge as well as some a reference to the court order under which the charge was tried
   and sentenced.
+
+  Note that sometimes ND will update the `ORDER_ID` associated with an `(OFFENDER_BOOK_ID, CHARGE_SEQ)` pair. We currently
+  do not support this and it will cause an invariant violation when the entity matching process will create a duplicate
+  state charge object. ND says this should happen rarely, so we use a raw data migration to remove the offending rows.
+  See https://github.com/Recidiviz/pulse-data/pull/8230 and https://github.com/Recidiviz/pulse-data/issues/5313
+  for additional details.
 primary_key_cols:
   - OFFENDER_BOOK_ID
   - CHARGE_SEQ
