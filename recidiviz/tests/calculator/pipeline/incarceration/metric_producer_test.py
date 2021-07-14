@@ -21,6 +21,7 @@ from collections import defaultdict
 from datetime import date
 from typing import Dict, List, Type
 
+import mock
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.incarceration import metric_producer, pipeline
@@ -33,6 +34,7 @@ from recidiviz.calculator.pipeline.incarceration.events import (
     IncarcerationStayEvent,
 )
 from recidiviz.calculator.pipeline.incarceration.metrics import (
+    IncarcerationCommitmentFromSupervisionMetric,
     IncarcerationMetric,
     IncarcerationMetricType,
     IncarcerationPopulationMetric,
@@ -55,6 +57,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonEthnicity,
+    StatePersonExternalId,
     StatePersonRace,
 )
 
@@ -901,6 +904,91 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             for metric in metrics
             if metric.person_id is not None
         )
+
+    @mock.patch(
+        "recidiviz.calculator.pipeline.utils.calculator_utils"
+        ".PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE",
+        {
+            "incarceration": {
+                "US_XX": "US_XX_DOC",
+                "US_YY": "US_YY_DOC",
+            },
+            "other_pipeline": {
+                "US_XX": "US_XX_SID",
+                "US_YY": "US_YY_SID",
+            },
+        },
+    )
+    @mock.patch(
+        "recidiviz.calculator.pipeline.utils.calculator_utils"
+        ".SECONDARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE",
+        {
+            "incarceration": {
+                "US_XX": "US_XX_SID",
+                "US_YY": "US_YY_SID",
+            },
+            "other_pipeline": {
+                "US_XX": "US_XX_DOC",
+                "US_YY": "US_YY_DOC",
+            },
+        },
+    )
+    def test_produce_incarceration_metrics_secondary_person_external_id(self):
+        person = StatePerson.new_with_defaults(
+            state_code="US_XX",
+            person_id=12345,
+            birthdate=date(1984, 8, 31),
+            gender=Gender.FEMALE,
+            races=[
+                StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
+            ],
+            ethnicities=[
+                StatePersonEthnicity.new_with_defaults(
+                    state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
+                )
+            ],
+            external_ids=[
+                StatePersonExternalId.new_with_defaults(
+                    external_id="DOC1341", id_type="US_XX_DOC", state_code="US_XX"
+                ),
+                StatePersonExternalId.new_with_defaults(
+                    external_id="SID9889", id_type="US_XX_SID", state_code="US_XX"
+                ),
+            ],
+        )
+
+        incarceration_events = [
+            IncarcerationCommitmentFromSupervisionAdmissionEvent(
+                state_code="US_XX",
+                event_date=date(2000, 3, 12),
+                facility="FACILITY X",
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=AdmissionReason.PAROLE_REVOCATION,
+                admission_reason_raw_text="PAROLE_REVOCATION",
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            ),
+        ]
+
+        metrics = self.metric_producer.produce_metrics(
+            person=person,
+            identifier_events=incarceration_events,
+            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month=None,
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=PIPELINE_JOB_ID,
+            pipeline_type=self.pipeline_config.pipeline_type,
+        )
+
+        expected_count = self.expected_metrics_count(incarceration_events)
+
+        self.assertEqual(expected_count, len(metrics))
+        for metric in metrics:
+            self.assertEqual("DOC1341", metric.person_external_id)
+
+            if isinstance(metric, IncarcerationCommitmentFromSupervisionMetric):
+                self.assertEqual("SID9889", metric.secondary_person_external_id)
 
     def expected_metrics_count(
         self, incarceration_events: List[IncarcerationEvent]

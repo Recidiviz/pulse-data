@@ -46,19 +46,30 @@ from recidiviz.common.date import (
 )
 from recidiviz.persistence.entity.state.entities import StatePerson
 
-PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
+PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
     "incarceration": {
         "US_ID": US_ID_DOC,
         "US_MO": US_MO_DOC,
+        "US_ND": US_ND_ELITE,
         "US_PA": US_PA_CONTROL,
     },
     "recidivism": {"US_ND": US_ND_ELITE},
     "supervision": {
         "US_ID": US_ID_DOC,
         "US_MO": US_MO_DOC,
-        "US_PA": US_PA_PBPP,
         "US_ND": US_ND_SID,
+        "US_PA": US_PA_PBPP,
     },
+}
+
+# For certain metrics we may record multiple kinds of external IDs for a person
+SECONDARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
+    "incarceration": {
+        "US_ID": US_ID_DOC,
+        "US_MO": US_MO_DOC,
+        "US_ND": US_ND_SID,
+        "US_PA": US_PA_PBPP,
+    }
 }
 
 
@@ -68,9 +79,10 @@ def person_characteristics(
     person_metadata: PersonMetadata,
     pipeline: str,
 ) -> Dict[str, Any]:
-    """Adds the person's demographic characteristics to the given |characteristics| dictionary. For the 'age_bucket'
-    field, calculates the person's age on the |event_date|. Adds the person's person_id and, if applicable, a
-    person_external_id.
+    """Adds the person's demographic characteristics to the given |characteristics|
+    dictionary. For the 'age_bucket' field, calculates the person's age on the
+    |event_date|. Adds the person's person_id and, if applicable,
+    a person_external_id and potentially a secondary person_external_id.
     """
     characteristics: Dict[str, Any] = {}
 
@@ -87,12 +99,19 @@ def person_characteristics(
 
     characteristics["person_id"] = person.person_id
 
-    person_external_id = person_external_id_to_include(
-        pipeline, person.state_code, person
+    primary_person_external_id = person_external_id_to_include(
+        pipeline, person.state_code, person, secondary=False
     )
 
-    if person_external_id is not None:
-        characteristics["person_external_id"] = person_external_id
+    if primary_person_external_id is not None:
+        characteristics["person_external_id"] = primary_person_external_id
+
+    secondary_person_external_id = person_external_id_to_include(
+        pipeline, person.state_code, person, secondary=True
+    )
+
+    if secondary_person_external_id is not None:
+        characteristics["secondary_person_external_id"] = secondary_person_external_id
 
     return characteristics
 
@@ -144,16 +163,25 @@ def age_bucket(age: Optional[int]) -> Optional[str]:
 
 
 def person_external_id_to_include(
-    pipeline: str, state_code: str, person: StatePerson
+    pipeline: str, state_code: str, person: StatePerson, secondary: bool = False
 ) -> Optional[str]:
-    """Finds an external_id on the person that should be included in calculations for person-level metrics in the
-    given pipeline."""
+    """Finds an external_id on the person that should be included in calculations for
+    person-level metrics in the given pipeline.
+
+    If |secondary| is True, finds an external_id of a type that is listed as a
+    "secondary" type to be included for metrics of the given pipeline. Else, finds an
+    external_id of the "primary" type.
+    """
     external_ids = person.external_ids
 
     if not external_ids:
         return None
 
-    id_types_to_include_for_pipeline = PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE.get(pipeline)
+    id_types_to_include_for_pipeline = (
+        SECONDARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE.get(pipeline)
+        if secondary
+        else PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE.get(pipeline)
+    )
 
     if (
         not id_types_to_include_for_pipeline
@@ -332,7 +360,10 @@ def build_metric(
     metric_attributes = attr.fields_dict(metric_class).keys()
 
     person_attributes = person_characteristics(
-        person, event_date, person_metadata, pipeline
+        person,
+        event_date,
+        person_metadata,
+        pipeline,
     )
 
     metric_cls_builder = metric_class.builder()
@@ -347,10 +378,9 @@ def build_metric(
     if "month" in metric_attributes:
         setattr(metric_cls_builder, "month", event_date.month)
 
-    # Add relevant demographic and person-level dimensions
+    # Add all demographic and person-level dimensions
     for attribute, value in person_attributes.items():
-        if attribute in metric_attributes:
-            setattr(metric_cls_builder, attribute, value)
+        setattr(metric_cls_builder, attribute, value)
 
     # Add attributes from the event that are relevant to the metric_class
     for metric_attribute in metric_attributes:

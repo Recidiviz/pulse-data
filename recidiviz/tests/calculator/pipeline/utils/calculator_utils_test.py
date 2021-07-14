@@ -18,6 +18,7 @@
 import unittest
 from datetime import date, datetime
 
+import mock
 import pytest
 
 from recidiviz.calculator.pipeline.utils import calculator_utils
@@ -264,9 +265,23 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         self.assertEqual(updated_characteristics, expected_output)
 
+    @mock.patch(
+        "recidiviz.calculator.pipeline.utils.calculator_utils"
+        ".PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE",
+        {
+            "test_pipeline": {
+                "US_XX": "US_XX_DOC",
+                "US_YY": "US_YY_DOC",
+            },
+            "other_pipeline": {
+                "US_XX": "US_XX_SID",
+                "US_YY": "US_YY_SID",
+            },
+        },
+    )
     def test_add_person_characteristics_IncludeExternalId(self):
         person = StatePerson.new_with_defaults(
-            state_code="US_MO",
+            state_code="US_XX",
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
@@ -282,8 +297,11 @@ class TestAddPersonCharacteristics(unittest.TestCase):
             ],
             external_ids=[
                 StatePersonExternalId.new_with_defaults(
-                    external_id="SID1341", id_type="US_MO_DOC", state_code="US_MO"
-                )
+                    external_id="DOC1341", id_type="US_XX_DOC", state_code="US_XX"
+                ),
+                StatePersonExternalId.new_with_defaults(
+                    external_id="SID9889", id_type="US_XX_SID", state_code="US_XX"
+                ),
             ],
         )
 
@@ -292,14 +310,89 @@ class TestAddPersonCharacteristics(unittest.TestCase):
         person_metadata = PersonMetadata()
 
         updated_characteristics = person_characteristics(
-            person, event_date, person_metadata, "supervision"
+            person, event_date, person_metadata, "test_pipeline"
         )
 
         expected_output = {
             "age_bucket": "25-29",
             "gender": Gender.FEMALE,
             "person_id": person.person_id,
-            "person_external_id": "SID1341",
+            "person_external_id": "DOC1341",
+        }
+
+        self.assertEqual(updated_characteristics, expected_output)
+
+    @mock.patch(
+        "recidiviz.calculator.pipeline.utils.calculator_utils"
+        ".PRIMARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE",
+        {
+            "test_pipeline": {
+                "US_XX": "US_XX_DOC",
+                "US_YY": "US_YY_DOC",
+            },
+            "other_pipeline": {
+                "US_XX": "US_XX_SID",
+                "US_YY": "US_YY_SID",
+            },
+        },
+    )
+    @mock.patch(
+        "recidiviz.calculator.pipeline.utils.calculator_utils"
+        ".SECONDARY_PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE",
+        {
+            "test_pipeline": {
+                "US_XX": "US_XX_SID",
+                "US_YY": "US_YY_SID",
+            },
+            "other_pipeline": {
+                "US_XX": "US_XX_DOC",
+                "US_YY": "US_YY_DOC",
+            },
+        },
+    )
+    def test_add_person_characteristics_IncludeSecondaryExternalId(self):
+        person = StatePerson.new_with_defaults(
+            state_code="US_XX",
+            person_id=12345,
+            birthdate=date(1984, 8, 31),
+            gender=Gender.FEMALE,
+            races=[
+                StatePersonRace.new_with_defaults(
+                    state_code="US_XX",
+                )
+            ],
+            ethnicities=[
+                StatePersonEthnicity.new_with_defaults(
+                    state_code="US_XX",
+                )
+            ],
+            external_ids=[
+                StatePersonExternalId.new_with_defaults(
+                    external_id="DOC1341", id_type="US_XX_DOC", state_code="US_XX"
+                ),
+                StatePersonExternalId.new_with_defaults(
+                    external_id="SID9889", id_type="US_XX_SID", state_code="US_XX"
+                ),
+            ],
+        )
+
+        event_date = date(2010, 9, 1)
+
+        person_metadata = PersonMetadata()
+
+        updated_characteristics = person_characteristics(
+            person,
+            event_date,
+            person_metadata,
+            "test_pipeline",
+        )
+
+        expected_output = {
+            "age_bucket": "25-29",
+            "gender": Gender.FEMALE,
+            "person_id": person.person_id,
+            "person_external_id": "DOC1341",
+            "secondary_person_external_id": "SID9889",
         }
 
         self.assertEqual(updated_characteristics, expected_output)
