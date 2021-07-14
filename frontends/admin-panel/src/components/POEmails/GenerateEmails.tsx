@@ -25,6 +25,7 @@ import { StateCodeInfo } from "../IngestOperationsView/constants";
 import ActionRegionConfirmationForm from "../Utilities/ActionRegionConfirmationForm";
 import { layout, tailLayout } from "./constants";
 import StateSelector from "../Utilities/StateSelector";
+import DataFreshnessInfo from "../Utilities/DataFreshnessInfo";
 
 interface GenerateFormData {
   state: string;
@@ -44,6 +45,8 @@ const GenerateEmails = (): JSX.Element => {
   const [showSpinner, setShowSpinner] = React.useState(false);
   const [isConfirmationModalVisible, setIsConfirmationModalVisible] =
     React.useState(false);
+  const [stateCode, setStateCode] =
+    React.useState<string | undefined>(undefined);
 
   const { loading, data } =
     useFetchedData<StateCodeInfo[]>(fetchEmailStateCodes);
@@ -97,8 +100,13 @@ const GenerateEmails = (): JSX.Element => {
           }}
         >
           <Form.Item label="State" name="state" rules={[{ required: true }]}>
-            <StateSelector loading={loading} data={data} />
+            <StateSelector
+              loading={loading}
+              data={data}
+              onChange={(state) => setStateCode(state)}
+            />
           </Form.Item>
+          {stateCode && <DataFreshnessInfo state={stateCode} />}
           <Form.Item
             label="Test Address"
             name="testAddress"
