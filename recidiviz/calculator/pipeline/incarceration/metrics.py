@@ -30,6 +30,7 @@ from recidiviz.calculator.pipeline.utils.metric_utils import (
     PersonLevelMetric,
     RecidivizMetric,
     RecidivizMetricType,
+    SecondaryPersonExternalIdMetric,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -58,7 +59,11 @@ class IncarcerationMetricType(RecidivizMetricType):
 
 
 @attr.s
-class IncarcerationMetric(RecidivizMetric[IncarcerationMetricType], PersonLevelMetric):
+class IncarcerationMetric(
+    RecidivizMetric[IncarcerationMetricType],
+    PersonLevelMetric,
+    SecondaryPersonExternalIdMetric,
+):
     """Models a single incarceration metric.
 
     Contains all of the identifying characteristics of the metric, including required characteristics for normalization
