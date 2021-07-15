@@ -47,6 +47,8 @@ from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_gcp
 
+GCS_IMPORT_EXPORT_TIMEOUT_SEC = 60 * 30  # 30 min
+
 
 def _get_state_code_from_str(state_code_str: str) -> StateCode:
     if not StateCode.is_state_code(state_code_str):
@@ -158,7 +160,7 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
             )
 
         operation_succeeded = cloud_sql_client.wait_until_operation_completed(
-            operation_id, seconds_to_wait=60
+            operation_id, seconds_to_wait=GCS_IMPORT_EXPORT_TIMEOUT_SEC
         )
         if not operation_succeeded:
             return (
@@ -213,7 +215,7 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
             )
 
         operation_succeeded = cloud_sql_client.wait_until_operation_completed(
-            operation_id, seconds_to_wait=60
+            operation_id, seconds_to_wait=GCS_IMPORT_EXPORT_TIMEOUT_SEC
         )
         if not operation_succeeded:
             return (
