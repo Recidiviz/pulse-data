@@ -29,6 +29,7 @@ python -m recidiviz.tools.migrations.purge_state_db \
     --database-version secondary \
     --project-id recidiviz-staging \
     --ssl-cert-path ~/dev_state_data_certs
+    [--purge-schema]
 """
 import argparse
 import logging
@@ -83,6 +84,12 @@ def create_parser() -> argparse.ArgumentParser:
         help="The path to the folder where the certs live.",
         required=True,
     )
+    parser.add_argument(
+        "--purge-schema",
+        action="store_true",
+        help="When set, runs the downgrade migrations.",
+        default=False,
+    )
     return parser
 
 
@@ -90,6 +97,7 @@ def main(
     state_code: StateCode,
     database_version: SQLAlchemyStateDatabaseVersion,
     ssl_cert_path: str,
+    purge_schema: bool,
 ) -> None:
     """
     Invokes the main code path for running a downgrade.
@@ -115,28 +123,57 @@ def main(
         else "PURGE DATABASE STATE IN PROD"
     )
     prompt_for_confirmation(
-        f"This script will run all DOWNGRADE migrations for {state_code=} and {database_version=}.",
+        f"This script will PURGE all data for for [{state_code.value}] in DB [{database_version.value}].",
         purge_str,
     )
+    if purge_schema:
+        purge_schema_str = (
+            "RUN DOWNGRADE MIGRATIONS IN STAGING"
+            if metadata.project_id() == GCP_PROJECT_STAGING
+            else "RUN DOWNGRADE MIGRATIONS IN PROD"
+        )
+        prompt_for_confirmation(
+            f"This script will run all DOWNGRADE migrations for "
+            f"[{state_code.value}] in DB [{database_version.value}].",
+            purge_schema_str,
+        )
 
     db_key = SQLAlchemyDatabaseKey.for_state_code(state_code, database_version)
 
-    # Run downgrade
     with SessionFactory.for_prod_data_client(db_key, ssl_cert_path) as session:
-        try:
-            overriden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
-                database_key=db_key,
-                ssl_cert_path=ssl_cert_path,
-                migration_user=True,
-            )
-            config = alembic.config.Config(db_key.alembic_file)
-            alembic.command.downgrade(config, "base")
+        truncate_commands = [
+            "TRUNCATE TABLE state_person CASCADE;",
+            "TRUNCATE TABLE state_agent CASCADE;",
+        ]
+        for command in truncate_commands:
+            logging.info('Running query ["%s"]. This may take a while...', command)
+            session.execute(command)
 
-            # We need to manually delete alembic_version because it's leftover after
-            # the downgrade migrations
-            session.execute("DROP TABLE alembic_version;")
-        finally:
-            local_postgres_helpers.restore_local_env_vars(overriden_env_vars)
+        logging.info("Done running truncate commands.")
+
+    if purge_schema:
+        with SessionFactory.for_prod_data_client(
+            db_key, ssl_cert_path
+        ) as purge_session:
+            overriden_env_vars = None
+            try:
+                logging.info("Purging schema...")
+                overriden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
+                    database_key=db_key,
+                    ssl_cert_path=ssl_cert_path,
+                    migration_user=True,
+                )
+                config = alembic.config.Config(db_key.alembic_file)
+                alembic.command.downgrade(config, "base")
+
+                # We need to manually delete alembic_version because it's leftover after
+                # the downgrade migrations
+                purge_session.execute("DROP TABLE alembic_version;")
+            finally:
+                if overriden_env_vars:
+                    local_postgres_helpers.restore_local_env_vars(overriden_env_vars)
+
+        logging.info("Purge complete.")
 
 
 if __name__ == "__main__":
@@ -144,4 +181,9 @@ if __name__ == "__main__":
 
     args = create_parser().parse_args()
     with local_project_id_override(args.project_id):
-        main(args.state_code, args.database_version, args.ssl_cert_path)
+        main(
+            args.state_code,
+            args.database_version,
+            args.ssl_cert_path,
+            args.purge_schema,
+        )

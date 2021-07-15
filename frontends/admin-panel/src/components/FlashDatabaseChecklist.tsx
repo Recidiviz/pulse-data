@@ -205,7 +205,8 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   {"    "}--database-version primary \<br />
                   {"    "}--project-id {projectId} \<br />
                   {"    "}--ssl-cert-path ~/{isProduction ? "prod" : "dev"}
-                  _state_data_certs
+                  _state_data_certs \<br />
+                  {"    "}--purge-schema
                 </CodeBlock>
               </p>
             </>
