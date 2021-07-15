@@ -16,6 +16,7 @@
 // =============================================================================
 
 import moment from "moment";
+import { rem, remToPx } from "polished";
 import { useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
 
@@ -60,4 +61,13 @@ export function getTimeDifference(date: moment.Moment): string {
 
 export function useUuid(): string {
   return useMemo(() => uuidv4(), []);
+}
+
+/**
+ * Scales a raw value (assumed to represent pixels) by the browser's current rem size.
+ * Useful when you need a pixel value but want to respect the user's change to base font size
+ * (which most UI elements will scale in response to).
+ */
+export function remScaledPixels(val: number): string {
+  return remToPx(rem(val));
 }
