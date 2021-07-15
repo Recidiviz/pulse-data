@@ -68,6 +68,7 @@ from recidiviz.tools.gsutil_shell_helpers import (
     gsutil_ls,
     gsutil_mv,
 )
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
 # pylint: disable=not-callable
@@ -397,14 +398,15 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-    MoveFilesFromStorageController(
-        project_id=args.project_id,
-        region=args.region,
-        start_date_bound=args.start_date_bound,
-        end_date_bound=args.end_date_bound,
-        dry_run=args.dry_run,
-        file_filter=args.file_filter,
-    ).run_move()
+    with local_project_id_override(args.project_id):
+        MoveFilesFromStorageController(
+            project_id=args.project_id,
+            region=args.region,
+            start_date_bound=args.start_date_bound,
+            end_date_bound=args.end_date_bound,
+            dry_run=args.dry_run,
+            file_filter=args.file_filter,
+        ).run_move()
 
 
 if __name__ == "__main__":
