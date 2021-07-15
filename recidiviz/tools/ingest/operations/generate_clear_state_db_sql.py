@@ -52,12 +52,16 @@ ASSOCIATION_TABLE_DELETION_FILTER_CLAUSE_TEMPLATE = (
 SQLALCHEMY_STATE_CODE_VAR = ":state_code_1"
 
 
-def _format_deletion_command(state_code: str, command: str) -> str:
-    return str(command).replace(SQLALCHEMY_STATE_CODE_VAR, f"'{state_code}'") + ";"
+def _format_deletion_command(state_code: StateCode, command: str) -> str:
+    return (
+        str(command).replace(SQLALCHEMY_STATE_CODE_VAR, f"'{state_code.value}'") + ";"
+    )
 
 
 def _commands_for_table(
-    state_code: str, table: sqlalchemy.Table, db_version: SQLAlchemyStateDatabaseVersion
+    state_code: StateCode,
+    table: sqlalchemy.Table,
+    db_version: SQLAlchemyStateDatabaseVersion,
 ) -> List[str]:
     """Returns a list of commands that should be run to fully delete data out of the
     given table.
@@ -106,7 +110,8 @@ def _commands_for_table(
 
 
 def generate_region_deletion_commands(
-    state_code: str, db_version: SQLAlchemyStateDatabaseVersion
+    state_code: StateCode,
+    db_version: SQLAlchemyStateDatabaseVersion,
 ) -> List[str]:
     commands = []
 
@@ -133,7 +138,7 @@ def main(state_code: StateCode, ingest_instance: DirectIngestInstance) -> None:
     print(f"\\c {db_key.db_name}")
 
     # Then run deletion commands
-    for cmd in generate_region_deletion_commands(state_code.value, db_version):
+    for cmd in generate_region_deletion_commands(state_code, db_version):
         print(cmd)
 
     print(
