@@ -26,7 +26,7 @@ import {
 import NeedsEmployment from "./NeedsEmployment";
 import NeedsFaceToFaceContact from "./NeedsFaceToFaceContact";
 import NeedsRiskAssessment from "./NeedsRiskAssessment";
-import { titleCase } from "../../utils";
+import { remScaledPixels, titleCase } from "../../utils";
 import { useRootStore } from "../../stores";
 import NotInCaseload from "./NotInCaseload";
 import {
@@ -55,7 +55,7 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }) => {
           <ClientName>{client.name}</ClientName>
           <NotInCaseloadDropdown client={client} />
           <CloseButton onClick={() => clientsStore.setShowClientCard(false)}>
-            <Icon kind={IconSVG.Close} />
+            <Icon kind={IconSVG.Close} size={remScaledPixels(14)} />
           </CloseButton>
         </ClientNameRow>
         <Caption>

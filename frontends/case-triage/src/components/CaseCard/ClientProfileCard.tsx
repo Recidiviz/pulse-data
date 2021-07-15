@@ -26,7 +26,7 @@ import { observer } from "mobx-react-lite";
 import moment from "moment";
 import React from "react";
 import { useRootStore } from "../../stores";
-import { titleCase } from "../../utils";
+import { remScaledPixels, titleCase } from "../../utils";
 import TEST_IDS from "../TestIDs";
 import { Caption, CloseButton } from "./CaseCard.styles";
 import { CaseCardProps } from "./CaseCard.types";
@@ -152,7 +152,7 @@ const ClientProfileCard: React.FC<CaseCardProps> = observer(({ client }) => {
         <NotInCaseloadDropdown client={client} />
 
         <CloseButton onClick={() => clientsStore.view()}>
-          <Icon kind={IconSVG.Close} />
+          <Icon kind={IconSVG.Close} size={remScaledPixels(14)} />
         </CloseButton>
 
         <ClientInfo>

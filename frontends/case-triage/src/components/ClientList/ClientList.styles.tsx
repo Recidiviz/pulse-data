@@ -193,6 +193,9 @@ export const StatusCardSection = styled(BaseCardSection)`
 `;
 
 export const StatusList = styled(TruncatedList)`
+  /* items are truncated from the right edge; create a little buffer 
+  to make sure they don't overflow by accident */
+  padding-right: 1px;
   text-align: right;
 
   li {
@@ -223,7 +226,10 @@ export const SortControlWrapper = styled(ControlWrapper)`
 
 const ControlToggle = styled(DropdownToggle).attrs({
   showCaret: true,
-})``;
+})`
+  font-size: ${rem(13)};
+  min-height: ${rem(32)};
+`;
 
 const FILTER_CONTROL_WIDTH = 160;
 export const FilterControlToggle = styled(ControlToggle)`
@@ -236,6 +242,8 @@ export const FilterControlMenu = styled(ToggleMenu)`
 
 const SORT_CONTROL_WIDTH = 280;
 export const SortControlToggle = styled(ControlToggle).attrs({ shape: "pill" })`
+  border-radius: ${rem(16)};
+  padding: ${rem(spacing.xs)} ${rem(spacing.md)};
   width: ${rem(SORT_CONTROL_WIDTH)};
 `;
 export const SortControlMenu = styled(DropdownMenu)`
@@ -244,7 +252,7 @@ export const SortControlMenu = styled(DropdownMenu)`
 
 export const ControlLabel = styled.div`
   color: ${palette.slate60};
-  font-size: ${rem(14)};
+  font-size: ${rem(13)};
   font-weight: 500;
   margin-bottom: ${rem(spacing.sm)};
 `;
