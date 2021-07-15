@@ -123,8 +123,8 @@ class MoveFilesToDeprecatedController:
         if self.file_type == GcsfsDirectIngestFileType.RAW_DATA:
             i = input(
                 "You have chosen to deprecate RAW_DATA type files. It is relatively "
-                "that this should happen - generally only if we have received bad data "
-                "from the state. \n Are you sure you want to proceed? [y/n]: "
+                "rare that this should happen - generally only if we have received bad "
+                "data from the state. \n Are you sure you want to proceed? [y/n]: "
             )
 
             if i.upper() != "Y":
