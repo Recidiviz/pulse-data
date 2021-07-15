@@ -294,12 +294,15 @@ function post_deploy_triggers {
         # Note: using exit_on_fail instead of run_cmd since the quoted string doesn't translate well when passed to run_cmd
         gcloud pubsub topics publish v1.calculator.us_id_historical_incarceration --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
         gcloud pubsub topics publish v1.calculator.us_id_historical_supervision --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
+        gcloud pubsub topics publish v1.calculator.us_id_historical_violation --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
         gcloud pubsub topics publish v1.calculator.us_mo_historical_incarceration --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
         gcloud pubsub topics publish v1.calculator.us_mo_historical_supervision --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
+        gcloud pubsub topics publish v1.calculator.us_mo_historical_violation --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
         gcloud pubsub topics publish v1.calculator.us_nd_historical_incarceration --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
         gcloud pubsub topics publish v1.calculator.us_nd_historical_supervision --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
         gcloud pubsub topics publish v1.calculator.us_pa_historical_incarceration --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
         gcloud pubsub topics publish v1.calculator.us_pa_historical_supervision --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
+        gcloud pubsub topics publish v1.calculator.us_pa_historical_violation --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
     else
         echo "Skipping historical calculation pipeline trigger - no relevant code changes"
     fi
