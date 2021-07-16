@@ -315,11 +315,9 @@ class SupervisionPipeline(BasePipeline):
             "supervision_period_to_agent_association": supervision_period_to_agent_associations_as_kv,
         } | "Group StatePerson to all entities" >> beam.CoGroupByKey()
 
-        # Identify SupervisionTimeBuckets from the StatePerson's StateSupervisionSentences and StateIncarcerationPeriods
-        person_time_buckets = (
-            person_entities
-            | "Get SupervisionTimeBuckets"
-            >> beam.ParDo(ClassifyEvents(), identifier=self.pipeline_config.identifier)
+        # Identify SupervisionEvents from the StatePerson's StateSupervisionSentences and StateIncarcerationPeriods
+        person_events = person_entities | "Get SupervisionEvents" >> beam.ParDo(
+            ClassifyEvents(), identifier=self.pipeline_config.identifier
         )
 
         person_metadata = (
@@ -333,11 +331,11 @@ class SupervisionPipeline(BasePipeline):
             )
         )
 
-        person_time_buckets_with_metadata = (
-            {"person_events": person_time_buckets, "person_metadata": person_metadata}
-            | "Group SupervisionTimeBuckets with person-level metadata"
+        person_events_with_metadata = (
+            {"person_events": person_events, "person_metadata": person_metadata}
+            | "Group SupervisionEvents with person-level metadata"
             >> beam.CoGroupByKey()
-            | "Organize StatePerson, PersonMetadata and SupervisionTimeBuckets for calculations"
+            | "Organize StatePerson, PersonMetadata and SupervisionEvents for calculations"
             >> beam.ParDo(ExtractPersonEventsMetadata())
         )
 
@@ -350,7 +348,7 @@ class SupervisionPipeline(BasePipeline):
 
         # Get supervision metrics
         supervision_metrics = (
-            person_time_buckets_with_metadata
+            person_events_with_metadata
             | "Get Supervision Metrics"
             >> GetMetrics(
                 pipeline_options=all_pipeline_options,
