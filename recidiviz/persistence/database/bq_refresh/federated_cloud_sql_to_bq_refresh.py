@@ -32,6 +32,9 @@ from recidiviz.big_query.view_update_manager import (
     create_managed_dataset_and_deploy_views_for_view_builders,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
@@ -56,12 +59,21 @@ from recidiviz.view_registry.dataset_overrides import (
 
 def federated_bq_schema_refresh(
     schema_type: SchemaType,
+    direct_ingest_instance: Optional[DirectIngestInstance] = None,
     dataset_override_prefix: Optional[str] = None,
 ) -> None:
     """Performs a full refresh of BigQuery data for a given schema, pulling data from
     the appropriate CloudSQL Postgres instance.
     """
-    config = CloudSqlToBQConfig.for_schema_type(schema_type)
+    if (
+        direct_ingest_instance == DirectIngestInstance.SECONDARY
+        and not dataset_override_prefix
+    ):
+        raise ValueError(
+            "Federated refresh can only proceed for secondary databases into a sandbox."
+        )
+
+    config = CloudSqlToBQConfig.for_schema_type(schema_type, direct_ingest_instance)
     # Query CloudSQL and export data into datasets with regions that match the instance
     # region (e.g. us-east1)
     _federated_bq_regional_dataset_refresh(config, dataset_override_prefix)

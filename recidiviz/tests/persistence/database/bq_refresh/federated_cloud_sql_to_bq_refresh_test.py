@@ -32,6 +32,9 @@ from recidiviz.big_query.view_update_manager import (
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants import states
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.persistence.database.base_schema import JailsBase, StateBase
 from recidiviz.persistence.database.bq_refresh import (
     federated_cloud_sql_table_big_query_view_collector,
@@ -350,3 +353,9 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
                 ),
             ]
         )
+
+    def test_secondary_without_prefix_raises(self) -> None:
+        with self.assertRaises(ValueError):
+            federated_bq_schema_refresh(
+                SchemaType.STATE, direct_ingest_instance=DirectIngestInstance.SECONDARY
+            )
