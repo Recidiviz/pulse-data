@@ -14,8 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import UserStore, { FeatureVariants } from "./UserStore";
+import * as Sentry from "@sentry/react";
 import { identify } from "../analytics";
+import UserStore, { FeatureVariants } from "./UserStore";
 
 interface APIProps {
   userStore: UserStore;
@@ -79,51 +80,58 @@ class API {
   }
 
   async request<T>({ path, method, body }: RequestProps): Promise<T> {
-    // Defer all requests until the API client has bootstrapped itself
-    if (!this.bootstrapped && path !== BOOTSTRAP_ROUTE) {
-      await this.bootstrap();
+    try {
+      // Defer all requests until the API client has bootstrapped itself
+      if (!this.bootstrapped && path !== BOOTSTRAP_ROUTE) {
+        await this.bootstrap();
+      }
+
+      if (!this.userStore.getTokenSilently) {
+        return Promise.reject();
+      }
+
+      const token = await this.userStore.getTokenSilently({
+        audience: "https://case-triage.recidiviz.org/api",
+        scope: "email",
+      });
+
+      const response = await fetch(path, {
+        body: method !== "GET" ? JSON.stringify(body) : null,
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "X-CSRF-Token": this.csrfToken,
+        },
+      });
+
+      const reportedVersion = response.headers.get(
+        "X-Recidiviz-Current-Version"
+      );
+      if (reportedVersion !== null) {
+        this.userStore.recordVersion(reportedVersion, method !== "GET");
+      }
+
+      const json = await response.json();
+
+      if (response.status === 401 && json.code === "no_app_access") {
+        this.userStore.setLacksCaseTriageAuthorization(true);
+      }
+
+      if (response.status === 400 && json.code === "invalid_csrf_token") {
+        this.bootstrapped = false;
+        return this.request<T>({ path, method, body });
+      }
+
+      if (isErrorResponse(json)) {
+        throw json;
+      }
+
+      return json;
+    } catch (err) {
+      Sentry.captureException(err);
+      throw err;
     }
-
-    if (!this.userStore.getTokenSilently) {
-      return Promise.reject();
-    }
-
-    const token = await this.userStore.getTokenSilently({
-      audience: "https://case-triage.recidiviz.org/api",
-      scope: "email",
-    });
-
-    const response = await fetch(path, {
-      body: method !== "GET" ? JSON.stringify(body) : null,
-      method,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        "X-CSRF-Token": this.csrfToken,
-      },
-    });
-
-    const reportedVersion = response.headers.get("X-Recidiviz-Current-Version");
-    if (reportedVersion !== null) {
-      this.userStore.recordVersion(reportedVersion, method !== "GET");
-    }
-
-    const json = await response.json();
-
-    if (response.status === 401 && json.code === "no_app_access") {
-      this.userStore.setLacksCaseTriageAuthorization(true);
-    }
-
-    if (response.status === 400 && json.code === "invalid_csrf_token") {
-      this.bootstrapped = false;
-      return this.request<T>({ path, method, body });
-    }
-
-    if (isErrorResponse(json)) {
-      throw json;
-    }
-
-    return json;
   }
 
   async delete<T>(path: string): Promise<T> {
