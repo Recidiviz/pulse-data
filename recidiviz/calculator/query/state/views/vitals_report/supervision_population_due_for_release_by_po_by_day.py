@@ -49,6 +49,7 @@ SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_QUERY_TEMPLATE = """
         WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 372 DAY)
             AND projected_end_date IS NOT NULL
             AND level_2_supervision_location_external_id IS NOT NULL
+            -- Remove duplicate entries created when unnesting a state that does not have L2 locations
         GROUP BY state_code, date_of_supervision, supervising_officer_external_id, level_1_supervision_location_external_id, level_2_supervision_location_external_id
     )
 
