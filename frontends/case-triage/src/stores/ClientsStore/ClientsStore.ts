@@ -122,8 +122,8 @@ class ClientsStore {
     };
 
     autorun(checkAuthAndFetchClients);
-    // Re-fetch once an hour for long-lived sessions.
-    setInterval(checkAuthAndFetchClients, 3600 * 1000);
+    // Re-fetch for long-lived sessions.
+    setInterval(checkAuthAndFetchClients, rootStore.refetchInterval);
   }
 
   async fetchClientsList(): Promise<void> {

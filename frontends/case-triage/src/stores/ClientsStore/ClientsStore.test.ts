@@ -20,10 +20,11 @@ import MockDate from "mockdate";
 import { runInAction } from "mobx";
 import API from "../API";
 import RootStore from "../RootStore";
-import { clientData, clientOpportunities, statePolicy } from "./__fixtures__";
+import { clientData, clientOpportunityData, statePolicy } from "./__fixtures__";
 import type ClientsStore from "./ClientsStore";
 import { ClientData } from "./Client";
 import { KNOWN_EXPERIMENTS } from "../UserStore";
+import { Opportunity } from "../OpportunityStore";
 
 jest.mock("../API");
 const APIMock = API as jest.MockedClass<typeof API>;
@@ -66,30 +67,30 @@ afterEach(() => {
 });
 
 test("sort by relevance (default)", async () => {
-  rootStore.opportunityStore.opportunities = [
+  rootStore.opportunityStore.opportunitiesFetched = [
     // clients 0, 2, 3 are unemployed
     {
-      ...clientOpportunities[1],
+      ...clientOpportunityData[1],
       personExternalId: "0",
     },
     {
-      ...clientOpportunities[1],
+      ...clientOpportunityData[1],
       personExternalId: "2",
     },
     {
-      ...clientOpportunities[1],
+      ...clientOpportunityData[1],
       personExternalId: "3",
     },
     // clients 2, 4 are eligible for downgrade
     {
-      ...clientOpportunities[0],
+      ...clientOpportunityData[0],
       personExternalId: "2",
     },
     {
-      ...clientOpportunities[0],
+      ...clientOpportunityData[0],
       personExternalId: "4",
     },
-  ];
+  ].map((data) => new Opportunity(data));
 
   // clients 1, 2 have contact alerts
   apiData[1].nextFaceToFaceDate = "2021-01-03";

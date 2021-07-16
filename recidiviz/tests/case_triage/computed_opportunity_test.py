@@ -69,7 +69,9 @@ class TestComputedOpportunity(TestCase):
 
         assert opp is not None
         self.assertIsInstance(opp, ComputedOpportunity)
-        self.assertEqual(opp.opportunity_metadata, {"status": "OVERDUE"})
+        self.assertEqual(
+            opp.opportunity_metadata, {"status": "OVERDUE", "daysUntilDue": -135}
+        )
 
         client.most_recent_assessment_date = upcoming_date
         opp = ComputedOpportunity.build_all_for_client(client).get(
@@ -78,7 +80,9 @@ class TestComputedOpportunity(TestCase):
 
         assert opp is not None
         self.assertIsInstance(opp, ComputedOpportunity)
-        self.assertEqual(opp.opportunity_metadata, {"status": "UPCOMING"})
+        self.assertEqual(
+            opp.opportunity_metadata, {"status": "UPCOMING", "daysUntilDue": 30}
+        )
 
         client.most_recent_assessment_date = no_opp_date
         self.assertIsNone(
@@ -100,7 +104,9 @@ class TestComputedOpportunity(TestCase):
 
         assert opp is not None
         self.assertIsInstance(opp, ComputedOpportunity)
-        self.assertEqual(opp.opportunity_metadata, {"status": "OVERDUE"})
+        self.assertEqual(
+            opp.opportunity_metadata, {"status": "OVERDUE", "daysUntilDue": -5}
+        )
 
         client.most_recent_face_to_face_date = upcoming_date
         opp = ComputedOpportunity.build_all_for_client(client).get(
@@ -109,7 +115,9 @@ class TestComputedOpportunity(TestCase):
 
         assert opp is not None
         self.assertIsInstance(opp, ComputedOpportunity)
-        self.assertEqual(opp.opportunity_metadata, {"status": "UPCOMING"})
+        self.assertEqual(
+            opp.opportunity_metadata, {"status": "UPCOMING", "daysUntilDue": 5}
+        )
 
         client.most_recent_face_to_face_date = no_opp_date
         self.assertIsNone(
