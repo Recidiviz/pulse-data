@@ -19,30 +19,33 @@ from datetime import date, datetime, timedelta
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional, Tuple
 from unittest import TestCase, mock
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from flask import Flask, Response, jsonify, session
+from sqlalchemy.orm import Session
 
 from recidiviz.case_triage.admin_flask_views import (
     IMPERSONATED_EMAIL_KEY,
     ImpersonateUser,
 )
-from recidiviz.case_triage.api_routes import create_api_blueprint
 from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.case_updates.serializers import serialize_client_case_version
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.client_info.types import PreferredContactMethod
-from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.opportunities.types import (
     OpportunityDeferralType,
     OpportunityType,
 )
 from recidiviz.case_triage.querier.case_update_presenter import CaseUpdateStatus
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
+from recidiviz.persistence.database.schema.case_triage.schema import ETLOfficer
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.tests.case_triage.api_test_helpers import CaseTriageTestHelpers
+from recidiviz.tests.case_triage.api_test_helpers import (
+    ADMIN_USER_EMAIL,
+    CaseTriageTestHelpers,
+)
 from recidiviz.tests.case_triage.case_triage_helpers import (
     generate_fake_case_update,
     generate_fake_client,
@@ -68,13 +71,9 @@ class TestCaseTriageAPIRoutes(TestCase):
 
     def setUp(self) -> None:
         self.test_app = Flask(__name__)
-        register_error_handlers(self.test_app)
-        self.mock_segment_client = MagicMock()
-        api = create_api_blueprint(self.mock_segment_client)
-        self.test_app.register_blueprint(api)
-
-        self.test_client = self.test_app.test_client()
         self.helpers = CaseTriageTestHelpers.from_test(self, self.test_app)
+        self.test_client = self.helpers.test_client
+        self.mock_segment_client = self.helpers.mock_segment_client
 
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
         self.overridden_env_vars = (
@@ -178,11 +177,11 @@ class TestCaseTriageAPIRoutes(TestCase):
         )
 
     def test_no_clients(self) -> None:
-        with self.helpers.as_officer(self.officer_without_clients):
+        with self.helpers.using_officer(self.officer_without_clients):
             self.assertEqual(self.helpers.get_clients(), [])
 
     def test_get_clients(self) -> None:
-        with self.helpers.as_officer(self.officer):
+        with self.helpers.using_officer(self.officer):
             client_1_response = self.helpers.find_client_in_api_response(
                 self.client_1.person_external_id
             )
@@ -196,12 +195,12 @@ class TestCaseTriageAPIRoutes(TestCase):
             )
 
     def test_no_opportunities(self) -> None:
-        with self.helpers.as_officer(self.officer_without_clients):
+        with self.helpers.using_officer(self.officer_without_clients):
             self.assertEqual([], self.helpers.get_opportunities())
 
     def test_get_opportunities(self) -> None:
 
-        with self.helpers.as_officer(self.officer):
+        with self.helpers.using_officer(self.officer):
             # Two ETL opportunities exist but one is inactive
             self.assertEqual(
                 len(self.helpers.get_opportunities()),
@@ -213,13 +212,13 @@ class TestCaseTriageAPIRoutes(TestCase):
             )
 
     def test_defer_opportunity_malformed_input(self) -> None:
-        with self.helpers.as_officer(self.officer):
+        with self.helpers.using_officer(self.officer) as test_client:
             # GET instead of POST
             response = self.test_client.get("/opportunity_deferrals")
             self.assertEqual(response.status_code, HTTPStatus.METHOD_NOT_ALLOWED)
 
             # `personExternalId` doesn't map to a real person
-            response = self.test_client.post(
+            response = test_client.post(
                 "/opportunity_deferrals",
                 json={
                     "personExternalId": "nonexistent-person",
@@ -238,7 +237,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             )
 
     def test_defer_opportunity_successful(self) -> None:
-        with self.helpers.as_officer(self.officer):
+        with self.helpers.using_officer(self.officer):
             opportunity_type = self.opportunity_2.opportunity_type
             person_external_id = self.client_2.person_external_id
 
@@ -260,7 +259,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             )
 
     def test_delete_opportunity_deferral(self) -> None:
-        with self.helpers.as_officer(self.officer):
+        with self.helpers.using_officer(self.officer):
             # Submit API request
             self.helpers.delete_opportunity_deferral(self.deferral_1.deferral_id)
             self.mock_segment_client.track_opportunity_deferral_deleted.assert_called()
@@ -273,8 +272,8 @@ class TestCaseTriageAPIRoutes(TestCase):
 
     def test_cannot_delete_anothers_opportunity_deferral(self) -> None:
         # Fetch original deferral id
-        with self.helpers.as_officer(self.officer_without_clients):
-            response = self.test_client.delete(
+        with self.helpers.using_officer(self.officer_without_clients) as test_client:
+            response = test_client.delete(
                 f"/opportunity_deferrals/{self.deferral_1.deferral_id}"
             )
             self.assertEqual(
@@ -282,13 +281,13 @@ class TestCaseTriageAPIRoutes(TestCase):
             )
 
     def test_case_updates_malformed_input(self) -> None:
-        with self.helpers.as_officer(self.officer):
+        with self.helpers.using_officer(self.officer) as test_client:
             # GET instead of POST
-            response = self.test_client.get("/case_updates")
+            response = test_client.get("/case_updates")
             self.assertEqual(response.status_code, HTTPStatus.METHOD_NOT_ALLOWED)
 
             # `personExternalId` doesn't map to a real person
-            response = self.test_client.post(
+            response = test_client.post(
                 "/case_updates",
                 json={
                     "personExternalId": "nonexistent-person",
@@ -304,7 +303,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             )
 
     def test_case_updates_success(self) -> None:
-        with self.helpers.as_officer(self.officer):
+        with self.helpers.using_officer(self.officer):
             # Record new user action
             action = CaseUpdateActionType.INCORRECT_ASSESSMENT_DATA.value
             person_external_id = self.client_2.person_external_id
@@ -338,7 +337,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.assertEqual(CaseUpdateStatus.UPDATED_IN_CIS.value, update["status"])
 
     def test_delete_case_update(self) -> None:
-        with self.helpers.as_officer(self.officer):
+        with self.helpers.using_officer(self.officer) as test_client:
 
             # Record new user action
             case_update = generate_fake_case_update(
@@ -359,7 +358,7 @@ class TestCaseTriageAPIRoutes(TestCase):
                 client["caseUpdates"],
             )
 
-            response = self.test_client.delete(f"/case_updates/{case_update.update_id}")
+            response = test_client.delete(f"/case_updates/{case_update.update_id}")
             self.assertEqual(response.status_code, 200)
             self.mock_segment_client.track_person_action_removed.assert_called()
 
@@ -375,24 +374,24 @@ class TestCaseTriageAPIRoutes(TestCase):
         case_update = self.case_update_2
 
         # Officer trying to delete another officer's update
-        with self.helpers.as_officer(self.officer_without_clients):
-            response = self.test_client.delete(f"/case_updates/{case_update.update_id}")
+        with self.helpers.using_officer(self.officer_without_clients) as test_client:
+            response = test_client.delete(f"/case_updates/{case_update.update_id}")
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
 
         # No signed in user
-        with self.helpers.as_demo_user():
-            response = self.test_client.delete(f"/case_updates/{case_update.update_id}")
+        with self.helpers.using_demo_user() as test_client:
+            response = test_client.delete(f"/case_updates/{case_update.update_id}")
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
 
     def test_post_state_policy(self) -> None:
-        with self.helpers.as_officer(self.officer):
-            response = self.test_client.post(
+        with self.helpers.using_officer(self.officer) as test_client:
+            response = test_client.post(
                 "/policy_requirements_for_state", json={"state": "US_ID"}
             )
             self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_set_preferred_name(self) -> None:
-        with self.helpers.as_officer(self.officer):
+        with self.helpers.using_officer(self.officer):
             client_info = self.helpers.find_client_in_api_response(
                 self.client_1.person_external_id
             )
@@ -415,7 +414,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.assertTrue("preferredName" not in client_info)
 
     def test_set_preferred_contact(self) -> None:
-        with self.helpers.as_officer(self.officer):
+        with self.helpers.using_officer(self.officer) as test_client:
             client_info = self.helpers.find_client_in_api_response(
                 self.client_1.person_external_id
             )
@@ -431,7 +430,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.assertEqual(client_info["preferredContactMethod"], "CALL")
 
             # Unset preferred contact fails
-            response = self.test_client.post(
+            response = test_client.post(
                 "/set_preferred_contact_method",
                 json={
                     "personExternalId": self.client_1.person_external_id,
@@ -441,7 +440,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
     def test_set_receiving_ssi_or_disability_income(self) -> None:
-        with self.helpers.as_officer(self.officer):
+        with self.helpers.using_officer(self.officer):
             client_info = self.helpers.find_client_in_api_response(
                 self.client_1.person_external_id
             )
@@ -466,9 +465,9 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.assertFalse(client_info["receivingSSIOrDisabilityIncome"])
 
     def test_cannot_set_preferred_values_for_non_clients(self) -> None:
-        with self.helpers.as_officer(self.officer_without_clients):
+        with self.helpers.using_officer(self.officer_without_clients) as test_client:
             # Test that you cannot set preferred contact
-            response = self.test_client.post(
+            response = test_client.post(
                 "/set_preferred_contact_method",
                 json={
                     "personExternalId": self.client_1.person_external_id,
@@ -478,7 +477,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
             # Test that you cannot set preferred name
-            response = self.test_client.post(
+            response = test_client.post(
                 "/set_preferred_name",
                 json={
                     "personExternalId": self.client_1.person_external_id,
@@ -488,7 +487,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
             # Test that you cannot mark as receiving SSI/disability income
-            response = self.test_client.post(
+            response = test_client.post(
                 "/set_receiving_ssi_or_disability_income",
                 json={
                     "personExternalId": self.client_1.person_external_id,
@@ -498,7 +497,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
     def test_ssi_disability_satisfies_employment_opportunity(self) -> None:
-        with self.helpers.as_officer(self.officer):
+        with self.helpers.using_officer(self.officer):
             client_info = self.helpers.find_client_in_api_response(
                 self.client_1.person_external_id
             )
@@ -536,7 +535,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.assertIsNone(employment_opportunity)
 
     def test_create_note(self) -> None:
-        with self.helpers.as_officer(self.officer):
+        with self.helpers.using_officer(self.officer):
             client_info = self.helpers.find_client_in_api_response(
                 self.client_1.person_external_id
             )
@@ -554,7 +553,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.assertEqual(client_info["notes"][0]["noteId"], note_id)
 
     def test_resolve_note(self) -> None:
-        with self.helpers.as_officer(self.officer):
+        with self.helpers.using_officer(self.officer):
             note_id = self.helpers.create_note(
                 self.client_1.person_external_id, "Demo user note."
             )
@@ -580,7 +579,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.assertFalse(note["resolved"])
 
     def test_update_note(self) -> None:
-        with self.helpers.as_officer(self.officer):
+        with self.helpers.using_officer(self.officer):
             note_id = self.helpers.create_note(
                 self.client_1.person_external_id, "Demo user note."
             )
@@ -599,9 +598,9 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.assertEqual(note["text"], "Updated!")
 
     def test_no_empty_notes(self) -> None:
-        with self.helpers.as_officer(self.officer):
+        with self.helpers.using_officer(self.officer) as test_client:
             # Check that creating an empty note fails
-            response = self.test_client.post(
+            response = test_client.post(
                 "/create_note",
                 json={
                     "personExternalId": self.officer.external_id,
@@ -617,7 +616,7 @@ class TestCaseTriageAPIRoutes(TestCase):
                 self.client_1.person_external_id, "Demo user note."
             )
 
-            response = self.test_client.post(
+            response = test_client.post(
                 "/update_note",
                 json={
                     "noteId": note_id,
@@ -629,7 +628,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             )
 
     def test_notes_sql_injection_gut_check(self) -> None:
-        with self.helpers.as_officer(self.officer):
+        with self.helpers.using_officer(self.officer):
             attempted_injection = "foo'; DROP TABLE officer_notes; SELECT * FROM etl_clients WHERE state_code != 'foo"
             note_id = self.helpers.create_note(
                 self.client_1.person_external_id,
@@ -643,7 +642,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.assertEqual(note["text"], attempted_injection)
 
     def test_readonly_access_to_endpoints(self) -> None:
-        with self.helpers.as_readonly_user(self.officer):
+        with self.helpers.using_readonly_user(self.officer) as test_client:
             read_operations: List[str] = ["/clients", "/opportunities"]
             post_operations: List[Tuple[str, Dict[str, Any]]] = [
                 (
@@ -677,16 +676,46 @@ class TestCaseTriageAPIRoutes(TestCase):
                 f"/case_updates/{self.case_update_1.update_id}",
             ]
             for read_endpoint in read_operations:
-                response = self.test_client.get(read_endpoint)
+                response = test_client.get(read_endpoint)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
             for post_endpoint, json in post_operations:
-                response = self.test_client.post(post_endpoint, json=json)
+                response = test_client.post(post_endpoint, json=json)
                 self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
 
             for delete_endpoint in delete_operations:
-                response = self.test_client.delete(delete_endpoint)
+                response = test_client.delete(delete_endpoint)
                 self.assertEqual(response.status_code, HTTPStatus.UNAUTHORIZED)
+
+    @patch("recidiviz.case_triage.querier.querier.CaseTriageQuerier.officer_for_email")
+    def test_fetch_user_info_correct_officer_when_impersonating(
+        self, mock_officer_for_email: MagicMock
+    ) -> None:
+        def mock_officer(_session: Session, _email: str) -> ETLOfficer:
+            return self.officer
+
+        mock_officer_for_email.side_effect = mock_officer
+        with self.test_app.test_request_context():
+            with self.test_client.session_transaction() as sess:  # type: ignore
+                sess["user_info"] = {"email": ADMIN_USER_EMAIL}
+                sess[IMPERSONATED_EMAIL_KEY] = self.officer.email_address
+
+            self.test_client.get("/clients")
+            # Impersonated user
+            self.assertIn(
+                self.officer.email_address,
+                mock_officer_for_email.call_args_list[0].args,
+            )
+
+            with self.test_client.session_transaction() as sess:  # type: ignore
+                sess["user_info"] = {"email": ADMIN_USER_EMAIL}
+                del sess[IMPERSONATED_EMAIL_KEY]
+
+            self.test_client.get("/clients")
+            # Non-impersonated user
+            self.assertIn(
+                "admin@recidiviz.org", mock_officer_for_email.call_args_list[1].args
+            )
 
 
 class TestUserImpersonation(TestCase):

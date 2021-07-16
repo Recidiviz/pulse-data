@@ -19,25 +19,17 @@ import json
 import os
 from typing import Dict
 
-from flask import Flask, Response, g, send_from_directory, session
-from flask_sqlalchemy_session import current_session
+from flask import Flask, Response, send_from_directory, session
 from flask_wtf.csrf import CSRFProtect
-from sqlalchemy.orm.exc import NoResultFound
 
-from recidiviz.case_triage.admin_flask_views import (
-    IMPERSONATED_EMAIL_KEY,
-    ImpersonateUser,
-    RefreshAuthStore,
-)
+from recidiviz.case_triage.admin_flask_views import ImpersonateUser, RefreshAuthStore
 from recidiviz.case_triage.analytics import CaseTriageSegmentClient
 from recidiviz.case_triage.api_routes import create_api_blueprint
 from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.e2e_routes import e2e_blueprint
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.exceptions import CaseTriageAuthorizationError
-from recidiviz.case_triage.querier.querier import CaseTriageQuerier
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
-from recidiviz.case_triage.user_context import UserContext
 from recidiviz.case_triage.util import get_local_secret
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -136,36 +128,7 @@ segment_client = CaseTriageSegmentClient(write_key)
 
 
 # Routes & Blueprints
-api = create_api_blueprint(segment_client)
-
-
-@api.before_request
-@requires_authorization
-def fetch_user_info() -> None:
-    """This method both fetches the current user and (by virtue of the decorator) enforces authorization
-    for all API routes.
-
-    If the user is an admin (i.e. an approved Recidiviz employee), and the `impersonated_email` param is
-    set, then they can make requests as if they were the impersonated user.
-    """
-    email = session["user_info"]["email"].lower()
-    g.user_context = UserContext.base_context_for_email(email, authorization_store)
-    try:
-        if IMPERSONATED_EMAIL_KEY in session and g.user_context.can_impersonate:
-            g.user_context.current_user = CaseTriageQuerier.officer_for_email(
-                current_session, session[IMPERSONATED_EMAIL_KEY]
-            )
-        else:
-            g.user_context.current_user = CaseTriageQuerier.officer_for_email(
-                current_session, email
-            )
-    except NoResultFound as e:
-        if not g.user_context.can_see_demo_data:
-            raise CaseTriageAuthorizationError(
-                code="no_app_access",
-                description="You are not authorized to access this application",
-            ) from e
-
+api = create_api_blueprint(segment_client, requires_authorization, authorization_store)
 
 app.register_blueprint(api, url_prefix="/api")
 app.register_blueprint(e2e_blueprint, url_prefix="/e2e")
