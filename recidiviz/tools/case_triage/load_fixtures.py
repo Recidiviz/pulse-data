@@ -31,43 +31,61 @@ SQLALCHEMY_DB_HOST="" SQLALCHEMY_DB_USER="" SQLALCHEMY_DB_PASSWORD="" SQLALCHEMY
 python -m recidiviz.tools.case_triage.load_fixtures
 """
 import os
+from typing import List
 
 import psycopg2
 
+from recidiviz.persistence.database.base_schema import CaseTriageBase
 from recidiviz.persistence.database.constants import (
     SQLALCHEMY_DB_HOST,
+    SQLALCHEMY_DB_NAME,
     SQLALCHEMY_DB_PASSWORD,
     SQLALCHEMY_DB_USER,
-    SQLALCHEMY_DB_NAME,
+)
+from recidiviz.persistence.database.schema.case_triage.schema import (
+    DashboardUserRestrictions,
+    ETLClient,
+    ETLOfficer,
+    ETLOpportunity,
 )
 
-user = os.getenv(SQLALCHEMY_DB_USER, "postgres")
-password = os.getenv(SQLALCHEMY_DB_PASSWORD, "example")
-host = os.getenv(SQLALCHEMY_DB_HOST, "localhost")
-database = os.getenv(SQLALCHEMY_DB_NAME, "postgres")
+TABLES_WITH_FIXTURES: List[CaseTriageBase] = [
+    DashboardUserRestrictions,
+    ETLClient,
+    ETLOfficer,
+    ETLOpportunity,
+]
 
-connection = psycopg2.connect(
-    dbname="postgres", host=host, user=user, password=password
-)
 
-with connection.cursor() as cursor:
-    cursor.execute("DELETE FROM etl_opportunities")
-    cursor.execute("DELETE FROM etl_clients")
-    cursor.execute("DELETE FROM etl_officers")
+def reset_case_triage_fixtures() -> None:
+    user = os.getenv(SQLALCHEMY_DB_USER, "postgres")
+    password = os.getenv(SQLALCHEMY_DB_PASSWORD, "example")
+    host = os.getenv(SQLALCHEMY_DB_HOST, "localhost")
+    database = os.getenv(SQLALCHEMY_DB_NAME, "postgres")
 
-    # Run CSV import
-    def import_csv(path: str, table: str) -> None:
-        with open(path, "r") as csv:
-            cursor.copy_expert(
-                f"COPY {table} FROM STDIN WITH DELIMITER ',' CSV",
-                csv,
-            )
-
-    import_csv("recidiviz/tools/case_triage/fixtures/etl_officers.csv", "etl_officers")
-    import_csv("recidiviz/tools/case_triage/fixtures/etl_clients.csv", "etl_clients")
-    import_csv(
-        "recidiviz/tools/case_triage/fixtures/etl_opportunities.csv",
-        "etl_opportunities",
+    connection = psycopg2.connect(
+        dbname=database, host=host, user=user, password=password
     )
 
-    cursor.execute("commit")
+    with connection.cursor() as cursor:
+
+        def _import_csv(path: str, table: str) -> None:
+            with open(path, "r") as csv:
+                cursor.copy_expert(
+                    f"COPY {table} FROM STDIN WITH DELIMITER ',' CSV",
+                    csv,
+                )
+
+        for table in TABLES_WITH_FIXTURES:
+            table_name = table.__table__.name
+            cursor.execute(f"DELETE FROM {table_name}")
+            _import_csv(
+                f"recidiviz/tools/case_triage/fixtures/{table_name}.csv",
+                table_name,
+            )
+
+        cursor.execute("commit")
+
+
+if __name__ == "__main__":
+    reset_case_triage_fixtures()
