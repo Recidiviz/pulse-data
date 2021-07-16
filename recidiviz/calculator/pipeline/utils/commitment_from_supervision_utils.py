@@ -207,13 +207,14 @@ def period_is_commitment_from_supervision_admission_from_parole_board_hold(
 
     return (
         incarceration_period.admission_reason
-        # Valid revocation admission reasons following a parole board hold
+        # Valid commitment from supervision admission reasons following a parole board
+        # hold
         in (
             StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
             StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
         )
-        # Revocation admission from a parole board hold should happen on the same day
+        # Admissions from a parole board hold should happen on the same day
         # as the release from the parole board hold
         and preceding_incarceration_period.specialized_purpose_for_incarceration
         == StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD

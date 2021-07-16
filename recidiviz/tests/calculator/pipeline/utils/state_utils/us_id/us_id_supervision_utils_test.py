@@ -22,9 +22,7 @@ from typing import Optional
 from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
-from recidiviz.calculator.pipeline.supervision.events import (
-    NonRevocationReturnSupervisionTimeBucket,
-)
+from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
 )
@@ -722,7 +720,7 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
     ) -> None:
         self.assertTrue(
             us_id_supervision_period_is_out_of_state(
-                self.create_time_bucket(
+                self.create_population_event(
                     "INTERSTATE PROBATION - remainder of identifier", None
                 )
             )
@@ -731,7 +729,7 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
     def test_supervision_period_is_out_of_state_with_identifier_parole(self) -> None:
         self.assertTrue(
             us_id_supervision_period_is_out_of_state(
-                self.create_time_bucket(
+                self.create_population_event(
                     "PAROLE COMMISSION OFFICE - remainder of identifier", None
                 )
             )
@@ -740,28 +738,30 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
     def test_supervision_period_is_out_of_state_with_partial_identifier(self) -> None:
         self.assertFalse(
             us_id_supervision_period_is_out_of_state(
-                self.create_time_bucket("INTERSTATE - remainder of identifier", None)
+                self.create_population_event(
+                    "INTERSTATE - remainder of identifier", None
+                )
             )
         )
 
     def test_supervision_period_is_out_of_state_with_incorrect_identifier(self) -> None:
         self.assertFalse(
             us_id_supervision_period_is_out_of_state(
-                self.create_time_bucket("Invalid", None)
+                self.create_population_event("Invalid", None)
             )
         )
 
     def test_supervision_period_is_out_of_state_with_empty_identifier(self) -> None:
         self.assertFalse(
             us_id_supervision_period_is_out_of_state(
-                self.create_time_bucket(None, None)
+                self.create_population_event(None, None)
             )
         )
 
     def test_supervision_period_is_out_of_state_with_federal_authority(self) -> None:
         self.assertTrue(
             us_id_supervision_period_is_out_of_state(
-                self.create_time_bucket(None, StateCustodialAuthority.FEDERAL)
+                self.create_population_event(None, StateCustodialAuthority.FEDERAL)
             )
         )
 
@@ -770,7 +770,9 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
     ) -> None:
         self.assertTrue(
             us_id_supervision_period_is_out_of_state(
-                self.create_time_bucket(None, StateCustodialAuthority.OTHER_COUNTRY)
+                self.create_population_event(
+                    None, StateCustodialAuthority.OTHER_COUNTRY
+                )
             )
         )
 
@@ -779,7 +781,7 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
     ) -> None:
         self.assertTrue(
             us_id_supervision_period_is_out_of_state(
-                self.create_time_bucket(None, StateCustodialAuthority.OTHER_STATE)
+                self.create_population_event(None, StateCustodialAuthority.OTHER_STATE)
             )
         )
 
@@ -788,18 +790,18 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
     ) -> None:
         self.assertFalse(
             us_id_supervision_period_is_out_of_state(
-                self.create_time_bucket(
+                self.create_population_event(
                     None, StateCustodialAuthority.SUPERVISION_AUTHORITY
                 )
             )
         )
 
     @staticmethod
-    def create_time_bucket(
+    def create_population_event(
         supervising_district_external_id: Optional[str],
         custodial_authority: Optional[StateCustodialAuthority],
-    ) -> NonRevocationReturnSupervisionTimeBucket:
-        return NonRevocationReturnSupervisionTimeBucket(
+    ) -> SupervisionPopulationEvent:
+        return SupervisionPopulationEvent(
             state_code="US_ID",
             year=2010,
             month=1,

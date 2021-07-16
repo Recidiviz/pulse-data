@@ -21,9 +21,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.supervision.events import (
-    NonRevocationReturnSupervisionTimeBucket,
-)
+from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
 )
@@ -182,22 +180,21 @@ def us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound
 
 
 def us_id_supervision_period_is_out_of_state(
-    supervision_time_bucket: NonRevocationReturnSupervisionTimeBucket,
+    supervision_population_event: SupervisionPopulationEvent,
 ) -> bool:
-    """Returns whether the given supervision time bucket should be considered a supervision period that is being
-    served out of state.
+    """Returns whether the given day on supervision was served out of state.
 
     This is true if either:
     - The supervision district identifier indicates a non-Idaho entity/jurisdiction
     - The supervision period custodial authority indicates a non-Idaho entity
     """
     # TODO(#4713): Rely on level_2_supervising_district_external_id, once it is populated.
-    external_id = supervision_time_bucket.supervising_district_external_id
+    external_id = supervision_population_event.supervising_district_external_id
     out_of_state_identifier = external_id is not None and external_id.startswith(
         tuple(_OUT_OF_STATE_EXTERNAL_ID_IDENTIFIERS)
     )
 
-    custodial_authority = supervision_time_bucket.custodial_authority
+    custodial_authority = supervision_population_event.custodial_authority
     out_of_state_authority = (
         custodial_authority is not None
         and custodial_authority

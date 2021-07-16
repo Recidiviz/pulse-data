@@ -21,9 +21,7 @@ from typing import Any, Dict, Optional, Tuple
 
 import attr
 
-from recidiviz.calculator.pipeline.supervision.events import (
-    NonRevocationReturnSupervisionTimeBucket,
-)
+from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
 from recidiviz.calculator.pipeline.utils.state_utils import (
     state_calculation_config_manager,
 )
@@ -423,7 +421,7 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
     def test_supervision_period_is_out_of_state_us_id_with_identifier(self) -> None:
         self.assertTrue(
             state_calculation_config_manager.supervision_period_is_out_of_state(
-                self.create_time_bucket(
+                self.create_population_event(
                     "US_ID", "INTERSTATE PROBATION - remainder of identifier"
                 )
             )
@@ -434,7 +432,9 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
     ) -> None:
         self.assertFalse(
             state_calculation_config_manager.supervision_period_is_out_of_state(
-                self.create_time_bucket("US_ID", "Incorrect - remainder of identifier")
+                self.create_population_event(
+                    "US_ID", "Incorrect - remainder of identifier"
+                )
             )
         )
 
@@ -443,14 +443,14 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
     ) -> None:
         self.assertFalse(
             state_calculation_config_manager.supervision_period_is_out_of_state(
-                self.create_time_bucket("US_ID", None)
+                self.create_population_event("US_ID", None)
             )
         )
 
     def test_supervision_period_is_out_of_state_us_mo_with_identifier(self) -> None:
         self.assertFalse(
             state_calculation_config_manager.supervision_period_is_out_of_state(
-                self.create_time_bucket(
+                self.create_population_event(
                     "US_MO", "INTERSTATE PROBATION - remainder of identifier"
                 )
             )
@@ -461,15 +461,17 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
     ) -> None:
         self.assertFalse(
             state_calculation_config_manager.supervision_period_is_out_of_state(
-                self.create_time_bucket("US_MO", "Incorrect - remainder of identifier")
+                self.create_population_event(
+                    "US_MO", "Incorrect - remainder of identifier"
+                )
             )
         )
 
     @staticmethod
-    def create_time_bucket(
+    def create_population_event(
         state_code: str, supervising_district_external_id: Optional[str]
-    ) -> NonRevocationReturnSupervisionTimeBucket:
-        return NonRevocationReturnSupervisionTimeBucket(
+    ) -> SupervisionPopulationEvent:
+        return SupervisionPopulationEvent(
             state_code=state_code,
             year=2010,
             month=1,

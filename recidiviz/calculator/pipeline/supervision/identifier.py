@@ -29,11 +29,11 @@ from recidiviz.calculator.pipeline.base_identifier import (
     IdentifierContextT,
 )
 from recidiviz.calculator.pipeline.supervision.events import (
-    NonRevocationReturnSupervisionTimeBucket,
-    ProjectedSupervisionCompletionBucket,
-    SupervisionStartBucket,
-    SupervisionTerminationBucket,
-    SupervisionTimeBucket,
+    ProjectedSupervisionCompletionEvent,
+    SupervisionEvent,
+    SupervisionPopulationEvent,
+    SupervisionStartEvent,
+    SupervisionTerminationEvent,
 )
 from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
@@ -57,7 +57,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     get_state_specific_case_compliance_manager,
     get_state_specific_supervising_officer_and_location_info_function,
     second_assessment_on_supervision_is_more_reliable,
-    should_produce_supervision_time_bucket_for_period,
+    should_produce_supervision_event_for_period,
     state_specific_supervision_admission_reason_override,
     state_specific_violation_response_pre_processing_function,
     state_specific_violation_responses_for_violation_history,
@@ -101,18 +101,18 @@ from recidiviz.persistence.entity.state.entities import (
 )
 
 
-class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
+class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
     """Identifier class for events related to supervision."""
 
     def __init__(self) -> None:
-        self.identifier_event_class = SupervisionTimeBucket
+        self.identifier_event_class = SupervisionEvent
 
     def find_events(
         self, person: StatePerson, identifier_context: IdentifierContextT
-    ) -> List[SupervisionTimeBucket]:
-        return self._find_supervision_time_buckets(person, **identifier_context)
+    ) -> List[SupervisionEvent]:
+        return self._find_supervision_events(person, **identifier_context)
 
-    def _find_supervision_time_buckets(
+    def _find_supervision_events(
         self,
         person: StatePerson,
         supervision_sentences: List[StateSupervisionSentence],
@@ -124,7 +124,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
         supervision_contacts: List[StateSupervisionContact],
         supervision_period_to_agent_association: List[Dict[str, Any]],
         supervision_period_judicial_district_association: List[Dict[str, Any]],
-    ) -> List[SupervisionTimeBucket]:
+    ) -> List[SupervisionEvent]:
         """Identifies various events related to being on supervision.
 
         Args:
@@ -140,7 +140,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
                 StateSupervisionPeriod ids to the judicial district responsible for the period of supervision
 
         Returns:
-            A list of SupervisionTimeBuckets for the person.
+            A list of SupervisionEvents for the person.
         """
         if not supervision_periods and not incarceration_periods:
             return []
@@ -201,9 +201,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
             )
         )
 
-        supervision_time_buckets: List[SupervisionTimeBucket] = []
+        supervision_events: List[SupervisionEvent] = []
 
-        projected_supervision_completion_buckets = self._classify_supervision_success(
+        projected_supervision_completion_events = self._classify_supervision_success(
             supervision_sentences,
             incarceration_sentences,
             supervision_periods,
@@ -212,10 +212,10 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
             supervision_period_to_judicial_district_associations,
         )
 
-        supervision_time_buckets.extend(projected_supervision_completion_buckets)
+        supervision_events.extend(projected_supervision_completion_events)
 
         for supervision_period in supervision_period_index.supervision_periods:
-            if should_produce_supervision_time_bucket_for_period(
+            if should_produce_supervision_event_for_period(
                 supervision_period, incarceration_sentences, supervision_sentences
             ):
                 judicial_district_code = self._get_judicial_district_code(
@@ -223,8 +223,23 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
                     supervision_period_to_judicial_district_associations,
                 )
 
-                supervision_time_buckets = supervision_time_buckets + self._find_time_buckets_for_supervision_period(
-                    person=person,
+                supervision_events.extend(
+                    self._find_population_events_for_supervision_period(
+                        person=person,
+                        supervision_sentences=supervision_sentences,
+                        incarceration_sentences=incarceration_sentences,
+                        supervision_period=supervision_period,
+                        supervision_period_index=supervision_period_index,
+                        incarceration_period_index=incarceration_period_index,
+                        assessments=assessments,
+                        violation_responses_for_history=violation_responses_for_history,
+                        supervision_contacts=supervision_contacts,
+                        supervision_period_to_agent_associations=supervision_period_to_agent_associations,
+                        judicial_district_code=judicial_district_code,
+                    )
+                )
+
+                supervision_termination_event = self._find_supervision_termination_event(
                     supervision_sentences=supervision_sentences,
                     incarceration_sentences=incarceration_sentences,
                     supervision_period=supervision_period,
@@ -232,27 +247,14 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
                     incarceration_period_index=incarceration_period_index,
                     assessments=assessments,
                     violation_responses_for_history=violation_responses_for_history,
-                    supervision_contacts=supervision_contacts,
                     supervision_period_to_agent_associations=supervision_period_to_agent_associations,
                     judicial_district_code=judicial_district_code,
                 )
 
-                supervision_termination_bucket = self._find_supervision_termination_bucket(
-                    supervision_sentences=supervision_sentences,
-                    incarceration_sentences=incarceration_sentences,
-                    supervision_period=supervision_period,
-                    supervision_period_index=supervision_period_index,
-                    incarceration_period_index=incarceration_period_index,
-                    assessments=assessments,
-                    violation_responses_for_history=violation_responses_for_history,
-                    supervision_period_to_agent_associations=supervision_period_to_agent_associations,
-                    judicial_district_code=judicial_district_code,
-                )
+                if supervision_termination_event:
+                    supervision_events.append(supervision_termination_event)
 
-                if supervision_termination_bucket:
-                    supervision_time_buckets.append(supervision_termination_bucket)
-
-                supervision_start_bucket = self._find_supervision_start_bucket(
+                supervision_start_event = self._find_supervision_start_event(
                     supervision_sentences=supervision_sentences,
                     incarceration_sentences=incarceration_sentences,
                     supervision_period=supervision_period,
@@ -261,21 +263,19 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
                     supervision_period_to_agent_associations=supervision_period_to_agent_associations,
                     judicial_district_code=judicial_district_code,
                 )
-                if supervision_start_bucket:
-                    supervision_time_buckets.append(supervision_start_bucket)
+                if supervision_start_event:
+                    supervision_events.append(supervision_start_event)
 
         if supervision_types_mutually_exclusive_for_state(state_code):
-            supervision_time_buckets = self._convert_buckets_to_dual(
-                supervision_time_buckets
-            )
+            supervision_events = self._convert_events_to_dual(supervision_events)
         else:
-            supervision_time_buckets = self._expand_dual_supervision_buckets(
-                supervision_time_buckets
+            supervision_events = self._expand_dual_supervision_events(
+                supervision_events
             )
 
-        return supervision_time_buckets
+        return supervision_events
 
-    def _find_time_buckets_for_supervision_period(
+    def _find_population_events_for_supervision_period(
         self,
         person: StatePerson,
         supervision_sentences: List[StateSupervisionSentence],
@@ -288,9 +288,10 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
         supervision_contacts: List[StateSupervisionContact],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         judicial_district_code: Optional[str] = None,
-    ) -> List[SupervisionTimeBucket]:
-        """Finds days that this person was on supervision for the given StateSupervisionPeriod, where the person was not
-        incarcerated and did not have a revocation admission that day.
+    ) -> List[SupervisionPopulationEvent]:
+        """Finds days that this person was on supervision for the given
+        StateSupervisionPeriod.
+
         Args:
             - person: StatePerson encoding of the person under supervision
             - supervision_sentences: List of StateSupervisionSentences for a person
@@ -306,9 +307,10 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
                 about the corresponding StateAgent on the period
             - judicial_district_code: The judicial district responsible for the period of supervision
         Returns
-            - A set of unique SupervisionTimeBuckets for the person for the given StateSupervisionPeriod.
+            - A set of unique SupervisionPopulationEvents for the person for the given
+            StateSupervisionPeriod.
         """
-        supervision_day_buckets: List[SupervisionTimeBucket] = []
+        supervision_population_events: List[SupervisionPopulationEvent] = []
 
         start_date = supervision_period.start_date
         termination_date = supervision_period.termination_date
@@ -445,8 +447,8 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
                     period=supervision_period,
                 )
 
-                supervision_day_buckets.append(
-                    NonRevocationReturnSupervisionTimeBucket(
+                supervision_population_events.append(
+                    SupervisionPopulationEvent(
                         state_code=supervision_period.state_code,
                         year=event_date.year,
                         month=event_date.month,
@@ -478,7 +480,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
 
             event_date = event_date + relativedelta(days=1)
 
-        return supervision_day_buckets
+        return supervision_population_events
 
     def _supervision_period_counts_towards_supervision_population_in_date_range(
         self,
@@ -570,7 +572,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
 
         return False
 
-    def _find_supervision_start_bucket(
+    def _find_supervision_start_event(
         self,
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_sentences: List[StateIncarcerationSentence],
@@ -579,9 +581,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
         incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         judicial_district_code: Optional[str] = None,
-    ) -> Optional[SupervisionTimeBucket]:
+    ) -> Optional[SupervisionEvent]:
         """Identifies an instance of supervision start, assuming the provided |supervision_period| has a valid start
-        date, and returns all relevant info as a SupervisionStartBucket.
+        date, and returns all relevant info as a SupervisionStartEvent.
         """
 
         # Do not create start metrics if no start date
@@ -626,7 +628,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
             incarceration_period_index,
         )
 
-        return SupervisionStartBucket(
+        return SupervisionStartEvent(
             state_code=supervision_period.state_code,
             admission_reason=admission_reason,
             event_date=start_date,
@@ -646,7 +648,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
             custodial_authority=supervision_period.custodial_authority,
         )
 
-    def _find_supervision_termination_bucket(
+    def _find_supervision_termination_event(
         self,
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_sentences: List[StateIncarcerationSentence],
@@ -657,9 +659,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
         violation_responses_for_history: List[StateSupervisionViolationResponse],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         judicial_district_code: Optional[str] = None,
-    ) -> Optional[SupervisionTimeBucket]:
+    ) -> Optional[SupervisionEvent]:
         """Identifies an instance of supervision termination. If the given supervision_period has a valid start_date and
-        termination_date, then returns a SupervisionTerminationBucket with the details of the termination.
+        termination_date, then returns a SupervisionTerminationEvent with the details of the termination.
 
         Calculates the change in assessment score from the beginning of supervision to the termination of supervision.
         This is done by identifying the first reassessment (or, the second score) and the last score during a
@@ -668,7 +670,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
         If a person has multiple supervision periods that end in a given month, the the earliest start date and the latest
         termination date of the periods is used to estimate the start and end dates of the supervision. These dates
         are then used to determine what the second and last assessment scores are. However, the termination_date on the
-        SupervisionTerminationBucket will always be the termination_date on the supervision_period.
+        SupervisionTerminationEvent will always be the termination_date on the supervision_period.
 
         If this supervision does not have a termination_date, then None is returned.
         """
@@ -764,7 +766,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
                 incarceration_period_index,
             )
 
-            return SupervisionTerminationBucket(
+            return SupervisionTerminationEvent(
                 state_code=supervision_period.state_code,
                 event_date=termination_date,
                 year=termination_date.year,
@@ -877,7 +879,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
         incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         supervision_period_to_judicial_district_associations: Dict[int, Dict[Any, Any]],
-    ) -> List[ProjectedSupervisionCompletionBucket]:
+    ) -> List[ProjectedSupervisionCompletionEvent]:
         """This classifies whether supervision projected to end in a given month was completed successfully.
 
         Will use both incarceration and supervision sentences in determining supervision success.
@@ -887,7 +889,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
         finds the one with the latest termination date. From that supervision period, classifies the termination as either
         successful or not successful.
         """
-        projected_completion_buckets: List[ProjectedSupervisionCompletionBucket] = []
+        projected_completion_events: List[ProjectedSupervisionCompletionEvent] = []
 
         all_sentences: List[
             Union[StateIncarcerationSentence, StateSupervisionSentence]
@@ -973,7 +975,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
                     latest_supervision_period = supervision_period
 
             if latest_supervision_period:
-                completion_bucket = self._get_projected_completion_bucket(
+                completion_event = self._get_projected_completion_event(
                     sentence,
                     projected_completion_date,
                     latest_supervision_period,
@@ -982,12 +984,12 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
                     supervision_period_to_judicial_district_associations,
                 )
 
-                if completion_bucket:
-                    projected_completion_buckets.append(completion_bucket)
+                if completion_event:
+                    projected_completion_events.append(completion_event)
 
-        return projected_completion_buckets
+        return projected_completion_events
 
-    def _get_projected_completion_bucket(
+    def _get_projected_completion_event(
         self,
         sentence: Union[StateSupervisionSentence, StateIncarcerationSentence],
         projected_completion_date: date,
@@ -995,8 +997,8 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
         incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         supervision_period_to_judicial_district_associations: Dict[int, Dict[Any, Any]],
-    ) -> Optional[ProjectedSupervisionCompletionBucket]:
-        """Returns a ProjectedSupervisionCompletionBucket for the given supervision sentence and its last terminated period,
+    ) -> Optional[ProjectedSupervisionCompletionEvent]:
+        """Returns a ProjectedSupervisionCompletionEvent for the given supervision sentence and its last terminated period,
         if the sentence should be included in the success metric counts. If the sentence should not be included in success
         metrics, then returns None."""
         if not self._include_termination_in_success_metric(
@@ -1073,7 +1075,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
 
         # TODO(#2975): Note that this metric measures success by projected completion month. Update or expand this
         #  metric to capture the success of early termination as well
-        return ProjectedSupervisionCompletionBucket(
+        return ProjectedSupervisionCompletionEvent(
             state_code=supervision_period.state_code,
             year=projected_completion_date.year,
             month=projected_completion_date.month,
@@ -1140,141 +1142,135 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
             f"Unexpected StateSupervisionPeriodTerminationReason: {termination_reason}"
         )
 
-    def _expand_dual_supervision_buckets(
+    def _expand_dual_supervision_events(
         self,
-        supervision_time_buckets: List[SupervisionTimeBucket],
-    ) -> List[SupervisionTimeBucket]:
-        """For any SupervisionTimeBuckets that are of DUAL supervision type, makes a copy of the bucket that has a PAROLE
-        supervision type and a copy of the bucket that has a PROBATION supervision type. Returns all buckets, including the
-        duplicated buckets for each of the DUAL supervision buckets, because we want these buckets to contribute to PAROLE,
+        supervision_events: List[SupervisionEvent],
+    ) -> List[SupervisionEvent]:
+        """For any SupervisionEvents that are of DUAL supervision type, makes a copy of the event that has a PAROLE
+        supervision type and a copy of the event that has a PROBATION supervision type. Returns all events, including the
+        duplicated events for each of the DUAL supervision events, because we want these events to contribute to PAROLE,
         PROBATION, and DUAL breakdowns of any metric."""
-        additional_supervision_months: List[SupervisionTimeBucket] = []
+        additional_supervision_months: List[SupervisionEvent] = []
 
-        for supervision_time_bucket in supervision_time_buckets:
+        for supervision_event in supervision_events:
             if (
-                supervision_time_bucket.supervision_type
+                supervision_event.supervision_type
                 == StateSupervisionPeriodSupervisionType.DUAL
             ):
                 parole_copy = attr.evolve(
-                    supervision_time_bucket,
+                    supervision_event,
                     supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 )
 
                 additional_supervision_months.append(parole_copy)
 
                 probation_copy = attr.evolve(
-                    supervision_time_bucket,
+                    supervision_event,
                     supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 )
 
                 additional_supervision_months.append(probation_copy)
 
-        supervision_time_buckets.extend(additional_supervision_months)
+        supervision_events.extend(additional_supervision_months)
 
-        return supervision_time_buckets
+        return supervision_events
 
-    # Each SupervisionMetricType with a list of the SupervisionTimeBuckets that contribute to that metric
-    BUCKET_TYPES_FOR_METRIC: Dict[
-        SupervisionMetricType, List[Type[SupervisionTimeBucket]]
+    # Each SupervisionMetricType with a list of the SupervisionEvents that contribute to that metric
+    EVENT_TYPES_FOR_METRIC: Dict[
+        SupervisionMetricType, List[Type[SupervisionEvent]]
     ] = {
-        SupervisionMetricType.SUPERVISION_COMPLIANCE: [
-            NonRevocationReturnSupervisionTimeBucket
-        ],
+        SupervisionMetricType.SUPERVISION_COMPLIANCE: [SupervisionPopulationEvent],
         SupervisionMetricType.SUPERVISION_POPULATION: [
-            NonRevocationReturnSupervisionTimeBucket,
+            SupervisionPopulationEvent,
         ],
         SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION: [
-            NonRevocationReturnSupervisionTimeBucket,
+            SupervisionPopulationEvent,
         ],
-        SupervisionMetricType.SUPERVISION_START: [SupervisionStartBucket],
+        SupervisionMetricType.SUPERVISION_START: [SupervisionStartEvent],
         SupervisionMetricType.SUPERVISION_SUCCESS: [
-            ProjectedSupervisionCompletionBucket
+            ProjectedSupervisionCompletionEvent
         ],
         SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: [
-            ProjectedSupervisionCompletionBucket
+            ProjectedSupervisionCompletionEvent
         ],
-        SupervisionMetricType.SUPERVISION_TERMINATION: [SupervisionTerminationBucket],
-        SupervisionMetricType.SUPERVISION_DOWNGRADE: [
-            NonRevocationReturnSupervisionTimeBucket
-        ],
+        SupervisionMetricType.SUPERVISION_TERMINATION: [SupervisionTerminationEvent],
+        SupervisionMetricType.SUPERVISION_DOWNGRADE: [SupervisionPopulationEvent],
     }
 
-    def _convert_buckets_to_dual(
+    def _convert_events_to_dual(
         self,
-        supervision_time_buckets: List[SupervisionTimeBucket],
-    ) -> List[SupervisionTimeBucket]:
+        supervision_events: List[SupervisionEvent],
+    ) -> List[SupervisionEvent]:
         """For some states, we want to track DUAL supervision as distinct from both PAROLE and PROBATION. For these states,
-        if someone has two buckets on the same day that will contribute to the same type of metric, and these buckets are
+        if someone has two events on the same day that will contribute to the same type of metric, and these events are
         of different supervision types (one is PAROLE and one is PROBATION, or one is DUAL and the other is something other
-        than DUAL), then we want that person to only contribute to metrics with a supervision type of DUAL. All buckets of
+        than DUAL), then we want that person to only contribute to metrics with a supervision type of DUAL. All events of
         that type on that day are then replaced with ones that have DUAL as the set supervision_type.
 
-        Returns an updated list of SupervisionTimeBuckets.
+        Returns an updated list of SupervisionEvents.
         """
-        buckets_by_date: Dict[date, List[SupervisionTimeBucket]] = defaultdict(list)
+        events_by_date: Dict[date, List[SupervisionEvent]] = defaultdict(list)
 
-        for bucket in supervision_time_buckets:
-            event_date = bucket.event_date
-            buckets_by_date[event_date].append(bucket)
+        for event in supervision_events:
+            event_date = event.event_date
+            events_by_date[event_date].append(event)
 
-        day_bucket_groups = list(buckets_by_date.values())
+        day_event_groups = list(events_by_date.values())
 
-        updated_supervision_time_buckets: List[SupervisionTimeBucket] = []
+        updated_supervision_events: List[SupervisionEvent] = []
 
-        for day_bucket_group in day_bucket_groups:
-            if len(day_bucket_group) < 2:
-                # We only need to convert buckets if there are two that fall in the same time period
-                updated_supervision_time_buckets.extend(day_bucket_group)
+        for day_event_group in day_event_groups:
+            if len(day_event_group) < 2:
+                # We only need to convert events if there are two that fall in the same time period
+                updated_supervision_events.extend(day_event_group)
                 continue
 
-            for _, bucket_types in self.BUCKET_TYPES_FOR_METRIC.items():
-                buckets_for_this_metric = [
-                    bucket
-                    for bucket in day_bucket_group
-                    for bucket_type in bucket_types
-                    if isinstance(bucket, bucket_type)
+            for _, event_types in self.EVENT_TYPES_FOR_METRIC.items():
+                events_for_this_metric = [
+                    event
+                    for event in day_event_group
+                    for event_type in event_types
+                    if isinstance(event, event_type)
                 ]
 
-                # If there is more than one bucket for this metric on this day
-                if buckets_for_this_metric and len(buckets_for_this_metric) > 1:
-                    parole_buckets = self._get_buckets_with_supervision_type(
-                        buckets_for_this_metric,
+                # If there is more than one event for this metric on this day
+                if events_for_this_metric and len(events_for_this_metric) > 1:
+                    parole_events = self._get_events_with_supervision_type(
+                        events_for_this_metric,
                         StateSupervisionPeriodSupervisionType.PAROLE,
                     )
-                    probation_buckets = self._get_buckets_with_supervision_type(
-                        buckets_for_this_metric,
+                    probation_events = self._get_events_with_supervision_type(
+                        events_for_this_metric,
                         StateSupervisionPeriodSupervisionType.PROBATION,
                     )
-                    dual_buckets = self._get_buckets_with_supervision_type(
-                        buckets_for_this_metric,
+                    dual_events = self._get_events_with_supervision_type(
+                        events_for_this_metric,
                         StateSupervisionPeriodSupervisionType.DUAL,
                     )
 
-                    # If they were on both parole and probation on this day, change every bucket for this metric
+                    # If they were on both parole and probation on this day, change every event for this metric
                     # to have a supervision type of DUAL
-                    if (parole_buckets and probation_buckets) or dual_buckets:
-                        for bucket in buckets_for_this_metric:
-                            updated_bucket = attr.evolve(
-                                bucket,
+                    if (parole_events and probation_events) or dual_events:
+                        for event in events_for_this_metric:
+                            updated_event = attr.evolve(
+                                event,
                                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
                             )
-                            day_bucket_group.remove(bucket)
-                            day_bucket_group.append(updated_bucket)
+                            day_event_group.remove(event)
+                            day_event_group.append(updated_event)
 
-            updated_supervision_time_buckets.extend(day_bucket_group)
+            updated_supervision_events.extend(day_event_group)
 
-        return updated_supervision_time_buckets
+        return updated_supervision_events
 
-    def _get_buckets_with_supervision_type(
+    def _get_events_with_supervision_type(
         self,
-        buckets: List[SupervisionTimeBucket],
+        events: List[SupervisionEvent],
         supervision_type: StateSupervisionPeriodSupervisionType,
-    ) -> List[SupervisionTimeBucket]:
-        """Returns each SupervisionTimeBucket in buckets if the supervision_type on the bucket matches the given
+    ) -> List[SupervisionEvent]:
+        """Returns each SupervisionEvent in events if the supervision_type on the event matches the given
         supervision_type."""
-        return [
-            bucket for bucket in buckets if bucket.supervision_type == supervision_type
-        ]
+        return [event for event in events if event.supervision_type == supervision_type]
 
     def _get_judicial_district_code(
         self,

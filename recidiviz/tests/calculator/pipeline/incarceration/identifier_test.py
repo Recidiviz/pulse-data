@@ -1700,7 +1700,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         )
 
     def testFindIncarcerationEvents_usId_RevocationAdmission(self):
-        """Tests the find_supervision_time_buckets function for state code US_ID."""
+        """Tests the find_incarceration_events function for state code US_ID."""
         self._stop_state_specific_delegate_patchers()
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(

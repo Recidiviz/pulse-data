@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Produces SupervisionMetrics from SupervisionTimeBuckets.
+"""Produces SupervisionMetrics from SupervisionEvents.
 
 This contains the core logic for calculating supervision metrics on a person-by-person
-basis. It transforms SupervisionTimeBuckets into SupervisionMetrics.
+basis. It transforms SupervisionEvents into SupervisionMetrics.
 """
 from operator import attrgetter
 from typing import Any, Dict, List, Optional, Type
@@ -25,11 +25,11 @@ from typing import Any, Dict, List, Optional, Type
 from recidiviz.calculator.pipeline.base_metric_producer import BaseMetricProducer
 from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.supervision.events import (
-    NonRevocationReturnSupervisionTimeBucket,
-    ProjectedSupervisionCompletionBucket,
-    SupervisionStartBucket,
-    SupervisionTerminationBucket,
-    SupervisionTimeBucket,
+    ProjectedSupervisionCompletionEvent,
+    SupervisionEvent,
+    SupervisionPopulationEvent,
+    SupervisionStartEvent,
+    SupervisionTerminationEvent,
 )
 from recidiviz.calculator.pipeline.supervision.metrics import (
     SuccessfulSupervisionSentenceDaysServedMetric,
@@ -57,29 +57,27 @@ from recidiviz.persistence.entity.state.entities import StatePerson
 
 
 class SupervisionMetricProducer(
-    BaseMetricProducer[
-        List[SupervisionTimeBucket], SupervisionMetricType, SupervisionMetric
-    ]
+    BaseMetricProducer[List[SupervisionEvent], SupervisionMetricType, SupervisionMetric]
 ):
-    """Produces SupervisionMetrics from SupervisionTimeBuckets."""
+    """Produces SupervisionMetrics from SupervisionEvents."""
 
     def __init__(self) -> None:
         # TODO(python/mypy#5374): Remove the ignore type when abstract class assignments are supported.
         self.metric_class = SupervisionMetric  # type: ignore
         self.event_to_metric_classes = {}
         self.event_to_metric_types = {
-            NonRevocationReturnSupervisionTimeBucket: [
+            SupervisionPopulationEvent: [
                 SupervisionMetricType.SUPERVISION_COMPLIANCE,
                 SupervisionMetricType.SUPERVISION_POPULATION,
                 SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION,
                 SupervisionMetricType.SUPERVISION_DOWNGRADE,
             ],
-            ProjectedSupervisionCompletionBucket: [
+            ProjectedSupervisionCompletionEvent: [
                 SupervisionMetricType.SUPERVISION_SUCCESS,
                 SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED,
             ],
-            SupervisionStartBucket: [SupervisionMetricType.SUPERVISION_START],
-            SupervisionTerminationBucket: [
+            SupervisionStartEvent: [SupervisionMetricType.SUPERVISION_START],
+            SupervisionTerminationEvent: [
                 SupervisionMetricType.SUPERVISION_TERMINATION
             ],
         }
@@ -99,7 +97,7 @@ class SupervisionMetricProducer(
     def produce_metrics(
         self,
         person: StatePerson,
-        identifier_events: List[SupervisionTimeBucket],
+        identifier_events: List[SupervisionEvent],
         metric_inclusions: Dict[SupervisionMetricType, bool],
         person_metadata: PersonMetadata,
         pipeline_type: PipelineType,
@@ -107,14 +105,14 @@ class SupervisionMetricProducer(
         calculation_end_month: Optional[str] = None,
         calculation_month_count: int = -1,
     ) -> List[SupervisionMetric]:
-        """Transforms SupervisionTimeBuckets and a StatePerson into SuperviisonMetrics.
+        """Transforms SupervisionEvents and a StatePerson into SuperviisonMetrics.
 
-        Takes in a StatePerson and all of her SupervisionTimeBuckets and returns an array
+        Takes in a StatePerson and all of their SupervisionEvents and returns an array
         of SupervisionMetrics.
 
         Args:
             person: the StatePerson
-            supervision_time_buckets: A list of SupervisionTimeBuckets for the given StatePerson.
+            identifier_events: A list of SupervisionEvents for the given StatePerson.
             metric_inclusions: A dictionary where the keys are each SupervisionMetricType, and the values are boolean
                     flags for whether or not to include that metric type in the calculations
             calculation_end_month: The year and month in YYYY-MM format of the last month for which metrics should be
@@ -138,17 +136,17 @@ class SupervisionMetricProducer(
             calculation_month_upper_bound, calculation_month_count
         )
 
-        for supervision_time_bucket in identifier_events:
-            event_date = supervision_time_bucket.event_date
+        for event in identifier_events:
+            event_date = event.event_date
 
             if (
                 isinstance(
-                    supervision_time_bucket,
-                    NonRevocationReturnSupervisionTimeBucket,
+                    event,
+                    SupervisionPopulationEvent,
                 )
-                and supervision_time_bucket.case_compliance
+                and event.case_compliance
             ):
-                event_date = supervision_time_bucket.case_compliance.date_of_evaluation
+                event_date = event.case_compliance.date_of_evaluation
 
             event_year = event_date.year
             event_month = event_date.month
@@ -161,15 +159,11 @@ class SupervisionMetricProducer(
             ):
                 continue
 
-            applicable_metric_types = self.event_to_metric_types.get(
-                type(supervision_time_bucket)
-            )
+            applicable_metric_types = self.event_to_metric_types.get(type(event))
 
             if not applicable_metric_types:
                 raise ValueError(
-                    "No metric types mapped to supervision_time_bucket of type {}".format(
-                        type(supervision_time_bucket)
-                    )
+                    "No metric types mapped to event of type {}".format(type(event))
                 )
 
             for metric_type in applicable_metric_types:
@@ -183,24 +177,24 @@ class SupervisionMetricProducer(
                         "No metric class for metric type {}".format(metric_type)
                     )
 
-                if self.include_event_in_metric(supervision_time_bucket, metric_type):
+                if self.include_event_in_metric(event, metric_type):
                     additional_attributes: Dict[str, Any] = {}
 
                     if (
                         isinstance(
-                            supervision_time_bucket,
-                            ProjectedSupervisionCompletionBucket,
+                            event,
+                            ProjectedSupervisionCompletionEvent,
                         )
                         and metric_type
                         == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
                     ):
                         additional_attributes[
                             "days_served"
-                        ] = supervision_time_bucket.sentence_days_served
+                        ] = event.sentence_days_served
 
                     metric = build_metric(
                         pipeline=pipeline_type.value.lower(),
-                        event=supervision_time_bucket,
+                        event=event,
                         metric_class=metric_class,
                         person=person,
                         event_date=event_date,
@@ -221,56 +215,54 @@ class SupervisionMetricProducer(
 
     def include_event_in_metric(
         self,
-        supervision_time_bucket: SupervisionTimeBucket,
+        event: SupervisionEvent,
         metric_type: SupervisionMetricType,
     ) -> bool:
-        """Returns whether the given supervision_time_bucket should contribute to metrics of the given metric_type."""
+        """Returns whether the given event should contribute to metrics of the given metric_type."""
         if metric_type == SupervisionMetricType.SUPERVISION_COMPLIANCE:
             return (
                 isinstance(
-                    supervision_time_bucket,
-                    NonRevocationReturnSupervisionTimeBucket,
+                    event,
+                    SupervisionPopulationEvent,
                 )
-                and supervision_time_bucket.case_compliance is not None
+                and event.case_compliance is not None
             )
         if metric_type == SupervisionMetricType.SUPERVISION_DOWNGRADE:
             return (
                 isinstance(
-                    supervision_time_bucket,
-                    NonRevocationReturnSupervisionTimeBucket,
+                    event,
+                    SupervisionPopulationEvent,
                 )
-                and supervision_time_bucket.supervision_level_downgrade_occurred
+                and event.supervision_level_downgrade_occurred
             )
         if metric_type == SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION:
             return (
                 isinstance(
-                    supervision_time_bucket,
-                    (NonRevocationReturnSupervisionTimeBucket,),
+                    event,
+                    (SupervisionPopulationEvent,),
                 )
-                and supervision_period_is_out_of_state(supervision_time_bucket)
+                and supervision_period_is_out_of_state(event)
             )
         if metric_type == SupervisionMetricType.SUPERVISION_POPULATION:
             return (
                 isinstance(
-                    supervision_time_bucket,
-                    (NonRevocationReturnSupervisionTimeBucket,),
+                    event,
+                    (SupervisionPopulationEvent,),
                 )
-                and not supervision_period_is_out_of_state(supervision_time_bucket)
+                and not supervision_period_is_out_of_state(event)
             )
         if (
             metric_type
             == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
         ):
             return (
-                isinstance(
-                    supervision_time_bucket, ProjectedSupervisionCompletionBucket
-                )
-                and supervision_time_bucket.successful_completion
+                isinstance(event, ProjectedSupervisionCompletionEvent)
+                and event.successful_completion
                 # Only include successful sentences where the person was not incarcerated during the sentence
                 # in this metric
-                and not supervision_time_bucket.incarcerated_during_sentence
+                and not event.incarcerated_during_sentence
                 # Only include this event in this metric if there is a recorded number of days served
-                and supervision_time_bucket.sentence_days_served is not None
+                and event.sentence_days_served is not None
             )
         if metric_type in (
             SupervisionMetricType.SUPERVISION_START,
