@@ -594,7 +594,7 @@
                                 <table align="center" width="599" border="0" cellspacing="0" cellpadding="0"
                                   class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
                                   style="width:599px; border-radius: 5px;">
-                                  {% if total_revocations_label -%}
+                                  {% if total_revocations is not none -%}
                                   <tr>
                                     <td valign="top" align="center">
                                       <table align="center" width="599" border="0" cellspacing="0" cellpadding="0"
@@ -671,7 +671,7 @@
                                   <tr>
                                     <td class="em_h18" height="32" style="height: 32px;">&nbsp;</td>
                                   </tr>
-                                  {% if technical_revocations -%}
+                                  {% if technical_revocations is not none -%}
                                   <tr>
                                     <td valign="top" align="center">
                                       <table width="100%" border="0" cellspacing="0" cellpadding="0">
@@ -777,7 +777,7 @@
                                   <tr>
                                     <td class="em_h18" height="32" style="height: 32px;">&nbsp;</td>
                                   </tr>
-                                  {% if crime_revocations -%}
+                                  {% if crime_revocations is not none -%}
                                   <tr>
                                     <td valign="top" align="center">
                                       <table width="100%" border="0" cellspacing="0" cellpadding="0">
