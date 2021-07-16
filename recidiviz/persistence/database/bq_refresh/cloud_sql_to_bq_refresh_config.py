@@ -111,6 +111,7 @@ class CloudSqlToBQConfig:
     def __init__(
         self,
         schema_type: SchemaType,
+        direct_ingest_instance: Optional[DirectIngestInstance] = None,
         columns_to_exclude: Optional[Dict[str, List[str]]] = None,
         history_tables_to_include: Optional[List[str]] = None,
         region_codes_to_exclude: Optional[List[str]] = None,
@@ -121,6 +122,7 @@ class CloudSqlToBQConfig:
             columns_to_exclude = {}
         if region_codes_to_exclude is None:
             region_codes_to_exclude = []
+        self.direct_ingest_instance = direct_ingest_instance
         self.schema_type = schema_type
         self.metadata_base = schema_type_to_schema_base(schema_type)
         self.sorted_tables: List[Table] = self.metadata_base.metadata.sorted_tables
@@ -206,9 +208,13 @@ class CloudSqlToBQConfig:
             )
 
         if self.schema_type == SchemaType.STATE:
+            if not self.direct_ingest_instance:
+                raise ValueError(
+                    "Expected DirectIngestInstance to be non-None for STATE schema."
+                )
             return SQLAlchemyDatabaseKey.for_state_code(
                 state_code=state_code,
-                db_version=DirectIngestInstance.PRIMARY.database_version(
+                db_version=self.direct_ingest_instance.database_version(
                     SystemLevel.STATE, state_code=state_code
                 ),
             )
@@ -417,11 +423,19 @@ class CloudSqlToBQConfig:
 
     @classmethod
     def for_schema_type(
-        cls, schema_type: SchemaType, yaml_path: Optional[GcsfsFilePath] = None
+        cls,
+        schema_type: SchemaType,
+        direct_ingest_instance: Optional[DirectIngestInstance] = None,
+        yaml_path: Optional[GcsfsFilePath] = None,
     ) -> "CloudSqlToBQConfig":
         """Logic for instantiating a config object for a schema type."""
         if not cls.is_valid_schema_type(schema_type):
             raise ValueError(f"Unsupported schema_type: [{schema_type}]")
+
+        if schema_type != SchemaType.STATE and direct_ingest_instance is not None:
+            raise ValueError(
+                "CloudSQLToBQConfig can only be initialized with DirectIngestInstance with STATE schema."
+            )
 
         gcs_fs = GcsfsFactory.build()
         if not yaml_path:
@@ -443,8 +457,11 @@ class CloudSqlToBQConfig:
                 region_codes_to_exclude=yaml_config.get("region_codes_to_exclude", []),
             )
         if schema_type == SchemaType.STATE:
+            if direct_ingest_instance is None:
+                direct_ingest_instance = DirectIngestInstance.PRIMARY
             return CloudSqlToBQConfig(
                 schema_type=SchemaType.STATE,
+                direct_ingest_instance=direct_ingest_instance,
                 region_codes_to_exclude=yaml_config.get("region_codes_to_exclude", []),
                 history_tables_to_include=yaml_config.get(
                     "state_history_tables_to_include", []

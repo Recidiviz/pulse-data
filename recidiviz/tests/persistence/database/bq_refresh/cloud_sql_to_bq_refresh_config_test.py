@@ -26,6 +26,9 @@ import sqlalchemy
 from parameterized import parameterized
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
 )
@@ -82,6 +85,14 @@ county_columns_to_exclude:
     def test_for_schema_type_raises_error(self) -> None:
         with self.assertRaises(ValueError):
             CloudSqlToBQConfig.for_schema_type("random-schema-type")  # type: ignore[arg-type]
+
+    def test_incorrect_direct_ingest_instance_raises(self) -> None:
+        for schema_type in self.enabled_schema_types:
+            if schema_type != SchemaType.STATE:
+                with self.assertRaises(ValueError):
+                    _ = CloudSqlToBQConfig.for_schema_type(
+                        schema_type, DirectIngestInstance.PRIMARY
+                    )
 
     def test_for_schema_type_returns_instance(self) -> None:
         for schema_type in self.schema_types:
