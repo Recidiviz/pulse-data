@@ -33,7 +33,8 @@ REVOCATION_SESSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME = (
 
 REVOCATION_SESSIONS_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION = """
     A view which provides a person / day level comparison between session identified revocations and the 
-    revocation dataflow metric. For each person / revocation date there are a set of binary variables that 
+    revocation admissions in the incarceration commitment from supervision dataflow 
+    metric. For each person / revocation date there are a set of binary variables that 
     indicate whether the revocation appears in dataflow, sessions, or both.
     """
 
@@ -44,8 +45,9 @@ REVOCATION_SESSIONS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
     SELECT DISTINCT
         person_id,
         state_code,
-        revocation_admission_date AS revocation_date
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_metrics_materialized` 
+        admission_date AS revocation_date
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_materialized`
+    WHERE admission_reason LIKE '%REVOCATION' 
     )
     ,
     session_revocations AS
