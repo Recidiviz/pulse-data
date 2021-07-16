@@ -242,7 +242,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
             metric_source = 'INFERRED'
                 AND inflow_from_level_1 = 'SUPERVISION'
                 AND (prev_end_reason in ('REVOCATION','RETURN_TO_INCARCERATION') 
-                    OR next_start_reason in ('REVOCATION','ADMITTED_FROM_SUPERVISION','DUAL_REVOCATION','PAROLE_REVOCATION','PROBATION_REVOCATION')) AS inferred_pending_custody,
+                    OR next_start_reason in ('REVOCATION','SANCTION_ADMISSION', 'DUAL_REVOCATION','PAROLE_REVOCATION','PROBATION_REVOCATION')) AS inferred_pending_custody,
             metric_source = 'INFERRED'
                 AND inflow_from_level_1 = 'INCARCERATION'
                 AND prev_end_reason = 'CONDITIONAL_RELEASE' AS inferred_pending_supervision,
