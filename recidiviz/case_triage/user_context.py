@@ -54,7 +54,6 @@ class UserContext:
     email: str = attr.ib()
     can_impersonate: bool = attr.ib(default=False)
     can_see_demo_data: bool = attr.ib(default=False)
-    permission: Permission = attr.ib(default=Permission.READ_WRITE)
     current_user: ETLOfficer = attr.ib(default=None)
     known_experiments: Dict[str, Optional[str]] = attr.ib(default=dict)
 
@@ -71,6 +70,14 @@ class UserContext:
                 for exp in KNOWN_EXPERIMENTS
             },
         )
+
+    @property
+    def permission(self) -> Permission:
+        if self.should_see_demo:
+            return Permission.READ_WRITE
+        if self.email == self.current_user.email_address:
+            return Permission.READ_WRITE
+        return Permission.READ_ONLY
 
     @property
     def segment_user_id(self) -> Optional[str]:
