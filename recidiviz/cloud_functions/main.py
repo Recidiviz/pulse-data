@@ -74,7 +74,7 @@ _APP_ENGINE_IMPORT_USER_RESTRICTIONS_CSV_TO_SQL_URL = (
     "https://{}.appspot.com/auth/import_user_restrictions_csv_to_sql?region_code={}"
 )
 _APP_ENGINE_IMPORT_CASE_TRIAGE_ETL_CSV_TO_SQL_URL = (
-    "https://{}.appspot.com/case_triage_ops/run_standard_cron_gcs_imports"
+    "https://{}.appspot.com/case_triage_ops/handle_gcs_imports"
 )
 
 

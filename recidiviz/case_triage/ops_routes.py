@@ -27,12 +27,18 @@ from flask import Blueprint
 from recidiviz.case_triage.views.view_config import CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.google_cloud.cloud_task_queue_manager import (
+    CloudTaskQueueInfo,
+    CloudTaskQueueManager,
+)
 from recidiviz.metrics.export.export_config import (
     CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
+
+CASE_TRIAGE_DB_OPERATIONS_QUEUE = "case-triage-db-operations-queue"
 
 case_triage_ops_blueprint = Blueprint("/case_triage_ops", __name__)
 
@@ -60,4 +66,18 @@ def _run_cron_gcs_import() -> Tuple[str, HTTPStatus]:
         )
         logging.info("View (%s) successfully imported", builder.view_id)
 
+    return "", HTTPStatus.OK
+
+
+@case_triage_ops_blueprint.route("/handle_gcs_imports", methods=["GET"])
+@requires_gae_auth
+def _handle_gcs_imports() -> Tuple[str, HTTPStatus]:
+    """Exposes an endpoint that enqueues a Cloud Task to trigger the GCS imports."""
+    cloud_task_manager = CloudTaskQueueManager(
+        queue_info_cls=CloudTaskQueueInfo, queue_name=CASE_TRIAGE_DB_OPERATIONS_QUEUE
+    )
+    cloud_task_manager.create_task(
+        relative_uri="/case_triage_ops/run_standard_cron_gcs_imports", body={}
+    )
+    logging.info("Enqueued gcs_import task to %s", CASE_TRIAGE_DB_OPERATIONS_QUEUE)
     return "", HTTPStatus.OK
