@@ -23,10 +23,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
 )
-from recidiviz.persistence.database.base_schema import (
-    JailsBase,
-    OperationsBase,
-)
+from recidiviz.persistence.database.base_schema import JailsBase, OperationsBase
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
 )
