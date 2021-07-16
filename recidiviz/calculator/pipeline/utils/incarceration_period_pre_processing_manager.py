@@ -239,7 +239,11 @@ class StateSpecificIncarcerationPreProcessingDelegate:
             and incarceration_period.admission_reason
             == StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
             and incarceration_period.specialized_purpose_for_incarceration
-            in (None, StateSpecializedPurposeForIncarceration.GENERAL)
+            in (
+                None,
+                StateSpecializedPurposeForIncarceration.GENERAL,
+                StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            )
         )
 
     @abc.abstractmethod
