@@ -31,7 +31,6 @@ pytablewriter = "*"
 black = "==20.8b1"
 pre-commit = "*"
 pygtrie = "*"
-
 types-dateparser = "*"
 types-flask = "*"
 types-freezegun = "*"
@@ -138,6 +137,8 @@ astroid = "*"
 redis = "*"
 pyarrow = "*"
 auth0-python = "*"
+sentry-sdk = {extras = ["flask"], version = "*"}
+blinker = "*"
 
 [requires]
 python_version = "3.8"
