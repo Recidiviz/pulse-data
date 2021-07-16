@@ -17,9 +17,9 @@
 """Revocations by race and ethnicity by metric period months."""
 # pylint: disable=trailing-whitespace
 
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -49,7 +49,7 @@ REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_QUERY_TEMPLATE = """
         district,
         metric_period_months,
         race_or_ethnicity
-      FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations`,
+      FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations_with_commitments_for_rate_denominators`,
       {metric_period_dimension}
       WHERE {metric_period_condition}
       GROUP BY state_code, race_or_ethnicity, district, supervision_type, metric_period_months
@@ -62,7 +62,7 @@ REVOCATIONS_BY_RACE_AND_ETHNICITY_BY_PERIOD_QUERY_TEMPLATE = """
         district,
         metric_period_months,
         race_or_ethnicity
-      FROM `{project_id}.{reference_views_dataset}.event_based_revocations`,
+      FROM `{project_id}.{reference_views_dataset}.event_based_commitments_from_supervision_materialized`,
       {metric_period_dimension}
       WHERE {metric_period_condition}
       GROUP BY state_code, supervision_type, district, metric_period_months, race_or_ethnicity

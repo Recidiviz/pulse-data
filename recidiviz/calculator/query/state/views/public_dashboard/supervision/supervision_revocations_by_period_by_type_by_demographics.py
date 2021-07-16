@@ -17,13 +17,14 @@
 """Supervision revocations by period by type by demographics. Person-based counts with respect to metric_period_months
 and supervision_type. If a person has more than one revocation of the same supervision type in a given metric period,
 the most recent one is chosen."""
-# pylint: disable=trailing-whitespace
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
 )
+
+# pylint: disable=trailing-whitespace
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -47,8 +48,8 @@ SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_QUERY_TEMPLA
         IFNULL(most_severe_violation_type, 'EXTERNAL_UNKNOWN') as most_severe_violation_type,
         IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
         IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket,
-        ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, supervision_type, person_id ORDER BY revocation_admission_date DESC) as revocation_ranking
-      FROM `{project_id}.{reference_views_dataset}.event_based_revocations`,
+        ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, supervision_type, person_id ORDER BY admission_date DESC) as revocation_ranking
+      FROM `{project_id}.{reference_views_dataset}.event_based_commitments_from_supervision_materialized`,
         UNNEST ([36]) AS metric_period_months
       WHERE {metric_period_condition}
       AND supervision_type IN ('ALL', 'PAROLE', 'PROBATION')

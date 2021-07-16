@@ -35,8 +35,8 @@ REVOCATIONS_MATRIX_BY_MONTH_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT
         state_code,
-        EXTRACT(YEAR FROM revocation_admission_date) as year,
-        EXTRACT(MONTH FROM revocation_admission_date) as month,
+        EXTRACT(YEAR FROM admission_date) as year,
+        EXTRACT(MONTH FROM admission_date) as month,
         admission_type,
         violation_type,
         reported_violations,
@@ -48,7 +48,7 @@ REVOCATIONS_MATRIX_BY_MONTH_QUERY_TEMPLATE = """
         COUNT(DISTINCT person_id) AS total_revocations
     FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`
     -- We want MoM revocation admissions for the last 36 months
-    WHERE revocation_admission_date >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH), INTERVAL 35 MONTH)
+    WHERE admission_date >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH), INTERVAL 35 MONTH)
         -- Filter out any rows that don't have a specified violation_type
         AND violation_type != 'NO_VIOLATION_TYPE'
     GROUP BY state_code, year, month, violation_type, reported_violations, supervision_type, supervision_level,

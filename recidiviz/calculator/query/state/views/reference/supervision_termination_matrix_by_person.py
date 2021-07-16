@@ -85,9 +85,9 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = """
             level_1_supervision_location,
             level_2_supervision_location,
             officer,
-            revocation_admission_date AS date_of_supervision,
+            admission_date AS date_of_supervision,
             TRUE as is_revocation
-        FROM `{project_id}.{reference_views_dataset}.event_based_revocations_for_matrix_materialized`
+        FROM `{project_id}.{reference_views_dataset}.event_based_commitments_from_supervision_for_matrix_materialized`
     ), revocations_and_terminations AS (
       SELECT * FROM terminations_matrix 
         UNION ALL

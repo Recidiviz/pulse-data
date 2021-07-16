@@ -41,7 +41,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
             state_code,
             metric_period_months,
             admission_type,
-            revocation_admission_date,
+            admission_date,
             {most_severe_violation_type_subtype_grouping},
             IF(response_count > 8, 8, response_count) as reported_violations,
             -- For record of the actual number of responses --
@@ -62,10 +62,11 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
             violation_record,
             violation_type_frequency_counter,
             ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_id
-                               ORDER BY revocation_admission_date DESC,
+                               ORDER BY admission_date DESC,
+                               (admission_type = 'LEGAL_REVOCATION') DESC,
                                supervision_type, supervision_level, case_type, level_1_supervision_location,
                                level_2_supervision_location, officer) as ranking
-        FROM `{project_id}.{reference_views_dataset}.event_based_revocations_for_matrix_materialized`,
+        FROM `{project_id}.{reference_views_dataset}.event_based_commitments_from_supervision_for_matrix_materialized`,
         {metric_period_dimension}
         WHERE {metric_period_condition}
         AND {state_specific_supervision_type_inclusion_filter}
@@ -82,7 +83,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
             state_code,
             metric_period_months,
             admission_type,
-            revocation_admission_date,
+            admission_date,
             violation_type,
             reported_violations,
             response_count,
@@ -118,7 +119,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
         metric_period_months,
         admission_type,
         admission_history_description,
-        revocation_admission_date,
+        admission_date,
         violation_type,
         reported_violations,
         response_count,

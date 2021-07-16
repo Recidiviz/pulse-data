@@ -17,9 +17,9 @@
 """Admissions by metric period months"""
 # pylint: disable=trailing-whitespace
 
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -31,16 +31,16 @@ ADMISSIONS_BY_TYPE_BY_PERIOD_DESCRIPTION = (
 
 ADMISSIONS_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE = """
     /*{description}*/
-    -- Combine supervision revocations with new admission incarcerations
+    -- Combine commitments from supervision with new admission incarcerations
     WITH combined_admissions AS (
       SELECT
         state_code, year, month,
         person_id,
-        revocation_admission_date AS admission_date,
+        admission_date,
         most_severe_violation_type,
         supervision_type,
         district
-      FROM `{project_id}.{reference_views_dataset}.event_based_revocations`
+      FROM `{project_id}.{reference_views_dataset}.event_based_commitments_from_supervision_materialized`
 
       UNION ALL
 
