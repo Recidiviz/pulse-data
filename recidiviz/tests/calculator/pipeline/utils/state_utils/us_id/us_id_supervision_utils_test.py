@@ -23,7 +23,7 @@ from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.supervision.events import (
-    RevocationReturnSupervisionTimeBucket,
+    NonRevocationReturnSupervisionTimeBucket,
 )
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
@@ -798,8 +798,8 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
     def create_time_bucket(
         supervising_district_external_id: Optional[str],
         custodial_authority: Optional[StateCustodialAuthority],
-    ) -> RevocationReturnSupervisionTimeBucket:
-        return RevocationReturnSupervisionTimeBucket(
+    ) -> NonRevocationReturnSupervisionTimeBucket:
+        return NonRevocationReturnSupervisionTimeBucket(
             state_code="US_ID",
             year=2010,
             month=1,

@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Buckets of time on supervision that may have included a revocation."""
+"""Various events related to being on supervision."""
 from datetime import date
-from typing import List, Optional
+from typing import Optional
 
 import attr
 
@@ -34,18 +34,12 @@ from recidiviz.common import attr_validators
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateSpecializedPurposeForIncarceration,
-)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
     is_official_supervision_admission,
-)
-from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseDecision,
 )
 
 
@@ -56,8 +50,9 @@ class SupervisionTimeBucket(
 ):
     """Models details related to a bucket of time on supervision.
 
-    Describes a month in which a person spent any amount of time on supervision. This includes the information
-    pertaining to time on supervision that we will want to track when calculating supervision and revocation metrics."""
+    Describes a period of time in which a person spent any amount of time on
+    supervision. This includes the information pertaining to time on supervision that we
+    will want to track when calculating various supervision metrics."""
 
     # Year for when the person was on supervision
     year: int = attr.ib(default=None, validator=attr_validators.is_int)
@@ -109,58 +104,6 @@ class SupervisionDowngradeBucket(BuildableAttr):
 
     # The supervision level of the previous supervision period.
     previous_supervision_level: Optional[StateSupervisionLevel] = attr.ib(default=None)
-
-
-# TODO(#6988): Delete this bucket after we transition to the
-#  IncarcerationCommitmentFromSupervisionMetric
-@attr.s(frozen=True)
-class RevocationReturnSupervisionTimeBucket(
-    SupervisionTimeBucket, ViolationHistoryMixin
-):
-    """Models a SupervisionTimeBucket where the person was incarcerated for a revocation."""
-
-    # TODO(#6988): This will temporarily store StateSpecializedPurposeForIncarceration
-    #  values as we transition to the IncarcerationCommitmentFromSupervisionMetric
-    # The type of revocation of supervision
-    revocation_type: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(
-        default=None
-    )
-
-    # A string subtype that provides further insight into the revocation_type above.
-    revocation_type_subtype: Optional[str] = attr.ib(default=None)
-
-    # A string representation of the violations recorded in the period leading up to the revocation
-    violation_history_description: Optional[str] = attr.ib(default=None)
-
-    # A list of a list of strings for each violation type and subtype recorded during the period leading up to the
-    # revocation. The elements of the outer list represent every StateSupervisionViolation that was reported in the
-    # period leading up to the revocation. Each inner list represents all of the violation types and conditions that
-    # were listed on the given violation.
-    violation_type_frequency_counter: Optional[List[List[str]]] = attr.ib(default=None)
-
-    # The most severe decision on the most recent response leading up to the revocation
-    most_recent_response_decision: Optional[
-        StateSupervisionViolationResponseDecision
-    ] = attr.ib(default=None)
-
-    # TODO(#3600): This field should be removed because the daily output makes this unnecessary
-    # True if the stint of time on supervision this month included the last day of the month
-    is_on_supervision_last_day_of_month: bool = attr.ib()
-
-    # The projected end date for the person's supervision term.
-    projected_end_date: Optional[date] = attr.ib(default=None)
-
-    @is_on_supervision_last_day_of_month.default
-    def _default_is_on_supervision_last_day_of_month(self) -> None:
-        raise ValueError("Must set is_on_supervision_last_day_of_month!")
-
-    @property
-    def revocation_admission_date(self) -> date:
-        return self.event_date
-
-    @property
-    def date_of_supervision(self) -> date:
-        return self.event_date
 
 
 @attr.s(frozen=True)

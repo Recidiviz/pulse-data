@@ -31,7 +31,6 @@ from recidiviz.calculator.pipeline.supervision import (
 from recidiviz.calculator.pipeline.supervision.events import (
     NonRevocationReturnSupervisionTimeBucket,
     ProjectedSupervisionCompletionBucket,
-    RevocationReturnSupervisionTimeBucket,
     SupervisionStartBucket,
     SupervisionTerminationBucket,
     SupervisionTimeBucket,
@@ -41,7 +40,6 @@ from recidiviz.calculator.pipeline.supervision.metrics import (
     SupervisionMetricType,
     SupervisionOutOfStatePopulationMetric,
     SupervisionPopulationMetric,
-    SupervisionRevocationMetric,
     SupervisionSuccessMetric,
     SupervisionTerminationMetric,
 )
@@ -56,28 +54,15 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateSpecializedPurposeForIncarceration,
-)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.common.constants.state.state_supervision_violation import (
-    StateSupervisionViolationType,
-)
-from recidiviz.common.constants.state.state_supervision_violation import (
-    StateSupervisionViolationType as ViolationType,
-)
-from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseDecision,
-)
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonEthnicity,
-    StatePersonExternalId,
     StatePersonRace,
 )
 
@@ -351,75 +336,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         expected_count = expected_metrics_count(supervision_time_buckets)
 
         self.assertEqual(expected_count, len(metrics))
-
-    def test_map_supervision_revocation_combinations(self) -> None:
-        """Tests the produce_supervision_metrics function for a revocation month."""
-        person = StatePerson.new_with_defaults(
-            state_code="US_XX",
-            person_id=12345,
-            birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
-        )
-
-        person_external_id = StatePersonExternalId.new_with_defaults(
-            external_id="SID1341", id_type="US_MO_DOC", state_code="US_XX"
-        )
-
-        person.external_ids = [person_external_id]
-
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
-        )
-
-        person.ethnicities = [ethnicity]
-
-        supervision_time_buckets: List[SupervisionTimeBucket] = [
-            RevocationReturnSupervisionTimeBucket(
-                state_code="US_XX",
-                year=2018,
-                month=3,
-                event_date=date(2018, 3, 31),
-                is_on_supervision_last_day_of_month=True,
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                case_type=StateSupervisionCaseType.GENERAL,
-                assessment_score=12,
-                assessment_level=StateAssessmentLevel.MEDIUM,
-                assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-                revocation_type=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
-                most_severe_violation_type=ViolationType.FELONY,
-                most_severe_violation_type_subtype="SUBTYPE",
-                most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
-                response_count=10,
-                supervision_level=StateSupervisionLevel.MINIMUM,
-                supervision_level_raw_text="MIN",
-                projected_end_date=None,
-            )
-        ]
-
-        metrics = self.metric_producer.produce_metrics(
-            person,
-            supervision_time_buckets,
-            ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month="2018-03",
-            calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
-            pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
-        )
-
-        expected_count = expected_metrics_count(supervision_time_buckets)
-
-        self.assertEqual(expected_count, len(metrics))
-        assert all(
-            metric.supervision_level_raw_text is not None
-            for metric in metrics
-            if isinstance(metric, SupervisionPopulationMetric)
-            and metric.person_id is not None
-        )
 
     def test_produce_supervision_metrics_supervision_success(self) -> None:
         """Tests the produce_supervision_metrics function when there is a ProjectedSupervisionCompletionBucket."""
@@ -748,99 +664,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         self.assertEqual(expected_count, len(metrics))
         assert any(metric.supervising_officer_external_id for metric in metrics)
 
-    def test_produce_supervision_metrics_revocation_and_not(self) -> None:
-        """Tests the produce_supervision_metrics function."""
-        person = StatePerson.new_with_defaults(
-            state_code="US_XX",
-            person_id=12345,
-            birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
-        )
-
-        person_external_id = StatePersonExternalId.new_with_defaults(
-            external_id="SID1341", id_type="US_MO_DOC", state_code="US_XX"
-        )
-
-        person.external_ids = [person_external_id]
-
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
-        )
-
-        person.ethnicities = [ethnicity]
-
-        supervision_time_buckets: List[SupervisionTimeBucket] = [
-            NonRevocationReturnSupervisionTimeBucket(
-                state_code="US_XX",
-                year=2018,
-                month=2,
-                event_date=date(2018, 2, 1),
-                is_on_supervision_last_day_of_month=False,
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                assessment_score=13,
-                assessment_level=StateAssessmentLevel.MEDIUM,
-                assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-                supervising_officer_external_id="OFFICER",
-                supervising_district_external_id="DISTRICT",
-                most_severe_violation_type=StateSupervisionViolationType.FELONY,
-                response_count=19,
-                projected_end_date=None,
-            ),
-            NonRevocationReturnSupervisionTimeBucket(
-                state_code="US_XX",
-                year=2018,
-                month=3,
-                event_date=date(2018, 3, 31),
-                is_on_supervision_last_day_of_month=True,
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                assessment_score=13,
-                assessment_level=StateAssessmentLevel.MEDIUM,
-                assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-                supervising_officer_external_id="OFFICER",
-                supervising_district_external_id="DISTRICT",
-                most_severe_violation_type=StateSupervisionViolationType.FELONY,
-                response_count=19,
-                projected_end_date=None,
-            ),
-            RevocationReturnSupervisionTimeBucket(
-                state_code="US_XX",
-                year=2018,
-                month=4,
-                event_date=date(2018, 4, 1),
-                is_on_supervision_last_day_of_month=False,
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                assessment_score=13,
-                assessment_level=StateAssessmentLevel.MEDIUM,
-                assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-                supervising_officer_external_id="OFFICER",
-                supervising_district_external_id="DISTRICT",
-                revocation_type=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
-                most_severe_violation_type=StateSupervisionViolationType.FELONY,
-                most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
-                response_count=19,
-                projected_end_date=None,
-            ),
-        ]
-
-        metrics = self.metric_producer.produce_metrics(
-            person,
-            supervision_time_buckets,
-            ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month="2018-04",
-            calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
-            pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
-        )
-
-        expected_count = expected_metrics_count(supervision_time_buckets)
-
-        self.assertEqual(expected_count, len(metrics))
-
     def test_produce_supervision_metrics_multiple_months(self) -> None:
         """Tests the produce_supervision_metrics function where the person was on supervision for multiple months."""
         person = StatePerson.new_with_defaults(
@@ -1146,68 +969,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             supervision_time_buckets,
             ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month="2018-04",
-            calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
-            pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
-        )
-
-        expected_count = expected_metrics_count(
-            supervision_time_buckets,
-        )
-
-        self.assertEqual(expected_count, len(metrics))
-
-    def test_produce_supervision_metrics_two_revocations_in_month_sort_date(
-        self,
-    ) -> None:
-        """Tests the produce_supervision_metrics function where the person was revoked twice in a given month. Asserts
-        that the revocation with the latest date is chosen."""
-        person = StatePerson.new_with_defaults(
-            state_code="US_XX",
-            person_id=12345,
-            birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
-        )
-
-        race = StatePersonRace.new_with_defaults(state_code="US_ND", race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_ND", ethnicity=Ethnicity.NOT_HISPANIC
-        )
-
-        person.ethnicities = [ethnicity]
-
-        supervision_time_buckets: List[SupervisionTimeBucket] = [
-            RevocationReturnSupervisionTimeBucket(
-                state_code="US_ND",
-                year=2018,
-                month=3,
-                event_date=date(2018, 3, 13),
-                is_on_supervision_last_day_of_month=False,
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                supervising_officer_external_id="FAKE_ID_1",
-                projected_end_date=None,
-            ),
-            RevocationReturnSupervisionTimeBucket(
-                state_code="US_ND",
-                year=2018,
-                month=3,
-                event_date=date(2018, 3, 29),
-                is_on_supervision_last_day_of_month=False,
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                supervising_officer_external_id="FAKE_ID_2",
-                projected_end_date=None,
-            ),
-        ]
-
-        metrics = self.metric_producer.produce_metrics(
-            person,
-            supervision_time_buckets,
-            ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month="2018-03",
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -1725,95 +1486,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric in metrics
         )
 
-    def test_produce_supervision_metrics_only_revocation(self) -> None:
-        person = StatePerson.new_with_defaults(
-            state_code="US_XX",
-            person_id=12345,
-            birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
-        )
-
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
-        )
-
-        person.ethnicities = [ethnicity]
-
-        termination_bucket = SupervisionTerminationBucket(
-            state_code="US_XX",
-            year=2010,
-            month=1,
-            event_date=date(2010, 1, 13),
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            assessment_score=11,
-            assessment_type=StateAssessmentType.LSIR,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            assessment_score_change=-9,
-        )
-
-        supervision_time_buckets: List[SupervisionTimeBucket] = [
-            ProjectedSupervisionCompletionBucket(
-                state_code="US_XX",
-                year=2010,
-                month=3,
-                event_date=date(2010, 3, 31),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                successful_completion=True,
-                supervising_officer_external_id="officer45",
-                supervising_district_external_id="district5",
-            ),
-            termination_bucket,
-            RevocationReturnSupervisionTimeBucket(
-                state_code="US_XX",
-                year=2010,
-                month=1,
-                event_date=date(2010, 1, 1),
-                is_on_supervision_last_day_of_month=False,
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                projected_end_date=None,
-            ),
-            NonRevocationReturnSupervisionTimeBucket(
-                state_code="US_XX",
-                year=2010,
-                month=2,
-                event_date=date(2010, 2, 2),
-                is_on_supervision_last_day_of_month=False,
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                projected_end_date=None,
-            ),
-        ]
-
-        inclusions_dict = {
-            metric_type: (metric_type == SupervisionMetricType.SUPERVISION_REVOCATION)
-            for metric_type in SupervisionMetricType
-        }
-
-        metrics = self.metric_producer.produce_metrics(
-            person,
-            supervision_time_buckets,
-            inclusions_dict,
-            calculation_end_month="2010-12",
-            calculation_month_count=12,
-            person_metadata=_DEFAULT_PERSON_METADATA,
-            pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
-        )
-
-        expected_count = expected_metrics_count(
-            supervision_time_buckets,
-            include_all_metrics=False,
-            metric_to_include=SupervisionMetricType.SUPERVISION_REVOCATION,
-        )
-
-        self.assertEqual(expected_count, len(metrics))
-        assert all(
-            isinstance(metric, SupervisionRevocationMetric) for metric in metrics
-        )
-
     def test_produce_supervision_metrics_only_population(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
@@ -1856,15 +1528,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 supervising_district_external_id="district5",
             ),
             termination_bucket,
-            RevocationReturnSupervisionTimeBucket(
-                state_code="US_XX",
-                year=2010,
-                month=1,
-                event_date=date(2010, 1, 1),
-                is_on_supervision_last_day_of_month=False,
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                projected_end_date=None,
-            ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code="US_XX",
                 year=2010,
@@ -2074,7 +1737,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets: List[SupervisionTimeBucket] = [
-            RevocationReturnSupervisionTimeBucket(
+            NonRevocationReturnSupervisionTimeBucket(
                 state_code="US_ID",
                 year=2010,
                 month=1,
@@ -2138,7 +1801,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets: List[SupervisionTimeBucket] = [
-            RevocationReturnSupervisionTimeBucket(
+            NonRevocationReturnSupervisionTimeBucket(
                 state_code="US_ID",
                 year=2010,
                 month=1,
@@ -2202,7 +1865,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets: List[SupervisionTimeBucket] = [
-            RevocationReturnSupervisionTimeBucket(
+            NonRevocationReturnSupervisionTimeBucket(
                 state_code="US_ID",
                 year=2010,
                 month=1,
@@ -2257,7 +1920,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets: List[SupervisionTimeBucket] = [
-            RevocationReturnSupervisionTimeBucket(
+            NonRevocationReturnSupervisionTimeBucket(
                 state_code="US_ID",
                 year=2010,
                 month=1,
@@ -2702,10 +2365,7 @@ def expected_metrics_count(
                     for bucket in supervision_time_buckets
                     if isinstance(
                         bucket,
-                        (
-                            RevocationReturnSupervisionTimeBucket,
-                            NonRevocationReturnSupervisionTimeBucket,
-                        ),
+                        (NonRevocationReturnSupervisionTimeBucket,),
                     )
                     and out_of_state_population
                 ]
@@ -2717,10 +2377,7 @@ def expected_metrics_count(
                     for bucket in supervision_time_buckets
                     if isinstance(
                         bucket,
-                        (
-                            RevocationReturnSupervisionTimeBucket,
-                            NonRevocationReturnSupervisionTimeBucket,
-                        ),
+                        (NonRevocationReturnSupervisionTimeBucket,),
                     )
                     and not out_of_state_population
                 ]

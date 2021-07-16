@@ -18,7 +18,7 @@ daily_pipelines:
     job_name: us-nd-supervision-calculations-36
     state_code: US_ND
     calculation_month_count: 36
-    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_SUCCESS SUPERVISION_TERMINATION SUPERVISION_COMPLIANCE
+    metric_types: SUPERVISION_POPULATION SUPERVISION_SUCCESS SUPERVISION_TERMINATION SUPERVISION_COMPLIANCE
     region: us-east1
   - pipeline: incarceration
     job_name: us-nd-incarceration-calculations-36
@@ -38,7 +38,7 @@ daily_pipelines:
     job_name: us-mo-supervision-calculations-36
     state_code: US_MO
     calculation_month_count: 36
-    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_TERMINATION
+    metric_types: SUPERVISION_POPULATION SUPERVISION_TERMINATION
     region: us-west3
   - pipeline: incarceration
     job_name: us-mo-incarceration-calculations-36
@@ -58,7 +58,7 @@ daily_pipelines:
     job_name: us-id-supervision-calculations-36
     state_code: US_ID
     calculation_month_count: 36
-    metric_types: SUPERVISION_POPULATION SUPERVISION_OUT_OF_STATE_POPULATION SUPERVISION_REVOCATION SUPERVISION_COMPLIANCE SUPERVISION_TERMINATION SUPERVISION_START SUPERVISION_DOWNGRADE
+    metric_types: SUPERVISION_POPULATION SUPERVISION_OUT_OF_STATE_POPULATION SUPERVISION_COMPLIANCE SUPERVISION_TERMINATION SUPERVISION_START SUPERVISION_DOWNGRADE
     region: us-central1
   - pipeline: incarceration
     job_name: us-id-incarceration-calculations-36
@@ -78,7 +78,7 @@ daily_pipelines:
     job_name: us-pa-supervision-calculations-36
     state_code: US_PA
     calculation_month_count: 36
-    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_SUCCESS SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION SUPERVISION_COMPLIANCE SUPERVISION_START SUPERVISION_DOWNGRADE
+    metric_types: SUPERVISION_POPULATION SUPERVISION_SUCCESS SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION SUPERVISION_COMPLIANCE SUPERVISION_START SUPERVISION_DOWNGRADE
     region: us-west1
   - pipeline: incarceration
     job_name: us-pa-incarceration-calculations-36
@@ -106,7 +106,7 @@ historical_pipelines:
     job_name: us-id-historical-supervision-calculations-240
     state_code: US_ID
     calculation_month_count: 240
-    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
+    metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
     # This region value must stay in-sync with the REGION arg in the
     # historical-pipelines.tf config for this pipeline
     region: us-west1
@@ -130,7 +130,7 @@ historical_pipelines:
     job_name: us-mo-historical-supervision-calculations-240
     state_code: US_MO
     calculation_month_count: 240
-    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
+    metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
     # This region value must stay in-sync with the REGION arg in the
     # historical-pipelines.tf config for this pipeline
     region: us-west3
@@ -154,7 +154,7 @@ historical_pipelines:
     job_name: us-nd-historical-supervision-calculations-240
     state_code: US_ND
     calculation_month_count: 240
-    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_START SUPERVISION_TERMINATION
+    metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION
     # This region value must stay in-sync with the REGION arg in the
     # historical-pipelines.tf config for this pipeline
     region: us-east1
@@ -170,7 +170,7 @@ historical_pipelines:
     job_name: us-pa-historical-supervision-calculations-240
     state_code: US_PA
     calculation_month_count: 240
-    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
+    metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
     # This region value must stay in-sync with the REGION arg in the
     # historical-pipelines.tf config for this pipeline
     region: us-central1
