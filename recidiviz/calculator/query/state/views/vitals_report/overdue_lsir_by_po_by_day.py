@@ -23,6 +23,9 @@ from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
 )
+from recidiviz.calculator.query.state.state_specific_query_strings import (
+    VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -48,7 +51,13 @@ WITH overdue_lsir AS (
     UNNEST ([supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
     WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 210 DAY)
         AND level_2_supervision_location_external_id IS NOT NULL
-    GROUP BY state_code, date_of_supervision, supervising_officer_external_id, level_1_supervision_location_external_id, level_2_supervision_location_external_id
+        -- Remove duplicate entries created when unnesting a state that does not have L2 locations
+    GROUP BY
+        state_code,
+        date_of_supervision,
+        supervising_officer_external_id,
+        level_1_supervision_location_external_id,
+        level_2_supervision_location_external_id
     )
 
     SELECT
@@ -69,6 +78,8 @@ WITH overdue_lsir AS (
         AND sup_pop.date_of_supervision = overdue_lsir.date_of_supervision
         AND sup_pop.supervising_officer_external_id = overdue_lsir.supervising_officer_external_id
         AND {vitals_state_specific_join_with_supervision_population}
+    WHERE overdue_lsir.level_1_supervision_location_external_id = 'ALL'
+        OR overdue_lsir.state_code IN {vitals_level_1_state_codes} 
     """
 
 OVERDUE_LSIR_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -91,6 +102,7 @@ OVERDUE_LSIR_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     vitals_state_specific_join_with_supervision_population=state_specific_query_strings.vitals_state_specific_join_with_supervision_population(
         "overdue_lsir"
     ),
+    vitals_level_1_state_codes=VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS,
 )
 
 if __name__ == "__main__":
