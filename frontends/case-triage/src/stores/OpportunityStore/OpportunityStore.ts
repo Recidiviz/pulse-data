@@ -14,17 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { autorun, makeAutoObservable, remove, runInAction } from "mobx";
+import { autorun, makeAutoObservable, runInAction } from "mobx";
 import moment from "moment";
 import {
   Opportunity,
-  OPPORTUNITY_PRIORITY,
   opportunityPriorityComparator,
   OpportunityType,
+  OpportunityData,
 } from "./Opportunity";
 import UserStore, { KNOWN_EXPERIMENTS } from "../UserStore";
 import API from "../API";
-import { Client } from "../ClientsStore";
 import RootStore from "../RootStore";
 
 interface OpportunityStoreProps {
@@ -40,7 +39,7 @@ class OpportunityStore {
 
   isLoading?: boolean;
 
-  opportunities?: Opportunity[];
+  opportunitiesFetched?: Opportunity[];
 
   error?: string;
 
@@ -54,13 +53,16 @@ class OpportunityStore {
     this.userStore = userStore;
     this.isLoading = false;
 
-    autorun(() => {
+    const checkAuthAndFetch = () => {
       if (!this.userStore.isAuthorized) {
         return;
       }
 
       this.fetchOpportunities();
-    });
+    };
+    autorun(checkAuthAndFetch);
+    // refetch for long-lived sessions
+    setInterval(checkAuthAndFetch, rootStore.refetchInterval);
   }
 
   async fetchOpportunities(): Promise<void> {
@@ -69,14 +71,12 @@ class OpportunityStore {
     try {
       await runInAction(async () => {
         this.isLoading = false;
-        let opportunities = await this.api.get<Opportunity[]>(
-          "/api/opportunities"
-        );
+        let opportunities = (
+          await this.api.get<OpportunityData[]>("/api/opportunities")
+        ).map((data) => new Opportunity(data));
 
         opportunities = opportunities.filter((opportunity: Opportunity) => {
-          return (
-            OPPORTUNITY_PRIORITY[opportunity.opportunityType] !== undefined
-          );
+          return opportunity.opportunityType in OpportunityType;
         });
 
         // this flag gives users access to more opportunities;
@@ -90,7 +90,7 @@ class OpportunityStore {
         }
 
         runInAction(() => {
-          this.opportunities = opportunities;
+          this.opportunitiesFetched = opportunities;
         });
       });
     } catch (error) {
@@ -99,6 +99,12 @@ class OpportunityStore {
         this.error = error;
       });
     }
+  }
+
+  get opportunities(): Opportunity[] | undefined {
+    return this.opportunitiesFetched
+      ?.slice()
+      .sort((a, b) => a.priority - b.priority);
   }
 
   get opportunitiesByPerson(): Record<string, Opportunity[] | undefined> {
@@ -117,13 +123,12 @@ class OpportunityStore {
   }
 
   *createOpportunityDeferral(
-    client: Client,
-    opportunityType: OpportunityType,
+    opportunity: Opportunity,
     deferUntil: moment.Moment
   ): Generator {
     yield this.api.post("/api/opportunity_deferrals", {
-      personExternalId: client.personExternalId,
-      opportunityType,
+      personExternalId: opportunity.personExternalId,
+      opportunityType: opportunity.opportunityType,
       deferralType: "REMINDER",
       deferUntil: deferUntil.format(),
       requestReminder: true,
@@ -137,9 +142,11 @@ class OpportunityStore {
       `/api/opportunity_deferrals/${opportunity.deferralId}`
     );
 
-    remove(opportunity, "deferredUntil");
-    remove(opportunity, "deferralId");
-    remove(opportunity, "deferralType");
+    /* eslint-disable no-param-reassign */
+    opportunity.deferredUntil = undefined;
+    opportunity.deferralId = undefined;
+    opportunity.deferralType = undefined;
+    /* eslint-enable no-param-reassign */
 
     // HACK: Due to a combination of bugs in React/Chrome, the scroll position is reset to the top of the page when re-rendering the client list
     // Store scroll position and re-scroll to the position upon the next re-render

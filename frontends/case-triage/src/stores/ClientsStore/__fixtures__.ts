@@ -15,8 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Opportunity } from "../OpportunityStore";
-import { OpportunityType } from "../OpportunityStore/Opportunity";
+import {
+  OpportunityData,
+  OpportunityType,
+} from "../OpportunityStore/Opportunity";
 import { Policy } from "../PolicyStore/Policy";
 import { ClientData } from "./Client";
 
@@ -56,7 +58,7 @@ export const clientData: ClientData = {
   supervisionType: "PAROLE",
 };
 
-export const clientOpportunities: Opportunity[] = [
+export const clientOpportunityData: OpportunityData[] = [
   {
     opportunityMetadata: {
       assessmentScore: 1,
@@ -104,6 +106,8 @@ export const statePolicy: Policy = {
   policyReferencesForOpportunities: {
     OVERDUE_DOWNGRADE: "http://example.com",
     EMPLOYMENT: "http://example.com",
+    ASSESSMENT: "http://example.com",
+    CONTACT: "http://example.com",
   },
   supervisionContactFrequencies: {
     GENERAL: {

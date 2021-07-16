@@ -130,8 +130,7 @@ const NeedsActionFlow = observer(
             onDeferred={(deferUntil) => {
               clientsStore.setClientPendingAnimation(true);
               opportunityStore.createOpportunityDeferral(
-                client,
-                opportunity.opportunityType,
+                opportunity,
                 deferUntil
               );
             }}

@@ -21,18 +21,25 @@ import assertNever from "assert-never";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 import {
   OpportunityType,
-  OPPORTUNITY_TITLES,
+  Opportunity,
 } from "../../stores/OpportunityStore/Opportunity";
 import { Pill, PillKind } from "../Pill";
 import { ClientProps } from "./ClientList.types";
 import { StatusList } from "./ClientList.styles";
 import AlertPreview from "../AlertPreview";
-import { DueDateAlert } from "../DueDate/DueDateAlert";
-import { getTimeDifference } from "../../utils";
 
-const opportunityToPillKind: Record<OpportunityType, PillKind> = {
-  EMPLOYMENT: "warn",
-  OVERDUE_DOWNGRADE: "highlight",
+const opportunityToPillKind = (opp: Opportunity): PillKind => {
+  switch (opp.opportunityType) {
+    case OpportunityType.OVERDUE_DOWNGRADE:
+      return "highlight";
+    case OpportunityType.EMPLOYMENT:
+      return "warn";
+    case OpportunityType.ASSESSMENT:
+    case OpportunityType.CONTACT:
+      return opp.opportunityMetadata.status === "OVERDUE" ? "error" : "warn";
+    default:
+      assertNever(opp.opportunityType);
+  }
 };
 
 export const ClientStatusList: React.FC<ClientProps> = observer(
@@ -62,42 +69,16 @@ export const ClientStatusList: React.FC<ClientProps> = observer(
 
     // if we picked up one of the above statuses, the rest of these should be ignored
     if (!statusPills.length) {
-      client.alerts.forEach((alert) => {
-        if ("opportunity" in alert) {
-          const { kind, opportunity } = alert;
-          statusPills.push(
-            <AlertPreview key={kind} kind={opportunityToPillKind[kind]}>
-              {OPPORTUNITY_TITLES[opportunity.opportunityType]}
-            </AlertPreview>
-          );
-        } else if ("status" in alert) {
-          const { kind, status, date } = alert;
-          let label: string;
-          let tooltip: string;
-          if (kind.startsWith("ASSESSMENT_")) {
-            label = "Risk assessment";
-            tooltip = "Risk Assessment needed";
-          } else {
-            label = "Contact";
-            tooltip = "Face to Face Contact recommended";
-          }
-          statusPills.push(
-            <DueDateAlert
-              key={kind}
-              status={status}
-              alertLabel={label}
-              tooltip={`${tooltip} ${getTimeDifference(date)}`}
-            />
-          );
-        } else if (alert.kind === "EMPLOYMENT") {
-          statusPills.push(
-            <AlertPreview key="employment" kind="warn">
-              Unemployed
-            </AlertPreview>
-          );
-        } else {
-          assertNever(alert);
-        }
+      client.activeOpportunities.forEach((opportunity) => {
+        statusPills.push(
+          <AlertPreview
+            key={opportunity.opportunityType}
+            kind={opportunityToPillKind(opportunity)}
+            tooltip={opportunity.tooltipText}
+          >
+            {opportunity.previewText}
+          </AlertPreview>
+        );
       });
     }
 
