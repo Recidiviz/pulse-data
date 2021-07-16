@@ -44,44 +44,8 @@ import StateSelector from "./Utilities/StateSelector";
 
 interface StyledStepProps extends StepProps {
   nextButtonTitle?: string;
-  onNextButtonClick: () => Promise<void>;
+  onNextButtonClick?: () => Promise<void>;
 }
-
-const StyledStep = ({
-  nextButtonTitle = "Mark Done",
-  onNextButtonClick,
-  description,
-  ...rest
-}: StyledStepProps): JSX.Element => {
-  const [loading, setLoading] = React.useState(false);
-
-  const jointDescription = (
-    <>
-      {description}
-      <Button
-        ghost
-        type="primary"
-        onClick={async () => {
-          setLoading(true);
-          await onNextButtonClick();
-          setLoading(false);
-        }}
-        loading={loading}
-        style={rest.status === "process" ? undefined : { display: "none" }}
-      >
-        {nextButtonTitle}
-      </Button>
-    </>
-  );
-
-  return (
-    <Steps.Step
-      style={{ paddingBottom: 5 }}
-      description={jointDescription}
-      {...rest}
-    />
-  );
-};
 
 interface CodeBlockProps {
   children: React.ReactNode;
@@ -124,6 +88,64 @@ const FlashDatabaseChecklist = (): JSX.Element => {
       return false;
     }
     return true;
+  };
+
+  const StyledStep = ({
+    nextButtonTitle = "Mark Done",
+    onNextButtonClick,
+    description,
+    ...rest
+  }: StyledStepProps): JSX.Element => {
+    const [loading, setLoading] = React.useState(false);
+
+    const jointDescription = (
+      <>
+        {description}
+        <Button
+          type="primary"
+          onClick={async () => {
+            setLoading(true);
+            if (onNextButtonClick) {
+              await onNextButtonClick();
+            } else {
+              await incrementCurrentStep();
+            }
+            setLoading(false);
+          }}
+          loading={loading}
+          style={rest.status === "process" ? undefined : { display: "none" }}
+        >
+          {nextButtonTitle}
+        </Button>
+        {onNextButtonClick && (
+          <Button
+            ghost
+            type="primary"
+            onClick={async () => {
+              setLoading(true);
+              await incrementCurrentStep();
+              setLoading(false);
+            }}
+            loading={loading}
+            style={
+              rest.status === "process"
+                ? { marginLeft: 5 }
+                : { display: "none" }
+            }
+          >
+            Mark Done
+          </Button>
+        )}
+      </>
+    );
+
+    return (
+      <Steps.Step
+        style={{ paddingBottom: 5 }}
+        description={jointDescription}
+        {...rest}
+      />
+    );
   };
 
   const contents =
@@ -211,7 +233,6 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               </p>
             </>
           }
-          onNextButtonClick={incrementCurrentStep}
         />
         <StyledStep
           title="Move primary files to storage"
@@ -242,7 +263,6 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               </p>
             </>
           }
-          onNextButtonClick={incrementCurrentStep}
         />
         <StyledStep
           title="Deprecate primary instance operation database rows"
@@ -274,7 +294,6 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               </ol>
             </>
           }
-          onNextButtonClick={incrementCurrentStep}
         />
         <StyledStep
           title="Import data from secondary"
@@ -327,7 +346,6 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               </ol>
             </>
           }
-          onNextButtonClick={incrementCurrentStep}
         />
         <StyledStep
           title="Update ingest view files"
@@ -349,7 +367,6 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               </p>
             </>
           }
-          onNextButtonClick={incrementCurrentStep}
         />
         <StyledStep
           title="Release Ingest Lock"
@@ -404,7 +421,6 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               </p>
             </>
           }
-          onNextButtonClick={incrementCurrentStep}
         />
         <StyledStep
           title="Unpause queues"
