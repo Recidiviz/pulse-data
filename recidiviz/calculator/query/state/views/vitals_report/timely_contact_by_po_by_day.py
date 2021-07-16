@@ -22,6 +22,9 @@ from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
 )
+from recidiviz.calculator.query.state.state_specific_query_strings import (
+    VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -49,8 +52,8 @@ WITH overdue_contacts AS (
     UNNEST ([compliance.level_1_supervision_location_external_id, 'ALL']) AS level_1_supervision_location_external_id,
     UNNEST ([compliance.level_2_supervision_location_external_id, 'ALL']) AS level_2_supervision_location_external_id,
     UNNEST ([supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
-    WHERE state_code = 'US_ND'
-        AND level_2_supervision_location_external_id IS NOT NULL
+    WHERE level_2_supervision_location_external_id IS NOT NULL
+        -- Remove duplicate entries created when unnesting a state that does not have L2 locations
         AND date_of_supervision > DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 211 DAY)
     GROUP BY state_code, date_of_supervision, supervising_officer_external_id, level_1_supervision_location_external_id, level_2_supervision_location_external_id
     )
@@ -73,6 +76,7 @@ WITH overdue_contacts AS (
         AND sup_pop.date_of_supervision = overdue_contacts.date_of_supervision
         AND sup_pop.supervising_officer_external_id = overdue_contacts.supervising_officer_external_id
         AND {vitals_state_specific_join_with_supervision_population}
+    WHERE level_1_supervision_location_external_id = 'ALL' OR state_code IN {vitals_level_1_state_codes} 
     """
 
 TIMELY_CONTACT_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -95,6 +99,7 @@ TIMELY_CONTACT_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     vitals_state_specific_join_with_supervision_population=state_specific_query_strings.vitals_state_specific_join_with_supervision_population(
         "overdue_contacts"
     ),
+    vitals_level_1_state_codes=VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS,
 )
 
 if __name__ == "__main__":
