@@ -22,7 +22,7 @@ from typing import Any, Dict, Optional, Tuple
 import attr
 
 from recidiviz.calculator.pipeline.supervision.events import (
-    RevocationReturnSupervisionTimeBucket,
+    NonRevocationReturnSupervisionTimeBucket,
 )
 from recidiviz.calculator.pipeline.utils.state_utils import (
     state_calculation_config_manager,
@@ -468,8 +468,8 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
     @staticmethod
     def create_time_bucket(
         state_code: str, supervising_district_external_id: Optional[str]
-    ) -> RevocationReturnSupervisionTimeBucket:
-        return RevocationReturnSupervisionTimeBucket(
+    ) -> NonRevocationReturnSupervisionTimeBucket:
+        return NonRevocationReturnSupervisionTimeBucket(
             state_code=state_code,
             year=2010,
             month=1,

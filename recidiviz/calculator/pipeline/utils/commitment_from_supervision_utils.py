@@ -81,8 +81,6 @@ CommitmentDetails = NamedTuple(
         ("supervision_type", StateSupervisionPeriodSupervisionType),
         ("supervision_level", Optional[StateSupervisionLevel]),
         ("supervision_level_raw_text", Optional[str]),
-        # TODO(#6988): Remove once we kill the SupervisionRevocationMetrics
-        ("pre_commitment_supervision_period", Optional[StateSupervisionPeriod]),
     ],
 )
 
@@ -184,7 +182,6 @@ def get_commitment_from_supervision_details(
         supervision_type=supervision_type,
         supervision_level=supervision_level,
         supervision_level_raw_text=supervision_level_raw_text,
-        pre_commitment_supervision_period=pre_commitment_supervision_period,
     )
 
     return commitment_details_result

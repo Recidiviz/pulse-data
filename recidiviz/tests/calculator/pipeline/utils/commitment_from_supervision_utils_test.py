@@ -181,7 +181,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                pre_commitment_supervision_period=supervision_period,
             ),
             commitment_details,
         )
@@ -226,7 +225,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                pre_commitment_supervision_period=supervision_period,
             ),
             commitment_details,
         )
@@ -257,7 +255,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 supervision_level=None,
                 supervision_level_raw_text=None,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                pre_commitment_supervision_period=None,
             ),
             commitment_details,
         )
@@ -342,7 +339,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                pre_commitment_supervision_period=supervision_period,
             ),
         )
 
@@ -395,7 +391,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 supervision_level=pre_commitment_sp.supervision_level,
                 supervision_level_raw_text=pre_commitment_sp.supervision_level_raw_text,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                pre_commitment_supervision_period=pre_commitment_sp,
             ),
             commitment_details,
         )

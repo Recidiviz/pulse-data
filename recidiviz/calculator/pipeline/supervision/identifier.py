@@ -31,7 +31,6 @@ from recidiviz.calculator.pipeline.base_identifier import (
 from recidiviz.calculator.pipeline.supervision.events import (
     NonRevocationReturnSupervisionTimeBucket,
     ProjectedSupervisionCompletionBucket,
-    RevocationReturnSupervisionTimeBucket,
     SupervisionStartBucket,
     SupervisionTerminationBucket,
     SupervisionTimeBucket,
@@ -41,9 +40,6 @@ from recidiviz.calculator.pipeline.supervision.supervision_case_compliance impor
     SupervisionCaseCompliance,
 )
 from recidiviz.calculator.pipeline.utils import assessment_utils
-from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
-    get_commitment_from_supervision_details,
-)
 from recidiviz.calculator.pipeline.utils.entity_pre_processing_utils import (
     pre_processing_managers_for_calculations,
 )
@@ -59,9 +55,7 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_month_supervision_type,
     get_state_specific_case_compliance_manager,
-    get_state_specific_commitment_from_supervision_delegate,
     get_state_specific_supervising_officer_and_location_info_function,
-    include_decisions_on_follow_up_responses_for_most_severe_response,
     second_assessment_on_supervision_is_more_reliable,
     should_produce_supervision_time_bucket_for_period,
     state_specific_supervision_admission_reason_override,
@@ -75,22 +69,15 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     identify_most_severe_case_type,
 )
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
-    get_most_severe_response_decision,
     prepare_violation_responses_for_calculations,
-    responses_on_most_recent_response_date,
-    violation_responses_in_window,
 )
 from recidiviz.calculator.pipeline.utils.violation_utils import (
-    VIOLATION_HISTORY_WINDOW_MONTHS,
     get_violation_and_response_history,
 )
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentLevel,
     StateAssessmentType,
-)
-from recidiviz.common.constants.state.state_incarceration_period import (
-    is_commitment_from_supervision,
 )
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -139,23 +126,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
         supervision_period_judicial_district_association: List[Dict[str, Any]],
     ) -> List[SupervisionTimeBucket]:
         """Identifies various events related to being on supervision.
-
-        Transforms each StateSupervisionPeriod into months where the person spent any number of days on
-        supervision. Excludes any time buckets in which the person was incarcerated for the entire time by looking through
-        all of the person's StateIncarcerationPeriods. For each month that someone was on supervision, a
-        SupervisionTimeBucket object is created. If the person was admitted to prison in that time for a revocation that
-        matches the type of supervision the SupervisionTimeBucket describes, then that object is a
-        RevocationSupervisionTimeBucket. If no applicable revocation occurs, then the object is of type
-        NonRevocationReturnSupervisionTimeBucket.
-
-        If someone is serving both probation and parole simultaneously, there will be one SupervisionTimeBucket for the
-        probation type and one for the parole type. If someone has multiple overlapping supervision periods,
-        there will be one SupervisionTimeBucket for each month on each supervision period.
-
-        If a revocation return to prison occurs in a time bucket where there is no recorded supervision period, we count
-        the individual as having been on supervision that time so that they can be included in the
-        revocation return count and rate metrics for that bucket. In these cases, we add supplemental
-        RevocationReturnSupervisionTimeBuckets to the list of SupervisionTimeBuckets.
 
         Args:
             - supervision_sentences: list of StateSupervisionSentences for a person
@@ -293,17 +263,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
                 )
                 if supervision_start_bucket:
                     supervision_time_buckets.append(supervision_start_bucket)
-
-        supervision_time_buckets = supervision_time_buckets + self._find_revocation_return_buckets(
-            supervision_sentences=supervision_sentences,
-            incarceration_sentences=incarceration_sentences,
-            supervision_period_index=supervision_period_index,
-            assessments=assessments,
-            sorted_violation_responses=sorted_violation_responses,
-            supervision_period_to_agent_associations=supervision_period_to_agent_associations,
-            supervision_period_to_judicial_district_associations=supervision_period_to_judicial_district_associations,
-            incarceration_period_index=incarceration_period_index,
-        )
 
         if supervision_types_mutually_exclusive_for_state(state_code):
             supervision_time_buckets = self._convert_buckets_to_dual(
@@ -910,195 +869,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
 
         return DateRangeDiff(sentence_range, period_range).overlapping_range is not None
 
-    def _find_revocation_return_buckets(
-        self,
-        supervision_sentences: List[StateSupervisionSentence],
-        incarceration_sentences: List[StateIncarcerationSentence],
-        supervision_period_index: PreProcessedSupervisionPeriodIndex,
-        assessments: List[StateAssessment],
-        sorted_violation_responses: List[StateSupervisionViolationResponse],
-        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
-        supervision_period_to_judicial_district_associations: Dict[int, Dict[Any, Any]],
-        incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
-    ) -> List[SupervisionTimeBucket]:
-        """Looks at all incarceration periods to see if they were revocation returns. For each revocation admission, adds
-        one RevocationReturnSupervisionTimeBuckets for each overlapping supervision period. If there are no overlapping
-        supervision periods, looks for a recently terminated period. If there are no overlapping or recently terminated
-        supervision periods, adds a RevocationReturnSupervisionTimeBuckets with as much information about the time on
-        supervision as possible.
-        """
-        revocation_return_buckets: List[SupervisionTimeBucket] = []
-
-        if not incarceration_period_index.incarceration_periods:
-            return revocation_return_buckets
-
-        for incarceration_period in incarceration_period_index.incarceration_periods:
-            if not incarceration_period.admission_date:
-                raise ValueError(f"Admission date is null for {incarceration_period}")
-            if not incarceration_period.admission_reason:
-                raise ValueError(f"Admision reason is null for {incarceration_period}")
-
-            state_code = incarceration_period.state_code
-
-            commitment_from_supervision_delegate = (
-                get_state_specific_commitment_from_supervision_delegate(state_code)
-            )
-
-            if not is_commitment_from_supervision(
-                incarceration_period.admission_reason
-            ):
-                continue
-
-            commitment_details = get_commitment_from_supervision_details(
-                incarceration_period=incarceration_period,
-                incarceration_period_index=incarceration_period_index,
-                supervision_period_index=supervision_period_index,
-                incarceration_sentences=incarceration_sentences,
-                supervision_sentences=supervision_sentences,
-                commitment_from_supervision_delegate=commitment_from_supervision_delegate,
-                supervision_period_to_agent_associations=supervision_period_to_agent_associations,
-                state_specific_officer_and_location_info_from_supervision_period_fn=get_state_specific_supervising_officer_and_location_info_function(
-                    state_code
-                ),
-            )
-
-            admission_date = incarceration_period.admission_date
-            admission_year = admission_date.year
-            admission_month = admission_date.month
-
-            (
-                assessment_score,
-                assessment_level,
-                assessment_type,
-            ) = assessment_utils.most_recent_applicable_assessment_attributes_for_class(
-                admission_date,
-                assessments,
-                assessment_class=StateAssessmentClass.RISK,
-                state_code=incarceration_period.state_code,
-            )
-
-            violation_responses_for_history = (
-                state_specific_violation_responses_for_violation_history(
-                    state_code=state_code,
-                    violation_responses=sorted_violation_responses,
-                    include_follow_up_responses=False,
-                )
-            )
-
-            violation_history_window = commitment_from_supervision_delegate.violation_history_window_pre_commitment_from_supervision(
-                admission_date=admission_date,
-                sorted_and_filtered_violation_responses=violation_responses_for_history,
-                default_violation_history_window_months=VIOLATION_HISTORY_WINDOW_MONTHS,
-            )
-
-            # Get details about the violation and response history leading up to the
-            # admission to incarceration
-            violation_history = get_violation_and_response_history(
-                upper_bound_exclusive_date=violation_history_window.upper_bound_exclusive_date,
-                lower_bound_inclusive_date_override=violation_history_window.lower_bound_inclusive_date,
-                violation_responses_for_history=violation_responses_for_history,
-                incarceration_period=incarceration_period,
-            )
-
-            responses_for_decision_evaluation = violation_responses_for_history
-
-            if include_decisions_on_follow_up_responses_for_most_severe_response(
-                incarceration_period.state_code
-            ):
-                # Get a new state-specific list of violation responses that includes follow-up
-                # responses
-                responses_for_decision_evaluation = (
-                    state_specific_violation_responses_for_violation_history(
-                        state_code=state_code,
-                        violation_responses=sorted_violation_responses,
-                        include_follow_up_responses=True,
-                    )
-                )
-
-            responses_in_window_for_decision_evaluation = violation_responses_in_window(
-                violation_responses=responses_for_decision_evaluation,
-                upper_bound_exclusive=(admission_date + relativedelta(days=1)),
-                # We're just looking for the most recent response
-                lower_bound_inclusive=None,
-            )
-
-            # Find the most severe decision on the most recent response decisions
-            most_recent_responses = responses_on_most_recent_response_date(
-                responses_in_window_for_decision_evaluation
-            )
-            most_recent_response_decision = get_most_severe_response_decision(
-                most_recent_responses
-            )
-
-            pre_commitment_supervision_period = (
-                commitment_details.pre_commitment_supervision_period
-            )
-
-            judicial_district_code = (
-                self._get_judicial_district_code(
-                    pre_commitment_supervision_period,
-                    supervision_period_to_judicial_district_associations,
-                )
-                if pre_commitment_supervision_period
-                else None
-            )
-
-            projected_end_date = (
-                self._get_projected_end_date(
-                    period=pre_commitment_supervision_period,
-                    supervision_sentences=supervision_sentences,
-                    incarceration_sentences=incarceration_sentences,
-                )
-                if pre_commitment_supervision_period
-                else None
-            )
-
-            deprecated_supervising_district_external_id = (
-                commitment_details.level_2_supervision_location_external_id
-                or commitment_details.level_1_supervision_location_external_id
-            )
-
-            revocation_month_bucket = RevocationReturnSupervisionTimeBucket(
-                state_code=incarceration_period.state_code,
-                year=admission_year,
-                month=admission_month,
-                event_date=admission_date,
-                supervision_type=commitment_details.supervision_type,
-                case_type=commitment_details.case_type,
-                assessment_score=assessment_score,
-                assessment_level=assessment_level,
-                assessment_type=assessment_type,
-                revocation_type=commitment_details.purpose_for_incarceration,
-                revocation_type_subtype=commitment_details.purpose_for_incarceration_subtype,
-                most_severe_violation_type=violation_history.most_severe_violation_type,
-                most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype,
-                most_severe_response_decision=violation_history.most_severe_response_decision,
-                most_recent_response_decision=most_recent_response_decision,
-                response_count=violation_history.response_count,
-                violation_history_description=violation_history.violation_history_description,
-                violation_type_frequency_counter=violation_history.violation_type_frequency_counter,
-                supervising_officer_external_id=commitment_details.supervising_officer_external_id,
-                supervising_district_external_id=deprecated_supervising_district_external_id,
-                level_1_supervision_location_external_id=(
-                    commitment_details.level_1_supervision_location_external_id
-                ),
-                level_2_supervision_location_external_id=(
-                    commitment_details.level_2_supervision_location_external_id
-                ),
-                supervision_level=commitment_details.supervision_level,
-                supervision_level_raw_text=commitment_details.supervision_level_raw_text,
-                # Note: This is incorrect in the case where you are revoked, then released by the end of the
-                #  month to a new supervision period that overlaps with EOM. We expect this case to be rare or
-                #  non-existent since we don't count temporary / board hold periods as revocations.
-                is_on_supervision_last_day_of_month=False,
-                judicial_district_code=judicial_district_code,
-                projected_end_date=projected_end_date,
-            )
-
-            revocation_return_buckets.append(revocation_month_bucket)
-
-        return revocation_return_buckets
-
     def _classify_supervision_success(
         self,
         supervision_sentences: List[StateSupervisionSentence],
@@ -1412,14 +1182,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionTimeBucket]]):
         ],
         SupervisionMetricType.SUPERVISION_POPULATION: [
             NonRevocationReturnSupervisionTimeBucket,
-            RevocationReturnSupervisionTimeBucket,
         ],
         SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION: [
             NonRevocationReturnSupervisionTimeBucket,
-            RevocationReturnSupervisionTimeBucket,
-        ],
-        SupervisionMetricType.SUPERVISION_REVOCATION: [
-            RevocationReturnSupervisionTimeBucket,
         ],
         SupervisionMetricType.SUPERVISION_START: [SupervisionStartBucket],
         SupervisionMetricType.SUPERVISION_SUCCESS: [

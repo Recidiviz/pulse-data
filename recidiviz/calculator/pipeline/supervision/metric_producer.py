@@ -27,7 +27,6 @@ from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.pipeline.supervision.events import (
     NonRevocationReturnSupervisionTimeBucket,
     ProjectedSupervisionCompletionBucket,
-    RevocationReturnSupervisionTimeBucket,
     SupervisionStartBucket,
     SupervisionTerminationBucket,
     SupervisionTimeBucket,
@@ -40,7 +39,6 @@ from recidiviz.calculator.pipeline.supervision.metrics import (
     SupervisionMetricType,
     SupervisionOutOfStatePopulationMetric,
     SupervisionPopulationMetric,
-    SupervisionRevocationMetric,
     SupervisionStartMetric,
     SupervisionSuccessMetric,
     SupervisionTerminationMetric,
@@ -80,11 +78,6 @@ class SupervisionMetricProducer(
                 SupervisionMetricType.SUPERVISION_SUCCESS,
                 SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED,
             ],
-            RevocationReturnSupervisionTimeBucket: [
-                SupervisionMetricType.SUPERVISION_POPULATION,
-                SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION,
-                SupervisionMetricType.SUPERVISION_REVOCATION,
-            ],
             SupervisionStartBucket: [SupervisionMetricType.SUPERVISION_START],
             SupervisionTerminationBucket: [
                 SupervisionMetricType.SUPERVISION_TERMINATION
@@ -97,7 +90,6 @@ class SupervisionMetricProducer(
             SupervisionMetricType.SUPERVISION_DOWNGRADE: SupervisionDowngradeMetric,
             SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION: SupervisionOutOfStatePopulationMetric,
             SupervisionMetricType.SUPERVISION_POPULATION: SupervisionPopulationMetric,
-            SupervisionMetricType.SUPERVISION_REVOCATION: SupervisionRevocationMetric,
             SupervisionMetricType.SUPERVISION_START: SupervisionStartMetric,
             SupervisionMetricType.SUPERVISION_SUCCESS: SupervisionSuccessMetric,
             SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: SuccessfulSupervisionSentenceDaysServedMetric,
@@ -253,10 +245,7 @@ class SupervisionMetricProducer(
             return (
                 isinstance(
                     supervision_time_bucket,
-                    (
-                        NonRevocationReturnSupervisionTimeBucket,
-                        RevocationReturnSupervisionTimeBucket,
-                    ),
+                    (NonRevocationReturnSupervisionTimeBucket,),
                 )
                 and supervision_period_is_out_of_state(supervision_time_bucket)
             )
@@ -264,10 +253,7 @@ class SupervisionMetricProducer(
             return (
                 isinstance(
                     supervision_time_bucket,
-                    (
-                        NonRevocationReturnSupervisionTimeBucket,
-                        RevocationReturnSupervisionTimeBucket,
-                    ),
+                    (NonRevocationReturnSupervisionTimeBucket,),
                 )
                 and not supervision_period_is_out_of_state(supervision_time_bucket)
             )
@@ -287,7 +273,6 @@ class SupervisionMetricProducer(
                 and supervision_time_bucket.sentence_days_served is not None
             )
         if metric_type in (
-            SupervisionMetricType.SUPERVISION_REVOCATION,
             SupervisionMetricType.SUPERVISION_START,
             SupervisionMetricType.SUPERVISION_SUCCESS,
             SupervisionMetricType.SUPERVISION_TERMINATION,
