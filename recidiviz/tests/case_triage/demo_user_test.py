@@ -19,12 +19,10 @@ from datetime import date
 from http import HTTPStatus
 from typing import Optional
 from unittest import TestCase
-from unittest.mock import MagicMock
 
 import pytest
 from flask import Flask
 
-from recidiviz.case_triage.api_routes import create_api_blueprint
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.client_info.types import PreferredContactMethod
 from recidiviz.case_triage.demo_helpers import (
@@ -32,15 +30,12 @@ from recidiviz.case_triage.demo_helpers import (
     get_fixture_opportunities,
     unconvert_fake_person_id_for_demo_user,
 )
-from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.case_triage.api_test_helpers import CaseTriageTestHelpers
 from recidiviz.tools.postgres import local_postgres_helpers
-
-DEMO_USER_EMAIL = "demo_user@recidiviz.org"
 
 
 @pytest.mark.uses_db
@@ -56,11 +51,6 @@ class TestDemoUser(TestCase):
 
     def setUp(self) -> None:
         self.test_app = Flask(__name__)
-        register_error_handlers(self.test_app)
-        mock_segment_client = MagicMock()
-        api = create_api_blueprint(mock_segment_client)
-        self.test_app.register_blueprint(api)
-        self.test_client = self.test_app.test_client()
         self.helpers = CaseTriageTestHelpers.from_test(self, self.test_app)
 
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
@@ -78,7 +68,7 @@ class TestDemoUser(TestCase):
 
         self.client_1 = self.demo_clients[0]
 
-        with self.helpers.as_demo_user():
+        with self.helpers.using_demo_user():
             self.helpers.create_case_update(
                 self.client_1.person_external_id,
                 CaseUpdateActionType.COMPLETED_ASSESSMENT.value,
@@ -105,7 +95,7 @@ class TestDemoUser(TestCase):
         self.assertEqual(test_client.most_recent_face_to_face_date, date.today())
 
     def test_get_clients(self) -> None:
-        with self.helpers.as_demo_user():
+        with self.helpers.using_demo_user():
             self.assertEqual(len(self.helpers.get_clients()), len(self.demo_clients))
 
             client = self.helpers.find_client_in_api_response(
@@ -114,7 +104,7 @@ class TestDemoUser(TestCase):
             self.assertTrue(len(client["caseUpdates"]) == 1)
 
     def test_create_case_updates_action(self) -> None:
-        with self.helpers.as_demo_user():
+        with self.helpers.using_demo_user():
             all_clients = self.helpers.get_clients()
             client_to_modify = None
             for client in all_clients:
@@ -141,7 +131,7 @@ class TestDemoUser(TestCase):
             )
 
     def test_delete_case_updates_action(self) -> None:
-        with self.helpers.as_demo_user():
+        with self.helpers.using_demo_user() as test_client:
             client_to_modify = self.helpers.find_client_in_api_response(
                 self.client_1.person_external_id
             )
@@ -150,7 +140,8 @@ class TestDemoUser(TestCase):
             case_update_id = client_to_modify["caseUpdates"][
                 CaseUpdateActionType.COMPLETED_ASSESSMENT.value
             ]["updateId"]
-            response = self.test_client.delete(f"/case_updates/{case_update_id}")
+
+            response = test_client.delete(f"/case_updates/{case_update_id}")
             self.assertEqual(response.status_code, HTTPStatus.OK)
 
             new_client = self.helpers.find_client_in_api_response(
@@ -159,32 +150,32 @@ class TestDemoUser(TestCase):
             self.assertTrue(len(new_client["caseUpdates"]) == 0)
 
     def test_get_opportunities(self) -> None:
-        # these numbers reflect the conditions represented in data fixtures
-        # that result in opportunities
-        num_unemployed = 58
-        num_assessment_overdue = 31
-        num_assessment_upcoming = 2
-        num_contact_overdue = 4
-        num_contact_upcoming = 1
+        with self.helpers.using_demo_user():
+            # these numbers reflect the conditions represented in data fixtures
+            # that result in opportunities
+            num_unemployed = 58
+            num_assessment_overdue = 31
+            num_assessment_upcoming = 2
+            num_contact_overdue = 4
+            num_contact_upcoming = 1
 
-        expected_opportunity_count = sum(
-            [
-                len(self.demo_opportunities),
-                num_unemployed,
-                num_assessment_overdue,
-                num_assessment_upcoming,
-                num_contact_overdue,
-                num_contact_upcoming,
-            ]
-        )
+            expected_opportunity_count = sum(
+                [
+                    len(self.demo_opportunities),
+                    num_unemployed,
+                    num_assessment_overdue,
+                    num_assessment_upcoming,
+                    num_contact_overdue,
+                    num_contact_upcoming,
+                ]
+            )
 
-        with self.helpers.as_demo_user():
             self.assertEqual(
                 len(self.helpers.get_opportunities()), expected_opportunity_count
             )
 
     def test_defer_opportunity(self) -> None:
-        with self.helpers.as_demo_user():
+        with self.helpers.using_demo_user():
             prior_opportunity_count = len(self.helpers.get_undeferred_opportunities())
 
             opportunity = self.demo_opportunities[0]
@@ -200,7 +191,7 @@ class TestDemoUser(TestCase):
             )
 
     def test_delete_opportunity_deferral(self) -> None:
-        with self.helpers.as_demo_user():
+        with self.helpers.using_demo_user():
             opportunity = self.demo_opportunities[0]
             self.helpers.defer_opportunity(
                 opportunity.person_external_id,
@@ -223,7 +214,7 @@ class TestDemoUser(TestCase):
             )
 
     def test_set_preferred_name(self) -> None:
-        with self.helpers.as_demo_user():
+        with self.helpers.using_demo_user():
             client = self.demo_clients[0]
 
             client_info = self.helpers.find_client_in_api_response(
@@ -246,7 +237,7 @@ class TestDemoUser(TestCase):
             self.assertTrue("preferredName" not in client_info)
 
     def test_set_preferred_contact(self) -> None:
-        with self.helpers.as_demo_user():
+        with self.helpers.using_demo_user() as test_client:
             client = self.demo_clients[0]
 
             client_info = self.helpers.find_client_in_api_response(
@@ -264,7 +255,7 @@ class TestDemoUser(TestCase):
             self.assertEqual(client_info["preferredContactMethod"], "CALL")
 
             # Unset preferred contact fails
-            response = self.test_client.post(
+            response = test_client.post(
                 "/set_preferred_contact_method",
                 json={
                     "personExternalId": client.person_external_id,
@@ -274,7 +265,7 @@ class TestDemoUser(TestCase):
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
 
     def test_set_receiving_ssi_or_disability_income(self) -> None:
-        with self.helpers.as_demo_user():
+        with self.helpers.using_demo_user():
             client = self.demo_clients[0]
 
             client_info = self.helpers.find_client_in_api_response(
@@ -301,7 +292,7 @@ class TestDemoUser(TestCase):
             self.assertFalse(client_info["receivingSSIOrDisabilityIncome"])
 
     def test_ssi_disability_satisfies_employment_opportunity(self) -> None:
-        with self.helpers.as_demo_user():
+        with self.helpers.using_demo_user():
             client = self.demo_clients[0]
 
             client_info = self.helpers.find_client_in_api_response(
@@ -341,7 +332,7 @@ class TestDemoUser(TestCase):
             self.assertIsNone(employment_opportunity)
 
     def test_notes(self) -> None:
-        with self.helpers.as_demo_user():
+        with self.helpers.using_demo_user():
             client = self.demo_clients[0]
 
             client_info = self.helpers.find_client_in_api_response(

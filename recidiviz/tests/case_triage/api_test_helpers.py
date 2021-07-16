@@ -17,17 +17,36 @@
 """ Test helpers for the Case Triage app """
 import contextlib
 from datetime import datetime, timedelta
+from functools import wraps
 from http import HTTPStatus
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any, Callable, Dict, Generator, List, Optional
 from unittest import TestCase
 
 import attr
-from flask import Flask, g
+from flask import Flask
 from flask.testing import FlaskClient
+from mock import MagicMock
 
+from recidiviz.case_triage.admin_flask_views import IMPERSONATED_EMAIL_KEY
+from recidiviz.case_triage.api_routes import create_api_blueprint
+from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.client_info.types import PreferredContactMethod
-from recidiviz.case_triage.user_context import Permission, UserContext
+from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.persistence.database.schema.case_triage.schema import ETLOfficer
+
+DEMO_USER_EMAIL = "demo_user@recidiviz.org"
+ADMIN_USER_EMAIL = "admin@recidiviz.org"
+
+
+def passthrough_authorization_decorator() -> Callable:
+    def decorated(route: Callable) -> Callable:
+        @wraps(route)
+        def inner(*args: List[Any], **kwargs: Dict[str, Any]) -> Any:
+            return route(*args, **kwargs)
+
+        return inner
+
+    return decorated
 
 
 @attr.s
@@ -36,39 +55,50 @@ class CaseTriageTestHelpers:
 
     test: TestCase = attr.ib()
     test_app: Flask = attr.ib()
-    test_client: FlaskClient = attr.ib()
+
+    def __attrs_post_init__(self) -> None:
+        register_error_handlers(self.test_app)
+        self.test_app.secret_key = "NOT-A-SECRET"
+        self.mock_segment_client = MagicMock()
+        self.mock_auth_store = AuthorizationStore()
+        self.mock_auth_store.demo_users = [DEMO_USER_EMAIL]
+        self.mock_auth_store.admin_users = [ADMIN_USER_EMAIL]
+        api = create_api_blueprint(
+            self.mock_segment_client,
+            passthrough_authorization_decorator(),
+            self.mock_auth_store,
+        )
+        self.test_app.register_blueprint(api)
+        self.test_client = self.test_app.test_client()
+
+    def set_session_user_info(self, email: str) -> None:
+        with self.test_client.session_transaction() as sess:  # type: ignore
+            sess["user_info"] = {"email": email}
 
     @contextlib.contextmanager
-    def as_demo_user(self) -> Generator[None, None, None]:
+    def using_demo_user(self) -> Generator[FlaskClient, None, None]:
         with self.test_app.test_request_context():
-            g.user_context = UserContext(
-                email="demo_user@recidiviz.org",
-                can_see_demo_data=True,
-            )
+            self.set_session_user_info(DEMO_USER_EMAIL)
 
-            yield
+            yield self.test_client
 
     @contextlib.contextmanager
-    def as_officer(self, officer: ETLOfficer) -> Generator[None, None, None]:
+    def using_officer(self, officer: ETLOfficer) -> Generator[FlaskClient, None, None]:
         with self.test_app.test_request_context():
-            g.user_context = UserContext(
-                email="demo_user@recidiviz.org",
-                can_see_demo_data=True,
-                current_user=officer,
-            )
+            self.set_session_user_info(officer.email_address)
 
-            yield
+            yield self.test_client
 
     @contextlib.contextmanager
-    def as_readonly_user(self, officer: ETLOfficer) -> Generator[None, None, None]:
+    def using_readonly_user(
+        self, officer: ETLOfficer
+    ) -> Generator[FlaskClient, None, None]:
         with self.test_app.test_request_context():
-            g.user_context = UserContext(
-                email="demo_user@recidiviz.org",
-                permission=Permission.READ_ONLY,
-                current_user=officer,
-            )
+            with self.test_client.session_transaction() as sess:  # type: ignore
+                sess["user_info"] = {"email": ADMIN_USER_EMAIL}
+                sess[IMPERSONATED_EMAIL_KEY] = officer.email_address
 
-            yield
+            yield self.test_client
 
     def get_clients(self) -> List[Dict[Any, Any]]:
         response = self.test_client.get("/clients")
@@ -217,4 +247,4 @@ class CaseTriageTestHelpers:
 
     @staticmethod
     def from_test(test: TestCase, test_app: Flask) -> "CaseTriageTestHelpers":
-        return CaseTriageTestHelpers(test, test_app, test_app.test_client())
+        return CaseTriageTestHelpers(test, test_app)
