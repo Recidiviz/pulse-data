@@ -19,6 +19,6 @@ module "case-triage-db-operations-queue" {
   source = "./modules/serial-task-queue"
 
   queue_name                = "case-triage-db-operations-queue"
-  region                    = var.region
+  region                    = var.app_engine_region
   max_dispatches_per_second = 100
 }
