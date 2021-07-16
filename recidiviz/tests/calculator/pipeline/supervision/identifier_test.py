@@ -33,11 +33,11 @@ import recidiviz.calculator.pipeline.utils.violation_response_utils
 import recidiviz.calculator.pipeline.utils.violation_utils
 from recidiviz.calculator.pipeline.supervision import identifier
 from recidiviz.calculator.pipeline.supervision.events import (
-    NonRevocationReturnSupervisionTimeBucket,
-    ProjectedSupervisionCompletionBucket,
-    SupervisionStartBucket,
-    SupervisionTerminationBucket,
-    SupervisionTimeBucket,
+    ProjectedSupervisionCompletionEvent,
+    SupervisionEvent,
+    SupervisionPopulationEvent,
+    SupervisionStartEvent,
+    SupervisionTerminationEvent,
 )
 from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
@@ -140,8 +140,8 @@ DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST = list(
 
 # TODO(#2732): Implement more full test coverage of the officer and district
 #  functionality and the supervision success classification
-class TestClassifySupervisionTimeBuckets(unittest.TestCase):
-    """Tests for the find_supervision_time_buckets function."""
+class TestClassifySupervisionEvents(unittest.TestCase):
+    """Tests for the find_supervision_events function."""
 
     def setUp(self) -> None:
         self.maxDiff = None
@@ -175,8 +175,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     def _stop_state_specific_delegate_patchers(self) -> None:
         self.pre_processing_delegate_patcher.stop()
 
-    def test_find_supervision_time_buckets(self) -> None:
-        """Tests the find_supervision_time_buckets function for a single
+    def test_find_supervision_events(self) -> None:
+        """Tests the find_supervision_population_events function for a single
         supervision period with no incarceration periods."""
 
         termination_date = date(2018, 5, 19)
@@ -234,7 +234,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events = [
-            ProjectedSupervisionCompletionBucket(
+            ProjectedSupervisionCompletionEvent(
                 state_code=supervision_period.state_code,
                 year=2018,
                 month=5,
@@ -247,7 +247,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 successful_completion=True,
                 incarcerated_during_sentence=False,
             ),
-            SupervisionTerminationBucket(
+            SupervisionTerminationEvent(
                 state_code=supervision_period.state_code,
                 year=termination_date.year,
                 month=termination_date.month,
@@ -259,13 +259,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 termination_reason=supervision_period.termination_reason,
                 in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 supervision_period, case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE
             ),
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
@@ -276,7 +276,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -291,8 +291,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_overlaps_year(self) -> None:
-        """Tests the find_supervision_time_buckets function for a single
+    def test_find_supervision_events_overlaps_year(self) -> None:
+        """Tests the find_supervision_events function for a single
         supervision period with no incarceration periods, where the supervision
         period overlaps two calendar years."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -328,11 +328,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events = [
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 supervision_period,
                 supervision_type=supervision_period_supervision_type,
                 in_supervision_population_on_date=True,
@@ -340,7 +340,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -352,7 +352,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -367,8 +367,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_two_supervision_periods(self) -> None:
-        """Tests the find_supervision_time_buckets function for two supervision
+    def test_find_supervision_events_two_supervision_periods(self) -> None:
+        """Tests the find_supervision_events function for two supervision
         periods with no incarceration periods."""
 
         first_supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -417,28 +417,28 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events = [
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 first_supervision_period,
                 supervision_type=first_supervision_period_supervision_type,
                 in_supervision_population_on_date=True,
             ),
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 second_supervision_period,
                 supervision_type=second_supervision_period_supervision_type,
                 in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 first_supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 second_supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 first_supervision_period,
                 first_supervision_period_supervision_type,
                 case_compliances=_generate_case_compliances(
@@ -450,7 +450,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 second_supervision_period,
                 second_supervision_period_supervision_type,
                 case_compliances=_generate_case_compliances(
@@ -461,7 +461,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -476,10 +476,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_overlapping_supervision_periods(
+    def test_find_supervision_events_overlapping_supervision_periods(
         self,
     ) -> None:
-        """Tests the find_supervision_time_buckets function for two supervision
+        """Tests the find_supervision_events function for two supervision
         periods with no incarceration periods, where the supervision
         periods are of the same type and have overlapping months."""
 
@@ -529,28 +529,28 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events = [
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 first_supervision_period,
                 in_supervision_population_on_date=True,
                 supervision_type=first_supervision_period_supervision_type,
             ),
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 second_supervision_period,
                 supervision_type=second_supervision_period_supervision_type,
                 in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 first_supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 second_supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 first_supervision_period,
                 first_supervision_period_supervision_type,
                 case_compliances=_generate_case_compliances(
@@ -562,7 +562,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 second_supervision_period,
                 second_supervision_period_supervision_type,
                 case_compliances=_generate_case_compliances(
@@ -573,7 +573,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -588,10 +588,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_overlapping_periods_different_types(
+    def test_find_supervision_events_overlapping_periods_different_types(
         self,
     ) -> None:
-        """Tests the find_supervision_time_buckets function for two supervision
+        """Tests the find_supervision_events function for two supervision
         periods with no incarceration periods, where the supervision
         periods are of different types and have overlapping months."""
 
@@ -644,28 +644,28 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events = [
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 first_supervision_period,
                 in_supervision_population_on_date=True,
                 supervision_type=first_supervision_period_supervision_type,
             ),
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 second_supervision_period,
                 supervision_type=overlapping_supervision_period_supervision_type,
                 in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 first_supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 second_supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 first_supervision_period,
                 first_supervision_period_supervision_type,
                 case_compliances=_generate_case_compliances(
@@ -677,7 +677,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 second_supervision_period,
                 overlapping_supervision_period_supervision_type,
                 case_compliances=_generate_case_compliances(
@@ -688,7 +688,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -703,8 +703,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_findSupervisionTimeBuckets_usNd_ignoreTemporaryCustodyPeriod(self) -> None:
-        """Tests the find_supervision_time_buckets function for state code US_ND to ensure that temporary
+    def test_findSupervisionEvents_usNd_ignoreTemporaryCustodyPeriod(self) -> None:
+        """Tests the find_supervision_events function for state code US_ND to ensure that temporary
         custody periods are ignored."""
         self._stop_state_specific_delegate_patchers()
 
@@ -765,11 +765,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events = [
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 first_supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             ),
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 first_supervision_period,
                 supervision_type=first_supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -778,7 +778,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 first_supervision_period,
                 first_supervision_period_supervision_type,
                 case_compliances=_generate_case_compliances(
@@ -789,7 +789,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -804,11 +804,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_findSupervisionTimeBuckets_usId_supervisionAfterInvestigation(
+    def test_findSupervisionEvents_usId_supervisionAfterInvestigation(
         self,
     ) -> None:
-        """Tests the find_supervision_time_buckets function for state code US_ID where the person starts supervision
-        after being on INVESTIGATION. Investigative periods should produce no SupervisionTimeBuckets, and the start
+        """Tests the find_supervision_events function for state code US_ID where the person starts supervision
+        after being on INVESTIGATION. Investigative periods should produce no SupervisionEvents, and the start
         of probation should be marked as the beginning of supervision.
         """
         self._stop_state_specific_delegate_patchers()
@@ -859,11 +859,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods: List[StateIncarcerationPeriod] = []
 
         expected_events = [
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             ),
-            SupervisionTerminationBucket(
+            SupervisionTerminationEvent(
                 state_code=supervision_period.state_code,
                 year=supervision_period_termination_date.year,
                 month=supervision_period_termination_date.month,
@@ -876,7 +876,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             ),
         ]
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 supervision_period_type,
                 case_compliances=_generate_case_compliances(
@@ -886,7 +886,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 ),
             )
         )
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -901,10 +901,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_findSupervisionTimeBuckets_usId_admittedAfterInvestigation(self) -> None:
-        """Tests the find_supervision_time_buckets function for state code US_ID where the person is admitted after
+    def test_findSupervisionEvents_usId_admittedAfterInvestigation(self) -> None:
+        """Tests the find_supervision_events function for state code US_ID where the person is admitted after
         being on INVESTIGATION supervision. These periods should produce no
-        SupervisionTimeBuckets."""
+        SupervisionEvents."""
         self._stop_state_specific_delegate_patchers()
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -947,8 +947,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         violation_responses: List[StateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
 
-        expected_events: List[SupervisionTimeBucket] = []
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        expected_events: List[SupervisionEvent] = []
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -963,10 +963,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_findSupervisionTimeBuckets_usNd_admittedAfterPreConfinement(self) -> None:
-        """Tests the find_supervision_time_buckets function for state code US_ND where the person is admitted after
+    def test_findSupervisionEvents_usNd_admittedAfterPreConfinement(self) -> None:
+        """Tests the find_supervision_events function for state code US_ND where the person is admitted after
         being on PRE-CONFINEMENT supervision. These periods should produce no
-        SupervisionTimeBuckets.
+        SupervisionEvents.
 
         TODO(#2891): This should be updated or removed once ND has been migrated to supervision_period_supervision_type
         """
@@ -1012,8 +1012,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         violation_responses: List[StateSupervisionViolationResponse] = []
         supervision_contacts: List[StateSupervisionContact] = []
 
-        expected_events: List[SupervisionTimeBucket] = []
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        expected_events: List[SupervisionEvent] = []
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -1028,8 +1028,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_multiple_periods(self) -> None:
-        """Tests the find_supervision_time_buckets function for two supervision
+    def test_find_supervision_events_multiple_periods(self) -> None:
+        """Tests the find_supervision_events function for two supervision
         periods with two incarceration periods."""
 
         first_supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -1105,28 +1105,28 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events = [
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 first_supervision_period,
                 supervision_type=first_supervision_period_supervision_type,
                 in_supervision_population_on_date=True,
             ),
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 second_supervision_period,
                 supervision_type=second_supervision_period_supervision_type,
                 in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 first_supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 second_supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 first_supervision_period,
                 first_supervision_period_supervision_type,
                 case_compliances=_generate_case_compliances(
@@ -1138,7 +1138,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 second_supervision_period,
                 second_supervision_period_supervision_type,
                 case_compliances=_generate_case_compliances(
@@ -1149,7 +1149,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -1164,8 +1164,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_multiple_admissions_in_month(self) -> None:
-        """Tests the find_supervision_time_buckets function for a supervision period with two incarceration periods
+    def test_find_supervision_events_multiple_admissions_in_month(self) -> None:
+        """Tests the find_supervision_events function for a supervision period with two incarceration periods
         with admission dates in the same month."""
         first_supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -1227,19 +1227,19 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events = [
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 first_supervision_period,
                 supervision_type=first_supervision_period_supervision_type,
                 in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 first_supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 first_supervision_period,
                 first_supervision_period_supervision_type,
                 case_compliances=_generate_case_compliances(
@@ -1250,7 +1250,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -1265,8 +1265,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_incarceration_overlaps_periods(self) -> None:
-        """Tests the find_supervision_time_buckets function for two supervision
+    def test_find_supervision_events_incarceration_overlaps_periods(self) -> None:
+        """Tests the find_supervision_events function for two supervision
         periods with an incarceration period that overlaps the end of one
         supervision period and the start of another."""
 
@@ -1329,21 +1329,21 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events = [
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 first_supervision_period,
                 in_incarceration_population_on_date=True,
                 supervision_type=first_supervision_period_supervision_type,
             ),
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 second_supervision_period,
                 supervision_type=second_supervision_period_supervision_type,
                 in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 first_supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 second_supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
                 in_incarceration_population_on_date=True,
@@ -1352,7 +1352,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 first_supervision_period,
                 first_supervision_period_supervision_type,
                 incarceration_period.admission_date,
@@ -1365,7 +1365,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 attr.evolve(
                     second_supervision_period,
                     start_date=incarceration_period.release_date,
@@ -1379,7 +1379,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -1394,10 +1394,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_supervision_authority_incarceration_overlaps_periods(
+    def test_find_supervision_events_supervision_authority_incarceration_overlaps_periods(
         self,
     ) -> None:
-        """Tests the find_supervision_time_buckets function for two supervision periods with an incarceration period
+        """Tests the find_supervision_events function for two supervision periods with an incarceration period
         that overlaps the end of one supervision period and the start of another, where the incarceration period is
         under the custodial authority of a supervision entity so the period does not exclude the supervision periods
         from being counted towards the supervision population."""
@@ -1461,37 +1461,37 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events = [
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 first_supervision_period,
                 supervision_type=first_supervision_period_supervision_type,
                 in_incarceration_population_on_date=True,
                 in_supervision_population_on_date=True,
             ),
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 second_supervision_period,
                 supervision_type=second_supervision_period_supervision_type,
                 in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(first_supervision_period),
-            create_start_bucket_from_period(
+            create_start_event_from_period(first_supervision_period),
+            create_start_event_from_period(
                 second_supervision_period, in_incarceration_population_on_date=True
             ),
         ]
 
-        # The entirety of both supervision periods should be counted as NonRevocationReturnSupervisionTimeBuckets
+        # The entirety of both supervision periods should be counted as SupervisionPopulationEvents
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 first_supervision_period, first_supervision_period_supervision_type
             )
         )
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 second_supervision_period, second_supervision_period_supervision_type
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -1507,7 +1507,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         self.assertCountEqual(expected_events, supervision_events)
 
     def test_transition_from_parole_to_probation_in_month(self) -> None:
-        """Tests the find_supervision_time_buckets function for transition between two supervision periods in a
+        """Tests the find_supervision_events function for transition between two supervision periods in a
         month."""
         first_supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -1555,28 +1555,28 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events = [
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 first_supervision_period,
                 in_supervision_population_on_date=True,
                 supervision_type=first_supervision_period_supervision_type,
             ),
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 second_supervision_period,
                 supervision_type=second_supervision_period_supervision_type,
                 in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 first_supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 second_supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 first_supervision_period,
                 first_supervision_period_supervision_type,
                 case_compliances=_generate_case_compliances(
@@ -1588,7 +1588,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 second_supervision_period,
                 second_supervision_period_supervision_type,
                 case_compliances=_generate_case_compliances(
@@ -1599,7 +1599,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -1614,8 +1614,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_return_next_month(self) -> None:
-        """Tests the find_supervision_time_buckets function
+    def test_find_supervision_events_return_next_month(self) -> None:
+        """Tests the find_supervision_events function
         when there is an incarceration period with a revocation admission
         the month after the supervision period's termination_date."""
 
@@ -1664,7 +1664,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events = [
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 supervision_period,
                 supervision_type=supervision_period_supervision_type,
                 supervising_officer_external_id="XXX",
@@ -1674,7 +1674,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 level_2_supervision_location_external_id=None,
                 in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 supervision_period,
                 supervising_officer_external_id="XXX",
                 judicial_district_code="XXX",
@@ -1685,7 +1685,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 supervision_period_supervision_type,
                 supervising_officer_external_id="XXX",
@@ -1700,7 +1700,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -1715,8 +1715,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_multiple_periods_revocations(self) -> None:
-        """Tests the find_supervision_time_buckets function
+    def test_find_supervision_events_multiple_periods_revocations(self) -> None:
+        """Tests the find_supervision_events function
         when the person is revoked and returned to supervision twice in one
         year."""
 
@@ -1783,20 +1783,20 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events = [
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 supervision_period,
                 supervision_type=supervision_period_supervision_type,
                 supervision_level=StateSupervisionLevel.MINIMUM,
                 in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 supervision_period_supervision_type,
                 first_incarceration_period.admission_date,
@@ -1809,7 +1809,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 attr.evolve(
                     supervision_period,
                     start_date=first_incarceration_period.release_date,
@@ -1825,7 +1825,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 attr.evolve(
                     supervision_period,
                     start_date=second_incarceration_period.release_date,
@@ -1839,7 +1839,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -1854,8 +1854,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_multiple_sentences_revocations(self) -> None:
-        """Tests the find_supervision_time_buckets function
+    def test_find_supervision_events_multiple_sentences_revocations(self) -> None:
+        """Tests the find_supervision_events function
         when the person is revoked and returned to supervision twice in one
         year, and they have multiple supervision sentences."""
 
@@ -1947,28 +1947,28 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events = [
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 first_supervision_period,
                 supervision_type=first_supervision_period_supervision_type,
                 in_supervision_population_on_date=True,
             ),
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 second_supervision_period,
                 supervision_type=second_supervision_period_supervision_type,
                 in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 first_supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 second_supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 first_supervision_period,
                 first_supervision_period_supervision_type,
                 first_incarceration_period.admission_date,
@@ -1981,7 +1981,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 attr.evolve(
                     first_supervision_period,
                     start_date=first_incarceration_period.release_date,
@@ -1997,7 +1997,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 attr.evolve(
                     first_supervision_period,
                     start_date=second_incarceration_period.release_date,
@@ -2012,7 +2012,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 second_supervision_period,
                 second_supervision_period_supervision_type,
                 case_compliances=_generate_case_compliances(
@@ -2023,7 +2023,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -2038,10 +2038,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_single_sentence_with_past_completion_date(
+    def test_find_supervision_events_single_sentence_with_past_completion_date(
         self,
     ) -> None:
-        """Tests the find_supervision_time_buckets function for a single
+        """Tests the find_supervision_events function for a single
         supervision period with no incarceration periods. The supervision period extends past
         the supervision sentence."""
 
@@ -2098,7 +2098,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events = [
-            SupervisionTerminationBucket(
+            SupervisionTerminationEvent(
                 state_code=supervision_period.state_code,
                 year=supervision_period_termination_date.year,
                 month=supervision_period_termination_date.month,
@@ -2110,13 +2110,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 termination_reason=supervision_period.termination_reason,
                 in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 supervision_period, case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE
             ),
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
@@ -2127,7 +2127,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -2142,10 +2142,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_multiple_sentences_past_sentence_completion_dates(
+    def test_find_supervision_events_multiple_sentences_past_sentence_completion_dates(
         self,
     ) -> None:
-        """Tests the find_supervision_time_buckets function when there are multiple supervision periods and
+        """Tests the find_supervision_events function when there are multiple supervision periods and
         multiple supervision sentences. Both supervision periods extend past their corresponding supervision
         sentences."""
 
@@ -2212,28 +2212,28 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events = [
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 first_supervision_period,
                 supervision_type=first_supervision_period_supervision_type,
                 in_supervision_population_on_date=True,
             ),
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 second_supervision_period,
                 supervision_type=second_supervision_period_supervision_type,
                 in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 first_supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 second_supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 first_supervision_period,
                 first_supervision_period_supervision_type,
                 projected_supervision_completion_date=first_supervision_sentence.projected_completion_date,
@@ -2246,7 +2246,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 second_supervision_period,
                 second_supervision_period_supervision_type,
                 projected_supervision_completion_date=second_supervision_sentence.projected_completion_date,
@@ -2258,7 +2258,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -2273,8 +2273,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_placeholders(self) -> None:
-        """Tests the find_supervision_time_buckets function
+    def test_find_supervision_events_placeholders(self) -> None:
+        """Tests the find_supervision_events function
         when there are placeholder supervision periods that should be dropped
         from the calculations."""
 
@@ -2327,19 +2327,19 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events = [
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 supervision_period,
                 supervision_type=supervision_period_supervision_type,
                 in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 supervision_period_supervision_type,
                 case_compliances=_generate_case_compliances(
@@ -2350,7 +2350,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -2365,8 +2365,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_us_id(self) -> None:
-        """Tests the find_supervision_time_buckets function where the supervision type should be taken from the
+    def test_find_supervision_events_us_id(self) -> None:
+        """Tests the find_supervision_events function where the supervision type should be taken from the
         supervision_period_supervision_type off of the supervision_period."""
         self._stop_state_specific_delegate_patchers()
 
@@ -2430,10 +2430,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ]
 
         expected_events = [
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 supervision_period, supervising_district_external_id="DISTRICT_1"
             ),
-            SupervisionTerminationBucket(
+            SupervisionTerminationEvent(
                 state_code=supervision_period.state_code,
                 year=supervision_period_termination_date.year,
                 month=supervision_period_termination_date.month,
@@ -2451,7 +2451,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 supervision_type,
                 assessment_score=assessment.assessment_score,
@@ -2468,7 +2468,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -2483,8 +2483,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_us_pa(self) -> None:
-        """Tests the find_supervision_time_buckets function for periods in US_PA."""
+    def test_find_supervision_events_us_pa(self) -> None:
+        """Tests the find_supervision_events function for periods in US_PA."""
         self._stop_state_specific_delegate_patchers()
 
         supervision_period_termination_date = date(2018, 5, 19)
@@ -2533,7 +2533,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             }
         ]
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -2547,7 +2547,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events = [
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 supervision_period,
                 supervising_district_external_id="DISTRICT_1",
                 level_1_supervision_location_external_id="OFFICE_2",
@@ -2555,7 +2555,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_officer_external_id="XXX",
                 judicial_district_code="XXX",
             ),
-            SupervisionTerminationBucket(
+            SupervisionTerminationEvent(
                 state_code=supervision_period.state_code,
                 year=supervision_period_termination_date.year,
                 month=supervision_period_termination_date.month,
@@ -2575,7 +2575,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 assessment_score=assessment.assessment_score,
@@ -2596,8 +2596,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_infer_supervision_type(self) -> None:
-        """Tests the find_supervision_time_buckets function where the supervision type needs to be inferred from the
+    def test_find_supervision_events_infer_supervision_type(self) -> None:
+        """Tests the find_supervision_events function where the supervision type needs to be inferred from the
         sentence attached to the supervision period."""
         supervision_period_termination_date = date(2018, 5, 19)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -2649,7 +2649,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
         expected_events = [
-            ProjectedSupervisionCompletionBucket(
+            ProjectedSupervisionCompletionEvent(
                 state_code=supervision_period.state_code,
                 year=2018,
                 month=5,
@@ -2665,7 +2665,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     - supervision_sentence_start_date
                 ).days,
             ),
-            SupervisionTerminationBucket(
+            SupervisionTerminationEvent(
                 state_code=supervision_period.state_code,
                 year=supervision_period_termination_date.year,
                 month=supervision_period_termination_date.month,
@@ -2675,7 +2675,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 termination_reason=supervision_period.termination_reason,
                 in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 supervision_period,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
@@ -2683,7 +2683,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 StateSupervisionPeriodSupervisionType.PROBATION,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
@@ -2700,7 +2700,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -2715,8 +2715,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_infer_supervision_type_parole(self) -> None:
-        """Tests the find_supervision_time_buckets function where the supervision type needs to be inferred, the
+    def test_find_supervision_events_infer_supervision_type_parole(self) -> None:
+        """Tests the find_supervision_events function where the supervision type needs to be inferred, the
         but the supervision period is not attached to any sentences, so the inferred type should be PAROLE."""
         supervision_period_termination_date = date(2018, 5, 19)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -2775,12 +2775,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ]
 
         expected_events = [
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 supervision_period,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
-            SupervisionTerminationBucket(
+            SupervisionTerminationEvent(
                 state_code=supervision_period.state_code,
                 year=supervision_period_termination_date.year,
                 month=supervision_period_termination_date.month,
@@ -2793,7 +2793,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
@@ -2810,7 +2810,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -2825,10 +2825,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_infer_supervision_type_dual_us_mo(
+    def test_find_supervision_events_infer_supervision_type_dual_us_mo(
         self,
     ) -> None:
-        """Tests the find_supervision_time_buckets function where the supervision type needs to be inferred, the
+        """Tests the find_supervision_events function where the supervision type needs to be inferred, the
         but the supervision period is attached to both a supervision sentence of type PROBATION and an incarceration
         sentence, so the inferred type should be DUAL."""
         self._stop_state_specific_delegate_patchers()
@@ -2922,7 +2922,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ]
 
         expected_events = [
-            SupervisionTerminationBucket(
+            SupervisionTerminationEvent(
                 state_code=supervision_period.state_code,
                 year=supervision_period_termination_date.year,
                 month=supervision_period_termination_date.month,
@@ -2932,14 +2932,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 termination_reason=supervision_period.termination_reason,
                 in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 supervision_period,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
             ),
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 StateSupervisionPeriodSupervisionType.DUAL,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
@@ -2949,7 +2949,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -2964,11 +2964,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_infer_supervision_type_dual_us_id(
+    def test_find_supervision_events_infer_supervision_type_dual_us_id(
         self,
     ) -> None:
-        """Tests the find_supervision_time_buckets function where the supervision type is taken from a `DUAL`
-        supervision period. Asserts that the DUAL buckets are NOT expanded into separate PROBATION and PAROLE buckets.
+        """Tests the find_supervision_events function where the supervision type is taken from a `DUAL`
+        supervision period. Asserts that the DUAL events are NOT expanded into separate PROBATION and PAROLE events.
         """
         self._stop_state_specific_delegate_patchers()
 
@@ -3005,8 +3005,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
         expected_events = [
-            create_start_bucket_from_period(supervision_period),
-            SupervisionTerminationBucket(
+            create_start_event_from_period(supervision_period),
+            SupervisionTerminationEvent(
                 state_code=supervision_period.state_code,
                 year=supervision_period_termination_date.year,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -3021,7 +3021,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 StateSupervisionPeriodSupervisionType.DUAL,
                 assessment_score=assessment.assessment_score,
@@ -3036,7 +3036,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -3051,13 +3051,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_infer_supervision_type_dual_us_nd(
+    def test_find_supervision_events_infer_supervision_type_dual_us_nd(
         self,
     ) -> None:
-        """Tests the find_supervision_time_buckets function where the supervision type needs to be inferred, the
+        """Tests the find_supervision_events function where the supervision type needs to be inferred, the
         but the supervision period is attached to both a supervision sentence of type PROBATION and an incarceration
-        sentence, so the inferred type should be DUAL. Also asserts that the DUAL buckets are expanded to have PAROLE,
-        PROBATION, and DUAL buckets."""
+        sentence, so the inferred type should be DUAL. Also asserts that the DUAL events are expanded to have PAROLE,
+        PROBATION, and DUAL events."""
         self._stop_state_specific_delegate_patchers()
 
         supervision_period_termination_date = date(2018, 5, 19)
@@ -3116,7 +3116,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ]
 
         expected_events = [
-            SupervisionTerminationBucket(
+            SupervisionTerminationEvent(
                 state_code=supervision_period.state_code,
                 year=supervision_period_termination_date.year,
                 month=supervision_period_termination_date.month,
@@ -3126,7 +3126,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 termination_reason=supervision_period.termination_reason,
                 in_supervision_population_on_date=True,
             ),
-            SupervisionTerminationBucket(
+            SupervisionTerminationEvent(
                 state_code=supervision_period.state_code,
                 year=supervision_period_termination_date.year,
                 month=supervision_period_termination_date.month,
@@ -3136,7 +3136,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 termination_reason=supervision_period.termination_reason,
                 in_supervision_population_on_date=True,
             ),
-            SupervisionTerminationBucket(
+            SupervisionTerminationEvent(
                 state_code=supervision_period.state_code,
                 year=supervision_period_termination_date.year,
                 month=supervision_period_termination_date.month,
@@ -3147,7 +3147,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 termination_reason=supervision_period.termination_reason,
                 in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 supervision_period,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 admission_reason=None,
@@ -3155,7 +3155,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 StateSupervisionPeriodSupervisionType.DUAL,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
@@ -3172,7 +3172,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
@@ -3189,7 +3189,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 StateSupervisionPeriodSupervisionType.PROBATION,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
@@ -3205,7 +3205,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -3220,7 +3220,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_no_supervision_when_no_sentences_supervision_spans_us_mo(
+    def test_find_supervision_events_no_supervision_when_no_sentences_supervision_spans_us_mo(
         self,
     ) -> None:
         self._stop_state_specific_delegate_patchers()
@@ -3258,7 +3258,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -3274,8 +3274,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         self.assertCountEqual([], supervision_events)
 
     @freeze_time("2019-09-04")
-    def test_find_supervision_time_buckets_admission_today(self) -> None:
-        """Tests the find_time_buckets_for_supervision_period function when there is an incarceration period with a
+    def test_find_supervision_events_admission_today(self) -> None:
+        """Tests the find_population_events_for_supervision_period function when there is an incarceration period with a
         revocation admission today, where there is no termination_date on the supervision_period, and no release_date
         on the incarceration_period."""
 
@@ -3316,15 +3316,15 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_periods = [supervision_period]
         incarceration_periods = [incarceration_period]
 
-        expected_events: List[SupervisionTimeBucket] = [
-            create_start_bucket_from_period(
+        expected_events: List[SupervisionEvent] = [
+            create_start_event_from_period(
                 supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 StateSupervisionPeriodSupervisionType.PROBATION,
                 date.today(),
@@ -3337,7 +3337,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -3352,10 +3352,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_supervision_time_buckets_multiple_incarcerations_in_year(
+    def test_find_supervision_events_multiple_incarcerations_in_year(
         self,
     ) -> None:
-        """Tests the find_time_buckets_for_supervision_period function when there are multiple
+        """Tests the find_population_events_for_supervision_period function when there are multiple
         incarceration periods in the year of supervision."""
         supervision_period_termination_date = date(2018, 6, 9)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -3412,7 +3412,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events = [
-            SupervisionTerminationBucket(
+            SupervisionTerminationEvent(
                 state_code=supervision_period.state_code,
                 year=supervision_period_termination_date.year,
                 month=supervision_period_termination_date.month,
@@ -3422,14 +3422,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 supervision_period_supervision_type,
                 first_incarceration_period.admission_date,
@@ -3441,7 +3441,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             [],
             [incarceration_sentence],
@@ -3456,7 +3456,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_supervision_time_buckets_violation_history(self) -> None:
+    def test_supervision_events_violation_history(self) -> None:
         state_code = "US_XX"
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -3543,7 +3543,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events = [
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 supervision_period,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -3553,14 +3553,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 response_count=1,
                 in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 supervision_period,
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
             ),
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 supervision_period_supervision_type,
                 end_date=violation_report_1.response_date,
@@ -3568,7 +3568,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 attr.evolve(
                     supervision_period,
                     start_date=violation_report_1.response_date,
@@ -3583,7 +3583,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 attr.evolve(
                     supervision_period,
                     start_date=violation_report_2.response_date,
@@ -3598,7 +3598,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 attr.evolve(supervision_period, start_date=date(2019, 4, 21)),
                 supervision_period_supervision_type,
                 most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
@@ -3608,7 +3608,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             [supervision_sentence],
             [],
@@ -3623,7 +3623,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_supervision_time_buckets_no_supervision_period_end_of_month_us_mo_supervision_span_shows_supervision(
+    def test_supervision_events_no_supervision_period_end_of_month_us_mo_supervision_span_shows_supervision(
         self,
     ) -> None:
         """Tests that we do not mark someone as under supervision at the end of the month if there is no supervision
@@ -3671,7 +3671,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods: List[StateIncarcerationPeriod] = []
 
         expected_events = [
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 supervision_period,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -3680,11 +3680,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 level_2_supervision_location_external_id=None,
                 in_supervision_population_on_date=True,
             ),
-            create_start_bucket_from_period(supervision_period),
+            create_start_event_from_period(supervision_period),
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 StateSupervisionPeriodSupervisionType.PROBATION,
                 level_1_supervision_location_external_id=supervision_period.supervision_site,
@@ -3692,7 +3692,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             [supervision_sentence],
             incarceration_sentences,
@@ -3707,7 +3707,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_supervision_time_buckets_period_eom_us_mo_supervision_span_shows_no_supervision_eom(
+    def test_supervision_events_period_eom_us_mo_supervision_span_shows_no_supervision_eom(
         self,
     ) -> None:
         self._stop_state_specific_delegate_patchers()
@@ -3761,8 +3761,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods: List[StateIncarcerationPeriod] = []
 
         expected_events = [
-            create_start_bucket_from_period(supervision_period),
-            create_termination_bucket_from_period(
+            create_start_event_from_period(supervision_period),
+            create_termination_event_from_period(
                 supervision_period,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -3774,7 +3774,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 StateSupervisionPeriodSupervisionType.PROBATION,
                 end_date=date(2019, 10, 6),
@@ -3784,7 +3784,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 attr.evolve(supervision_period, start_date=date(2019, 11, 6)),
                 StateSupervisionPeriodSupervisionType.PROBATION,
                 level_1_supervision_location_external_id=supervision_period.supervision_site,
@@ -3792,7 +3792,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             [supervision_sentence],
             incarceration_sentences,
@@ -3860,7 +3860,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods: List[StateIncarcerationPeriod] = []
 
         expected_events = [
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 supervision_period,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -3872,13 +3872,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             # in_supervision_population_on_date=False because the lack of an overlapping
             # supervision span means they are not counted in the supervision population
             # for US_MO
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 supervision_period, in_supervision_population_on_date=False
             ),
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 attr.evolve(supervision_period, start_date=date(2019, 11, 6)),
                 StateSupervisionPeriodSupervisionType.PROBATION,
                 level_1_supervision_location_external_id=supervision_period.supervision_site,
@@ -3886,7 +3886,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             [supervision_sentence],
             incarceration_sentences,
@@ -3951,7 +3951,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_sentences: List[StateIncarcerationSentence] = []
         incarceration_periods: List[StateIncarcerationPeriod] = []
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             [supervision_sentence],
             incarceration_sentences,
@@ -4014,7 +4014,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_periods: List[StateIncarcerationPeriod] = []
 
         expected_events = [
-            create_termination_bucket_from_period(
+            create_termination_event_from_period(
                 supervision_period,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -4026,13 +4026,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             # in_supervision_population_on_date=False because the lack of an overlapping
             # supervision span means they are not counted in the supervision population
             # for US_MO
-            create_start_bucket_from_period(
+            create_start_event_from_period(
                 supervision_period, in_supervision_population_on_date=False
             ),
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 attr.evolve(supervision_period, start_date=date(2019, 10, 15)),
                 StateSupervisionPeriodSupervisionType.PROBATION,
                 level_1_supervision_location_external_id=supervision_period.supervision_site,
@@ -4040,7 +4040,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             [supervision_sentence],
             incarceration_sentences,
@@ -4056,8 +4056,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         self.assertCountEqual(expected_events, supervision_events)
 
     @freeze_time("2000-01-01")
-    def test_find_supervision_time_buckets_dates_in_future(self) -> None:
-        """Tests the find_supervision_time_buckets function for a supervision period where the termination date is
+    def test_find_supervision_events_dates_in_future(self) -> None:
+        """Tests the find_supervision_events function for a supervision period where the termination date is
         in the future."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -4122,14 +4122,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        expected_events: List[SupervisionTimeBucket] = [
-            create_start_bucket_from_period(
+        expected_events: List[SupervisionEvent] = [
+            create_start_event_from_period(
                 supervision_period, case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE
             ),
         ]
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 end_date=date.today() + relativedelta(days=1),
                 supervision_type=supervision_period_supervision_type,
@@ -4137,7 +4137,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_supervision_time_buckets(
+        supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
             incarceration_sentences,
@@ -4153,8 +4153,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         self.assertCountEqual(expected_events, supervision_events)
 
 
-class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
-    """Tests for the find_time_buckets_for_supervision_period function."""
+class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
+    """Tests for the find_population_events_for_supervision_period function."""
 
     def setUp(self) -> None:
         self.maxDiff = None
@@ -4175,10 +4175,10 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
     def tearDown(self) -> None:
         self.assessment_types_patcher.stop()
 
-    def test_find_time_buckets_for_supervision_period_revocation_no_termination(
+    def test_find_population_events_for_supervision_period_revocation_no_termination(
         self,
     ) -> None:
-        """Tests the find_time_buckets_for_supervision_period function
+        """Tests the find_population_events_for_supervision_period function
         when there is an incarceration period with a revocation admission,
         where there is no termination_date on the supervision_period, and
         no release_date on the incarceration_period."""
@@ -4230,17 +4230,19 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences = [supervision_sentence]
 
-        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
-            self.person,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_period,
-            supervision_period_index,
-            incarceration_period_index,
-            assessments,
-            violation_reports,
-            supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+        supervision_events = (
+            self.identifier._find_population_events_for_supervision_period(
+                self.person,
+                supervision_sentences,
+                incarceration_sentences,
+                supervision_period,
+                supervision_period_index,
+                incarceration_period_index,
+                assessments,
+                violation_reports,
+                supervision_contacts,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            )
         )
 
         supervision_period_supervision_type = (
@@ -4248,7 +4250,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
         )
 
         self.assertCountEqual(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 supervision_period,
                 supervision_period_supervision_type,
                 incarceration_period.admission_date,
@@ -4262,10 +4264,10 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             supervision_events,
         )
 
-    def test_find_time_buckets_for_supervision_period_incarceration_ends_same_month(
+    def test_find_population_events_for_supervision_period_incarceration_ends_same_month(
         self,
     ) -> None:
-        """Tests the find_time_buckets_for_supervision_period function when there is an incarceration period with a
+        """Tests the find_population_events_for_supervision_period function when there is an incarceration period with a
         revocation admission before the supervision period's termination_date, and the supervision_period and the
         incarceration_period end in the same month."""
 
@@ -4323,7 +4325,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        expected_events = expected_non_revocation_return_time_buckets(
+        expected_events = expected_population_events(
             supervision_period,
             supervision_period_supervision_type,
             incarceration_period.admission_date,
@@ -4334,26 +4336,28 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             ),
         )
 
-        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
-            self.person,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_period,
-            supervision_period_index,
-            incarceration_period_index,
-            assessments,
-            violation_responses,
-            supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+        supervision_events = (
+            self.identifier._find_population_events_for_supervision_period(
+                self.person,
+                supervision_sentences,
+                incarceration_sentences,
+                supervision_period,
+                supervision_period_index,
+                incarceration_period_index,
+                assessments,
+                violation_responses,
+                supervision_contacts,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            )
         )
 
         self.assertCountEqual(expected_events, supervision_events)
 
     @freeze_time("2019-11-03")
-    def test_find_time_buckets_for_supervision_period_nested_revocation_no_termination(
+    def test_find_population_events_for_supervision_period_nested_revocation_no_termination(
         self,
     ) -> None:
-        """Tests the find_time_buckets_for_supervision_period function when there is an incarceration period with
+        """Tests the find_population_events_for_supervision_period function when there is an incarceration period with
         a revocation admission, a stay in prison, and a continued supervision period after release from incarceration
         that has still not terminated."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -4413,7 +4417,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        expected_events = expected_non_revocation_return_time_buckets(
+        expected_events = expected_population_events(
             supervision_period,
             supervision_period_supervision_type,
             incarceration_period.admission_date,
@@ -4426,7 +4430,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
         )
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 attr.evolve(
                     supervision_period, start_date=incarceration_period.release_date
                 ),
@@ -4440,25 +4444,27 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
-            self.person,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_period,
-            supervision_period_index,
-            incarceration_period_index,
-            assessments,
-            violation_reports,
-            supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+        supervision_events = (
+            self.identifier._find_population_events_for_supervision_period(
+                self.person,
+                supervision_sentences,
+                incarceration_sentences,
+                supervision_period,
+                supervision_period_index,
+                incarceration_period_index,
+                assessments,
+                violation_reports,
+                supervision_contacts,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            )
         )
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_time_buckets_for_supervision_period_admission_no_revocation(
+    def test_find_population_events_for_supervision_period_admission_no_revocation(
         self,
     ) -> None:
-        """Tests the find_time_buckets_for_supervision_period function when there is an incarceration period with a
+        """Tests the find_population_events_for_supervision_period function when there is an incarceration period with a
         non-revocation admission before the supervision period's termination_date."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -4513,7 +4519,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        expected_events = expected_non_revocation_return_time_buckets(
+        expected_events = expected_population_events(
             supervision_period,
             supervision_period_supervision_type,
             incarceration_period.admission_date,
@@ -4524,23 +4530,25 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             ),
         )
 
-        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
-            self.person,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_period,
-            supervision_period_index,
-            incarceration_period_index,
-            assessments,
-            violation_reports,
-            supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+        supervision_events = (
+            self.identifier._find_population_events_for_supervision_period(
+                self.person,
+                supervision_sentences,
+                incarceration_sentences,
+                supervision_period,
+                supervision_period_index,
+                incarceration_period_index,
+                assessments,
+                violation_reports,
+                supervision_contacts,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            )
         )
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_time_buckets_for_supervision_period_multiple_years(self) -> None:
-        """Tests the find_time_buckets_for_supervision_period function when the supervision period overlaps
+    def test_find_population_events_for_supervision_period_multiple_years(self) -> None:
+        """Tests the find_population_events_for_supervision_period function when the supervision period overlaps
         multiple years, and there is an incarceration period during this time that also overlaps multiple years."""
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -4598,7 +4606,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        expected_events = expected_non_revocation_return_time_buckets(
+        expected_events = expected_population_events(
             supervision_period,
             supervision_period_supervision_type,
             incarceration_period.admission_date,
@@ -4610,7 +4618,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
         )
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 attr.evolve(
                     supervision_period, start_date=incarceration_period.release_date
                 ),
@@ -4623,23 +4631,25 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
-            self.person,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_period,
-            supervision_period_index,
-            incarceration_period_index,
-            assessments,
-            violation_reports,
-            supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+        supervision_events = (
+            self.identifier._find_population_events_for_supervision_period(
+                self.person,
+                supervision_sentences,
+                incarceration_sentences,
+                supervision_period,
+                supervision_period_index,
+                incarceration_period_index,
+                assessments,
+                violation_reports,
+                supervision_contacts,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            )
         )
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_time_buckets_for_supervision_period_ends_on_first(self) -> None:
-        """Tests the find_time_buckets_for_supervision_period function for a
+    def test_find_population_events_for_supervision_period_ends_on_first(self) -> None:
+        """Tests the find_population_events_for_supervision_period function for a
         supervision period with no incarceration periods, where the supervision
         period ends on the 1st day of a month."""
 
@@ -4683,14 +4693,14 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        expected_events = expected_non_revocation_return_time_buckets(
+        expected_events = expected_population_events(
             supervision_period,
             supervision_period_supervision_type,
         )
 
         self.assertEqual(
             expected_events[-1],
-            NonRevocationReturnSupervisionTimeBucket(
+            SupervisionPopulationEvent(
                 state_code=supervision_period.state_code,
                 year=2001,
                 month=6,
@@ -4702,23 +4712,25 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             ),
         )
 
-        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
-            self.person,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_period,
-            supervision_period_index,
-            incarceration_period_index,
-            assessments,
-            violation_reports,
-            supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+        supervision_events = (
+            self.identifier._find_population_events_for_supervision_period(
+                self.person,
+                supervision_sentences,
+                incarceration_sentences,
+                supervision_period,
+                supervision_period_index,
+                incarceration_period_index,
+                assessments,
+                violation_reports,
+                supervision_contacts,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            )
         )
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_time_buckets_for_supervision_period_ends_on_last(self) -> None:
-        """Tests the find_time_buckets_for_supervision_period function for a
+    def test_find_population_events_for_supervision_period_ends_on_last(self) -> None:
+        """Tests the find_population_events_for_supervision_period function for a
         supervision period with no incarceration periods, where the supervision
         period ends on the last day of a month."""
 
@@ -4762,14 +4774,14 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        expected_events = expected_non_revocation_return_time_buckets(
+        expected_events = expected_population_events(
             supervision_period,
             supervision_period_supervision_type,
         )
 
         self.assertEqual(
             expected_events[-1],
-            NonRevocationReturnSupervisionTimeBucket(
+            SupervisionPopulationEvent(
                 state_code=supervision_period.state_code,
                 year=2001,
                 month=6,
@@ -4781,22 +4793,26 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             ),
         )
 
-        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
-            self.person,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_period,
-            supervision_period_index,
-            incarceration_period_index,
-            assessments,
-            violation_reports,
-            supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+        supervision_events = (
+            self.identifier._find_population_events_for_supervision_period(
+                self.person,
+                supervision_sentences,
+                incarceration_sentences,
+                supervision_period,
+                supervision_period_index,
+                incarceration_period_index,
+                assessments,
+                violation_reports,
+                supervision_contacts,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            )
         )
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_time_buckets_for_supervision_period_start_end_same_day(self) -> None:
+    def test_find_population_events_for_supervision_period_start_end_same_day(
+        self,
+    ) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
@@ -4832,25 +4848,27 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
         incarceration_sentences: List[StateIncarcerationSentence] = []
         supervision_sentences: List[StateSupervisionSentence] = [supervision_sentence]
 
-        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
-            self.person,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_period,
-            supervision_period_index,
-            incarceration_period_index,
-            assessments,
-            violation_reports,
-            supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+        supervision_events = (
+            self.identifier._find_population_events_for_supervision_period(
+                self.person,
+                supervision_sentences,
+                incarceration_sentences,
+                supervision_period,
+                supervision_period_index,
+                incarceration_period_index,
+                assessments,
+                violation_reports,
+                supervision_contacts,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            )
         )
 
         self.assertCountEqual([], supervision_events)
 
-    def test_find_time_buckets_for_supervision_period_multiple_assessments(
+    def test_find_population_events_for_supervision_period_multiple_assessments(
         self,
     ) -> None:
-        """Tests the find_time_buckets_for_supervision_period function
+        """Tests the find_population_events_for_supervision_period function
         when there is an incarceration period with a revocation admission,
         a stay in prison, a continued supervision period after release
         from incarceration, and multiple assessments over this time period."""
@@ -4925,7 +4943,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        expected_events = expected_non_revocation_return_time_buckets(
+        expected_events = expected_population_events(
             supervision_period,
             supervision_period_supervision_type,
             end_date=incarceration_period.admission_date,
@@ -4935,7 +4953,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
         )
 
         expected_events.extend(
-            expected_non_revocation_return_time_buckets(
+            expected_population_events(
                 attr.evolve(
                     supervision_period, start_date=incarceration_period.release_date
                 ),
@@ -4946,25 +4964,27 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             )
         )
 
-        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
-            self.person,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_period,
-            supervision_period_index,
-            incarceration_period_index,
-            assessments,
-            violation_responses,
-            supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+        supervision_events = (
+            self.identifier._find_population_events_for_supervision_period(
+                self.person,
+                supervision_sentences,
+                incarceration_sentences,
+                supervision_period,
+                supervision_period_index,
+                incarceration_period_index,
+                assessments,
+                violation_responses,
+                supervision_contacts,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            )
         )
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_time_buckets_for_supervision_period_assessment_year_before(
+    def test_find_population_events_for_supervision_period_assessment_year_before(
         self,
     ) -> None:
-        """Tests the find_time_buckets_for_supervision_period function
+        """Tests the find_population_events_for_supervision_period function
         when there is no revocation and the assessment date is the year before
         the start of the supervision."""
 
@@ -5013,7 +5033,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        expected_events = expected_non_revocation_return_time_buckets(
+        expected_events = expected_population_events(
             supervision_period,
             supervision_period_supervision_type,
             assessment_score=assessment.assessment_score,
@@ -5027,25 +5047,27 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             ),
         )
 
-        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
-            self.person,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_period,
-            supervision_period_index,
-            incarceration_period_index,
-            assessments,
-            violation_responses,
-            supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+        supervision_events = (
+            self.identifier._find_population_events_for_supervision_period(
+                self.person,
+                supervision_sentences,
+                incarceration_sentences,
+                supervision_period,
+                supervision_period_index,
+                incarceration_period_index,
+                assessments,
+                violation_responses,
+                supervision_contacts,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            )
         )
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_time_buckets_for_supervision_period_with_a_supervision_downgrade(
+    def test_find_population_events_for_supervision_period_with_a_supervision_downgrade(
         self,
     ) -> None:
-        """Tests the find_time_buckets_for_supervision_period function
+        """Tests the find_population_events_for_supervision_period function
         when a supervision level downgrade has taken place."""
 
         supervision_periods = [
@@ -5099,7 +5121,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        expected_events = expected_non_revocation_return_time_buckets(
+        expected_events = expected_population_events(
             supervision_periods[1],
             supervision_period_supervision_type,
             supervision_downgrade_date=date(2018, 3, 19),
@@ -5113,25 +5135,27 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             ),
         )
 
-        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
-            self.person,
-            supervision_sentences,
-            incarceration_sentences,
-            supervision_periods[1],
-            supervision_period_index,
-            incarceration_period_index,
-            assessments,
-            violation_responses,
-            supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+        supervision_events = (
+            self.identifier._find_population_events_for_supervision_period(
+                self.person,
+                supervision_sentences,
+                incarceration_sentences,
+                supervision_periods[1],
+                supervision_period_index,
+                incarceration_period_index,
+                assessments,
+                violation_responses,
+                supervision_contacts,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            )
         )
 
         self.assertCountEqual(expected_events, supervision_events)
 
-    def test_find_time_buckets_for_supervision_period_without_a_supervision_downgrade_out_of_time_frame(
+    def test_find_population_events_for_supervision_period_without_a_supervision_downgrade_out_of_time_frame(
         self,
     ) -> None:
-        """Tests the find_time_buckets_for_supervision_period function
+        """Tests the find_population_events_for_supervision_period function
         when a supervision level downgrade has taken place."""
 
         supervision_periods = [
@@ -5180,24 +5204,26 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        supervision_events = self.identifier._find_time_buckets_for_supervision_period(
-            self.person,
-            [supervision_sentence],
-            incarceration_sentences,
-            supervision_periods[1],
-            supervision_period_index,
-            incarceration_period_index,
-            assessments,
-            violation_responses,
-            supervision_contacts,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+        supervision_events = (
+            self.identifier._find_population_events_for_supervision_period(
+                self.person,
+                [supervision_sentence],
+                incarceration_sentences,
+                supervision_periods[1],
+                supervision_period_index,
+                incarceration_period_index,
+                assessments,
+                violation_responses,
+                supervision_contacts,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            )
         )
 
         supervision_period_supervision_type = (
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        expected_events = expected_non_revocation_return_time_buckets(
+        expected_events = expected_population_events(
             supervision_periods[1],
             supervision_period_supervision_type,
             case_compliances=_generate_case_compliances(
@@ -5251,7 +5277,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         supervision_sentences = [supervision_sentence]
 
-        projected_completion_buckets = self.identifier._classify_supervision_success(
+        projected_completion_events = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [supervision_period],
@@ -5262,7 +5288,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             self.default_supervision_period_to_judicial_district_associations,
         )
 
-        self.assertEqual(1, len(projected_completion_buckets))
+        self.assertEqual(1, len(projected_completion_events))
 
         supervision_period_supervision_type = (
             StateSupervisionPeriodSupervisionType.PAROLE
@@ -5270,7 +5296,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         self.assertEqual(
             [
-                ProjectedSupervisionCompletionBucket(
+                ProjectedSupervisionCompletionEvent(
                     state_code=supervision_period.state_code,
                     year=2018,
                     month=12,
@@ -5287,7 +5313,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     ).days,
                 )
             ],
-            projected_completion_buckets,
+            projected_completion_events,
         )
 
     def test_classify_supervision_success_unsuccessful(self) -> None:
@@ -5330,7 +5356,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         incarceration_periods = [incarceration_period]
 
-        projected_completion_buckets = self.identifier._classify_supervision_success(
+        projected_completion_events = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [supervision_period],
@@ -5346,7 +5372,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             self.default_supervision_period_to_judicial_district_associations,
         )
 
-        self.assertEqual(1, len(projected_completion_buckets))
+        self.assertEqual(1, len(projected_completion_events))
 
         supervision_period_supervision_type = (
             StateSupervisionPeriodSupervisionType.PAROLE
@@ -5354,7 +5380,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         self.assertEqual(
             [
-                ProjectedSupervisionCompletionBucket(
+                ProjectedSupervisionCompletionEvent(
                     state_code=supervision_period.state_code,
                     year=2018,
                     month=12,
@@ -5371,7 +5397,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     ).days,
                 )
             ],
-            projected_completion_buckets,
+            projected_completion_events,
         )
 
     def test_classify_supervision_success_multiple_periods(self) -> None:
@@ -5415,7 +5441,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         incarceration_periods: List[StateIncarcerationPeriod] = []
 
-        projected_completion_buckets = self.identifier._classify_supervision_success(
+        projected_completion_events = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [first_supervision_period, second_supervision_period],
@@ -5431,7 +5457,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             self.default_supervision_period_to_judicial_district_associations,
         )
 
-        self.assertEqual(1, len(projected_completion_buckets))
+        self.assertEqual(1, len(projected_completion_events))
 
         second_supervision_period_supervision_type = (
             StateSupervisionPeriodSupervisionType.PAROLE
@@ -5439,7 +5465,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         self.assertEqual(
             [
-                ProjectedSupervisionCompletionBucket(
+                ProjectedSupervisionCompletionEvent(
                     state_code=second_supervision_period.state_code,
                     year=2018,
                     month=12,
@@ -5456,7 +5482,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     ).days,
                 )
             ],
-            projected_completion_buckets,
+            projected_completion_events,
         )
 
     def test_classify_supervision_success_multiple_sentences(self) -> None:
@@ -5518,7 +5544,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         ]
         incarceration_periods: List[StateIncarcerationPeriod] = []
 
-        projected_completion_buckets = self.identifier._classify_supervision_success(
+        projected_completion_events = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [first_supervision_period, second_supervision_period],
@@ -5534,7 +5560,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             self.default_supervision_period_to_judicial_district_associations,
         )
 
-        self.assertEqual(2, len(projected_completion_buckets))
+        self.assertEqual(2, len(projected_completion_events))
 
         first_supervision_period_supervision_type = (
             StateSupervisionPeriodSupervisionType.PAROLE
@@ -5545,7 +5571,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         self.assertEqual(
             [
-                ProjectedSupervisionCompletionBucket(
+                ProjectedSupervisionCompletionEvent(
                     state_code=first_supervision_period.state_code,
                     year=2018,
                     month=8,
@@ -5561,7 +5587,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                         - first_supervision_sentence_start_date
                     ).days,
                 ),
-                ProjectedSupervisionCompletionBucket(
+                ProjectedSupervisionCompletionEvent(
                     state_code=second_supervision_period.state_code,
                     year=2018,
                     month=12,
@@ -5578,7 +5604,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     ).days,
                 ),
             ],
-            projected_completion_buckets,
+            projected_completion_events,
         )
 
     def test_classify_supervision_success_multiple_sentence_types(self) -> None:
@@ -5640,7 +5666,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         ]
         incarceration_periods: List[StateIncarcerationPeriod] = []
 
-        projected_completion_buckets = self.identifier._classify_supervision_success(
+        projected_completion_events = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [first_supervision_period, second_supervision_period],
@@ -5656,7 +5682,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             self.default_supervision_period_to_judicial_district_associations,
         )
 
-        self.assertEqual(2, len(projected_completion_buckets))
+        self.assertEqual(2, len(projected_completion_events))
 
         first_supervision_period_supervision_type = (
             StateSupervisionPeriodSupervisionType.PAROLE
@@ -5667,7 +5693,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         self.assertEqual(
             [
-                ProjectedSupervisionCompletionBucket(
+                ProjectedSupervisionCompletionEvent(
                     state_code=first_supervision_period.state_code,
                     year=2018,
                     month=12,
@@ -5683,7 +5709,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                         - first_supervision_sentence_start_date
                     ).days,
                 ),
-                ProjectedSupervisionCompletionBucket(
+                ProjectedSupervisionCompletionEvent(
                     state_code=second_supervision_period.state_code,
                     year=2018,
                     month=12,
@@ -5700,7 +5726,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     ).days,
                 ),
             ],
-            projected_completion_buckets,
+            projected_completion_events,
         )
 
     def test_classify_supervision_success_officer_district(self) -> None:
@@ -5746,7 +5772,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         incarceration_periods: List[StateIncarcerationPeriod] = []
 
-        projected_completion_buckets = self.identifier._classify_supervision_success(
+        projected_completion_events = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [supervision_period],
@@ -5762,7 +5788,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             supervision_period_to_judicial_district_associations,
         )
 
-        self.assertEqual(1, len(projected_completion_buckets))
+        self.assertEqual(1, len(projected_completion_events))
 
         supervision_period_supervision_type = (
             StateSupervisionPeriodSupervisionType.PAROLE
@@ -5770,7 +5796,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         self.assertEqual(
             [
-                ProjectedSupervisionCompletionBucket(
+                ProjectedSupervisionCompletionEvent(
                     state_code=supervision_period.state_code,
                     year=2018,
                     month=12,
@@ -5791,7 +5817,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     ).days,
                 )
             ],
-            projected_completion_buckets,
+            projected_completion_events,
         )
 
     def test_classify_supervision_success_empty_officer_district(self) -> None:
@@ -5836,7 +5862,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         incarceration_periods: List[StateIncarcerationPeriod] = []
 
-        projected_completion_buckets = self.identifier._classify_supervision_success(
+        projected_completion_events = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [supervision_period],
@@ -5851,7 +5877,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             supervision_period_agent_association,
             supervision_period_to_judicial_district_associations,
         )
-        self.assertEqual(1, len(projected_completion_buckets))
+        self.assertEqual(1, len(projected_completion_events))
 
         supervision_period_supervision_type = (
             StateSupervisionPeriodSupervisionType.PAROLE
@@ -5859,7 +5885,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         self.assertEqual(
             [
-                ProjectedSupervisionCompletionBucket(
+                ProjectedSupervisionCompletionEvent(
                     state_code=supervision_period.state_code,
                     year=2018,
                     month=12,
@@ -5879,7 +5905,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     judicial_district_code=None,
                 )
             ],
-            projected_completion_buckets,
+            projected_completion_events,
         )
 
     def test_classify_supervision_success_period_ends_after_projected_completion(
@@ -5914,7 +5940,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         incarceration_periods: List[StateIncarcerationPeriod] = []
 
-        projected_completion_buckets = self.identifier._classify_supervision_success(
+        projected_completion_events = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [supervision_period],
@@ -5930,7 +5956,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             self.default_supervision_period_to_judicial_district_associations,
         )
 
-        self.assertEqual(1, len(projected_completion_buckets))
+        self.assertEqual(1, len(projected_completion_events))
 
         supervision_period_supervision_type = (
             StateSupervisionPeriodSupervisionType.PAROLE
@@ -5938,7 +5964,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         self.assertEqual(
             [
-                ProjectedSupervisionCompletionBucket(
+                ProjectedSupervisionCompletionEvent(
                     state_code=supervision_period.state_code,
                     year=2018,
                     month=12,
@@ -5950,7 +5976,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     sentence_days_served=(completion_date - start_date).days,
                 )
             ],
-            projected_completion_buckets,
+            projected_completion_events,
         )
 
     def test_classify_supervision_success_exclude_termination_reason_death(
@@ -5986,7 +6012,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             ip_id_to_pfi_subtype={},
         )
 
-        projected_completion_buckets = self.identifier._classify_supervision_success(
+        projected_completion_events = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [supervision_period],
@@ -5995,7 +6021,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             self.default_supervision_period_to_judicial_district_associations,
         )
 
-        self.assertEqual(0, len(projected_completion_buckets))
+        self.assertEqual(0, len(projected_completion_events))
 
     def test_classify_supervision_success_exclude_no_completion_date(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -6027,7 +6053,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             ip_id_to_pfi_subtype={},
         )
 
-        projected_completion_buckets = self.identifier._classify_supervision_success(
+        projected_completion_events = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [supervision_period],
@@ -6036,7 +6062,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             self.default_supervision_period_to_judicial_district_associations,
         )
 
-        self.assertEqual(0, len(projected_completion_buckets))
+        self.assertEqual(0, len(projected_completion_events))
 
     def test_classify_supervision_success_exclude_completion_before_start(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -6069,7 +6095,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             ip_id_to_pfi_subtype={},
         )
 
-        projected_completion_buckets = self.identifier._classify_supervision_success(
+        projected_completion_events = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [supervision_period],
@@ -6078,7 +6104,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             self.default_supervision_period_to_judicial_district_associations,
         )
 
-        self.assertEqual(0, len(projected_completion_buckets))
+        self.assertEqual(0, len(projected_completion_events))
 
     def test_classify_supervision_success_was_incarcerated_during_sentence(
         self,
@@ -6121,7 +6147,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         incarceration_periods = [incarceration_period]
 
-        projected_completion_buckets = self.identifier._classify_supervision_success(
+        projected_completion_events = self.identifier._classify_supervision_success(
             supervision_sentences,
             [],
             [supervision_period],
@@ -6137,7 +6163,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             self.default_supervision_period_to_judicial_district_associations,
         )
 
-        self.assertEqual(1, len(projected_completion_buckets))
+        self.assertEqual(1, len(projected_completion_events))
 
         supervision_period_supervision_type = (
             StateSupervisionPeriodSupervisionType.PAROLE
@@ -6147,7 +6173,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         self.assertEqual(
             [
-                ProjectedSupervisionCompletionBucket(
+                ProjectedSupervisionCompletionEvent(
                     state_code=supervision_period.state_code,
                     year=2018,
                     month=12,
@@ -6159,7 +6185,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     sentence_days_served=sentence_length,
                 )
             ],
-            projected_completion_buckets,
+            projected_completion_events,
         )
 
     def test_classify_supervision_success_with_incarceration_sentences(self) -> None:
@@ -6193,7 +6219,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             incarceration_sentence
         ]
 
-        projected_completion_buckets = self.identifier._classify_supervision_success(
+        projected_completion_events = self.identifier._classify_supervision_success(
             [],
             incarceration_sentences,
             [supervision_period],
@@ -6204,7 +6230,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             self.default_supervision_period_to_judicial_district_associations,
         )
 
-        self.assertEqual(1, len(projected_completion_buckets))
+        self.assertEqual(1, len(projected_completion_events))
 
         supervision_period_supervision_type = (
             StateSupervisionPeriodSupervisionType.PAROLE
@@ -6212,7 +6238,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         self.assertEqual(
             [
-                ProjectedSupervisionCompletionBucket(
+                ProjectedSupervisionCompletionEvent(
                     state_code=supervision_period.state_code,
                     year=2018,
                     month=12,
@@ -6226,7 +6252,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     sentence_days_served=(completion_date - start_date).days,
                 )
             ],
-            projected_completion_buckets,
+            projected_completion_events,
         )
 
     def test_classify_supervision_success_with_incarceration_sentence_future_start_date(
@@ -6259,7 +6285,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             incarceration_sentence
         ]
 
-        projected_completion_buckets = self.identifier._classify_supervision_success(
+        projected_completion_events = self.identifier._classify_supervision_success(
             [],
             incarceration_sentences,
             [supervision_period],
@@ -6270,7 +6296,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             self.default_supervision_period_to_judicial_district_associations,
         )
 
-        self.assertEqual(0, len(projected_completion_buckets))
+        self.assertEqual(0, len(projected_completion_events))
 
     def test_classify_supervision_success_with_incarceration_sentence_without_max_length_day(
         self,
@@ -6301,7 +6327,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             incarceration_sentence
         ]
 
-        projected_completion_buckets = self.identifier._classify_supervision_success(
+        projected_completion_events = self.identifier._classify_supervision_success(
             [],
             incarceration_sentences,
             [supervision_period],
@@ -6312,7 +6338,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             self.default_supervision_period_to_judicial_district_associations,
         )
 
-        self.assertEqual(0, len(projected_completion_buckets))
+        self.assertEqual(0, len(projected_completion_events))
 
     def test_classify_supervision_success_with_large_max_length_date_incarceration_sentence(
         self,
@@ -6344,7 +6370,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             incarceration_sentence
         ]
 
-        projected_completion_buckets = self.identifier._classify_supervision_success(
+        projected_completion_events = self.identifier._classify_supervision_success(
             [],
             incarceration_sentences,
             [supervision_period],
@@ -6355,7 +6381,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             self.default_supervision_period_to_judicial_district_associations,
         )
 
-        self.assertEqual(0, len(projected_completion_buckets))
+        self.assertEqual(0, len(projected_completion_events))
 
     def test_classify_supervision_success_with_incarceration_and_supervision_sentences(
         self,
@@ -6417,7 +6443,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             incarceration_sentence
         ]
 
-        projected_completion_buckets = self.identifier._classify_supervision_success(
+        projected_completion_events = self.identifier._classify_supervision_success(
             supervision_sentences,
             incarceration_sentences,
             [supervision_period, incarceration_supervision_period],
@@ -6428,7 +6454,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             self.default_supervision_period_to_judicial_district_associations,
         )
 
-        self.assertEqual(2, len(projected_completion_buckets))
+        self.assertEqual(2, len(projected_completion_events))
 
         supervision_period_supervision_type = (
             StateSupervisionPeriodSupervisionType.PAROLE
@@ -6436,7 +6462,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         self.assertEqual(
             [
-                ProjectedSupervisionCompletionBucket(
+                ProjectedSupervisionCompletionEvent(
                     state_code=supervision_period.state_code,
                     year=2018,
                     month=12,
@@ -6450,7 +6476,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                         - supervision_sentence_start_date
                     ).days,
                 ),
-                ProjectedSupervisionCompletionBucket(
+                ProjectedSupervisionCompletionEvent(
                     state_code=supervision_period.state_code,
                     year=2008,
                     month=2,
@@ -6464,17 +6490,17 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     sentence_days_served=(completion_date - start_date).days,
                 ),
             ],
-            projected_completion_buckets,
+            projected_completion_events,
         )
 
 
-class TestFindSupervisionTerminationBucket(unittest.TestCase):
-    """Tests the find_supervision_termination_bucket function."""
+class TestFindSupervisionTerminationEvent(unittest.TestCase):
+    """Tests the find_supervision_termination_event function."""
 
     def setUp(self) -> None:
         self.identifier = identifier.SupervisionIdentifier()
 
-    def test_find_supervision_termination_bucket(self) -> None:
+    def test_find_supervision_termination_event(self) -> None:
         supervision_period_termination_date = date(2019, 5, 19)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -6535,7 +6561,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
-        termination_bucket = self.identifier._find_supervision_termination_bucket(
+        termination_event = self.identifier._find_supervision_termination_event(
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
@@ -6552,7 +6578,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        expected_termination_bucket = SupervisionTerminationBucket(
+        expected_termination_event = SupervisionTerminationEvent(
             state_code=supervision_period.state_code,
             year=supervision_period_termination_date.year,
             month=supervision_period_termination_date.month,
@@ -6566,9 +6592,9 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             in_supervision_population_on_date=True,
         )
 
-        self.assertEqual(expected_termination_bucket, termination_bucket)
+        self.assertEqual(expected_termination_event, termination_event)
 
-    def test_find_supervision_termination_bucket_no_assessments(self) -> None:
+    def test_find_supervision_termination_event_no_assessments(self) -> None:
         supervision_period_termination_date = date(2019, 5, 19)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -6606,7 +6632,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
-        termination_bucket = self.identifier._find_supervision_termination_bucket(
+        termination_event = self.identifier._find_supervision_termination_event(
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
@@ -6621,7 +6647,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        expected_termination_bucket = SupervisionTerminationBucket(
+        expected_termination_event = SupervisionTerminationEvent(
             state_code=supervision_period.state_code,
             year=supervision_period_termination_date.year,
             month=supervision_period_termination_date.month,
@@ -6635,9 +6661,9 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             in_supervision_population_on_date=True,
         )
 
-        self.assertEqual(expected_termination_bucket, termination_bucket)
+        self.assertEqual(expected_termination_event, termination_event)
 
-    def test_find_supervision_termination_bucket_insufficient_assessments(self) -> None:
+    def test_find_supervision_termination_event_insufficient_assessments(self) -> None:
         supervision_period_termination_date = date(2019, 5, 19)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -6682,7 +6708,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
-        termination_bucket = self.identifier._find_supervision_termination_bucket(
+        termination_event = self.identifier._find_supervision_termination_event(
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
@@ -6697,7 +6723,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        expected_termination_bucket = SupervisionTerminationBucket(
+        expected_termination_event = SupervisionTerminationEvent(
             state_code=supervision_period.state_code,
             year=supervision_period_termination_date.year,
             month=supervision_period_termination_date.month,
@@ -6711,9 +6737,9 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             in_supervision_population_on_date=True,
         )
 
-        self.assertEqual(expected_termination_bucket, termination_bucket)
+        self.assertEqual(expected_termination_event, termination_event)
 
-    def test_find_supervision_termination_bucket_no_termination(self) -> None:
+    def test_find_supervision_termination_event_no_termination(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
@@ -6747,7 +6773,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
-        termination_bucket = self.identifier._find_supervision_termination_bucket(
+        termination_event = self.identifier._find_supervision_termination_event(
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
@@ -6758,12 +6784,12 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
         )
 
-        self.assertEqual(None, termination_bucket)
+        self.assertEqual(None, termination_event)
 
-    def test_find_supervision_termination_bucket_multiple_in_month(self) -> None:
+    def test_find_supervision_termination_event_multiple_in_month(self) -> None:
         """Tests that when multiple supervision periods end in the same month, the earliest start_date and the latest
         termination_date are used as the date boundaries for the assessments, but the termination_date on the
-        supervision_period is still on the SupervisionTerminationBucket."""
+        supervision_period is still on the SupervisionTerminationEvent."""
         first_supervision_period_termination_date = date(2019, 11, 17)
         first_supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -6840,7 +6866,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
-        termination_bucket = self.identifier._find_supervision_termination_bucket(
+        termination_event = self.identifier._find_supervision_termination_event(
             supervision_sentences,
             incarceration_sentences,
             first_supervision_period,
@@ -6856,7 +6882,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         )
 
         # in_supervision_population_on_date=True because another SP was in progress the same day as this termination
-        expected_termination_bucket = SupervisionTerminationBucket(
+        expected_termination_event = SupervisionTerminationEvent(
             state_code=first_supervision_period.state_code,
             year=first_supervision_period_termination_date.year,
             month=first_supervision_period_termination_date.month,
@@ -6870,9 +6896,9 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             assessment_score_change=(assessment_3_score - assessment_2_score),
         )
 
-        self.assertEqual(expected_termination_bucket, termination_bucket)
+        self.assertEqual(expected_termination_event, termination_event)
 
-    def test_find_supervision_termination_bucket_incarceration_overlaps_full_supervision_period(
+    def test_find_supervision_termination_event_incarceration_overlaps_full_supervision_period(
         self,
     ) -> None:
         supervision_period_termination_date = date(2018, 5, 19)
@@ -6906,7 +6932,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             incarceration_periods=[], ip_id_to_pfi_subtype={}
         )
 
-        termination_bucket = self.identifier._find_supervision_termination_bucket(
+        termination_event = self.identifier._find_supervision_termination_event(
             supervision_sentences=[supervision_sentence],
             incarceration_sentences=[],
             supervision_period=supervision_period,
@@ -6921,7 +6947,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        expected_termination_bucket = SupervisionTerminationBucket(
+        expected_termination_event = SupervisionTerminationEvent(
             state_code=supervision_period.state_code,
             year=supervision_period_termination_date.year,
             month=supervision_period_termination_date.month,
@@ -6932,22 +6958,22 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             in_supervision_population_on_date=True,
         )
 
-        self.assertEqual(expected_termination_bucket, termination_bucket)
+        self.assertEqual(expected_termination_event, termination_event)
 
-    def test_find_supervision_termination_bucket_overlapping_incarceration(
+    def test_find_supervision_termination_event_overlapping_incarceration(
         self,
     ) -> None:
-        """Tests that the SupervisionTerminationBucket has in_incarceration_population_on_date=True
+        """Tests that the SupervisionTerminationEvent has in_incarceration_population_on_date=True
         and in_supervision_population_on_date=False if the termination date occurs
         during an incarceration period for that person."""
         self.run_overlapping_periods_test(
             date(2019, 5, 19), date(2019, 5, 15), True, False
         )
 
-    def test_find_supervision_termination_bucket_overlapping_incarceration_incarceration_ends_first(
+    def test_find_supervision_termination_event_overlapping_incarceration_incarceration_ends_first(
         self,
     ) -> None:
-        """Tests that the SupervisionTerminationBucket has in_incarceration_population_on_date=False
+        """Tests that the SupervisionTerminationEvent has in_incarceration_population_on_date=False
         and in_supervision_population_on_date=True if the termination date occurs after
         an incarceration period for that person, even if the supervision and
         incarceration periods were overlapping previously."""
@@ -6955,40 +6981,40 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             date(2019, 5, 19), date(2018, 5, 15), False, True, date(2019, 5, 15)
         )
 
-    def test_find_supervision_termination_bucket_termination_admission_same_date(
+    def test_find_supervision_termination_event_termination_admission_same_date(
         self,
     ) -> None:
-        """Tests that the SupervisionTerminationBucket has in_incarceration_population_on_date=True
+        """Tests that the SupervisionTerminationEvent has in_incarceration_population_on_date=True
         and in_supervision_population_on_date=True if the termination date is on the
         same day as the admission date of an incarceration period for that person."""
         self.run_overlapping_periods_test(
             date(2019, 5, 19), date(2019, 5, 19), True, True
         )
 
-    def test_find_supervision_termination_bucket_termination_day_before_admission(
+    def test_find_supervision_termination_event_termination_day_before_admission(
         self,
     ) -> None:
-        """Tests that the SupervisionTerminationBucket has in_incarceration_population_on_date=False
+        """Tests that the SupervisionTerminationEvent has in_incarceration_population_on_date=False
         and in_supervision_population_on_date=True if the termination date is the day
         before the admission date of an incarceration period for that person."""
         self.run_overlapping_periods_test(
             date(2019, 5, 19), date(2019, 5, 20), False, True
         )
 
-    def test_find_supervision_termination_bucket_single_day_termination_non_overlapping(
+    def test_find_supervision_termination_event_single_day_termination_non_overlapping(
         self,
     ) -> None:
-        """Tests that the SupervisionTerminationBucket has in_supervision_population_on_date=True
+        """Tests that the SupervisionTerminationEvent has in_supervision_population_on_date=True
         and in_incarceration_population_on_date=False if the supervision period is 1 full day and
         non-overlapping with other periods."""
         self.run_overlapping_periods_test(
             date(2018, 3, 6), date(2019, 5, 20), False, True
         )
 
-    def test_find_supervision_termination_bucket_single_day_termination_overlapping(
+    def test_find_supervision_termination_event_single_day_termination_overlapping(
         self,
     ) -> None:
-        """Tests that the SupervisionTerminationBucket has in_supervision_population_on_date=True
+        """Tests that the SupervisionTerminationEvent has in_supervision_population_on_date=True
         if the supervision period is 1 full day and non-overlapping with other
         supervision periods, but in_incarceration_population_on_date=True because it's overlapping
         with an incarceration period."""
@@ -6996,10 +7022,10 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             date(2018, 3, 6), date(2018, 3, 6), True, True
         )
 
-    def test_find_supervision_termination_bucket_single_day_termination_overlapping_with_supervision(
+    def test_find_supervision_termination_event_single_day_termination_overlapping_with_supervision(
         self,
     ) -> None:
-        """Tests that the SupervisionTerminationBucket has in_supervision_population_on_date=True
+        """Tests that the SupervisionTerminationEvent has in_supervision_population_on_date=True
         if the supervision period is 1 full day and overlapping with another
         supervision period, but in_incarceration_population_on_date=False because it's overlapping
         with no incarceration periods."""
@@ -7050,7 +7076,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
-        termination_bucket = self.identifier._find_supervision_termination_bucket(
+        termination_event = self.identifier._find_supervision_termination_event(
             supervision_sentences,
             incarceration_sentences,
             first_supervision_period,
@@ -7070,7 +7096,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
                 "Expected supervision_period.termination_date to be filled"
             )
 
-        expected_termination_bucket = SupervisionTerminationBucket(
+        expected_termination_event = SupervisionTerminationEvent(
             state_code=first_supervision_period.state_code,
             year=first_supervision_period.termination_date.year,
             month=first_supervision_period.termination_date.month,
@@ -7085,21 +7111,21 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             assessment_score_change=None,
         )
 
-        self.assertEqual(expected_termination_bucket, termination_bucket)
+        self.assertEqual(expected_termination_event, termination_event)
 
-    def test_find_supervision_termination_bucket_zero_day_termination_non_overlapping(
+    def test_find_supervision_termination_event_zero_day_termination_non_overlapping(
         self,
     ) -> None:
-        """Tests that the SupervisionTerminationBucket has in_supervision_population_on_date=False
+        """Tests that the SupervisionTerminationEvent has in_supervision_population_on_date=False
         if the supervision period is 0 full days and non-overlapping with other periods."""
         self.run_overlapping_periods_test(
             date(2018, 3, 5), date(2019, 5, 20), False, False
         )
 
-    def test_find_supervision_termination_bucket_zero_day_termination_overlapping(
+    def test_find_supervision_termination_event_zero_day_termination_overlapping(
         self,
     ) -> None:
-        """Tests that the SupervisionTerminationBucket has in_supervision_population_on_date=False
+        """Tests that the SupervisionTerminationEvent has in_supervision_population_on_date=False
         if the supervision period is 0 full days and non-overlapping with other
         supervision periods, but in_incarceration_population_on_date=True because it's overlapping
         with an incarceration period."""
@@ -7107,10 +7133,10 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             date(2018, 3, 5), date(2018, 3, 5), True, False
         )
 
-    def test_find_supervision_termination_bucket_zero_day_termination_overlapping_with_supervision(
+    def test_find_supervision_termination_event_zero_day_termination_overlapping_with_supervision(
         self,
     ) -> None:
-        """Tests that the SupervisionTerminationBucket has in_supervision_population_on_date=False
+        """Tests that the SupervisionTerminationEvent has in_supervision_population_on_date=False
         if the supervision period is 0 full days and overlapping with another
         supervision period, but in_incarceration_population_on_date=False because it's overlapping
         with no incarceration periods."""
@@ -7161,7 +7187,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
-        termination_bucket = self.identifier._find_supervision_termination_bucket(
+        termination_event = self.identifier._find_supervision_termination_event(
             supervision_sentences,
             incarceration_sentences,
             first_supervision_period,
@@ -7181,7 +7207,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
                 "Expected supervision_period.termination_date to be filled"
             )
 
-        expected_termination_bucket = SupervisionTerminationBucket(
+        expected_termination_event = SupervisionTerminationEvent(
             state_code=first_supervision_period.state_code,
             year=first_supervision_period.termination_date.year,
             month=first_supervision_period.termination_date.month,
@@ -7196,7 +7222,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             assessment_score_change=None,
         )
 
-        self.assertEqual(expected_termination_bucket, termination_bucket)
+        self.assertEqual(expected_termination_event, termination_event)
 
     def run_overlapping_periods_test(
         self,
@@ -7206,7 +7232,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         expected_in_supervision_population_on_date: bool,
         incarceration_release_date: Optional[date] = date(2020, 9, 20),
     ) -> None:
-        """Runs a test for find_supervision_termination_bucket where there are
+        """Runs a test for find_supervision_termination_event where there are
         overlapping supervision and incarceration periods."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -7260,7 +7286,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         supervision_sentences = [supervision_sentence]
         violation_responses: List[StateSupervisionViolationResponse] = []
 
-        termination_bucket = self.identifier._find_supervision_termination_bucket(
+        termination_event = self.identifier._find_supervision_termination_event(
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
@@ -7280,7 +7306,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
                 "Expected supervision_period.termination_date to be filled"
             )
 
-        expected_termination_bucket = SupervisionTerminationBucket(
+        expected_termination_event = SupervisionTerminationEvent(
             state_code=supervision_period.state_code,
             year=supervision_period.termination_date.year,
             month=supervision_period.termination_date.month,
@@ -7295,17 +7321,17 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             assessment_score_change=None,
         )
 
-        self.assertEqual(expected_termination_bucket, termination_bucket)
+        self.assertEqual(expected_termination_event, termination_event)
 
 
-class TestFindSupervisionStartBucket(unittest.TestCase):
-    """Tests the find_supervision_start_bucket function."""
+class TestFindSupervisionStartEvent(unittest.TestCase):
+    """Tests the find_supervision_start_event function."""
 
     def setUp(self) -> None:
         self.identifier = identifier.SupervisionIdentifier()
 
-    def test_find_supervision_start_bucket_overlapping_incarceration(self) -> None:
-        """Tests that the SupervisionStartBucket has in_incarceration_population_on_date=True
+    def test_find_supervision_start_event_overlapping_incarceration(self) -> None:
+        """Tests that the SupervisionStartEvent has in_incarceration_population_on_date=True
         if the start date occurs during an incarceration period for that person.
         in_supervision_population_on_date=False because the IP overlapping with the
         start date means they are generally not counted in the supervision population
@@ -7314,10 +7340,10 @@ class TestFindSupervisionStartBucket(unittest.TestCase):
             date(2018, 3, 5), date(2018, 4, 1), True, False
         )
 
-    def test_find_supervision_start_bucket_overlapping_incarceration_supervision_authority(
+    def test_find_supervision_start_event_overlapping_incarceration_supervision_authority(
         self,
     ) -> None:
-        """Tests that the SupervisionStartBucket has in_incarceration_population_on_date=True
+        """Tests that the SupervisionStartEvent has in_incarceration_population_on_date=True
         if the start date occurs during an incarceration period for that person.
         in_supervision_population_on_date=True because the IP overlapping with the
         start date has custodial_authority=SUPERVISION_AUTHORITY which means the person
@@ -7330,10 +7356,10 @@ class TestFindSupervisionStartBucket(unittest.TestCase):
             incarceration_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
         )
 
-    def test_find_supervision_start_bucket_overlapping_incarceration_supervision_starts_first(
+    def test_find_supervision_start_event_overlapping_incarceration_supervision_starts_first(
         self,
     ) -> None:
-        """Tests that the SupervisionStartBucket has in_incarceration_population_on_date=False
+        """Tests that the SupervisionStartEvent has in_incarceration_population_on_date=False
         if the start date occurs before an incarceration period for that person,
         even if the supervision and incarceration periods are overlapping thereafter.
         in_supervision_population_on_date=True because it's not a 0-day supervision period."""
@@ -7341,46 +7367,46 @@ class TestFindSupervisionStartBucket(unittest.TestCase):
             date(2018, 3, 5), date(2019, 5, 20), False, True, date(2018, 4, 1)
         )
 
-    def test_find_supervision_start_bucket_start_release_same_date(self) -> None:
-        """Tests that the SupervisionStartBucket has in_incarceration_population_on_date=False
+    def test_find_supervision_start_event_start_release_same_date(self) -> None:
+        """Tests that the SupervisionStartEvent has in_incarceration_population_on_date=False
         and in_supervision_population_on_date=True if the start date is on the same day
         as the release date of an incarceration period for that person."""
         self.run_overlapping_periods_test(
             date(2018, 3, 5), date(2018, 3, 5), False, True
         )
 
-    def test_find_supervision_start_bucket_start_day_before_release(self) -> None:
-        """Tests that the SupervisionStartBucket has in_incarceration_population_on_date=True
+    def test_find_supervision_start_event_start_day_before_release(self) -> None:
+        """Tests that the SupervisionStartEvent has in_incarceration_population_on_date=True
         and in_supervision_population_on_date=False if the start date is the day before
         the release date of an incarceration period for that person."""
         self.run_overlapping_periods_test(
             date(2018, 3, 5), date(2018, 3, 6), True, False
         )
 
-    def test_find_supervision_start_bucket_single_day_termination_non_overlapping(
+    def test_find_supervision_start_event_single_day_termination_non_overlapping(
         self,
     ) -> None:
-        """Tests that the SupervisionStartBucket has in_supervision_population_on_date=True
+        """Tests that the SupervisionStartEvent has in_supervision_population_on_date=True
         and in_incarceration_population_on_date=False if the supervision period is 1 full day and
         non-overlapping with other periods."""
         self.run_overlapping_periods_test(
             date(2019, 5, 18), date(2019, 2, 20), False, True
         )
 
-    def test_find_supervision_start_bucket_single_day_termination_overlapping(
+    def test_find_supervision_start_event_single_day_termination_overlapping(
         self,
     ) -> None:
-        """Tests that the SupervisionStartBucket has in_supervision_population_on_date=False
+        """Tests that the SupervisionStartEvent has in_supervision_population_on_date=False
         and in_incarceration_population_on_date=True if the the supervision period
         is 1 full day and that day is overlapping with an incarceration period."""
         self.run_overlapping_periods_test(
             date(2019, 5, 18), date(2020, 5, 18), True, False, date(2019, 5, 18)
         )
 
-    def test_find_supervision_start_bucket_single_day_termination_overlapping_with_supervision(
+    def test_find_supervision_start_event_single_day_termination_overlapping_with_supervision(
         self,
     ) -> None:
-        """Tests that the SupervisionStartBucket has in_supervision_population_on_date=True
+        """Tests that the SupervisionStartEvent has in_supervision_population_on_date=True
         and in_incarceration_population_on_date=False if the supervision period is 1
         full day and overlapping with another supervision period, but with no
         incarceration periods."""
@@ -7429,7 +7455,7 @@ class TestFindSupervisionStartBucket(unittest.TestCase):
         supervision_sentences: List[StateSupervisionSentence] = [supervision_sentence]
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        start_bucket = self.identifier._find_supervision_start_bucket(
+        start_event = self.identifier._find_supervision_start_event(
             supervision_sentences,
             incarceration_sentences,
             first_supervision_period,
@@ -7444,7 +7470,7 @@ class TestFindSupervisionStartBucket(unittest.TestCase):
                 "Expected supervision_period.termination_date to be filled"
             )
 
-        expected_start_bucket = SupervisionStartBucket(
+        expected_start_event = SupervisionStartEvent(
             state_code=first_supervision_period.state_code,
             year=first_supervision_period_start_date.year,
             month=first_supervision_period_start_date.month,
@@ -7457,31 +7483,31 @@ class TestFindSupervisionStartBucket(unittest.TestCase):
             admission_reason=first_supervision_period.admission_reason,
         )
 
-        self.assertEqual(expected_start_bucket, start_bucket)
+        self.assertEqual(expected_start_event, start_event)
 
-    def test_find_supervision_start_bucket_zero_day_termination_non_overlapping(
+    def test_find_supervision_start_event_zero_day_termination_non_overlapping(
         self,
     ) -> None:
-        """Tests that the SupervisionStartBucket has in_supervision_population_on_date=False
+        """Tests that the SupervisionStartEvent has in_supervision_population_on_date=False
         if the supervision period is 0 full days and non-overlapping with other periods."""
         self.run_overlapping_periods_test(
             date(2019, 5, 19), date(2019, 2, 20), False, False
         )
 
-    def test_find_supervision_start_bucket_zero_day_termination_overlapping(
+    def test_find_supervision_start_event_zero_day_termination_overlapping(
         self,
     ) -> None:
-        """Tests that the SupervisionStartBucket has in_supervision_population_on_date=False
+        """Tests that the SupervisionStartEvent has in_supervision_population_on_date=False
         and in_incarceration_population_on_date=True if the supervision period is 0 full
         days and it's overlapping with an incarceration period."""
         self.run_overlapping_periods_test(
             date(2019, 5, 19), date(2020, 5, 19), True, False, date(2019, 5, 19)
         )
 
-    def test_find_supervision_start_bucket_zero_day_termination_overlapping_with_supervision(
+    def test_find_supervision_start_event_zero_day_termination_overlapping_with_supervision(
         self,
     ) -> None:
-        """Tests that the SupervisionStartBucket has in_supervision_population_on_date=True
+        """Tests that the SupervisionStartEvent has in_supervision_population_on_date=True
         and in_incarceration_population_on_date=False if the supervision period is 0
         full days and overlapping with another supervision period but with no
         incarceration periods."""
@@ -7530,7 +7556,7 @@ class TestFindSupervisionStartBucket(unittest.TestCase):
         supervision_sentences: List[StateSupervisionSentence] = [supervision_sentence]
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        start_bucket = self.identifier._find_supervision_start_bucket(
+        start_event = self.identifier._find_supervision_start_event(
             supervision_sentences,
             incarceration_sentences,
             first_supervision_period,
@@ -7545,7 +7571,7 @@ class TestFindSupervisionStartBucket(unittest.TestCase):
                 "Expected supervision_period.termination_date to be filled"
             )
 
-        expected_start_bucket = SupervisionStartBucket(
+        expected_start_event = SupervisionStartEvent(
             state_code=first_supervision_period.state_code,
             year=start_date.year,
             month=start_date.month,
@@ -7558,7 +7584,7 @@ class TestFindSupervisionStartBucket(unittest.TestCase):
             admission_reason=first_supervision_period.admission_reason,
         )
 
-        self.assertEqual(expected_start_bucket, start_bucket)
+        self.assertEqual(expected_start_event, start_event)
 
     def run_overlapping_periods_test(
         self,
@@ -7569,7 +7595,7 @@ class TestFindSupervisionStartBucket(unittest.TestCase):
         incarceration_admission_date: Optional[date] = date(2018, 2, 20),
         incarceration_authority: Optional[StateCustodialAuthority] = None,
     ) -> None:
-        """Runs a test for find_supervision_start_bucket where there are overlapping
+        """Runs a test for find_supervision_start_event where there are overlapping
         supervision and incarceration periods."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -7621,7 +7647,7 @@ class TestFindSupervisionStartBucket(unittest.TestCase):
         supervision_sentences: List[StateSupervisionSentence] = [supervision_sentence]
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        start_bucket = self.identifier._find_supervision_start_bucket(
+        start_event = self.identifier._find_supervision_start_event(
             supervision_sentences,
             incarceration_sentences,
             supervision_period,
@@ -7634,7 +7660,7 @@ class TestFindSupervisionStartBucket(unittest.TestCase):
         if supervision_period.start_date is None:
             raise ValueError("Expected supervision_period.start_date to be filled")
 
-        expected_start_bucket = SupervisionStartBucket(
+        expected_start_event = SupervisionStartEvent(
             state_code=supervision_period.state_code,
             year=supervision_period.start_date.year,
             month=supervision_period.start_date.month,
@@ -7647,7 +7673,7 @@ class TestFindSupervisionStartBucket(unittest.TestCase):
             admission_reason=supervision_period.admission_reason,
         )
 
-        self.assertEqual(expected_start_bucket, start_bucket)
+        self.assertEqual(expected_start_event, start_event)
 
 
 class TestGetMostSevereResponseDecision(unittest.TestCase):
@@ -7700,15 +7726,15 @@ class TestGetMostSevereResponseDecision(unittest.TestCase):
         self.assertIsNone(most_severe_response_decision)
 
 
-class TestConvertBucketsToDual(unittest.TestCase):
-    """Tests the _convert_buckets_to_dual function."""
+class TestConvertEventsToDual(unittest.TestCase):
+    """Tests the _convert_events_to_dual function."""
 
     def setUp(self) -> None:
         self.identifier = identifier.SupervisionIdentifier()
 
-    def test_convert_buckets_to_dual_us_mo(self) -> None:
-        supervision_events: List[SupervisionTimeBucket] = [
-            NonRevocationReturnSupervisionTimeBucket(
+    def test_convert_events_to_dual_us_mo(self) -> None:
+        supervision_events: List[SupervisionEvent] = [
+            SupervisionPopulationEvent(
                 state_code="US_MO",
                 year=1900,
                 month=1,
@@ -7716,7 +7742,7 @@ class TestConvertBucketsToDual(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 is_on_supervision_last_day_of_month=False,
             ),
-            NonRevocationReturnSupervisionTimeBucket(
+            SupervisionPopulationEvent(
                 state_code="US_MO",
                 year=1900,
                 month=1,
@@ -7726,12 +7752,12 @@ class TestConvertBucketsToDual(unittest.TestCase):
             ),
         ]
 
-        updated_buckets = self.identifier._convert_buckets_to_dual(
-            supervision_time_buckets=supervision_events
+        updated_events = self.identifier._convert_events_to_dual(
+            supervision_events=supervision_events
         )
 
         expected_output = [
-            NonRevocationReturnSupervisionTimeBucket(
+            SupervisionPopulationEvent(
                 state_code="US_MO",
                 year=1900,
                 month=1,
@@ -7739,7 +7765,7 @@ class TestConvertBucketsToDual(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
                 is_on_supervision_last_day_of_month=False,
             ),
-            NonRevocationReturnSupervisionTimeBucket(
+            SupervisionPopulationEvent(
                 state_code="US_MO",
                 year=1900,
                 month=1,
@@ -7749,11 +7775,11 @@ class TestConvertBucketsToDual(unittest.TestCase):
             ),
         ]
 
-        self.assertCountEqual(updated_buckets, expected_output)
+        self.assertCountEqual(updated_events, expected_output)
 
-    def test_convert_buckets_to_dual_us_mo_one_dual(self) -> None:
-        supervision_events: List[SupervisionTimeBucket] = [
-            NonRevocationReturnSupervisionTimeBucket(
+    def test_convert_events_to_dual_us_mo_one_dual(self) -> None:
+        supervision_events: List[SupervisionEvent] = [
+            SupervisionPopulationEvent(
                 state_code="US_MO",
                 year=1900,
                 month=1,
@@ -7761,7 +7787,7 @@ class TestConvertBucketsToDual(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
                 is_on_supervision_last_day_of_month=False,
             ),
-            NonRevocationReturnSupervisionTimeBucket(
+            SupervisionPopulationEvent(
                 state_code="US_MO",
                 year=1900,
                 month=1,
@@ -7771,12 +7797,12 @@ class TestConvertBucketsToDual(unittest.TestCase):
             ),
         ]
 
-        updated_buckets = self.identifier._convert_buckets_to_dual(
-            supervision_time_buckets=supervision_events
+        updated_events = self.identifier._convert_events_to_dual(
+            supervision_events=supervision_events
         )
 
         expected_output = [
-            NonRevocationReturnSupervisionTimeBucket(
+            SupervisionPopulationEvent(
                 state_code="US_MO",
                 year=1900,
                 month=1,
@@ -7784,7 +7810,7 @@ class TestConvertBucketsToDual(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
                 is_on_supervision_last_day_of_month=False,
             ),
-            NonRevocationReturnSupervisionTimeBucket(
+            SupervisionPopulationEvent(
                 state_code="US_MO",
                 year=1900,
                 month=1,
@@ -7794,11 +7820,11 @@ class TestConvertBucketsToDual(unittest.TestCase):
             ),
         ]
 
-        self.assertCountEqual(updated_buckets, expected_output)
+        self.assertCountEqual(updated_events, expected_output)
 
-    def test_convert_buckets_to_dual_us_mo_one_other_day(self) -> None:
-        supervision_events: List[SupervisionTimeBucket] = [
-            NonRevocationReturnSupervisionTimeBucket(
+    def test_convert_events_to_dual_us_mo_one_other_day(self) -> None:
+        supervision_events: List[SupervisionEvent] = [
+            SupervisionPopulationEvent(
                 state_code="US_MO",
                 year=1900,
                 month=1,
@@ -7807,7 +7833,7 @@ class TestConvertBucketsToDual(unittest.TestCase):
                 is_on_supervision_last_day_of_month=False,
                 projected_end_date=None,
             ),
-            NonRevocationReturnSupervisionTimeBucket(
+            SupervisionPopulationEvent(
                 state_code="US_MO",
                 year=1900,
                 month=1,
@@ -7816,7 +7842,7 @@ class TestConvertBucketsToDual(unittest.TestCase):
                 is_on_supervision_last_day_of_month=False,
                 projected_end_date=None,
             ),
-            NonRevocationReturnSupervisionTimeBucket(
+            SupervisionPopulationEvent(
                 state_code="US_MO",
                 year=1900,
                 month=1,
@@ -7827,12 +7853,12 @@ class TestConvertBucketsToDual(unittest.TestCase):
             ),
         ]
 
-        updated_buckets = self.identifier._convert_buckets_to_dual(
-            supervision_time_buckets=supervision_events
+        updated_events = self.identifier._convert_events_to_dual(
+            supervision_events=supervision_events
         )
 
         expected_output = [
-            NonRevocationReturnSupervisionTimeBucket(
+            SupervisionPopulationEvent(
                 state_code="US_MO",
                 year=1900,
                 month=1,
@@ -7841,7 +7867,7 @@ class TestConvertBucketsToDual(unittest.TestCase):
                 is_on_supervision_last_day_of_month=False,
                 projected_end_date=None,
             ),
-            NonRevocationReturnSupervisionTimeBucket(
+            SupervisionPopulationEvent(
                 state_code="US_MO",
                 year=1900,
                 month=1,
@@ -7850,7 +7876,7 @@ class TestConvertBucketsToDual(unittest.TestCase):
                 is_on_supervision_last_day_of_month=False,
                 projected_end_date=None,
             ),
-            NonRevocationReturnSupervisionTimeBucket(
+            SupervisionPopulationEvent(
                 state_code="US_MO",
                 year=1900,
                 month=1,
@@ -7861,11 +7887,11 @@ class TestConvertBucketsToDual(unittest.TestCase):
             ),
         ]
 
-        self.assertCountEqual(updated_buckets, expected_output)
+        self.assertCountEqual(updated_events, expected_output)
 
-    def test_convert_buckets_to_dual_us_mo_one_different_type(self) -> None:
+    def test_convert_events_to_dual_us_mo_one_different_type(self) -> None:
         supervision_events = [
-            NonRevocationReturnSupervisionTimeBucket(
+            SupervisionPopulationEvent(
                 state_code="US_MO",
                 year=1900,
                 month=1,
@@ -7874,7 +7900,7 @@ class TestConvertBucketsToDual(unittest.TestCase):
                 is_on_supervision_last_day_of_month=True,
                 projected_end_date=None,
             ),
-            NonRevocationReturnSupervisionTimeBucket(
+            SupervisionPopulationEvent(
                 state_code="US_MO",
                 year=1900,
                 month=1,
@@ -7883,7 +7909,7 @@ class TestConvertBucketsToDual(unittest.TestCase):
                 is_on_supervision_last_day_of_month=True,
                 projected_end_date=None,
             ),
-            ProjectedSupervisionCompletionBucket(
+            ProjectedSupervisionCompletionEvent(
                 state_code="US_MO",
                 year=1900,
                 month=1,
@@ -7893,12 +7919,12 @@ class TestConvertBucketsToDual(unittest.TestCase):
             ),
         ]
 
-        updated_buckets = self.identifier._convert_buckets_to_dual(
-            supervision_time_buckets=supervision_events
+        updated_events = self.identifier._convert_events_to_dual(
+            supervision_events=supervision_events
         )
 
         expected_output = [
-            NonRevocationReturnSupervisionTimeBucket(
+            SupervisionPopulationEvent(
                 state_code="US_MO",
                 year=1900,
                 month=1,
@@ -7907,7 +7933,7 @@ class TestConvertBucketsToDual(unittest.TestCase):
                 is_on_supervision_last_day_of_month=True,
                 projected_end_date=None,
             ),
-            NonRevocationReturnSupervisionTimeBucket(
+            SupervisionPopulationEvent(
                 state_code="US_MO",
                 year=1900,
                 month=1,
@@ -7916,7 +7942,7 @@ class TestConvertBucketsToDual(unittest.TestCase):
                 is_on_supervision_last_day_of_month=True,
                 projected_end_date=None,
             ),
-            ProjectedSupervisionCompletionBucket(
+            ProjectedSupervisionCompletionEvent(
                 state_code="US_MO",
                 year=1900,
                 month=1,
@@ -7926,24 +7952,24 @@ class TestConvertBucketsToDual(unittest.TestCase):
             ),
         ]
 
-        self.assertCountEqual(updated_buckets, expected_output)
+        self.assertCountEqual(updated_events, expected_output)
 
-    def test_convert_buckets_to_dual_empty_input(self) -> None:
-        supervision_events: List[SupervisionTimeBucket] = []
+    def test_convert_events_to_dual_empty_input(self) -> None:
+        supervision_events: List[SupervisionEvent] = []
 
-        updated_buckets = self.identifier._convert_buckets_to_dual(
-            supervision_time_buckets=supervision_events
+        updated_events = self.identifier._convert_events_to_dual(
+            supervision_events=supervision_events
         )
 
-        expected_output: List[SupervisionTimeBucket] = []
+        expected_output: List[SupervisionEvent] = []
 
-        self.assertCountEqual(updated_buckets, expected_output)
+        self.assertCountEqual(updated_events, expected_output)
 
-    def test_convert_buckets_to_dual_metric_type_coverage(self) -> None:
+    def test_convert_events_to_dual_metric_type_coverage(self) -> None:
         """Asserts all SupervisionMetricTypes are handled in the function."""
         for metric_type in SupervisionMetricType:
             self.assertTrue(
-                metric_type in self.identifier.BUCKET_TYPES_FOR_METRIC.keys()
+                metric_type in self.identifier.EVENT_TYPES_FOR_METRIC.keys()
             )
 
 
@@ -7960,7 +7986,7 @@ class TestIncludeTerminationInSuccessMetric(unittest.TestCase):
             )
 
 
-def expected_non_revocation_return_time_buckets(
+def expected_population_events(
     supervision_period: StateSupervisionPeriod,
     supervision_type: StateSupervisionPeriodSupervisionType,
     end_date: Optional[date] = None,
@@ -7983,9 +8009,9 @@ def expected_non_revocation_return_time_buckets(
     supervision_downgrade_occurred: Optional[bool] = False,
     previous_supervision_level: Optional[StateSupervisionLevel] = None,
     projected_supervision_completion_date: Optional[date] = None,
-) -> List[NonRevocationReturnSupervisionTimeBucket]:
-    """Returns the expected NonRevocationReturnSupervisionTimeBuckets based on the provided |supervision_period|
-    and when the buckets should end."""
+) -> List[SupervisionPopulationEvent]:
+    """Returns the expected SupervisionPopulationEvents based on the provided
+    |supervision_period| and when the events should end."""
 
     expected_events = []
 
@@ -8029,7 +8055,7 @@ def expected_non_revocation_return_time_buckets(
             )
             previous_level = previous_supervision_level if downgrade_occurred else None
 
-            bucket = NonRevocationReturnSupervisionTimeBucket(
+            event = SupervisionPopulationEvent(
                 state_code=supervision_period.state_code,
                 year=day_on_supervision.year,
                 month=day_on_supervision.month,
@@ -8060,7 +8086,7 @@ def expected_non_revocation_return_time_buckets(
                 projected_end_date=projected_supervision_completion_date,
             )
 
-            expected_events.append(bucket)
+            expected_events.append(event)
 
     return expected_events
 
@@ -8583,10 +8609,10 @@ class TestProjectedCompletionDate(unittest.TestCase):
         )
 
 
-def create_start_bucket_from_period(
+def create_start_event_from_period(
     period: StateSupervisionPeriod, **kwargs: Any
-) -> SupervisionStartBucket:
-    """Creates the SupervisionStartBucket we expect to be created from the given
+) -> SupervisionStartEvent:
+    """Creates the SupervisionStartEvent we expect to be created from the given
     period."""
     (
         _supervising_officer_external_id,
@@ -8605,7 +8631,7 @@ def create_start_bucket_from_period(
 
     assert period.start_date is not None
 
-    bucket = SupervisionStartBucket(
+    event = SupervisionStartEvent(
         state_code=period.state_code,
         year=period.start_date.year,
         month=period.start_date.month,
@@ -8621,14 +8647,14 @@ def create_start_bucket_from_period(
         admission_reason=period.admission_reason
         or StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
     )
-    bucket = attr.evolve(bucket, **kwargs)
-    return bucket
+    event = attr.evolve(event, **kwargs)
+    return event
 
 
-def create_termination_bucket_from_period(
+def create_termination_event_from_period(
     period: StateSupervisionPeriod, **kwargs: Any
-) -> SupervisionTerminationBucket:
-    """Creates the SupervisionTerminationBucket we expect to be created from the given
+) -> SupervisionTerminationEvent:
+    """Creates the SupervisionTerminationEvent we expect to be created from the given
     period."""
     (
         _supervising_officer_external_id,
@@ -8653,7 +8679,7 @@ def create_termination_bucket_from_period(
 
     assert period.termination_date is not None
 
-    bucket = SupervisionTerminationBucket(
+    event = SupervisionTerminationEvent(
         state_code=period.state_code,
         year=period.termination_date.year,
         month=period.termination_date.month,
@@ -8667,8 +8693,8 @@ def create_termination_bucket_from_period(
         case_type=StateSupervisionCaseType.GENERAL,
         termination_reason=termination_reason,
     )
-    bucket = attr.evolve(bucket, **kwargs)
-    return bucket
+    event = attr.evolve(event, **kwargs)
+    return event
 
 
 def _generate_case_compliances(

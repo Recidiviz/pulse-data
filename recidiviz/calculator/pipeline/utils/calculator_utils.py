@@ -217,12 +217,14 @@ def include_in_output(
     calculation_month_upper_bound: datetime.date,
     calculation_month_lower_bound: Optional[datetime.date],
 ) -> bool:
-    """Determines whether the event with the given year and month should be included in the metric output.
-    If the calculation_month_lower_bound is None, then includes the bucket if it occurred in or before the month of the
-    calculation_month_upper_bound. If the calculation_month_lower_bound is set, then includes the event if it happens
-    in a month between the calculation_month_lower_bound and the calculation_month_upper_bound (inclusive). The
-    calculation_month_upper_bound is always the last day of a month, and, if set, the calculation_month_lower_bound is
-    always the first day of a month."""
+    """Determines whether the event with the given year and month should be included in
+    the metric output. If the calculation_month_lower_bound is None, then includes
+    the event if it occurred in or before the month of the
+    calculation_month_upper_bound. If the calculation_month_lower_bound is set, then
+    includes the event if it happens in a month between the
+    calculation_month_lower_bound and the calculation_month_upper_bound (inclusive). The
+    calculation_month_upper_bound is always the last day of a month, and, if set, the
+    calculation_month_lower_bound is always the first day of a month."""
     if not calculation_month_lower_bound:
         return year < calculation_month_upper_bound.year or (
             year == calculation_month_upper_bound.year

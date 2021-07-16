@@ -22,9 +22,7 @@ import sys
 from datetime import date
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
-from recidiviz.calculator.pipeline.supervision.events import (
-    NonRevocationReturnSupervisionTimeBucket,
-)
+from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
 from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
     StateSpecificIncarcerationPreProcessingDelegate,
@@ -345,20 +343,23 @@ def terminating_supervision_period_supervision_type(
     )
 
 
-def should_produce_supervision_time_bucket_for_period(
+def should_produce_supervision_event_for_period(
     supervision_period: StateSupervisionPeriod,
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
 ) -> bool:
-    """Whether or not any SupervisionTimeBuckets should be created using the supervision_period. In some cases,
-    supervision period pre-processing will not drop periods entirely because we need them for context in some of the
-    calculations, but we do not want to create metrics using the periods.
+    """Whether or not any SupervisionEvents should be created using the
+    supervision_period. In some cases, supervision period pre-processing will not drop
+    periods entirely because we need them for context in some of the calculations,
+    but we do not want to create metrics using the periods.
 
-    If this returns True, it does not necessarily mean they should be counted towards the supervision population for
-    any part of this period. It just means that a person was actively assigned to supervision at this time and various
-    characteristics of this period may be relevant for generating metrics (such as the termination reason / date) even
-    if we may not count this person towards the supervision population during the period time span (e.g. if they are
-    incarcerated the whole time).
+    If this returns True, it does not necessarily mean they should be counted towards
+    the supervision population for any part of this period. It just means that a
+    person was actively assigned to supervision at this time and various
+    characteristics of this period may be relevant for generating metrics (such as the
+    termination reason / date) even if we may not count this person towards the
+    supervision population during the period time span (e.g. if they are incarcerated
+    the whole time).
     """
     if supervision_period.state_code == "US_MO":
         # If no days of this supervision_period should count towards any metrics, we can drop this period entirely
@@ -669,15 +670,13 @@ def state_specific_violation_response_pre_processing_function(
 
 
 def supervision_period_is_out_of_state(
-    supervision_time_bucket: NonRevocationReturnSupervisionTimeBucket,
+    supervision_population_event: SupervisionPopulationEvent,
 ) -> bool:
-    """Returns whether the given supervision time bucket should be considered a supervision period that is being
-    served out of state.
-    """
-    if supervision_time_bucket.state_code != "US_ID":
+    """Returns whether the given day on supervision was served out of state."""
+    if supervision_population_event.state_code != "US_ID":
         return False
 
-    return us_id_supervision_period_is_out_of_state(supervision_time_bucket)
+    return us_id_supervision_period_is_out_of_state(supervision_population_event)
 
 
 def state_specific_violation_responses_for_violation_history(

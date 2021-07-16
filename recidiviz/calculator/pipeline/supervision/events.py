@@ -43,15 +43,11 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 
 
-# TODO(#5307): Convert all "bucket" language to use "event"
 @attr.s(frozen=True)
-class SupervisionTimeBucket(
-    IdentifierEvent, SupervisionLocationMixin, AssessmentEventMixin
-):
-    """Models details related to a bucket of time on supervision.
+class SupervisionEvent(IdentifierEvent, SupervisionLocationMixin, AssessmentEventMixin):
+    """Models details of an event related to being on supervision.
 
-    Describes a period of time in which a person spent any amount of time on
-    supervision. This includes the information pertaining to time on supervision that we
+    This includes the information pertaining to time on supervision that we
     will want to track when calculating various supervision metrics."""
 
     # Year for when the person was on supervision
@@ -60,9 +56,7 @@ class SupervisionTimeBucket(
     # Month for when the person was on supervision
     month: int = attr.ib(default=None, validator=attr_validators.is_int)
 
-    # TODO(#2891): Consider moving this out of the base class, and making the supervision type specific to each
-    #   bucket type
-    # The type of supervision the person was on on the last day of the time bucket
+    # The supervision type
     supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(
         default=None
     )
@@ -91,12 +85,13 @@ class SupervisionTimeBucket(
 
 
 @attr.s(frozen=True)
-class SupervisionDowngradeBucket(BuildableAttr):
+class SupervisionDowngradeEvent(BuildableAttr):
     """
-    Base class for including whether a supervision level downgrade took place on a SupervisionTimeBucket.
+    Base class for including whether a supervision level downgrade took place on a
+    SupervisionEvent.
 
-    Note: This bucket only identifies supervision level downgrades for states where a new supervision period is created
-    if the supervision level changes.
+    Note: This event only identifies supervision level downgrades for states where a
+    new supervision period is created if the supervision level changes.
     """
 
     # Whether a supervision level downgrade has taken place.
@@ -107,12 +102,12 @@ class SupervisionDowngradeBucket(BuildableAttr):
 
 
 @attr.s(frozen=True)
-class NonRevocationReturnSupervisionTimeBucket(
-    SupervisionTimeBucket,
+class SupervisionPopulationEvent(
+    SupervisionEvent,
     ViolationHistoryMixin,
-    SupervisionDowngradeBucket,
+    SupervisionDowngradeEvent,
 ):
-    """Models a SupervisionTimeBucket where the person was not incarcerated for a revocation."""
+    """Models a day on which a person was on supervision."""
 
     # TODO(#3600): This field should be removed because the daily output makes this unnecessary
     # True if the stint of time on supervision this month included the last day of the month
@@ -200,11 +195,11 @@ class NonRevocationReturnSupervisionTimeBucket(
 
 
 @attr.s(frozen=True)
-class ProjectedSupervisionCompletionBucket(SupervisionTimeBucket):
+class ProjectedSupervisionCompletionEvent(SupervisionEvent):
     """Models a month in which supervision was projected to complete.
 
-    Describes whether or not the supervision was successfully completed or not, as well as other details about the time
-    on supervision.
+    Describes whether or not the supervision was successfully completed or not, as well
+    as other details about the time on supervision.
     """
 
     # Whether or not the supervision was completed successfully
@@ -218,8 +213,8 @@ class ProjectedSupervisionCompletionBucket(SupervisionTimeBucket):
 
 
 @attr.s(frozen=True)
-class SupervisionStartBucket(SupervisionTimeBucket, InPopulationMixin):
-    """Models details regarding the start of supervision."""
+class SupervisionStartEvent(SupervisionEvent, InPopulationMixin):
+    """Models a day on which supervision started."""
 
     # The reason for supervision admission
     admission_reason: Optional[StateSupervisionPeriodAdmissionReason] = attr.ib(
@@ -236,10 +231,10 @@ class SupervisionStartBucket(SupervisionTimeBucket, InPopulationMixin):
 
 
 @attr.s(frozen=True)
-class SupervisionTerminationBucket(
-    SupervisionTimeBucket, ViolationHistoryMixin, InPopulationMixin
+class SupervisionTerminationEvent(
+    SupervisionEvent, ViolationHistoryMixin, InPopulationMixin
 ):
-    """Models a month in which supervision was terminated.
+    """Models a day on which supervision was terminated.
 
     Describes the reason for termination, and the change in assessment score between
     first reassessment and termination of supervision.

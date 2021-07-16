@@ -31,10 +31,10 @@ from more_itertools import one
 from recidiviz.calculator.pipeline.base_pipeline import ClassifyEvents, ProduceMetrics
 from recidiviz.calculator.pipeline.supervision import identifier, pipeline
 from recidiviz.calculator.pipeline.supervision.events import (
-    NonRevocationReturnSupervisionTimeBucket,
-    ProjectedSupervisionCompletionBucket,
-    SupervisionTerminationBucket,
-    SupervisionTimeBucket,
+    ProjectedSupervisionCompletionEvent,
+    SupervisionEvent,
+    SupervisionPopulationEvent,
+    SupervisionTerminationEvent,
 )
 from recidiviz.calculator.pipeline.supervision.metrics import (
     SupervisionMetric,
@@ -1046,8 +1046,8 @@ class TestSupervisionPipeline(unittest.TestCase):
         self.run_test_pipeline(dataset, data_dict, expected_metric_types)
 
 
-class TestClassifySupervisionTimeBuckets(unittest.TestCase):
-    """Tests the ClassifySupervisionTimeBuckets DoFn in the pipeline."""
+class TestClassifyEvents(unittest.TestCase):
+    """Tests the ClassifyEvents DoFn in the pipeline."""
 
     def setUp(self) -> None:
         self.maxDiff = None
@@ -1118,8 +1118,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             or [],
         }
 
-    def testClassifySupervisionTimeBuckets(self) -> None:
-        """Tests the ClassifySupervisionTimeBuckets DoFn."""
+    def testClassifyEvents(self) -> None:
+        """Tests the ClassifyEvents DoFn."""
         fake_person_id = 12345
 
         fake_person = StatePerson.new_with_defaults(
@@ -1218,8 +1218,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_period_supervision_type = (
             StateSupervisionPeriodSupervisionType.PROBATION
         )
-        expected_buckets: List[SupervisionTimeBucket] = [
-            ProjectedSupervisionCompletionBucket(
+        expected_events: List[SupervisionEvent] = [
+            ProjectedSupervisionCompletionEvent(
                 state_code=supervision_period.state_code,
                 year=2015,
                 month=5,
@@ -1238,10 +1238,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         ]
 
-        # We have to add these expected buckets in this order because there is no unsorted-list equality check in the
+        # We have to add these expected events in this order because there is no unsorted-list equality check in the
         # Apache Beam testing utils
-        expected_buckets.extend(
-            identifier_test.expected_non_revocation_return_time_buckets(
+        expected_events.extend(
+            identifier_test.expected_population_events(
                 supervision_period,
                 supervision_period_supervision_type,
                 assessment_score=assessment.assessment_score,
@@ -1254,8 +1254,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        expected_buckets.append(
-            SupervisionTerminationBucket(
+        expected_events.append(
+            SupervisionTerminationEvent(
                 state_code=supervision_period.state_code,
                 year=supervision_period_termination_date.year,
                 month=supervision_period_termination_date.month,
@@ -1272,8 +1272,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 in_supervision_population_on_date=True,
             )
         )
-        expected_buckets.append(
-            identifier_test.create_start_bucket_from_period(
+        expected_events.append(
+            identifier_test.create_start_event_from_period(
                 supervision_period,
                 supervising_officer_external_id="OFFICER0009",
                 supervising_district_external_id="10",
@@ -1281,14 +1281,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        correct_output = [(fake_person.person_id, (fake_person, expected_buckets))]
+        correct_output = [(fake_person.person_id, (fake_person, expected_events))]
 
         test_pipeline = TestPipeline()
 
         output = (
             test_pipeline
             | beam.Create([(fake_person_id, person_entities)])
-            | "Identify Supervision Time Buckets"
+            | "Identify Supervision Events"
             >> beam.ParDo(ClassifyEvents(), identifier=self.identifier)
         )
 
@@ -1296,8 +1296,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testClassifySupervisionTimeBuckets_withPeriodsStartingAfterDeath(self) -> None:
-        """Tests the ClassifySupervisionTimeBuckets DoFn when the person has supervision
+    def testClassifyEvents_withPeriodsStartingAfterDeath(self) -> None:
+        """Tests the ClassifyEvents DoFn when the person has supervision
         periods after their death."""
         fake_person_id = 12345
 
@@ -1445,8 +1445,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_period_to_agent_association=supervision_period_to_agent_data,
         )
 
-        expected_buckets: List[SupervisionTimeBucket] = [
-            *identifier_test.expected_non_revocation_return_time_buckets(
+        expected_events: List[SupervisionEvent] = [
+            *identifier_test.expected_population_events(
                 supervision_period_with_death,
                 StateSupervisionPeriodSupervisionType.PROBATION,
                 supervising_officer_external_id="OFFICER0009",
@@ -1455,8 +1455,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         ]
 
-        expected_buckets.append(
-            SupervisionTerminationBucket(
+        expected_events.append(
+            SupervisionTerminationEvent(
                 state_code=supervision_period_with_death.state_code,
                 year=termination_date.year,
                 month=termination_date.month,
@@ -1472,22 +1472,22 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        expected_buckets.append(
-            identifier_test.create_start_bucket_from_period(
+        expected_events.append(
+            identifier_test.create_start_event_from_period(
                 supervision_period_with_death,
                 supervising_officer_external_id="OFFICER0009",
                 judicial_district_code="XXX",
             )
         )
 
-        correct_output = [(fake_person.person_id, (fake_person, expected_buckets))]
+        correct_output = [(fake_person.person_id, (fake_person, expected_events))]
 
         test_pipeline = TestPipeline()
 
         output = (
             test_pipeline
             | beam.Create([(fake_person_id, person_entities)])
-            | "Identify Supervision Time Buckets"
+            | "Identify Supervision Events"
             >> beam.ParDo(ClassifyEvents(), identifier=self.identifier)
         )
 
@@ -1495,10 +1495,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testClassifySupervisionTimeBuckets_withOpenPeriodStartDateCapturedByPeriodEndingInDeath(
+    def testClassifyEvents_withOpenPeriodStartDateCapturedByPeriodEndingInDeath(
         self,
     ) -> None:
-        """Tests the ClassifySupervisionTimeBuckets DoFn when the person has open period
+        """Tests the ClassifyEvents DoFn when the person has open period
         within the range of the period ending in their death."""
         fake_person_id = 12345
 
@@ -1619,8 +1619,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_period_to_agent_association=supervision_period_to_agent_data,
         )
 
-        expected_buckets: List[SupervisionTimeBucket] = [
-            *identifier_test.expected_non_revocation_return_time_buckets(
+        expected_events: List[SupervisionEvent] = [
+            *identifier_test.expected_population_events(
                 supervision_period_with_death,
                 StateSupervisionPeriodSupervisionType.PROBATION,
                 supervising_officer_external_id="OFFICER0009",
@@ -1629,8 +1629,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         ]
 
-        expected_buckets.append(
-            SupervisionTerminationBucket(
+        expected_events.append(
+            SupervisionTerminationEvent(
                 state_code=supervision_period_with_death.state_code,
                 year=termination_date.year,
                 month=termination_date.month,
@@ -1646,16 +1646,16 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        expected_buckets.append(
-            identifier_test.create_start_bucket_from_period(
+        expected_events.append(
+            identifier_test.create_start_event_from_period(
                 supervision_period_with_death,
                 supervising_officer_external_id="OFFICER0009",
                 judicial_district_code="XXX",
             )
         )
 
-        expected_buckets.extend(
-            identifier_test.expected_non_revocation_return_time_buckets(
+        expected_events.extend(
+            identifier_test.expected_population_events(
                 attr.evolve(
                     open_supervision_period,
                     termination_date=supervision_period_with_death.termination_date,
@@ -1667,8 +1667,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        expected_buckets.append(
-            SupervisionTerminationBucket(
+        expected_events.append(
+            SupervisionTerminationEvent(
                 state_code=supervision_period_with_death.state_code,
                 year=termination_date.year,
                 month=termination_date.month,
@@ -1684,22 +1684,22 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         )
 
-        expected_buckets.append(
-            identifier_test.create_start_bucket_from_period(
+        expected_events.append(
+            identifier_test.create_start_event_from_period(
                 open_supervision_period,
                 supervising_officer_external_id="OFFICER0009",
                 judicial_district_code="XXX",
             )
         )
 
-        correct_output = [(fake_person.person_id, (fake_person, expected_buckets))]
+        correct_output = [(fake_person.person_id, (fake_person, expected_events))]
 
         test_pipeline = TestPipeline()
 
         output = (
             test_pipeline
             | beam.Create([(fake_person_id, person_entities)])
-            | "Identify Supervision Time Buckets"
+            | "Identify Supervision Events"
             >> beam.ParDo(ClassifyEvents(), identifier=self.identifier)
         )
 
@@ -1707,8 +1707,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testClassifySupervisionTimeBuckets_NoIncarcerationPeriods(self) -> None:
-        """Tests the ClassifySupervisionTimeBuckets DoFn when the person has no
+    def testClassifyEvents_NoIncarcerationPeriods(self) -> None:
+        """Tests the ClassifyEvents DoFn when the person has no
         incarceration periods."""
         fake_person_id = 12345
 
@@ -1773,8 +1773,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        expected_buckets: List[SupervisionTimeBucket] = [
-            *identifier_test.expected_non_revocation_return_time_buckets(
+        expected_events: List[SupervisionEvent] = [
+            *identifier_test.expected_population_events(
                 supervision_period,
                 supervision_period_supervision_type,
                 assessment_score=assessment.assessment_score,
@@ -1785,9 +1785,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         ]
 
-        expected_buckets.extend(
+        expected_events.extend(
             [
-                SupervisionTerminationBucket(
+                SupervisionTerminationEvent(
                     state_code=supervision_period.state_code,
                     year=supervision_period_termination.year,
                     month=supervision_period_termination.month,
@@ -1802,7 +1802,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                     in_supervision_population_on_date=True,
                 ),
-                identifier_test.create_start_bucket_from_period(
+                identifier_test.create_start_event_from_period(
                     supervision_period,
                     supervising_officer_external_id="OFFICER0009",
                     supervising_district_external_id="10",
@@ -1810,14 +1810,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             ]
         )
 
-        correct_output = [(fake_person.person_id, (fake_person, expected_buckets))]
+        correct_output = [(fake_person.person_id, (fake_person, expected_events))]
 
         test_pipeline = TestPipeline()
 
         output = (
             test_pipeline
             | beam.Create([(fake_person_id, person_entities)])
-            | "Identify Supervision Time Buckets"
+            | "Identify Supervision Events"
             >> beam.ParDo(ClassifyEvents(), identifier=self.identifier)
         )
 
@@ -1825,8 +1825,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testClassifySupervisionTimeBuckets_NoAssessments(self) -> None:
-        """Tests the ClassifySupervisionTimeBuckets DoFn when the person has no
+    def testClassifyEvents_NoAssessments(self) -> None:
+        """Tests the ClassifyEvents DoFn when the person has no
         assessments."""
         fake_person_id = 12345
 
@@ -1883,8 +1883,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        expected_buckets: List[SupervisionTimeBucket] = [
-            *identifier_test.expected_non_revocation_return_time_buckets(
+        expected_events: List[SupervisionEvent] = [
+            *identifier_test.expected_population_events(
                 supervision_period,
                 supervision_period_supervision_type,
                 supervising_officer_external_id="OFFICER0009",
@@ -1892,9 +1892,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         ]
 
-        expected_buckets.extend(
+        expected_events.extend(
             [
-                SupervisionTerminationBucket(
+                SupervisionTerminationEvent(
                     state_code=supervision_period.state_code,
                     year=termination_date.year,
                     month=termination_date.month,
@@ -1909,7 +1909,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                     in_supervision_population_on_date=True,
                 ),
-                identifier_test.create_start_bucket_from_period(
+                identifier_test.create_start_event_from_period(
                     supervision_period,
                     supervising_officer_external_id="OFFICER0009",
                     supervising_district_external_id="10",
@@ -1917,14 +1917,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             ]
         )
 
-        correct_output = [(fake_person.person_id, (fake_person, expected_buckets))]
+        correct_output = [(fake_person.person_id, (fake_person, expected_events))]
 
         test_pipeline = TestPipeline()
 
         output = (
             test_pipeline
             | beam.Create([(fake_person_id, person_entities)])
-            | "Identify Supervision Time Buckets"
+            | "Identify Supervision Events"
             >> beam.ParDo(ClassifyEvents(), identifier=self.identifier)
         )
 
@@ -1932,8 +1932,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testClassifySupervisionTimeBuckets_NoSupervisionPeriods(self) -> None:
-        """Tests the ClassifySupervisionTimeBuckets DoFn when the person
+    def testClassifyEvents_NoSupervisionPeriods(self) -> None:
+        """Tests the ClassifyEvents DoFn when the person
         has no supervision periods."""
         fake_person_id = 12345
 
@@ -1984,7 +1984,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         output = (
             test_pipeline
             | beam.Create([(fake_person_id, person_entities)])
-            | "Identify Supervision Time Buckets"
+            | "Identify Supervision Events"
             >> beam.ParDo(ClassifyEvents(), identifier=self.identifier)
         )
 
@@ -2016,8 +2016,8 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             residency_status=ResidencyStatus.PERMANENT,
         )
 
-        supervision_time_buckets = [
-            NonRevocationReturnSupervisionTimeBucket(
+        supervision_time_events = [
+            SupervisionPopulationEvent(
                 state_code="US_XX",
                 year=2015,
                 month=3,
@@ -2033,8 +2033,8 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             ),
         ]
 
-        expected_population_metric_count = len(supervision_time_buckets)
-        expected_compliance_metric_count = len(supervision_time_buckets)
+        expected_population_metric_count = len(supervision_time_events)
+        expected_compliance_metric_count = len(supervision_time_events)
 
         expected_metric_counts = {
             SupervisionMetricType.SUPERVISION_POPULATION.value: expected_population_metric_count,
@@ -2047,7 +2047,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             (
                 self.fake_person_id,
                 {
-                    "person_events": [(fake_person, supervision_time_buckets)],
+                    "person_events": [(fake_person, supervision_time_events)],
                     "person_metadata": [self.person_metadata],
                 },
             )
