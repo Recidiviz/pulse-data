@@ -40,6 +40,9 @@ export default class RootStore {
 
   userStore: UserStore;
 
+  // refresh data once an hour for long-lived sessions
+  refetchInterval = 3600 * 1000;
+
   constructor() {
     this.userStore = UserStore.build();
     this.api = new API({ userStore: this.userStore });

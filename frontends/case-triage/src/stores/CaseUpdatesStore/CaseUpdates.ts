@@ -61,4 +61,12 @@ export const CASE_UPDATE_OPPORTUNITY_ASSOCIATION: Record<
     CaseUpdateActionType.FOUND_EMPLOYMENT,
     CaseUpdateActionType.INCORRECT_EMPLOYMENT_DATA,
   ],
+  [OpportunityType.ASSESSMENT]: [
+    CaseUpdateActionType.COMPLETED_ASSESSMENT,
+    CaseUpdateActionType.INCORRECT_ASSESSMENT_DATA,
+  ],
+  [OpportunityType.CONTACT]: [
+    CaseUpdateActionType.SCHEDULED_FACE_TO_FACE,
+    CaseUpdateActionType.INCORRECT_CONTACT_DATA,
+  ],
 };

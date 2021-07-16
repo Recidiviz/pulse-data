@@ -75,23 +75,27 @@ export const ClientListSupervisionStartComparator = getReverseDateComparator(
 );
 
 /**
- * Sorts clients by the priority of their alerts.
+ * Sorts clients by the priority of their opportunities.
  * Ties are broken by next contact date.
  */
 export const ClientListPriorityComparator: ClientSortFn = (a, b) => {
   // NOTE: assumes alerts are in priority order
-  for (let i = 0; i < Math.max(a.alerts.length, b.alerts.length); i += 1) {
-    const alertA = a.alerts[i];
-    const alertB = b.alerts[i];
+  for (
+    let i = 0;
+    i < Math.max(a.activeOpportunities.length, b.activeOpportunities.length);
+    i += 1
+  ) {
+    const oppA = a.activeOpportunities[i];
+    const oppB = b.activeOpportunities[i];
     // first alert with higher priority wins
-    if (alertA && alertB) {
-      if (alertA.priority < alertB.priority) return -1;
-      if (alertA.priority > alertB.priority) return 1;
+    if (oppA && oppB) {
+      if (oppA.priority < oppB.priority) return -1;
+      if (oppA.priority > oppB.priority) return 1;
     }
     // if we've exhausted all matching pairs of alerts,
     // if one client still has more then it wins
-    if (alertA && !alertB) return -1;
-    if (alertB && !alertA) return 1;
+    if (oppA && !oppB) return -1;
+    if (oppB && !oppA) return 1;
   }
 
   return ClientListContactComparator(a, b);

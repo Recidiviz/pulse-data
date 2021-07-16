@@ -20,8 +20,8 @@ from typing import Dict
 import attr
 
 from recidiviz.case_triage.client_utils.compliance import (
-    get_assessment_due_status,
-    get_contact_due_status,
+    get_assessment_due_details,
+    get_contact_due_details,
 )
 from recidiviz.case_triage.opportunities.types import Opportunity, OpportunityType
 from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
@@ -59,19 +59,27 @@ class ComputedOpportunity(Opportunity):
             )
 
         # compliance opportunities
-        assessment_status = get_assessment_due_status(client)
-        if assessment_status:
+        assessment_due = get_assessment_due_details(client)
+        if assessment_due:
+            status, days_until_due = assessment_due
             opps[OpportunityType.ASSESSMENT] = ComputedOpportunity(
                 opportunity_type=OpportunityType.ASSESSMENT.value,
-                opportunity_metadata={"status": assessment_status},
+                opportunity_metadata={
+                    "status": status,
+                    "daysUntilDue": days_until_due,
+                },
                 **client_args
             )
 
-        contact_status = get_contact_due_status(client)
-        if contact_status:
+        contact_due = get_contact_due_details(client)
+        if contact_due:
+            status, days_until_due = contact_due
             opps[OpportunityType.CONTACT] = ComputedOpportunity(
                 opportunity_type=OpportunityType.CONTACT.value,
-                opportunity_metadata={"status": contact_status},
+                opportunity_metadata={
+                    "status": status,
+                    "daysUntilDue": days_until_due,
+                },
                 **client_args
             )
 

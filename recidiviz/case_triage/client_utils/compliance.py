@@ -18,7 +18,7 @@
 
 import logging
 from datetime import date, timedelta
-from typing import Literal, Optional
+from typing import Literal, Optional, Tuple
 
 import numpy as np
 
@@ -154,28 +154,43 @@ DueDateStatus = Literal["OVERDUE", "UPCOMING"]
 
 
 def _get_due_date_status(
-    due_date: Optional[date], upcoming_threshold_days: int
+    due_date: date, upcoming_threshold_days: int
 ) -> Optional[DueDateStatus]:
-    if due_date:
-        today = date.today()
-        if due_date < today:
-            return "OVERDUE"
-        if due_date <= today + timedelta(days=upcoming_threshold_days):
-            return "UPCOMING"
+    today = date.today()
+    if due_date < today:
+        return "OVERDUE"
+    if due_date <= today + timedelta(days=upcoming_threshold_days):
+        return "UPCOMING"
 
     return None
 
 
-def get_assessment_due_status(client: ETLClient) -> Optional[DueDateStatus]:
+def _get_days_until_due(due_date: date) -> int:
+    return (due_date - date.today()).days
+
+
+def get_assessment_due_details(
+    client: ETLClient,
+) -> Optional[Tuple[DueDateStatus, int]]:
     """Outputs whether client's assessment is upcoming or overdue relative to the current date."""
-    return _get_due_date_status(get_next_assessment_date(client), 30)
+    due_date = get_next_assessment_date(client)
+    if due_date:
+        status = _get_due_date_status(due_date, 30)
+        if status:
+            return (status, _get_days_until_due(due_date))
+    return None
 
 
-def get_contact_due_status(client: ETLClient) -> Optional[DueDateStatus]:
+def get_contact_due_details(client: ETLClient) -> Optional[Tuple[DueDateStatus, int]]:
     """Outputs whether contact with client is upcoming or overdue relative to the current date."""
 
     # TODO(#7320): Our current `nextHomeVisitDate` determines when the next home visit
     # should be assuming that home visits must be F2F visits and not collateral visits.
     # As a result, until we do more investigation into what the appropriate application
     # of state policy is, we're not showing home visits as the next contact dates.
-    return _get_due_date_status(get_next_face_to_face_date(client), 7)
+    due_date = get_next_face_to_face_date(client)
+    if due_date:
+        status = _get_due_date_status(due_date, 7)
+        if status:
+            return (status, _get_days_until_due(due_date))
+    return None

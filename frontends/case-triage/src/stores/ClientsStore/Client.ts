@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import assertNever from "assert-never";
 import parsePhoneNumber from "libphonenumber-js";
 import { makeAutoObservable, runInAction, set } from "mobx";
 import moment from "moment";
@@ -26,8 +25,9 @@ import {
   CaseUpdateActionType,
   CaseUpdateStatus,
 } from "../CaseUpdatesStore";
+import { CASE_UPDATE_OPPORTUNITY_ASSOCIATION } from "../CaseUpdatesStore/CaseUpdates";
 import type OpportunityStore from "../OpportunityStore";
-import { Opportunity, OpportunityType } from "../OpportunityStore/Opportunity";
+import { Opportunity } from "../OpportunityStore/Opportunity";
 import type PolicyStore from "../PolicyStore";
 import type ClientsStore from "./ClientsStore";
 import { Note, NoteData } from "./Note";
@@ -109,67 +109,6 @@ const parseDate = (date?: APIDate) => {
 
   return moment(date);
 };
-
-export type DueDateStatus = "OVERDUE" | "UPCOMING" | null;
-
-function getDueDateStatus({
-  dueDate,
-  upcomingWindowDays,
-}: {
-  dueDate: moment.Moment | null;
-  upcomingWindowDays: number;
-}) {
-  const currentTime = moment(Date.now());
-  if (dueDate) {
-    const differenceInDays = dueDate.diff(currentTime, "days");
-
-    if (differenceInDays < 0) {
-      return "OVERDUE";
-    }
-
-    if (differenceInDays <= upcomingWindowDays) {
-      return "UPCOMING";
-    }
-  }
-
-  return null;
-}
-
-export const AlertKindList = [
-  OpportunityType.OVERDUE_DOWNGRADE,
-  OpportunityType.EMPLOYMENT,
-  "ASSESSMENT_OVERDUE",
-  "ASSESSMENT_UPCOMING",
-  "CONTACT_OVERDUE",
-  "CONTACT_UPCOMING",
-] as const;
-type AlertKind = typeof AlertKindList[number];
-const ALERT_PRIORITIES = AlertKindList.reduce((memo, kind, index) => {
-  return { ...memo, [kind]: index };
-}, {} as Record<AlertKind, number>);
-
-type AlertBase = { priority: number };
-
-type OpportunityAlert = AlertBase & {
-  kind: Extract<AlertKind, OpportunityType>;
-  opportunity: Opportunity;
-};
-type DateAlert = AlertBase & {
-  kind: Extract<
-    AlertKind,
-    | "ASSESSMENT_OVERDUE"
-    | "ASSESSMENT_UPCOMING"
-    | "CONTACT_OVERDUE"
-    | "CONTACT_UPCOMING"
-  >;
-  status: NonNullable<DueDateStatus>;
-  date: moment.Moment;
-};
-type PlainAlert = AlertBase & {
-  kind: Exclude<AlertKind, OpportunityAlert["kind"] | DateAlert["kind"]>;
-};
-
-type Alert = PlainAlert | OpportunityAlert | DateAlert;
 
 /**
  * Data model representing a single client. To instantiate, it is recommended
@@ -420,93 +359,22 @@ export class Client {
     return this.nextFaceToFaceDate;
   }
 
-  get contactStatus(): DueDateStatus {
-    return getDueDateStatus({
-      dueDate: this.nextContactDate,
-      upcomingWindowDays: 7,
-    });
-  }
-
-  get riskAssessmentStatus(): DueDateStatus {
-    return getDueDateStatus({
-      dueDate: this.nextAssessmentDate,
-      upcomingWindowDays: 30,
-    });
-  }
-
   get opportunities(): Opportunity[] {
     return (
       this.opportunityStore.opportunitiesByPerson?.[this.personExternalId] || []
     );
   }
 
-  get alerts(): Alert[] {
-    const alerts: (Alert | undefined)[] = AlertKindList.map((kind) => {
-      switch (kind) {
-        case OpportunityType.OVERDUE_DOWNGRADE:
-        case OpportunityType.EMPLOYMENT: {
-          const opportunity = this.opportunities.find(
-            (opp) => opp.opportunityType === kind
-          );
-          if (opportunity && !opportunity.deferredUntil) {
-            return { kind, opportunity, priority: ALERT_PRIORITIES[kind] };
-          }
-          break;
-        }
-        case "ASSESSMENT_OVERDUE":
-          if (
-            this.riskAssessmentStatus === "OVERDUE" &&
-            this.nextAssessmentDate
-          ) {
-            return {
-              kind,
-              status: this.riskAssessmentStatus,
-              date: this.nextAssessmentDate,
-              priority: ALERT_PRIORITIES[kind],
-            };
-          }
-          break;
-        case "ASSESSMENT_UPCOMING":
-          if (
-            this.riskAssessmentStatus === "UPCOMING" &&
-            this.nextAssessmentDate
-          ) {
-            return {
-              kind,
-              status: this.riskAssessmentStatus,
-              date: this.nextAssessmentDate,
-              priority: ALERT_PRIORITIES[kind],
-            };
-          }
-          break;
-        case "CONTACT_OVERDUE":
-          if (this.contactStatus === "OVERDUE" && this.nextContactDate) {
-            return {
-              kind,
-              status: this.contactStatus,
-              date: this.nextContactDate,
-              priority: ALERT_PRIORITIES[kind],
-            };
-          }
-          break;
-        case "CONTACT_UPCOMING":
-          if (this.contactStatus === "UPCOMING" && this.nextContactDate) {
-            return {
-              kind,
-              status: this.contactStatus,
-              date: this.nextContactDate,
-              priority: ALERT_PRIORITIES[kind],
-            };
-          }
-          break;
-        default:
-          assertNever(kind);
-      }
-
-      return undefined;
-    });
-
-    return alerts.filter((alert): alert is Alert => alert !== undefined);
+  get activeOpportunities(): Opportunity[] {
+    return this.opportunities.filter(
+      (opp) =>
+        // not deferred
+        !opp.deferredUntil &&
+        // not overridden by a case update
+        CASE_UPDATE_OPPORTUNITY_ASSOCIATION[opp.opportunityType].every(
+          (updateKey) => !this.hasInProgressUpdate(updateKey)
+        )
+    );
   }
 
   /**

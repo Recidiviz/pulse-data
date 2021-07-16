@@ -17,12 +17,15 @@
 
 import { cloneDeep } from "lodash";
 import MockDate from "mockdate";
+import moment from "moment";
 import API from "../API";
-import { OpportunityType } from "../OpportunityStore/Opportunity";
+import { CaseUpdateActionType, CaseUpdateStatus } from "../CaseUpdatesStore";
+import { Opportunity } from "../OpportunityStore";
+import { OpportunityDeferralType } from "../OpportunityStore/Opportunity";
 import RootStore from "../RootStore";
-import { AlertKindList, Client, PENDING_ID } from "./Client";
+import { Client, PENDING_ID } from "./Client";
 import { Note } from "./Note";
-import { clientData, clientOpportunities } from "./__fixtures__";
+import { clientData, clientOpportunityData } from "./__fixtures__";
 
 jest.mock("../API");
 const APIMock = API as jest.MockedClass<typeof API>;
@@ -46,26 +49,6 @@ beforeEach(() => {
 afterEach(() => {
   APIMock.mockReset();
   MockDate.reset();
-});
-
-test("contact status", () => {
-  // date in fixture is 2022-06-18
-  MockDate.set("2022-08-18");
-  expect(testClient.contactStatus).toBe("OVERDUE");
-
-  MockDate.set("2022-06-18");
-  expect(testClient.contactStatus).toBe("UPCOMING");
-
-  // shouldn't have to be midnight
-  MockDate.set(new Date(2022, 5, 18, 14, 22));
-  expect(testClient.contactStatus).toBe("UPCOMING");
-
-  MockDate.set("2022-06-11");
-  expect(testClient.contactStatus).toBe("UPCOMING");
-
-  // beyond the threshold to be considered "upcoming"
-  MockDate.set("2022-06-10");
-  expect(testClient.contactStatus).toBe(null);
 });
 
 test("phone number parsing", () => {
@@ -94,100 +77,6 @@ test("phone number parsing", () => {
   });
 
   expect(testClient.phoneNumber).toEqual("(510) 867-5309");
-});
-
-test("risk assessment status", () => {
-  // date in fixture is 2020-10-23
-  MockDate.set("2020-10-25");
-  expect(testClient.riskAssessmentStatus).toBe("OVERDUE");
-
-  MockDate.set("2020-10-23");
-  expect(testClient.riskAssessmentStatus).toBe("UPCOMING");
-
-  // shouldn't have to be midnight
-  MockDate.set(new Date(2020, 9, 23, 14, 22));
-  expect(testClient.riskAssessmentStatus).toBe("UPCOMING");
-
-  MockDate.set("2020-09-23");
-  expect(testClient.riskAssessmentStatus).toBe("UPCOMING");
-
-  // beyond the threshold to be considered "upcoming"
-  MockDate.set("2020-09-22");
-  expect(testClient.riskAssessmentStatus).toBe(null);
-});
-
-describe("alerts", () => {
-  test("include all Opportunity types", () => {
-    expect(AlertKindList).toEqual(
-      expect.arrayContaining(Object.values(OpportunityType))
-    );
-  });
-
-  test("from opportunities", () => {
-    expect(
-      testClient.alerts.find(
-        (alert) => alert.kind === OpportunityType.OVERDUE_DOWNGRADE
-      )
-    ).toBeUndefined();
-
-    expect(
-      testClient.alerts.find(
-        (alert) => alert.kind === OpportunityType.EMPLOYMENT
-      )
-    ).toBeUndefined();
-
-    rootStore.opportunityStore.opportunities = [...clientOpportunities];
-
-    expect(
-      testClient.alerts.find(
-        (alert) => alert.kind === OpportunityType.OVERDUE_DOWNGRADE
-      )
-    ).toBeDefined();
-
-    expect(
-      testClient.alerts.find(
-        (alert) => alert.kind === OpportunityType.EMPLOYMENT
-      )
-    ).toBeDefined();
-  });
-
-  test("risk assessment", () => {
-    // date in fixture is 2020-10-23
-    MockDate.set("2020-10-25");
-    expect(
-      testClient.alerts.find((alert) => alert.kind === "ASSESSMENT_OVERDUE")
-    ).toBeDefined();
-    expect(
-      testClient.alerts.find((alert) => alert.kind === "ASSESSMENT_UPCOMING")
-    ).toBeUndefined();
-
-    MockDate.set("2020-10-20");
-    expect(
-      testClient.alerts.find((alert) => alert.kind === "ASSESSMENT_OVERDUE")
-    ).toBeUndefined();
-    expect(
-      testClient.alerts.find((alert) => alert.kind === "ASSESSMENT_UPCOMING")
-    ).toBeDefined();
-  });
-
-  test("contact", () => {
-    // date in fixture is 2022-06-18
-    MockDate.set("2022-08-18");
-    expect(
-      testClient.alerts.find((alert) => alert.kind === "CONTACT_OVERDUE")
-    ).toBeDefined();
-    expect(
-      testClient.alerts.find((alert) => alert.kind === "CONTACT_UPCOMING")
-    ).toBeUndefined();
-
-    MockDate.set("2022-06-15");
-    expect(
-      testClient.alerts.find((alert) => alert.kind === "CONTACT_OVERDUE")
-    ).toBeUndefined();
-    expect(
-      testClient.alerts.find((alert) => alert.kind === "CONTACT_UPCOMING")
-    ).toBeDefined();
-  });
 });
 
 test("create a note", async () => {
@@ -302,4 +191,29 @@ describe("update notes", () => {
     await request;
     expect(testNote.resolved).toBe(true);
   });
+});
+
+test("active opportunities", () => {
+  rootStore.opportunityStore.opportunitiesFetched = clientOpportunityData.map(
+    (data) => new Opportunity(data)
+  );
+  expect(testClient.activeOpportunities.length).toBe(2);
+});
+
+test("no active opportunities", () => {
+  rootStore.opportunityStore.opportunitiesFetched = [
+    {
+      ...clientOpportunityData[0],
+      deferredUntil: moment().format(),
+      deferralType: OpportunityDeferralType.REMINDER,
+    },
+    clientOpportunityData[1],
+  ].map((data) => new Opportunity(data));
+  testClient.caseUpdates.INCORRECT_EMPLOYMENT_DATA = {
+    actionTs: moment().format(),
+    actionType: CaseUpdateActionType.INCORRECT_EMPLOYMENT_DATA,
+    comment: "",
+    status: CaseUpdateStatus.IN_PROGRESS,
+  };
+  expect(testClient.activeOpportunities.length).toBe(0);
 });
