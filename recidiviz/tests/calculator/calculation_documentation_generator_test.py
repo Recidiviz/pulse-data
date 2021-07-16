@@ -42,7 +42,7 @@ from recidiviz.calculator.pipeline.recidivism.metrics import (
 )
 from recidiviz.calculator.pipeline.supervision.metrics import (
     SupervisionCaseComplianceMetric,
-    SupervisionRevocationMetric,
+    SupervisionStartMetric,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.export.export_config import PRODUCTS_CONFIG_PATH, ProductConfigs
@@ -169,7 +169,7 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
             ReincarcerationRecidivismCountMetric: "test_recidivism_count_metrics",
             # SupervisionMetrics
             SupervisionCaseComplianceMetric: "test_supervision_case_compliance_metrics",
-            SupervisionRevocationMetric: "test_supervision_revocation_metrics",
+            SupervisionStartMetric: "test_supervision_start_metrics",
         },
     )
     def test_generate_summary_strings(
@@ -186,7 +186,7 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
             "Recidivism": [ReincarcerationRecidivismCountMetric],
             "Supervision": [
                 SupervisionCaseComplianceMetric,
-                SupervisionRevocationMetric,
+                SupervisionStartMetric,
             ],
         }
 
@@ -213,7 +213,7 @@ class CalculationDocumentationGeneratorTest(unittest.TestCase):
     - [ReincarcerationRecidivismCountMetric](calculation/metrics/recidivism/test_recidivism_count_metrics.md)
   - SUPERVISION
     - [SupervisionCaseComplianceMetric](calculation/metrics/supervision/test_supervision_case_compliance_metrics.md)
-    - [SupervisionRevocationMetric](calculation/metrics/supervision/test_supervision_revocation_metrics.md)\n"""
+    - [SupervisionStartMetric](calculation/metrics/supervision/test_supervision_start_metrics.md)\n"""
 
         expected_summary_strings = [
             expected_header_str,

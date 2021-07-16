@@ -20,11 +20,10 @@ import logging
 # TODO(#2995): Make a state config file for every state and every one of these state-specific calculation methodologies
 import sys
 from datetime import date
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 from recidiviz.calculator.pipeline.supervision.events import (
     NonRevocationReturnSupervisionTimeBucket,
-    RevocationReturnSupervisionTimeBucket,
 )
 from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
@@ -670,9 +669,7 @@ def state_specific_violation_response_pre_processing_function(
 
 
 def supervision_period_is_out_of_state(
-    supervision_time_bucket: Union[
-        NonRevocationReturnSupervisionTimeBucket, RevocationReturnSupervisionTimeBucket
-    ]
+    supervision_time_bucket: NonRevocationReturnSupervisionTimeBucket,
 ) -> bool:
     """Returns whether the given supervision time bucket should be considered a supervision period that is being
     served out of state.

@@ -17,7 +17,7 @@
 """Supervision metrics we calculate."""
 import abc
 from datetime import date
-from typing import List, Optional
+from typing import Optional
 
 import attr
 
@@ -34,17 +34,11 @@ from recidiviz.calculator.pipeline.utils.metric_utils import (
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.constants.state.state_incarceration_period import (
-    StateSpecializedPurposeForIncarceration,
-)
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
-)
-from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseDecision,
 )
 
 
@@ -54,7 +48,6 @@ class SupervisionMetricType(RecidivizMetricType):
     SUPERVISION_COMPLIANCE = "SUPERVISION_COMPLIANCE"
     SUPERVISION_POPULATION = "SUPERVISION_POPULATION"
     SUPERVISION_OUT_OF_STATE_POPULATION = "SUPERVISION_OUT_OF_STATE_POPULATION"
-    SUPERVISION_REVOCATION = "SUPERVISION_REVOCATION"
     SUPERVISION_START = "SUPERVISION_START"
     SUPERVISION_SUCCESS = "SUPERVISION_SUCCESS"
     SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED = (
@@ -166,59 +159,8 @@ class SupervisionOutOfStatePopulationMetric(SupervisionPopulationMetric):
     )
 
 
-# TODO(#6988): Delete this metric once we've transitioned to the
-#  IncarcerationCommitmentFromSupervisionMetric
 @attr.s
-class SupervisionRevocationMetric(
-    SupervisionMetric, AssessmentMetricMixin, ViolationHistoryMixin
-):
-    """Subclass of SupervisionMetric that contains supervision revocation information."""
-
-    @classmethod
-    def get_description(cls) -> str:
-        return "TODO(#7563): Add SupervisionRevocationMetric description"
-
-    # Required characteristics
-
-    # The type of SupervisionMetric
-    metric_type: SupervisionMetricType = attr.ib(
-        init=False, default=SupervisionMetricType.SUPERVISION_REVOCATION
-    )
-
-    # Optional characteristics
-
-    # TODO(#6988): This will temporarily store StateSpecializedPurposeForIncarceration
-    #  values as we transition to the IncarcerationCommitmentFromSupervisionMetric
-    # The type of revocation of supervision
-    revocation_type: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(
-        default=None
-    )
-
-    # A string subtype that provides further insight into the revocation_type above.
-    revocation_type_subtype: Optional[str] = attr.ib(default=None)
-
-    # For person-level metrics only, the date of the revocation admission
-    revocation_admission_date: date = attr.ib(default=None)
-
-    # A string representation of the violations recorded in the period leading up to the revocation, which is the
-    # number of each of the represented types separated by a semicolon
-    violation_history_description: Optional[str] = attr.ib(default=None)
-
-    # A list of a list of strings for each violation type and subtype recorded during the period leading up to the
-    # revocation. The elements of the outer list represent every StateSupervisionViolation that was reported in the
-    # period leading up to the revocation. Each inner list represents all of the violation types and conditions that
-    # were listed on the given violation. For example, 3 violations may be represented as:
-    # [['FELONY', 'TECHNICAL'], ['MISDEMEANOR'], ['ABSCONDED', 'MUNICIPAL']]
-    violation_type_frequency_counter: Optional[List[List[str]]] = attr.ib(default=None)
-
-    # The most severe decision on the most recent response leading up to the revocation
-    most_recent_response_decision: Optional[
-        StateSupervisionViolationResponseDecision
-    ] = attr.ib(default=None)
-
-
-@attr.s
-class SupervisionSuccessMetric(SupervisionMetric):
+class SupervisionSuccessMetric(SupervisionMetric, PersonLevelMetric):
     """Subclass of SupervisionMetric that contains supervision success and failure counts."""
 
     @classmethod

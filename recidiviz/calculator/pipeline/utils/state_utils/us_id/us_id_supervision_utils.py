@@ -17,13 +17,12 @@
 """US_ID-specific implementations of functions related to supervision."""
 from collections import defaultdict
 from datetime import date
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.supervision.events import (
     NonRevocationReturnSupervisionTimeBucket,
-    RevocationReturnSupervisionTimeBucket,
 )
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
@@ -183,9 +182,7 @@ def us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound
 
 
 def us_id_supervision_period_is_out_of_state(
-    supervision_time_bucket: Union[
-        NonRevocationReturnSupervisionTimeBucket, RevocationReturnSupervisionTimeBucket
-    ]
+    supervision_time_bucket: NonRevocationReturnSupervisionTimeBucket,
 ) -> bool:
     """Returns whether the given supervision time bucket should be considered a supervision period that is being
     served out of state.
