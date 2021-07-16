@@ -17,8 +17,8 @@
 """Revocations by supervision type by month."""
 # pylint: disable=trailing-whitespace
 
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -43,7 +43,7 @@ REVOCATIONS_BY_SUPERVISION_TYPE_BY_MONTH_QUERY_TEMPLATE = """
         COUNT(DISTINCT person_id) AS revocation_count,
         supervision_type,
         district
-      FROM `{project_id}.{reference_views_dataset}.event_based_revocations`
+      FROM `{project_id}.{reference_views_dataset}.event_based_commitments_from_supervision_materialized`
       WHERE supervision_type in ('PAROLE', 'PROBATION')
       GROUP BY state_code, year, month, supervision_type, district
     ) rev

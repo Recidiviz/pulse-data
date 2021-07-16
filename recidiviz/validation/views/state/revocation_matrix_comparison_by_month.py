@@ -35,8 +35,8 @@ REVOCATION_MATRIX_COMPARISON_BY_MONTH_QUERY_TEMPLATE = """
     /*{description}*/
     WITH event_based_counts AS (
       SELECT state_code as region_code, year, month, COUNT(*) as total_revocations
-      FROM `{project_id}.{reference_views_dataset}.event_based_revocations_for_matrix_materialized`
-        WHERE revocation_admission_date >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH), INTERVAL 35 MONTH)
+      FROM `{project_id}.{reference_views_dataset}.event_based_commitments_from_supervision_for_matrix_materialized`
+        WHERE admission_date >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH), INTERVAL 35 MONTH)
       GROUP BY state_code, year, month
     ),
     month_counts AS (

@@ -33,17 +33,20 @@ from recidiviz.calculator.query.state.views.reference.dashboard_user_restriction
 from recidiviz.calculator.query.state.views.reference.event_based_admissions import (
     EVENT_BASED_ADMISSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.event_based_commitments_from_supervision import (
+    EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.reference.event_based_commitments_from_supervision_for_matrix import (
+    EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.event_based_program_referrals import (
     EVENT_BASED_PROGRAM_REFERRALS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.reference.event_based_revocations import (
-    EVENT_BASED_REVOCATIONS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.reference.event_based_revocations_for_matrix import (
-    EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.reference.event_based_supervision_populations import (
     EVENT_BASED_SUPERVISION_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.reference.event_based_supervision_populations_with_commitments_for_rate_denominators import (
+    EVENT_BASED_SUPERVISION_POPULATIONS_WITH_COMMITMENTS_FOR_RATE_DENOMINATORS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.reference.incarceration_period_judicial_district_association import (
     INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
@@ -90,15 +93,16 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
 
 REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
-    EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_BUILDER,
+    EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_VIEW_BUILDER,
     AUGMENTED_AGENT_INFO_VIEW_BUILDER,
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER,
     PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_BUILDER,
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER,
     EVENT_BASED_ADMISSIONS_VIEW_BUILDER,
     EVENT_BASED_PROGRAM_REFERRALS_VIEW_BUILDER,
-    EVENT_BASED_REVOCATIONS_VIEW_BUILDER,
+    EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_VIEW_BUILDER,
     EVENT_BASED_SUPERVISION_VIEW_BUILDER,
+    EVENT_BASED_SUPERVISION_POPULATIONS_WITH_COMMITMENTS_FOR_RATE_DENOMINATORS_VIEW_BUILDER,
     REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER,
     SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER,
     ADMISSION_TYPES_PER_STATE_FOR_MATRIX_VIEW_BUILDER,

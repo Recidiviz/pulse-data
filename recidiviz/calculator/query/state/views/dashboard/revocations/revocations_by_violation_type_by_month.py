@@ -17,8 +17,8 @@
 """Revocations by violation type by month."""
 # pylint: disable=trailing-whitespace
 
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -47,7 +47,7 @@ REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_QUERY_TEMPLATE = """
         COUNT(DISTINCT person_id) AS total_supervision_count,
         supervision_type,
         district
-      FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations`
+      FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations_with_commitments_for_rate_denominators`
       GROUP BY state_code, year, month, supervision_type, district
     ) pop
     LEFT JOIN (
@@ -66,8 +66,8 @@ REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_QUERY_TEMPLATE = """
           supervision_type, district,
           -- Only use most recent revocation per person/supervision_type/metric_period_months
           ROW_NUMBER() OVER (PARTITION BY state_code, year, month, person_id, supervision_type, district
-                             ORDER BY revocation_admission_date DESC) AS revocation_rank
-        FROM `{project_id}.{reference_views_dataset}.event_based_revocations`
+                             ORDER BY admission_date DESC) AS revocation_rank
+        FROM `{project_id}.{reference_views_dataset}.event_based_commitments_from_supervision_materialized`
       )
       WHERE revocation_rank = 1
       GROUP BY state_code, year, month, supervision_type, district
