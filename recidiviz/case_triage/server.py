@@ -19,8 +19,10 @@ import json
 import os
 from typing import Dict
 
+import sentry_sdk
 from flask import Flask, Response, send_from_directory, session
 from flask_wtf.csrf import CSRFProtect
+from sentry_sdk.integrations.flask import FlaskIntegration
 
 from recidiviz.case_triage.admin_flask_views import ImpersonateUser, RefreshAuthStore
 from recidiviz.case_triage.analytics import CaseTriageSegmentClient
@@ -42,8 +44,18 @@ from recidiviz.utils.auth.auth0 import (
     build_auth0_authorization_decorator,
     get_userinfo,
 )
-from recidiviz.utils.environment import in_development, in_test
+from recidiviz.utils.environment import in_development, in_gcp, in_test
 from recidiviz.utils.timer import RepeatedTimer
+
+# Sentry setup
+if in_gcp():
+    sentry_sdk.init(
+        # not a secret!
+        dsn="https://1aa10e823cad49d9a662d71cedb3365b@o432474.ingest.sentry.io/5623757",
+        integrations=[FlaskIntegration()],
+        # This value may need to be adjusted over time as usage increases.
+        traces_sample_rate=1.0,
+    )
 
 # Flask setup
 static_folder = os.path.abspath(
