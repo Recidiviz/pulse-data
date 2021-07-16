@@ -330,8 +330,8 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
     ):
         state_code = "US_XX"
 
-        temporary_custody_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=2222,
+        temporary_custody_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
@@ -341,23 +341,44 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
+        temporary_custody_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2008, 11, 20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            release_date=date(2008, 11, 22),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+        )
+
         board_hold = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code=state_code,
-            admission_date=date(2008, 11, 20),
+            admission_date=date(2008, 11, 22),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
             release_date=date(2010, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
-        incarceration_periods = [board_hold, temporary_custody_period]
+        incarceration_periods = [
+            board_hold,
+            temporary_custody_period_1,
+            temporary_custody_period_2,
+        ]
 
-        updated_temporary_custody = attr.evolve(
-            temporary_custody_period,
+        updated_temporary_custody_1 = attr.evolve(
+            temporary_custody_period_1,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+        )
+
+        updated_temporary_custody_2 = attr.evolve(
+            temporary_custody_period_2,
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
         )
 
@@ -376,7 +397,11 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         )
 
         self.assertEqual(
-            [updated_temporary_custody, updated_board_hold],
+            [
+                updated_temporary_custody_1,
+                updated_temporary_custody_2,
+                updated_board_hold,
+            ],
             validated_incarceration_periods,
         )
 

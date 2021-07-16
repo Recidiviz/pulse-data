@@ -50,6 +50,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
+    StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.entity_utils import get_single_state_code
@@ -136,6 +137,9 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
             release_date = incarceration_period.release_date
             release_reason = incarceration_period.release_reason
             release_facility = incarceration_period.facility
+            purpose_for_incarceration = (
+                incarceration_period.specialized_purpose_for_incarceration
+            )
 
             event = None
             next_incarceration_period = (
@@ -145,7 +149,11 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
             )
 
             if not self._should_include_in_release_cohort(
-                status, release_date, release_reason, next_incarceration_period
+                status,
+                release_date,
+                release_reason,
+                purpose_for_incarceration,
+                next_incarceration_period,
             ):
                 # If this release should not be included in a release cohort, then we do not need to produce any events
                 # for this period of incarceration
@@ -348,10 +356,11 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
         status: StateIncarcerationPeriodStatus,
         release_date: Optional[date],
         release_reason: Optional[ReleaseReason],
+        purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration],
         next_incarceration_period: Optional[StateIncarcerationPeriod],
     ) -> bool:
-        """Identifies whether a period of incarceration with the given features should be included in the release
-        cohort."""
+        """Identifies whether a period of incarceration with the given features should
+        be included in the release cohort."""
         # If the person is still in custody, there is no release to include in a cohort.
         if status == StateIncarcerationPeriodStatus.IN_CUSTODY:
             return False
@@ -362,7 +371,16 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
             raise ValueError("release_date is not set where it should be.")
 
         if not release_reason:
-            # If there is no recorded release reason, then we cannot classify this as a valid release for the cohort
+            # If there is no recorded release reason, then we cannot classify this as
+            # a valid release for the cohort
+            return False
+
+        if purpose_for_incarceration in (
+            StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+            StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+        ):
+            # If the person was released from a period of temporary custody
+            # or from a parole board hold, do not include them in the release cohort.
             return False
 
         if next_incarceration_period:
@@ -370,53 +388,56 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
             if DateRangeDiff(
                 time_range_release, next_incarceration_period.duration
             ).overlapping_range:
-                # If the release overlaps with the following incarceration period, this is not an actual release from
-                # incarceration
+                # If the release overlaps with the following incarceration period,
+                # this is not an actual release from incarceration
                 return False
 
             if (
                 next_incarceration_period.release_date
                 and release_date == next_incarceration_period.release_date
             ):
-                # This release shares a release_date with the next incarceration period. Do not include this release.
+                # This release shares a release_date with the next incarceration period.
+                # Do not include this release.
                 return False
 
         if release_reason in [ReleaseReason.DEATH, ReleaseReason.EXECUTION]:
-            # If the person was released from this incarceration period because they died or were executed, do not include
-            # them in the release cohort.
+            # If the person was released from this incarceration period because they
+            # died or were executed, do not include them in the release cohort.
             return False
         if release_reason == ReleaseReason.ESCAPE:
-            # If the person was released from this incarceration period because they escaped, do not include them in the
-            # release cohort.
+            # If the person was released from this incarceration period because they
+            # escaped, do not include them in the release cohort.
             return False
         if release_reason == ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY:
-            # If the person was released from a period of temporary custody, do not include them in the release_cohort.
+            # If the person was released from a period of temporary custody, do not
+            # include them in the release_cohort.
             return False
         if release_reason == ReleaseReason.RELEASED_IN_ERROR:
-            # If the person was released from this incarceration period due to an error, do not include them in the
-            # release cohort.
+            # If the person was released from this incarceration period due to an error,
+            # do not include them in the release cohort.
             return False
         if release_reason == ReleaseReason.TRANSFER:
-            # If the person was released from this incarceration period because they were transferred elsewhere, do not
-            # include them in the release cohort.
+            # If the person was released from this incarceration period because they
+            # were transferred elsewhere, do not include them in the release cohort.
             return False
         if release_reason == ReleaseReason.TRANSFER_OUT_OF_STATE:
-            # Releases where the person has been transferred out of state don't really count as true releases.
+            # Releases where the person has been transferred out of state don't really
+            # count as true releases.
             return False
         if release_reason == ReleaseReason.COURT_ORDER:
-            # If the person was released from this incarceration period due to a court order, do not include them in the
-            # release cohort.
+            # If the person was released from this incarceration period due to a court
+            # order, do not include them in the release cohort.
             return False
         if release_reason == ReleaseReason.STATUS_CHANGE:
-            # If the person was released from this incarceration period because their incarceration status changed, do not
-            # include them in the release cohort.
+            # If the person was released from this incarceration period because their
+            # incarceration status changed, do not include them in the release cohort.
             return False
         if release_reason in (
             ReleaseReason.EXTERNAL_UNKNOWN,
             ReleaseReason.INTERNAL_UNKNOWN,
         ):
-            # We do not have enough information to determine whether this release qualifies for inclusion in the release
-            # cohort.
+            # We do not have enough information to determine whether this release
+            # qualifies for inclusion in the release cohort.
             return False
         if release_reason in (
             ReleaseReason.COMMUTED,
