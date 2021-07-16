@@ -208,23 +208,23 @@ def state_specific_admission_type_inclusion_filter() -> str:
     """State-specific admission_type inclusions"""
     return """
     -- US_MO only includes Legal Revocation admissions
-    (state_code != 'US_MO' OR revocation_type = 'GENERAL')
+    (state_code != 'US_MO' OR specialized_purpose_for_incarceration = 'GENERAL')
     -- US_PA includes Legal Revocation and Shock Incarceration admissions
-    AND (state_code != 'US_PA' OR revocation_type IN ('GENERAL', 'SHOCK_INCARCERATION'))"""
+    AND (state_code != 'US_PA' OR specialized_purpose_for_incarceration IN ('GENERAL', 'SHOCK_INCARCERATION'))"""
 
 
 def state_specific_admission_type() -> str:
-    return """CASE WHEN revocation_type = 'GENERAL' THEN 'LEGAL_REVOCATION'
+    return """CASE WHEN specialized_purpose_for_incarceration = 'GENERAL' THEN 'LEGAL_REVOCATION'
              WHEN state_code = 'US_PA' THEN
-                 CASE WHEN revocation_type = 'SHOCK_INCARCERATION' THEN
-                         CASE WHEN revocation_type_subtype = 'PVC' THEN 'SHOCK_INCARCERATION_PVC'
-                              WHEN revocation_type_subtype = 'RESCR' THEN 'SHOCK_INCARCERATION_0_TO_6_MONTHS'
-                              WHEN revocation_type_subtype = 'RESCR6' THEN 'SHOCK_INCARCERATION_6_MONTHS'
-                              WHEN revocation_type_subtype = 'RESCR9' THEN 'SHOCK_INCARCERATION_9_MONTHS'
-                              WHEN revocation_type_subtype = 'RESCR12' THEN 'SHOCK_INCARCERATION_12_MONTHS'
+                 CASE WHEN specialized_purpose_for_incarceration = 'SHOCK_INCARCERATION' THEN
+                         CASE WHEN purpose_for_incarceration_subtype = 'PVC' THEN 'SHOCK_INCARCERATION_PVC'
+                              WHEN purpose_for_incarceration_subtype = 'RESCR' THEN 'SHOCK_INCARCERATION_0_TO_6_MONTHS'
+                              WHEN purpose_for_incarceration_subtype = 'RESCR6' THEN 'SHOCK_INCARCERATION_6_MONTHS'
+                              WHEN purpose_for_incarceration_subtype = 'RESCR9' THEN 'SHOCK_INCARCERATION_9_MONTHS'
+                              WHEN purpose_for_incarceration_subtype = 'RESCR12' THEN 'SHOCK_INCARCERATION_12_MONTHS'
                          END
                   END
-             ELSE revocation_type
+             ELSE specialized_purpose_for_incarceration
         END AS admission_type"""
 
 
@@ -233,7 +233,7 @@ def state_specific_admission_history_description() -> str:
     return """CASE
             -- US_MO only includes Legal Revocation admissions, so we display the number of admissions instead
             WHEN state_code = 'US_MO' THEN CAST(COUNT(admission_type) AS STRING)
-            ELSE STRING_AGG(admission_type, ";" ORDER BY revocation_admission_date)
+            ELSE STRING_AGG(admission_type, ";" ORDER BY admission_date)
             END AS admission_history_description"""
 
 
