@@ -1,3 +1,5 @@
+{% import 'common/components.html.jinja2' as components %}
+
 {% macro average_comparison_card(
     static_image_path,
     icon_image,
@@ -93,12 +95,7 @@
             </table>
         </td>
         </tr>
-        <tr>
-        <td bgcolor="#CDD2D0" height="1"
-            style="height: 1px; font-size: 0px; line-height: 0px;"><img
-            src="{{ static_image_path }}/spacer.gif" width="1" height="1" alt=" " border="0"
-            style="display: block;" /></td>
-        </tr>
+        {{ components.card_divider() }}
         <tr>
         <td class="em_h18" height="32" style="height: 32px;">&nbsp;</td>
         </tr>
