@@ -21,6 +21,7 @@ from unittest.case import TestCase
 
 import pytest
 
+from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.case_updates.interface import CaseUpdatesInterface
 from recidiviz.case_triage.case_updates.types import (
     CaseUpdateActionType,
@@ -59,7 +60,9 @@ class TestCaseUpdatesInterface(TestCase):
             last_assessment_date=date(2021, 2, 1),
         )
         self.mock_context = UserContext(
-            email=self.mock_officer.email_address, current_user=self.mock_officer
+            email=self.mock_officer.email_address,
+            authorization_store=AuthorizationStore(),
+            current_user=self.mock_officer,
         )
 
     def tearDown(self) -> None:

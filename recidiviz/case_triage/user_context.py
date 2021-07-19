@@ -24,7 +24,11 @@ from typing import Dict, Optional
 import attr
 import pytz
 
-from recidiviz.case_triage.authorization import KNOWN_EXPERIMENTS, AuthorizationStore
+from recidiviz.case_triage.authorization import (
+    KNOWN_EXPERIMENTS,
+    AuthorizationStore,
+    FrontendAppPermissions,
+)
 from recidiviz.case_triage.demo_helpers import (
     DEMO_STATE_CODE,
     fake_officer_id_for_demo_user,
@@ -52,24 +56,29 @@ class UserContext:
     """Storing context and permissions for all of the operations for Case Triage"""
 
     email: str = attr.ib()
-    can_impersonate: bool = attr.ib(default=False)
-    can_see_demo_data: bool = attr.ib(default=False)
+    authorization_store: AuthorizationStore = attr.ib()
     current_user: ETLOfficer = attr.ib(default=None)
-    known_experiments: Dict[str, Optional[str]] = attr.ib(default=dict)
 
     @classmethod
     def base_context_for_email(
         cls, email: str, authorization_store: AuthorizationStore
     ) -> "UserContext":
-        return UserContext(
-            email=email,
-            can_impersonate=authorization_store.can_impersonate_others(email),
-            can_see_demo_data=authorization_store.can_see_demo_data(email),
-            known_experiments={
-                exp: authorization_store.get_feature_variant(exp, email)
-                for exp in KNOWN_EXPERIMENTS
-            },
-        )
+        return UserContext(email=email, authorization_store=authorization_store)
+
+    @property
+    def can_impersonate(self) -> bool:
+        return self.authorization_store.can_impersonate_others(self.email)
+
+    @property
+    def can_see_demo_data(self) -> bool:
+        return self.authorization_store.can_see_demo_data(self.email)
+
+    @property
+    def known_experiments(self) -> Dict[str, Optional[str]]:
+        return {
+            exp: self.authorization_store.get_feature_variant(exp, self.email)
+            for exp in KNOWN_EXPERIMENTS
+        }
 
     @property
     def permission(self) -> Permission:
@@ -117,6 +126,9 @@ class UserContext:
         if self.should_see_demo:
             return DEMO_STATE_CODE
         return self.current_user.state_code
+
+    def get_frontend_access_permissions(self) -> FrontendAppPermissions:
+        return self.authorization_store.get_frontend_access_permissions(self.email)
 
     def now(self) -> datetime:
         return datetime.now(tz=pytz.UTC)
