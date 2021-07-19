@@ -240,8 +240,7 @@ const IngestOperationsView = (): JSX.Element => {
                 key={action}
                 style={{ display: "block", textAlign: "center", width: "auto" }}
               >
-                {/* TODO(#6072): Remove development label when we migrate to state-specific queues */}
-                {actionNames[action]?.concat(" (in dev)")}
+                {actionNames[action]}
               </Button>
             );
           })}
