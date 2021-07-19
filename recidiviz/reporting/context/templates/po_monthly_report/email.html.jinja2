@@ -1,3 +1,4 @@
+{% import 'common/components.html.jinja2' as components %}
 {% import 'po_monthly_report/email_cards.html.jinja2' as cards %}
 
 <!DOCTYPE html
@@ -181,12 +182,7 @@
                                     </td>
                                   </tr>
                                   {% endif -%}
-                                  <tr>
-                                    <td bgcolor="#CDD2D0" height="1"
-                                      style="height: 1px; font-size: 0px; line-height: 0px;"><img
-                                        src="{{ static_image_path }}/spacer.gif" width="1" height="1" alt=" " border="0"
-                                        style="display: block;" /></td>
-                                  </tr>
+                                  {{ components.card_divider() }}
                                   <tr>
                                     <td class="em_h18" height="32" style="height: 32px;">&nbsp;</td>
                                   </tr>
@@ -287,12 +283,7 @@
                                   <tr>
                                     <td class="em_h20" height="30" style="height: 30px;">&nbsp;</td>
                                   </tr>
-                                  <tr>
-                                    <td bgcolor="#CDD2D0" height="1"
-                                      style="height: 1px; font-size: 0px; line-height: 0px;"><img
-                                        src="{{ static_image_path }}/spacer.gif" width="1" height="1" alt=" " border="0"
-                                        style="display: block;" /></td>
-                                  </tr>
+                                  {{ components.card_divider() }}
                                   <tr>
                                     <td class="em_h18" height="32" style="height: 32px;">&nbsp;</td>
                                   </tr>
@@ -476,12 +467,7 @@
                                   <tr>
                                     <td class="em_h15" height="32" style="height: 32px;">&nbsp;</td>
                                   </tr>
-                                  <tr>
-                                    <td bgcolor="#CDD2D0" height="1"
-                                      style="height: 1px; font-size: 0px; line-height: 0px;"><img
-                                        src="{{ static_image_path }}/spacer.gif" width="1" height="1" alt=" " border="0"
-                                        style="display: block;" /></td>
-                                  </tr>
+                                  {{ components.card_divider() }}
                                   <tr>
                                     <td class="em_h15" height="32" style="height: 32px;">&nbsp;</td>
                                   </tr>
@@ -572,12 +558,7 @@
                                   <tr>
                                     <td class="em_h15" height="31" style="height: 31px;">&nbsp;</td>
                                   </tr>
-                                  <tr>
-                                    <td bgcolor="#CDD2D0" height="1"
-                                      style="height: 1px; font-size: 0px; line-height: 0px;"><img
-                                        src="{{ static_image_path }}/spacer.gif" width="1" height="1" alt=" " border="0"
-                                        style="display: block;" /></td>
-                                  </tr>
+                                  {{ components.card_divider() }}
                                   <tr>
                                     <td class="em_h15" height="32" style="height: 32px;">&nbsp;</td>
                                   </tr>
@@ -707,12 +688,7 @@
                                       </table>
                                     </td>
                                   </tr>
-                                  <tr>
-                                    <td bgcolor="#CDD2D0" height="1"
-                                      style="height: 1px; font-size: 0px; line-height: 0px;"><img
-                                        src="{{ static_image_path }}/spacer.gif" width="1" height="1" alt=" " border="0"
-                                        style="display: block;" /></td>
-                                  </tr>
+                                  {{ components.card_divider() }}
                                   <tr>
                                     <td valign="top" align="center">
                                       <table width="100%" border="0" cellspacing="0" cellpadding="0">
@@ -741,12 +717,7 @@
                                       </table>
                                     </td>
                                   </tr>
-                                  <tr>
-                                    <td bgcolor="#CDD2D0" height="1"
-                                      style="height: 1px; font-size: 0px; line-height: 0px;"><img
-                                        src="{{ static_image_path }}/spacer.gif" width="1" height="1" alt=" " border="0"
-                                        style="display: block;" /></td>
-                                  </tr>
+                                  {{ components.card_divider() }}
                                   <tr>
                                     <td valign="top" align="center">
                                       <table width="100%" border="0" cellspacing="0" cellpadding="0">
