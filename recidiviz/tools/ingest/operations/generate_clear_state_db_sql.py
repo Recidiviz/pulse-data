@@ -71,7 +71,7 @@ def _commands_for_table(
         or db_version != SQLAlchemyStateDatabaseVersion.LEGACY
     ):
         if db_version == SQLAlchemyStateDatabaseVersion.LEGACY:
-            query = table.delete().where(table.c.state_code == state_code)
+            query = table.delete().where(table.c.state_code == state_code.value)
         elif db_version in {
             SQLAlchemyStateDatabaseVersion.PRIMARY,
             SQLAlchemyStateDatabaseVersion.SECONDARY,
@@ -98,7 +98,7 @@ def _commands_for_table(
         filter_statement = ASSOCIATION_TABLE_DELETION_FILTER_CLAUSE_TEMPLATE.format(
             foreign_key_table=constraint.referred_table,
             foreign_key_col=constraint.column_keys[0],
-            state_code=state_code,
+            state_code=state_code.value,
         )
 
         table_commands.append(
