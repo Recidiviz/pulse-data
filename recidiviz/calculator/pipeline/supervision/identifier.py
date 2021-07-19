@@ -415,10 +415,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     violation_responses_for_history=violation_responses_for_history,
                 )
 
-                is_on_supervision_last_day_of_month = event_date == last_day_of_month(
-                    event_date
-                )
-
                 case_compliance: Optional[SupervisionCaseCompliance] = None
 
                 if state_specific_case_compliance_manager:
@@ -468,7 +464,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                         level_2_supervision_location_external_id=level_2_supervision_location_external_id,
                         supervision_level=supervision_period.supervision_level,
                         supervision_level_raw_text=supervision_period.supervision_level_raw_text,
-                        is_on_supervision_last_day_of_month=is_on_supervision_last_day_of_month,
                         case_compliance=case_compliance,
                         judicial_district_code=judicial_district_code,
                         custodial_authority=supervision_period.custodial_authority,

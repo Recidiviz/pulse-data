@@ -4708,7 +4708,6 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 supervision_type=supervision_period_supervision_type,
                 supervision_level=supervision_period.supervision_level,
                 case_type=StateSupervisionCaseType.GENERAL,
-                is_on_supervision_last_day_of_month=True,
             ),
         )
 
@@ -4788,7 +4787,6 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 event_date=date(2001, 6, 29),
                 supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
-                is_on_supervision_last_day_of_month=False,
                 supervision_level=supervision_period.supervision_level,
             ),
         )
@@ -7740,7 +7738,6 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                is_on_supervision_last_day_of_month=False,
             ),
             SupervisionPopulationEvent(
                 state_code="US_MO",
@@ -7748,7 +7745,6 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                is_on_supervision_last_day_of_month=False,
             ),
         ]
 
@@ -7763,7 +7759,6 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
-                is_on_supervision_last_day_of_month=False,
             ),
             SupervisionPopulationEvent(
                 state_code="US_MO",
@@ -7771,7 +7766,6 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
-                is_on_supervision_last_day_of_month=False,
             ),
         ]
 
@@ -7785,7 +7779,6 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
-                is_on_supervision_last_day_of_month=False,
             ),
             SupervisionPopulationEvent(
                 state_code="US_MO",
@@ -7793,7 +7786,6 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                is_on_supervision_last_day_of_month=False,
             ),
         ]
 
@@ -7808,7 +7800,6 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
-                is_on_supervision_last_day_of_month=False,
             ),
             SupervisionPopulationEvent(
                 state_code="US_MO",
@@ -7816,7 +7807,6 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
-                is_on_supervision_last_day_of_month=False,
             ),
         ]
 
@@ -7830,7 +7820,6 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
-                is_on_supervision_last_day_of_month=False,
                 projected_end_date=None,
             ),
             SupervisionPopulationEvent(
@@ -7839,7 +7828,6 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
-                is_on_supervision_last_day_of_month=False,
                 projected_end_date=None,
             ),
             SupervisionPopulationEvent(
@@ -7848,7 +7836,6 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 4),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                is_on_supervision_last_day_of_month=False,
                 projected_end_date=None,
             ),
         ]
@@ -7864,7 +7851,6 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
-                is_on_supervision_last_day_of_month=False,
                 projected_end_date=None,
             ),
             SupervisionPopulationEvent(
@@ -7873,7 +7859,6 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 3),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
-                is_on_supervision_last_day_of_month=False,
                 projected_end_date=None,
             ),
             SupervisionPopulationEvent(
@@ -7882,7 +7867,6 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 4),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                is_on_supervision_last_day_of_month=False,
                 projected_end_date=None,
             ),
         ]
@@ -7897,7 +7881,6 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
-                is_on_supervision_last_day_of_month=True,
                 projected_end_date=None,
             ),
             SupervisionPopulationEvent(
@@ -7906,7 +7889,6 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                is_on_supervision_last_day_of_month=True,
                 projected_end_date=None,
             ),
             ProjectedSupervisionCompletionEvent(
@@ -7930,7 +7912,6 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
-                is_on_supervision_last_day_of_month=True,
                 projected_end_date=None,
             ),
             SupervisionPopulationEvent(
@@ -7939,7 +7920,6 @@ class TestConvertEventsToDual(unittest.TestCase):
                 month=1,
                 event_date=date(1900, 1, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
-                is_on_supervision_last_day_of_month=True,
                 projected_end_date=None,
             ),
             ProjectedSupervisionCompletionEvent(
@@ -8038,10 +8018,6 @@ def expected_population_events(
             assert max(days_on_supervision) < end_date
 
         for day_on_supervision in days_on_supervision:
-            is_on_supervision_last_day_of_month = (
-                day_on_supervision == last_day_of_month(day_on_supervision)
-            )
-
             case_compliance = case_compliances.get(day_on_supervision)
 
             downgrade_occurred = (
@@ -8078,7 +8054,6 @@ def expected_population_events(
                 level_2_supervision_location_external_id=level_2_supervision_location_external_id,
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
-                is_on_supervision_last_day_of_month=is_on_supervision_last_day_of_month,
                 case_compliance=case_compliance,
                 judicial_district_code=judicial_district_code,
                 supervision_level_downgrade_occurred=downgrade_occurred,
