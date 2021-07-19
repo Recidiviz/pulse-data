@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements API routes for the Case Triage app."""
+import os
 from functools import wraps
 from http import HTTPStatus
 from typing import Any, Callable, Dict, List
@@ -134,7 +135,7 @@ def create_api_blueprint(
         except NoResultFound as e:
             if not g.user_context.can_see_demo_data:
                 raise CaseTriageAuthorizationError(
-                    code="no_app_access",
+                    code="no_case_triage_access",
                     description="You are not authorized to access this application",
                 ) from e
 
@@ -167,6 +168,10 @@ def create_api_blueprint(
                 "knownExperiments": {
                     k: v for k, v in g.user_context.known_experiments.items() if v
                 },
+                "dashboardURL": os.getenv(
+                    "DASHBOARD_URL", "https://dashboard.recidiviz.org"
+                ),
+                **g.user_context.get_frontend_access_permissions().to_json(),
             }
         )
 

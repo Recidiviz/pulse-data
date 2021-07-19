@@ -67,6 +67,11 @@ resource "google_cloud_run_service" "case-triage" {
         }
 
         env {
+          name  = "DASHBOARD_URL"
+          value = "https://dashboard.recidiviz.org"
+        }
+
+        env {
           name  = "SEGMENT_WRITE_KEY"
           value = data.google_secret_manager_secret_version.segment_write_key.secret_data
         }

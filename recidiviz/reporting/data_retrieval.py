@@ -26,6 +26,7 @@ import logging
 from typing import Dict, List, Optional
 
 import recidiviz.reporting.email_reporting_utils as utils
+from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.case_triage.querier.querier import CaseTriageQuerier
 from recidiviz.case_triage.user_context import UserContext
@@ -219,7 +220,11 @@ def _retrieve_data_for_top_opportunities(state_code: StateCode) -> List[Recipien
     ) as session:
         for officer_email in _top_opps_email_recipient_addresses():
             officer = CaseTriageQuerier.officer_for_email(session, officer_email)
-            user_context = UserContext(email=officer_email, current_user=officer)
+            user_context = UserContext(
+                email=officer_email,
+                authorization_store=AuthorizationStore(),  # empty store because it won't be used
+                current_user=officer,
+            )
             opportunities = [
                 opp
                 for opp in CaseTriageQuerier.opportunities_for_officer(

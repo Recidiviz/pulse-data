@@ -30,6 +30,8 @@ def generate_fake_user_restrictions(
     email: str,
     allowed_supervision_location_ids: str = "",
     allowed_supervision_location_level: str = "level_1_supervision_location",
+    can_access_leadership_dashboard: bool = True,
+    can_access_case_triage: bool = False,
 ) -> DashboardUserRestrictions:
     return DashboardUserRestrictions(
         state_code=region_code,
@@ -39,8 +41,8 @@ def generate_fake_user_restrictions(
         allowed_supervision_location_ids=allowed_supervision_location_ids,
         allowed_supervision_location_level=allowed_supervision_location_level,
         internal_role="level_1_access_role",
-        can_access_leadership_dashboard=True,
-        can_access_case_triage=False,
+        can_access_leadership_dashboard=can_access_leadership_dashboard,
+        can_access_case_triage=can_access_case_triage,
     )
 
 

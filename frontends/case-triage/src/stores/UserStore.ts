@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { makeAutoObservable, runInAction } from "mobx";
 import createAuth0Client, {
   Auth0ClientOptions,
   GetTokenSilentlyOptions,
@@ -22,6 +21,7 @@ import createAuth0Client, {
   RedirectLoginOptions,
   User,
 } from "@auth0/auth0-spa-js";
+import { makeAutoObservable, runInAction } from "mobx";
 import qs from "qs";
 
 interface UserStoreProps {
@@ -42,6 +42,10 @@ export default class UserStore {
 
   authSettings: Auth0ClientOptions;
 
+  canAccessCaseTriage: boolean;
+
+  canAccessLeadershipDashboard: boolean;
+
   currentVersion?: string;
 
   featureVariants: FeatureVariants;
@@ -49,8 +53,6 @@ export default class UserStore {
   isAuthorized: boolean;
 
   isLoading: boolean;
-
-  lacksCaseTriageAuthorization: boolean;
 
   shouldReload: boolean;
 
@@ -68,12 +70,17 @@ export default class UserStore {
     makeAutoObservable(this);
 
     this.authSettings = authSettings;
-    this.lacksCaseTriageAuthorization = false;
     this.featureVariants = {};
     this.isAuthorized = false;
     this.isLoading = true;
     this.shouldReload = false;
     this.shouldNotHardReload = false;
+
+    // We assume they have access until a request comes in indicating
+    // that they don't have access.
+    // In general, this will allow us to exist in a loading state.
+    this.canAccessCaseTriage = true;
+    this.canAccessLeadershipDashboard = true;
   }
 
   async authorize(): Promise<void> {
@@ -151,10 +158,12 @@ export default class UserStore {
     }
   }
 
-  setLacksCaseTriageAuthorization(lacksCaseTriageAuthorization: boolean): void {
-    runInAction(() => {
-      this.lacksCaseTriageAuthorization = lacksCaseTriageAuthorization;
-    });
+  setCaseTriageAccess(canAccessCaseTriage: boolean): void {
+    this.canAccessCaseTriage = canAccessCaseTriage;
+  }
+
+  setLeadershipDashboardAccess(canAccessLeadershipDashboard: boolean): void {
+    this.canAccessLeadershipDashboard = canAccessLeadershipDashboard;
   }
 
   setFeatureVariants(variants: FeatureVariants): void {

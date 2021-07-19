@@ -777,7 +777,7 @@ class TestUserImpersonation(TestCase):
 
     def test_no_query_params(self) -> None:
         with self.test_app.test_request_context():
-            self.auth_store.admin_users = ["admin@recidiviz.org"]
+            self.auth_store.case_triage_admin_users = ["admin@recidiviz.org"]
             with self.test_client.session_transaction() as sess:  # type: ignore
                 sess["user_info"] = {
                     "email": "admin@recidiviz.org",
@@ -791,7 +791,7 @@ class TestUserImpersonation(TestCase):
 
     def test_happy_path(self) -> None:
         with self.test_app.test_request_context():
-            self.auth_store.admin_users = ["admin@recidiviz.org"]
+            self.auth_store.case_triage_admin_users = ["admin@recidiviz.org"]
             with self.test_client.session_transaction() as sess:  # type: ignore
                 sess["user_info"] = {
                     "email": "admin@recidiviz.org",
@@ -809,7 +809,7 @@ class TestUserImpersonation(TestCase):
 
     def test_remove_impersonation(self) -> None:
         with self.test_app.test_request_context():
-            self.auth_store.admin_users = ["admin@recidiviz.org"]
+            self.auth_store.case_triage_admin_users = ["admin@recidiviz.org"]
             with self.test_client.session_transaction() as sess:  # type: ignore
                 sess["user_info"] = {
                     "email": "admin@recidiviz.org",

@@ -17,23 +17,23 @@
 /**
  * Verifies authorization before rendering its children.
  */
-import { Link } from "@reach/router";
-import * as React from "react";
-import { ReactElement, useEffect } from "react";
-import { when } from "mobx";
-import { observer } from "mobx-react-lite";
+import { Link, redirectTo } from "@reach/router";
 import {
   Assets,
   ErrorPage,
   Header,
   Link as TypographyLink,
 } from "@recidiviz/design-system";
+import { when } from "mobx";
+import { observer } from "mobx-react-lite";
+import * as React from "react";
+import { ReactElement, useEffect } from "react";
 import { useRootStore } from "../../stores";
 import Loading from "../Loading";
 import UserSection from "../UserSection";
 
 const AuthWall: React.FC = ({ children }): ReactElement | null => {
-  const { userStore } = useRootStore();
+  const { userStore, api } = useRootStore();
 
   useEffect(
     () =>
@@ -65,7 +65,12 @@ const AuthWall: React.FC = ({ children }): ReactElement | null => {
     );
   }
 
-  if (userStore.lacksCaseTriageAuthorization) {
+  if (
+    userStore.canAccessLeadershipDashboard &&
+    !userStore.canAccessCaseTriage
+  ) {
+    redirectTo(api.dashboardURL);
+  } else if (!userStore.canAccessCaseTriage) {
     return (
       <ErrorPage headerText="Thank you for your interest in Recidiviz.">
         <p>

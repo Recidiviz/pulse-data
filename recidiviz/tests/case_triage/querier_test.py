@@ -21,6 +21,7 @@ from unittest.case import TestCase
 import pytest
 import sqlalchemy.orm.exc
 
+from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.case_triage.querier.querier import (
     CaseTriageQuerier,
@@ -93,14 +94,21 @@ class TestCaseTriageQuerier(TestCase):
         officer_1 = generate_fake_officer("id_1")
         officer_2 = generate_fake_officer("id_2")
         officer_3 = generate_fake_officer("id_3")
+        auth_store = AuthorizationStore()
         user_context_1 = UserContext(
-            email=officer_1.email_address, current_user=officer_1
+            email=officer_1.email_address,
+            authorization_store=auth_store,
+            current_user=officer_1,
         )
         user_context_2 = UserContext(
-            email=officer_2.email_address, current_user=officer_2
+            email=officer_2.email_address,
+            authorization_store=auth_store,
+            current_user=officer_2,
         )
         user_context_3 = UserContext(
-            email=officer_3.email_address, current_user=officer_3
+            email=officer_3.email_address,
+            authorization_store=auth_store,
+            current_user=officer_3,
         )
         client_1 = generate_fake_client("client_1", supervising_officer_id="id_1")
         client_2 = generate_fake_client("client_2", supervising_officer_id="id_1")
@@ -139,11 +147,16 @@ class TestCaseTriageQuerier(TestCase):
     def test_etl_client_for_officer(self) -> None:
         officer_1 = generate_fake_officer("officer_1")
         officer_2 = generate_fake_officer("officer_2")
+        auth_store = AuthorizationStore()
         user_context_1 = UserContext(
-            email=officer_1.email_address, current_user=officer_1
+            email=officer_1.email_address,
+            authorization_store=auth_store,
+            current_user=officer_1,
         )
         user_context_2 = UserContext(
-            email=officer_2.email_address, current_user=officer_2
+            email=officer_2.email_address,
+            authorization_store=auth_store,
+            current_user=officer_2,
         )
         client_1 = generate_fake_client(
             "client_1", supervising_officer_id=officer_1.external_id
@@ -176,7 +189,11 @@ class TestCaseTriageQuerier(TestCase):
 
     def test_opportunities_for_officer(self) -> None:
         officer = generate_fake_officer("officer_1")
-        user_context = UserContext(current_user=officer, email=officer.email_address)
+        user_context = UserContext(
+            current_user=officer,
+            authorization_store=AuthorizationStore(),
+            email=officer.email_address,
+        )
         client = generate_fake_client(
             "client_1", supervising_officer_id=officer.external_id
         )
