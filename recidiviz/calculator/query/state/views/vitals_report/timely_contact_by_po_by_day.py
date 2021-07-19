@@ -15,8 +15,6 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Count of supervisees with their contact needs met by PO by day"""
-# pylint: disable=line-too-long
-
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import (
     dataset_config,
@@ -76,7 +74,7 @@ WITH overdue_contacts AS (
         AND sup_pop.date_of_supervision = overdue_contacts.date_of_supervision
         AND sup_pop.supervising_officer_external_id = overdue_contacts.supervising_officer_external_id
         AND {vitals_state_specific_join_with_supervision_population}
-    WHERE level_1_supervision_location_external_id = 'ALL' OR state_code IN {vitals_level_1_state_codes} 
+    WHERE overdue_contacts.level_1_supervision_location_external_id = 'ALL' OR overdue_contacts.state_code IN {vitals_level_1_state_codes}
     """
 
 TIMELY_CONTACT_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
