@@ -61,8 +61,8 @@ class CaseTriageTestHelpers:
         self.test_app.secret_key = "NOT-A-SECRET"
         self.mock_segment_client = MagicMock()
         self.mock_auth_store = AuthorizationStore()
-        self.mock_auth_store.demo_users = [DEMO_USER_EMAIL]
-        self.mock_auth_store.admin_users = [ADMIN_USER_EMAIL]
+        self.mock_auth_store.case_triage_demo_users = [DEMO_USER_EMAIL]
+        self.mock_auth_store.case_triage_admin_users = [ADMIN_USER_EMAIL]
         api = create_api_blueprint(
             self.mock_segment_client,
             passthrough_authorization_decorator(),

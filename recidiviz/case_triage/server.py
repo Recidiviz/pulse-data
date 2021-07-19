@@ -92,9 +92,9 @@ def on_successful_authorization(_payload: Dict[str, str], token: str) -> None:
         session["user_info"] = get_userinfo(authorization_config.domain, token)
 
     email = session["user_info"]["email"]
-    if email not in authorization_store.allowed_users:
+    if email not in authorization_store.case_triage_allowed_users:
         raise CaseTriageAuthorizationError(
-            code="no_app_access",
+            code="no_case_triage_access",
             description="You are not authorized to access this application",
         )
 

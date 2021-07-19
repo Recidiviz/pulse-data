@@ -17,11 +17,7 @@
 
 import { Then } from "@cucumber/cucumber";
 import homePage from "../pages/HomePage";
-import {
-  NEED_TEST_ID_MAP,
-  NEED_TYPE,
-  waitUntilElementHasText,
-} from "./helpers";
+import { NEED_TYPE, waitUntilElementHasText } from "./helpers";
 
 Then("I should see my client list", async () => {
   const heading = await homePage.clientListHeading;

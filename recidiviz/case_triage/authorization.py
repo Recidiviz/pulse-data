@@ -26,9 +26,16 @@ from typing import Dict, List, Optional
 
 import attr
 import dateutil.parser
+import sqlalchemy.orm.exc
 
 from recidiviz.case_triage.util import get_local_file
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.persistence.database.schema.case_triage.schema import (
+    DashboardUserRestrictions,
+)
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils.environment import in_gcp
 from recidiviz.utils.metadata import project_id
 
@@ -63,6 +70,18 @@ class FeatureGateInfo:
         return self.variant
 
 
+@attr.s(auto_attribs=True)
+class FrontendAppPermissions:
+    can_access_case_triage: bool
+    can_access_leadership_dashboard: bool
+
+    def to_json(self) -> Dict[str, bool]:
+        return {
+            "canAccessCaseTriage": self.can_access_case_triage,
+            "canAccessLeadershipDashboard": self.can_access_leadership_dashboard,
+        }
+
+
 class AuthorizationStore:
     """
     Simple store that fetches the allowlist of early Case Triage users' email addresses.
@@ -70,6 +89,8 @@ class AuthorizationStore:
     """
 
     def __init__(self) -> None:
+        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
+
         prefix = "" if not in_gcp() else f"{project_id()}-"
         self.allowlist_path = GcsfsFilePath.from_absolute_path(
             f"{prefix}case-triage-data/allowlist_v2.json"
@@ -78,9 +99,9 @@ class AuthorizationStore:
             f"{prefix}case-triage-data/feature_variants.json"
         )
 
-        self.allowed_users: List[str] = []
-        self.admin_users: List[str] = []
-        self.demo_users: List[str] = []
+        self.case_triage_allowed_users: List[str] = []
+        self.case_triage_admin_users: List[str] = []
+        self.case_triage_demo_users: List[str] = []
 
         # Map from feature name to a map of email addresses to variants
         # of the feature that they are in.
@@ -92,11 +113,11 @@ class AuthorizationStore:
 
     def _refresh_auth_info(self) -> None:
         data = json.loads(get_local_file(self.allowlist_path))
-        self.allowed_users = [struct["email"] for struct in data]
-        self.admin_users = [
+        self.case_triage_allowed_users = [struct["email"] for struct in data]
+        self.case_triage_admin_users = [
             struct["email"] for struct in data if struct.get("is_admin")
         ]
-        self.demo_users = [
+        self.case_triage_demo_users = [
             struct["email"] for struct in data if struct.get("is_demo_user")
         ]
 
@@ -111,14 +132,47 @@ class AuthorizationStore:
             for feature, submap in feature_gate_json.items()
         }
 
+    def get_frontend_access_permissions(self, email: str) -> FrontendAppPermissions:
+        email = email.lower()
+
+        if _is_recidiviz_employee(email):
+            return FrontendAppPermissions(
+                can_access_case_triage=True, can_access_leadership_dashboard=True
+            )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            try:
+                permissions = (
+                    session.query(DashboardUserRestrictions)
+                    .filter(DashboardUserRestrictions.restricted_user_email == email)
+                    .one()
+                )
+                return FrontendAppPermissions(
+                    can_access_case_triage=(
+                        permissions.can_access_case_triage
+                        or email in self.case_triage_allowed_users
+                    ),
+                    can_access_leadership_dashboard=permissions.can_access_leadership_dashboard,
+                )
+            except sqlalchemy.orm.exc.NoResultFound:
+                return FrontendAppPermissions(
+                    can_access_case_triage=False, can_access_leadership_dashboard=False
+                )
+
     def can_impersonate_others(self, email: str) -> bool:
-        return email in self.admin_users
+        return email in self.case_triage_admin_users
 
     def can_refresh_auth_store(self, email: str) -> bool:
-        return email in self.admin_users
+        return email in self.case_triage_admin_users
 
     def can_see_demo_data(self, email: str) -> bool:
-        return email in self.admin_users or email in self.demo_users
+        return (
+            email in self.case_triage_admin_users
+            or email in self.case_triage_demo_users
+            or _is_recidiviz_employee(email)
+        )
 
     def get_feature_variant(
         self, feature: str, email: str, on_date: Optional[date] = None
@@ -129,3 +183,7 @@ class AuthorizationStore:
         if not feature_gate_info:
             return None
         return feature_gate_info.get_current_variant(on_date=on_date)
+
+
+def _is_recidiviz_employee(email: str) -> bool:
+    return email.lower().endswith("@recidiviz.org")

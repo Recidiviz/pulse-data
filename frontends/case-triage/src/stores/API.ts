@@ -32,6 +32,10 @@ interface BootstrapResponse {
   csrf: string;
   segmentUserId: string;
   knownExperiments: FeatureVariants;
+  dashboardURL: string;
+
+  canAccessCaseTriage: boolean;
+  canAccessLeadershipDashboard: boolean;
 }
 
 export type ErrorResponse = {
@@ -57,10 +61,13 @@ class API {
 
   csrfToken: string;
 
+  dashboardURL: string;
+
   userStore: UserStore;
 
   constructor({ userStore }: APIProps) {
     this.csrfToken = "";
+    this.dashboardURL = "";
     this.userStore = userStore;
   }
 
@@ -68,10 +75,22 @@ class API {
     this.bootstrapping =
       this.bootstrapping ||
       this.get<BootstrapResponse>(BOOTSTRAP_ROUTE).then(
-        ({ csrf, segmentUserId, knownExperiments: featureVariants }) => {
+        ({
+          csrf,
+          segmentUserId,
+          knownExperiments: featureVariants,
+          dashboardURL,
+          canAccessCaseTriage,
+          canAccessLeadershipDashboard,
+        }) => {
           this.csrfToken = csrf;
           identify(segmentUserId);
+          this.dashboardURL = dashboardURL;
           this.userStore.setFeatureVariants(featureVariants);
+          this.userStore.setCaseTriageAccess(canAccessCaseTriage);
+          this.userStore.setLeadershipDashboardAccess(
+            canAccessLeadershipDashboard
+          );
           this.bootstrapped = true;
         }
       );
@@ -114,13 +133,13 @@ class API {
 
       const json = await response.json();
 
-      if (response.status === 401 && json.code === "no_app_access") {
-        this.userStore.setLacksCaseTriageAuthorization(true);
-      }
-
       if (response.status === 400 && json.code === "invalid_csrf_token") {
         this.bootstrapped = false;
         return this.request<T>({ path, method, body });
+      }
+
+      if (response.status === 401 && json.code === "no_case_triage_access") {
+        this.userStore.setCaseTriageAccess(false);
       }
 
       if (isErrorResponse(json)) {
