@@ -134,10 +134,6 @@ class SupervisionPopulationMetric(
 
     # Optional characteristics
 
-    # TODO(#3600): This field should be removed because the daily output makes this unnecessary
-    # For person-level metrics only, indicates whether this person was on supervision at the end of the month
-    is_on_supervision_last_day_of_month: Optional[bool] = attr.ib(default=None)
-
     # The projected end date for the person's supervision term.
     projected_end_date: Optional[date] = attr.ib(default=None)
 
