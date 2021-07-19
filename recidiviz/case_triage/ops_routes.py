@@ -43,7 +43,9 @@ CASE_TRIAGE_DB_OPERATIONS_QUEUE = "case-triage-db-operations-queue"
 case_triage_ops_blueprint = Blueprint("/case_triage_ops", __name__)
 
 
-@case_triage_ops_blueprint.route("/run_standard_cron_gcs_imports", methods=["GET"])
+@case_triage_ops_blueprint.route(
+    "/run_standard_cron_gcs_imports", methods=["GET", "POST"]
+)
 @requires_gae_auth
 def _run_cron_gcs_import() -> Tuple[str, HTTPStatus]:
     """Exposes an endpoint to trigger standard GCS imports via cron."""
