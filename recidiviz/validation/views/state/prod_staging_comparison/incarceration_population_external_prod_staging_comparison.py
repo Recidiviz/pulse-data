@@ -21,11 +21,9 @@ to the person-level values from external metrics provided by the state.
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
-
 
 INCARCERATION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_NAME = (
     "incarceration_population_external_prod_staging_comparison"
@@ -37,6 +35,7 @@ Comparison of external, prod, and staging data on incarceration releases
 
 INCARCERATION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_QUERY_TEMPLATE = """
 /*{description}*/
+    /* TODO(#8153): Update views to only exist in or materialize in staging */
       SELECT
         region_code,
         date_of_stay,
@@ -46,8 +45,8 @@ INCARCERATION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_QUERY_TEMPLATE = """
         prod.external_facility AS external_facility,
         prod.internal_facility AS prod_facility,
         staging.internal_facility AS staging_facility,
-      FROM `{prod_project_id}.{validation_views_dataset}.incarceration_population_person_level_external_comparison` prod
-      FULL JOIN `{staging_project_id}.{validation_views_dataset}.incarceration_population_person_level_external_comparison` staging
+      FROM `{prod_project_id}.{validation_views_dataset}.incarceration_population_person_level_external_comparison_materialized` prod
+      FULL JOIN `{staging_project_id}.{validation_views_dataset}.incarceration_population_person_level_external_comparison_materialized` staging
       USING (region_code, external_data_person_external_id, date_of_stay) 
 
 """
@@ -61,6 +60,7 @@ INCARCERATION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER = SimpleB
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     prod_project_id=GCP_PROJECT_PRODUCTION,
     staging_project_id=GCP_PROJECT_STAGING,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

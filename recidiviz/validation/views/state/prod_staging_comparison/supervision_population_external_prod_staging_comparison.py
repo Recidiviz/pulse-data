@@ -22,11 +22,9 @@ to the person-level values from external metrics provided by the state.
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
-
 
 SUPERVISION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_NAME = (
     "supervision_population_external_prod_staging_comparison"
@@ -38,6 +36,7 @@ Comparison of external, prod, and staging data on supervision population
 
 SUPERVISION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_QUERY_TEMPLATE = """
 /*{description}*/
+      /* TODO(#8153): Update views to only exist in or materialize in staging */
       SELECT
         # TODO(#7545): Update external, prod, and staging validation views to use internal person_id for supervision metrics
         region_code,
@@ -54,8 +53,8 @@ SUPERVISION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_QUERY_TEMPLATE = """
         prod.external_supervising_officer AS external_supervising_officer,
         prod.internal_supervising_officer AS prod_supervising_officer,
         staging.internal_supervising_officer AS staging_supervising_officer,
-      FROM `{prod_project_id}.{validation_views_dataset}.supervision_population_person_level_external_comparison` prod
-      FULL JOIN `{staging_project_id}.{validation_views_dataset}.supervision_population_person_level_external_comparison` staging
+      FROM `{prod_project_id}.{validation_views_dataset}.supervision_population_person_level_external_comparison_materialized` prod
+      FULL JOIN `{staging_project_id}.{validation_views_dataset}.supervision_population_person_level_external_comparison_materialized` staging
       USING (region_code, external_person_external_id, date_of_supervision)     
 """
 
@@ -68,6 +67,7 @@ SUPERVISION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER = SimpleBig
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     prod_project_id=GCP_PROJECT_PRODUCTION,
     staging_project_id=GCP_PROJECT_STAGING,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":
