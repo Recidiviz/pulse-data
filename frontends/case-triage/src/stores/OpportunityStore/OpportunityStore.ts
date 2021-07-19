@@ -16,15 +16,15 @@
 // =============================================================================
 import { autorun, makeAutoObservable, runInAction } from "mobx";
 import moment from "moment";
-import {
-  Opportunity,
-  opportunityPriorityComparator,
-  OpportunityType,
-  OpportunityData,
-} from "./Opportunity";
-import UserStore, { KNOWN_EXPERIMENTS } from "../UserStore";
 import API from "../API";
 import RootStore from "../RootStore";
+import UserStore, { KNOWN_EXPERIMENTS } from "../UserStore";
+import {
+  Opportunity,
+  OpportunityData,
+  opportunityPriorityComparator,
+  OpportunityType,
+} from "./Opportunity";
 
 interface OpportunityStoreProps {
   api: API;
@@ -168,9 +168,14 @@ class OpportunityStore {
       return;
     }
 
-    return this.opportunitiesByPerson[personExternalId]
-      ?.slice()
-      .sort(opportunityPriorityComparator)[0];
+    let baseOpportunities =
+      this.opportunitiesByPerson[personExternalId]?.slice();
+    if (!this.userStore.isInExperiment(KNOWN_EXPERIMENTS.ProfileV2)) {
+      baseOpportunities = baseOpportunities?.filter(
+        (opp) => opp.opportunityType === OpportunityType.OVERDUE_DOWNGRADE
+      );
+    }
+    return baseOpportunities?.sort(opportunityPriorityComparator)[0];
   }
 
   getOpportunitiesForClient(personExternalId: string): Opportunity[] {
