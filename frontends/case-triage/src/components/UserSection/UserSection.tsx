@@ -51,7 +51,7 @@ interface UserProps {
 }
 
 const UserComponent = ({ user }: UserProps): JSX.Element => {
-  const { userStore } = useRootStore();
+  const { api, userStore } = useRootStore();
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
 
   const toggleDropdown = React.useCallback(() => {
@@ -72,6 +72,11 @@ const UserComponent = ({ user }: UserProps): JSX.Element => {
           >
             FAQ
           </DropdownLink>
+          {userStore.canAccessLeadershipDashboard && api.dashboardURL && (
+            <DropdownLink href={api.dashboardURL} target="_blank">
+              Go to Dashboard
+            </DropdownLink>
+          )}
           <DropdownLinkButton
             kind="link"
             onClick={() => {
