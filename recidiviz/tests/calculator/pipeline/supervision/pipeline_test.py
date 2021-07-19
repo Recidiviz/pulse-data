@@ -2025,7 +2025,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 supervision_level=StateSupervisionLevel.MINIMUM,
                 supervision_level_raw_text="MIN",
-                is_on_supervision_last_day_of_month=True,
                 case_compliance=SupervisionCaseCompliance(
                     date_of_evaluation=date(2015, 3, 31), num_days_assessment_overdue=0
                 ),

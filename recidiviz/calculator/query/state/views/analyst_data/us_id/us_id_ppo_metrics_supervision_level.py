@@ -15,13 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Metric capturing number of people on limited or low supervision on the last day of each month"""
-# pylint: disable=trailing-whitespace
-
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
-    STATE_BASE_DATASET,
     ANALYST_VIEWS_DATASET,
+    STATE_BASE_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -33,22 +31,25 @@ US_ID_PPO_METRICS_SUPERVISION_LEVEL_VIEW_DESCRIPTION = """Metric capturing numbe
 US_ID_PPO_METRICS_SUPERVISION_LEVEL_QUERY_TEMPLATE = """
     /*{description}*/
 
-    SELECT 
+    SELECT
       state_code,
       date_of_supervision,
       supervision_type,
       COUNT(DISTINCT person_id) as count,
       COUNT(DISTINCT IF(supervision_level in ('LIMITED', 'MINIMUM'), person_id, NULL))/COUNT(*) as pct_low_or_limited_supervision
-      FROM 
+      FROM
       (
         SELECT state_code, person_id, supervision_type, supervision_level, date_of_supervision
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
-        WHERE (date_of_supervision = CURRENT_DATE() OR is_on_supervision_last_day_of_month)      
+        WHERE (
+          date_of_supervision = CURRENT_DATE('US/Pacific') OR
+          date_of_supervision = LAST_DAY(date_of_supervision, MONTH)
+        )
       )
-      
+
       WHERE state_code = 'US_ID'
-        AND date_of_supervision >= DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR)
-        
+        AND date_of_supervision >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 3 YEAR)
+
       GROUP BY 1,2,3
       ORDER BY 1,2,3
     """
