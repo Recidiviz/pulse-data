@@ -42,7 +42,11 @@ STAGING_MULTI_DB_STATES: List[StateCode] = [
     StateCode.US_PA,
     StateCode.US_TN,
 ]
-PROD_MULTI_DB_STATES: List[StateCode] = []
+PROD_MULTI_DB_STATES: List[StateCode] = [
+    StateCode.US_MI,
+    StateCode.US_PA,
+    StateCode.US_TN,
+]
 
 STATE_TO_PRIMARY_DATABASE_VERSION = {
     GCP_PROJECT_STAGING: {
