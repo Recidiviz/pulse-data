@@ -43,13 +43,13 @@ CASE_TRIAGE_DB_OPERATIONS_QUEUE = "case-triage-db-operations-queue"
 case_triage_ops_blueprint = Blueprint("/case_triage_ops", __name__)
 
 
-@case_triage_ops_blueprint.route(
-    "/run_standard_cron_gcs_imports", methods=["GET", "POST"]
-)
+@case_triage_ops_blueprint.route("/run_gcs_imports", methods=["GET", "POST"])
 @requires_gae_auth
-def _run_cron_gcs_import() -> Tuple[str, HTTPStatus]:
-    """Exposes an endpoint to trigger standard GCS imports via cron."""
+def _run_gcs_import() -> Tuple[str, HTTPStatus]:
+    """Exposes an endpoint to trigger standard GCS imports."""
     for builder in CASE_TRIAGE_EXPORTED_VIEW_BUILDERS:
+        # TODO(#8335): This function should take in as a parameter the file
+        # that changed and only perform an import for that file.
         csv_path = GcsfsFilePath.from_absolute_path(
             os.path.join(
                 CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI.format(
@@ -78,8 +78,10 @@ def _handle_gcs_imports() -> Tuple[str, HTTPStatus]:
     cloud_task_manager = CloudTaskQueueManager(
         queue_info_cls=CloudTaskQueueInfo, queue_name=CASE_TRIAGE_DB_OPERATIONS_QUEUE
     )
+    # TODO(#8335): This function should take in as a parameter the file that changed,
+    # and pass in that file in the body of the cloud task that is being created.
     cloud_task_manager.create_task(
-        relative_uri="/case_triage_ops/run_standard_cron_gcs_imports", body={}
+        relative_uri="/case_triage_ops/run_gcs_imports", body={}
     )
     logging.info("Enqueued gcs_import task to %s", CASE_TRIAGE_DB_OPERATIONS_QUEUE)
     return "", HTTPStatus.OK
