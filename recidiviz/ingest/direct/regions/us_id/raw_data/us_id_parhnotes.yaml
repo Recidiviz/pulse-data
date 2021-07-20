@@ -1,0 +1,16 @@
+file_tag: parhnotes
+file_description: |-
+  Contains notes on parole hearings.
+primary_key_cols:
+  - par_hrg_srl
+columns:
+  - name: par_hrg_srl
+    description: |-
+      Unique id for the parole hearing
+  - name: par_hrg_note
+    description: |-
+      The notes associated with the hearing.
+separator: ‡
+custom_line_terminator: †
+ignore_quotes: True
+encoding: WINDOWS-1252

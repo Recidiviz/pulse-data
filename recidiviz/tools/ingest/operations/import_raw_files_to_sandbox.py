@@ -45,10 +45,7 @@ from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsBucketPath,
-    GcsfsDirectoryPath,
-)
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsDirectoryPath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
@@ -120,7 +117,7 @@ def do_upload(
     input_str = input(
         f"Have you already uploaded raw files to [{source_bucket.uri()}] using script "
         f"`recidiviz.tools.ingest.operations.upload_raw_state_files_to_ingest_bucket_with_date` "
-        f"with arg `--destination-bucket {source_bucket.bucket_name}`?. [Y/n] "
+        f"with arg `--destination-bucket {source_bucket.bucket_name}`?. [y/n] "
     )
 
     if input_str.upper() != "Y":
