@@ -43,21 +43,30 @@ WHERE
     agent_type = 'SUPERVISION_OFFICER'
 GROUP BY state_code, external_id
 ),
-rename_columns AS (
-SELECT
-    state_code,
-    officer_external_id AS external_id,
-    email_address
-FROM
-    `{project_id}.{static_reference_dataset}.case_triage_users`
+id_roster AS (
+    SELECT
+        UPPER(SPLIT(email_address, "@")[OFFSET(0)]) AS external_id,
+        LOWER(email_address) AS email_address,
+        'US_ID' AS state_code
+    FROM `{project_id}.{static_reference_dataset}.us_id_roster`
+),
+all_officers AS (
+    SELECT
+        state_code,
+        external_id,
+        id_roster.email_address AS email_address,
+        given_names,
+        names.surname AS surname
+    FROM
+        id_roster
+    JOIN
+        names
+    USING (state_code, external_id)
 )
 SELECT
     {columns}
 FROM
-    names
-INNER JOIN
-    rename_columns
-USING (state_code, external_id)
+    all_officers
 """
 
 OFFICER_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
