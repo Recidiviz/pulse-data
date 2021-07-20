@@ -207,29 +207,18 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
         supervision_period = attr.evolve(
             self.DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
             state_code="US_PA",
-            # TODO(#6314): Change this back to "CO|CO - CENTRAL OFFICE|9110"
-            supervision_site=None,
+            supervision_site="CO|CO - CENTRAL OFFICE|9110",
         )
-
-        # TODO(#6314): Delete this and send in the DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
-        #  instead once we've removed the hack
-        temporary_sp_agent_associations = {
-            111: {
-                "agent_id": 123,
-                "agent_external_id": "CO|CO - CENTRAL OFFICE|9110#999: JOHN SNOW",
-                "supervision_period_id": 111,
-            }
-        }
 
         (
             supervising_officer_external_id,
             level_1_supervision_location,
             level_2_supervision_location,
         ) = self._get_state_specific_supervising_officer_and_location_info(
-            supervision_period, temporary_sp_agent_associations
+            supervision_period, self.DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
         )
 
-        self.assertEqual("999: JOHN SNOW", supervising_officer_external_id)
+        self.assertEqual("agent_external_id_1", supervising_officer_external_id)
         self.assertEqual("CO - CENTRAL OFFICE", level_1_supervision_location)
         self.assertEqual("CO", level_2_supervision_location)
 
@@ -247,120 +236,7 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
             supervision_period
         )
 
-        # TODO(#6314): Return to asserting that the officer is "agent_external_id_1"
-        self.assertEqual(None, supervising_officer_external_id)
-        self.assertEqual(None, level_1_supervision_location)
-        self.assertEqual(None, level_2_supervision_location)
-
-        # TODO(#6314): Delete the rest of this test, since it's only testing the hack
-        supervision_period = attr.evolve(
-            self.DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
-            state_code="US_PA",
-            supervision_site=None,
-        )
-
-        temporary_sp_agent_associations = {
-            111: {
-                "agent_id": 123,
-                # Only agent info, no supervision location info
-                "agent_external_id": "#999: JOHN SNOW",
-                "supervision_period_id": 111,
-            }
-        }
-
-        (
-            supervising_officer_external_id,
-            level_1_supervision_location,
-            level_2_supervision_location,
-        ) = self._get_state_specific_supervising_officer_and_location_info(
-            supervision_period, temporary_sp_agent_associations
-        )
-
-        self.assertEqual("999: JOHN SNOW", supervising_officer_external_id)
-        self.assertEqual(None, level_1_supervision_location)
-        self.assertEqual(None, level_2_supervision_location)
-
-        temporary_sp_agent_associations = {
-            111: {
-                "agent_id": 123,
-                # Only supervision location info, no agent info
-                "agent_external_id": "CO|CO - CENTRAL OFFICE|9110#",
-                "supervision_period_id": 111,
-            }
-        }
-
-        (
-            supervising_officer_external_id,
-            level_1_supervision_location,
-            level_2_supervision_location,
-        ) = self._get_state_specific_supervising_officer_and_location_info(
-            supervision_period, temporary_sp_agent_associations
-        )
-
-        self.assertEqual(None, supervising_officer_external_id)
-        self.assertEqual("CO - CENTRAL OFFICE", level_1_supervision_location)
-        self.assertEqual("CO", level_2_supervision_location)
-
-        temporary_sp_agent_associations = {
-            111: {
-                "agent_id": 123,
-                # Only level_2 location info
-                "agent_external_id": "07||#",
-                "supervision_period_id": 111,
-            }
-        }
-
-        (
-            supervising_officer_external_id,
-            level_1_supervision_location,
-            level_2_supervision_location,
-        ) = self._get_state_specific_supervising_officer_and_location_info(
-            supervision_period, temporary_sp_agent_associations
-        )
-
-        self.assertEqual(None, supervising_officer_external_id)
-        self.assertEqual(None, level_1_supervision_location)
-        self.assertEqual("07", level_2_supervision_location)
-
-        temporary_sp_agent_associations = {
-            111: {
-                "agent_id": 123,
-                # Only level_2 location info, officer name has whitespace
-                "agent_external_id": "07||#  ",
-                "supervision_period_id": 111,
-            }
-        }
-
-        (
-            supervising_officer_external_id,
-            level_1_supervision_location,
-            level_2_supervision_location,
-        ) = self._get_state_specific_supervising_officer_and_location_info(
-            supervision_period, temporary_sp_agent_associations
-        )
-
-        self.assertEqual(None, supervising_officer_external_id)
-        self.assertEqual(None, level_1_supervision_location)
-        self.assertEqual("07", level_2_supervision_location)
-
-        temporary_sp_agent_associations = {
-            111: {
-                "agent_id": 123,
-                # Empty info string
-                "agent_external_id": "||#",
-                "supervision_period_id": 111,
-            }
-        }
-
-        (
-            supervising_officer_external_id,
-            level_1_supervision_location,
-            level_2_supervision_location,
-        ) = self._get_state_specific_supervising_officer_and_location_info(
-            supervision_period, temporary_sp_agent_associations
-        )
-
-        self.assertEqual(None, supervising_officer_external_id)
+        self.assertEqual("agent_external_id_1", supervising_officer_external_id)
         self.assertEqual(None, level_1_supervision_location)
         self.assertEqual(None, level_2_supervision_location)
 

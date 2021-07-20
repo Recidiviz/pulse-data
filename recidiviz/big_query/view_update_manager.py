@@ -29,9 +29,6 @@ from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilderShouldNotBuildError,
 )
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
-)
 from recidiviz.utils import monitoring
 
 m_failed_view_update = measure.MeasureInt(
@@ -224,16 +221,6 @@ def _build_views_to_update(
             raise ValueError(
                 f"Found view [{view_builder.view_id}] in source-table-only dataset [{view_builder.dataset_id}]"
             )
-
-        # TODO(#6314): Remove this check once we have deleted the hack us_pa_supervision_period_TEMP view
-        if (
-            isinstance(view_builder, DirectIngestPreProcessedIngestViewBuilder)
-            and view_builder.ingest_view_name == "us_pa_supervision_period_TEMP"
-            and dataset_overrides
-        ):
-            # Don't update the us_pa_supervision_period_TEMP view when loading sandbox
-            # views with dataset_overrides
-            continue
 
         try:
             view = view_builder.build(

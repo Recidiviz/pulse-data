@@ -31,9 +31,6 @@ from recidiviz.big_query.big_query_view import (
     BigQueryView,
     SimpleBigQueryViewBuilder,
 )
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
-)
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.view_registry.dataset_overrides import (
     dataset_overrides_for_view_builders,
@@ -549,10 +546,6 @@ class ViewManagerTest(unittest.TestCase):
 
     def test_no_views_in_source_data_datasets(self) -> None:
         for view_builder in DEPLOYED_VIEW_BUILDERS:
-            # TODO(#6314): Remove this check once we delete the us_pa_supervision_period_TEMP view
-            if isinstance(view_builder, DirectIngestPreProcessedIngestViewBuilder):
-                continue
-
             self.assertNotIn(
                 view_builder.dataset_id,
                 VIEW_SOURCE_TABLE_DATASETS,
