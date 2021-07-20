@@ -480,7 +480,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
         ],
         StateSupervisionLevel.LIMITED: [
             "ADM",  # Administrative Parole
-            "SPC",  # Special Circumstance
         ],
         StateSupervisionLevel.HIGH: [
             "ENH",  # Enhanced
