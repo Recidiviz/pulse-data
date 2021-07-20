@@ -350,20 +350,12 @@ def incarceration_period_admission_reason_mapper(
         )
         start_is_admin_edge = "FALSE"
     else:
-        # TODO(#7222): Remove this first clause once sci_incarceration_period_v2 has
-        #  shipped in prod
-        if concatenated_codes.count(" ") == 2:
-            _, start_is_new_revocation, start_movement_code = concatenated_codes.split(
-                " "
-            )
-            start_is_admin_edge = "FALSE"
-        else:
-            (
-                _,
-                start_is_new_revocation,
-                start_movement_code,
-                start_is_admin_edge,
-            ) = concatenated_codes.split(" ")
+        (
+            _,
+            start_is_new_revocation,
+            start_movement_code,
+            start_is_admin_edge,
+        ) = concatenated_codes.split(" ")
 
     if start_is_new_revocation == "TRUE":
         # Note: These are not always legal revocations. We are currently using the PAROLE_REVOCATION admission_reason

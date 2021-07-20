@@ -197,12 +197,8 @@ class UsPaController(CsvGcsfsDirectIngestController):
         ]
 
         self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
-            # TODO(#7222): Rename to strip "_v2" (with an operations DB migration) once
-            #  this version has been rerun in prod.
-            "person_external_ids_v2": [self._hydrate_person_external_ids],
-            # TODO(#7222): Rename to strip "_v2" (with an operations DB migration) once
-            #  this version has been rerun in prod.
-            "doc_person_info_v2": doc_person_info_postprocessors,
+            "person_external_ids": [self._hydrate_person_external_ids],
+            "doc_person_info": doc_person_info_postprocessors,
             "dbo_tblInmTestScore": [
                 gen_label_single_external_id_hook(US_PA_CONTROL),
                 self._generate_doc_assessment_external_id,
@@ -214,9 +210,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._rationalize_offense_type,
                 self._set_is_violent,
             ],
-            # TODO(#7222): Rename to strip "_v2" (with an operations DB migration) once
-            #  this version has been rerun in prod.
-            "sci_incarceration_period_v2": sci_incarceration_period_row_postprocessors,
+            "sci_incarceration_period": sci_incarceration_period_row_postprocessors,
             "ccis_incarceration_period": [
                 self._concatenate_admission_reason_codes,
                 self._concatenate_release_reason_codes,
@@ -224,17 +218,13 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._concatenate_incarceration_purpose_codes,
             ],
             "dbo_Miscon": dbo_Miscon_postprocessors,
-            # TODO(#7222): Rename to strip "_v2" (with an operations DB migration) once
-            #  this version has been rerun in prod.
-            "dbo_Offender_v2": dbo_offender_postprocessors,
+            "dbo_Offender": dbo_offender_postprocessors,
             "dbo_LSIHistory": [
                 gen_label_single_external_id_hook(US_PA_PBPP),
                 self._generate_pbpp_assessment_external_id,
                 self._enrich_pbpp_assessments,
             ],
-            # TODO(#7222): Rename to strip "_v2" (with an operations DB migration) once
-            #  this version has been rerun in prod.
-            "supervision_period_v2": supervision_period_postprocessors,
+            "supervision_period": supervision_period_postprocessors,
             "supervision_violation": [
                 self._append_supervision_violation_entries,
             ],
@@ -255,13 +245,13 @@ class UsPaController(CsvGcsfsDirectIngestController):
         self.file_post_processors_by_file: Dict[
             str, List[IngestFilePostprocessorCallable]
         ] = {
-            "person_external_ids_v2": [],
-            "doc_person_info_v2": [],
+            "person_external_ids": [],
+            "doc_person_info": [],
             "dbo_tblInmTestScore": [],
             "dbo_Senrec": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
-            "sci_incarceration_period_v2": [
+            "sci_incarceration_period": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
             "ccis_incarceration_period": [
@@ -270,13 +260,10 @@ class UsPaController(CsvGcsfsDirectIngestController):
             "dbo_Miscon": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
-            "dbo_Offender_v2": [],
+            "dbo_Offender": [],
             "dbo_LSIR": [],
             "dbo_LSIHistory": [],
             "supervision_period": [
-                gen_convert_person_ids_to_external_id_objects(self._get_id_type),
-            ],
-            "supervision_period_v2": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
             "supervision_violation": [
@@ -296,9 +283,8 @@ class UsPaController(CsvGcsfsDirectIngestController):
         self.primary_key_override_hook_by_file: Dict[
             str, IngestPrimaryKeyOverrideCallable
         ] = {
-            "sci_incarceration_period_v2": _generate_sci_incarceration_period_primary_key,
+            "sci_incarceration_period": _generate_sci_incarceration_period_primary_key,
             "supervision_period": _generate_supervision_period_primary_key,
-            "supervision_period_v2": _generate_supervision_period_primary_key,
             "supervision_violation": _generate_supervision_violation_primary_key,
             "supervision_violation_response": _generate_supervision_violation_response_primary_key,
             "board_action": _generate_board_action_supervision_violation_response_primary_key,
@@ -307,7 +293,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         self.ancestor_chain_overrides_callback_by_file: Dict[
             str, IngestAncestorChainOverridesCallable
         ] = {
-            "sci_incarceration_period_v2": _state_incarceration_period_ancestor_chain_overrides,
+            "sci_incarceration_period": _state_incarceration_period_ancestor_chain_overrides,
             "ccis_incarceration_period": _state_incarceration_period_ancestor_chain_overrides,
             "supervision_violation_response": _state_supervision_violation_response_ancestor_chain_overrides,
         }
@@ -703,19 +689,19 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def get_file_tag_rank_list(self) -> List[str]:
         launched_file_tags = [
             # Data source: Mixed
-            "person_external_ids_v2",
+            "person_external_ids",
             # Data source: DOC
-            "doc_person_info_v2",
+            "doc_person_info",
             "dbo_tblInmTestScore",
             "dbo_Senrec",
-            "sci_incarceration_period_v2",
+            "sci_incarceration_period",
             "dbo_Miscon",
             # Data source: CCIS
             "ccis_incarceration_period",
             # Data source: PBPP
-            "dbo_Offender_v2",
+            "dbo_Offender",
             "dbo_LSIHistory",
-            "supervision_period_v2",
+            "supervision_period",
             "supervision_violation",
             "supervision_violation_response",
             "board_action",
@@ -808,14 +794,14 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _get_id_type(file_tag: str) -> Optional[str]:
         if file_tag in [
             "dbo_Senrec",
-            "sci_incarceration_period_v2",
+            "sci_incarceration_period",
             "ccis_incarceration_period",
             "dbo_Miscon",
         ]:
             return US_PA_CONTROL
 
         if file_tag in [
-            "supervision_period_v2",
+            "supervision_period",
             "supervision_violation",
             "supervision_violation_response",
             "board_action",
@@ -1121,7 +1107,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         """Concatenates the incarceration period admission reason-related codes to be parsed in the enum mapper."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
-                if gating_context.file_tag in ("sci_incarceration_period_v2",):
+                if gating_context.file_tag in ("sci_incarceration_period",):
                     obj.admission_reason = (
                         concatenate_sci_incarceration_period_start_codes(row)
                     )
@@ -1141,7 +1127,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
                 if obj.release_date:
-                    if gating_context.file_tag in ("sci_incarceration_period_v2",):
+                    if gating_context.file_tag in ("sci_incarceration_period",):
                         obj.release_reason = (
                             concatenate_sci_incarceration_period_end_codes(row)
                         )
@@ -1160,7 +1146,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         """Concatenates the incarceration period specialized purpose-related codes to be parsed in the enum mapper."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
-                if gating_context.file_tag in ("sci_incarceration_period_v2",):
+                if gating_context.file_tag in ("sci_incarceration_period",):
                     obj.specialized_purpose_for_incarceration = (
                         concatenate_sci_incarceration_period_purpose_codes(row)
                     )
@@ -1179,7 +1165,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         """Sets incarceration type on incarceration periods based on facility."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
-                if gating_context.file_tag in ("sci_incarceration_period_v2",):
+                if gating_context.file_tag in ("sci_incarceration_period",):
                     # TODO(#3312): Figure out how to fill out the incarceration_type COUNTY_JAIL/STATE/FEDERAL based on
                     #  IC sentence status + location codes? Ask PA about this!
                     obj.incarceration_type = "SCI"

@@ -18,7 +18,7 @@
 (SCIs), extracted from multiple PADOC files.
 """
 
-from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids_v2 import (
+from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids import (
     MASTER_STATE_IDS_FRAGMENT_V2,
 )
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
@@ -182,7 +182,7 @@ FROM periods
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_pa",
-    ingest_view_name="sci_incarceration_period_v2",
+    ingest_view_name="sci_incarceration_period",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols="control_number, sequence_number",
     materialize_raw_data_table_views=True,
