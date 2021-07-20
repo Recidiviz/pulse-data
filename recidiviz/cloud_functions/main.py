@@ -187,6 +187,7 @@ def handle_new_case_triage_etl(
         logging.info("Ignoring file %s", data["name"])
         return "", HTTPStatus.OK
 
+    # TODO(#8335): We should pass in the name of the file that changed.
     import_url = _APP_ENGINE_IMPORT_CASE_TRIAGE_ETL_CSV_TO_SQL_URL.format(project_id)
     import_response = make_iap_request(import_url, IAP_CLIENT_ID[project_id])
     return "", HTTPStatus(import_response.status_code)
