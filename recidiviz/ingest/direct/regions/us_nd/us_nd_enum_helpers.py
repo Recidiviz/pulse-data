@@ -19,9 +19,9 @@ from typing import Dict, List
 
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import (
-    EnumOverrides,
-    EnumMapper,
     EnumIgnorePredicate,
+    EnumMapper,
+    EnumOverrides,
 )
 from recidiviz.common.constants.person_characteristics import Gender, Race
 from recidiviz.common.constants.standard_enum_overrides import (
@@ -47,10 +47,10 @@ from recidiviz.common.constants.state.state_program_assignment import (
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_contact import (
-    StateSupervisionContactType,
-    StateSupervisionContactReason,
     StateSupervisionContactLocation,
+    StateSupervisionContactReason,
     StateSupervisionContactStatus,
+    StateSupervisionContactType,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
@@ -154,7 +154,6 @@ def generate_enum_overrides() -> EnumOverrides:
             "PV",
             "RPAR",
             "RPRB",
-            "SUPL",
         ],
         StateIncarcerationPeriodReleaseReason.COURT_ORDER: ["CO"],
         StateIncarcerationPeriodReleaseReason.DEATH: ["DECE"],

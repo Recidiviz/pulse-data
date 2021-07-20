@@ -21,8 +21,8 @@ from typing import Callable, Dict, Optional, Set, Type, Union
 
 import attr
 
-from recidiviz.common.str_field_utils import normalize
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
+from recidiviz.common.str_field_utils import normalize
 
 EnumMapper = Callable[[str], Optional[EntityEnum]]
 EnumIgnorePredicate = Callable[[str], bool]
@@ -133,6 +133,7 @@ class EnumOverrides:
             label: str,
             mapped_enum: EntityEnum,
             from_field: Optional[EntityEnumType] = None,
+            force_overwrite: bool = False,
         ) -> "EnumOverrides.Builder":
             """Adds a mapping from |label| to |mapped_enum|. As |label| must be a string, the provided field value must
             match the string exactly to constitute a match.
@@ -140,10 +141,29 @@ class EnumOverrides:
             Optionally, the |from_field| parameter allows values to be mapped across fields. For example:
             `add('PENDING', BondStatus.PENDING, BondType)` remaps the bond_type field to a bond_status when the
             bond_type is set to 'PENDING'. Mappings *between* entity types are not allowed.
+
+            If the |force_overwrite| parameter is set, then it is permitted to change the entity enum an
+            existing label maps to. Without it, attempting to re-set a label to a different value will raise
+            an exception.
             """
             if from_field is None:
                 from_field = mapped_enum.__class__
             label = normalize(label, remove_punctuation=True)
+            if (
+                not force_overwrite
+                and (
+                    old_mapping := self._str_mappings_dict[from_field].get(
+                        label, mapped_enum
+                    )
+                )
+                != mapped_enum
+            ):
+                # A mapping already exists for this label and it differs from the
+                # mapped value that was passed in.
+                raise ValueError(
+                    "Cannot override a mapping that has already been set. "
+                    f"{label=} was mapped to {old_mapping=} but call was made to map to {mapped_enum=}"
+                )
             self._str_mappings_dict[from_field][label] = mapped_enum
             return self
 

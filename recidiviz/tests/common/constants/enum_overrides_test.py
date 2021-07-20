@@ -21,7 +21,7 @@ import unittest
 from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.county.charge import ChargeClass, ChargeDegree
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.person_characteristics import Race, Ethnicity
+from recidiviz.common.constants.person_characteristics import Ethnicity, Race
 
 
 class EnumOverridesTest(unittest.TestCase):
@@ -78,3 +78,14 @@ class EnumOverridesTest(unittest.TestCase):
         overrides = overrides_builder.build()
 
         self.assertTrue(overrides.should_ignore("NONE", ChargeClass))
+
+    def test_double_add_fails(self) -> None:
+        overrides_builder = EnumOverrides.Builder()
+        overrides_builder.add("A", ChargeDegree.FIRST)
+        with self.assertRaises(ValueError):
+            overrides_builder.add("A", ChargeDegree.SECOND)
+
+    def test_overwrite_double_add_succeeds(self) -> None:
+        overrides_builder = EnumOverrides.Builder()
+        overrides_builder.add("A", ChargeDegree.FIRST)
+        overrides_builder.add("A", ChargeDegree.SECOND, force_overwrite=True)
