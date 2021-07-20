@@ -42,8 +42,6 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseType,
 )
-from recidiviz.common.str_field_utils import normalize
-from recidiviz.ingest.direct.regions.us_pa import us_pa_enum_helpers
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionViolationResponse,
@@ -94,21 +92,13 @@ class UsPaIncarcerationPreProcessingDelegate(
             violation_responses,
         )
 
-    # TODO(#7222): Use default behavior once we've done an ingest re-run for US_PA
     def pre_processing_incarceration_period_admission_reason_mapper(
         self,
         incarceration_period: StateIncarcerationPeriod,
     ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
-        """We have updated our StateIncarcerationPeriodAdmissionReason
-        enum-mappings for US_PA, and the changes require a re-run (are beyond the scope
-        of a database migration). Until that re-run happens, we will be re-ingesting
-        raw admission_reason_raw_text values and using the following logic to provide
-        updated admission reason values."""
-        if not incarceration_period.admission_reason_raw_text:
-            return incarceration_period.admission_reason
-        return us_pa_enum_helpers.incarceration_period_admission_reason_mapper(
-            normalize(
-                incarceration_period.admission_reason_raw_text, remove_punctuation=True
+        return (
+            self._default_pre_processing_incarceration_period_admission_reason_mapper(
+                incarceration_period
             )
         )
 
