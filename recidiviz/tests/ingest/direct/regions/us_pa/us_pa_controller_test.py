@@ -22,58 +22,57 @@ from typing import Type
 
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import (
+    Ethnicity,
     Gender,
     Race,
-    Ethnicity,
     ResidencyStatus,
 )
 from recidiviz.common.constants.state.external_id_types import (
     US_PA_CONTROL,
+    US_PA_INMATE,
     US_PA_PBPP,
-    US_PA_INMATE,
-    US_PA_INMATE,
 )
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
-    StateAssessmentType,
     StateAssessmentLevel,
+    StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import (
-    StateIncarcerationIncidentType,
     StateIncarcerationIncidentOutcomeType,
+    StateIncarcerationIncidentType,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
+    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_contact import (
-    StateSupervisionContactType,
     StateSupervisionContactLocation,
     StateSupervisionContactStatus,
+    StateSupervisionContactType,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+    StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
-    StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodTerminationReason,
-    StateSupervisionLevel,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseType,
+    StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseRevocationType,
-    StateSupervisionViolationResponseDecidingBodyType,
+    StateSupervisionViolationResponseType,
 )
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
@@ -81,27 +80,27 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
 from recidiviz.ingest.direct.regions.us_pa.us_pa_controller import UsPaController
 from recidiviz.ingest.models.ingest_info import (
     IngestInfo,
-    StatePerson,
-    StatePersonExternalId,
-    StatePersonRace,
-    StateAlias,
-    StatePersonEthnicity,
-    StateAssessment,
-    StateSentenceGroup,
-    StateIncarcerationSentence,
-    StateCharge,
     StateAgent,
-    StateIncarcerationPeriod,
+    StateAlias,
+    StateAssessment,
+    StateCharge,
     StateIncarcerationIncident,
     StateIncarcerationIncidentOutcome,
+    StateIncarcerationPeriod,
+    StateIncarcerationSentence,
+    StatePerson,
+    StatePersonEthnicity,
+    StatePersonExternalId,
+    StatePersonRace,
+    StateSentenceGroup,
     StateSupervisionContact,
-    StateSupervisionSentence,
     StateSupervisionPeriod,
-    StateSupervisionViolation,
-    StateSupervisionViolationTypeEntry,
+    StateSupervisionSentence,
     StateSupervisionViolatedConditionEntry,
+    StateSupervisionViolation,
     StateSupervisionViolationResponse,
     StateSupervisionViolationResponseDecisionEntry,
+    StateSupervisionViolationTypeEntry,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state import entities
@@ -254,7 +253,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "person_external_ids_v2")
+        self.run_parse_file_test(expected, "person_external_ids")
 
     def test_populate_data_doc_person_info(self) -> None:
         expected = IngestInfo(
@@ -361,7 +360,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "doc_person_info_v2")
+        self.run_parse_file_test(expected, "doc_person_info")
 
     def test_populate_data_dbo_tblInmTestScore(self) -> None:
         expected = IngestInfo(
@@ -1145,7 +1144,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "sci_incarceration_period_v2")
+        self.run_parse_file_test(expected, "sci_incarceration_period")
 
     def test_populate_data_dbo_Miscon(self) -> None:
         expected = IngestInfo(
@@ -1375,7 +1374,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "dbo_Offender_v2")
+        self.run_parse_file_test(expected, "dbo_Offender")
 
     def test_populate_data_dbo_LSIHistory(self) -> None:
         expected = IngestInfo(
@@ -1698,7 +1697,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "supervision_period_v2")
+        self.run_parse_file_test(expected, "supervision_period")
 
     def test_populate_data_supervision_violation(self) -> None:
         violation_456B_1_1 = StateSupervisionViolation(
@@ -2513,7 +2512,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename("person_external_ids_v2.csv")
+        self._run_ingest_job_for_filename("person_external_ids.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -2657,7 +2656,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename("doc_person_info_v2.csv")
+        self._run_ingest_job_for_filename("doc_person_info.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -3592,7 +3591,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename("sci_incarceration_period_v2.csv")
+        self._run_ingest_job_for_filename("sci_incarceration_period.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -3973,7 +3972,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename("dbo_Offender_v2.csv")
+        self._run_ingest_job_for_filename("dbo_Offender.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -4338,7 +4337,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename("supervision_period_v2.csv")
+        self._run_ingest_job_for_filename("supervision_period.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)

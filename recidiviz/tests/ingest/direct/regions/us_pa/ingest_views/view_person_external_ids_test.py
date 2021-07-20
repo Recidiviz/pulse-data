@@ -50,7 +50,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             get_region(STATE_CODE, is_direct_ingest=True), []
         ).collect_view_builders()
         self.view_builder = one(
-            view for view in view_builders if view.file_tag == "person_external_ids_v2"
+            view for view in view_builders if view.file_tag == "person_external_ids"
         )
 
         self.expected_result_columns = [
@@ -67,7 +67,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
         recidiviz_reference_linking_ids: List[RecidivizReferenceLinkingIds],
         expected_output: List[List[Any]],
     ) -> None:
-        """Runs a test that executes the person_external_ids_v2 query given the provided
+        """Runs a test that executes the person_external_ids query given the provided
         input rows.
         """
         run_time = datetime.datetime.now()
@@ -99,7 +99,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
         print(results)
         assert_frame_equal(expected, results)
 
-    def test_view_person_external_ids_v2_parses(self) -> None:
+    def test_view_person_external_ids_parses(self) -> None:
         self.run_test(
             dbo_parole_count_ids=[],
             dbo_tbl_search_inmate_info_ids=[],
@@ -107,7 +107,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             expected_output=[],
         )
 
-    def test_view_person_external_ids_v2_simple(self) -> None:
+    def test_view_person_external_ids_simple(self) -> None:
         self.run_test(
             dbo_parole_count_ids=[
                 ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="AB1234")
@@ -129,7 +129,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             ],
         )
 
-    def test_view_person_external_ids_v2_multiple_inmate(self) -> None:
+    def test_view_person_external_ids_multiple_inmate(self) -> None:
         self.run_test(
             dbo_parole_count_ids=[
                 ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="AB1234")
@@ -153,7 +153,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             ],
         )
 
-    def test_view_person_external_ids_v2_missing_parole(self) -> None:
+    def test_view_person_external_ids_missing_parole(self) -> None:
         self.run_test(
             dbo_parole_count_ids=[],
             dbo_tbl_search_inmate_info_ids=[
@@ -172,7 +172,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             ],
         )
 
-    def test_view_person_external_ids_v2_missing_control(self) -> None:
+    def test_view_person_external_ids_missing_control(self) -> None:
         self.run_test(
             dbo_parole_count_ids=[
                 ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="AB1234"),
@@ -189,7 +189,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             ],
         )
 
-    def test_view_person_external_ids_v2_null_inmate_numbers(self) -> None:
+    def test_view_person_external_ids_null_inmate_numbers(self) -> None:
         self.run_test(
             dbo_parole_count_ids=[
                 ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber=None)
@@ -214,7 +214,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             ],
         )
 
-    def test_view_person_external_ids_v2_clean_bad_inmate_numbers(self) -> None:
+    def test_view_person_external_ids_clean_bad_inmate_numbers(self) -> None:
         self.run_test(
             dbo_parole_count_ids=[
                 ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber=None),
@@ -249,7 +249,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             ],
         )
 
-    def test_view_person_external_ids_v2_complex(self) -> None:
+    def test_view_person_external_ids_complex(self) -> None:
         self.run_test(
             dbo_parole_count_ids=[
                 ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="AB1234"),
@@ -277,7 +277,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             ],
         )
 
-    def test_view_person_external_ids_v2_complex2(self) -> None:
+    def test_view_person_external_ids_complex2(self) -> None:
         self.run_test(
             dbo_parole_count_ids=[
                 ParoleCountIds(ParoleNumber="1111P", ParoleInstNumber="II1111"),
@@ -310,7 +310,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             ],
         )
 
-    def test_view_person_external_ids_v2_join_on_parole(self) -> None:
+    def test_view_person_external_ids_join_on_parole(self) -> None:
         self.run_test(
             dbo_parole_count_ids=[
                 ParoleCountIds(ParoleNumber="0420X", ParoleInstNumber="AB1234"),
@@ -332,7 +332,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             ],
         )
 
-    def test_view_person_external_ids_v2_join_on_parole_2(self) -> None:
+    def test_view_person_external_ids_join_on_parole_2(self) -> None:
         self.run_test(
             dbo_parole_count_ids=[
                 ParoleCountIds(ParoleNumber="1234R", ParoleInstNumber=None),
@@ -359,7 +359,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             ],
         )
 
-    def test_view_person_external_ids_v2_join_on_parole_mismatch_casing(self) -> None:
+    def test_view_person_external_ids_join_on_parole_mismatch_casing(self) -> None:
         self.run_test(
             dbo_parole_count_ids=[
                 ParoleCountIds(ParoleNumber="0420x", ParoleInstNumber="AB1234"),
@@ -381,7 +381,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             ],
         )
 
-    def test_view_person_external_ids_v2_multiple_control_linked_via_parole(
+    def test_view_person_external_ids_multiple_control_linked_via_parole(
         self,
     ) -> None:
         self.run_test(
@@ -405,7 +405,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             ],
         )
 
-    def test_view_person_external_ids_v2_link_via_pseudo_id(self) -> None:
+    def test_view_person_external_ids_link_via_pseudo_id(self) -> None:
         self.run_test(
             dbo_parole_count_ids=[],
             dbo_tbl_search_inmate_info_ids=[
@@ -432,7 +432,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
             ],
         )
 
-    def test_view_person_external_ids_v2_link_via_pseudo_id_one_parole_link(
+    def test_view_person_external_ids_link_via_pseudo_id_one_parole_link(
         self,
     ) -> None:
         self.run_test(

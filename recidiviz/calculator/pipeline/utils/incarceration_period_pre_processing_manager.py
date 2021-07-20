@@ -192,7 +192,6 @@ class StateSpecificIncarcerationPreProcessingDelegate:
         )
 
     # TODO(#7965): Remove this once we've done a re-run for US_MO
-    # TODO(#7222): Remove this once we've done a re-run for US_PA
     @abc.abstractmethod
     def pre_processing_incarceration_period_admission_reason_mapper(
         self,
@@ -351,7 +350,6 @@ class IncarcerationPreProcessingManager:
                 )
 
                 # TODO(#7965): Remove this once we've done a re-run for US_MO
-                # TODO(#7222): Remove this once we've done a re-run for US_PA
                 mid_processing_periods = (
                     self._apply_ingest_mappings_to_admission_reasons(
                         mid_processing_periods

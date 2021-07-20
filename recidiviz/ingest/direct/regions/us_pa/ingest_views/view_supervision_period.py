@@ -417,7 +417,7 @@ WHERE open_count != 0
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_pa",
-    ingest_view_name="supervision_period_v2",
+    ingest_view_name="supervision_period",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols="parole_number ASC, period_sequence_number ASC",
 )

@@ -54,7 +54,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
         self.view_builder = one(
             view
             for view in view_builders
-            if view.file_tag == "sci_incarceration_period_v2"
+            if view.file_tag == "sci_incarceration_period"
         )
 
         self.expected_result_columns = [
@@ -83,7 +83,7 @@ class ViewPersonExternalIdsTest(BaseViewTest):
         senrecs: List[Senrec],
         expected_output: List[List[Any]],
     ) -> None:
-        """Runs a test that executes the person_external_ids_v2 query given the provided
+        """Runs a test that executes the person_external_ids query given the provided
         input rows.
         """
         run_time = datetime.datetime.now()
