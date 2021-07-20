@@ -33,41 +33,22 @@ def us_pa_get_supervising_officer_and_location_info_from_supervision_period(
     if not supervision_period.supervision_period_id:
         raise ValueError("Unexpected null supervision_period_id")
 
-    # TODO(#6314): Remove this hack once we've re-run US_PA ingest with the fix.
-    #  Replace the contents of this function with:
-    #  supervision_site = supervision_period.supervision_site
-    #  if supervision_site and supervision_site.count("|") == 2:
-    #     # In PA, supervision_site follows format
-    #     # "{supervision district}|{supervision suboffice}|{supervision unit org code}"
-    #     (
-    #         level_2_supervision_location,
-    #         level_1_supervision_location,
-    #         _org_code,
-    #     ) = supervision_site.split("|")
-    period_info = supervision_period_to_agent_associations.get(
+    if supervision_period.supervision_site:
+        # In PA, supervision_site follows format
+        # "{supervision district}|{supervision suboffice}|{supervision unit org code}"
+        (
+            level_2_supervision_location,
+            level_1_supervision_location,
+            _org_code,
+        ) = supervision_period.supervision_site.split("|")
+
+    agent_info = supervision_period_to_agent_associations.get(
         supervision_period.supervision_period_id
     )
-    if period_info:
-        supervision_info = period_info["agent_external_id"]
 
-        if supervision_info and supervision_info.count("#") == 1:
-            (
-                supervision_site,
-                supervising_officer_external_id,
-            ) = supervision_info.split("#")
+    if agent_info is not None:
+        supervising_officer_external_id = agent_info["agent_external_id"]
 
-            # If the supervising_officer_external_id is only whitespace, set to None
-            if not supervising_officer_external_id.strip():
-                supervising_officer_external_id = None
-
-            if supervision_site and supervision_site.count("|") == 2:
-                # In PA, supervision_site follows format
-                # "{supervision district}|{supervision suboffice}|{supervision unit org code}"
-                (
-                    level_2_supervision_location,
-                    level_1_supervision_location,
-                    _org_code,
-                ) = supervision_site.split("|")
     return (
         supervising_officer_external_id,
         level_1_supervision_location or None,

@@ -84,12 +84,6 @@ from recidiviz.calculator.query.state.views.reference.supervision_termination_ma
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
     US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
 )
-from recidiviz.ingest.direct.regions.us_pa.ingest_views import (
-    view_supervision_period_v2 as us_pa_view_supervision_period,
-)
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
-)
 
 REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
@@ -114,13 +108,4 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER,
     SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER,
     SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER,
-    # TODO(#6314): Remove this view builder
-    # Note: This view is loaded into the us_pa_ingest_views dataset, NOT the reference_views
-    # dataset
-    DirectIngestPreProcessedIngestViewBuilder(
-        region="us_pa",
-        ingest_view_name="us_pa_supervision_period_TEMP",
-        view_query_template=us_pa_view_supervision_period.VIEW_BUILDER.view_query_template,
-        order_by_cols=us_pa_view_supervision_period.VIEW_BUILDER.order_by_cols,
-    ),
 ]

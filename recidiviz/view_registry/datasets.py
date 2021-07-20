@@ -24,11 +24,11 @@ from recidiviz.calculator.query.experiments.dataset_config import (
 )
 from recidiviz.calculator.query.operations.dataset_config import OPERATIONS_BASE_DATASET
 from recidiviz.calculator.query.state.dataset_config import (
+    COVID_DASHBOARD_REFERENCE_DATASET,
+    DATAFLOW_METRICS_DATASET,
+    POPULATION_PROJECTION_OUTPUT_DATASET,
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
-    DATAFLOW_METRICS_DATASET,
-    COVID_DASHBOARD_REFERENCE_DATASET,
-    POPULATION_PROJECTION_OUTPUT_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
