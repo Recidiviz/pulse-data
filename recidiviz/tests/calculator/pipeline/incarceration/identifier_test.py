@@ -2016,21 +2016,11 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         assessments = [assessment]
         violation_responses = [parole_board_permanent_decision]
 
-        # TODO(#6314): Don't send in this temporary reference, revert references to
-        #  DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST
-        temporary_sp_agent_associations_list = [
-            {
-                "agent_id": 123,
-                "agent_external_id": "DISTRICT_1|OFFICE_2|ORG_CODE#XXX",
-                "supervision_period_id": _DEFAULT_SP_ID,
-            }
-        ]
-
         incarceration_events = self._run_find_incarceration_events(
             sentence_groups=sentence_groups,
             assessments=assessments,
             violation_responses=violation_responses,
-            supervision_period_to_agent_association=temporary_sp_agent_associations_list,
+            supervision_period_to_agent_association=_DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         )
 
         expected_board_hold_stay_events = expected_incarceration_stay_events(

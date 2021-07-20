@@ -2523,16 +2523,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         supervision_contacts: List[StateSupervisionContact] = []
         incarceration_sentences: List[StateIncarcerationSentence] = []
 
-        # TODO(#6314): Don't send in this temporary reference, revert references to
-        #  DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST
-        temporary_sp_agent_associations_list = [
-            {
-                "agent_id": 123,
-                "agent_external_id": "DISTRICT_1|OFFICE_2|1345#XXX",
-                "supervision_period_id": _DEFAULT_SUPERVISION_PERIOD_ID,
-            }
-        ]
-
         supervision_events = self.identifier._find_supervision_events(
             self.person,
             supervision_sentences,
@@ -2542,7 +2532,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            temporary_sp_agent_associations_list,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 

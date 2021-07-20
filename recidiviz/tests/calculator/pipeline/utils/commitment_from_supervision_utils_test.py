@@ -78,9 +78,8 @@ from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_commitmen
 )
 
 _DEFAULT_SUPERVISION_PERIOD_ID = 999
-_DEFAULT_SSVR_ID = 999
 
-DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS = {
+DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS: Optional[Dict[int, Dict[Any, Any]]] = {
     999: {"agent_id": 000, "agent_external_id": "XXX", "supervision_period_id": 999}
 }
 
@@ -297,15 +296,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
         )
 
-        # TODO(#6314): Don't send in this temporary reference
-        temporary_sp_agent_associations = {
-            _DEFAULT_SUPERVISION_PERIOD_ID: {
-                "agent_id": 123,
-                "agent_external_id": "DISTRICT_1|OFFICE_2|ORG_CODE#123: JACK STONE",
-                "supervision_period_id": _DEFAULT_SUPERVISION_PERIOD_ID,
-            }
-        }
-
         ip_index = PreProcessedIncarcerationPeriodIndex(
             incarceration_periods=[incarceration_period],
             ip_id_to_pfi_subtype={
@@ -317,8 +307,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
             incarceration_period,
             supervision_periods=[supervision_period],
             incarceration_period_index=ip_index,
-            # TODO(#6314): Don't send in this temporary reference
-            supervision_period_to_agent_associations=temporary_sp_agent_associations,
         )
 
         self.assertEqual(
@@ -328,13 +316,11 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 purpose_for_incarceration_subtype="PVC",
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
-                supervising_officer_external_id="123: JACK STONE",
-                # TODO(#6314): Remove other value for supervising_officer_external_id and use:
-                # supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
-                #     supervision_period.supervision_period_id
-                # ).get(
-                #     "agent_external_id"
-                # ),
+                supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
+                    supervision_period.supervision_period_id
+                ).get(
+                    "agent_external_id"
+                ),
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
