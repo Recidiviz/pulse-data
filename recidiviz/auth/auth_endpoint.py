@@ -30,9 +30,14 @@ from recidiviz.auth.auth0_client import Auth0AppMetadata, Auth0Client
 from recidiviz.calculator.query.state.views.reference.dashboard_user_restrictions import (
     DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
 )
+from recidiviz.case_triage.ops_routes import CASE_TRIAGE_DB_OPERATIONS_QUEUE
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.google_cloud.cloud_task_queue_manager import (
+    CloudTaskQueueInfo,
+    CloudTaskQueueManager,
+)
 from recidiviz.metrics.export.export_config import (
     DASHBOARD_USER_RESTRICTIONS_OUTPUT_DIRECTORY_URI,
 )
@@ -50,15 +55,40 @@ from recidiviz.utils.params import get_only_str_param_value
 auth_endpoint_blueprint = Blueprint("auth_endpoint_blueprint", __name__)
 
 
-@auth_endpoint_blueprint.route("/import_user_restrictions_csv_to_sql", methods=["GET"])
+@auth_endpoint_blueprint.route(
+    "/handle_import_user_restrictions_csv_to_sql", methods=["GET"]
+)
+@requires_gae_auth
+def handle_import_user_restrictions_csv_to_sql() -> Tuple[str, HTTPStatus]:
+    region_code = get_only_str_param_value(
+        "region_code", request.args, preserve_case=True
+    )
+    if not region_code:
+        return "Missing region_code param", HTTPStatus.BAD_REQUEST
+
+    cloud_task_manager = CloudTaskQueueManager(
+        queue_info_cls=CloudTaskQueueInfo, queue_name=CASE_TRIAGE_DB_OPERATIONS_QUEUE
+    )
+    cloud_task_manager.create_task(
+        relative_uri="/auth/import_user_restrictions_csv_to_sql",
+        body={"region_code": region_code},
+    )
+    logging.info(
+        "Enqueued import_user_restrictions_csv_to_sql task to %s",
+        CASE_TRIAGE_DB_OPERATIONS_QUEUE,
+    )
+    return "", HTTPStatus.OK
+
+
+@auth_endpoint_blueprint.route(
+    "/import_user_restrictions_csv_to_sql", methods=["GET", "POST"]
+)
 @requires_gae_auth
 def import_user_restrictions_csv_to_sql() -> Tuple[str, HTTPStatus]:
     """This endpoint triggers the import of the user restrictions CSV file to Cloud SQL. It is requested by a Cloud
     Function that is triggered when a new file is created in the user restrictions bucket."""
     try:
-        region_code = get_only_str_param_value(
-            "region_code", request.args, preserve_case=True
-        )
+        region_code = request.json.get("region_code")
         if not region_code:
             return "Missing region_code param", HTTPStatus.BAD_REQUEST
 

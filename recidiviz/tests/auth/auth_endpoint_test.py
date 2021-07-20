@@ -107,10 +107,10 @@ class AuthEndpointTests(TestCase):
         self, mock_import_csv: MagicMock
     ) -> None:
         with self.app.test_request_context():
-            response = self.client.get(
+            response = self.client.post(
                 self.import_user_restrictions_csv_to_sql_url,
                 headers=self.headers,
-                query_string={
+                json={
                     "region_code": self.region_code,
                 },
             )
@@ -130,10 +130,10 @@ class AuthEndpointTests(TestCase):
 
     def test_import_user_restrictions_csv_to_sql_missing_region_code(self) -> None:
         with self.app.test_request_context():
-            response = self.client.get(
+            response = self.client.post(
                 self.import_user_restrictions_csv_to_sql_url,
                 headers=self.headers,
-                query_string={},
+                json={},
             )
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
             self.assertEqual(
@@ -143,10 +143,10 @@ class AuthEndpointTests(TestCase):
 
     def test_import_user_restrictions_csv_to_sql_invalid_region_code(self) -> None:
         with self.app.test_request_context():
-            response = self.client.get(
+            response = self.client.post(
                 self.import_user_restrictions_csv_to_sql_url,
                 headers=self.headers,
-                query_string={
+                json={
                     "region_code": "MO",
                 },
             )
@@ -162,10 +162,10 @@ class AuthEndpointTests(TestCase):
     ) -> None:
         mock_import_csv.side_effect = Exception("Error while importing CSV")
         with self.app.test_request_context():
-            response = self.client.get(
+            response = self.client.post(
                 self.import_user_restrictions_csv_to_sql_url,
                 headers=self.headers,
-                query_string={
+                json={
                     "region_code": "US_MO",
                 },
             )
