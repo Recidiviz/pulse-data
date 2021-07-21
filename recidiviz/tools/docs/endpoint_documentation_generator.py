@@ -25,7 +25,7 @@ import re
 import sys
 from collections import defaultdict
 from functools import lru_cache
-from typing import List, Dict
+from typing import Dict, List, Optional
 
 from flask import Flask
 from werkzeug.routing import Rule
@@ -225,6 +225,10 @@ def _create_ingest_catalog_summary_for_endpoints(
 
 
 def main() -> int:
+    # Forcing a local environment for script execution so that in_development() returns True
+    previous_dev_environment: Optional[str] = os.environ.get("IS_DEV", None)
+    os.environ["IS_DEV"] = "true"
+
     with local_project_id_override(GCP_PROJECT_STAGING):
         docs_generator = EndpointDocumentationGenerator()
         added = generate_documentation_for_new_endpoints(docs_generator)
@@ -233,6 +237,13 @@ def main() -> int:
                 _create_ingest_catalog_summary_for_endpoints(docs_generator),
                 "## Endpoint Catalog",
             )
+
+        # Return to previous environment - if IS_DEV is not set prior, pops it
+        if previous_dev_environment:
+            os.environ["IS_DEV"] = previous_dev_environment
+        else:
+            os.environ.pop("IS_DEV")
+
         return 1 if added else 0
 
 
