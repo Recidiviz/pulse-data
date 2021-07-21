@@ -21,7 +21,15 @@ module "justice-counts-data-bucket" {
   name_suffix = "justice-counts-data"
 }
 
-# TODO(#6213): We should also import the primary direct-ingest storage bucket.
+module "direct-ingest-state-storage" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id    = var.project_id
+  location      = var.direct_ingest_region
+  storage_class = "REGIONAL"
+  name_suffix   = "direct-ingest-state-storage"
+}
+
 module "direct-ingest-state-storage-secondary" {
   source = "./modules/cloud-storage-bucket"
 
