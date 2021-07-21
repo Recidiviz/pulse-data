@@ -140,18 +140,19 @@ const GenerateEmails = (): JSX.Element => {
           </Form.Item>
         </Form>
         {showSpinner ? <Spin /> : null}
+        {batchId ? (
+          <p>
+            Bucket link to {projectId}-report-html for {formData?.state}, batch
+            <a
+              style={{ margin: 10 }}
+              href={`https://console.cloud.google.com/storage/browser/${projectId}-report-html/${formData?.state}/${batchId}`}
+            >
+              {batchId}
+            </a>
+          </p>
+        ) : null}
       </Card>
-      {batchId ? (
-        <p>
-          Bucket link to {projectId}-report-html for {formData?.state}, batch
-          <a
-            style={{ margin: 10 }}
-            href={`https://console.cloud.google.com/storage/browser/${projectId}-report-html/${formData?.state}/${batchId}`}
-          >
-            {batchId}
-          </a>
-        </p>
-      ) : null}
+
       {formData?.state ? (
         <ActionRegionConfirmationForm
           visible={isConfirmationModalVisible}
