@@ -507,6 +507,17 @@ def scheduler() -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
+@direct_ingest_control.route("/heartbeat", methods=["GET", "POST"])
+@requires_gae_auth
+def heartbeat() -> Tuple[str, HTTPStatus]:
+    """Endpoint that can regularly be called to restart ingest if it has been stopped
+    (e.g. earlier tasks failed due to locking conflicts). This is safe to call, even if
+    another process is running that should block ingest.
+    """
+    kick_all_schedulers()
+    return "", HTTPStatus.OK
+
+
 def kick_all_schedulers() -> None:
     """Kicks all ingest schedulers to restart ingest"""
     supported_regions = get_supported_direct_ingest_region_codes()
