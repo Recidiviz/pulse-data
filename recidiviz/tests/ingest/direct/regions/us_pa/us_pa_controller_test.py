@@ -1505,8 +1505,9 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                                 "END",
                                             ],
                                             supervising_officer=StateAgent(
-                                                state_agent_id="555678",
-                                                full_name="Kramer, Cosmo",
+                                                state_agent_id="876555",
+                                                given_names="Cosmo",
+                                                surname="Kramer",
                                                 agent_type="SUPERVISION_OFFICER",
                                             ),
                                         ),
@@ -1550,8 +1551,9 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                                 "AANA",
                                             ],
                                             supervising_officer=StateAgent(
-                                                state_agent_id="444123",
-                                                full_name="Benes, Elaine",
+                                                state_agent_id="321444",
+                                                given_names="Elaine",
+                                                surname="Benes",
                                                 agent_type="SUPERVISION_OFFICER",
                                             ),
                                         ),
@@ -1606,7 +1608,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                             ],
                                             supervising_officer=StateAgent(
                                                 state_agent_id="888888",
-                                                full_name="Bania, K",
+                                                given_names="K",
+                                                surname="Bania",
                                                 agent_type="SUPERVISION_OFFICER",
                                             ),
                                         ),
@@ -1623,7 +1626,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                             custodial_authority="05",
                                             supervising_officer=StateAgent(
                                                 state_agent_id="555",
-                                                full_name="Seinfeld, Jerry",
+                                                given_names="Jerry",
+                                                surname="Seinfeld",
                                                 agent_type="SUPERVISION_OFFICER",
                                             ),
                                         ),
@@ -1638,6 +1642,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                             supervision_level="ADM",
                                             custodial_authority="04",
                                             supervising_officer=StateAgent(
+                                                state_agent_id="247",
                                                 full_name="Newman",
                                                 agent_type="SUPERVISION_OFFICER",
                                             ),
@@ -1683,8 +1688,9 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                                 "REFC",
                                             ],
                                             supervising_officer=StateAgent(
-                                                state_agent_id="101010",
-                                                full_name="Talker, Close",
+                                                state_agent_id="10101",
+                                                given_names="Close",
+                                                surname="Talker",
                                                 agent_type="SUPERVISION_OFFICER",
                                             ),
                                         ),
@@ -1697,7 +1703,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "supervision_period")
+        self.run_parse_file_test(expected, "supervision_period_v3")
 
     def test_populate_data_supervision_violation(self) -> None:
         violation_456B_1_1 = StateSupervisionViolation(
@@ -2287,9 +2293,10 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                                     location="None-Home",
                                                     status="Yes",
                                                     contacted_agent=StateAgent(
-                                                        state_agent_id="444123",
+                                                        state_agent_id="321444",
                                                         agent_type="SUPERVISION_OFFICER",
-                                                        full_name="BENES, ELAINE",
+                                                        given_names="ELAINE",
+                                                        surname="BENES",
                                                     ),
                                                 ),
                                                 StateSupervisionContact(
@@ -2299,9 +2306,10 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                                     location="Employer-Email",
                                                     status="No",
                                                     contacted_agent=StateAgent(
-                                                        state_agent_id="444123",
+                                                        state_agent_id="321444",
                                                         agent_type="SUPERVISION_OFFICER",
-                                                        full_name="BENES, ELAINE",
+                                                        given_names="ELAINE",
+                                                        surname="BENES",
                                                     ),
                                                 ),
                                                 StateSupervisionContact(
@@ -2311,9 +2319,10 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                                     location="None-Home",
                                                     status="No",
                                                     contacted_agent=StateAgent(
-                                                        state_agent_id="444123",
+                                                        state_agent_id="321444",
                                                         agent_type="SUPERVISION_OFFICER",
-                                                        full_name="BENES, ELAINE",
+                                                        given_names="ELAINE",
+                                                        surname="BENES",
                                                     ),
                                                 ),
                                                 StateSupervisionContact(
@@ -2323,9 +2332,10 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                                     location="CourtProbationStaf-Field",
                                                     status="Yes",
                                                     contacted_agent=StateAgent(
-                                                        state_agent_id="444123",
+                                                        state_agent_id="321444",
                                                         agent_type="SUPERVISION_OFFICER",
-                                                        full_name="BENES, ELAINE",
+                                                        given_names="ELAINE",
+                                                        surname="BENES",
                                                     ),
                                                 ),
                                             ]
@@ -4132,9 +4142,9 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             supervision_level_raw_text="MAX",
             conditions="MEST, ACT35, GPAR, MVICT, REMC, END",
             supervising_officer=entities.StateAgent.new_with_defaults(
-                external_id="555678",
+                external_id="876555",
                 state_code=_STATE_CODE_UPPER,
-                full_name='{"full_name": "KRAMER, COSMO"}',
+                full_name='{"given_names": "COSMO", "surname": "KRAMER"}',
                 agent_type=StateAgentType.SUPERVISION_OFFICER,
                 agent_type_raw_text="SUPERVISION_OFFICER",
             ),
@@ -4183,9 +4193,9 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             supervision_level_raw_text="MED",
             conditions="PN, EST, BL, END, SUBD, AANA",
             supervising_officer=entities.StateAgent.new_with_defaults(
-                external_id="444123",
+                external_id="321444",
                 state_code=_STATE_CODE_UPPER,
-                full_name='{"full_name": "BENES, ELAINE"}',
+                full_name='{"given_names": "ELAINE", "surname": "BENES"}',
                 agent_type=StateAgentType.SUPERVISION_OFFICER,
                 agent_type_raw_text="SUPERVISION_OFFICER",
             ),
@@ -4231,7 +4241,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             supervising_officer=entities.StateAgent.new_with_defaults(
                 external_id="888888",
                 state_code=_STATE_CODE_UPPER,
-                full_name='{"full_name": "BANIA, K"}',
+                full_name='{"given_names": "K", "surname": "BANIA"}',
                 agent_type=StateAgentType.SUPERVISION_OFFICER,
                 agent_type_raw_text="SUPERVISION_OFFICER",
             ),
@@ -4258,7 +4268,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             supervising_officer=entities.StateAgent.new_with_defaults(
                 external_id="555",
                 state_code=_STATE_CODE_UPPER,
-                full_name='{"full_name": "SEINFELD, JERRY"}',
+                full_name='{"given_names": "JERRY", "surname": "SEINFELD"}',
                 agent_type=StateAgentType.SUPERVISION_OFFICER,
                 agent_type_raw_text="SUPERVISION_OFFICER",
             ),
@@ -4282,6 +4292,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             supervision_level=StateSupervisionLevel.LIMITED,
             supervision_level_raw_text="ADM",
             supervising_officer=entities.StateAgent.new_with_defaults(
+                external_id="247",
                 state_code=_STATE_CODE_UPPER,
                 full_name='{"full_name": "NEWMAN"}',
                 agent_type=StateAgentType.SUPERVISION_OFFICER,
@@ -4323,9 +4334,9 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             supervision_level_raw_text="MED",
             conditions="DOMV, AUTO, DDU, REFR, MNOAM, END, RI, RC, MEMON, MCURF, REFC",
             supervising_officer=entities.StateAgent.new_with_defaults(
-                external_id="101010",
+                external_id="10101",
                 state_code=_STATE_CODE_UPPER,
-                full_name='{"full_name": "TALKER, CLOSE"}',
+                full_name='{"given_names": "CLOSE", "surname": "TALKER"}',
                 agent_type=StateAgentType.SUPERVISION_OFFICER,
                 agent_type_raw_text="SUPERVISION_OFFICER",
             ),
@@ -4337,7 +4348,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename("supervision_period.csv")
+        self._run_ingest_job_for_filename("supervision_period_v3.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)

@@ -20,15 +20,22 @@ import time
 import unittest
 from contextlib import contextmanager
 from types import ModuleType
-from typing import Dict, Iterator, List, Optional, Type, TextIO
+from typing import Dict, Iterator, List, Optional, TextIO, Type
 
 import attr
 import gcsfs
-from mock import Mock, patch, create_autospec
+from mock import Mock, create_autospec, patch
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.cloud_storage.gcsfs_path import (
+    GcsfsBucketPath,
+    GcsfsDirectoryPath,
+    GcsfsFilePath,
+)
+from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers import (
     direct_ingest_raw_table_migration_collector,
 )
@@ -38,54 +45,49 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import (
     CsvGcsfsDirectIngestController,
 )
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestView,
-    DirectIngestPreProcessedIngestViewBuilder,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
     to_normalized_unprocessed_file_path,
 )
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
-    DirectIngestRawFileImportManager,
     DirectIngestRawFileConfig,
+    DirectIngestRawFileImportManager,
     DirectIngestRegionRawFileConfig,
     RawTableColumnInfo,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
-from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
-    BaseDirectIngestController,
-)
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    filename_parts_from_path,
-    GcsfsIngestArgs,
-    GcsfsDirectIngestFileType,
-)
-from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsFilePath,
-    GcsfsDirectoryPath,
-    GcsfsBucketPath,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import GcsfsCsvReader
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    GcsfsDirectIngestFileType,
+    GcsfsIngestArgs,
+    filename_parts_from_path,
+    gcsfs_direct_ingest_bucket_for_region,
+)
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestView,
+    DirectIngestPreProcessedIngestViewBuilder,
+)
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
-from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
-from recidiviz.tests.ingest.direct.fake_direct_ingest_big_query_client import (
-    FakeDirectIngestBigQueryClient,
-)
-from recidiviz.tests.ingest.direct.fake_async_direct_ingest_cloud_task_manager import (
-    FakeAsyncDirectIngestCloudTaskManager,
-)
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import (
     FakeGCSFileSystem,
     FakeGCSFileSystemDelegate,
 )
+from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
+from recidiviz.tests.ingest.direct import fixture_util
+from recidiviz.tests.ingest.direct.fake_async_direct_ingest_cloud_task_manager import (
+    FakeAsyncDirectIngestCloudTaskManager,
+)
+from recidiviz.tests.ingest.direct.fake_direct_ingest_big_query_client import (
+    FakeDirectIngestBigQueryClient,
+)
 from recidiviz.tests.ingest.direct.fake_synchronous_direct_ingest_cloud_task_manager import (
     FakeSynchronousDirectIngestCloudTaskManager,
 )
-from recidiviz.tests.ingest.direct import fixture_util
 from recidiviz.utils import metadata
 from recidiviz.utils.regions import Region
 
@@ -300,6 +302,7 @@ class FakeDirectIngestPreProcessedIngestViewCollector(
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging"))
 def build_gcsfs_controller_for_tests(
     controller_cls: Type[CsvGcsfsDirectIngestController],
+    ingest_instance: DirectIngestInstance,
     run_async: bool,
     can_start_ingest: bool = True,
     regions_module: ModuleType = fake_regions_module,
@@ -351,9 +354,15 @@ def build_gcsfs_controller_for_tests(
                             new=regions_module,
                         ):
                             controller = controller_cls(
-                                ingest_bucket_path=GcsfsBucketPath(
-                                    "recidiviz-xxx-direct-ingest-state-us-xx"
-                                ),
+                                ingest_bucket_path=gcsfs_direct_ingest_bucket_for_region(
+                                    region_code=controller_cls.region_code(),
+                                    system_level=SystemLevel.for_region_code(
+                                        controller_cls.region_code(),
+                                        is_direct_ingest=True,
+                                    ),
+                                    ingest_instance=ingest_instance,
+                                    project_id="recidiviz-xxx",
+                                )
                             )
                             controller.csv_reader = _TestSafeGcsCsvReader(fake_fs)
                             controller.raw_file_import_manager.csv_reader = (

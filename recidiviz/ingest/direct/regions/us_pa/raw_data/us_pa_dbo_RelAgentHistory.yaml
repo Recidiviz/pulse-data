@@ -20,7 +20,7 @@ columns:
       External ID for a particular stint of a particular person under supervision by PADOC.
   - name: AgentName
     description: |-
-      Name and ID of a supervising agent.
+      Name of a supervising agent. It's unclear what the number following the name in this field represents.
   - name: SupervisorName
     description: |-
       Name and ID of the supervisor of the supervising agent.

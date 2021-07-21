@@ -115,13 +115,18 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     @classmethod
+    def _main_ingest_instance(cls) -> DirectIngestInstance:
+        # We assume we're ingesting into the SECONDARY ingest instance, which
+        # should always have the latest ingest updates released to it.
+        return DirectIngestInstance.SECONDARY
+
+    @classmethod
     def _main_database_key(cls) -> "SQLAlchemyDatabaseKey":
         if cls.schema_type() == SchemaType.STATE:
             state_code = StateCode(cls.region_code().upper())
             return SQLAlchemyDatabaseKey.for_state_code(
                 state_code,
-                # We assume we're ingesting into the PRIMARY ingest instance
-                DirectIngestInstance.PRIMARY.database_version(
+                cls._main_ingest_instance().database_version(
                     SystemLevel.STATE, state_code=state_code
                 ),
             )
@@ -145,6 +150,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
 
         self.controller = build_gcsfs_controller_for_tests(
             self.controller_cls(),
+            ingest_instance=self._main_ingest_instance(),
             run_async=False,
             regions_module=regions,
         )
@@ -168,7 +174,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
 
         for instance in DirectIngestInstance:
             DirectIngestInstanceStatusManager.add_instance(
-                self.region_code(), instance, (instance != DirectIngestInstance.PRIMARY)
+                self.region_code(), instance, (instance != self._main_ingest_instance())
             )
 
     def tearDown(self) -> None:

@@ -14,9 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
 """Direct ingest controller implementation for US_PA."""
-
 import json
 import re
 from typing import Dict, List, Optional
@@ -85,6 +83,9 @@ from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller impo
     IngestPrimaryKeyOverrideCallable,
     IngestRowPosthookCallable,
 )
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     create_if_not_exists,
     update_overrides_from_maps,
@@ -141,7 +142,8 @@ from recidiviz.utils import environment
 
 MAGICAL_DATES = ["20000000"]
 
-AGENT_NAME_AND_ID_REGEX = re.compile(r"(.*?)( (\d+))$")
+AGENT_NAME_AND_ID_REGEX = re.compile(r"([^,]*), (.*?) (\d+)$")
+FALLBACK_AGENT_NAME_AND_ID_REGEX = re.compile(r"(.*?) (\d+.*)$")
 
 
 class UsPaController(CsvGcsfsDirectIngestController):
@@ -182,6 +184,12 @@ class UsPaController(CsvGcsfsDirectIngestController):
             self._specify_incident_type,
             self._specify_incident_details,
             self._specify_incident_outcome,
+        ]
+        legacy_supervision_period_postprocessors: List[IngestRowPosthookCallable] = [
+            self._unpack_supervision_period_conditions,
+            self._legacy_set_supervising_officer,
+            self._set_supervision_site,
+            self._set_supervision_period_custodial_authority,
         ]
         supervision_period_postprocessors: List[IngestRowPosthookCallable] = [
             self._unpack_supervision_period_conditions,
@@ -224,7 +232,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._generate_pbpp_assessment_external_id,
                 self._enrich_pbpp_assessments,
             ],
-            "supervision_period": supervision_period_postprocessors,
+            # TODO(#8337): Cleanup reference to `supervision_period`
+            "supervision_period": legacy_supervision_period_postprocessors,
+            "supervision_period_v3": supervision_period_postprocessors,
             "supervision_violation": [
                 self._append_supervision_violation_entries,
             ],
@@ -263,7 +273,11 @@ class UsPaController(CsvGcsfsDirectIngestController):
             "dbo_Offender": [],
             "dbo_LSIR": [],
             "dbo_LSIHistory": [],
+            # TODO(#8337): Cleanup reference to `supervision_period`
             "supervision_period": [
+                gen_convert_person_ids_to_external_id_objects(self._get_id_type),
+            ],
+            "supervision_period_v3": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
             "supervision_violation": [
@@ -284,7 +298,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
             str, IngestPrimaryKeyOverrideCallable
         ] = {
             "sci_incarceration_period": _generate_sci_incarceration_period_primary_key,
+            # TODO(#8337): Cleanup reference to `supervision_period`
             "supervision_period": _generate_supervision_period_primary_key,
+            "supervision_period_v3": _generate_supervision_period_primary_key,
             "supervision_violation": _generate_supervision_violation_primary_key,
             "supervision_violation_response": _generate_supervision_violation_response_primary_key,
             "board_action": _generate_board_action_supervision_violation_response_primary_key,
@@ -701,12 +717,20 @@ class UsPaController(CsvGcsfsDirectIngestController):
             # Data source: PBPP
             "dbo_Offender",
             "dbo_LSIHistory",
-            "supervision_period",
             "supervision_violation",
             "supervision_violation_response",
             "board_action",
             "supervision_contacts",
         ]
+
+        # TODO(#8337): Cleanup reference to `supervision_period` and delete view file
+        if (
+            not environment.in_gcp_production()
+            and self.ingest_instance is DirectIngestInstance.SECONDARY
+        ):
+            launched_file_tags.append("supervision_period_v3")
+        else:
+            launched_file_tags.append("supervision_period")
 
         unlaunched_file_tags: List[str] = [
             # Empty for now
@@ -801,7 +825,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
             return US_PA_CONTROL
 
         if file_tag in [
+            # TODO(#8337): Cleanup reference to `supervision_period`
             "supervision_period",
+            "supervision_period_v3",
             "supervision_violation",
             "supervision_violation_response",
             "board_action",
@@ -1273,8 +1299,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 if conditions:
                     obj.conditions = conditions
 
+    # TODO(#8337): Cleanup this old version used for `supervision_period`
     @staticmethod
-    def _set_supervising_officer(
+    def _legacy_set_supervising_officer(
         _gating_context: IngestGatingContext,
         row: Dict[str, str],
         extracted_objects: List[IngestObject],
@@ -1296,7 +1323,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
                     # TODO(#4159): Update this regex to extract and set the given_names and surname from the full_name
                     match = re.match(AGENT_NAME_AND_ID_REGEX, officer_full_name_and_id)
                     if match:
-                        full_name = match.group(1)
+                        full_name = f"{match.group(1)}, {match.group(2)}"
                         external_id: Optional[str] = match.group(3)
                     else:
                         full_name = officer_full_name_and_id
@@ -1306,6 +1333,47 @@ class UsPaController(CsvGcsfsDirectIngestController):
                         full_name=full_name,
                         agent_type=StateAgentType.SUPERVISION_OFFICER.value,
                     )
+
+    @staticmethod
+    def _set_supervising_officer(
+        _gating_context: IngestGatingContext,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
+        """Sets the supervision officer (as an Agent entity) on the supervision period."""
+        officer_id = row.get("supervising_officer_id")
+        if not officer_id:
+            # In a large percentage of cases when there is no id attached to an
+            # officer, the PO is a placeholder.
+            return
+
+        officer_name = row.get("supervising_officer_name", None)
+
+        given_names = None
+        surname = None
+        full_name = None
+        if officer_name:
+            match = re.match(AGENT_NAME_AND_ID_REGEX, officer_name)
+            if match:
+                surname = match.group(1)
+                given_names = match.group(2)
+            elif full_name_match := re.match(
+                FALLBACK_AGENT_NAME_AND_ID_REGEX, officer_name
+            ):
+                full_name = full_name_match.group(1)
+            else:
+                full_name = officer_name
+
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionPeriod):
+                obj.create_state_agent(
+                    state_agent_id=officer_id,
+                    full_name=full_name,
+                    given_names=given_names,
+                    surname=surname,
+                    agent_type=StateAgentType.SUPERVISION_OFFICER.value,
+                )
 
     @staticmethod
     def _set_supervision_site(
@@ -1498,12 +1566,10 @@ class UsPaController(CsvGcsfsDirectIngestController):
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionContact):
                 if officer_id and officer_first_name and officer_last_name:
-                    full_name = (
-                        f"{officer_last_name.upper()}, {officer_first_name.upper()}"
-                    )
                     obj.create_state_agent(
                         state_agent_id=officer_id,
-                        full_name=full_name,
+                        given_names=officer_first_name.upper(),
+                        surname=officer_last_name.upper(),
                         agent_type=StateAgentType.SUPERVISION_OFFICER.value,
                     )
 
