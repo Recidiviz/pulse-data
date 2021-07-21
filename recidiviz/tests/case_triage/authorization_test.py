@@ -24,12 +24,16 @@ from unittest import TestCase, mock
 import pytest
 from freezegun import freeze_time
 from parameterized import parameterized
+from sqlalchemy.orm.exc import NoResultFound
 
 from recidiviz.case_triage.authorization import (
     AuthorizationStore,
     FrontendAppPermissions,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.persistence.database.schema.case_triage.schema import (
+    DashboardUserRestrictions,
+)
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -218,4 +222,18 @@ class TestFrontendAppPermissions(TestCase):
             self.overridden_user.restricted_user_email,
             can_access_case_triage=True,
             can_access_leadership_dashboard=True,
+        )
+
+    def test_still_can_access_if_not_in_database(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            with self.assertRaises(NoResultFound):
+                session.query(DashboardUserRestrictions).filter(
+                    DashboardUserRestrictions.restricted_user_email
+                    == "demoer@not-recidiviz.org"
+                ).one()
+
+        self.assert_email_has_permissions(
+            "demoer@not-recidiviz.org",
+            can_access_case_triage=True,
+            can_access_leadership_dashboard=False,
         )
