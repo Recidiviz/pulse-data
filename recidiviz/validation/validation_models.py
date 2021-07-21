@@ -18,11 +18,11 @@
 """Models representing data validation."""
 import abc
 from enum import Enum
-from typing import Generic, Optional, TypeVar
+from typing import Dict, Generic, Optional, TypeVar
 
 import attr
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.validation.validation_config import ValidationRegionConfig
 
@@ -43,8 +43,8 @@ class ValidationCategory(Enum):
 class DataValidationCheck(BuildableAttr):
     """Models a type of validation check that can be performed."""
 
-    # The BigQuery view for this type of check
-    view: BigQueryView = attr.ib()
+    # The BigQuery builder for this type of check
+    view_builder: SimpleBigQueryViewBuilder = attr.ib()
 
     # The type of validation to be performed for this type of check
     validation_type: ValidationCheckType = attr.ib()
@@ -57,7 +57,7 @@ class DataValidationCheck(BuildableAttr):
 
     @property
     def validation_name(self) -> str:
-        return self.view.view_id + (
+        return self.view_builder.view_id + (
             f"_{self.validation_name_suffix}" if self.validation_name_suffix else ""
         )
 
@@ -68,11 +68,12 @@ class DataValidationCheck(BuildableAttr):
         """Returns a copy of this DataValidationCheck that has been modified
         appropriately based on the region config."""
 
-    def query_str_for_region_code(self, region_code: str) -> str:
-        return f"{self.view.select_query} WHERE region_code = '{region_code}';"
-
 
 DataValidationType = TypeVar("DataValidationType", bound=DataValidationCheck)
+
+
+def _query_str_for_region_code(view: BigQueryView, region_code: str) -> str:
+    return f"{view.select_query} WHERE region_code = '{region_code}';"
 
 
 @attr.s(frozen=True)
@@ -85,8 +86,14 @@ class DataValidationJob(Generic[DataValidationType], BuildableAttr):
     # The region we're going to validate (who we're going to check)
     region_code: str = attr.ib()
 
+    # Optional dataset overrides to change which datasets will be used for query
+    dataset_overrides: Optional[Dict[str, str]] = attr.ib(default=None)
+
     def query_str(self) -> str:
-        return self.validation.query_str_for_region_code(region_code=self.region_code)
+        view = self.validation.view_builder.build(
+            dataset_overrides=self.dataset_overrides
+        )
+        return _query_str_for_region_code(view=view, region_code=self.region_code)
 
 
 class DataValidationJobResultDetails(abc.ABC):
@@ -124,7 +131,7 @@ class DataValidationJobResult:
             f"\n\t\tcheck_type: {self.validation_job.validation.validation_type},"
             f"\n\t\tvalidation_category: {self.validation_job.validation.validation_category},"
             f"\n\t\tvalidation_name: {self.validation_job.validation.validation_name},"
-            f"\n\t\tview_id: {self.validation_job.validation.view.view_id},"
+            f"\n\t\tview_id: {self.validation_job.validation.view_builder.view_id},"
             f"\n\t]"
             f"\n]"
         )

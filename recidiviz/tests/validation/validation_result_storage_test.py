@@ -21,7 +21,7 @@ import unittest
 from mock import MagicMock, patch
 
 from recidiviz.big_query import big_query_client
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.validation.checks.sameness_check import (
     ResultRow,
     SamenessDataValidationCheck,
@@ -61,7 +61,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     validation_type=ValidationCheckType.SAMENESS,
                     comparison_columns=["a", "b", "c"],
                     sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-                    view=BigQueryView(
+                    view_builder=SimpleBigQueryViewBuilder(
                         dataset_id="my_dataset",
                         view_id="test_view",
                         description="test_view description",
@@ -140,7 +140,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     comparison_columns=["internal", "external"],
                     partition_columns=["state_code", "date"],
                     sameness_check_type=SamenessDataValidationCheckType.STRINGS,
-                    view=BigQueryView(
+                    view_builder=SimpleBigQueryViewBuilder(
                         dataset_id="my_dataset",
                         view_id="test_view",
                         description="test_view description",
@@ -212,7 +212,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     validation_type=ValidationCheckType.SAMENESS,
                     comparison_columns=["a", "b", "c"],
                     sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-                    view=BigQueryView(
+                    view_builder=SimpleBigQueryViewBuilder(
                         dataset_id="my_dataset",
                         view_id="test_view",
                         description="test_view description",
@@ -281,7 +281,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-                view=BigQueryView(
+                view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",

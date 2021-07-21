@@ -20,7 +20,7 @@ import unittest
 
 from mock import patch
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.validation.checks import check_resolver
 from recidiviz.validation.checks.existence_check import (
     ExistenceDataValidationCheck,
@@ -50,7 +50,7 @@ class ValidationCheckResolverTest(unittest.TestCase):
             validation=ExistenceDataValidationCheck(
                 validation_category=ValidationCategory.INVARIANT,
                 validation_type=ValidationCheckType.EXISTENCE,
-                view=BigQueryView(
+                view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
