@@ -26,7 +26,7 @@ STATE_AGGREGATE_URL = (
 
 
 def get_urls_to_download() -> Set[str]:
-    content = html.fromstring(requests.get(STATE_AGGREGATE_URL).text)
+    content = html.fromstring(requests.get(STATE_AGGREGATE_URL, verify=False).text)
 
     return {
         f"https://dhhr.wv.gov{url}"
