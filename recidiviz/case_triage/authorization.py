@@ -158,7 +158,8 @@ class AuthorizationStore:
                 )
             except sqlalchemy.orm.exc.NoResultFound:
                 return FrontendAppPermissions(
-                    can_access_case_triage=False, can_access_leadership_dashboard=False
+                    can_access_case_triage=(email in self.case_triage_allowed_users),
+                    can_access_leadership_dashboard=False,
                 )
 
     def can_impersonate_others(self, email: str) -> bool:
