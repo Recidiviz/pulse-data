@@ -35,13 +35,14 @@ module "case_triage_database" {
 module "jails_database" {
   source = "./modules/cloud-sql-instance"
 
-  instance_key      = "jails"
-  base_secret_name  = "sqlalchemy"
-  database_version  = local.is_production ? "POSTGRES_9_6" : "POSTGRES_13"
-  region            = "us-east4"
-  zone              = "us-east4-b"
-  tier              = "db-custom-4-15360" # 4 vCPU, 15GB Memory
-  has_readonly_user = true
+  instance_key     = "jails"
+  base_secret_name = "sqlalchemy"
+  database_version = "POSTGRES_9_6"
+  region           = "us-east4"
+  zone             = local.is_production ? "us-east4-b" : "us-east4-c"
+  # 4 vCPU, 15GB Memory | 1 vCPU, 3.75GB Memory
+  tier              = local.is_production ? "db-custom-4-15360" : "db-custom-1-3840"
+  has_readonly_user = local.is_production
 }
 
 
