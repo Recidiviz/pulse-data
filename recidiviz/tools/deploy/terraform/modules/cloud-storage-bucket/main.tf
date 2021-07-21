@@ -31,9 +31,16 @@ variable "location" {
   default = "us"
 }
 
+# The storage class of the bucket.
+variable "storage_class" {
+  type    = string
+  default = "STANDARD"
+}
+
 resource "google_storage_bucket" "bucket" {
   name                        = "${var.project_id}-${var.name_suffix}"
   location                    = var.location
+  storage_class               = var.storage_class
   uniform_bucket_level_access = true
 
   lifecycle_rule {
