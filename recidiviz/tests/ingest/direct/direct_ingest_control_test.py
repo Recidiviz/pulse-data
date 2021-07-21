@@ -760,6 +760,78 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_region")
+    def test_heartbeat(
+        self,
+        mock_get_region: mock.MagicMock,
+        mock_environment: mock.MagicMock,
+        mock_supported_region_codes: mock.MagicMock,
+    ) -> None:
+
+        fake_supported_regions = {
+            "us_tx_brazos": fake_region(
+                region_code="us_tx_brazos", environment="staging"
+            ),
+            "us_mo": fake_region(region_code="us_mo", environment="staging"),
+            self.region_code: fake_region(
+                region_code=self.region_code, environment="production"
+            ),
+        }
+
+        mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskManager)
+        region_to_mock_controller = defaultdict(list)
+
+        def mock_build_controller(
+            ingest_bucket_path: GcsfsBucketPath,
+            allow_unlaunched: bool,
+        ) -> BaseDirectIngestController:
+            self.assertFalse(allow_unlaunched)
+            region_code_ = get_region_code_from_direct_ingest_bucket(
+                ingest_bucket_path.bucket_name
+            )
+            if region_code_ is None:
+                raise ValueError("Expected nonnull region code")
+            mock_controller = Mock(__class__=BaseDirectIngestController)
+            mock_controller.cloud_task_manager.return_value = mock_cloud_task_manager
+            region_to_mock_controller[region_code_.lower()].append(mock_controller)
+            return mock_controller
+
+        self.mock_controller_factory.build.side_effect = mock_build_controller
+
+        def fake_get_region(region_code: str, is_direct_ingest: bool) -> Region:
+            if not is_direct_ingest:
+                self.fail("is_direct_ingest is False")
+
+            return fake_supported_regions[region_code]
+
+        mock_get_region.side_effect = fake_get_region
+
+        mock_supported_region_codes.return_value = fake_supported_regions.keys()
+
+        mock_environment.return_value = "staging"
+
+        headers = {"X-Appengine-Cron": "test-cron"}
+
+        response = self.client.post(
+            "/heartbeat",
+            query_string={},
+            headers=headers,
+            data={},
+        )
+        self.assertEqual(200, response.status_code)
+
+        mock_supported_region_codes.assert_called()
+        for region_code, controllers in region_to_mock_controller.items():
+            if region_code == "us_tx_brazos":
+                # Only run for PRIMARY instance
+                self.assertEqual(len(controllers), 1)
+            else:
+                self.assertEqual(len(controllers), len(DirectIngestInstance))
+            for mock_controller in controllers:
+                mock_controller.kick_scheduler.assert_called_once()
+
+    @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
+    @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.utils.regions.get_region")
     def test_kick_all_schedulers(
         self,
         mock_get_region: mock.MagicMock,
