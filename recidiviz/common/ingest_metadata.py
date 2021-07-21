@@ -34,6 +34,10 @@ from recidiviz.utils.regions import Region
 
 @enum.unique
 class SystemLevel(enum.Enum):
+    """Distinguishes between the STATE (state schema) and COUNTY (jails schema) parts
+    of our system.
+    """
+
     COUNTY = "COUNTY"
     STATE = "STATE"
 
@@ -49,17 +53,21 @@ class SystemLevel(enum.Enum):
 
     @classmethod
     def for_region(cls, region: Region) -> "SystemLevel":
-        if region.is_direct_ingest is None:
+        return cls.for_region_code(region.region_code, region.is_direct_ingest)
+
+    @classmethod
+    def for_region_code(cls, region_code: str, is_direct_ingest: bool) -> "SystemLevel":
+        if is_direct_ingest is None:
             raise ValueError(
                 "Region flag is_direct_ingest is None, expected boolean value."
             )
-        if not region.is_direct_ingest:
+        if not is_direct_ingest:
             # There are some scrapers that scrape state jails websites (e.g.
             # recidiviz/ingest/scrape/regions/us_pa/us_pa_scraper.py) which we always
             # write to the Vera county jails database.
             return SystemLevel.COUNTY
 
-        if StateCode.is_state_code(region.region_code.upper()):
+        if StateCode.is_state_code(region_code.upper()):
             return SystemLevel.STATE
         return SystemLevel.COUNTY
 
