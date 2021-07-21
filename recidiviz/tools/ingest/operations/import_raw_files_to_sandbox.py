@@ -28,15 +28,17 @@ Usage:
 
 python -m recidiviz.tools.ingest.operations.import_raw_files_to_sandbox \
     --state_code US_PA --sandbox_dataset_prefix my_prefix \
-    --source_bucket recidiviz-staging-my-test-bucket
+    --source_bucket recidiviz-staging-my-test-bucket \
+    [--file_tag_filter (tagA|otherTagB)]
 """
 
 import argparse
 import datetime
 import logging
+import re
 import sys
 from collections import defaultdict
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import google
 
@@ -109,6 +111,7 @@ def do_upload(
     state_code: StateCode,
     sandbox_dataset_prefix: str,
     source_bucket: GcsfsBucketPath,
+    file_tag_filter: Optional[str],
 ) -> None:
     """Imports a set of raw data files in the given source bucket into a sandbox
     dataset.
@@ -143,6 +146,12 @@ def do_upload(
 
     for i, file_path in enumerate(raw_files_to_import):
         parts = filename_parts_from_path(file_path)
+        if file_tag_filter and not re.search(file_tag_filter, parts.file_tag):
+            logging.info("** Skipping file with tag [%s] **", parts.file_tag)
+            continue
+
+        logging.info("Running file with tag [%s]", parts.file_tag)
+
         try:
             import_manager.import_raw_file_to_big_query(
                 file_path,
@@ -208,6 +217,13 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         "already have normalized file names.",
     )
 
+    parser.add_argument(
+        "--file_tag_filter",
+        default=None,
+        help="Regex file tag filter - when set, will only import files whose tags "
+        "contain a match to this regex.",
+    )
+
     return parser.parse_known_args(argv)
 
 
@@ -219,4 +235,5 @@ if __name__ == "__main__":
             state_code=StateCode(known_args.state_code),
             sandbox_dataset_prefix=known_args.sandbox_dataset_prefix,
             source_bucket=GcsfsBucketPath(known_args.source_bucket),
+            file_tag_filter=known_args.file_tag_filter,
         )
