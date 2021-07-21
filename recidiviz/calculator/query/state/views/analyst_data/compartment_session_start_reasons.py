@@ -54,7 +54,7 @@ COMPARTMENT_SESSION_START_REASONS_QUERY_TEMPLATE = """
         admission_date as start_date,
         state_code,
         COALESCE(admission_reason, 'INTERNAL_UNKNOWN') AS start_reason,
-        COALESCE(most_severe_violation_type, admission_reason, 'INTERNAL_UNKNOWN') AS start_sub_reason,
+        most_severe_violation_type AS start_sub_reason,
         'INCARCERATION' as compartment_level_1,
         adm.metric_type AS metric_source,
         ROW_NUMBER() OVER(PARTITION BY person_id, admission_date
@@ -76,7 +76,7 @@ COMPARTMENT_SESSION_START_REASONS_QUERY_TEMPLATE = """
         start_date,
         state_code,
         COALESCE(admission_reason, 'INTERNAL_UNKNOWN') AS start_reason,
-        COALESCE(admission_reason, 'INTERNAL_UNKNOWN') AS start_sub_reason,
+        CAST(NULL AS STRING) AS start_sub_reason,
         'SUPERVISION' as compartment_level_1,
         metric_type AS metric_source,
         ROW_NUMBER() OVER(PARTITION BY person_id, start_date ORDER BY COALESCE(priority, 999) ASC) AS reason_priority,
