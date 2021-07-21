@@ -407,6 +407,9 @@ class IncarcerationPreProcessingManager:
                         overwrite_facility_information_in_transfers=config.overwrite_facility_information_in_transfers,
                     )
 
+                # Validate IPs
+                self._validate_ip_invariants(mid_processing_periods)
+
                 self._pre_processed_incarceration_period_index_for_calculations[
                     config
                 ] = PreProcessedIncarcerationPeriodIndex(
@@ -947,7 +950,9 @@ class IncarcerationPreProcessingManager:
 
             # Then, universally apply overrides to ensure commitment from supervision
             # admissions match expected values
-            if is_commitment_from_supervision(updated_ip.admission_reason):
+            if is_commitment_from_supervision(
+                updated_ip.admission_reason, allow_ingest_only_enum_values=True
+            ):
                 # Set the purpose_for_incarceration from the pfi_info onto the period,
                 # if set. Default to GENERAL for any unset purpose_for_incarceration
                 # values at this point in pre-processing.
@@ -971,9 +976,6 @@ class IncarcerationPreProcessingManager:
                         admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
                     )
 
-            # TODO(#7070): Fail here if the updated_ip has an admission_reason of
-            #  ADMITTED_FROM_SUPERVISION once this value is handled by all state
-            #  delegates
             updated_periods.append(updated_ip)
 
             if not updated_ip.incarceration_period_id:
@@ -1026,6 +1028,38 @@ class IncarcerationPreProcessingManager:
             updated_ips.append(updated_ip)
 
         return updated_ips
+
+    @staticmethod
+    def _validate_ip_invariants(incarceration_periods: List[StateIncarcerationPeriod]):
+        """Validates that no IPs violate standards that we can expect to be
+        met for all periods in all states at the end of IP pre-processing."""
+        for ip in incarceration_periods:
+            if (
+                ip.admission_reason
+                == StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION
+            ):
+                raise ValueError(
+                    "Unexpected ingest-only admission_reason ADMITTED_FROM_SUPERVISION "
+                    f"on ip: {ip}. We should have handled this value by the end of "
+                    "IP pre-processing."
+                )
+            if not ip.admission_date:
+                raise ValueError(
+                    f"Unexpected missing admission_date on ip: {ip}. All IPs should "
+                    "have set admission_dates by the end of IP pre-processing."
+                )
+            if not ip.admission_reason:
+                raise ValueError(
+                    f"Unexpected missing admission_reason on ip: {ip}. All IPs should "
+                    "have a set admission_reason by the end of IP pre-processing."
+                )
+            if not ip.specialized_purpose_for_incarceration:
+                raise ValueError(
+                    "Unexpected missing specialized_purpose_for_incarceration on "
+                    f"ip: {ip}. All IPs should have a set "
+                    "specialized_purpose_for_incarceration by the end of IP "
+                    "pre-processing."
+                )
 
     def _collapse_incarceration_period_transfers(
         self,
