@@ -180,7 +180,9 @@ def _us_pa_get_pfi_info_for_incarceration_period(
             "Unexpected StateIncarcerationPeriod without a set admission_date."
         )
 
-    if not is_commitment_from_supervision(incarceration_period.admission_reason):
+    if not is_commitment_from_supervision(
+        incarceration_period.admission_reason, allow_ingest_only_enum_values=True
+    ):
         # This period does not require an updated purpose_for_incarceration value,
         # and does not have a pfi_subtype
         return PurposeForIncarcerationInfo(

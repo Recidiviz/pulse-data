@@ -180,9 +180,19 @@ class StateSpecializedPurposeForIncarceration(EntityEnum, metaclass=EntityEnumMe
 
 def is_commitment_from_supervision(
     admission_reason: Optional[StateIncarcerationPeriodAdmissionReason],
+    allow_ingest_only_enum_values: bool = False,
 ) -> bool:
     """Determines if the provided admission_reason represents a type of commitment from
-    supervision due to a sanction or revocation."""
+    supervision due to a sanction or revocation.
+
+    When dealing with incarceration periods during ingest or during IP pre-processing
+    we may encounter ingest-only enum values that need to be handled by this function.
+    After IP pre-processing we do not expect to see any ingest-only enum values. The
+    |allow_ingest_only_enum_values| boolean should only be set to True if this
+    function is being called during ingest or during IP pre-processing. All usage of
+    this function in calculations with pre-processed IPs should have
+    allow_ingest_only_enum_values=False.
+    """
     if not admission_reason:
         return False
     revocation_types = [
@@ -211,10 +221,13 @@ def is_commitment_from_supervision(
         admission_reason
         == StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION
     ):
-        # TODO(#7070): Once we have guaranteed ADMITTED_FROM_SUPERVISION is an
-        #  ingest-only enum, and can expect to not see it after pre-processing,
-        #  raise an error here.
-        return False
+        if allow_ingest_only_enum_values:
+            return False
+
+        raise ValueError(
+            "ADMITTED_FROM_SUPERVISION is an ingest-only enum, and we should not "
+            "see this value after IP pre-processing."
+        )
     raise ValueError(
         f"Unexpected StateIncarcerationPeriodAdmissionReason {admission_reason}."
     )
@@ -222,13 +235,25 @@ def is_commitment_from_supervision(
 
 def is_official_admission(
     admission_reason: Optional[StateIncarcerationPeriodAdmissionReason],
+    allow_ingest_only_enum_values: bool = False,
 ) -> bool:
-    """Returns whether or not the |admission_reason| is considered an official start of incarceration, i.e. the root
-    cause for being admitted to prison at all, not transfers or other unknown statuses resulting in facility changes."""
+    """Returns whether or not the |admission_reason| is considered an official start of
+    incarceration, i.e. the root cause for being admitted to prison at all,
+    not transfers or other unknown statuses resulting in facility changes.
+
+    When dealing with incarceration periods during ingest or during IP pre-processing
+    we may encounter ingest-only enum values that need to be handled by this function.
+    After IP pre-processing we do not expect to see any ingest-only enum values. The
+    |allow_ingest_only_enum_values| boolean should only be set to True if this
+    function is being called during ingest or during IP pre-processing. All usage of
+    this function in calculations with pre-processed IPs should have
+    allow_ingest_only_enum_values=False.
+    """
     if not admission_reason:
         return False
 
-    # An incarceration period that has one of these admission reasons indicates the official start of incarceration
+    # An incarceration period that has one of these admission reasons indicates the
+    # official start of incarceration
     official_admission_types = [
         StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
@@ -257,10 +282,13 @@ def is_official_admission(
         admission_reason
         == StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION
     ):
-        # TODO(#7070): Once we have guaranteed ADMITTED_FROM_SUPERVISION is an
-        #  ingest-only enum, and can expect to not see it after pre-processing,
-        #  raise an error here.
-        return True
+        if allow_ingest_only_enum_values:
+            return True
+
+        raise ValueError(
+            "ADMITTED_FROM_SUPERVISION is an ingest-only enum, and we should not "
+            "see this value after IP pre-processing."
+        )
 
     raise ValueError(
         f"Unsupported StateSupervisionPeriodAdmissionReason value: {admission_reason}"

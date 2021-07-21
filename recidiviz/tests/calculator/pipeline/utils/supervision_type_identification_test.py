@@ -800,6 +800,13 @@ class TestGetPreIncarcerationSupervisionType(unittest.TestCase):
                 == StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION
             ):
                 expected_type = StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+            elif (
+                admission_reason
+                == StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION
+            ):
+                # Ingest-only value, ignore
+                continue
+
             self.assertEqual(
                 expected_type,
                 get_pre_incarceration_supervision_type_from_ip_admission_reason(

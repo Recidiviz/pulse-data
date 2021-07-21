@@ -33,15 +33,43 @@ class StateIncarcerationPeriodTest(unittest.TestCase):
 
     def test_is_commitment_from_supervision_all_enums(self) -> None:
         for admission_reason in StateIncarcerationPeriodAdmissionReason:
-            # Assert no error
-            _ = state_incarceration_period.is_commitment_from_supervision(
+            if (
                 admission_reason
-            )
+                == StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION
+            ):
+                with self.assertRaises(ValueError):
+                    _ = state_incarceration_period.is_commitment_from_supervision(
+                        admission_reason
+                    )
+
+                # Assert no error when we allow ingest-only values
+                _ = state_incarceration_period.is_commitment_from_supervision(
+                    admission_reason, allow_ingest_only_enum_values=True
+                )
+            else:
+                # Assert no error
+                _ = state_incarceration_period.is_commitment_from_supervision(
+                    admission_reason
+                )
 
     def test_is_official_admission_all_enums(self) -> None:
         for admission_reason in StateIncarcerationPeriodAdmissionReason:
-            # Assert no error
-            _ = state_incarceration_period.is_official_admission(admission_reason)
+            if (
+                admission_reason
+                == StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION
+            ):
+                with self.assertRaises(ValueError):
+                    _ = state_incarceration_period.is_official_admission(
+                        admission_reason
+                    )
+
+                # Assert no error when we allow ingest-only values
+                _ = state_incarceration_period.is_official_admission(
+                    admission_reason, allow_ingest_only_enum_values=True
+                )
+            else:
+                # Assert no error
+                _ = state_incarceration_period.is_official_admission(admission_reason)
 
     def test_is_official_release_all_enums(self) -> None:
         for release_reason in StateIncarcerationPeriodReleaseReason:

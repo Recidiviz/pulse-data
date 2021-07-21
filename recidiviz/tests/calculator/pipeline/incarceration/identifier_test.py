@@ -2995,11 +2995,16 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         for admission_reason in StateIncarcerationPeriodAdmissionReason:
             incarceration_period.admission_reason = admission_reason
 
-            admission_event = self._run_admission_event_for_period(
-                incarceration_period=incarceration_period,
-            )
+            # ADMITTED_FROM_SUPERVISION is an ingest-only enum
+            if (
+                admission_reason
+                != StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION
+            ):
+                admission_event = self._run_admission_event_for_period(
+                    incarceration_period=incarceration_period,
+                )
 
-            self.assertIsNotNone(admission_event)
+                self.assertIsNotNone(admission_event)
 
     def test_admission_event_for_period_specialized_pfi(self):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(

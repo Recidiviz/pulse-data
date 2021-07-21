@@ -431,14 +431,15 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         with pytest.raises(EntityMatchingError):
             get_external_ids_of_cls([person], schema.StatePerson)
 
-    def test_completeEnumSet_admittedForRevocation(self) -> None:
+    def test_completeEnumSet_admittedForCommitmentFromSupervision(self) -> None:
         period = schema.StateIncarcerationPeriod()
         for admission_reason in StateIncarcerationPeriodAdmissionReason:
             period.admission_reason = admission_reason.value
             is_commitment_from_supervision(
                 StateIncarcerationPeriodAdmissionReason.parse_from_canonical_string(
-                    period.admission_reason
-                )
+                    period.admission_reason,
+                ),
+                allow_ingest_only_enum_values=True,
             )
 
         is_commitment_from_supervision(

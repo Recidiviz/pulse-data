@@ -17,7 +17,7 @@
 
 """Contains util methods for UsNdMatchingDelegate."""
 import datetime
-from typing import Union, cast, List, Optional, Set
+from typing import List, Optional, Set, Union, cast
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -30,9 +30,9 @@ from recidiviz.ingest.direct.regions.us_nd import us_nd_enum_helpers
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.entity_utils import (
-    is_placeholder,
-    get_set_entity_field_names,
     EntityFieldType,
+    get_set_entity_field_names,
+    is_placeholder,
 )
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 from recidiviz.persistence.entity_matching.state.state_matching_utils import (
@@ -72,7 +72,9 @@ def associate_revocation_svrs_with_ips(merged_persons: List[schema.StatePerson])
             )
             if isinstance(admission_reason, StateIncarcerationPeriodAdmissionReason):
                 if (
-                    is_commitment_from_supervision(admission_reason)
+                    is_commitment_from_supervision(
+                        admission_reason, allow_ingest_only_enum_values=True
+                    )
                     and ip.admission_date
                 ):
                     revocation_ips.append(ip)

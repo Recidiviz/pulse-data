@@ -686,7 +686,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             external_id="1",
             state_code=state_code,
             admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
             release_date=date(2009, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.DEATH,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
@@ -3646,3 +3646,61 @@ class TestStatusChangeEdges(unittest.TestCase):
                     "not valid attribute on the StateIncarcerationPeriod "
                     "class."
                 )
+
+
+class TestValidateIpInvariants(unittest.TestCase):
+    """Tests the _validate_ip_invariants function."""
+
+    def setUp(self) -> None:
+        self.valid_ip = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1113,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id="3",
+            state_code="US_XX",
+            admission_date=date(2010, 1, 13),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            release_date=date(2012, 12, 24),
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+    def test_validate_ip_invariants_valid(self):
+        # Assert no error
+        IncarcerationPreProcessingManager._validate_ip_invariants([self.valid_ip])
+
+    def test_validate_ip_invariants_missing_admission_reason(self):
+        invalid_ip_missing = attr.evolve(self.valid_ip, admission_reason=None)
+
+        with self.assertRaises(ValueError):
+            IncarcerationPreProcessingManager._validate_ip_invariants(
+                [invalid_ip_missing]
+            )
+
+    def test_validate_ip_invariants_missing_admission_date(self):
+        invalid_ip_missing = attr.evolve(self.valid_ip, admission_date=None)
+
+        with self.assertRaises(ValueError):
+            IncarcerationPreProcessingManager._validate_ip_invariants(
+                [invalid_ip_missing]
+            )
+
+    def test_validate_ip_invariants_missing_pfi(self):
+        invalid_ip_missing = attr.evolve(
+            self.valid_ip, specialized_purpose_for_incarceration=None
+        )
+
+        with self.assertRaises(ValueError):
+            IncarcerationPreProcessingManager._validate_ip_invariants(
+                [invalid_ip_missing]
+            )
+
+    def test_validate_ip_invariants_invalid_admission_reason(self):
+        invalid_ip_missing = attr.evolve(
+            self.valid_ip,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
+        )
+
+        with self.assertRaises(ValueError):
+            IncarcerationPreProcessingManager._validate_ip_invariants(
+                [invalid_ip_missing]
+            )
