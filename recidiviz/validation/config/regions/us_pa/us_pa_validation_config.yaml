@@ -12,11 +12,6 @@ exclusions:
   - validation_name: po_report_missing_fields
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: PA has not yet been launched for PO Monthly report, so we are excluding this currently. To be fixed in \#7437.
-  # TODO(#7443): Remove exclusion once US_PA IP pre-processing is complete
-  - validation_name: invalid_admitted_from_supervision_admission_reason
-    exclusion_type: DOES_NOT_APPLY
-    exclusion_reason: US_PA IP pre-processing hasn't fully implemented handling of
-      ADMITTED_FROM_SUPERVISION admission reasons. To be fixed in \#7443.
     
 max_allowed_error_overrides:
   - validation_name: supervision_population_person_level_external_comparison
