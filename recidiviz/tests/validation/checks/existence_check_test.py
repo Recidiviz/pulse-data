@@ -21,7 +21,7 @@ from unittest import TestCase
 
 from mock import patch
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.validation.checks.existence_check import (
     ExistenceDataValidationCheck,
     ExistenceValidationChecker,
@@ -60,7 +60,7 @@ class TestExistenceValidationChecker(TestCase):
             validation=ExistenceDataValidationCheck(
                 validation_category=ValidationCategory.INVARIANT,
                 validation_type=ValidationCheckType.EXISTENCE,
-                view=BigQueryView(
+                view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
@@ -91,7 +91,7 @@ class TestExistenceValidationChecker(TestCase):
             validation=ExistenceDataValidationCheck(
                 validation_category=ValidationCategory.INVARIANT,
                 validation_type=ValidationCheckType.EXISTENCE,
-                view=BigQueryView(
+                view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
@@ -122,7 +122,7 @@ class TestExistenceValidationChecker(TestCase):
             validation=ExistenceDataValidationCheck(
                 validation_category=ValidationCategory.INVARIANT,
                 validation_type=ValidationCheckType.EXISTENCE,
-                view=BigQueryView(
+                view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
