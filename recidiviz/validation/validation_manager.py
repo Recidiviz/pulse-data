@@ -44,6 +44,9 @@ from recidiviz.validation.validation_result_storage import (
     ValidationResultForStorage,
     store_validation_results,
 )
+from recidiviz.view_registry.dataset_overrides import (
+    dataset_overrides_for_view_builders,
+)
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
 
@@ -100,12 +103,21 @@ def execute_validation(
     rematerialize_views: bool,
     region_code_filter: Optional[str] = None,
     validation_name_filter: Optional[Pattern] = None,
+    sandbox_dataset_prefix: Optional[str] = None,
 ) -> List[DataValidationJobResult]:
     """Executes all validation checks.
     If |region_code_filter| is supplied, limits validations to just that region.
     If |validation_name_filter| is supplied, only performs validations on those
     that have a regex match.
+    If |sandbox_dataset_prefix| is supplied, performs validation using sandbox dataset
     """
+
+    sandbox_dataset_overrides = None
+    if sandbox_dataset_prefix:
+        sandbox_dataset_overrides = dataset_overrides_for_view_builders(
+            sandbox_dataset_prefix, DEPLOYED_VIEW_BUILDERS
+        )
+
     if rematerialize_views:
         logging.info(
             'Received query param "should_update_views" = true, updating validation dataset and views... '
@@ -115,12 +127,16 @@ def execute_validation(
             views_to_update_builders=DEPLOYED_VIEW_BUILDERS,
             all_view_builders=DEPLOYED_VIEW_BUILDERS,
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            dataset_overrides=sandbox_dataset_overrides,
+            # If a given view hasn't been loaded to the sandbox it will skip it
+            skip_missing_views=True,
         )
 
     # Fetch collection of validation jobs to perform
     validation_jobs = _fetch_validation_jobs_to_perform(
         region_code_filter=region_code_filter,
         validation_name_filter=validation_name_filter,
+        dataset_overrides=sandbox_dataset_overrides,
     )
 
     run_datetime = datetime.datetime.today()
@@ -202,7 +218,12 @@ def _run_job(job: DataValidationJob) -> DataValidationJobResult:
 def _fetch_validation_jobs_to_perform(
     region_code_filter: Optional[str] = None,
     validation_name_filter: Optional[Pattern] = None,
+    dataset_overrides: Optional[Dict[str, str]] = None,
 ) -> List[DataValidationJob]:
+    """
+    Creates and returns validation jobs for all validations meeting the name filter,
+    for the given region code, and with the dataset overrides if given.
+    """
     validation_checks = get_all_validations()
     region_configs = get_validation_region_configs()
     global_config = get_validation_global_config()
@@ -222,7 +243,11 @@ def _fetch_validation_jobs_to_perform(
             if check.validation_name not in region_config.exclusions:
                 updated_check = check.updated_for_region(region_config)
                 validation_jobs.append(
-                    DataValidationJob(validation=updated_check, region_code=region_code)
+                    DataValidationJob(
+                        validation=updated_check,
+                        region_code=region_code,
+                        dataset_overrides=dataset_overrides,
+                    )
                 )
 
     return validation_jobs

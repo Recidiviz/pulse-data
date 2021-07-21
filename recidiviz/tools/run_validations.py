@@ -27,6 +27,7 @@ Example usage (run from `pipenv shell`):
 python -m recidiviz.tools.run_validations \
     --project-id recidiviz-staging \
     --region-code-filter [region_code] \
+    --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] \
     --validation-name-filter [regex]
 """
 import argparse
@@ -54,6 +55,13 @@ def create_parser() -> argparse.ArgumentParser:
         help="Region code filter - when set, will only limit validations to the specified region.",
     )
     parser.add_argument(
+        "--sandbox_dataset_prefix",
+        dest="sandbox_dataset_prefix",
+        help="A prefix to append to all names of the datasets to load custom views.",
+        type=str,
+        default="",
+    )
+    parser.add_argument(
         "--validation-name-filter",
         default=None,
         help="Regex name filter - when set, will only run validations with names that match this regex.",
@@ -62,7 +70,9 @@ def create_parser() -> argparse.ArgumentParser:
 
 
 def main(
-    region_code_filter: Optional[str], validation_name_filter: Optional[str]
+    sandbox_dataset_prefix: str,
+    region_code_filter: Optional[str],
+    validation_name_filter: Optional[str],
 ) -> None:
     validation_regex = (
         re.compile(validation_name_filter) if validation_name_filter else None
@@ -71,6 +81,7 @@ def main(
         rematerialize_views=False,
         region_code_filter=region_code_filter,
         validation_name_filter=validation_regex,
+        sandbox_dataset_prefix=sandbox_dataset_prefix,
     )
 
 
@@ -79,4 +90,8 @@ if __name__ == "__main__":
 
     args = create_parser().parse_args()
     with local_project_id_override(args.project_id):
-        main(args.region_code_filter, args.validation_name_filter)
+        main(
+            args.sandbox_dataset_prefix,
+            args.region_code_filter,
+            args.validation_name_filter,
+        )

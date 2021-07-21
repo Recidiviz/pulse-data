@@ -21,7 +21,7 @@ from unittest import TestCase
 
 from mock import patch
 
-from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.validation.checks.sameness_check import (
     ResultRow,
     SamenessDataValidationCheck,
@@ -72,7 +72,7 @@ class TestSamenessValidationChecker(TestCase):
                 validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 validation_type=ValidationCheckType.SAMENESS,
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-                view=BigQueryView(
+                view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
@@ -90,7 +90,7 @@ class TestSamenessValidationChecker(TestCase):
                 validation_type=ValidationCheckType.SAMENESS,
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
                 comparison_columns=["a", "b", "c"],
-                view=BigQueryView(
+                view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
@@ -109,7 +109,7 @@ class TestSamenessValidationChecker(TestCase):
             validation_type=ValidationCheckType.SAMENESS,
             sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
             comparison_columns=["a", "b", "c"],
-            view=BigQueryView(
+            view_builder=SimpleBigQueryViewBuilder(
                 dataset_id="my_dataset",
                 view_id="test_view",
                 description="test_view description",
@@ -124,7 +124,7 @@ class TestSamenessValidationChecker(TestCase):
             sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
             validation_name_suffix="b_c_only",
             comparison_columns=["b", "c"],
-            view=BigQueryView(
+            view_builder=SimpleBigQueryViewBuilder(
                 dataset_id="my_dataset",
                 view_id="test_view",
                 description="test_view description",
@@ -143,7 +143,7 @@ class TestSamenessValidationChecker(TestCase):
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-                view=BigQueryView(
+                view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
@@ -173,7 +173,7 @@ class TestSamenessValidationChecker(TestCase):
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-                view=BigQueryView(
+                view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
@@ -210,7 +210,7 @@ class TestSamenessValidationChecker(TestCase):
                 comparison_columns=["a", "b", "c"],
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
                 max_allowed_error=0.02,
-                view=BigQueryView(
+                view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
@@ -241,7 +241,7 @@ class TestSamenessValidationChecker(TestCase):
                 comparison_columns=["a", "b", "c"],
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
                 max_allowed_error=0.02,
-                view=BigQueryView(
+                view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
@@ -281,7 +281,7 @@ class TestSamenessValidationChecker(TestCase):
                 comparison_columns=["a", "b", "c"],
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
                 max_allowed_error=0.02,
-                view=BigQueryView(
+                view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
@@ -328,7 +328,7 @@ class TestSamenessValidationChecker(TestCase):
                 comparison_columns=["a", "b", "c"],
                 partition_columns=[],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
-                view=BigQueryView(
+                view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
@@ -366,7 +366,7 @@ class TestSamenessValidationChecker(TestCase):
                 comparison_columns=["a", "b", "c"],
                 partition_columns=[],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
-                view=BigQueryView(
+                view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
@@ -403,7 +403,7 @@ class TestSamenessValidationChecker(TestCase):
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-                view=BigQueryView(
+                view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
@@ -430,7 +430,7 @@ class TestSamenessValidationChecker(TestCase):
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-                view=BigQueryView(
+                view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
@@ -458,7 +458,7 @@ class TestSamenessValidationChecker(TestCase):
                 comparison_columns=["a", "b", "c"],
                 partition_columns=[],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
-                view=BigQueryView(
+                view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
@@ -496,7 +496,7 @@ class TestSamenessValidationChecker(TestCase):
                 comparison_columns=["a", "b", "c"],
                 partition_columns=[],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
-                view=BigQueryView(
+                view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
@@ -536,7 +536,7 @@ class TestSamenessValidationChecker(TestCase):
                 comparison_columns=["a", "b", "c"],
                 partition_columns=[],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
-                view=BigQueryView(
+                view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
@@ -569,7 +569,7 @@ class TestSamenessValidationChecker(TestCase):
                 partition_columns=[],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
                 max_allowed_error=max_allowed_error,
-                view=BigQueryView(
+                view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
@@ -610,7 +610,7 @@ class TestSamenessValidationChecker(TestCase):
                 partition_columns=[],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
                 max_allowed_error=max_allowed_error,
-                view=BigQueryView(
+                view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
@@ -657,7 +657,7 @@ class TestSamenessValidationChecker(TestCase):
                 partition_columns=["region", "date"],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
                 max_allowed_error=0.0,
-                view=BigQueryView(
+                view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
                     description="test_view description",
