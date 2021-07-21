@@ -49,7 +49,17 @@ INCARCERATION_PERIOD_ADMISSION_REASON_TO_MOVEMENT_CODE_MAPPINGS: Dict[
     ],
     StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN: [
         # SCI CODES
-        "RTN"  # (Not in PA data dictionary, no instances after 1996)
+        "RTN",  # (Not in PA data dictionary, no instances after 1996)
+        # SCI CODES
+        # TODO(#8346): There are a small amount of SCI admissions in US_PA that have
+        #  revocation statuses but are not classified as revocations due to the previous
+        #  SCI status for the person also being a revocations status. This represents
+        #  less than 1% of all non-transfer admissions, and we are classifying them as
+        #  INTERNAL_UNKNOWN because it's not actually clear what's happening when we
+        #  see these statuses on admissions that are neither parole board holds nor
+        #  revocations.
+        "APD",  # Parole Detainee
+        "APV",  # Parole Violator
     ],
     StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION: [
         # SCI CODES
@@ -62,18 +72,6 @@ INCARCERATION_PERIOD_ADMISSION_REASON_TO_MOVEMENT_CODE_MAPPINGS: Dict[
     StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE: [
         # SCI CODES
         "AE",  # Escape
-    ],
-    StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION: [
-        # SCI CODES
-        # TODO(#3312): Ask what the difference between these two is - APV is much more common
-        "APD",  # Parole Detainee
-        # TODO(#3312): What to do when the parole status code is TPV (i.e. they're already convicted)? I don't think
-        #  this always corresponds to a revocation! For example CN=300233, who it looks like was transferred to a
-        #  county jail (sentence status TC), then transferred back as an APV months later. However, CN=314993 seems
-        #  to have just entered as a violation. TL;DR - going to need to change this logic to a mapper.
-        # When a person comes in on a parole board hold they can have this status - they have not technically been
-        # revoked yet if their parole status is 'PVP'.
-        "APV",  # Parole Violator
     ],
     StateIncarcerationPeriodAdmissionReason.TRANSFER: [
         # CCIS CODES
@@ -349,21 +347,28 @@ def incarceration_period_admission_reason_mapper(
             " "
         )
         start_is_admin_edge = "FALSE"
+        parole_status_code = "NONE"
     else:
         (
-            _,
+            parole_status_code,
             start_is_new_revocation,
             start_movement_code,
             start_is_admin_edge,
         ) = concatenated_codes.split(" ")
 
     if start_is_new_revocation == "TRUE":
-        # Note: These are not always legal revocations. We are currently using the PAROLE_REVOCATION admission_reason
-        # for admissions from parole for treatment and shock incarceration as well as for legal revocations
+        # Note: These are not always legal revocations. We are currently using the
+        # PAROLE_REVOCATION admission_reason for admissions from parole for treatment
+        # and shock incarceration as well as for legal revocations in ingest.
+        # Treatment and shock incarceration admissions are handled as sanction
+        # admissions in IP pre-processing.
         return StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
 
     if start_is_admin_edge == "TRUE":
         return StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE
+
+    if parole_status_code == "PVP":
+        return StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
 
     admission_reason = (
         MOVEMENT_CODE_TO_INCARCERATION_PERIOD_ADMISSION_REASON_MAPPINGS.get(
