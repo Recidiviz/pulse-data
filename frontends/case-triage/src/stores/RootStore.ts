@@ -15,13 +15,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { configure } from "mobx";
+import API from "./API";
+import CaseUpdatesStore from "./CaseUpdatesStore";
 import ClientsStore from "./ClientsStore";
+import { ClientListBuilder } from "./ClientsStore/ClientListBuilder";
+import ErrorMessageStore from "./ErrorMessageStore";
 import OpportunityStore from "./OpportunityStore";
 import PolicyStore from "./PolicyStore";
 import UserStore from "./UserStore";
-import CaseUpdatesStore from "./CaseUpdatesStore";
-import API from "./API";
-import { ClientListBuilder } from "./ClientsStore/ClientListBuilder";
 
 configure({
   useProxies: "never",
@@ -34,6 +35,8 @@ export default class RootStore {
 
   clientsStore: ClientsStore;
 
+  errorMessageStore: ErrorMessageStore;
+
   opportunityStore: OpportunityStore;
 
   policyStore: PolicyStore;
@@ -45,7 +48,11 @@ export default class RootStore {
 
   constructor() {
     this.userStore = UserStore.build();
-    this.api = new API({ userStore: this.userStore });
+    this.errorMessageStore = new ErrorMessageStore();
+    this.api = new API({
+      errorMessageStore: this.errorMessageStore,
+      userStore: this.userStore,
+    });
 
     this.policyStore = new PolicyStore({
       api: this.api,

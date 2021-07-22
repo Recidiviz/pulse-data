@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import { Button, Icon, IconSVG } from "@recidiviz/design-system";
 import * as React from "react";
-import { Button, Icon, IconSVG, useToasts } from "@recidiviz/design-system";
-import { Client } from "../../stores/ClientsStore";
 import { useRootStore } from "../../stores";
-import { useToggleFocus } from "./useToggleFocus";
+import { Client } from "../../stores/ClientsStore";
 import { TextInput } from "./PreferredNameInput.styles";
+import { useToggleFocus } from "./useToggleFocus";
 
 export interface PreferredNameInputProps {
   client: Client;
@@ -28,8 +28,7 @@ export interface PreferredNameInputProps {
 export const PreferredNameInput: React.FC<PreferredNameInputProps> = ({
   client,
 }) => {
-  const { clientsStore } = useRootStore();
-  const { addToast } = useToasts();
+  const { clientsStore, errorMessageStore } = useRootStore();
   const [isToggled, setIsToggled, toggleRef, toggledRef] =
     useToggleFocus<HTMLButtonElement, HTMLInputElement>();
 
@@ -38,7 +37,7 @@ export const PreferredNameInput: React.FC<PreferredNameInputProps> = ({
     clientsStore
       .updateClientPreferredName(client, name)
       .catch(() =>
-        addToast("Failed to update preferred name", { appearance: "error" })
+        errorMessageStore.pushErrorMessage("Failed to update preferred name.")
       );
   };
 
