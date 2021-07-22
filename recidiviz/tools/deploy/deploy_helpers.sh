@@ -300,6 +300,7 @@ function post_deploy_triggers {
         gcloud pubsub topics publish v1.calculator.us_mo_historical_violation --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
         gcloud pubsub topics publish v1.calculator.us_nd_historical_incarceration --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
         gcloud pubsub topics publish v1.calculator.us_nd_historical_supervision --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
+        gcloud pubsub topics publish v1.calculator.us_nd_historical_program --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
         gcloud pubsub topics publish v1.calculator.us_pa_historical_incarceration --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
         gcloud pubsub topics publish v1.calculator.us_pa_historical_supervision --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
         gcloud pubsub topics publish v1.calculator.us_pa_historical_violation --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail

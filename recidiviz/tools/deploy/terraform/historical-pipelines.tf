@@ -61,3 +61,16 @@ module "violation_historical_pipelines" {
   state_code     = each.key
   region         = each.value
 }
+
+module "program_historical_pipelines" {
+  source = "./modules/historical-pipeline"
+  for_each = {
+    US_ND = "us-east1"
+  }
+
+  project_id     = var.project_id
+  repo_url       = local.repo_url
+  pipeline_type  = "program"
+  state_code     = each.key
+  region         = each.value
+}
