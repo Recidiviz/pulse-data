@@ -20,7 +20,7 @@ variable "project_id" {
 }
 
 variable "pipeline_type" {
-  // Options are "supervision", "incarceration", or "violation"
+  // Options are "supervision", "incarceration", "violation", or "program"
   type = string
 }
 

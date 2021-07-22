@@ -158,6 +158,14 @@ historical_pipelines:
     # This region value must stay in-sync with the REGION arg in the
     # historical-pipelines.tf config for this pipeline
     region: us-east1
+  - pipeline: program
+    job_name: us-nd-historical-program-calculations-60
+    state_code: US_ND
+    calculation_month_count: 60
+    metric_types: PROGRAM_PARTICIPATION PROGRAM_REFERRAL
+    # This region value must stay in-sync with the REGION arg in the
+    # historical-pipelines.tf config for this pipeline
+    region: us-east1
   - pipeline: incarceration
     job_name: us-pa-historical-incarceration-calculations-240
     state_code: US_PA
