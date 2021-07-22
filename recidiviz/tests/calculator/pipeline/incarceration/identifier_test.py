@@ -103,6 +103,9 @@ from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_commitmen
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violations_delegate import (
+    UsXxViolationDelegate,
+)
 from recidiviz.tests.calculator.pipeline.utils.us_mo_fakes import (
     FakeUsMoIncarcerationSentence,
     FakeUsMoSupervisionSentence,
@@ -160,6 +163,11 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         self.mock_commitment_from_supervision_delegate.return_value = (
             UsXxCommitmentFromSupervisionDelegate()
         )
+        self.violation_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_violation_delegate"
+        )
+        self.mock_violation_delegate = self.violation_delegate_patcher.start()
+        self.mock_violation_delegate.return_value = UsXxViolationDelegate()
 
     def tearDown(self) -> None:
         self._stop_state_specific_delegate_patchers()
@@ -167,6 +175,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
     def _stop_state_specific_delegate_patchers(self) -> None:
         self.pre_processing_delegate_patcher.stop()
         self.commitment_from_supervision_delegate_patcher.stop()
+        self.violation_delegate_patcher.stop()
 
     def _run_find_incarceration_events(
         self,
@@ -2833,10 +2842,19 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         self.mock_commitment_from_supervision_delegate.return_value = (
             UsXxCommitmentFromSupervisionDelegate()
         )
+        self.violation_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_violation_delegate"
+        )
+        self.mock_violation_delegate = self.violation_delegate_patcher.start()
+        self.mock_violation_delegate.return_value = UsXxViolationDelegate()
         self.identifier = identifier.IncarcerationIdentifier()
 
     def tearDown(self) -> None:
+        self._stop_state_specific_delegate_patchers()
+
+    def _stop_state_specific_delegate_patchers(self) -> None:
         self.commitment_from_supervision_delegate_patcher.stop()
+        self.violation_delegate_patcher.stop()
 
     def _run_admission_event_for_period(
         self,
@@ -3083,6 +3101,18 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
 
     def setUp(self) -> None:
         self.identifier = identifier.IncarcerationIdentifier()
+
+        self.violation_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_violation_delegate"
+        )
+        self.mock_violation_delegate = self.violation_delegate_patcher.start()
+        self.mock_violation_delegate.return_value = UsXxViolationDelegate()
+
+    def tearDown(self) -> None:
+        self._stop_state_specific_delegate_patchers()
+
+    def _stop_state_specific_delegate_patchers(self) -> None:
+        self.violation_delegate_patcher.stop()
 
     def _run_commitment_from_supervision_event_for_period(
         self,
@@ -3433,6 +3463,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         window. Tests that the date on the most recent non-supplemental report is used for the violation history, but
         that the response decision on the supplemental report is counted for the most_severe_response_decision.
         """
+        self._stop_state_specific_delegate_patchers()
         state_code = "US_MO"
 
         supervision_violation = StateSupervisionViolation.new_with_defaults(
@@ -3603,6 +3634,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         )
 
     def test_commitment_from_supervision_event_us_nd(self):
+        self._stop_state_specific_delegate_patchers()
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SP_ID,
             external_id="sp1",

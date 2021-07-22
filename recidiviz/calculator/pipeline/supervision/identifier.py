@@ -56,11 +56,11 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     get_month_supervision_type,
     get_state_specific_case_compliance_manager,
     get_state_specific_supervising_officer_and_location_info_function,
+    get_state_specific_violation_delegate,
     second_assessment_on_supervision_is_more_reliable,
     should_produce_supervision_event_for_period,
     state_specific_supervision_admission_reason_override,
     state_specific_violation_response_pre_processing_function,
-    state_specific_violation_responses_for_violation_history,
     supervision_period_counts_towards_supervision_population_in_date_range_state_specific,
     supervision_types_mutually_exclusive_for_state,
     terminating_supervision_period_supervision_type,
@@ -72,6 +72,7 @@ from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     prepare_violation_responses_for_calculations,
 )
 from recidiviz.calculator.pipeline.utils.violation_utils import (
+    filter_violation_responses_for_violation_history,
     get_violation_and_response_history,
 )
 from recidiviz.common.constants.state.state_assessment import (
@@ -193,9 +194,10 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             sp_pre_processing_manager.pre_processed_supervision_period_index_for_calculations()
         )
 
+        violation_delegate = get_state_specific_violation_delegate(state_code)
         violation_responses_for_history = (
-            state_specific_violation_responses_for_violation_history(
-                state_code=state_code,
+            filter_violation_responses_for_violation_history(
+                violation_delegate,
                 violation_responses=sorted_violation_responses,
                 include_follow_up_responses=False,
             )

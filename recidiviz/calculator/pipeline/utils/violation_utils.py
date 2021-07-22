@@ -17,19 +17,22 @@
 """Utils for working with StateSupervisionViolations and their related entities."""
 from collections import OrderedDict, defaultdict
 from datetime import date
-from typing import List, Optional, Dict, Tuple, Set, NamedTuple
+from typing import Dict, List, NamedTuple, Optional, Set, Tuple
 
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
+    get_violation_type_subtype_strings_for_violation,
+    shorthand_for_violation_subtype,
+    sorted_violation_subtypes_by_severity,
+    violation_type_from_subtype,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
+    StateSpecificViolationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     get_most_severe_response_decision,
     violation_responses_in_window,
-)
-from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    shorthand_for_violation_subtype,
-    sorted_violation_subtypes_by_severity,
-    get_violation_type_subtype_strings_for_violation,
-    violation_type_from_subtype,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -39,9 +42,9 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.persistence.entity.entity_utils import get_single_state_code
 from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationPeriod,
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
-    StateIncarcerationPeriod,
 )
 
 SUBSTANCE_ABUSE_SUBTYPE_STR: str = "SUBSTANCE_ABUSE"
@@ -326,3 +329,23 @@ def get_violation_history_description(
     state_code = get_single_state_code(violations)
 
     return shorthand_description_for_ranked_violation_counts(state_code, subtype_counts)
+
+
+def filter_violation_responses_for_violation_history(
+    violation_delegate: StateSpecificViolationDelegate,
+    violation_responses: List[StateSupervisionViolationResponse],
+    include_follow_up_responses: bool = False,
+) -> List[StateSupervisionViolationResponse]:
+    """Returns the list of violation responses that should be included in analyses
+    of violation history. By default, filters out null dates and draft responses.
+    Then, uses the state-specific code to determine whether each response should also be included."""
+    filtered_responses = [
+        response
+        for response in violation_responses
+        if response.response_date is not None
+        and not response.is_draft
+        and violation_delegate.should_include_response_in_violation_history(
+            response, include_follow_up_responses
+        )
+    ]
+    return filtered_responses

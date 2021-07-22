@@ -18,6 +18,7 @@
 import unittest
 from datetime import date
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from unittest import mock
 
 import apache_beam as beam
 from apache_beam.testing.test_pipeline import TestPipeline
@@ -58,6 +59,9 @@ from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
     run_test_pipeline,
     test_pipeline_options,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violations_delegate import (
+    UsXxViolationDelegate,
+)
 
 ALL_METRIC_INCLUSIONS_DICT = {metric_type: True for metric_type in ViolationMetricType}
 
@@ -68,6 +72,14 @@ class TestViolationPipeline(unittest.TestCase):
     def setUp(self) -> None:
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
         self.fake_bq_sink_factory = FakeWriteToBigQueryFactory(FakeWriteToBigQuery)
+        self.violation_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.violation.identifier.get_state_specific_violation_delegate"
+        )
+        self.mock_violation_delegate = self.violation_delegate_patcher.start()
+        self.mock_violation_delegate.return_value = UsXxViolationDelegate()
+
+    def tearDown(self) -> None:
+        self.violation_delegate_patcher.stop()
 
     @staticmethod
     def build_data_dict(
@@ -277,6 +289,14 @@ class TestClassifyViolationEvents(unittest.TestCase):
             birthdate=date(1985, 2, 1),
         )
         self.identifier = ViolationIdentifier()
+        self.violation_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.violation.identifier.get_state_specific_violation_delegate"
+        )
+        self.mock_violation_delegate = self.violation_delegate_patcher.start()
+        self.mock_violation_delegate.return_value = UsXxViolationDelegate()
+
+    def tearDown(self) -> None:
+        self.violation_delegate_patcher.stop()
 
     def testClassifyViolationEvents(self) -> None:
         """Tests the ClassifyViolationEvents DoFn."""
