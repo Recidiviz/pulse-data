@@ -18,6 +18,7 @@
 """Tests for violation/identifier.py"""
 import unittest
 from datetime import date
+from unittest import mock
 
 from recidiviz.calculator.pipeline.violation import identifier
 from recidiviz.calculator.pipeline.violation.events import ViolationWithResponseEvent
@@ -35,6 +36,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponseDecisionEntry,
     StateSupervisionViolationTypeEntry,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violations_delegate import (
+    UsXxViolationDelegate,
+)
 
 
 class TestFindViolationEvents(unittest.TestCase):
@@ -42,6 +46,14 @@ class TestFindViolationEvents(unittest.TestCase):
 
     def setUp(self) -> None:
         self.identifier = identifier.ViolationIdentifier()
+        self.violation_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.violation.identifier.get_state_specific_violation_delegate"
+        )
+        self.mock_violation_delegate = self.violation_delegate_patcher.start()
+        self.mock_violation_delegate.return_value = UsXxViolationDelegate()
+
+    def tearDown(self) -> None:
+        self.violation_delegate_patcher.stop()
 
     def test_find_violation_events(self) -> None:
         violation_type = StateSupervisionViolationTypeEntry.new_with_defaults(
@@ -133,6 +145,14 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         self.violation_response.supervision_violation = self.violation
         self.violation_type.supervision_violation = self.violation
         self.identifier = identifier.ViolationIdentifier()
+        self.violation_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.violation.identifier.get_state_specific_violation_delegate"
+        )
+        self.mock_violation_delegate = self.violation_delegate_patcher.start()
+        self.mock_violation_delegate.return_value = UsXxViolationDelegate()
+
+    def tearDown(self) -> None:
+        self.violation_delegate_patcher.stop()
 
     def test_find_violation_with_response_events(self) -> None:
         violation_with_response_events = (

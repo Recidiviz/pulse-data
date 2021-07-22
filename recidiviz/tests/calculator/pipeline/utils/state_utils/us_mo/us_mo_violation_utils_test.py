@@ -20,18 +20,16 @@ from typing import List
 
 import pytest
 
-
 # pylint: disable=protected-access
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils import (
-    _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP,
     _LAW_CITATION_SUBTYPE_STR,
-    us_mo_filter_violation_responses,
-    _normalize_violations_on_responses,
     _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES,
-    us_mo_sorted_violation_subtypes_by_severity,
+    _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP,
+    _normalize_violations_on_responses,
     us_mo_get_violation_type_subtype_strings_for_violation,
-    us_mo_violation_type_from_subtype,
     us_mo_shorthand_for_violation_subtype,
+    us_mo_sorted_violation_subtypes_by_severity,
+    us_mo_violation_type_from_subtype,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -40,10 +38,10 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.persistence.entity.state.entities import (
-    StateSupervisionViolation,
     StateSupervisionViolatedConditionEntry,
-    StateSupervisionViolationTypeEntry,
+    StateSupervisionViolation,
     StateSupervisionViolationResponse,
+    StateSupervisionViolationTypeEntry,
 )
 
 _STATE_CODE = "US_MO"
@@ -393,135 +391,3 @@ class TestNormalizeViolationsOnResponsesUsMo(unittest.TestCase):
         with pytest.raises(ValueError):
             # This function should only be called for responses from US_MO
             _ = _normalize_violations_on_responses(supervision_violation_response)
-
-
-class TestFilterViolationResponses(unittest.TestCase):
-    """Tests the us_mo_filter_violation_responses function."""
-
-    def test_filter_violation_responses_INI(self) -> None:
-        supervision_violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_MO",
-                response_type=StateSupervisionViolationResponseType.CITATION,
-            ),
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_MO",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_subtype="INI",  # Should be included
-            ),
-        ]
-
-        filtered_responses = us_mo_filter_violation_responses(
-            supervision_violation_responses, include_follow_up_responses=True
-        )
-
-        self.assertEqual(supervision_violation_responses, filtered_responses)
-
-    def test_filter_violation_responses_ITR(self) -> None:
-        supervision_violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_MO",
-                response_type=StateSupervisionViolationResponseType.CITATION,
-            ),
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_MO",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_subtype="ITR",  # Should be included
-            ),
-        ]
-
-        filtered_responses = us_mo_filter_violation_responses(
-            supervision_violation_responses, include_follow_up_responses=True
-        )
-
-        self.assertEqual(supervision_violation_responses, filtered_responses)
-
-    def test_filter_violation_responses_do_not_include_supplemental(self) -> None:
-        supervision_violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_MO",
-                response_type=StateSupervisionViolationResponseType.CITATION,
-            ),
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_MO",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_subtype="SUP",  # Should not be included
-            ),
-        ]
-
-        filtered_responses = us_mo_filter_violation_responses(
-            supervision_violation_responses, include_follow_up_responses=False
-        )
-        expected_output = [
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_MO",
-                response_type=StateSupervisionViolationResponseType.CITATION,
-            )
-        ]
-
-        self.assertEqual(expected_output, filtered_responses)
-
-    def test_filter_violation_responses_do_include_supplemental(self) -> None:
-        supervision_violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_MO",
-                response_type=StateSupervisionViolationResponseType.CITATION,
-            ),
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_MO",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_subtype="SUP",  # Should be included
-            ),
-        ]
-
-        filtered_responses = us_mo_filter_violation_responses(
-            supervision_violation_responses, include_follow_up_responses=True
-        )
-        expected_output = [
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_MO",
-                response_type=StateSupervisionViolationResponseType.CITATION,
-            ),
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_MO",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_subtype="SUP",  # Should be included
-            ),
-        ]
-
-        self.assertEqual(expected_output, filtered_responses)
-
-    def test_filter_violation_responses_none_valid(self) -> None:
-        supervision_violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_MO",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_subtype="SUP",  # Should not be included
-            ),
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_MO",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_subtype="HOF",  # Should not be included
-            ),
-        ]
-
-        filtered_responses = us_mo_filter_violation_responses(
-            supervision_violation_responses, include_follow_up_responses=False
-        )
-        expected_output: List[StateSupervisionViolationResponse] = []
-
-        self.assertEqual(expected_output, filtered_responses)
-
-    def test_filter_violation_responses_unexpected_subtype(self) -> None:
-        supervision_violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_MO",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_subtype="XXX",  # Not one we expect to see
-            )
-        ]
-
-        with pytest.raises(ValueError):
-            _ = us_mo_filter_violation_responses(
-                supervision_violation_responses, include_follow_up_responses=True
-            )

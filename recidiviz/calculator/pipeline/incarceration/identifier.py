@@ -57,9 +57,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     get_post_incarceration_supervision_type,
     get_state_specific_commitment_from_supervision_delegate,
     get_state_specific_supervising_officer_and_location_info_function,
+    get_state_specific_violation_delegate,
     include_decisions_on_follow_up_responses_for_most_severe_response,
     state_specific_violation_response_pre_processing_function,
-    state_specific_violation_responses_for_violation_history,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
@@ -75,6 +75,7 @@ from recidiviz.calculator.pipeline.utils.violation_response_utils import (
 )
 from recidiviz.calculator.pipeline.utils.violation_utils import (
     VIOLATION_HISTORY_WINDOW_MONTHS,
+    filter_violation_responses_for_violation_history,
     get_violation_and_response_history,
 )
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
@@ -591,10 +592,10 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             assessment_class=StateAssessmentClass.RISK,
             state_code=incarceration_period.state_code,
         )
-
+        violation_delegate = get_state_specific_violation_delegate(state_code)
         violation_responses_for_history = (
-            state_specific_violation_responses_for_violation_history(
-                state_code=state_code,
+            filter_violation_responses_for_violation_history(
+                violation_delegate,
                 violation_responses=sorted_violation_responses,
                 include_follow_up_responses=False,
             )
@@ -623,8 +624,8 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             # Get a new state-specific list of violation responses that includes follow-up
             # responses
             responses_for_decision_evaluation = (
-                state_specific_violation_responses_for_violation_history(
-                    state_code=state_code,
+                filter_violation_responses_for_violation_history(
+                    violation_delegate=violation_delegate,
                     violation_responses=sorted_violation_responses,
                     include_follow_up_responses=True,
                 )

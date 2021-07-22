@@ -22,7 +22,6 @@ from typing import Callable, Dict, List, Optional
 
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
-    StateSupervisionViolationResponseType,
 )
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
@@ -125,27 +124,6 @@ def sorted_violation_responses_with_set_dates(
 
     # All responses will have a response_date at this point, but date.min helps to satisfy mypy
     filtered_responses.sort(key=lambda b: b.response_date or date.min)
-
-    return filtered_responses
-
-
-def default_filtered_violation_responses_for_violation_history(
-    violation_responses: List[StateSupervisionViolationResponse],
-) -> List[StateSupervisionViolationResponse]:
-    """Default filtering function for including the kinds of
-    StateSupervisionViolationResponses that should be used in analyses of history of
-    violations."""
-    filtered_responses = [
-        response
-        for response in violation_responses
-        if response.response_date is not None
-        and not response.is_draft
-        and response.response_type
-        in (
-            StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            StateSupervisionViolationResponseType.CITATION,
-        )
-    ]
 
     return filtered_responses
 

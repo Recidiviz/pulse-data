@@ -36,6 +36,9 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
+    StateSpecificViolationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_commitment_from_supervision_delegate import (
     UsIdCommitmentFromSupervisionDelegate,
 )
@@ -52,6 +55,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_uti
     us_id_get_supervision_period_admission_override,
     us_id_supervision_period_is_out_of_state,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_violations_delegate import (
+    UsIdViolationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo import us_mo_violation_utils
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_commitment_from_supervision_delegate import (
     UsMoCommitmentFromSupervisionDelegate,
@@ -65,8 +71,8 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_uti
     us_mo_get_post_incarceration_supervision_type,
     us_mo_get_pre_incarceration_supervision_type,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils import (
-    us_mo_filter_violation_responses,
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violations_delegate import (
+    UsMoViolationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd import us_nd_violation_utils
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_delegate import (
@@ -82,6 +88,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_uti
     us_nd_get_post_incarceration_supervision_type,
     us_nd_infer_supervision_period_admission,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_violations_delegate import (
+    UsNdViolationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa import us_pa_violation_utils
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from_supervision_delegate import (
     UsPaCommitmentFromSupervisionDelegate,
@@ -95,6 +104,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_com
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_utils import (
     us_pa_get_supervising_officer_and_location_info_from_supervision_period,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violations_delegate import (
+    UsPaViolationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
 )
@@ -104,9 +116,6 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
     get_month_supervision_type_default,
     get_pre_incarceration_supervision_type_from_ip_admission_reason,
-)
-from recidiviz.calculator.pipeline.utils.violation_response_utils import (
-    default_filtered_violation_responses_for_violation_history,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
@@ -495,6 +504,23 @@ def get_state_specific_commitment_from_supervision_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
+def get_state_specific_violation_delegate(
+    state_code: str,
+) -> StateSpecificViolationDelegate:
+    """Returns the type of StateSpecificViolationDelegate that should be used for
+    violation calculations in a given |state_code|."""
+    if state_code == StateCode.US_ID.value:
+        return UsIdViolationDelegate()
+    if state_code == StateCode.US_ND.value:
+        return UsNdViolationDelegate()
+    if state_code == StateCode.US_MO.value:
+        return UsMoViolationDelegate()
+    if state_code == StateCode.US_PA.value:
+        return UsPaViolationDelegate()
+
+    raise ValueError(f"Unexpected state code [{state_code}]")
+
+
 # TODO(#3829): Remove this helper once we've built level 1/level 2 supervision
 #  location distinction directly into our schema (info currently packed into
 #  supervision_site for states that have both).
@@ -677,23 +703,3 @@ def supervision_period_is_out_of_state(
         return False
 
     return us_id_supervision_period_is_out_of_state(supervision_population_event)
-
-
-def state_specific_violation_responses_for_violation_history(
-    state_code: str,
-    violation_responses: List[StateSupervisionViolationResponse],
-    include_follow_up_responses: bool = False,
-) -> List[StateSupervisionViolationResponse]:
-    """Returns the list of violation responses that should be included in analyses
-    of violation history, using state-specific filtering logic where necessary."""
-    if state_code == StateCode.US_MO.value:
-        return us_mo_filter_violation_responses(
-            violation_responses, include_follow_up_responses
-        )
-    if state_code == StateCode.US_ND.value:
-        return us_nd_violation_utils.us_nd_filter_violation_responses(
-            violation_responses
-        )
-    return default_filtered_violation_responses_for_violation_history(
-        violation_responses
-    )
