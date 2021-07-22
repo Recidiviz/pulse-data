@@ -77,6 +77,26 @@ const UserComponent = ({ user }: UserProps): JSX.Element => {
               Go to Dashboard
             </DropdownLink>
           )}
+          {process.env.NODE_ENV === "development" && (
+            <DropdownLinkButton
+              kind="link"
+              onClick={async () => {
+                try {
+                  // Note: This request will fail in dev because of CORS.
+                  // We catch the error and proceed anyways.
+                  await api.get(
+                    // To impersonate a user, switch the url to something like:
+                    // "/impersonate_user?impersonated_email=user%40recidiviz.org"
+                    "/impersonate_user"
+                  );
+                } finally {
+                  window.location.reload();
+                }
+              }}
+            >
+              Impersonate User
+            </DropdownLinkButton>
+          )}
           <DropdownLinkButton
             kind="link"
             onClick={() => {
