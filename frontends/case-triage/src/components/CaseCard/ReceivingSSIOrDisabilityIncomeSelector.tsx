@@ -21,7 +21,6 @@ import {
   DropdownToggle,
   Icon,
   IconSVG,
-  useToasts,
 } from "@recidiviz/design-system";
 import { observer } from "mobx-react-lite";
 import * as React from "react";
@@ -34,8 +33,7 @@ export interface ReceivingSSIOrDisabilityIncomeSelectorProps {
 
 export const ReceivingSSIOrDisabilityIncomeSelector: React.FC<ReceivingSSIOrDisabilityIncomeSelectorProps> =
   observer(({ client }) => {
-    const { opportunityStore } = useRootStore();
-    const { addToast } = useToasts();
+    const { opportunityStore, errorMessageStore } = useRootStore();
 
     return (
       <Dropdown>
@@ -56,9 +54,9 @@ export const ReceivingSSIOrDisabilityIncomeSelector: React.FC<ReceivingSSIOrDisa
                   !client.receivingSSIOrDisabilityIncome
                 );
               } catch (error) {
-                addToast("Failed to update SSI/Disability income", {
-                  appearance: "error",
-                });
+                errorMessageStore.pushErrorMessage(
+                  "Failed to update SSI/Disability income"
+                );
               }
               // We check to see if their opportunities have changed
               // now that we've changed SSI/Disability income information.

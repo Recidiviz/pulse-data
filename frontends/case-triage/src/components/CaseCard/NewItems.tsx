@@ -14,19 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-
 import { observer } from "mobx-react-lite";
 import React, { useState } from "react";
+import { ActionRow } from "./ActionRow";
 import { CaseCardProps } from "./CaseCard.types";
-import { AddNote, NoteInput, NoteRow } from "./Notes";
 import {
-  NewItemsWrapper,
-  ItemsWrapper,
-  Item,
   FooterItem,
+  Item,
+  ItemsWrapper,
+  NewItemsWrapper,
   PlainBullet,
 } from "./NewItems.styles";
-import { ActionRow } from "./ActionRow";
+import { AddNote, NoteInput, NoteRow } from "./Notes";
 
 export const NewItems = observer(({ client }: CaseCardProps): JSX.Element => {
   const [noteInProgress, setNoteInProgress] = useState(false);
