@@ -17,34 +17,17 @@
 """Utils for state-specific calculations related to violations for US_ND."""
 import datetime
 from collections import defaultdict
-from typing import List, Dict, Set
+from typing import Dict, List, Set
 
 import attr
 
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
-from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseType,
-)
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
     StateSupervisionViolationTypeEntry,
 )
-
-
-def us_nd_filter_violation_responses(
-    violation_responses: List[StateSupervisionViolationResponse],
-) -> List[StateSupervisionViolationResponse]:
-    """Filters out VIOLATION_REPORT responses that are not of type INI (Initial) or ITR (Inter district)."""
-    filtered_responses = [
-        response
-        for response in violation_responses
-        if response.response_type
-        == StateSupervisionViolationResponseType.PERMANENT_DECISION
-    ]
-
-    return filtered_responses
 
 
 def us_nd_prepare_violation_responses_for_calculations(

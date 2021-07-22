@@ -97,6 +97,9 @@ from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_commitmen
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violations_delegate import (
+    UsXxViolationDelegate,
+)
 from recidiviz.tests.persistence.database import database_test_utils
 
 _COUNTY_OF_RESIDENCE = "county_of_residence"
@@ -143,10 +146,16 @@ class TestIncarcerationPipeline(unittest.TestCase):
         self.mock_commitment_from_supervision_delegate.return_value = (
             UsXxCommitmentFromSupervisionDelegate()
         )
+        self.violation_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_violation_delegate"
+        )
+        self.mock_violation_delegate = self.violation_delegate_patcher.start()
+        self.mock_violation_delegate.return_value = UsXxViolationDelegate()
 
     def tearDown(self) -> None:
         self.pre_processing_delegate_patcher.stop()
         self.commitment_from_supervision_delegate_patcher.stop()
+        self.violation_delegate_patcher.stop()
 
     @staticmethod
     def _default_data_dict():
@@ -732,9 +741,16 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         self.mock_commitment_from_supervision_delegate.return_value = (
             UsXxCommitmentFromSupervisionDelegate()
         )
+        self.violation_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_violation_delegate"
+        )
+        self.mock_violation_delegate = self.violation_delegate_patcher.start()
+        self.mock_violation_delegate.return_value = UsXxViolationDelegate()
 
     def tearDown(self) -> None:
         self.pre_processing_delegate_patcher.stop()
+        self.commitment_from_supervision_delegate_patcher.stop()
+        self.violation_delegate_patcher.stop()
 
     @staticmethod
     def load_person_entities_dict(

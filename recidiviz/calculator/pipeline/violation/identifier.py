@@ -22,10 +22,10 @@ from recidiviz.calculator.pipeline.base_identifier import (
     IdentifierContextT,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
+    get_state_specific_violation_delegate,
     get_violation_type_subtype_strings_for_violation,
     sorted_violation_subtypes_by_severity,
     state_specific_violation_response_pre_processing_function,
-    state_specific_violation_responses_for_violation_history,
     state_specific_violation_type_subtypes_with_violation_type_mappings,
     violation_type_from_subtype,
 )
@@ -35,6 +35,7 @@ from recidiviz.calculator.pipeline.utils.violation_response_utils import (
 )
 from recidiviz.calculator.pipeline.utils.violation_utils import (
     DEFAULT_VIOLATION_SUBTYPE_SEVERITY_ORDER,
+    filter_violation_responses_for_violation_history,
 )
 from recidiviz.calculator.pipeline.violation.events import (
     ViolationEvent,
@@ -114,10 +115,14 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
                 state_code=state_code
             ),
         )
+
+        violation_delegate = get_state_specific_violation_delegate(state_code)
         appropriate_violation_responses_with_dates: List[
             StateSupervisionViolationResponse
-        ] = state_specific_violation_responses_for_violation_history(
-            state_code, sorted_violation_responses
+        ] = filter_violation_responses_for_violation_history(
+            violation_delegate,
+            violation_responses=sorted_violation_responses,
+            include_follow_up_responses=False,
         )
 
         if not appropriate_violation_responses_with_dates:

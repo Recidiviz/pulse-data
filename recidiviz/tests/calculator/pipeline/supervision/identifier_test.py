@@ -111,6 +111,9 @@ from recidiviz.persistence.entity.state.entities import (
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violations_delegate import (
+    UsXxViolationDelegate,
+)
 from recidiviz.tests.calculator.pipeline.utils.us_mo_fakes import (
     FakeUsMoIncarcerationSentence,
     FakeUsMoSupervisionSentence,
@@ -164,6 +167,11 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         self.mock_pre_processing_delegate.return_value = (
             UsXxIncarcerationPreProcessingDelegate()
         )
+        self.violation_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.supervision.identifier.get_state_specific_violation_delegate"
+        )
+        self.mock_violation_delegate = self.violation_delegate_patcher.start()
+        self.mock_violation_delegate.return_value = UsXxViolationDelegate()
         self.identifier = identifier.SupervisionIdentifier()
 
         self.person = StatePerson.new_with_defaults(state_code="US_XX")
@@ -174,6 +182,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
     def _stop_state_specific_delegate_patchers(self) -> None:
         self.pre_processing_delegate_patcher.stop()
+        self.violation_delegate_patcher.stop()
 
     def test_find_supervision_events(self) -> None:
         """Tests the find_supervision_population_events function for a single
