@@ -111,7 +111,9 @@ requires_authorization = build_auth0_authorization_decorator(
 )
 
 store_refresh = RepeatedTimer(
-    15 * 60, authorization_store.refresh, run_immediately=True
+    15 * 60,
+    authorization_store.refresh,
+    run_immediately_synchronously=True,
 )
 
 if not in_test():
