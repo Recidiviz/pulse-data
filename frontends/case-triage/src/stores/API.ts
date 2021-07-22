@@ -91,6 +91,10 @@ class API {
           this.userStore.setLeadershipDashboardAccess(
             canAccessLeadershipDashboard
           );
+
+          Sentry.setUser({ id: segmentUserId });
+          Sentry.setTag("app.version", this.userStore.currentVersion);
+
           this.bootstrapped = true;
         }
       );

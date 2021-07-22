@@ -31,17 +31,21 @@ class RepeatedTimer(threading.Thread):
         seconds_to_wait: float,
         callback: Callable[[], None],
         run_immediately: bool = False,
+        run_immediately_synchronously: bool = False,
     ):
         threading.Thread.__init__(self)
         self.seconds_to_wait = seconds_to_wait
         self.callback = callback
-        self.run_immmediately = run_immediately
+        self.run_immediately = run_immediately
+
+        if run_immediately_synchronously:
+            self.callback()
 
         self.daemon = True
         self.stop_event = threading.Event()
 
     def run(self) -> None:
-        if self.run_immmediately:
+        if self.run_immediately:
             self.callback()
         while True:
             # Will be true if we didn't wait for the full timeout (e.g stop_timer() is called)
