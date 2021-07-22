@@ -16,9 +16,11 @@
 // =============================================================================
 import * as Sentry from "@sentry/react";
 import { identify } from "../analytics";
+import ErrorMessageStore from "./ErrorMessageStore";
 import UserStore, { FeatureVariants } from "./UserStore";
 
 interface APIProps {
+  errorMessageStore: ErrorMessageStore;
   userStore: UserStore;
 }
 
@@ -63,11 +65,14 @@ class API {
 
   dashboardURL: string;
 
+  errorMessageStore: ErrorMessageStore;
+
   userStore: UserStore;
 
-  constructor({ userStore }: APIProps) {
+  constructor({ errorMessageStore, userStore }: APIProps) {
     this.csrfToken = "";
     this.dashboardURL = "";
+    this.errorMessageStore = errorMessageStore;
     this.userStore = userStore;
   }
 
@@ -147,6 +152,7 @@ class API {
       }
 
       if (isErrorResponse(json)) {
+        this.errorMessageStore.pushError(json);
         throw json;
       }
 

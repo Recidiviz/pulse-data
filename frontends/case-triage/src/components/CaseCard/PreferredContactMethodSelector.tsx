@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import * as React from "react";
 import {
   Dropdown,
   DropdownMenu,
@@ -22,16 +21,14 @@ import {
   DropdownToggle,
   Icon,
   IconSVG,
-  useToasts,
 } from "@recidiviz/design-system";
-
 import { observer } from "mobx-react-lite";
+import * as React from "react";
+import { useRootStore } from "../../stores";
 import {
   Client,
   PreferredContactMethod,
 } from "../../stores/ClientsStore/Client";
-import { useRootStore } from "../../stores";
-
 import { titleCase } from "../../utils";
 
 export interface PreferredContactMethodSelectorProps {
@@ -42,8 +39,7 @@ const DEFAULT_TITLE = "Method";
 
 export const PreferredContactMethodSelector: React.FC<PreferredContactMethodSelectorProps> =
   observer(({ client }) => {
-    const { clientsStore } = useRootStore();
-    const { addToast } = useToasts();
+    const { clientsStore, errorMessageStore } = useRootStore();
 
     return (
       <Dropdown>
@@ -61,9 +57,9 @@ export const PreferredContactMethodSelector: React.FC<PreferredContactMethodSele
                 clientsStore
                   .updateClientPreferredContactMethod(client, value)
                   .catch(() =>
-                    addToast("Failed to update preferred contact method", {
-                      appearance: "error",
-                    })
+                    errorMessageStore.pushErrorMessage(
+                      "Failed to update preferred contact method"
+                    )
                   )
               }
               key={value}

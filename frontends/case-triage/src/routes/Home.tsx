@@ -15,8 +15,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { Link, RouteComponentProps } from "@reach/router";
-import React, { ReactElement } from "react";
-import styled from "styled-components/macro";
 import {
   Assets,
   Button,
@@ -24,11 +22,17 @@ import {
   Modal,
   Search,
   spacing,
+  useToasts,
 } from "@recidiviz/design-system";
-import { rem } from "polished";
-import { observer } from "mobx-react-lite";
-
 import useBreakpoint from "@w11r/use-breakpoint";
+import { observer } from "mobx-react-lite";
+import { rem } from "polished";
+import React, { ReactElement } from "react";
+import styled from "styled-components/macro";
+import {
+  trackSearchBarEnterPressed,
+  trackSearchBarFocused,
+} from "../analytics";
 import AuthWall from "../components/AuthWall";
 import CaseCard, {
   CaseCardDrawer,
@@ -36,13 +40,9 @@ import CaseCard, {
   CaseCardPopout,
 } from "../components/CaseCard";
 import ClientList from "../components/ClientList";
+import { device } from "../components/styles";
 import UserSection from "../components/UserSection";
 import { useRootStore } from "../stores";
-import {
-  trackSearchBarEnterPressed,
-  trackSearchBarFocused,
-} from "../analytics";
-import { device } from "../components/styles";
 import { KNOWN_EXPERIMENTS } from "../stores/UserStore";
 
 const Container = styled.div`
@@ -69,6 +69,16 @@ const Right = styled.div`
 const ReloadButton = styled(Button)`
   margin: ${rem(spacing.lg)} auto 0 auto;
 `;
+
+const ErrorToasts = observer((): JSX.Element => {
+  const { errorMessageStore } = useRootStore();
+  const { addToast } = useToasts();
+  const error = errorMessageStore.removeError();
+  if (error) {
+    addToast(error.description, { appearance: "error" });
+  }
+  return <></>;
+});
 
 const Home = (props: RouteComponentProps): ReactElement => {
   const { clientsStore, userStore } = useRootStore();
@@ -128,6 +138,7 @@ const Home = (props: RouteComponentProps): ReactElement => {
             )}
           </>
         )}
+        <ErrorToasts />
       </Container>
       <Modal
         isOpen={userStore.shouldReload}

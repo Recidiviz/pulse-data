@@ -14,10 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-
 import { Button, Icon } from "@recidiviz/design-system";
-import React from "react";
 import { observer } from "mobx-react-lite";
+import React from "react";
+import { Note } from "../../../stores/ClientsStore";
+import { ActionRow } from "../ActionRow";
 import {
   AddNoteButton,
   Input,
@@ -26,8 +27,6 @@ import {
   NoteText,
   NoteWrapper,
 } from "./Notes.styles";
-import { Note } from "../../../stores/ClientsStore";
-import { ActionRow } from "../ActionRow";
 
 type InputProps = {
   onCommit: (text: string) => void;
