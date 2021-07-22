@@ -20,7 +20,7 @@ columns:
       - Supervision officers can pick up to **6** contact codes (i.e. 1 value for `CONTACT_CODE`, and `C2-C6` all populated as well)<br>- **Face to Face** contacts are *only* placed in the `CONTACT_CODE` column<br>- The rest can be in C2→ C6<br>- You can have `C2-6`, without `CONTACT_CODE`:<br>- This can happen when another officer (who doesn’t have the supervisee on their caseload) logs that something happened and the associated office is not present<br>- Only a person who has a supervisee in their caseload can add an entry with an associated `CONTACT_CODE`.
     known_values:
       - value: FR
-        description: Unknown  #TODO(#7196): Update when official description is known
+        description: FTR (Freedom Through Recovery) Refusal
       - value: HV
         description: Home Visit; going to the residence/current location
       - value: OO
@@ -32,18 +32,71 @@ columns:
   - name: C2
     description: |-
       Additional sub-code for the kind of contact which occurred.
+    known_values:
+      - value: 19
+        description: Code for COVID-19 virus
+      - value: AC
+        description: Attempted Contact
+      - value: AD
+        description: Administrative Contact
+      - value: AS
+        description: Alco-Sensor
+      - value: CC
+        description: Collateral Contact
+      - value: CT
+        description: Care Coordination Team
+      - value: EP
+        description: Epics
+      - value: FA
+        description: File Audit
+      - value: FF
+        description: Face to face visit
+      - value: HV
+        description: Home visit
+      - value: MR
+        description: Monthly report
+      - value: NS
+        description: No Show
+      - value: OC
+        description: Offender Communication
+      - value: OO
+        description: Out of Office Visit
+      - value: OR
+        description: Overridden
+      - value: OV
+        description: Office Visit
+      - value: PI
+        description: Pre-trial Incentive
+      - value: PR
+        description: Positive reinforcement
+      - value: PS
+        description: Pre-trial Sanction
+      - value: PT
+        description: Pre-trial
+      - value: RA
+        description: Reassessment
+      - value: SO
+        description: Surveillance Officer
+      - value: SU
+        description: Substance Use
+      - value: TS
+        description: Treatment Staff
+      - value: UA
+        description: Urine analysis
+      - value: VI
+        description: Violation
   - name: C3
     description: |-
-      Additional sub-code for the kind of contact which occurred.
+      Additional sub-code for the kind of contact which occurred. Known values are same as those captured in CONTACT_CODE or C2
   - name: C4
     description: |-
-      Additional sub-code for the kind of contact which occurred.
+      Additional sub-code for the kind of contact which occurred. Known values are same as those captured in CONTACT_CODE or C2
   - name: C5
     description: |-
-      Additional sub-code for the kind of contact which occurred.
+      Additional sub-code for the kind of contact which occurred. Known values are same as those captured in CONTACT_CODE or C2
   - name: C6
     description: |-
-      Additional sub-code for the kind of contact which occurred.
+      Additional sub-code for the kind of contact which occurred. Known values are same as those captured in CONTACT_CODE or C2
   - name: CATEGORY
     description: |-
       The type of contact (i.e. Supervision, Recovery, etc.).
