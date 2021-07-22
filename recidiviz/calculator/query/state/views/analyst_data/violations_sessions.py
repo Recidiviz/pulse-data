@@ -88,7 +88,7 @@ VIOLATIONS_SESSIONS_QUERY_TEMPLATE = """
         WHERE is_most_severe_violation_type
     ), 
     violations_dedup_cte AS (
-        SELECT *
+        SELECT * EXCEPT(violation_priority)
         FROM violations_cte 
         WHERE violation_priority = 1
     ),
@@ -122,13 +122,16 @@ VIOLATIONS_SESSIONS_QUERY_TEMPLATE = """
     violations_sessions_info AS (
         SELECT violations.*,
         COALESCE(sessions.session_id,1) as session_id,
-        revocations.revocation_session_id as revocation_session_id_temp,
-        revocations.revocation_date,
+        /* Where the same violation is associated with multiple revocations, choose the earliest revocation date */
         ROW_NUMBER() OVER(PARTITION BY violations.person_id, violations.response_date 
             ORDER BY revocations.revocation_date ASC) as same_violation_multiple_revocations_rn,
         super_sessions.supervision_super_session_id,
+        /* Where the same revocation is associated with multiple violations, choose the most severe of the violations
+        and then choose the most recent violation if the severity is the same */
         CASE WHEN ROW_NUMBER() OVER(PARTITION BY violations.person_id, revocations.revocation_session_id 
-            ORDER BY CASE WHEN priority IS null THEN 1 ELSE 0 END, priority ASC, response_date DESC) = 1 THEN revocation_session_id END AS revocation_session_id
+            ORDER BY CASE WHEN priority IS null THEN 1 ELSE 0 END, priority ASC, response_date DESC) = 1 THEN revocation_session_id END AS revocation_session_id,
+        CASE WHEN ROW_NUMBER() OVER(PARTITION BY violations.person_id, revocations.revocation_session_id 
+            ORDER BY CASE WHEN priority IS null THEN 1 ELSE 0 END, priority ASC, response_date DESC) = 1 THEN revocation_date END AS revocation_date
         FROM violations_combine violations
         /* left join because there is a very small number of observations that dont get a session_id - if the violation
         is recorded before they show up in population metrics and therefore in sessions */
@@ -139,10 +142,10 @@ VIOLATIONS_SESSIONS_QUERY_TEMPLATE = """
             ON sessions.person_id = super_sessions.person_id
             AND sessions.session_id BETWEEN super_sessions.session_id_start AND super_sessions.session_id_end
         LEFT JOIN `{project_id}.{analyst_dataset}.revocation_sessions_materialized` revocations
-        ON revocations.person_id = violations.person_id
-        AND revocations.revocation_date BETWEEN violations.response_date AND DATE_ADD(violations.response_date, INTERVAL 365 DAY)        
+            ON revocations.person_id = violations.person_id
+            AND revocations.revocation_date BETWEEN violations.response_date AND DATE_ADD(violations.response_date, INTERVAL 365 DAY)        
     )   
-    SELECT *
+    SELECT * EXCEPT(same_violation_multiple_revocations_rn, priority)
     FROM violations_sessions_info 
     WHERE same_violation_multiple_revocations_rn = 1
     """
