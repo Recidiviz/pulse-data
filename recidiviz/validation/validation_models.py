@@ -37,6 +37,7 @@ class ValidationCategory(Enum):
     EXTERNAL_INDIVIDUAL = "EXTERNAL_INDIVIDUAL"
     CONSISTENCY = "CONSISTENCY"
     INVARIANT = "INVARIANT"
+    FRESHNESS = "FRESHNESS"
 
 
 @attr.s(frozen=True)
