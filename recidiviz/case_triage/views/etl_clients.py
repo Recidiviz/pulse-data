@@ -109,6 +109,9 @@ latest_periods AS (
     termination_date IS NULL
     AND admission_reason != 'ABSCONSION'
 ),
+export_time AS (
+  SELECT CURRENT_TIMESTAMP AS exported_at
+),
 -- TODO(#5943): Make ideal_query the main query body.
 ideal_query AS (
 SELECT
@@ -146,6 +149,9 @@ USING (person_id, state_code)
 LEFT JOIN
   days_on_supervision_level
 USING (person_id, state_code)
+FULL OUTER JOIN
+  export_time
+ON TRUE
 WHERE
   supervision_level IS NOT NULL
 ),
@@ -216,6 +222,7 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "most_recent_home_visit_date",
         "days_with_current_po",
         "days_on_current_supervision_level",
+        "exported_at",
         # TODO(#5943): supervising_officer_external_id must be at the end of
         # this list because of the way that we have to derive this result from
         # the ofndr_agnt table for Idaho.

@@ -110,21 +110,33 @@ limited_supervision_eligible AS (
     AND supervision_type NOT IN ('INTERNAL_UNKNOWN', 'INFORMAL_PROBATION')
     AND supervision_level = 'MINIMUM'
     AND days_at_current_supervision_level >= 365 
+),
+export_time AS (
+  SELECT CURRENT_TIMESTAMP AS exported_at
+),
+unioned_results AS (
+  SELECT
+    *
+  FROM
+    overdue_downgrades
+  UNION ALL
+  SELECT
+    *
+  FROM
+    earned_discharge_eligible
+  UNION ALL
+  SELECT
+    *
+  FROM
+    limited_supervision_eligible
 )
 SELECT
   {{columns}}
 FROM
-  overdue_downgrades
-UNION ALL 
-SELECT
-  {{columns}}
-FROM
-  earned_discharge_eligible
-UNION ALL 
-SELECT
-  {{columns}}
-FROM
-  limited_supervision_eligible 
+  unioned_results
+FULL OUTER JOIN
+  export_time
+ON TRUE
 """
 
 
@@ -140,6 +152,7 @@ TOP_OPPORTUNITIES_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "person_external_id",
         "opportunity_type",
         "opportunity_metadata",
+        "exported_at",
     ],
     should_materialize=True,
 )
