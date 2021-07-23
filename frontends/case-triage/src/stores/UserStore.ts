@@ -23,6 +23,7 @@ import createAuth0Client, {
 } from "@auth0/auth0-spa-js";
 import { makeAutoObservable, runInAction } from "mobx";
 import qs from "qs";
+import { titleCase } from "../utils";
 
 interface UserStoreProps {
   authSettings: Auth0ClientOptions;
@@ -60,6 +61,12 @@ export default class UserStore {
 
   user?: User;
 
+  officerGivenNames: string;
+
+  officerSurname: string;
+
+  isImpersonating: boolean;
+
   getTokenSilently?(options?: GetTokenSilentlyOptions): Promise<void>;
 
   login?(options?: RedirectLoginOptions): Promise<void>;
@@ -81,6 +88,12 @@ export default class UserStore {
     // In general, this will allow us to exist in a loading state.
     this.canAccessCaseTriage = true;
     this.canAccessLeadershipDashboard = true;
+
+    // We assume that when first loading, that they will be accessing their
+    // own case triage.
+    this.officerGivenNames = "";
+    this.officerSurname = "";
+    this.isImpersonating = false;
   }
 
   async authorize(): Promise<void> {
@@ -168,6 +181,22 @@ export default class UserStore {
 
   setFeatureVariants(variants: FeatureVariants): void {
     this.featureVariants = variants;
+  }
+
+  setOfficerMetadata(
+    officerGivenNames: string,
+    officerSurname: string,
+    isImpersonating: boolean
+  ): void {
+    this.officerGivenNames = officerGivenNames;
+    this.officerSurname = officerSurname;
+    this.isImpersonating = isImpersonating;
+  }
+
+  getOfficerFullName(): string {
+    return `${titleCase(this.officerGivenNames)} ${titleCase(
+      this.officerSurname
+    )}`;
   }
 
   isInExperiment(experiment: KNOWN_EXPERIMENTS): boolean {

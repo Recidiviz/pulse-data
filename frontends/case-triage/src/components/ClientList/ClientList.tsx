@@ -15,20 +15,19 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { observer } from "mobx-react-lite";
-
 import * as React from "react";
 import { useRootStore } from "../../stores";
+import { CLIENT_LIST_KIND } from "../../stores/ClientsStore/ClientListBuilder";
+import { KNOWN_EXPERIMENTS } from "../../stores/UserStore";
+import TEST_IDS from "../TestIDs";
 import {
   ClientListContainerElement,
   ClientListHeading,
   FirstClientListHeading,
 } from "./ClientList.styles";
 import ClientListCard from "./ClientListCard";
-import EmptyStateCard from "./EmptyStateCard";
-import { CLIENT_LIST_KIND } from "../../stores/ClientsStore/ClientListBuilder";
-import TEST_IDS from "../TestIDs";
-import { KNOWN_EXPERIMENTS } from "../../stores/UserStore";
 import { ClientListControls } from "./ClientListControls";
+import EmptyStateCard from "./EmptyStateCard";
 
 interface ClientListProps {
   kind: CLIENT_LIST_KIND;
@@ -82,7 +81,13 @@ const ClientListContainer = observer(() => {
 
   return (
     <ClientListContainerElement>
-      <FirstClientListHeading>Up Next</FirstClientListHeading>
+      {userStore.isImpersonating ? (
+        <FirstClientListHeading>
+          {userStore.getOfficerFullName()}&apos;s Caseload
+        </FirstClientListHeading>
+      ) : (
+        <FirstClientListHeading>Up Next</FirstClientListHeading>
+      )}
       {showControls && <ClientListControls />}
       <ClientList kind={CLIENT_LIST_KIND.UP_NEXT} showEmptyState />
       {clientsStore.lists[CLIENT_LIST_KIND.PROCESSING_FEEDBACK].length > 0 ? (

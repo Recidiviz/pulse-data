@@ -35,7 +35,9 @@ interface BootstrapResponse {
   segmentUserId: string;
   knownExperiments: FeatureVariants;
   dashboardURL: string;
-
+  officerGivenNames: string;
+  officerSurname: string;
+  isImpersonating: boolean;
   canAccessCaseTriage: boolean;
   canAccessLeadershipDashboard: boolean;
 }
@@ -87,6 +89,9 @@ class API {
           segmentUserId,
           knownExperiments: featureVariants,
           dashboardURL,
+          officerGivenNames,
+          officerSurname,
+          isImpersonating,
           canAccessCaseTriage,
           canAccessLeadershipDashboard,
         }) => {
@@ -102,6 +107,11 @@ class API {
           Sentry.setUser({ id: segmentUserId });
           Sentry.setTag("app.version", this.userStore.currentVersion);
 
+          this.userStore.setOfficerMetadata(
+            officerGivenNames,
+            officerSurname,
+            isImpersonating
+          );
           this.bootstrapped = true;
         }
       );
@@ -111,25 +121,25 @@ class API {
 
   async request<T>({ path, method, body }: RequestProps): Promise<T> {
     try {
+      // Check if it's an impersonation request
+      const params = new URLSearchParams(window.location.search);
+      const impersonate = params.get(IMPERSONATED_EMAIL_KEY);
+      if (impersonate) {
+        await this.post(IMPERSONATE_ROUTE, {
+          [IMPERSONATED_EMAIL_KEY]: impersonate,
+        });
+
+        params.delete(IMPERSONATED_EMAIL_KEY);
+
+        window.history.replaceState(
+          null,
+          window.document.title,
+          params.toString() ? `/?${params.toString()}` : "/"
+        );
+      }
       // Defer all requests until the API client has bootstrapped itself
       if (!this.bootstrapped && path !== BOOTSTRAP_ROUTE) {
         await this.bootstrap();
-
-        const params = new URLSearchParams(window.location.search);
-        const impersonate = params.get(IMPERSONATED_EMAIL_KEY);
-        if (impersonate) {
-          await this.post(IMPERSONATE_ROUTE, {
-            [IMPERSONATED_EMAIL_KEY]: impersonate,
-          });
-
-          params.delete(IMPERSONATED_EMAIL_KEY);
-
-          window.history.replaceState(
-            null,
-            window.document.title,
-            params.toString() ? `/?${params.toString()}` : "/"
-          );
-        }
       }
 
       if (!this.userStore.getTokenSilently) {
