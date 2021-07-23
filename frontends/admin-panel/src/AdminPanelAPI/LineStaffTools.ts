@@ -17,8 +17,8 @@
 import { postWithURLAndBody } from "./utils";
 
 // Cloud SQL -> GCS CSV Export
-export const generateCaseUpdatesExport = async (): Promise<Response> => {
-  return postWithURLAndBody("/api/case_triage/generate_case_updates_export");
+export const generateNonETLExports = async (): Promise<Response> => {
+  return postWithURLAndBody("/api/case_triage/generate_non_etl_exports");
 };
 
 // GCS CSV -> Cloud SQL Import

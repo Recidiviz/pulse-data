@@ -17,7 +17,7 @@
 import { WarningFilled } from "@ant-design/icons";
 import { Alert, Button, Form, PageHeader, Result } from "antd";
 import * as React from "react";
-import { generateCaseUpdatesExport } from "../AdminPanelAPI";
+import { generateNonETLExports } from "../AdminPanelAPI";
 
 const CloudSQLExportView = (): JSX.Element => {
   const [exportStatus, setExportStatus] =
@@ -55,7 +55,7 @@ const CloudSQLExportView = (): JSX.Element => {
 
   const startExport = async () => {
     setExportStatus("started");
-    const r = await generateCaseUpdatesExport();
+    const r = await generateNonETLExports();
     if (r.status >= 400) {
       setErrorText(await r.text());
       setExportStatus("errored");
@@ -91,7 +91,7 @@ const CloudSQLExportView = (): JSX.Element => {
       <Form className="buffer" onFinish={startExport}>
         <Form.Item {...tailLayout}>
           <Button type="primary" htmlType="submit">
-            Export Case Actions
+            Export Non-ETL Tables
           </Button>
         </Form.Item>
       </Form>

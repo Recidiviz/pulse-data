@@ -21,7 +21,7 @@ for Unified Products related entities.
 """
 import uuid
 from datetime import date, timedelta
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Type
 
 import dateutil.parser
 from sqlalchemy import (
@@ -427,3 +427,11 @@ class DashboardUserRestrictions(CaseTriageBase):
         default=False,
         comment="User has permission to access Case Triage",
     )
+
+
+ETL_TABLES: List[Type[CaseTriageBase]] = [
+    DashboardUserRestrictions,
+    ETLClient,
+    ETLOfficer,
+    ETLOpportunity,
+]

@@ -21,16 +21,14 @@ from unittest import TestCase
 import pytest
 from pytest_alembic import runner
 
+from recidiviz.persistence.database.schema.case_triage.schema import ETL_TABLES
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.tools.case_triage.load_fixtures import (
-    TABLES_WITH_FIXTURES,
-    reset_case_triage_fixtures,
-)
+from recidiviz.tools.case_triage.load_fixtures import reset_case_triage_fixtures
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
@@ -87,5 +85,5 @@ class TestLoadFixtures(TestCase):
         with SessionFactory.using_database(
             self.db_key, autocommit=False
         ) as read_session:
-            for fixture_class in TABLES_WITH_FIXTURES:
+            for fixture_class in ETL_TABLES:
                 self.assertTrue(len(read_session.query(fixture_class).all()) > 0)
