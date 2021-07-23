@@ -48,6 +48,10 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
 )
 
 
+class OfficerDoesNotExistError(ValueError):
+    pass
+
+
 class PersonDoesNotExistError(ValueError):
     pass
 
@@ -202,8 +206,11 @@ class CaseTriageQuerier:
 
     @staticmethod
     def officer_for_email(session: Session, officer_email: str) -> ETLOfficer:
-        email = officer_email.lower()
-        return session.query(ETLOfficer).filter_by(email_address=email).one()
+        try:
+            email = officer_email.lower()
+            return session.query(ETLOfficer).filter_by(email_address=email).one()
+        except sqlalchemy.orm.exc.NoResultFound as e:
+            raise OfficerDoesNotExistError(f"Cannot find {officer_email=}") from e
 
     @staticmethod
     def opportunities_for_officer(
