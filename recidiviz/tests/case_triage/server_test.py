@@ -238,6 +238,37 @@ class TestCaseTriageAPIRoutes(TestCase):
                 response.get_json()["description"]["personExternalId"],
             )
 
+    def test_defer_computed_opportunity_successful(self) -> None:
+        with self.helpers.using_officer(self.officer):
+            # Employment is a ComputedOpportunity and not actually stored
+            # in the database.
+            opportunity_type = OpportunityType.EMPLOYMENT.value
+            person_external_id = self.client_1.person_external_id
+
+            # Verify that the opportunity is initially present
+            self.assertEqual(
+                len(
+                    self.helpers.get_opportunity_for_person(
+                        opportunity_type, person_external_id
+                    )
+                ),
+                1,
+            )
+
+            # Submit API request
+            self.helpers.defer_opportunity(person_external_id, opportunity_type)
+            self.mock_segment_client.track_opportunity_deferred.assert_called()
+
+            # Verify that the opportunity is deferred
+            self.assertEqual(
+                len(
+                    self.helpers.get_opportunity_for_person(
+                        opportunity_type, person_external_id
+                    )
+                ),
+                0,
+            )
+
     def test_defer_opportunity_successful(self) -> None:
         with self.helpers.using_officer(self.officer):
             opportunity_type = self.opportunity_2.opportunity_type
@@ -250,12 +281,9 @@ class TestCaseTriageAPIRoutes(TestCase):
             # Verify that the opportunity is deferred
             self.assertEqual(
                 len(
-                    [
-                        o
-                        for o in self.helpers.get_undeferred_opportunities()
-                        if o["opportunityType"] == opportunity_type
-                        and o["personExternalId"] == person_external_id
-                    ]
+                    self.helpers.get_opportunity_for_person(
+                        opportunity_type, person_external_id
+                    )
                 ),
                 0,
             )
