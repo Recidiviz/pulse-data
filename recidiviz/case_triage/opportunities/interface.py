@@ -51,7 +51,7 @@ class OpportunitiesInterface:
         reminder_requested: bool,
     ) -> None:
         """Implements base opportunity deferral and commits back to database."""
-        etl_opportunity = CaseTriageQuerier.fetch_etl_opportunity(
+        opportunity = CaseTriageQuerier.fetch_opportunity(
             session, user_context, client, opportunity_type
         )
         officer_id = user_context.officer_id
@@ -61,12 +61,12 @@ class OpportunitiesInterface:
             .values(
                 person_external_id=person_external_id,
                 supervising_officer_external_id=officer_id,
-                state_code=etl_opportunity.state_code,
-                opportunity_type=etl_opportunity.opportunity_type,
+                state_code=opportunity.state_code,
+                opportunity_type=opportunity.opportunity_type,
                 deferral_type=deferral_type.value,
                 deferred_until=defer_until,
                 reminder_was_requested=reminder_requested,
-                opportunity_metadata=etl_opportunity.opportunity_metadata,
+                opportunity_metadata=opportunity.opportunity_metadata,
             )
             .on_conflict_do_update(
                 constraint="unique_person_officer_opportunity_triple",
@@ -74,7 +74,7 @@ class OpportunitiesInterface:
                     "deferral_type": deferral_type.value,
                     "deferred_until": defer_until,
                     "reminder_was_requested": reminder_requested,
-                    "opportunity_metadata": etl_opportunity.opportunity_metadata,
+                    "opportunity_metadata": opportunity.opportunity_metadata,
                 },
             )
         )
