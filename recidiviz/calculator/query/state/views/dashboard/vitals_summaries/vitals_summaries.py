@@ -16,6 +16,8 @@
 # =============================================================================
 """Daily summaries of vitals metrics, at the state, district, and PO level."""
 # pylint: disable=trailing-whitespace,line-too-long
+from typing import Dict, List, Optional
+
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.bq_utils import generate_district_id_from_district_name
 from recidiviz.calculator.query.state import dataset_config
@@ -23,6 +25,10 @@ from recidiviz.calculator.query.state.state_specific_query_strings import (
     VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS,
     vitals_state_specific_district_display_name,
     vitals_state_specific_po_name,
+)
+from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_view_helpers import (
+    ENABLED_VITALS,
+    make_enabled_states_filter_for_vital,
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -78,9 +84,75 @@ def generate_entity_summary_query(field: str, vitals_table: str) -> str:
         most_recent_supervision_dates_per_state.most_recent_date_of_supervision,
         DATE_SUB(most_recent_supervision_dates_per_state.most_recent_date_of_supervision, INTERVAL 30 DAY),
         DATE_SUB(most_recent_supervision_dates_per_state.most_recent_date_of_supervision, INTERVAL 90 DAY))
-      AND state_code = 'US_ND'
+      AND {make_enabled_states_filter_for_vital(field)}
     GROUP BY state_code, most_recent_date_of_supervision, entity_id, entity_name, parent_entity_id, supervising_officer_external_id, district_id
     """
+
+
+def generate_overall_scores(
+    enabled_vitals: Optional[Dict[str, List[str]]] = None,
+) -> str:
+    """
+    Uses ENABLED_VITALS to generate the overall score field by averaging all of the enabled vitals per state.
+    """
+    # Example generated code:
+    # enabled_vitals = {
+    #    'US_XX': ['vital_1', 'vital_2'],
+    #    'US_YY': ['vital_1', 'vital_3', 'vital_4']
+    # }
+    #
+    # CASE state_code
+    #   WHEN 'US_XX' THEN ROUND((most_recent_vital_1 + most_recent_vital_2) / 2, 0)
+    #   WHEN 'US_YY' THEN ROUND((most_recent_vital_1 + most_recent_vital_3 + most_recent_vital_4) / 3, 0)
+    # END as overall,
+    #
+    # CASE state_code
+    #   WHEN 'US_XX' THEN ROUND((most_recent_vital_1 + most_recent_vital_2) / 2 - (vital_1_30_days_before + vital_2_30_days_before) / 2, 0)
+    #   WHEN 'US_YY' THEN ROUND((most_recent_vital_1 + most_recent_vital_3 + most_recent_vital_4) / 3 - (vital_1_30_days_before + vital_3_30_days_before + vital_4_30_days_before) / 3, 0)
+    # END as overall_30d,
+    #
+    # CASE state_code
+    #   WHEN 'US_XX' THEN ROUND((most_recent_vital_1 + most_recent_vital_2) / 2 - (vital_1_90_days_before + vital_2_90_days_before) / 2, 0)
+    #   WHEN 'US_YY' THEN ROUND((most_recent_vital_1 + most_recent_vital_3 + most_recent_vital_4) / 3 - (vital_1_90_days_before + vital_3_90_days_before + vital_4_90_days_before) / 3, 0)
+    # END as overall_90d,
+
+    if enabled_vitals is None:
+        enabled_vitals = ENABLED_VITALS
+
+    def most_recent_vitals_sum(vitals: List[str]) -> str:
+        return f'({" + ".join(f"most_recent_{metric}" for metric in vitals)}) / {len(vitals)}'
+
+    def historic_vitals_sum(vitals: List[str], days_past: int) -> str:
+        return f'({" + ".join(f"{metric}_{days_past}_days_before" for metric in vitals)}) / {len(vitals)}'
+
+    overall_cases = "\n        ".join(
+        f"WHEN '{state}' THEN ROUND({most_recent_vitals_sum(vitals)}, 0)"
+        for state, vitals in enabled_vitals.items()
+    )
+    most_recent_overall_query = f"""
+      CASE state_code
+        {overall_cases}
+      END as overall,"""
+
+    overall_30_cases = "\n        ".join(
+        f"WHEN '{state}' THEN ROUND({most_recent_vitals_sum(vitals)} - {historic_vitals_sum(vitals, 30)}, 0)"
+        for state, vitals in enabled_vitals.items()
+    )
+    overall_30_query = f"""
+      CASE state_code
+        {overall_30_cases}
+      END as overall_30d,"""
+
+    overall_90_cases = "\n        ".join(
+        f"WHEN '{state}' THEN ROUND({most_recent_vitals_sum(vitals)} - {historic_vitals_sum(vitals, 90)}, 0)"
+        for state, vitals in enabled_vitals.items()
+    )
+    overall_90_query = f"""
+      CASE state_code
+        {overall_90_cases}
+      END as overall_90d,"""
+
+    return most_recent_overall_query + overall_30_query + overall_90_query
 
 
 VITALS_SUMMARIES_QUERY_TEMPLATE = f"""
@@ -104,26 +176,22 @@ VITALS_SUMMARIES_QUERY_TEMPLATE = f"""
 
     SELECT 
       state_code,
-      timely_discharge.most_recent_date_of_supervision,
-      timely_discharge.entity_type,
-      timely_discharge.entity_id,
-      timely_discharge.entity_name,
-      timely_discharge.parent_entity_id,
-      ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + most_recent_timely_contact) / 3, 0) as overall,
+      timely_risk_assessment.most_recent_date_of_supervision,
+      timely_risk_assessment.entity_type,
+      timely_risk_assessment.entity_id,
+      timely_risk_assessment.entity_name,
+      timely_risk_assessment.parent_entity_id,
       ROUND(most_recent_timely_discharge) as timely_discharge,
       ROUND(most_recent_timely_risk_assessment) as timely_risk_assessment,
-      # TODO(#6703): update once contact vitals are completed.
       ROUND(most_recent_timely_contact) as timely_contact,
-      ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + most_recent_timely_contact) / 3 - (timely_discharge_30_days_before + timely_risk_assessment_30_days_before + timely_contact_30_days_before) / 3, 0) as overall_30d,
-      ROUND((most_recent_timely_discharge + most_recent_timely_risk_assessment + most_recent_timely_contact) / 3 - (timely_discharge_90_days_before + timely_risk_assessment_90_days_before + timely_contact_90_days_before) / 3, 0) as overall_90d
+      {generate_overall_scores()}
     FROM timely_discharge
-    LEFT JOIN timely_risk_assessment
+    FULL OUTER JOIN timely_risk_assessment
       USING (state_code, entity_id, parent_entity_id)
-    LEFT JOIN timely_contact
+    FULL OUTER JOIN timely_contact
       USING (state_code, entity_id, parent_entity_id)
     WHERE entity_id is not null
       AND entity_id != 'UNKNOWN'
-      AND ROUND(most_recent_timely_discharge) != 0
       AND ROUND(most_recent_timely_risk_assessment) != 0
     ORDER BY most_recent_date_of_supervision DESC
 """
