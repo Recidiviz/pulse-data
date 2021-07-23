@@ -15,15 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Various helper classes for interacting with a cloud task queue."""
-
-from typing import List, Type, TypeVar, Generic, Dict, Optional
+import json
+from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 
 import attr
+from flask import request
 from google.cloud import tasks_v2
 
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     GoogleCloudTasksClientWrapper,
 )
+
+
+def get_cloud_task_json_body() -> Dict[str, Any]:
+    """Tasks in GCP do not send the appropriate headers for Flask to populate request.json"""
+    json_data = request.get_data(as_text=True)
+    return json.loads(json_data)
 
 
 @attr.s
