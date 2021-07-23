@@ -18,7 +18,7 @@
 import os
 from datetime import date
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 from unittest import TestCase, mock
 
 import pytest
@@ -26,10 +26,7 @@ from freezegun import freeze_time
 from parameterized import parameterized
 from sqlalchemy.orm.exc import NoResultFound
 
-from recidiviz.case_triage.authorization import (
-    AuthorizationStore,
-    FrontendAppPermissions,
-)
+from recidiviz.case_triage.authorization import AccessPermissions, AuthorizationStore
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence.database.schema.case_triage.schema import (
     DashboardUserRestrictions,
@@ -38,6 +35,7 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.auth.helpers import generate_fake_user_restrictions
+from recidiviz.tests.case_triage.case_triage_helpers import generate_fake_officer
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
@@ -66,18 +64,15 @@ class TestAuthorizationStore(TestCase):
 
     @parameterized.expand(
         [
-            ("non-user@not-recidiviz.org", False, False, False),
-            ("user@not-recidiviz.org", True, False, False),
-            ("demoer@not-recidiviz.org", True, True, False),
-            ("admin@not-recidiviz.org", True, True, True),
+            ("non-user@not-recidiviz.org", False, False),
+            ("user@not-recidiviz.org", True, False),
+            ("demoer@not-recidiviz.org", True, True),
+            ("admin@not-recidiviz.org", True, True),
         ]
     )
-    def test_basic_auth(
-        self, email: str, is_allowed: bool, can_see_demo: bool, can_impersonate: bool
-    ) -> None:
+    def test_basic_auth(self, email: str, is_allowed: bool, can_see_demo: bool) -> None:
         self.assertEqual(email in self.auth_store.case_triage_allowed_users, is_allowed)
         self.assertEqual(self.auth_store.can_see_demo_data(email), can_see_demo)
-        self.assertEqual(self.auth_store.can_impersonate_others(email), can_impersonate)
 
     @parameterized.expand(
         [
@@ -108,7 +103,7 @@ class TestAuthorizationStore(TestCase):
 
 
 @pytest.mark.uses_db
-class TestFrontendAppPermissions(TestCase):
+class TestAccessPermissions(TestCase):
     """Implements tests for the authorization store that make use of the database as
     a secondary store of permissions to check for frontend app access."""
 
@@ -164,6 +159,17 @@ class TestFrontendAppPermissions(TestCase):
             can_access_case_triage=False,
         )
 
+        self.both_user_different_state = generate_fake_user_restrictions(
+            "US_YY",
+            "both-diff@not-recidiviz.org",
+            can_access_leadership_dashboard=True,
+            can_access_case_triage=True,
+        )
+
+        self.officer = generate_fake_officer(
+            "test", "case-triage@not-recidiviz.org", state_code="US_XX"
+        )
+
         with SessionFactory.using_database(self.database_key) as session:
             session.expire_on_commit = False
             session.add_all(
@@ -172,6 +178,8 @@ class TestFrontendAppPermissions(TestCase):
                     self.dashboard_user,
                     self.both_user,
                     self.overridden_user,
+                    self.both_user_different_state,
+                    self.officer,
                 ]
             )
 
@@ -185,12 +193,14 @@ class TestFrontendAppPermissions(TestCase):
         *,
         can_access_case_triage: bool,
         can_access_leadership_dashboard: bool,
+        impersonatable_state_codes: List[str]
     ) -> None:
         self.assertEqual(
-            self.auth_store.get_frontend_access_permissions(email),
-            FrontendAppPermissions(
+            self.auth_store.get_access_permissions(email),
+            AccessPermissions(
                 can_access_case_triage=can_access_case_triage,
                 can_access_leadership_dashboard=can_access_leadership_dashboard,
+                impersonatable_state_codes=impersonatable_state_codes,
             ),
         )
 
@@ -199,21 +209,31 @@ class TestFrontendAppPermissions(TestCase):
             self.case_triage_user.restricted_user_email,
             can_access_case_triage=True,
             can_access_leadership_dashboard=False,
+            impersonatable_state_codes=[],
         )
         self.assert_email_has_permissions(
             self.dashboard_user.restricted_user_email,
             can_access_case_triage=False,
             can_access_leadership_dashboard=True,
+            impersonatable_state_codes=["US_XX"],
         )
         self.assert_email_has_permissions(
             self.both_user.restricted_user_email,
             can_access_case_triage=True,
             can_access_leadership_dashboard=True,
+            impersonatable_state_codes=["US_XX"],
         )
         self.assert_email_has_permissions(
             "nonexistent@not-recidiviz.org",
             can_access_case_triage=False,
             can_access_leadership_dashboard=False,
+            impersonatable_state_codes=[],
+        )
+        self.assert_email_has_permissions(
+            self.both_user_different_state.restricted_user_email,
+            can_access_case_triage=True,
+            can_access_leadership_dashboard=True,
+            impersonatable_state_codes=["US_YY"],
         )
 
     def test_allowlist_override_succeeds(self) -> None:
@@ -222,6 +242,53 @@ class TestFrontendAppPermissions(TestCase):
             self.overridden_user.restricted_user_email,
             can_access_case_triage=True,
             can_access_leadership_dashboard=True,
+            impersonatable_state_codes=["US_XX"],
+        )
+
+    @parameterized.expand(
+        [
+            ("test@recidiviz.org", False),
+            ("leadership@not-recidiviz.org", False),
+            ("both@not-recidiviz.org", True),
+            ("user@not-recidiviz.org", True),
+            ("both-diff@not-recidiviz.org", False),
+        ]
+    )
+    def test_can_impersonate(self, email: str, can_impersonate: bool) -> None:
+        print(self.auth_store.get_access_permissions("admin@not-recidiviz.org"))
+        self.assertEqual(
+            self.auth_store.can_impersonate(
+                email,
+                generate_fake_officer(
+                    officer_id="test",
+                    email="case-triage@not-recidiviz.org",
+                    state_code="US_XX",
+                ),
+            ),
+            can_impersonate,
+        )
+
+    def test_admin_can_impersonate_all_states(self) -> None:
+        self.assertTrue(
+            self.auth_store.can_impersonate(
+                "admin@not-recidiviz.org",
+                generate_fake_officer(
+                    officer_id="test",
+                    email="case-triage@not-recidiviz.org",
+                ),
+            )
+        )
+
+    def test_cannot_impersonate_own_self(self) -> None:
+        self.assertFalse(
+            self.auth_store.can_impersonate(
+                "case-triage@not-recidiviz.org",
+                generate_fake_officer(
+                    officer_id="test",
+                    email="case-triage@not-recidiviz.org",
+                    state_code="US_XX",
+                ),
+            )
         )
 
     def test_still_can_access_if_not_in_database(self) -> None:
@@ -236,4 +303,5 @@ class TestFrontendAppPermissions(TestCase):
             "demoer@not-recidiviz.org",
             can_access_case_triage=True,
             can_access_leadership_dashboard=False,
+            impersonatable_state_codes=[],
         )

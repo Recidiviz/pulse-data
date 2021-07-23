@@ -18,6 +18,7 @@
 from base64 import b64encode
 from datetime import datetime
 from enum import Enum
+from functools import cached_property
 from hashlib import sha256
 from typing import Dict, Optional
 
@@ -26,8 +27,8 @@ import pytz
 
 from recidiviz.case_triage.authorization import (
     KNOWN_EXPERIMENTS,
+    AccessPermissions,
     AuthorizationStore,
-    FrontendAppPermissions,
 )
 from recidiviz.case_triage.demo_helpers import (
     DEMO_STATE_CODE,
@@ -65,9 +66,8 @@ class UserContext:
     ) -> "UserContext":
         return UserContext(email=email, authorization_store=authorization_store)
 
-    @property
-    def can_impersonate(self) -> bool:
-        return self.authorization_store.can_impersonate_others(self.email)
+    def can_impersonate(self, other_officer: ETLOfficer) -> bool:
+        return self.authorization_store.can_impersonate(self.email, other_officer)
 
     @property
     def can_see_demo_data(self) -> bool:
@@ -127,8 +127,9 @@ class UserContext:
             return DEMO_STATE_CODE
         return self.current_user.state_code
 
-    def get_frontend_access_permissions(self) -> FrontendAppPermissions:
-        return self.authorization_store.get_frontend_access_permissions(self.email)
+    @cached_property
+    def access_permissions(self) -> AccessPermissions:
+        return self.authorization_store.get_access_permissions(self.email)
 
     def now(self) -> datetime:
         return datetime.now(tz=pytz.UTC)

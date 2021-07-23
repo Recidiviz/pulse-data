@@ -41,12 +41,12 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
 
 
 def generate_fake_officer(
-    officer_id: str, email: str = "nonexistent_email.com"
+    officer_id: str, email: str = "nonexistent_email.com", state_code: str = "US_ID"
 ) -> ETLOfficer:
     return ETLOfficer(
         external_id=officer_id,
         email_address=email,
-        state_code="US_ID",
+        state_code=state_code,
         given_names="Test",
         surname="Officer",
     )

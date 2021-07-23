@@ -55,6 +55,8 @@ export function isErrorResponse(x: {
 }
 
 const BOOTSTRAP_ROUTE = "/api/bootstrap";
+const IMPERSONATE_ROUTE = "/impersonate_user";
+const IMPERSONATED_EMAIL_KEY = "impersonated_email";
 
 class API {
   bootstrapped?: boolean;
@@ -112,6 +114,22 @@ class API {
       // Defer all requests until the API client has bootstrapped itself
       if (!this.bootstrapped && path !== BOOTSTRAP_ROUTE) {
         await this.bootstrap();
+
+        const params = new URLSearchParams(window.location.search);
+        const impersonate = params.get(IMPERSONATED_EMAIL_KEY);
+        if (impersonate) {
+          await this.post(IMPERSONATE_ROUTE, {
+            [IMPERSONATED_EMAIL_KEY]: impersonate,
+          });
+
+          params.delete(IMPERSONATED_EMAIL_KEY);
+
+          window.history.replaceState(
+            null,
+            window.document.title,
+            params.toString() ? `/?${params.toString()}` : "/"
+          );
+        }
       }
 
       if (!this.userStore.getTokenSilently) {

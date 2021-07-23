@@ -22,16 +22,17 @@ selection.
 import json
 import logging
 from datetime import date
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import attr
 import dateutil.parser
 import sqlalchemy.orm.exc
 
-from recidiviz.case_triage.util import get_local_file
+from recidiviz.case_triage.util import CASE_TRIAGE_STATES, get_local_file
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence.database.schema.case_triage.schema import (
     DashboardUserRestrictions,
+    ETLOfficer,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -71,14 +72,17 @@ class FeatureGateInfo:
 
 
 @attr.s(auto_attribs=True)
-class FrontendAppPermissions:
+class AccessPermissions:
     can_access_case_triage: bool
     can_access_leadership_dashboard: bool
+    # The state codes that are accessible by users, by default empty
+    impersonatable_state_codes: List[str]
 
-    def to_json(self) -> Dict[str, bool]:
+    def to_json(self) -> Dict[str, Any]:
         return {
             "canAccessCaseTriage": self.can_access_case_triage,
             "canAccessLeadershipDashboard": self.can_access_leadership_dashboard,
+            "impersonatableStateCodes": self.impersonatable_state_codes,
         }
 
 
@@ -132,12 +136,15 @@ class AuthorizationStore:
             for feature, submap in feature_gate_json.items()
         }
 
-    def get_frontend_access_permissions(self, email: str) -> FrontendAppPermissions:
+    def get_access_permissions(self, email: str) -> AccessPermissions:
+        """Retrieves the appropriate access permissions for different users of Case Triage."""
         email = email.lower()
 
-        if _is_recidiviz_employee(email):
-            return FrontendAppPermissions(
-                can_access_case_triage=True, can_access_leadership_dashboard=True
+        if email in self.case_triage_admin_users:
+            return AccessPermissions(
+                can_access_case_triage=True,
+                can_access_leadership_dashboard=True,
+                impersonatable_state_codes=CASE_TRIAGE_STATES,
             )
 
         with SessionFactory.using_database(
@@ -149,21 +156,39 @@ class AuthorizationStore:
                     .filter(DashboardUserRestrictions.restricted_user_email == email)
                     .one()
                 )
-                return FrontendAppPermissions(
+                return AccessPermissions(
                     can_access_case_triage=(
                         permissions.can_access_case_triage
                         or email in self.case_triage_allowed_users
                     ),
                     can_access_leadership_dashboard=permissions.can_access_leadership_dashboard,
+                    impersonatable_state_codes=(
+                        [permissions.state_code]
+                        if permissions.can_access_leadership_dashboard
+                        else []
+                    ),
                 )
             except sqlalchemy.orm.exc.NoResultFound:
-                return FrontendAppPermissions(
+                return AccessPermissions(
                     can_access_case_triage=(email in self.case_triage_allowed_users),
                     can_access_leadership_dashboard=False,
+                    impersonatable_state_codes=[],
                 )
 
-    def can_impersonate_others(self, email: str) -> bool:
-        return email in self.case_triage_admin_users
+    def can_impersonate(self, email: str, other_officer: ETLOfficer) -> bool:
+        """Determines whether or not the current user with email
+        can impersonate another user with other_email."""
+        access_permissions = self.get_access_permissions(email.lower())
+        if (
+            access_permissions.can_access_case_triage
+            and access_permissions.can_access_leadership_dashboard
+        ):
+            return (
+                other_officer.state_code
+                in access_permissions.impersonatable_state_codes
+            )
+
+        return False
 
     def can_refresh_auth_store(self, email: str) -> bool:
         return email in self.case_triage_admin_users

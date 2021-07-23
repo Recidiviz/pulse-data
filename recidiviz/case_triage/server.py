@@ -20,7 +20,7 @@ import os
 from typing import Dict
 
 import sentry_sdk
-from flask import Flask, Response, send_from_directory, session
+from flask import Flask, Response, g, send_from_directory, session
 from flask_wtf.csrf import CSRFProtect
 from sentry_sdk.integrations.flask import FlaskIntegration
 
@@ -32,6 +32,7 @@ from recidiviz.case_triage.e2e_routes import e2e_blueprint
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.exceptions import CaseTriageAuthorizationError
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
+from recidiviz.case_triage.user_context import UserContext
 from recidiviz.case_triage.util import get_local_secret
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -91,8 +92,12 @@ def on_successful_authorization(_payload: Dict[str, str], token: str) -> None:
     if "user_info" not in session:
         session["user_info"] = get_userinfo(authorization_config.domain, token)
 
-    email = session["user_info"]["email"]
-    if email not in authorization_store.case_triage_allowed_users:
+    email = session["user_info"]["email"].lower()
+    g.user_context = UserContext(email, authorization_store)
+    if (
+        not g.user_context.access_permissions.can_access_case_triage
+        and not g.user_context.access_permissions.can_access_leadership_dashboard
+    ):
         raise CaseTriageAuthorizationError(
             code="no_case_triage_access",
             description="You are not authorized to access this application",
@@ -142,7 +147,7 @@ segment_client = CaseTriageSegmentClient(write_key)
 
 
 # Routes & Blueprints
-api = create_api_blueprint(segment_client, requires_authorization, authorization_store)
+api = create_api_blueprint(segment_client, requires_authorization)
 
 app.register_blueprint(api, url_prefix="/api")
 app.register_blueprint(e2e_blueprint, url_prefix="/e2e")
@@ -153,7 +158,9 @@ app.add_url_rule(
         "impersonate_user",
         redirect_url="/",
         authorization_store=authorization_store,
+        authorization_decorator=requires_authorization,
     ),
+    methods=["GET", "POST"],
 )
 app.add_url_rule(
     "/refresh_auth_store",
