@@ -80,7 +80,7 @@ export {
 export {
   fetchEmailStateCodes,
   fetchETLViewIds,
-  generateCaseUpdatesExport,
+  generateNonETLExports,
   getPOFeedback,
   runCloudSQLImport,
 } from "./LineStaffTools";

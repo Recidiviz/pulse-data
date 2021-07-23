@@ -31,30 +31,16 @@ SQLALCHEMY_DB_HOST="" SQLALCHEMY_DB_USER="" SQLALCHEMY_DB_PASSWORD="" SQLALCHEMY
 python -m recidiviz.tools.case_triage.load_fixtures
 """
 import os
-from typing import List
 
 import psycopg2
 
-from recidiviz.persistence.database.base_schema import CaseTriageBase
 from recidiviz.persistence.database.constants import (
     SQLALCHEMY_DB_HOST,
     SQLALCHEMY_DB_NAME,
     SQLALCHEMY_DB_PASSWORD,
     SQLALCHEMY_DB_USER,
 )
-from recidiviz.persistence.database.schema.case_triage.schema import (
-    DashboardUserRestrictions,
-    ETLClient,
-    ETLOfficer,
-    ETLOpportunity,
-)
-
-TABLES_WITH_FIXTURES: List[CaseTriageBase] = [
-    DashboardUserRestrictions,
-    ETLClient,
-    ETLOfficer,
-    ETLOpportunity,
-]
+from recidiviz.persistence.database.schema.case_triage.schema import ETL_TABLES
 
 
 def reset_case_triage_fixtures() -> None:
@@ -76,7 +62,7 @@ def reset_case_triage_fixtures() -> None:
                     csv,
                 )
 
-        for table in TABLES_WITH_FIXTURES:
+        for table in ETL_TABLES:
             table_name = table.__table__.name
             cursor.execute(f"DELETE FROM {table_name}")
             _import_csv(

@@ -37,8 +37,14 @@ from recidiviz.common.results import MultiRequestResult
 from recidiviz.metrics.export.export_config import (
     CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
 )
-from recidiviz.persistence.database.schema.case_triage.schema import CaseUpdate
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema.case_triage.schema import (
+    ETL_TABLES,
+    CaseUpdate,
+)
+from recidiviz.persistence.database.schema_utils import (
+    SchemaType,
+    get_case_triage_table_classes,
+)
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.reporting import data_retrieval, email_delivery
@@ -81,23 +87,28 @@ def add_case_triage_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
         )
 
     # Generate Case Updates export from Cloud SQL -> GCS
-    @bp.route("/api/case_triage/generate_case_updates_export", methods=["POST"])
+    @bp.route("/api/case_triage/generate_non_etl_exports", methods=["POST"])
     @requires_gae_auth
-    def _generate_case_updates_export() -> Tuple[str, HTTPStatus]:
-        export_from_cloud_sql_to_gcs_csv(
-            SchemaType.CASE_TRIAGE,
-            "case_update_actions",
-            GcsfsFilePath.from_absolute_path(
-                os.path.join(
-                    CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI.format(
-                        project_id=metadata.project_id()
-                    ),
-                    "exported",
-                    "case_update_actions.csv",
-                )
-            ),
-            [col.name for col in CaseUpdate.__table__.columns],
-        )
+    def _generate_non_etl_exports() -> Tuple[str, HTTPStatus]:
+        etl_table_classes = [t.__table__ for t in ETL_TABLES]
+        for table_class in get_case_triage_table_classes():
+            if table_class in etl_table_classes:
+                continue
+
+            export_from_cloud_sql_to_gcs_csv(
+                SchemaType.CASE_TRIAGE,
+                table_class.name,
+                GcsfsFilePath.from_absolute_path(
+                    os.path.join(
+                        CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI.format(
+                            project_id=metadata.project_id()
+                        ),
+                        "exported",
+                        f"{table_class.name}.csv",
+                    )
+                ),
+                [col.name for col in table_class.columns],
+            )
 
         return "", HTTPStatus.OK
 
