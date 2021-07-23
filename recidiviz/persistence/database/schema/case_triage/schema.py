@@ -62,7 +62,13 @@ def _timeshift_date_fields(
     return results
 
 
-class ETLClient(CaseTriageBase):
+class ETLDerivedEntity:
+    """Encodes columns that should be found on all ETL entities."""
+
+    exported_at = Column(DateTime(timezone=True))
+
+
+class ETLClient(CaseTriageBase, ETLDerivedEntity):
     """Represents a person derived from our ETL pipeline."""
 
     __tablename__ = "etl_clients"
@@ -192,6 +198,7 @@ class ETLClient(CaseTriageBase):
                 "days_on_current_supervision_level"
             ),
             "phone_number": json_client.get("phone_number"),
+            "exported_at": json_client.get("exported_at"),
         }
 
         if timedelta_shift:
@@ -200,7 +207,7 @@ class ETLClient(CaseTriageBase):
         return ETLClient(**client_args)
 
 
-class ETLOfficer(CaseTriageBase):
+class ETLOfficer(CaseTriageBase, ETLDerivedEntity):
     """Represents an officer derived from our ETL pipeline."""
 
     __tablename__ = "etl_officers"
@@ -211,7 +218,7 @@ class ETLOfficer(CaseTriageBase):
     surname = Column(String(255), nullable=False)
 
 
-class ETLOpportunity(CaseTriageBase):
+class ETLOpportunity(CaseTriageBase, ETLDerivedEntity):
     """Represents an "opportunity" derived from our ETL pipeline."""
 
     __tablename__ = "etl_opportunities"
@@ -235,6 +242,7 @@ class ETLOpportunity(CaseTriageBase):
             ],
             opportunity_type=json_opportunity["opportunity_type"],
             opportunity_metadata=json_opportunity["opportunity_metadata"],
+            exported_at=json_opportunity.get("exported_at"),
         )
 
 
