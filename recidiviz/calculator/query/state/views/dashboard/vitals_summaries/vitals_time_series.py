@@ -29,6 +29,8 @@ from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+# TODO(#8387): Clean up query generation for vitals dash views
+
 
 def generate_time_series_query(
     metric_name: str, metric_field: str, table_name: str
@@ -94,6 +96,8 @@ VITALS_TIME_SERIES_TEMPLATE = f"""
     {generate_time_series_query("risk_assessment", "timely_risk_assessment", "overdue_lsir_by_po_by_day")}
   ), timely_contact AS (
     {generate_time_series_query("contact", "timely_contact", "timely_contact_by_po_by_day")}
+  ), timely_downgrade AS (
+    {generate_time_series_query("downgrade", "timely_downgrade", "supervision_downgrade_opportunities_by_po_by_day")}
   ), summary AS (
     SELECT
       state_code,
@@ -103,9 +107,11 @@ VITALS_TIME_SERIES_TEMPLATE = f"""
       {make_overall_score_queries_by_state('value')}
       {make_overall_score_queries_by_state('avg_30d')}
     FROM timely_discharge
-      JOIN timely_risk_assessment 
+    JOIN timely_risk_assessment 
       USING (state_code, date, entity_id)
-      JOIN timely_contact
+    JOIN timely_contact
+      USING (state_code, date, entity_id)
+    JOIN timely_downgrade
       USING (state_code, date, entity_id)
     ORDER BY entity_id, date
   )
@@ -117,6 +123,8 @@ VITALS_TIME_SERIES_TEMPLATE = f"""
     SELECT * FROM timely_risk_assessment WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY)
     UNION ALL
     SELECT * FROM timely_contact WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY)
+    UNION ALL
+    SELECT * FROM timely_downgrade WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY)
     UNION ALL
     SELECT * FROM summary WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY)
   )

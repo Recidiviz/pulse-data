@@ -34,6 +34,8 @@ from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+# TODO(#8387): Clean up query generation for vitals dash views
+
 VITALS_SUMMARIES_VIEW_NAME = "vitals_summaries"
 
 VITALS_SUMMARIES_DESCRIPTION = """
@@ -172,6 +174,9 @@ VITALS_SUMMARIES_QUERY_TEMPLATE = f"""
     ),
     timely_contact AS (
      {generate_entity_summary_query('timely_contact', 'timely_contact_by_po_by_day')}
+    ),
+    timely_downgrade AS (
+     {generate_entity_summary_query('timely_downgrade', 'supervision_downgrade_opportunities_by_po_by_day')}
     )
 
     SELECT 
@@ -184,11 +189,14 @@ VITALS_SUMMARIES_QUERY_TEMPLATE = f"""
       ROUND(most_recent_timely_discharge) as timely_discharge,
       ROUND(most_recent_timely_risk_assessment) as timely_risk_assessment,
       ROUND(most_recent_timely_contact) as timely_contact,
+      ROUND(most_recent_timely_downgrade) as timely_downgrade,
       {generate_overall_scores()}
     FROM timely_discharge
     FULL OUTER JOIN timely_risk_assessment
       USING (state_code, entity_id, parent_entity_id)
     FULL OUTER JOIN timely_contact
+      USING (state_code, entity_id, parent_entity_id)
+    FULL OUTER JOIN timely_downgrade
       USING (state_code, entity_id, parent_entity_id)
     WHERE entity_id is not null
       AND entity_id != 'UNKNOWN'
