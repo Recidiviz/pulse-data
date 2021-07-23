@@ -160,7 +160,7 @@ jobs:
         id: cache-postgres
         with:
           path: "~/postgres"
-          key: ${{ runner.os }}-postgres-10-v2
+          key: ${{ runner.os }}-postgres-13
       - name: Install postgres
         env:
           CACHE_HIT: ${{steps.cache-postgres.outputs.cache-hit}}
@@ -168,13 +168,13 @@ jobs:
           if [[ "$CACHE_HIT" == 'true' ]]; then
             sudo cp --force --recursive ~/postgres/* /
           else
-            sudo apt-get update && sudo apt-get install -yq postgresql-10
+            sudo apt-get update && sudo apt-get install -yq postgresql-13
             mkdir -p ~/postgres
-            for dep in postgresql-10; do
+            for dep in postgresql-13; do
                 dpkg -L $dep | while IFS= read -r f; do if test -f $f; then echo $f; fi; done | xargs cp --parents --target-directory ~/postgres/
             done
           fi
-          echo "/usr/lib/postgresql/10/bin" >> $GITHUB_PATH
+          echo "/usr/lib/postgresql/13/bin" >> $GITHUB_PATH
           sudo chown -R $USER /var/run/postgresql
       - name: Run db tests
         run: pipenv run pytest recidiviz --test-set not-parallel -m 'uses_db' --with-emulator
