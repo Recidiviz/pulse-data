@@ -28,69 +28,7 @@
                       style="width:600px;">
                       <tr>
                         <td valign="top" align="center">
-                          <table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
-                            class="em_wrapper" style="width:600px;">
-                            {% if mismatches['high_downgrades'] -%}
-                            <tr>
-                              <td class="em_heading em_dm_txt_white" valign="top" align="left" colspan="3"
-                                style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 24px; line-height: 24px; font-weight: 500; color: #00413E; letter-spacing: -0.16px;">
-                                Highs who should be downgraded
-                              </td>
-                            </tr>
-                            <tr>
-                              <td class="em_h10" height="24" style="height: 24px;">&nbsp;</td>
-                            </tr>
-                            {% for mismatch in mismatches['high_downgrades'] -%}
-                            <tr>
-                              <td class="em_line" height="24"
-                                style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 16px; line-height: 16px; font-weight: 500;">
-                                {{ mismatch['name'] }} ({{ mismatch['person_external_id'] }})
-                              </td>
-                              <td class="em_line" height="24"
-                                style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 16px; line-height: 16px; font-weight: 500;">
-                                {% if mismatch['last_score'] %}{{ assessment_name }}&nbsp;Score: {{ mismatch['last_score'] }}{% endif %}
-                              </td>
-                              <td class="em_line" height="24"
-                                style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 16px; line-height: 16px; font-weight: 500;">
-                                {% if mismatch['last_assessment_date'] %}Last&nbsp;Assessed: {{ mismatch['last_assessment_date'] }}{% endif %}
-                              </td>
-                            </tr>
-                            {% endfor -%}
-                            <tr>
-                              <td class="em_h34" height="63" style="height: 63px;">&nbsp;</td>
-                            </tr>
-                            {% endif -%}
-                            {% if mismatches['medium_downgrades'] -%}
-                            <tr>
-                              <td class="em_heading em_dm_txt_white" valign="top" align="left" colspan="3"
-                                style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 24px; line-height: 24px; font-weight: 500; color: #00413E; letter-spacing: -0.16px;">
-                                Mediums who should be downgraded
-                              </td>
-                            </tr>
-                            <tr>
-                              <td class="em_h10" height="24" style="height: 24px;">&nbsp;</td>
-                            </tr>
-                            {% for mismatch in mismatches['medium_downgrades'] -%}
-                            <tr>
-                              <td class="em_line" height="24"
-                                style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 16px; line-height: 16px; font-weight: 500;">
-                                {{ mismatch['name'] }} ({{ mismatch['person_external_id'] }})
-                              </td>
-                              <td class="em_line" height="24"
-                                style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 16px; line-height: 16px; font-weight: 500;">
-                                {% if mismatch['last_score'] %}{{ assessment_name }}&nbsp;Score: {{ mismatch['last_score'] }}{% endif %}
-                              </td>
-                              <td class="em_line" height="24"
-                                style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 16px; line-height: 16px; font-weight: 500;">
-                                {% if mismatch['last_assessment_date'] %}Last&nbsp;Assessed: {{ mismatch['last_assessment_date'] }}{% endif %}
-                              </td>
-                            </tr>
-                            {% endfor -%}
-                            <tr>
-                              <td class="em_h34" height="63" style="height: 63px;">&nbsp;</td>
-                            </tr>
-                            {% endif -%}
-                          </table>
+                          {% include "top_opportunities/supervision_mismatches.html.jinja2" %}
                         </td>
                       </tr>
                     </table>

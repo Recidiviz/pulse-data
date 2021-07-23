@@ -97,35 +97,40 @@ if __name__ == "__main__":
                 utils.KEY_DISTRICT: "US_ID_D3",
                 OFFICER_GIVEN_NAME: "Alex",
                 "assessment_name": "LSI-R",
-                "mismatches": {
-                    "high_downgrades": [
-                        {
-                            "name": "Tonye Thompson",
-                            "person_external_id": "189472",
-                            "last_score": 14,
-                        },
-                    ],
-                    "medium_downgrades": [
-                        {
-                            "name": "Linet Hansen",
-                            "person_external_id": "47228",
-                            "last_assessment_date": "1/12/21",
-                            "last_score": 8,
-                        },
-                        {
-                            "name": "Rebekah Cortes",
-                            "person_external_id": "132878",
-                            "last_assessment_date": "3/14/20",
-                            "last_score": 10,
-                        },
-                        {
-                            "name": "Taryn Berry",
-                            "person_external_id": "147872",
-                            "last_assessment_date": "3/13/20",
-                            "last_score": 4,
-                        },
-                    ],
-                },
+                "mismatches": [
+                    {
+                        "name": "Tonye Thompson",
+                        "person_external_id": "189472",
+                        "last_score": 14,
+                        "last_assessment_date": "10/12/20",
+                        "curent_supervision_level": "Medium",
+                        "recommended_level": "Low",
+                    },
+                    {
+                        "name": "Linet Hansen",
+                        "person_external_id": "47228",
+                        "last_assessment_date": "1/12/21",
+                        "last_score": 8,
+                        "curent_supervision_level": "Medium",
+                        "recommended_level": "Low",
+                    },
+                    {
+                        "name": "Rebekah Cortes",
+                        "person_external_id": "132878",
+                        "last_assessment_date": "3/14/20",
+                        "last_score": 10,
+                        "curent_supervision_level": "High",
+                        "recommended_level": "Medium",
+                    },
+                    {
+                        "name": "Taryn Berry",
+                        "person_external_id": "147872",
+                        "last_assessment_date": "3/13/20",
+                        "last_score": 4,
+                        "curent_supervision_level": "High",
+                        "recommended_level": "Low",
+                    },
+                ],
             }
         ),
     )

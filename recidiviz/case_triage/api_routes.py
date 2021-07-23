@@ -24,7 +24,6 @@ from flask import Blueprint, Response, current_app, g, jsonify
 from flask.globals import session
 from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import generate_csrf
-from sqlalchemy.orm.exc import NoResultFound
 
 from recidiviz.case_triage.admin_flask_views import IMPERSONATED_EMAIL_KEY
 from recidiviz.case_triage.analytics import CaseTriageSegmentClient
@@ -68,6 +67,7 @@ from recidiviz.case_triage.permissions_checker import PermissionsChecker
 from recidiviz.case_triage.querier.case_update_presenter import CaseUpdatePresenter
 from recidiviz.case_triage.querier.querier import (
     CaseTriageQuerier,
+    OfficerDoesNotExistError,
     PersonDoesNotExistError,
 )
 from recidiviz.case_triage.state_utils.requirements import policy_requirements_for_state
@@ -132,7 +132,7 @@ def create_api_blueprint(
                 g.user_context.current_user = CaseTriageQuerier.officer_for_email(
                     current_session, email
                 )
-        except NoResultFound as e:
+        except OfficerDoesNotExistError as e:
             if not g.user_context.can_see_demo_data:
                 raise CaseTriageAuthorizationError(
                     code="no_case_triage_access",

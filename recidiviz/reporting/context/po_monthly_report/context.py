@@ -106,14 +106,12 @@ class PoMonthlyReportContext(ReportContext):
         )
         self.prepared_data["learn_more_link"] = self.properties["learn_more_link"]
 
-        if "message_body_override" not in self.prepared_data:
+        if message_override := self.recipient_data.get("message_body_override"):
+            self.prepared_data["message_body"] = message_override
+        else:
             self.prepared_data["message_body"] = self.properties[
                 DEFAULT_MESSAGE_BODY_KEY
             ]
-        else:
-            self.prepared_data["message_body"] = self.recipient_data.get(
-                "message_body_override"
-            )
 
         self._convert_month_to_name("review_month")
 
@@ -554,6 +552,40 @@ if __name__ == "__main__":
                 "officer_external_id": 0,
                 "officer_given_name": "Clementine",
                 "review_month": 4,
+                "mismatches": [
+                    {
+                        "name": "Tonye Thompson",
+                        "person_external_id": "189472",
+                        "last_score": 14,
+                        "last_assessment_date": "10/12/20",
+                        "curent_supervision_level": "Medium",
+                        "recommended_level": "Low",
+                    },
+                    {
+                        "name": "Linet Hansen",
+                        "person_external_id": "47228",
+                        "last_assessment_date": "1/12/21",
+                        "last_score": 8,
+                        "curent_supervision_level": "Medium",
+                        "recommended_level": "Low",
+                    },
+                    {
+                        "name": "Rebekah Cortes",
+                        "person_external_id": "132878",
+                        "last_assessment_date": "3/14/20",
+                        "last_score": 10,
+                        "curent_supervision_level": "High",
+                        "recommended_level": "Medium",
+                    },
+                    {
+                        "name": "Taryn Berry",
+                        "person_external_id": "147872",
+                        "last_assessment_date": "3/13/20",
+                        "last_score": 4,
+                        "curent_supervision_level": "High",
+                        "recommended_level": "Low",
+                    },
+                ],
             }
         ),
     )
