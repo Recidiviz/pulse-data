@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import styled from "styled-components/macro";
-import { rem } from "polished";
 import { Button, fonts, palette, spacing } from "@recidiviz/design-system";
+import { rem } from "polished";
+import styled from "styled-components/macro";
 
 export const UserFlex = styled.div`
   display: flex;
@@ -96,6 +96,6 @@ export const DropdownLinkButton = styled(Button)`
   ${linkStyleBase}
 `;
 
-export const LoginButtonDiv = styled(Button)`
+export const ToolbarButton = styled(Button)`
   margin: 0 ${rem(spacing.md)};
 `;

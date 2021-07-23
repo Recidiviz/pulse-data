@@ -22,7 +22,7 @@ import {
   DropdownContainer,
   DropdownLink,
   DropdownLinkButton,
-  LoginButtonDiv,
+  ToolbarButton,
   UserAvatar,
   UserFlex,
   UserName,
@@ -37,12 +37,12 @@ const LoginButton: React.FC = () => {
   }
 
   return (
-    <LoginButtonDiv
+    <ToolbarButton
       onClick={() => userStore.login && userStore.login()}
       kind="primary"
     >
       Log In
-    </LoginButtonDiv>
+    </ToolbarButton>
   );
 };
 
@@ -60,10 +60,14 @@ const UserComponent = ({ user }: UserProps): JSX.Element => {
 
   return (
     <>
-      <UserName onClick={toggleDropdown}>{user.name}</UserName>
-      <UserAvatar onClick={toggleDropdown}>
-        {user.name && user.name[0]}
-      </UserAvatar>
+      {!userStore.isImpersonating && (
+        <>
+          <UserName onClick={toggleDropdown}>{user.name}</UserName>
+          <UserAvatar onClick={toggleDropdown}>
+            {user.name && user.name[0]}
+          </UserAvatar>
+        </>
+      )}
       {dropdownOpen ? (
         <DropdownContainer>
           <DropdownLink
@@ -85,7 +89,7 @@ const UserComponent = ({ user }: UserProps): JSX.Element => {
                   // To impersonate a user, add to the body
                   // impersonated_email: some-user@recidiviz.org
                   "/impersonate_user",
-                  {}
+                  { impersonated_email: "nikhil@recidiviz.org" }
                 );
                 window.location.reload();
               }}
@@ -110,8 +114,8 @@ const UserComponent = ({ user }: UserProps): JSX.Element => {
 };
 
 const UserSection = () => {
-  const { userStore } = useRootStore();
-  const { isAuthorized, isLoading, user } = userStore;
+  const { api, userStore } = useRootStore();
+  const { isAuthorized, isLoading, user, isImpersonating } = userStore;
 
   if (isLoading) {
     return <UserFlex />;
@@ -121,6 +125,21 @@ const UserSection = () => {
     <UserFlex className="fs-exclude">
       <LoginButton />
       {isAuthorized && user ? <UserComponent user={user} /> : null}
+      {isImpersonating && (
+        <ToolbarButton
+          kind="primary"
+          onClick={async () => {
+            await api.post("/impersonate_user", {});
+            if (userStore.canAccessCaseTriage) {
+              window.location.reload();
+            } else {
+              window.close();
+            }
+          }}
+        >
+          Close
+        </ToolbarButton>
+      )}
     </UserFlex>
   );
 };

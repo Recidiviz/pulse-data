@@ -169,6 +169,20 @@ def create_api_blueprint(
         api, "/bootstrap", [Permission.READ_WRITE, Permission.READ_ONLY]
     )
     def _get_bootstrap() -> str:
+        officer_metadata: Dict[str, Any] = (
+            {
+                "officerGivenNames": g.user_context.current_user.given_names,
+                "officerSurname": g.user_context.current_user.surname,
+                "isImpersonating": g.user_context.email
+                != g.user_context.current_user.email_address,
+            }
+            if g.user_context.current_user
+            else {
+                "officerGivenNames": None,
+                "officerSurname": None,
+                "isImpersonating": False,
+            }
+        )
         return jsonify(
             {
                 "csrf": generate_csrf(current_app.secret_key),
@@ -179,6 +193,7 @@ def create_api_blueprint(
                 "dashboardURL": os.getenv(
                     "DASHBOARD_URL", "https://dashboard.recidiviz.org"
                 ),
+                **officer_metadata,
                 **g.user_context.access_permissions.to_json(),
             }
         )
