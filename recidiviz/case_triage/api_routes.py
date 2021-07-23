@@ -39,7 +39,6 @@ from recidiviz.case_triage.api_schemas import (
     UpdateNoteSchema,
     requires_api_schema,
 )
-from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.case_updates.interface import (
     CaseUpdateDoesNotExistError,
     CaseUpdatesInterface,
@@ -50,6 +49,7 @@ from recidiviz.case_triage.exceptions import (
     CaseTriageAuthorizationError,
     CaseTriageBadRequestException,
     CaseTriagePersonNotOnCaseloadException,
+    CaseTriageSecretForbiddenException,
 )
 from recidiviz.case_triage.officer_notes.interface import (
     OfficerNoteDoesNotExistError,
@@ -71,7 +71,7 @@ from recidiviz.case_triage.querier.querier import (
     PersonDoesNotExistError,
 )
 from recidiviz.case_triage.state_utils.requirements import policy_requirements_for_state
-from recidiviz.case_triage.user_context import Permission, UserContext
+from recidiviz.case_triage.user_context import Permission
 from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
 
 
@@ -106,7 +106,6 @@ def route_with_permissions(
 def create_api_blueprint(
     segment_client: CaseTriageSegmentClient,
     authorization_decorator: Callable,
-    authorization_store: AuthorizationStore,
 ) -> Blueprint:
     """Creates Blueprint object that is parameterized with a SegmentClient, a requires_authorization decorator and an authorization_store."""
 
@@ -121,23 +120,32 @@ def create_api_blueprint(
         If the user is an admin (i.e. an approved Recidiviz employee), and the `impersonated_email` param is
         set, then they can make requests as if they were the impersonated user.
         """
-        email = session["user_info"]["email"].lower()
-        g.user_context = UserContext.base_context_for_email(email, authorization_store)
-        try:
-            if IMPERSONATED_EMAIL_KEY in session and g.user_context.can_impersonate:
-                g.user_context.current_user = CaseTriageQuerier.officer_for_email(
-                    current_session, session[IMPERSONATED_EMAIL_KEY]
+        if not hasattr(g, "user_context"):
+            # We expect the authorization decorator to have populated the user context.
+            # However, in the case that it doesn't successfully happen, this is to check
+            # for that.
+            raise CaseTriageSecretForbiddenException()
+        if IMPERSONATED_EMAIL_KEY in session:
+            try:
+                impersonated_officer = CaseTriageQuerier.officer_for_email(
+                    current_session, session[IMPERSONATED_EMAIL_KEY].lower()
                 )
-            else:
+                if g.user_context.can_impersonate(impersonated_officer):
+                    g.user_context.current_user = impersonated_officer
+            except OfficerDoesNotExistError as e:
+                session.pop(IMPERSONATED_EMAIL_KEY)
+
+        if not g.user_context.current_user:
+            try:
                 g.user_context.current_user = CaseTriageQuerier.officer_for_email(
-                    current_session, email
+                    current_session, g.user_context.email
                 )
-        except OfficerDoesNotExistError as e:
-            if not g.user_context.can_see_demo_data:
-                raise CaseTriageAuthorizationError(
-                    code="no_case_triage_access",
-                    description="You are not authorized to access this application",
-                ) from e
+            except OfficerDoesNotExistError as e:
+                if not g.user_context.can_see_demo_data:
+                    raise CaseTriageAuthorizationError(
+                        code="no_case_triage_access",
+                        description="You are not authorized to access this application",
+                    ) from e
 
     @route_with_permissions(
         api, "/clients", [Permission.READ_WRITE, Permission.READ_ONLY]
@@ -171,7 +179,7 @@ def create_api_blueprint(
                 "dashboardURL": os.getenv(
                     "DASHBOARD_URL", "https://dashboard.recidiviz.org"
                 ),
-                **g.user_context.get_frontend_access_permissions().to_json(),
+                **g.user_context.access_permissions.to_json(),
             }
         )
 

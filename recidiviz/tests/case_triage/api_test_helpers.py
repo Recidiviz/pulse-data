@@ -23,7 +23,7 @@ from typing import Any, Callable, Dict, Generator, List, Optional
 from unittest import TestCase
 
 import attr
-from flask import Flask
+from flask import Flask, g
 from flask.testing import FlaskClient
 from mock import MagicMock
 
@@ -32,6 +32,7 @@ from recidiviz.case_triage.api_routes import create_api_blueprint
 from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.client_info.types import PreferredContactMethod
 from recidiviz.case_triage.error_handlers import register_error_handlers
+from recidiviz.case_triage.user_context import UserContext
 from recidiviz.persistence.database.schema.case_triage.schema import ETLOfficer
 
 DEMO_USER_EMAIL = "demo_user@recidiviz.org"
@@ -66,7 +67,6 @@ class CaseTriageTestHelpers:
         api = create_api_blueprint(
             self.mock_segment_client,
             passthrough_authorization_decorator(),
-            self.mock_auth_store,
         )
         self.test_app.register_blueprint(api)
         self.test_client = self.test_app.test_client()
@@ -79,6 +79,9 @@ class CaseTriageTestHelpers:
     def using_demo_user(self) -> Generator[FlaskClient, None, None]:
         with self.test_app.test_request_context():
             self.set_session_user_info(DEMO_USER_EMAIL)
+            g.user_context = UserContext.base_context_for_email(
+                DEMO_USER_EMAIL, self.mock_auth_store
+            )
 
             yield self.test_client
 
@@ -86,18 +89,33 @@ class CaseTriageTestHelpers:
     def using_officer(self, officer: ETLOfficer) -> Generator[FlaskClient, None, None]:
         with self.test_app.test_request_context():
             self.set_session_user_info(officer.email_address)
+            g.user_context = UserContext.base_context_for_email(
+                officer.email_address, self.mock_auth_store
+            )
 
             yield self.test_client
 
     @contextlib.contextmanager
-    def using_readonly_user(
-        self, officer: ETLOfficer
-    ) -> Generator[FlaskClient, None, None]:
+    def using_readonly_user(self, email: str) -> Generator[FlaskClient, None, None]:
         with self.test_app.test_request_context():
             with self.test_client.session_transaction() as sess:  # type: ignore
                 sess["user_info"] = {"email": ADMIN_USER_EMAIL}
-                sess[IMPERSONATED_EMAIL_KEY] = officer.email_address
+                sess[IMPERSONATED_EMAIL_KEY] = email
+            g.user_context = UserContext.base_context_for_email(
+                ADMIN_USER_EMAIL, self.mock_auth_store
+            )
 
+            yield self.test_client
+
+    @contextlib.contextmanager
+    def using_ordinary_user(self, email: str) -> Generator[FlaskClient, None, None]:
+        with self.test_app.test_request_context():
+            with self.test_client.session_transaction() as sess:  # type: ignore
+                sess["user_info"] = {"email": email}
+                del sess[IMPERSONATED_EMAIL_KEY]
+            g.user_context = UserContext.base_context_for_email(
+                email, self.mock_auth_store
+            )
             yield self.test_client
 
     def get_clients(self) -> List[Dict[Any, Any]]:
