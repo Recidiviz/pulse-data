@@ -37,6 +37,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.common.google_cloud.cloud_task_queue_manager import (
     CloudTaskQueueInfo,
     CloudTaskQueueManager,
+    get_cloud_task_json_body,
 )
 from recidiviz.metrics.export.export_config import (
     DASHBOARD_USER_RESTRICTIONS_OUTPUT_DIRECTORY_URI,
@@ -88,7 +89,8 @@ def import_user_restrictions_csv_to_sql() -> Tuple[str, HTTPStatus]:
     """This endpoint triggers the import of the user restrictions CSV file to Cloud SQL. It is requested by a Cloud
     Function that is triggered when a new file is created in the user restrictions bucket."""
     try:
-        region_code = request.json.get("region_code")
+        body = get_cloud_task_json_body()
+        region_code = body.get("region_code")
         if not region_code:
             return "Missing region_code param", HTTPStatus.BAD_REQUEST
 
