@@ -17,9 +17,11 @@
 """Helpers for generating shared SQL fragments for vitals queries."""
 from typing import Dict, List, Optional
 
+# TODO(#8387): Clean up query generation for vitals dash views
+
 ENABLED_VITALS: Dict[str, List[str]] = {
     "US_ND": ["timely_contact", "timely_risk_assessment", "timely_discharge"],
-    "US_ID": ["timely_contact", "timely_risk_assessment"],
+    "US_ID": ["timely_contact", "timely_risk_assessment", "timely_downgrade"],
 }
 
 

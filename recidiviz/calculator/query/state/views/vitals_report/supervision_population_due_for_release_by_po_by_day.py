@@ -24,6 +24,8 @@ from recidiviz.calculator.query.state import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+# TODO(#8389) Templatize vital base-view generation
+
 SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_VIEW_NAME = (
     "supervision_population_due_for_release_by_po_by_day"
 )

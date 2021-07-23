@@ -26,6 +26,8 @@ from recidiviz.calculator.query.state.state_specific_query_strings import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+# TODO(#8389) Templatize vital base-view generation
+
 TIMELY_CONTACT_BY_PO_BY_DAY_VIEW_NAME = "timely_contact_by_po_by_day"
 
 TIMELY_CONTACT_BY_PO_BY_DAY_DESCRIPTION = """
