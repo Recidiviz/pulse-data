@@ -72,7 +72,7 @@ _APP_ENGINE_UPDATE_AUTH0_USER_METADATA_URL = (
 )
 _APP_ENGINE_IMPORT_USER_RESTRICTIONS_CSV_TO_SQL_URL = "https://{}.appspot.com/auth/handle_import_user_restrictions_csv_to_sql?region_code={}"
 _APP_ENGINE_IMPORT_CASE_TRIAGE_ETL_CSV_TO_SQL_URL = (
-    "https://{}.appspot.com/case_triage_ops/handle_gcs_imports"
+    "https://{}.appspot.com/case_triage_ops/handle_gcs_imports?filename={}"
 )
 
 
@@ -181,12 +181,14 @@ def handle_new_case_triage_etl(
         logging.error("No project id set for call to update auth0 users, returning.")
         return "", HTTPStatus.BAD_REQUEST
 
-    if not data["name"].startswith("etl_") or not data["name"].endswith(".csv"):
-        logging.info("Ignoring file %s", data["name"])
+    filename = data["name"]
+    if not filename.startswith("etl_") or not filename.endswith(".csv"):
+        logging.info("Ignoring file %s", filename)
         return "", HTTPStatus.OK
 
-    # TODO(#8335): We should pass in the name of the file that changed.
-    import_url = _APP_ENGINE_IMPORT_CASE_TRIAGE_ETL_CSV_TO_SQL_URL.format(project_id)
+    import_url = _APP_ENGINE_IMPORT_CASE_TRIAGE_ETL_CSV_TO_SQL_URL.format(
+        project_id, filename
+    )
     import_response = make_iap_request(import_url, IAP_CLIENT_ID[project_id])
     return "", HTTPStatus(import_response.status_code)
 
