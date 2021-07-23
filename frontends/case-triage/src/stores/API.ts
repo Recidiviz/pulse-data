@@ -143,7 +143,7 @@ class API {
       const json = await response.json();
 
       if (response.status === 400 && json.code === "invalid_csrf_token") {
-        this.bootstrapped = false;
+        this.invalidateBootstrap();
         return this.request<T>({ path, method, body });
       }
 
@@ -173,6 +173,11 @@ class API {
 
   async post<T>(path: string, body: Record<string, unknown>): Promise<T> {
     return this.request({ path, body, method: "POST" });
+  }
+
+  private invalidateBootstrap() {
+    this.bootstrapped = false;
+    this.bootstrapping = undefined;
   }
 }
 
