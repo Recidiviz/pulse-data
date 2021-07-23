@@ -17,33 +17,30 @@
 """ Endpoints for the data discovery tool. Combination of cloud task endpoints and user-facing endpoints
     Cloud task endpoints are suffixed with `_task`
 """
-import json
 import threading
 import uuid
 from http import HTTPStatus
-from typing import Tuple, Dict, Any
+from typing import Tuple
 
 import attr
 import flask
 import gcsfs
-from flask import Blueprint, request, jsonify, Response
+from flask import Blueprint, Response, jsonify, request
 
 from recidiviz.admin_panel.data_discovery.arguments import DataDiscoveryArgsFactory
 from recidiviz.admin_panel.data_discovery.cache_ingest_file_as_parquet import (
     CacheIngestFileAsParquetDelegate,
     SingleIngestFileParquetCache,
 )
-from recidiviz.admin_panel.data_discovery.discovery import (
-    discover_data,
-)
+from recidiviz.admin_panel.data_discovery.discovery import discover_data
 from recidiviz.admin_panel.data_discovery.file_configs import (
-    get_raw_data_configs,
     get_ingest_view_configs,
+    get_raw_data_configs,
 )
 from recidiviz.admin_panel.data_discovery.task_manager import (
+    AbstractAdminPanelDataDiscoveryCloudTaskManager,
     AdminPanelDataDiscoveryCloudTaskManager,
     DevelopmentAdminPanelDataDiscoveryCloudTaskManager,
-    AbstractAdminPanelDataDiscoveryCloudTaskManager,
 )
 from recidiviz.admin_panel.data_discovery.types import DataDiscoveryTTL
 from recidiviz.admin_panel.data_discovery.utils import (
@@ -51,9 +48,12 @@ from recidiviz.admin_panel.data_discovery.utils import (
     get_data_discovery_communicator,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.google_cloud.cloud_task_queue_manager import (
+    get_cloud_task_json_body,
+)
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import (
-    GcsfsCsvReader,
     COMMON_RAW_FILE_ENCODINGS,
+    GcsfsCsvReader,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
@@ -64,12 +64,6 @@ from recidiviz.utils.metadata import project_id
 
 CACHE_HIT = "CACHE_HIT"
 CACHE_MISS = "CACHE_MISS"
-
-
-def _get_task_json_body() -> Dict[str, Any]:
-    """ Tasks in GCP do not send the appropriate headers for Flask to populate request.json """
-    json_data = request.get_data(as_text=True)
-    return json.loads(json_data)
 
 
 def add_data_discovery_routes(blueprint: Blueprint) -> None:
@@ -95,7 +89,7 @@ def add_data_discovery_routes(blueprint: Blueprint) -> None:
              Cache hit/miss result
         """
         cache = get_data_discovery_cache()
-        body = _get_task_json_body()
+        body = get_cloud_task_json_body()
         path = GcsfsFilePath.from_absolute_path(body["gcs_file_uri"])
         parquet_path = SingleIngestFileParquetCache.parquet_cache_key(path)
 
@@ -139,7 +133,7 @@ def add_data_discovery_routes(blueprint: Blueprint) -> None:
         Returns:
             N/A
         """
-        body = _get_task_json_body()
+        body = get_cloud_task_json_body()
         if in_gcp():
             discover_data(body["discovery_id"])
         else:
