@@ -50,6 +50,9 @@ id_roster AS (
         'US_ID' AS state_code
     FROM `{project_id}.{static_reference_dataset}.us_id_roster`
 ),
+export_time AS (
+    SELECT CURRENT_TIMESTAMP AS exported_at
+),
 all_officers AS (
     SELECT
         state_code,
@@ -67,6 +70,9 @@ SELECT
     {columns}
 FROM
     all_officers
+FULL OUTER JOIN
+    export_time
+ON TRUE
 """
 
 OFFICER_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -79,6 +85,7 @@ OFFICER_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "email_address",
         "given_names",
         "surname",
+        "exported_at",
     ],
     reference_views_dataset=REFERENCE_VIEWS_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,

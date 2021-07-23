@@ -69,6 +69,7 @@ def csv_row_to_etl_client_json(row: List[str]) -> Dict[str, Any]:
         "email_address": treat_empty_as_null(row[20]),
         "days_on_current_supervision_level": int(row[21]),
         "phone_number": treat_empty_as_null(row[22]),
+        "exported_at": parse_nullable_date(row[23]),
     }
 
 
@@ -79,6 +80,7 @@ def csv_row_to_etl_opportunity_json(row: List[str]) -> Dict[str, Any]:
         "person_external_id": row[2],
         "opportunity_type": row[3],
         "opportunity_metadata": json.loads(row[4]),
+        "exported_at": parse_nullable_date(row[5]),
     }
 
 
