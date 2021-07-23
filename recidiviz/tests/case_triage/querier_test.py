@@ -19,12 +19,12 @@ from typing import Optional
 from unittest.case import TestCase
 
 import pytest
-import sqlalchemy.orm.exc
 
 from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.case_triage.querier.querier import (
     CaseTriageQuerier,
+    OfficerDoesNotExistError,
     PersonDoesNotExistError,
 )
 from recidiviz.case_triage.user_context import UserContext
@@ -87,7 +87,7 @@ class TestCaseTriageQuerier(TestCase):
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            with self.assertRaises(sqlalchemy.orm.exc.NoResultFound):
+            with self.assertRaises(OfficerDoesNotExistError):
                 CaseTriageQuerier.officer_for_email(session, "nonexistent@email.com")
 
     def test_clients_for_officer(self) -> None:
