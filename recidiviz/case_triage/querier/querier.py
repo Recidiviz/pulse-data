@@ -343,13 +343,17 @@ class CaseTriageQuerier:
         raise ValueError("Not authorized to view client opportunities.")
 
     @staticmethod
-    def fetch_etl_opportunity(
+    def fetch_opportunity(
         session: Session,
         user_context: UserContext,
         client: ETLClient,
         opportunity_type: OpportunityType,
-    ) -> ETLOpportunity:
+    ) -> Opportunity:
         """Fetches a given opportunity for an officer and client."""
+        computed_opps = ComputedOpportunity.build_all_for_client(client)
+        if opportunity_type in computed_opps:
+            return computed_opps[opportunity_type]
+
         if user_context.should_see_demo:
             opportunities = get_fixture_opportunities()
             for opp in opportunities:

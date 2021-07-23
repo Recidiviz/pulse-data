@@ -132,6 +132,16 @@ class CaseTriageTestHelpers:
         all_opportunities = self.get_opportunities()
         return [opp for opp in all_opportunities if "deferredUntil" not in opp]
 
+    def get_opportunity_for_person(
+        self, opportunity_type: str, person_external_id: str
+    ) -> List[Dict[Any, Any]]:
+        return [
+            opp
+            for opp in self.get_undeferred_opportunities()
+            if opp["opportunityType"] == opportunity_type
+            and opp["personExternalId"] == person_external_id
+        ]
+
     def create_case_update(
         self, person_external_id: str, action_type: str, comment: str = ""
     ) -> None:
