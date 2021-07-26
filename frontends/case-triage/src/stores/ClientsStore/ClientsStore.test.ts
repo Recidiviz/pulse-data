@@ -16,15 +16,14 @@
 // =============================================================================
 
 import { cloneDeep } from "lodash";
-import MockDate from "mockdate";
 import { runInAction } from "mobx";
+import MockDate from "mockdate";
 import API from "../API";
-import RootStore from "../RootStore";
-import { clientData, clientOpportunityData, statePolicy } from "./__fixtures__";
-import type ClientsStore from "./ClientsStore";
-import { ClientData } from "./Client";
-import { KNOWN_EXPERIMENTS } from "../UserStore";
 import { Opportunity } from "../OpportunityStore";
+import RootStore from "../RootStore";
+import { ClientData } from "./Client";
+import type ClientsStore from "./ClientsStore";
+import { clientData, clientOpportunityData, statePolicy } from "./__fixtures__";
 
 jest.mock("../API");
 const APIMock = API as jest.MockedClass<typeof API>;
@@ -41,10 +40,6 @@ beforeEach(async () => {
   // initialize the store for testing
   rootStore = new RootStore();
   store = rootStore.clientsStore;
-  // tests in this file require an experiment flag
-  rootStore.userStore.setFeatureVariants({
-    [KNOWN_EXPERIMENTS.NewClientList]: "foo",
-  });
 
   // easy-to-remember date for time-sensitive alerts
   MockDate.set("2021-01-01");

@@ -24,7 +24,6 @@ import {
   spacing,
   useToasts,
 } from "@recidiviz/design-system";
-import useBreakpoint from "@w11r/use-breakpoint";
 import { observer } from "mobx-react-lite";
 import { rem } from "polished";
 import React, { ReactElement } from "react";
@@ -34,16 +33,10 @@ import {
   trackSearchBarFocused,
 } from "../analytics";
 import AuthWall from "../components/AuthWall";
-import CaseCard, {
-  CaseCardDrawer,
-  CaseCardModal,
-  CaseCardPopout,
-} from "../components/CaseCard";
+import CaseCard, { CaseCardDrawer } from "../components/CaseCard";
 import ClientList from "../components/ClientList";
-import { device } from "../components/styles";
 import UserSection from "../components/UserSection";
 import { useRootStore } from "../stores";
-import { KNOWN_EXPERIMENTS } from "../stores/UserStore";
 
 const Container = styled.div`
   display: flex;
@@ -51,19 +44,6 @@ const Container = styled.div`
   max-width: 1288px;
   padding: 0 ${rem(spacing.xl)};
   margin: 0 auto;
-`;
-
-const Left = styled.div`
-  width: 100%;
-
-  @media ${device.desktop} {
-    width: 700px;
-  }
-`;
-
-const Right = styled.div`
-  padding-left: ${rem(spacing.xl)};
-  width: 555px;
 `;
 
 const ReloadButton = styled(Button)`
@@ -82,12 +62,6 @@ const ErrorToasts = observer((): JSX.Element => {
 
 const Home = (props: RouteComponentProps): ReactElement => {
   const { clientsStore, userStore } = useRootStore();
-
-  const isDesktop = useBreakpoint(true, ["tablet-", false]);
-
-  const showNewLayout = userStore.isInExperiment(
-    KNOWN_EXPERIMENTS.NewClientList
-  );
 
   const ClientCard =
     clientsStore.activeClient && clientsStore.activeClient.isVisible ? (
@@ -119,25 +93,8 @@ const Home = (props: RouteComponentProps): ReactElement => {
         right={<UserSection />}
       />
       <Container>
-        {showNewLayout ? (
-          <>
-            <ClientList />
-            <CaseCardDrawer>{ClientCard}</CaseCardDrawer>
-          </>
-        ) : (
-          <>
-            <Left>
-              <ClientList />
-            </Left>
-            {isDesktop ? (
-              <Right>
-                <CaseCardPopout>{ClientCard}</CaseCardPopout>
-              </Right>
-            ) : (
-              <CaseCardModal>{ClientCard}</CaseCardModal>
-            )}
-          </>
-        )}
+        <ClientList />
+        <CaseCardDrawer>{ClientCard}</CaseCardDrawer>
         <ErrorToasts />
       </Container>
       <Modal

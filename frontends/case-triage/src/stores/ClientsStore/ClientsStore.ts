@@ -21,7 +21,7 @@ import API, { ErrorResponse } from "../API";
 import OpportunityStore from "../OpportunityStore";
 import PolicyStore from "../PolicyStore";
 import RootStore from "../RootStore";
-import UserStore, { KNOWN_EXPERIMENTS } from "../UserStore";
+import UserStore from "../UserStore";
 import {
   Client,
   ClientData,
@@ -164,18 +164,7 @@ class ClientsStore {
   }
 
   get lists(): Record<CLIENT_LIST_KIND, Client[]> {
-    if (this.userStore.isInExperiment(KNOWN_EXPERIMENTS.NewClientList)) {
-      return this.filteredSortedLists;
-    }
-
-    return {
-      [CLIENT_LIST_KIND.UP_NEXT]: [
-        ...this.unfilteredLists[CLIENT_LIST_KIND.UP_NEXT],
-      ].filter((client) => client.isVisible),
-      [CLIENT_LIST_KIND.PROCESSING_FEEDBACK]: [
-        ...this.unfilteredLists[CLIENT_LIST_KIND.PROCESSING_FEEDBACK],
-      ].filter((client) => client.isVisible),
-    };
+    return this.filteredSortedLists;
   }
 
   private get unsortedBuckets() {

@@ -14,26 +14,19 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-
-import TruncatedList from "react-truncate-list";
-import styled from "styled-components/macro";
-import { rem } from "polished";
 import {
   Card,
   CardSection,
   DropdownMenu,
   DropdownToggle,
   H2,
-  Need,
   palette,
   spacing,
 } from "@recidiviz/design-system";
-import { device } from "../styles";
+import { rem } from "polished";
+import TruncatedList from "react-truncate-list";
+import styled from "styled-components/macro";
 import { ToggleMenu } from "../ToggleMenu";
-
-export const ClientNeed = styled(Need)`
-  margin-left: ${rem(spacing.md)};
-`;
 
 interface ClientCardProps {
   className?: string;
@@ -67,20 +60,6 @@ export const ClientListCardElement = styled(Card).attrs(
   }
 `;
 
-export const StackingClientListCardElement = styled(ClientListCardElement)`
-  // Override base <Card/> flex-direction
-  && {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  @media ${device.desktop} {
-    && {
-      flex-direction: row;
-    }
-  }
-`;
-
 export const MainText = styled.span`
   color: ${palette.pine4};
   font-size: ${rem("16px")};
@@ -105,44 +84,11 @@ export const FlexCardSection = styled(BaseCardSection)`
   align-items: center;
 `;
 
-export const FirstCardSection = styled(FlexCardSection)`
-  display: flex;
-  justify-content: space-between;
-  flex: 0 0 30% !important;
-  border-bottom: 1px solid ${palette.slate20};
-
-  @media ${device.desktop} {
-    border-bottom: none;
-  }
-`;
-
 export const ClientNameSupervisionLevel = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
-`;
-
-export const NextActionCardSection = styled(FlexCardSection)`
-  flex: 0 1 40% !important;
-`;
-
-export const NeedsIconsCardSection = styled(FlexCardSection)`
-  flex: 0 0 30% !important;
-  justify-content: flex-end;
-  display: none;
-
-  @media ${device.desktop} {
-    display: flex;
-  }
-`;
-
-export const MobileClientIcons = styled.div`
-  margin-left: auto;
-  display: flex;
-  @media ${device.desktop} {
-    display: none;
-  }
 `;
 
 export const FirstClientListHeading = styled(H2)`
@@ -175,10 +121,6 @@ export const InProgressIndicator = styled.div`
 
   border-radius: 999px;
   background-color: ${palette.slate60};
-`;
-
-export const PendingText = styled.div`
-  color: ${palette.slate70};
 `;
 
 export const NameCardSection = styled(FlexCardSection)`

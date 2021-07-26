@@ -33,7 +33,7 @@ export enum OpportunityType {
   CONTACT = "CONTACT",
 }
 
-export const OPPORTUNITY_TITLES: Record<OpportunityType, string> = {
+const OPPORTUNITY_TITLES: Record<OpportunityType, string> = {
   [OpportunityType.OVERDUE_DOWNGRADE]: "Supervision level mismatch",
   [OpportunityType.EMPLOYMENT]: "Unemployed",
   [OpportunityType.ASSESSMENT]: "Risk assessment",
