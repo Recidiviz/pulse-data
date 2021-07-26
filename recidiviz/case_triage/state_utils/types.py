@@ -60,6 +60,13 @@ class PolicyRequirements:
     # External reference to policy doc describing supervision policies
     supervision_policy_reference: str
 
+    def get_supervision_level_name(
+        self, supervision_level: StateSupervisionLevel
+    ) -> str:
+        return self.supervision_level_names.get(
+            supervision_level, supervision_level.value
+        )
+
     def to_json(self) -> Dict[str, Any]:
         assessment_score_cutoff_dict = {
             gender.value: {

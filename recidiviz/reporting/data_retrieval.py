@@ -23,12 +23,19 @@ for use in the emails.
 
 import json
 import logging
+from datetime import date, timedelta
 from typing import Dict, List, Optional
+
+import dateutil.parser
 
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.opportunities.types import OpportunityType
-from recidiviz.case_triage.querier.querier import CaseTriageQuerier
+from recidiviz.case_triage.querier.querier import (
+    CaseTriageQuerier,
+    OfficerDoesNotExistError,
+)
+from recidiviz.case_triage.state_utils.requirements import policy_requirements_for_state
 from recidiviz.case_triage.user_context import UserContext
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -49,6 +56,9 @@ from recidiviz.reporting.context.po_monthly_report.constants import (
 from recidiviz.reporting.email_reporting_utils import _gcsfs_path_for_batch_metadata
 from recidiviz.reporting.recipient import Recipient
 from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
+
+MAX_SUPERVISION_MISMATCHES_TO_SHOW = 5
+IDEAL_SUPERVISION_MISMATCH_AGE_IN_DAYS = 30
 
 
 def filter_recipients(
@@ -209,73 +219,105 @@ def _top_opps_email_recipient_addresses() -> List[str]:
     return []
 
 
-def _retrieve_data_for_top_opportunities(state_code: StateCode) -> List[Recipient]:
-    """Fetches list of recipients from the Case Triage backend where we store information
-    about which opportunities are active via the OpportunityPresenter."""
-
-    recipients = []
-
+def _get_mismatch_data_for_officer(
+    officer_email: str,
+) -> List[Dict[str, str]]:
+    """Fetches the list of supervision mismatches on an officer's caseload for display
+    in our email templates."""
     with SessionFactory.using_database(
         SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE), autocommit=False
     ) as session:
-        for officer_email in _top_opps_email_recipient_addresses():
+        try:
             officer = CaseTriageQuerier.officer_for_email(session, officer_email)
-            user_context = UserContext(
-                email=officer_email,
-                authorization_store=AuthorizationStore(),  # empty store because it won't be used
-                current_user=officer,
+        except OfficerDoesNotExistError:
+            return []
+
+        try:
+            policy_requirements = policy_requirements_for_state(officer.state_code)
+        except Exception:
+            # If for some reason we can't fetch the policy requirements, we should not show mismatches.
+            return []
+
+        user_context = UserContext(
+            email=officer_email,
+            authorization_store=AuthorizationStore(),  # empty store won't actually be leveraged
+            current_user=officer,
+        )
+        opportunities = [
+            opp.opportunity
+            for opp in CaseTriageQuerier.opportunities_for_officer(
+                session, user_context
             )
-            opportunities = [
-                opp
-                for opp in CaseTriageQuerier.opportunities_for_officer(
-                    session, user_context
-                )
-                if not opp.is_deferred()
-                and opp.opportunity.opportunity_type
-                == OpportunityType.OVERDUE_DOWNGRADE.value
+            if not opp.is_deferred()
+            and opp.opportunity.opportunity_type
+            == OpportunityType.OVERDUE_DOWNGRADE.value
+        ]
+        mismatches: List[Dict[str, str]] = []
+        for opp in opportunities:
+            client = CaseTriageQuerier.etl_client_for_officer(
+                session, user_context, opp.person_external_id
+            )
+
+            client_name = json.loads(client.full_name)
+            # TODO(#7957): We shouldn't be converting to title-case because there
+            # are many names whose preferred casing is not that. Once we figure out
+            # how to access the original name casing, we should use that wherever possible.
+            given_names = client_name.get("given_names", "").title()
+            surname = client_name.get("surname", "").title()
+            full_name = " ".join([given_names, surname]).strip()
+            mismatches.append(
+                {
+                    "name": full_name,
+                    "person_external_id": client.person_external_id,
+                    "last_score": opp.opportunity_metadata["assessmentScore"],
+                    "last_assessment_date": opp.opportunity_metadata[
+                        "latestAssessmentDate"
+                    ],
+                    "current_supervision_level": policy_requirements.get_supervision_level_name(
+                        StateSupervisionLevel(client.supervision_level)
+                    ),
+                    "recommended_level": policy_requirements.get_supervision_level_name(
+                        StateSupervisionLevel(
+                            opp.opportunity_metadata["recommendedSupervisionLevel"]
+                        )
+                    ),
+                }
+            )
+
+        mismatches.sort(key=lambda x: x["last_assessment_date"], reverse=True)
+        if len(mismatches) > MAX_SUPERVISION_MISMATCHES_TO_SHOW:
+            cutoff_date = date.today() - timedelta(
+                days=IDEAL_SUPERVISION_MISMATCH_AGE_IN_DAYS
+            )
+
+            cutoff_index = len(mismatches) - MAX_SUPERVISION_MISMATCHES_TO_SHOW
+            for i in range(cutoff_index):
+                if (
+                    dateutil.parser.parse(mismatches[i]["last_assessment_date"]).date()
+                    <= cutoff_date
+                ):
+                    cutoff_index = i
+                    break
+
+            return mismatches[
+                cutoff_index : cutoff_index + MAX_SUPERVISION_MISMATCHES_TO_SHOW
             ]
-            mismatches: Dict[str, List[Dict[str, str]]] = {
-                "high_downgrades": [],
-                "medium_downgrades": [],
-            }
-            for opp in opportunities:
-                client = CaseTriageQuerier.etl_client_for_officer(
-                    session, user_context, opp.opportunity.person_external_id
-                )
-                key = None
-                if client.supervision_level == StateSupervisionLevel.HIGH.value:
-                    key = "high_downgrades"
-                elif client.supervision_level == StateSupervisionLevel.MEDIUM.value:
-                    key = "medium_downgrades"
-                else:
-                    logging.warning(
-                        "unexpected supervision level for client: person_external_id=%s, supervision_level=%s",
-                        client.person_external_id,
-                        client.supervision_level,
-                    )
-                    continue
 
-                client_name = json.loads(client.full_name)
-                # TODO(#7957): We shouldn't be converting to title-case because there
-                # are many names whose preferred casing is not that. Once we figure out
-                # how to access the original name casing, we should use that wherever possible.
-                given_names = client_name.get("given_names", "").title()
-                surname = client_name.get("surname").title()
-                full_name = " ".join([given_names, surname]).strip()
-                mismatches[key].append(
-                    {
-                        "name": full_name,
-                        "person_external_id": client.person_external_id,
-                        "last_score": opp.opportunity.opportunity_metadata[
-                            "assessmentScore"
-                        ],
-                        "last_assessment_date": opp.opportunity.opportunity_metadata[
-                            "latestAssessmentDate"
-                        ],
-                    }
-                )
+        return mismatches
 
-            if mismatches["high_downgrades"] or mismatches["medium_downgrades"]:
+
+def _retrieve_data_for_top_opportunities(state_code: StateCode) -> List[Recipient]:
+    """Fetches list of recipients from the Case Triage backend where we store information
+    about which opportunities are active via the OpportunityPresenter."""
+    recipients = []
+    for officer_email in _top_opps_email_recipient_addresses():
+        mismatches = _get_mismatch_data_for_officer(officer_email)
+        if mismatches is not None:
+            with SessionFactory.using_database(
+                SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE),
+                autocommit=False,
+            ) as session:
+                officer = CaseTriageQuerier.officer_for_email(session, officer_email)
                 recipients.append(
                     Recipient.from_report_json(
                         {
@@ -288,7 +330,7 @@ def _retrieve_data_for_top_opportunities(state_code: StateCode) -> List[Recipien
                     )
                 )
 
-        return recipients
+    return recipients
 
 
 def _retrieve_data_for_po_monthly_report(
@@ -337,6 +379,10 @@ def _retrieve_data_for_po_monthly_report(
                 err,
             )
         else:
+            if email := item.get("email_address"):
+                mismatches = _get_mismatch_data_for_officer(email)
+                if mismatches is not None:
+                    item["mismatches"] = mismatches
             recipient_data.append(item)
 
     logging.info(
