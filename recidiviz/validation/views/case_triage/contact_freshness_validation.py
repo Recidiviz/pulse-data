@@ -14,23 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A view that can be used to validate that BigQuery has fresh assessment data
+"""A view that can be used to validate that BigQuery has fresh contacts data
 """
 
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.validation.views.case_triage.utils import FRESHNESS_FRAGMENT
 from recidiviz.validation.views.dataset_config import VIEWS_DATASET
 from recidiviz.validation.views.utils.freshness_validation import (
     FreshnessValidation,
     FreshnessValidationAssertion,
-    current_date_add,
-    current_date_sub,
 )
-
-CONTACT_FRESHNESS_FRAGMENT = (
-    f"{current_date_sub(days=1)} AND {current_date_add(days=100)}"
-)
-
 
 CONTACT_FRESHNESS_VALIDATION_VIEW_BUILDER = FreshnessValidation(
     dataset=VIEWS_DATASET,
@@ -43,7 +37,7 @@ CONTACT_FRESHNESS_VALIDATION_VIEW_BUILDER = FreshnessValidation(
             description="Checks that we've imported raw data in the last 24 hours, but not the received data is timely",
             dataset="us_id_raw_data",
             table="sprvsn_cntc",
-            freshness_clause=f"CAST(update_datetime AS DATE) BETWEEN {CONTACT_FRESHNESS_FRAGMENT}",
+            freshness_clause=f"CAST(update_datetime AS DATE) BETWEEN {FRESHNESS_FRAGMENT}",
         ),
         FreshnessValidationAssertion.build_assertion(
             region_code="US_ID",
@@ -51,7 +45,7 @@ CONTACT_FRESHNESS_VALIDATION_VIEW_BUILDER = FreshnessValidation(
             description="Checks that the imported data contains edits from within the freshness threshold",
             dataset="us_id_raw_data",
             table="sprvsn_cntc",
-            freshness_clause=f"SAFE_CAST(SPLIT(updt_dt, ' ')[OFFSET(0)] AS DATE) BETWEEN {CONTACT_FRESHNESS_FRAGMENT}",
+            freshness_clause=f"SAFE_CAST(SPLIT(updt_dt, ' ')[OFFSET(0)] AS DATE) BETWEEN {FRESHNESS_FRAGMENT}",
         ),
         FreshnessValidationAssertion.build_assertion(
             region_code="US_ID",
@@ -59,7 +53,7 @@ CONTACT_FRESHNESS_VALIDATION_VIEW_BUILDER = FreshnessValidation(
             description="Checks that the imported data contains contacts from within the freshness threshold",
             dataset="us_id_raw_data",
             table="sprvsn_cntc",
-            freshness_clause=f"SAFE_CAST(SPLIT(cntc_dt, ' ')[OFFSET(0)] AS DATE) BETWEEN {CONTACT_FRESHNESS_FRAGMENT}",
+            freshness_clause=f"SAFE_CAST(SPLIT(cntc_dt, ' ')[OFFSET(0)] AS DATE) BETWEEN {FRESHNESS_FRAGMENT}",
         ),
         FreshnessValidationAssertion.build_assertion(
             region_code="US_ID",
@@ -67,7 +61,7 @@ CONTACT_FRESHNESS_VALIDATION_VIEW_BUILDER = FreshnessValidation(
             description="Checks that the state tables were successfully updated",
             dataset="state",
             table="state_supervision_contact",
-            freshness_clause=f"state_code = 'US_ID' AND contact_date BETWEEN {CONTACT_FRESHNESS_FRAGMENT}",
+            freshness_clause=f"state_code = 'US_ID' AND contact_date BETWEEN {FRESHNESS_FRAGMENT}",
         ),
         FreshnessValidationAssertion.build_assertion(
             region_code="US_ID",
@@ -75,7 +69,7 @@ CONTACT_FRESHNESS_VALIDATION_VIEW_BUILDER = FreshnessValidation(
             description="Checks that the Case Triage ETL was successfully updated",
             dataset="case_triage",
             table="etl_clients_materialized",
-            freshness_clause=f"state_code = 'US_ID' AND most_recent_face_to_face_date BETWEEN {CONTACT_FRESHNESS_FRAGMENT}",
+            freshness_clause=f"state_code = 'US_ID' AND most_recent_face_to_face_date BETWEEN {FRESHNESS_FRAGMENT}",
         ),
     ],
 ).to_big_query_view_builder()
