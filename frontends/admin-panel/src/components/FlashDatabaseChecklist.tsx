@@ -40,6 +40,7 @@ import {
   QueueState,
   StateCodeInfo,
 } from "./IngestOperationsView/constants";
+import NewTabLink from "./NewTabLink";
 import StateSelector from "./Utilities/StateSelector";
 
 interface StyledStepProps extends StepProps {
@@ -70,6 +71,9 @@ const CodeBlock = ({ children, enabled }: CodeBlockProps): JSX.Element => (
 const FlashDatabaseChecklist = (): JSX.Element => {
   const isProduction = window.RUNTIME_GCP_ENVIRONMENT === "production";
   const projectId = isProduction ? "recidiviz-123" : "recidiviz-staging";
+  const operationsPageURL = `https://go/${
+    isProduction ? "prod" : "dev"
+  }-state-data-operations`;
 
   const [currentStep, setCurrentStep] = React.useState(0);
   const [stateCode, setStateCode] = React.useState<string | null>(null);
@@ -216,7 +220,13 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             <p>
               Export a SQL dump of all data in the {stateCode.toLowerCase()}
               _secondary database to cloud storage bucket{" "}
-              <code>{projectId}-cloud-sql-exports</code>.
+              <code>{projectId}-cloud-sql-exports</code>. <br />
+              You can check your progress in the{" "}
+              <NewTabLink href={operationsPageURL}>
+                Operations section
+              </NewTabLink>{" "}
+              of the STATE SQL instance page. If this request times out, but the
+              operation succeeds, just select &#39;Mark Done&#39;.
             </p>
           }
           nextButtonTitle="Export Data"
@@ -345,6 +355,13 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 Update all rows in operations database that had database{" "}
                 <code>{stateCode.toLowerCase()}_secondary</code> with updated
                 database name <code>{stateCode.toLowerCase()}_primary</code>.
+                <br />
+                You can check your progress in the{" "}
+                <NewTabLink href={operationsPageURL}>
+                  Operations section
+                </NewTabLink>{" "}
+                of the STATE SQL instance page. If this request times out, but
+                the operation succeeds, just select &#39;Mark Done&#39;.
               </p>
               <ol style={{ paddingLeft: 20 }}>
                 <li>
