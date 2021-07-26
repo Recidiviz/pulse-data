@@ -21,6 +21,7 @@ import os
 from abc import ABC, abstractmethod
 from typing import List
 
+from bs4 import BeautifulSoup
 from jinja2 import Template
 
 import recidiviz.reporting.email_reporting_utils as utils
@@ -92,11 +93,15 @@ class ReportContext(ABC):
 
         return self.prepare_for_generation()
 
-    def render_html(self) -> str:
+    def render_html(self, minify: bool = True) -> str:
         """Interpolates the report's prepared data into the template
         Returns: Interpolated template"""
         prepared_data = self.get_prepared_data()
-        return self.html_template.render(prepared_data)
+        original = self.html_template.render(prepared_data)
+        if not minify:
+            return original
+        soup = BeautifulSoup(original, "html.parser")
+        return str(soup).strip()
 
     @abstractmethod
     def prepare_for_generation(self) -> dict:
