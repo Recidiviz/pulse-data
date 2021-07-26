@@ -173,18 +173,37 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           }}
         />
         <StyledStep
-          title="Acquire Ingest Lock"
+          title="Acquire PRIMARY Ingest Lock"
           description={
             <p>
-              Acquire the ingest lock for {stateCode}. This prevents other
-              operations from updating ingest databases until the lock is
-              released
+              Acquire the ingest lock for {stateCode}&#39;s primary ingest
+              instance. This prevents other operations from updating ingest
+              databases until the lock is released.
             </p>
           }
           nextButtonTitle="Acquire Lock"
           onNextButtonClick={async () => {
-            // TODO(#8070): Update this to acquire both secondary and primary locks
-            const request = async () => acquireBQExportLock(stateCode);
+            const request = async () =>
+              acquireBQExportLock(stateCode, DirectIngestInstance.PRIMARY);
+            const succeeded = await runAndCheckStatus(request);
+            if (succeeded) {
+              await incrementCurrentStep();
+            }
+          }}
+        />
+        <StyledStep
+          title="Acquire SECONDARY Ingest Lock"
+          description={
+            <p>
+              Acquire the ingest lock for {stateCode}&#39;s secondary ingest
+              instance. This prevents other operations from updating ingest
+              databases until the lock is released.
+            </p>
+          }
+          nextButtonTitle="Acquire Lock"
+          onNextButtonClick={async () => {
+            const request = async () =>
+              acquireBQExportLock(stateCode, DirectIngestInstance.SECONDARY);
             const succeeded = await runAndCheckStatus(request);
             if (succeeded) {
               await incrementCurrentStep();
@@ -221,7 +240,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 pipenv shell:
               </p>
               <p>
-                <CodeBlock enabled={currentStep === 3}>
+                <CodeBlock enabled={currentStep === 4}>
                   python -m recidiviz.tools.migrations.purge_state_db \<br />
                   {"    "}--state-code {stateCode} \<br />
                   {"    "}--database-version primary \<br />
@@ -243,7 +262,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 storage:
               </p>
               <p>
-                <CodeBlock enabled={currentStep === 4}>
+                <CodeBlock enabled={currentStep === 5}>
                   python -m
                   recidiviz.tools.ingest.operations.move_storage_files_to_deprecated
                   \<br />
@@ -256,7 +275,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               </p>
               <p>and then run:</p>
               <p>
-                <CodeBlock enabled={currentStep === 4}>
+                <CodeBlock enabled={currentStep === 5}>
                   gsutil rm gs://{projectId}-direct-ingest-state-storage/
                   {stateCode.toLowerCase()}/ingest_view/*/*/*/split_files/*
                 </CodeBlock>
@@ -282,7 +301,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   Drop all rows for{" "}
                   <code>{stateCode.toLowerCase()}_primary</code> from{" "}
                   <code>direct_ingest_ingest_file_metadata</code>:
-                  <CodeBlock enabled={currentStep === 5}>
+                  <CodeBlock enabled={currentStep === 6}>
                     UPDATE direct_ingest_ingest_file_metadata <br />
                     SET is_invalidated = TRUE <br />
                     WHERE region_code = &#39;{stateCode}&#39; <br />
@@ -334,7 +353,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 </li>
                 <li>
                   Run the following SQL query to update the tables:
-                  <CodeBlock enabled={currentStep === 7}>
+                  <CodeBlock enabled={currentStep === 8}>
                     UPDATE direct_ingest_ingest_file_metadata <br />
                     SET ingest_database_name = &#39;{stateCode.toLowerCase()}
                     _primary&#39; <br />
@@ -356,7 +375,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 storage.
               </p>
               <p>
-                <CodeBlock enabled={currentStep === 8}>
+                <CodeBlock enabled={currentStep === 9}>
                   python -m
                   recidiviz.tools.ingest.operations.copy_ingest_views_from_secondary_to_primary
                   \<br />
@@ -369,12 +388,33 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           }
         />
         <StyledStep
-          title="Release Ingest Lock"
-          description={<p>Release the ingest lock for {stateCode}.</p>}
+          title="Release PRIMARY Ingest Lock"
+          description={
+            <p>
+              Release the ingest lock for {stateCode}&#39;s primary instance.
+            </p>
+          }
           nextButtonTitle="Release Lock"
           onNextButtonClick={async () => {
-            // TODO(#8070): Update this to release both secondary and primary locks
-            const request = async () => releaseBQExportLock(stateCode);
+            const request = async () =>
+              releaseBQExportLock(stateCode, DirectIngestInstance.PRIMARY);
+            const succeeded = await runAndCheckStatus(request);
+            if (succeeded) {
+              await incrementCurrentStep();
+            }
+          }}
+        />
+        <StyledStep
+          title="Release SECONDARY Ingest Lock"
+          description={
+            <p>
+              Release the ingest lock for {stateCode}&#39;s secondary instance.
+            </p>
+          }
+          nextButtonTitle="Release Lock"
+          onNextButtonClick={async () => {
+            const request = async () =>
+              releaseBQExportLock(stateCode, DirectIngestInstance.SECONDARY);
             const succeeded = await runAndCheckStatus(request);
             if (succeeded) {
               await incrementCurrentStep();
@@ -410,7 +450,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 pipenv shell:
               </p>
               <p>
-                <CodeBlock enabled={currentStep === 11}>
+                <CodeBlock enabled={currentStep === 13}>
                   python -m recidiviz.tools.migrations.purge_state_db \<br />
                   {"    "}--state-code {stateCode} \<br />
                   {"    "}--database-version secondary \<br />

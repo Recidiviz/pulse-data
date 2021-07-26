@@ -101,19 +101,23 @@ export const importDatabaseFromGCS = async (
 
 // Acquire BQ Export lock for the STATE database
 export const acquireBQExportLock = async (
-  stateCode: string
+  stateCode: string,
+  ingestInstance: DirectIngestInstance
 ): Promise<Response> => {
   return postWithURLAndBody(`/api/ingest_operations/acquire_ingest_lock`, {
     stateCode,
+    ingestInstance,
   });
 };
 
 // Release BQ Export lock for the STATE database
 export const releaseBQExportLock = async (
-  stateCode: string
+  stateCode: string,
+  ingestInstance: DirectIngestInstance
 ): Promise<Response> => {
   return postWithURLAndBody(`/api/ingest_operations/release_ingest_lock`, {
     stateCode,
+    ingestInstance,
   });
 };
 
