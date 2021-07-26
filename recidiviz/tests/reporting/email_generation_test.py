@@ -81,9 +81,7 @@ class EmailGenerationTests(TestCase):
     def test_generate(self) -> None:
         """Test that the prepared html is added to Google Cloud Storage with the correct bucket name, filepath,
         and prepared html template for the report context."""
-        html_template = self.report_context.html_template
-        prepared_data = self.report_context.get_prepared_data()
-        prepared_html = html_template.render(prepared_data)
+        prepared_html = self.report_context.render_html()
         generate(self.report_context)
 
         bucket_name = "recidiviz-test-report-html"

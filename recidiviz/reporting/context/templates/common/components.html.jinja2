@@ -1,7 +1,13 @@
 {% macro card_divider(static_image_path) -%}
 <tr>
-    <td bgcolor="#CDD2D0" height="1" style="height: 1px; font-size: 0px; line-height: 0px;">
-        <img src="{{ static_image_path }}/spacer.gif" width="1" height="1" alt=" " border="0" style="display: block;" />
+    <td bgcolor="#CDD2D0" height="1" colspan="2" style="height: 1px; font-size: 0px; line-height: 0px;">
+        &nbsp;
     </td>
 </tr>
 {% endmacro %}
+
+{% macro preview_text(text) %}
+<div style="display: none; max-height: 0px; overflow: hidden;">
+  {{ text }}
+</div>
+{%- endmacro %}
