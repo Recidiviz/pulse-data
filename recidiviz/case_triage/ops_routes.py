@@ -30,6 +30,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.google_cloud.cloud_task_queue_manager import (
     CloudTaskQueueInfo,
     CloudTaskQueueManager,
+    get_cloud_task_json_body,
 )
 from recidiviz.metrics.export.export_config import (
     CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
@@ -48,7 +49,8 @@ case_triage_ops_blueprint = Blueprint("/case_triage_ops", __name__)
 @requires_gae_auth
 def _run_gcs_imports() -> Tuple[str, HTTPStatus]:
     """Exposes an endpoint to trigger standard GCS imports."""
-    filename = request.json.get("filename")
+    body = get_cloud_task_json_body()
+    filename = body.get("filename")
     if not filename:
         return "Must include `filename` in the json payload", HTTPStatus.BAD_REQUEST
     for builder in CASE_TRIAGE_EXPORTED_VIEW_BUILDERS:
