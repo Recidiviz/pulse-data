@@ -79,16 +79,6 @@ class OpportunityStore {
           return opportunity.opportunityType in OpportunityType;
         });
 
-        // this flag gives users access to more opportunities;
-        // outside of it, a more limited list powers the "top opportunities" feature
-        if (!this.userStore.isInExperiment(KNOWN_EXPERIMENTS.NewClientList)) {
-          opportunities = opportunities.filter(
-            (opportunity) =>
-              // this is in fact the only supported "top opportunity"
-              opportunity.opportunityType === OpportunityType.OVERDUE_DOWNGRADE
-          );
-        }
-
         runInAction(() => {
           this.opportunitiesFetched = opportunities;
         });

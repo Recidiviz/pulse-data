@@ -14,26 +14,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import * as React from "react";
-import { observer } from "mobx-react-lite";
 import { autorun } from "mobx";
+import { observer } from "mobx-react-lite";
+import * as React from "react";
+import { trackPersonSelected } from "../../analytics";
 import { useRootStore } from "../../stores";
+import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
+import Tooltip from "../Tooltip";
+import CardPillsLayout from "./CardPillsLayout";
 import {
   ClientListCardElement,
   InProgressIndicator,
-  StackingClientListCardElement,
 } from "./ClientList.styles";
-import Tooltip from "../Tooltip";
-import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
-import { trackPersonSelected } from "../../analytics";
 import { ClientProps } from "./ClientList.types";
-import { KNOWN_EXPERIMENTS } from "../../stores/UserStore";
-import CardIconsLayout from "./CardIconsLayout";
-import CardPillsLayout from "./CardPillsLayout";
 
 const ClientComponent: React.FC<ClientProps> = observer(
   ({ client }: ClientProps) => {
-    const { clientsStore, policyStore, userStore } = useRootStore();
+    const { clientsStore, policyStore } = useRootStore();
     const cardRef = React.useRef<HTMLDivElement>(null);
 
     const viewClient = React.useCallback(() => {
@@ -70,16 +67,8 @@ const ClientComponent: React.FC<ClientProps> = observer(
     const active =
       clientsStore.activeClient?.personExternalId === client.personExternalId;
 
-    const showNewLayout = userStore.isInExperiment(
-      KNOWN_EXPERIMENTS.NewClientList
-    );
-
-    const CardElement = showNewLayout
-      ? ClientListCardElement
-      : StackingClientListCardElement;
-
     return (
-      <CardElement
+      <ClientListCardElement
         className={active ? "client-card--active" : ""}
         ref={cardRef}
         onClick={() => {
@@ -87,11 +76,7 @@ const ClientComponent: React.FC<ClientProps> = observer(
           viewClient();
         }}
       >
-        {showNewLayout ? (
-          <CardPillsLayout client={client} />
-        ) : (
-          <CardIconsLayout client={client} />
-        )}
+        <CardPillsLayout client={client} />
 
         {numInProgressActions > 0 ? (
           <Tooltip
@@ -106,7 +91,7 @@ const ClientComponent: React.FC<ClientProps> = observer(
             <InProgressIndicator />
           </Tooltip>
         ) : null}
-      </CardElement>
+      </ClientListCardElement>
     );
   }
 );
