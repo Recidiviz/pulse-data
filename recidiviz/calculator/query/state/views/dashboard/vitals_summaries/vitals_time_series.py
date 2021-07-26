@@ -107,11 +107,11 @@ VITALS_TIME_SERIES_TEMPLATE = f"""
       {make_overall_score_queries_by_state('value')}
       {make_overall_score_queries_by_state('avg_30d')}
     FROM timely_discharge
-    JOIN timely_risk_assessment 
+    FULL OUTER JOIN timely_risk_assessment 
       USING (state_code, date, entity_id)
-    JOIN timely_contact
+    FULL OUTER JOIN timely_contact
       USING (state_code, date, entity_id)
-    JOIN timely_downgrade
+    FULL OUTER JOIN timely_downgrade
       USING (state_code, date, entity_id)
     ORDER BY entity_id, date
   )
