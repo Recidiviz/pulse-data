@@ -42,6 +42,9 @@ from recidiviz.validation.views.case_triage.assessment_freshness_validation impo
 from recidiviz.validation.views.case_triage.contact_freshness_validation import (
     CONTACT_FRESHNESS_VALIDATION_VIEW_BUILDER,
 )
+from recidiviz.validation.views.case_triage.employment_freshness_validation import (
+    EMPLOYMENT_FRESHNESS_VALIDATION_VIEW_BUILDER,
+)
 from recidiviz.validation.views.justice_counts.incarceration_population_by_state_by_date_justice_counts_comparison import (
     INCARCERATION_POPULATION_BY_STATE_BY_DATE_JUSTICE_COUNTS_COMPARISON_VIEW_BUILDER,
 )
@@ -324,6 +327,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=CONTACT_FRESHNESS_VALIDATION_VIEW_BUILDER,
+            validation_category=ValidationCategory.FRESHNESS,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=EMPLOYMENT_FRESHNESS_VALIDATION_VIEW_BUILDER,
             validation_category=ValidationCategory.FRESHNESS,
         ),
         SamenessDataValidationCheck(
