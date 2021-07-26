@@ -31,6 +31,9 @@ from recidiviz.validation.views.case_triage.contact_freshness_validation import 
 from recidiviz.validation.views.case_triage.employment_freshness_validation import (
     EMPLOYMENT_FRESHNESS_VALIDATION_VIEW_BUILDER,
 )
+from recidiviz.validation.views.case_triage.etl_freshness_validation import (
+    ETL_FRESHNESS_VALIDATION_VIEW_BUILDER,
+)
 from recidiviz.validation.views.justice_counts.incarceration_population_by_state_by_date_justice_counts_comparison import (
     INCARCERATION_POPULATION_BY_STATE_BY_DATE_JUSTICE_COUNTS_COMPARISON_VIEW_BUILDER,
 )
@@ -372,6 +375,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = (
         ASSESSMENT_FRESHNESS_VALIDATION_VIEW_BUILDER,
         CONTACT_FRESHNESS_VALIDATION_VIEW_BUILDER,
         EMPLOYMENT_FRESHNESS_VALIDATION_VIEW_BUILDER,
+        ETL_FRESHNESS_VALIDATION_VIEW_BUILDER,
     ]
     + CROSS_PROJECT_VALIDATION_VIEW_BUILDERS
     + POPULATION_PROJECTION_DATA_VALIDATION_VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE
