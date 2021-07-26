@@ -24,6 +24,7 @@ from unittest import TestCase
 from unittest.mock import patch
 
 import pytest
+from freezegun import freeze_time
 
 from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -35,7 +36,12 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
-from recidiviz.reporting.data_retrieval import filter_recipients, retrieve_data, start
+from recidiviz.reporting.data_retrieval import (
+    _get_mismatch_data_for_officer,
+    filter_recipients,
+    retrieve_data,
+    start,
+)
 from recidiviz.reporting.recipient import Recipient
 from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
 from recidiviz.tests.case_triage.case_triage_helpers import (
@@ -121,7 +127,7 @@ class EmailGenerationTests(TestCase):
             last_assessment_date=date(2021, 1, 2),
             assessment_score=100,
         )
-        opportunities = [
+        self.opportunities = [
             generate_fake_etl_opportunity(
                 officer_id=self.officer.external_id,
                 person_external_id=client.person_external_id,
@@ -129,6 +135,7 @@ class EmailGenerationTests(TestCase):
                 opportunity_metadata={
                     "assessmentScore": client.assessment_score,
                     "latestAssessmentDate": str(client.most_recent_assessment_date),
+                    "recommendedSupervisionLevel": "MINIMUM",
                 },
             )
             for client in [
@@ -147,7 +154,7 @@ class EmailGenerationTests(TestCase):
                     self.client_downgradable_medium_1,
                     self.client_downgradable_medium_2,
                     self.client_no_downgrade,
-                    *opportunities,
+                    *self.opportunities,
                 ]
             )
 
@@ -317,30 +324,74 @@ class EmailGenerationTests(TestCase):
 
         self.assertEqual(
             recipient.data["mismatches"],
-            {
-                "high_downgrades": [
-                    {
-                        "name": "Test Name",
-                        "last_score": 1,
-                        "last_assessment_date": "2021-01-02",
-                        "person_external_id": "client_1",
-                    }
-                ],
-                "medium_downgrades": [
-                    {
-                        "name": "Test Name",
-                        "last_score": 1,
-                        "last_assessment_date": "2021-01-02",
-                        "person_external_id": "client_2",
-                    },
-                    {
-                        "name": "Test Name",
-                        "last_score": 1,
-                        "last_assessment_date": "2021-01-02",
-                        "person_external_id": "client_3",
-                    },
-                ],
-            },
+            [
+                {
+                    "name": "Test Name",
+                    "last_score": 1,
+                    "last_assessment_date": "2021-01-02",
+                    "person_external_id": "client_1",
+                    "current_supervision_level": "High",
+                    "recommended_level": "Low",
+                },
+                {
+                    "name": "Test Name",
+                    "last_score": 1,
+                    "last_assessment_date": "2021-01-02",
+                    "person_external_id": "client_2",
+                    "current_supervision_level": "Moderate",
+                    "recommended_level": "Low",
+                },
+                {
+                    "name": "Test Name",
+                    "last_score": 1,
+                    "last_assessment_date": "2021-01-02",
+                    "person_external_id": "client_3",
+                    "current_supervision_level": "Moderate",
+                    "recommended_level": "Low",
+                },
+            ],
+        )
+
+    def test_retrieve_po_report_mismatch(self) -> None:
+        batch_id = "123"
+        self._write_test_data(build_report_json_fixture(self.officer.email_address))
+
+        recipients = retrieve_data(
+            state_code=self.state_code,
+            report_type=ReportType.POMonthlyReport,
+            batch_id=batch_id,
+        )
+        self.assertEqual(len(recipients), 1)
+        recipient = recipients[0]
+
+        self.assertEqual(
+            recipient.data["mismatches"],
+            [
+                {
+                    "name": "Test Name",
+                    "last_score": 1,
+                    "last_assessment_date": "2021-01-02",
+                    "person_external_id": "client_1",
+                    "current_supervision_level": "High",
+                    "recommended_level": "Low",
+                },
+                {
+                    "name": "Test Name",
+                    "last_score": 1,
+                    "last_assessment_date": "2021-01-02",
+                    "person_external_id": "client_2",
+                    "current_supervision_level": "Moderate",
+                    "recommended_level": "Low",
+                },
+                {
+                    "name": "Test Name",
+                    "last_score": 1,
+                    "last_assessment_date": "2021-01-02",
+                    "person_external_id": "client_3",
+                    "current_supervision_level": "Moderate",
+                    "recommended_level": "Low",
+                },
+            ],
         )
 
     def test_filter_recipients(self) -> None:
@@ -376,3 +427,149 @@ class EmailGenerationTests(TestCase):
 
         with self.assertRaises(InvalidRegionCodeException):
             filter_recipients(recipients, region_code="gibberish")
+
+    def test_less_than_6_all_mismatches_reported(self) -> None:
+        mismatches = _get_mismatch_data_for_officer(self.officer.email_address)
+        self.assertCountEqual(
+            [mismatch["person_external_id"] for mismatch in mismatches],
+            [opp.person_external_id for opp in self.opportunities],
+        )
+
+    def test_no_opportunities_reported(self) -> None:
+        no_opportunity_officer = generate_fake_officer(
+            "no_opportunity_officer", "no-opportunity@recidiviz.org"
+        )
+        with SessionFactory.using_database(self.database_key) as session:
+            session.expire_on_commit = False
+            session.add(no_opportunity_officer)
+
+        self.assertEqual(
+            [], _get_mismatch_data_for_officer(no_opportunity_officer.email_address)
+        )
+
+    @freeze_time("2023-01-02 00:00")
+    def test_only_5_mismatches_reported(self) -> None:
+        many_opportunities_officer = generate_fake_officer(
+            "many_opportunities_officer", "many-opportunities@recidiviz.org"
+        )
+        many_opportunity_clients = [
+            generate_fake_client(
+                client_id=f"many_opportunities_client_{i}",
+                supervising_officer_id=many_opportunities_officer.external_id,
+                supervision_level=StateSupervisionLevel.MEDIUM,
+                last_assessment_date=date(2021, 1, i + 1),
+                assessment_score=1,
+            )
+            for i in range(6)
+        ]
+        opportunities = [
+            generate_fake_etl_opportunity(
+                officer_id=many_opportunities_officer.external_id,
+                person_external_id=client.person_external_id,
+                opportunity_type=OpportunityType.OVERDUE_DOWNGRADE,
+                opportunity_metadata={
+                    "assessmentScore": client.assessment_score,
+                    "latestAssessmentDate": str(client.most_recent_assessment_date),
+                    "recommendedSupervisionLevel": "MINIMUM",
+                },
+            )
+            for client in many_opportunity_clients
+        ]
+        with SessionFactory.using_database(self.database_key) as session:
+            session.expire_on_commit = False
+            session.add_all(
+                [many_opportunities_officer, *many_opportunity_clients, *opportunities]
+            )
+
+        mismatches = _get_mismatch_data_for_officer(
+            many_opportunities_officer.email_address
+        )
+        self.assertCountEqual(
+            [mismatch["person_external_id"] for mismatch in mismatches],
+            [client.person_external_id for client in many_opportunity_clients[1:]],
+        )
+
+    @freeze_time("2021-01-15 00:00")
+    def test_newest_5_mismatches_reported(self) -> None:
+        # Since all opportunities are sooner than the cutoff, we take the 5 oldest.
+        many_opportunities_officer = generate_fake_officer(
+            "many_opportunities_officer", "many-opportunities@recidiviz.org"
+        )
+        many_opportunity_clients = [
+            generate_fake_client(
+                client_id=f"many_opportunities_client_{i}",
+                supervising_officer_id=many_opportunities_officer.external_id,
+                supervision_level=StateSupervisionLevel.MEDIUM,
+                last_assessment_date=date(2021, 1, i + 1),
+                assessment_score=1,
+            )
+            for i in range(6)
+        ]
+        opportunities = [
+            generate_fake_etl_opportunity(
+                officer_id=many_opportunities_officer.external_id,
+                person_external_id=client.person_external_id,
+                opportunity_type=OpportunityType.OVERDUE_DOWNGRADE,
+                opportunity_metadata={
+                    "assessmentScore": client.assessment_score,
+                    "latestAssessmentDate": str(client.most_recent_assessment_date),
+                    "recommendedSupervisionLevel": "MINIMUM",
+                },
+            )
+            for client in many_opportunity_clients
+        ]
+        with SessionFactory.using_database(self.database_key) as session:
+            session.expire_on_commit = False
+            session.add_all(
+                [many_opportunities_officer, *many_opportunity_clients, *opportunities]
+            )
+
+        mismatches = _get_mismatch_data_for_officer(
+            many_opportunities_officer.email_address
+        )
+        self.assertCountEqual(
+            [mismatch["person_external_id"] for mismatch in mismatches],
+            [client.person_external_id for client in many_opportunity_clients[:5]],
+        )
+
+    @freeze_time("2021-02-15 00:00")
+    def test_5_after_threshold_reported(self) -> None:
+        many_opportunities_officer = generate_fake_officer(
+            "many_opportunities_officer", "many-opportunities@recidiviz.org"
+        )
+        many_opportunity_clients = [
+            generate_fake_client(
+                client_id=f"many_opportunities_client_{i}",
+                supervising_officer_id=many_opportunities_officer.external_id,
+                supervision_level=StateSupervisionLevel.MEDIUM,
+                last_assessment_date=date(2021, 1, i + 1),
+                assessment_score=1,
+            )
+            for i in range(31)
+        ]
+        opportunities = [
+            generate_fake_etl_opportunity(
+                officer_id=many_opportunities_officer.external_id,
+                person_external_id=client.person_external_id,
+                opportunity_type=OpportunityType.OVERDUE_DOWNGRADE,
+                opportunity_metadata={
+                    "assessmentScore": client.assessment_score,
+                    "latestAssessmentDate": str(client.most_recent_assessment_date),
+                    "recommendedSupervisionLevel": "MINIMUM",
+                },
+            )
+            for client in many_opportunity_clients
+        ]
+        with SessionFactory.using_database(self.database_key) as session:
+            session.expire_on_commit = False
+            session.add_all(
+                [many_opportunities_officer, *many_opportunity_clients, *opportunities]
+            )
+
+        mismatches = _get_mismatch_data_for_officer(
+            many_opportunities_officer.email_address
+        )
+        self.assertCountEqual(
+            [mismatch["person_external_id"] for mismatch in mismatches],
+            [client.person_external_id for client in many_opportunity_clients[11:16]],
+        )
