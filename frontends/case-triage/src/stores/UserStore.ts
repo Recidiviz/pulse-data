@@ -31,7 +31,6 @@ interface UserStoreProps {
 
 export enum KNOWN_EXPERIMENTS {
   ProfileV2 = "can-see-profile-v2",
-  NewClientList = "can-see-new-client-list",
 }
 
 export interface FeatureVariants {
@@ -207,9 +206,6 @@ export default class UserStore {
    * Feature flag requires membership in multiple experiments. This checks them all.
    */
   get canSeeProfileV2(): boolean {
-    return (
-      this.isInExperiment(KNOWN_EXPERIMENTS.NewClientList) &&
-      this.isInExperiment(KNOWN_EXPERIMENTS.ProfileV2)
-    );
+    return this.isInExperiment(KNOWN_EXPERIMENTS.ProfileV2);
   }
 }

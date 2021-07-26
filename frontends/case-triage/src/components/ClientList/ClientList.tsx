@@ -18,7 +18,6 @@ import { observer } from "mobx-react-lite";
 import * as React from "react";
 import { useRootStore } from "../../stores";
 import { CLIENT_LIST_KIND } from "../../stores/ClientsStore/ClientListBuilder";
-import { KNOWN_EXPERIMENTS } from "../../stores/UserStore";
 import TEST_IDS from "../TestIDs";
 import {
   ClientListContainerElement,
@@ -75,10 +74,6 @@ const ClientListContainer = observer(() => {
     return <ClientListContainerElement>Loading...</ClientListContainerElement>;
   }
 
-  const showControls = userStore.isInExperiment(
-    KNOWN_EXPERIMENTS.NewClientList
-  );
-
   return (
     <ClientListContainerElement>
       {userStore.isImpersonating ? (
@@ -88,7 +83,7 @@ const ClientListContainer = observer(() => {
       ) : (
         <FirstClientListHeading>Up Next</FirstClientListHeading>
       )}
-      {showControls && <ClientListControls />}
+      <ClientListControls />
       <ClientList kind={CLIENT_LIST_KIND.UP_NEXT} showEmptyState />
       {clientsStore.lists[CLIENT_LIST_KIND.PROCESSING_FEEDBACK].length > 0 ? (
         <ClientListHeading>Processing Feedback</ClientListHeading>
