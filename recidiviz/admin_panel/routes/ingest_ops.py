@@ -230,9 +230,7 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     def _acquire_ingest_lock() -> Tuple[str, HTTPStatus]:
         try:
             state_code = StateCode(request.json["stateCode"])
-            # TODO(#8070): For now, we assume we are locking PRIMARY - we need to thread
-            #   this through from the frontend.
-            ingest_instance = DirectIngestInstance.PRIMARY
+            ingest_instance = DirectIngestInstance(request.json["ingestInstance"])
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
 
@@ -261,9 +259,7 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     def _release_ingest_lock() -> Tuple[str, HTTPStatus]:
         try:
             state_code = StateCode(request.json["stateCode"])
-            # TODO(#8070): For now, we assume we are unlocking PRIMARY - we need to thread
-            #   this through from the frontend.
-            ingest_instance = DirectIngestInstance.PRIMARY
+            ingest_instance = DirectIngestInstance(request.json["ingestInstance"])
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
 
