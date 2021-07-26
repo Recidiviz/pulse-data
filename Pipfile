@@ -31,6 +31,7 @@ pytablewriter = "*"
 black = "==20.8b1"
 pre-commit = "*"
 pygtrie = "*"
+types-beautifulsoup4 = "*"
 types-dateparser = "*"
 types-flask = "*"
 types-freezegun = "*"
@@ -139,6 +140,7 @@ pyarrow = "*"
 auth0-python = "*"
 sentry-sdk = {extras = ["flask"], version = "*"}
 blinker = "*"
+beautifulsoup4 = "*"
 
 [requires]
 python_version = "3.8"

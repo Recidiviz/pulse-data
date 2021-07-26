@@ -4,36 +4,38 @@
 <!DOCTYPE html
   PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml"
-  xmlns:o="urn:schemas-microsoft-com:office:office">
+  xmlns:o="urn:schemas-microsoft-com:office:office" lang="en">
 
 <head>
 {% include "common/html_header.html.jinja2" %}
 </head>
 
 <body class="em_body em_dm_grey" style="margin:0px auto; padding:0px;" bgcolor="#F2F4F4">
+{{ components.preview_text(message_body) }}
+
 {% include "common/message_body.html.jinja2" %}  
   <!-- == Body Section == -->
   <table width="100%" border="0" cellspacing="0" cellpadding="0" class="em_full_wrap em_dm_grey" bgcolor="#F2F4F4"
-    style="table-layout:fixed;">
+    style="table-layout:fixed;" role="presentation">
     <tr>
       <td align="center" valign="top">
         <table align="center" width="632" border="0" cellspacing="0" cellpadding="0" class="em_main_table"
-          style="width:632px; table-layout:fixed;">
+          style="width:632px; table-layout:fixed;" role="presentation">
           <!-- Banner section -->
           <tr>
             <td valign="top" align="center">
               <table align="center" width="632" border="0" cellspacing="0" cellpadding="0" class="em_wrapper"
-                style="width:632px;">
+                style="width:632px;" role="presentation">
                 <tr>
                   <td class="em_side8" width="16" style="width: 16px;">&nbsp;</td>
                   <td valign="top" align="center">
                     <table align="center" width="600" border="0" cellspacing="0" cellpadding="0" class="em_wrapper"
-                      style="width:600px;">
+                      style="width:600px;" role="presentation">
                       <tr>
                         <td valign="top" align="center">
                           {% include "top_opportunities/supervision_mismatches.html.jinja2" %}
                           <table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
-                            class="em_wrapper" style="width:600px;">
+                            class="em_wrapper" style="width:600px;" role="presentation">
                             <tr>
                               <td class="em_heading em_dm_txt_white" valign="top" align="left"
                                 style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 24px; line-height: 24px; font-weight: 500; color: #00413E; letter-spacing: -0.16px;">
@@ -98,7 +100,7 @@
                       <tr>
                         <td valign="top" align="center">
                           <table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
-                            class="em_wrapper" style="width:600px;">
+                            class="em_wrapper" style="width:600px;" role="presentation">
                             <tr>
                               <td class="em_h18" height="40" style="height: 40px;">&nbsp;</td>
                             </tr>
@@ -114,23 +116,23 @@
                               <td valign="top" align="center">
                                 <table align="center" width="599" border="0" cellspacing="0" cellpadding="0"
                                   class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
-                                  style="width:599px; border-radius: 5px;">
+                                  style="width:599px; border-radius: 5px;" role="presentation">
                                   {% if total_revocations is not none -%}
                                   <tr>
                                     <td valign="top" align="center">
                                       <table align="center" width="599" border="0" cellspacing="0" cellpadding="0"
                                         class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
-                                        style="width:599px; border-radius: 5px;">
+                                        style="width:599px; border-radius: 5px;" role="presentation">
                                         <tr>
                                           <td class="em_side15" width="32" style="width: 32px;">&nbsp;</td>
                                           <td valign="top" align="center">
-                                            <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                            <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
                                               <tr>
                                                 <td class="em_h20" height="40" style="height: 40px;">&nbsp;</td>
                                               </tr>
                                               <tr>
                                                 <td valign="top" align="center">
-                                                  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                                  <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
                                                     <tr>
                                                       <td class="em_img1" width="64" valign="top" align="left"><img
                                                           src="{{ static_image_path }}/ic_technical-revocation.png"
@@ -139,7 +141,7 @@
                                                       <td class="em_side15" width="26" style="width: 26px;">&nbsp;</td>
                                                       <td valign="top" align="left">
                                                         <table align="left" width="100%" border="0" cellspacing="0"
-                                                          cellpadding="0">
+                                                          cellpadding="0" role="presentation">
                                                           <tr>
                                                             <td class="em_hide" height="2"
                                                               style="height: 2px; font-size: 0px; line-height: 0px;">
@@ -150,7 +152,7 @@
                                                           <tr>
                                                             <td valign="top" align="left">
                                                               <table width="100%" border="0" cellspacing="0"
-                                                                cellpadding="0">
+                                                                cellpadding="0" role="presentation">
                                                                 <tr>
                                                                   <td class="em_head_font em_ptop8 em_dm_txt_white"
                                                                     valign="top" align="left"
@@ -190,7 +192,7 @@
                                   {% if technical_revocations is not none -%}
                                   <tr>
                                     <td valign="top" align="center">
-                                      <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                      <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
                                         <tr>
                                           <td class="em_side15" width="32" style="width: 32px;">&nbsp;</td>
                                           <td class="em_font em_dm_txt_white" valign="top" align="left"
@@ -207,14 +209,14 @@
                                     <td valign="top" align="center">
                                       <table align="center" width="599" border="0" cellspacing="0" cellpadding="0"
                                         class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
-                                        style="width:599px; border-radius: 5px;">
+                                        style="width:599px; border-radius: 5px;" role="presentation">
                                         <tr>
                                           <td class="em_side1" width="84" style="width: 84px;">&nbsp;</td>
                                           <td valign="top" align="center">
-                                            <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                            <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
                                               <tr>
                                                 <td valign="top" align="center">
-                                                  <table border="0" cellspacing="0" cellpadding="0">
+                                                  <table border="0" cellspacing="0" cellpadding="0" role="presentation">
                                                     <tr>
                                                       <td class="em_num1 em_dm_txt_white" valign="top" align="center"
                                                         style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 32px; line-height: 38px; font-weight: 600; color: {{ technical_revocations_color }}; letter-spacing: -0.01em;">
@@ -234,7 +236,7 @@
                                                 </td>
                                                 <td class="em_gap1" width="80" style="width: 80px;">&nbsp;</td>
                                                 <td valign="top" align="center">
-                                                  <table border="0" cellspacing="0" cellpadding="0">
+                                                  <table border="0" cellspacing="0" cellpadding="0" role="presentation">
                                                     <tr>
                                                       <td class="em_num1 em_dm_txt_white" valign="top" align="center"
                                                         style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 32px; line-height: 38px; font-weight: 600; color: {{ technical_revocations_district_average_color }}; letter-spacing: -0.01em;">
@@ -254,7 +256,7 @@
                                                 </td>
                                                 <td class="em_gap2" width="58" style="width: 58px;">&nbsp;</td>
                                                 <td valign="top" align="center">
-                                                  <table border="0" cellspacing="0" cellpadding="0">
+                                                  <table border="0" cellspacing="0" cellpadding="0" role="presentation">
                                                     <tr>
                                                       <td class="em_num1 em_dm_txt_white" valign="top" align="center"
                                                         style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 32px; line-height: 38px; font-weight: 600; color: #00413E; letter-spacing: -0.01em;">
@@ -291,7 +293,7 @@
                                   {% if crime_revocations is not none -%}
                                   <tr>
                                     <td valign="top" align="center">
-                                      <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                      <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
                                         <tr>
                                           <td class="em_side15" width="32" style="width: 32px;">&nbsp;</td>
                                           <td class="em_font em_dm_txt_white" valign="top" align="left"
@@ -308,14 +310,14 @@
                                     <td valign="top" align="center">
                                       <table align="center" width="599" border="0" cellspacing="0" cellpadding="0"
                                         class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
-                                        style="width:599px; border-radius: 5px;">
+                                        style="width:599px; border-radius: 5px;" role="presentation">
                                         <tr>
                                           <td class="em_side1" width="84" style="width: 84px;">&nbsp;</td>
                                           <td valign="top" align="center">
-                                            <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                            <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
                                               <tr>
                                                 <td valign="top" align="center">
-                                                  <table border="0" cellspacing="0" cellpadding="0">
+                                                  <table border="0" cellspacing="0" cellpadding="0" role="presentation">
                                                     <tr>
                                                       <td class="em_num1 em_dm_txt_white" valign="top" align="center"
                                                         style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 32px; line-height: 38px; font-weight: 600; color: {{ crime_revocations_color }}; letter-spacing: -0.01em;">
@@ -335,7 +337,7 @@
                                                 </td>
                                                 <td class="em_gap1" width="80" style="width: 80px;">&nbsp;</td>
                                                 <td valign="top" align="center">
-                                                  <table border="0" cellspacing="0" cellpadding="0">
+                                                  <table border="0" cellspacing="0" cellpadding="0" role="presentation">
                                                     <tr>
                                                       <td class="em_num1 em_dm_txt_white" valign="top" align="center"
                                                         style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 32px; line-height: 38px; font-weight: 600; color: {{ crime_revocations_district_average_color }}; letter-spacing: -0.01em;">
@@ -355,7 +357,7 @@
                                                 </td>
                                                 <td class="em_gap2" width="58" style="width: 58px;">&nbsp;</td>
                                                 <td valign="top" align="center">
-                                                  <table border="0" cellspacing="0" cellpadding="0">
+                                                  <table border="0" cellspacing="0" cellpadding="0" role="presentation">
                                                     <tr>
                                                       <td class="em_num1 em_dm_txt_white" valign="top" align="center"
                                                         style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 32px; line-height: 38px; font-weight: 600; color: #00413E; letter-spacing: -0.01em;">
@@ -412,7 +414,7 @@
                       <tr>
                         <td valign="top" align="center">
                           <table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
-                            class="em_wrapper" style="width:600px;">
+                            class="em_wrapper" style="width:600px;" role="presentation">
                             <tr>
                               <td class="em_h20" height="40" style="height: 40px;">&nbsp;</td>
                             </tr>
@@ -428,23 +430,23 @@
                               <td valign="top" align="center">
                                 <table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
                                   class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
-                                  style="width:600px; border-radius: 5px;">
+                                  style="width:600px; border-radius: 5px;" role="presentation">
                                   {% if assessments_label -%}
                                   <tr>
                                     <td valign="top" align="center">
                                       <table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
                                         class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
-                                        style="width:600px; border-radius: 5px;">
+                                        style="width:600px; border-radius: 5px;" role="presentation">
                                         <tr>
                                           <td class="em_side22" width="44" style="width: 44px;">&nbsp;</td>
                                           <td valign="top" align="center">
-                                            <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                            <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
                                               <tr>
                                                 <td class="em_h18" height="32" style="height: 32px;">&nbsp;</td>
                                               </tr>
                                               <tr>
                                                 <td valign="top" align="center">
-                                                  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                                  <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
                                                     <tr>
                                                       <td class="em_head_font em_dm_txt_white" valign="middle"
                                                         align="left"
@@ -477,14 +479,14 @@
                                     <td valign="top" align="center">
                                       <table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
                                         class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
-                                        style="width:600px; border-radius: 5px;">
+                                        style="width:600px; border-radius: 5px;" role="presentation">
                                         <tr>
                                           <td class="em_side22" width="44" style="width: 44px;">&nbsp;</td>
                                           <td valign="top" align="center">
-                                            <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                            <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
                                               <tr>
                                                 <td valign="top" align="center">
-                                                  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                                  <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
                                                     <tr>
                                                       <td class="em_font em_pright10" valign="top" align="left"
                                                         style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 20px; line-height: 24px; font-weight: 600; color: #7D9897;">
@@ -519,23 +521,23 @@
                               <td valign="top" align="center">
                                 <table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
                                   class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
-                                  style="width:600px; border-radius: 5px;">
+                                  style="width:600px; border-radius: 5px;" role="presentation">
                                   {% if facetoface_label -%}
                                   <tr>
                                     <td valign="top" align="center">
                                       <table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
                                         class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
-                                        style="width:600px; border-radius: 5px;">
+                                        style="width:600px; border-radius: 5px;" role="presentation">
                                         <tr>
                                           <td class="em_side22" width="44" style="width: 44px;">&nbsp;</td>
                                           <td valign="top" align="center">
-                                            <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                            <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
                                               <tr>
                                                 <td class="em_h18" height="32" style="height: 32px;">&nbsp;</td>
                                               </tr>
                                               <tr>
                                                 <td valign="top" align="center">
-                                                  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                                  <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
                                                     <tr>
                                                       <td class="em_head_font em_dm_txt_white" valign="middle"
                                                         align="left"
@@ -567,15 +569,15 @@
                                     <td valign="top" align="center">
                                       <table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
                                         class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
-                                        style="width:600px; border-radius: 5px;">
+                                        style="width:600px; border-radius: 5px;" role="presentation">
                                         {% if facetoface_percent -%}
                                         <tr>
                                           <td class="em_side22" width="44" style="width: 44px;">&nbsp;</td>
                                           <td valign="top" align="center">
-                                            <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                            <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
                                               <tr>
                                                 <td valign="top" align="center">
-                                                  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                                  <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
                                                     <tr>
                                                       <td class="em_font em_pright10" valign="top" align="left"
                                                         style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 20px; line-height: 24px; font-weight: 600; color: #7D9897;">
@@ -609,7 +611,7 @@
                       <tr style="display: {{ display_congratulations }};">
                         <td valign="top" align="center">
                           <table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
-                            class="em_wrapper" style="width:600px;">
+                            class="em_wrapper" style="width:600px;" role="presentation">
                             <tr>
                               <td class="em_h15" height="40" style="height: 40px;">&nbsp;</td>
                             </tr>
@@ -647,7 +649,10 @@
                       <tr>
                         <td valign="top" align="center">
                           <table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
-                            class="em_wrapper" style="width:600px;">
+                            class="em_wrapper" style="width:600px;" role="presentation">
+                            <tr>
+                              <td class="em_h20" height="40" style="height: 40px;">&nbsp;</td>
+                            </tr>
                             <tr>
                               <td class="em_heading em_dm_txt_white" valign="top" align="left"
                                 style="font-family: 'Libre Franklin', Arial, sans-serif; padding-left: 3px; font-weight: 500; font-size: 24px; line-height: 24px; letter-spacing: -0.01em; color: #00413E;">
@@ -660,14 +665,14 @@
                               <td valign="top" align="center">
                                 <table align="center" width="599" border="0" cellspacing="0" cellpadding="0"
                                   class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
-                                  style="width:599px; border-radius: 5px;">
+                                  style="width:599px; border-radius: 5px;" role="presentation">
                                   <tr>
                                     <td valign="top" align="center">
-                                      <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                      <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
                                         <tr>
                                           <td class="em_side15" width="24" style="width: 24px;">&nbsp;</td>
                                           <td valign="top" align="left">
-                                            <table width="100%" border="0" cellspacing="0" cellpadding="0" align="left">
+                                            <table width="100%" border="0" cellspacing="0" cellpadding="0" align="left" role="presentation">
                                               <tr>
                                                 <td class="em_h18" height="32" style="height: 32px;">&nbsp;</td>
                                               </tr>
@@ -692,11 +697,11 @@
                                   {{ components.card_divider(static_image_path) }}
                                   <tr>
                                     <td valign="top" align="center">
-                                      <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                      <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
                                         <tr>
                                           <td class="em_side15" width="24" style="width: 24px;">&nbsp;</td>
                                           <td valign="top" align="left">
-                                            <table width="100%" border="0" cellspacing="0" cellpadding="0" align="left">
+                                            <table width="100%" border="0" cellspacing="0" cellpadding="0" align="left" role="presentation">
                                               <tr>
                                                 <td class="em_h18" height="32" style="height: 32px;">&nbsp;</td>
                                               </tr>
@@ -721,11 +726,11 @@
                                   {{ components.card_divider(static_image_path) }}
                                   <tr>
                                     <td valign="top" align="center">
-                                      <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                                      <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
                                         <tr>
                                           <td class="em_side15" width="24" style="width: 24px;">&nbsp;</td>
                                           <td valign="top" align="left">
-                                            <table width="100%" border="0" cellspacing="0" cellpadding="0" align="left">
+                                            <table width="100%" border="0" cellspacing="0" cellpadding="0" align="left" role="presentation">
                                               <tr>
                                                 <td class="em_h18" height="32" style="height: 32px;">&nbsp;</td>
                                               </tr>
@@ -766,20 +771,20 @@
   </table>
   <!-- == //Body Section == -->
   <!-- == Footer Section == -->
-  <table width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#F2F4F4" class="em_full_wrap em_dm_grey">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#F2F4F4" class="em_full_wrap em_dm_grey" role="presentation">
     <tr>
       <td align="center" valign="top">
         <table align="center" width="632" border="0" cellspacing="0" cellpadding="0" class="em_main_table"
-          style="width:632px; table-layout:fixed;">
+          style="width:632px; table-layout:fixed;" role="presentation">
           <tr>
             <td valign="top" align="center">
               <table align="center" width="632" border="0" cellspacing="0" cellpadding="0" class="em_wrapper"
-                style="width:632px;">
+                style="width:632px;" role="presentation">
                 <tr>
                   <td class="em_side8" width="16" style="width: 16px;">&nbsp;</td>
                   <td valign="top" align="center">
                     <table align="center" width="600" border="0" cellspacing="0" cellpadding="0" class="em_wrapper"
-                      style="width:600px;">
+                      style="width:600px;" role="presentation">
                       <tr>
                         <td class="em_h50" height="82" style="height: 82px;">&nbsp;</td>
                       </tr>
@@ -794,7 +799,7 @@
                       </tr>
                       <!-- Hide feedback form until it's implemented -->
                       <!--                    <tr>-->
-                      <!--                      <td valign="top" align="center"><table border="0" cellspacing="0" cellpadding="0">-->
+                      <!--                      <td valign="top" align="center"><table border="0" cellspacing="0" cellpadding="0" role="presentation">-->
                       <!--                          <tr>-->
                       <!--                            <td class="em_star" valign="top" align="center"><img src="{{ static_image_path }}/star.png" width="24" height="24" alt=" " border="0" style="display: block;"/></td>-->
                       <!--                            <td class="em_side8" width="16" style="width: 16px;">&nbsp;</td>-->
@@ -813,13 +818,13 @@
                       <!--                    </tr>-->
 
                       <!--                    <tr>-->
-                      <!--                      <td valign="top" align="center"><table width="100%" border="0" cellspacing="0" cellpadding="0">-->
+                      <!--                      <td valign="top" align="center"><table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">-->
                       <!--                          <tr>-->
                       <!--                            <td class="em_side12" width="24" style="width: 24px;">&nbsp;</td>-->
-                      <!--                            <td valign="top" align="center"><table width="538" border="0" cellspacing="0" cellpadding="0" class="em_wrapper em_dm_grey em_border_radius" bgcolor="#E9EBEB" style="width: 538px; border-radius: 5px; border: 1px solid #7D9897; display: block;">-->
+                      <!--                            <td valign="top" align="center"><table width="538" border="0" cellspacing="0" cellpadding="0" class="em_wrapper em_dm_grey em_border_radius" bgcolor="#E9EBEB" style="width: 538px; border-radius: 5px; border: 1px solid #7D9897; display: block;" role="presentation">-->
                       <!--                                <tr>-->
                       <!--                                	<td valign="top" align="center">-->
-                      <!--                                    	<table width="100%" border="0" cellspacing="0" cellpadding="0">-->
+                      <!--                                    	<table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">-->
                       <!--                                          <tr>-->
                       <!--                                              <td class="em_footer_font em_padd" valign="top" align="left" style="padding: 24px 24px 8px 24px; font-family: 'Libre Franklin', Arial, sans-serif; font-size: 24px; line-height: 36px; color: #7D9897;"> What didn’t make sense? Did any numbers look incorrect? How can we make this email better? </td>-->
                       <!--                                            </tr>-->
@@ -840,7 +845,7 @@
                       <tr>
                         <td valign="top" align="center">
                           <table width="297" border="0" cellspacing="0" cellpadding="0" class="em_button"
-                            bgcolor="#006C67" style="width: 297px; border-radius: 54px;">
+                            bgcolor="#006C67" style="width: 297px; border-radius: 54px;" role="presentation">
                             <tr>
                               <td class="em_defaultlink em_cta" valign="middle" align="center" height="72"
                                 style="height: 72px; font-family: 'Libre Franklin', Arial, sans-serif; font-weight: 500; font-size: 21px; line-height: 24px; letter-spacing: -0.01em; color: #E9EBEB;">
@@ -858,7 +863,7 @@
                       </tr>
                       <tr>
                         <td class="em_aside10" valign="top" align="center">
-                          <table border="0" cellspacing="0" cellpadding="0">
+                          <table border="0" cellspacing="0" cellpadding="0" role="presentation">
                             <tr>
                               <td class="em_footer_logo" valign="top" align="center"
                                 style="font-size: 0px; line-height: 0px;"><a href="https://www.recidiviz.org/"

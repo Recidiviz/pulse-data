@@ -1,6 +1,7 @@
+{% import 'common/components.html.jinja2' as components %}
 {% if mismatches %}
 <table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
-class="em_wrapper" style="width:600px;"> {# Top Opps section #}
+class="em_wrapper" style="width:600px;" role="presentation"> {# Top Opps section #}
     <tr>
         <td class="em_heading em_dm_txt_white" valign="top" align="left"
         style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 24px; line-height: 24px; font-weight: 500; color: #00413E; letter-spacing: -0.16px;">
@@ -14,15 +15,15 @@ class="em_wrapper" style="width:600px;"> {# Top Opps section #}
         <td valign="top" align="center">
             <table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
                 class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
-                style="width:600px; border-radius: 5px;"> {# Mismatches #}
+                style="width:600px; border-radius: 5px;" role="presentation"> {# Mismatches #}
                 <tr>
-                    <td class="em_h15" height="32" style="height: 32px;">&nbsp;</td>
+                    <td class="em_h15" height="32" colspan="3" style="height: 32px;">&nbsp;</td>
                 </tr>
                 <tr>
                     <td class="em_side15" width="32" style="width: 32px;">&nbsp;</td>
                     <td>
                         <table align="center" border="0" cellspacing="0" cellpadding="0"
-                            style="width:100%; border-radius: 5px;">
+                            style="width:100%; border-radius: 5px;" role="presentation">
                             <tr>
                                 <td class="em_heading em_dm_txt_white" valign="top" align="center" colspan="3"
                                     style="font-family: 'Libre Baskerville', 'Times New Roman', Times, serif; font-size: 29px; line-height: 34px; font-weight: 400; letter-spacing: -0.16px; color: #00413E;">
@@ -43,28 +44,21 @@ class="em_wrapper" style="width:600px;"> {# Top Opps section #}
                                 {{ mismatch['curent_supervision_level'] }} &rarr; {{ mismatch['recommended_level'] }}
                                 </td>
                             </tr>
-                            <tr>
-                                <td bgcolor="#CDD2D0" height="1" colspan="2"
-                                    style="height: 1px; font-size: 0px; line-height: 0px;">
-                                    <img src="{{ static_image_path }}/spacer.gif" width="1" height="1" alt=" "
-                                        border="0" style="display: block;" />
-                                </td>
-                            </tr>
+                            {{ components.card_divider(static_image_path) }}
                             {% endfor -%}
                             <tr>
                                 <td class="em_h10" height="24" style="height: 24px;">&nbsp;</td>
                             </tr>
                             <tr>
-                                <td class="em_heading em_dm_txt_white" valign="top" align="center" colspan="3"
+                                <td class="em_font em_dm_txt_white" valign="top" align="center" colspan="3"
                                 style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 16px; line-height: 24px; font-weight: 500; color: #003331;">
                                     Update their supervision level in {% if oms_name %}{{oms_name}}{% else %}your OMS{% endif %}.
-
                                 </td>
                             </tr>
                             <tr>
                                 <td class="em_font em_dm_txt_white" valign="top" align="center" colspan="3"
                                 style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 16px; line-height: 24px;">
-                                    <a href="TODO(#8332): Use correct email" style="color: #006C67;">Report incorrect data</a>
+                                    <a href="TODO(#8332): Use correct link" style="color: #006C67;">Report incorrect data</a>
                                 </td>
                             </tr>
                         </table>
