@@ -76,7 +76,10 @@ RUN if [ "$DEV_MODE" = "True" ]; \
 
 # Install postgres to be used by tests that need to write to a database from multiple threads.
 RUN if [ "$DEV_MODE" = "True" ]; \
-    then apt-get update && apt install postgresql-13 -y; \
+    then apt-get install wget && \
+    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
+    echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
+    apt-get update && apt-get install postgresql-13 -y; \
     fi
 # Add all the postgres tools installed above to the path, so that we can use pg_ctl, etc. in tests.
 # Uses variable substitution to set PATH_PREFIX to '/usr/lib/postgresql/13/bin/' in DEV_MODE and otherwise leave it
@@ -112,7 +115,7 @@ COPY --from=case-triage-build /usr/case-triage/build /app/frontends/case-triage/
 
 # Add the current commit SHA as an env variable
 ARG CURRENT_GIT_SHA=""
-ENV CURRENT_GIT_SHA=${CURRENT_GIT_SHA}}
+ENV CURRENT_GIT_SHA=${CURRENT_GIT_SHA}
 
 EXPOSE 8080
 CMD pipenv run gunicorn -c gunicorn.conf.py --log-file=- -b :8080 recidiviz.server:app
