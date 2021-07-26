@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A view that can be used to validate that BigQuery has fresh assessment data
+"""A view that can be used to validate that BigQuery has fresh employment data
 """
 
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -26,20 +26,19 @@ from recidiviz.validation.views.utils.freshness_validation import (
     FreshnessValidationAssertion,
 )
 
-UPDT_DT_CLAUSE = DT_CLAUSE.format(datetime_field="updt_dt")
-TST_DT_CLAUSE = DT_CLAUSE.format(datetime_field="tst_dt")
+UPDDATE_DT_CLAUSE = DT_CLAUSE.format(datetime_field="upddate")
 
-ASSESSMENT_FRESHNESS_VALIDATION_VIEW_BUILDER = FreshnessValidation(
+EMPLOYMENT_FRESHNESS_VALIDATION_VIEW_BUILDER = FreshnessValidation(
     dataset=VIEWS_DATASET,
-    view_id="case_triage_risk_assessment_freshness",
-    description="Builds validation table to ensure ingested assessment data meets Case Triage SLAs",
+    view_id="case_triage_employment_freshness",
+    description="Builds validation table to ensure ingested employment data meets Case Triage SLAs",
     assertions=[
         FreshnessValidationAssertion.build_assertion(
             region_code="US_ID",
             assertion="RAW_DATA_WAS_IMPORTED",
             description="Checks that we've imported raw data in the last 24 hours, but not the received data is timely",
             dataset="us_id_raw_data",
-            table="ofndr_tst",
+            table="cis_employment",
             freshness_clause=f"CAST(update_datetime AS DATE) BETWEEN {FRESHNESS_FRAGMENT}",
         ),
         FreshnessValidationAssertion.build_assertion(
@@ -47,37 +46,12 @@ ASSESSMENT_FRESHNESS_VALIDATION_VIEW_BUILDER = FreshnessValidation(
             assertion="RAW_DATA_WAS_EDITED_WITHIN_EXPECTED_PERIOD",
             description="Checks that the imported data contains edits from within the freshness threshold",
             dataset="us_id_raw_data",
-            table="ofndr_tst",
-            freshness_clause=f"{UPDT_DT_CLAUSE} BETWEEN {FRESHNESS_FRAGMENT}",
-        ),
-        FreshnessValidationAssertion.build_assertion(
-            region_code="US_ID",
-            assertion="RAW_DATA_CONTAINS_RELEVANT_DATA_FROM_EXPECTED_PERIOD",
-            description="Checks that the imported data contains assessments from within the freshness threshold",
-            dataset="us_id_raw_data",
-            table="ofndr_tst",
-            freshness_clause=f"{TST_DT_CLAUSE} BETWEEN {FRESHNESS_FRAGMENT}",
-        ),
-        FreshnessValidationAssertion.build_assertion(
-            region_code="US_ID",
-            assertion="STATE_TABLES_CONTAIN_FRESH_DATA",
-            description="Checks that the state tables were successfully updated",
-            dataset="state",
-            table="state_assessment",
-            freshness_clause=f"state_code = 'US_ID' AND assessment_date BETWEEN {FRESHNESS_FRAGMENT}",
-        ),
-        FreshnessValidationAssertion.build_assertion(
-            region_code="US_ID",
-            assertion="CASE_TRIAGE_ETL_CONTAINS_FRESH_DATA",
-            description="Checks that the Case Triage ETL was successfully updated",
-            dataset="case_triage",
-            table="etl_clients_materialized",
-            freshness_clause=f"state_code = 'US_ID' AND most_recent_assessment_date BETWEEN {FRESHNESS_FRAGMENT}",
+            table="cis_employment",
+            freshness_clause=f"{UPDDATE_DT_CLAUSE} BETWEEN {FRESHNESS_FRAGMENT}",
         ),
     ],
 ).to_big_query_view_builder()
 
-
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        ASSESSMENT_FRESHNESS_VALIDATION_VIEW_BUILDER.build_and_print()
+        EMPLOYMENT_FRESHNESS_VALIDATION_VIEW_BUILDER.build_and_print()
