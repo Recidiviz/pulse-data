@@ -30,7 +30,7 @@ from typing import Dict, List, Optional
 from flask import Flask
 from werkzeug.routing import Rule
 
-from recidiviz.server import all_blueprints_with_url_prefixes
+from recidiviz.server import get_blueprints_for_documentation
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -171,6 +171,7 @@ class EndpointDocumentationGenerator:
 @lru_cache(maxsize=None)
 def app_rules() -> List[Rule]:
     temp_app = Flask(__name__)
+    all_blueprints_with_url_prefixes = get_blueprints_for_documentation()
     for blueprint, url_prefix in all_blueprints_with_url_prefixes:
         temp_app.register_blueprint(blueprint, url_prefix=url_prefix)
     return list(temp_app.url_map.iter_rules())
