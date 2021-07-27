@@ -24,7 +24,6 @@ from typing import Tuple
 
 import attr
 import flask
-import gcsfs
 from flask import Blueprint, Response, jsonify, request
 
 from recidiviz.admin_panel.data_discovery.arguments import DataDiscoveryArgsFactory
@@ -47,6 +46,7 @@ from recidiviz.admin_panel.data_discovery.utils import (
     get_data_discovery_cache,
     get_data_discovery_communicator,
 )
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.google_cloud.cloud_task_queue_manager import (
     get_cloud_task_json_body,
@@ -60,7 +60,6 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 )
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import in_gcp
-from recidiviz.utils.metadata import project_id
 
 CACHE_HIT = "CACHE_HIT"
 CACHE_MISS = "CACHE_MISS"
@@ -94,7 +93,7 @@ def add_data_discovery_routes(blueprint: Blueprint) -> None:
         parquet_path = SingleIngestFileParquetCache.parquet_cache_key(path)
 
         if not cache.exists(parquet_path):
-            fs = gcsfs.GCSFileSystem(project=project_id(), access="read_only")
+            fs = GcsfsFactory.build()
             parquet_cache = SingleIngestFileParquetCache(
                 get_data_discovery_cache(), path, expiry=DataDiscoveryTTL.PARQUET_FILES
             )

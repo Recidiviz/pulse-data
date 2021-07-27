@@ -19,26 +19,21 @@ import csv
 import os
 import uuid
 from http import HTTPStatus
-from io import StringIO
-from typing import Dict
-from unittest import TestCase, mock
-from unittest.mock import patch, create_autospec, MagicMock
+from unittest import TestCase
+from unittest.mock import MagicMock, patch
 
 import fakeredis
-import gcsfs
 import pandas
-from flask import Flask, Blueprint
+from flask import Blueprint, Flask
 
 from recidiviz.admin_panel.data_discovery.cache_ingest_file_as_parquet import (
     SingleIngestFileParquetCache,
 )
 from recidiviz.admin_panel.routes import data_discovery
 from recidiviz.admin_panel.routes.data_discovery import add_data_discovery_routes
-from recidiviz.cloud_memorystore.redis_communicator import (
-    RedisCommunicator,
-)
+from recidiviz.cloud_memorystore.redis_communicator import RedisCommunicator
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 fixture_path = os.path.join(
     os.path.dirname(__file__),
@@ -54,25 +49,13 @@ class TestDataDiscoveryRoutes(TestCase):
         blueprint = Blueprint("data_discovery_test", __name__)
         self.test_client = self.test_app.test_client()
         self.fakeredis = fakeredis.FakeRedis()
-        self.files: Dict[str, str] = {}
-        self.mock_gcsfs = create_autospec(gcsfs.GCSFileSystem)
 
-        def mock_gcsfs_open(
-            # pylint: disable=unused-argument
-            path: str,
-            *,
-            mode: str,
-            encoding: str,
-            token: str
-        ) -> StringIO:
-            return StringIO(self.files[path])
-
-        self.mock_gcsfs.open = mock_gcsfs_open
-
-        self.project_id_patcher = patch(
-            "recidiviz.admin_panel.routes.data_discovery.project_id",
-            return_value="recidiviz-456",
+        self.fs = FakeGCSFileSystem()
+        self.gcs_factory_patcher = patch(
+            "recidiviz.admin_panel.routes.data_discovery.GcsfsFactory.build"
         )
+        self.gcs_factory_patcher.start().return_value = self.fs
+
         self.project_number_patcher = patch(
             "recidiviz.utils.metadata.project_number", return_value=999
         )
@@ -82,13 +65,6 @@ class TestDataDiscoveryRoutes(TestCase):
         )
         self.redis_patcher = patch("redis.Redis", return_value=self.fakeredis)
 
-        self.gcs_factory_patcher = mock.patch(
-            "gcsfs.GCSFileSystem",
-            return_value=self.mock_gcsfs,
-        )
-
-        self.gcs_factory_patcher.start()
-        self.project_id_patcher.start()
         self.project_number_patcher.start()
         self.redis_patcher.start()
         self.requires_gae_auth_patcher.start()
@@ -98,15 +74,14 @@ class TestDataDiscoveryRoutes(TestCase):
 
     def tearDown(self) -> None:
         self.gcs_factory_patcher.stop()
-        self.project_id_patcher.stop()
         self.project_number_patcher.stop()
-        self.redis_patcher.start()
+        self.redis_patcher.stop()
         self.requires_gae_auth_patcher.stop()
 
     def cache_ingest_file(
         self, path: GcsfsFilePath, csv_text: str, separator: str = ","
     ) -> None:
-        self.files[path.uri()] = csv_text
+        self.fs.upload_from_string(path, csv_text, content_type="text/csv")
         response = self.test_client.post(
             "/data_discovery/cache_ingest_file_as_parquet_task",
             json={

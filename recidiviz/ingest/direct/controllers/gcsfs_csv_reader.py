@@ -20,14 +20,13 @@ import csv
 from contextlib import contextmanager
 from typing import Any, Dict, Iterator, List, Optional, TextIO, Tuple, Union
 
-import gcsfs
 import pandas as pd
 
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.controllers.read_only_csv_normalizing_stream import (
     ReadOnlyCsvNormalizingStream,
 )
-from recidiviz.utils import environment
 
 UTF_8_ENCODING = "UTF-8"
 
@@ -98,7 +97,7 @@ class GcsfsCsvReaderDelegate:
 class GcsfsCsvReader:
     """Class providing streaming read functionality for Google Cloud Storage CSV files."""
 
-    def __init__(self, fs: gcsfs.GCSFileSystem):
+    def __init__(self, fs: GCSFileSystem):
         self.gcs_file_system = fs
 
     @contextmanager
@@ -112,10 +111,7 @@ class GcsfsCsvReader:
         # reading from may have to match the project default you have set locally (check via `gcloud info` and set via
         # `gcloud config set project [PROJECT_ID]`. If we are running in the GCP environment, we should be able to query
         # the internal metadata for credentials.
-        token = "google_default" if not environment.in_gcp() else "cloud"
-        with self.gcs_file_system.open(
-            path.uri(), mode="r", encoding=encoding, token=token
-        ) as f:
+        with self.gcs_file_system.open(path, encoding=encoding) as f:
             yield f
 
     def _get_preprocessed_file_stream(

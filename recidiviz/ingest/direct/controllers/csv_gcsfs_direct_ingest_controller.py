@@ -20,48 +20,42 @@ GCSFileSystem.
 
 import abc
 import os
-from typing import List, Optional, Callable, Dict
+from typing import Callable, Dict, List, Optional
 
-import gcsfs
 import pandas as pd
 
-from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
-
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.cloud_storage.gcsfs_path import (
+    GcsfsBucketPath,
+    GcsfsDirectoryPath,
+    GcsfsFilePath,
+)
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsIngestArgs,
-    filename_parts_from_path,
-    GcsfsDirectIngestFileType,
-)
-from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsFilePath,
-    GcsfsDirectoryPath,
-    GcsfsBucketPath,
-)
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader_delegates import (
     ReadOneGcsfsCsvReaderDelegate,
     SplittingGcsfsCsvReaderDelegate,
 )
-from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
-from recidiviz.ingest.direct.state_shared_row_posthooks import (
-    IngestGatingContext,
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    GcsfsDirectIngestFileType,
+    GcsfsIngestArgs,
+    filename_parts_from_path,
 )
+from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
+from recidiviz.ingest.direct.state_shared_row_posthooks import IngestGatingContext
 from recidiviz.ingest.extractor.csv_data_extractor import (
     CsvDataExtractor,
-    RowType,
     IngestFieldCoordinates,
+    RowType,
 )
 from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
-from recidiviz.utils import metadata
-
 
 IngestRowPrehookCallable = Callable[[IngestGatingContext, RowType], None]
 IngestRowPosthookCallable = Callable[
@@ -106,11 +100,7 @@ class CsvGcsfsDirectIngestController(BaseDirectIngestController):
 
     def __init__(self, ingest_bucket_path: GcsfsBucketPath):
         super().__init__(ingest_bucket_path)
-        self.csv_reader = GcsfsCsvReader(
-            gcsfs.GCSFileSystem(
-                project=metadata.project_id(), cache_timeout=GCSFS_NO_CACHING
-            )
-        )
+        self.csv_reader = GcsfsCsvReader(GcsfsFactory.build())
 
     @abc.abstractmethod
     def get_file_tag_rank_list(self) -> List[str]:
