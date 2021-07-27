@@ -1,16 +1,29 @@
 file_tag: parhrg
 file_description: |-
-  Not in use
+  Data on parole board hearings
 primary_key_cols:
   - par_hrg_srl
 columns:
   - name: par_hrg_srl
+    description: |-
+      Primary key
   - name: docno
+    description: |-
+      Identifier of the person
   - name: incrno
+    description: |-
+      Incarceration number for this hearing
   - name: par_hrg_dtd
+    is_datetime: True
+    description: |-
+      Date of parole hearing
   - name: par_agenda_typ
+    description: |-
+      Code for type of hearing. Can be joined to agdtyp.par_agenda_typ
   - name: fac_cd
   - name: par_hrg_dec
+    description: |-
+      Code for hearing decision. Can be joined to pardec.par_hrg_dec
   - name: par_brd_act_dtd
   - name: prev_par_hrg_srl
   - name: par_susp_empl_cd

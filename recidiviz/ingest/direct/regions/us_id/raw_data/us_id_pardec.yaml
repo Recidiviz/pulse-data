@@ -1,9 +1,13 @@
 file_tag: pardec
 file_description: |-
-  Not in use
+    Code table that provides descriptions for parole hearing decisions.
 primary_key_cols:
   - par_hrg_dec
 columns:
   - name: par_hrg_dec
+    description: |-
+      Code for parole hearing decision. Can be joined to parhrg.par_hrg_dec
   - name: par_hrg_dec_desc
+    description: |-
+      Description of parole hearing decision
   - name: tpd_lost

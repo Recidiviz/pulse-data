@@ -1,9 +1,20 @@
 file_tag: agdtyp
 file_description: |-
-    Not in use
+    Code table that provides descriptions for parole hearing agenda types.
 primary_key_cols:
   - par_agenda_typ
 columns:
   - name: par_agenda_typ
+    description: |-
+      Code for agenda type. Can be joined to parhrg.par_agenda_type
   - name: par_agenda_desc
+    description: |-
+      Description of agenda type
   - name: typ_actv_flg
+    description: |-
+      Flag for active/inactive values
+    known_values:
+      - value: A
+        description: Active
+      - value: I
+        description: Inactive
