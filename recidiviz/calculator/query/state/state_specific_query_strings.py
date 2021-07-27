@@ -143,7 +143,8 @@ def state_specific_violation_type_entry_categories() -> str:
 def state_specific_supervision_level() -> str:
     return """IFNULL(
                 (CASE WHEN state_code = 'US_PA' THEN
-                  CASE WHEN supervision_level IN ('LIMITED', 'INTERNAL_UNKNOWN') THEN 'SPECIAL'
+                  CASE WHEN supervision_level = 'LIMITED' THEN 'SPECIAL'
+                       WHEN (supervision_level = 'INTERNAL_UNKNOWN' AND supervision_level_raw_text = 'SPC') THEN 'SPECIAL'
                        WHEN supervision_level = 'HIGH' THEN 'ENHANCED'
                        ELSE supervision_level END
                 ELSE supervision_level END),
