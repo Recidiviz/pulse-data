@@ -42,7 +42,7 @@ class FreshnessValidationAssertion:
         query = f"""
             /* {self.description} */   
             SELECT
-                '{self.region_code}' as state_code,
+                '{self.region_code}' as region_code,
                 '{self.assertion}' as assertion,
                 COUNT(*) > 0 as passed
             FROM {self.from_clause}
@@ -77,11 +77,11 @@ class FreshnessValidation:
             /* {self.description} */
             WITH assertions AS ( {assertion_queries} )
             SELECT
-                state_code,
+                region_code,
                 ARRAY_AGG(assertion) as failed_assertions
             FROM assertions
             WHERE passed = false
-            GROUP BY state_code
+            GROUP BY region_code
         """
 
     def to_big_query_view_builder(self) -> SimpleBigQueryViewBuilder:

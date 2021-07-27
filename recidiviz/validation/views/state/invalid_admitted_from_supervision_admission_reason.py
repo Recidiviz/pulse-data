@@ -44,7 +44,7 @@ invalid, ingest-only admission_reason values of ADMITTED_FROM_SUPERVISION."""
 
 
 SELECT_FROM_METRICS_TEMPLATE = (
-    "(SELECT state_code, person_id, metric_type, job_id FROM "
+    "(SELECT state_code AS region_code, person_id, metric_type, job_id FROM "
     "`{{project_id}}.{{materialized_metrics_dataset}}.most_recent_{metric_table}_materialized` "
     "WHERE admission_reason = 'ADMITTED_FROM_SUPERVISION')"
 )

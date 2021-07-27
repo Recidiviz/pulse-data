@@ -52,6 +52,7 @@ REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_QUERY_TEMPLATE = """
         WHERE metric_period_months = 36
     )
     SELECT
+        state_code AS region_code,
         a.total_admissions AS total_revocation_admissions, 
         c.total_admissions AS total_caseload_admissions
     FROM admission_counts a
