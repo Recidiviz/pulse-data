@@ -25,15 +25,12 @@ from types import ModuleType
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 import attr
-import gcsfs
 import pandas as pd
 from google.api_core.exceptions import BadRequest
 from google.cloud import bigquery
-from google.oauth2.credentials import Credentials
 from more_itertools import one
 
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsBucketPath,
     GcsfsDirectoryPath,
@@ -65,7 +62,6 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     filename_parts_from_path,
 )
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
-from recidiviz.utils import metadata
 from recidiviz.utils.regions import Region
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -428,7 +424,6 @@ class DirectIngestRawFileImportManager:
         big_query_client: BigQueryClient,
         region_raw_file_config: Optional[DirectIngestRegionRawFileConfig] = None,
         upload_chunk_size: int = _DEFAULT_BQ_UPLOAD_CHUNK_SIZE,
-        credentials: Optional[Credentials] = None,
     ):
 
         self.region = region
@@ -445,13 +440,7 @@ class DirectIngestRawFileImportManager:
             )
         )
         self.upload_chunk_size = upload_chunk_size
-        self.csv_reader = GcsfsCsvReader(
-            gcsfs.GCSFileSystem(
-                project=metadata.project_id(),
-                cache_timeout=GCSFS_NO_CACHING,
-                token=credentials,
-            )
-        )
+        self.csv_reader = GcsfsCsvReader(fs)
         self.raw_table_migrations = DirectIngestRawTableMigrationCollector(
             region_code=self.region.region_code,
             regions_module_override=self.region.region_module,

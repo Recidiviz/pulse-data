@@ -23,7 +23,18 @@ import logging
 import os
 import tempfile
 import uuid
-from typing import List, Optional, Union, Callable, Dict, TypeVar, Generic
+from contextlib import contextmanager
+from typing import (
+    Callable,
+    Dict,
+    Generic,
+    Iterator,
+    List,
+    Optional,
+    TextIO,
+    TypeVar,
+    Union,
+)
 
 import pytz
 
@@ -36,15 +47,15 @@ from recidiviz.cloud_storage.gcs_file_system import (
     GCSFileSystem,
     GcsfsFileContentsHandle,
 )
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    filename_parts_from_path,
-    GcsfsDirectIngestFileType,
-)
 from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsPath,
-    GcsfsFilePath,
-    GcsfsDirectoryPath,
     GcsfsBucketPath,
+    GcsfsDirectoryPath,
+    GcsfsFilePath,
+    GcsfsPath,
+)
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    GcsfsDirectIngestFileType,
+    filename_parts_from_path,
 )
 
 DIRECT_INGEST_UNPROCESSED_PREFIX = "unprocessed"
@@ -274,6 +285,16 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
 
     def is_file(self, path: str) -> bool:
         return self.gcs_file_system.is_file(path)
+
+    @contextmanager
+    def open(
+        self,
+        path: GcsfsFilePath,
+        chunk_size: Optional[int] = None,
+        encoding: Optional[str] = None,
+    ) -> Iterator[TextIO]:
+        with self.gcs_file_system.open(path, chunk_size, encoding) as f:
+            yield f
 
     @staticmethod
     def is_processed_file(path: GcsfsFilePath) -> bool:

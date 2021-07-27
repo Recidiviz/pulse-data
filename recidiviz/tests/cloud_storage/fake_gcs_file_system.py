@@ -20,7 +20,8 @@ import abc
 import os
 import shutil
 import threading
-from typing import Union, Dict, Optional, List, Set
+from contextlib import contextmanager
+from typing import Dict, Iterator, List, Optional, Set, TextIO, Union
 
 import attr
 
@@ -30,15 +31,15 @@ from recidiviz.cloud_storage.content_types import (
     IoType,
 )
 from recidiviz.cloud_storage.gcs_file_system import (
+    GCSBlobDoesNotExistError,
     GCSFileSystem,
     GcsfsFileContentsHandle,
     generate_random_temp_path,
-    GCSBlobDoesNotExistError,
 )
 from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsFilePath,
-    GcsfsDirectoryPath,
     GcsfsBucketPath,
+    GcsfsDirectoryPath,
+    GcsfsFilePath,
     GcsfsPath,
 )
 
@@ -238,3 +239,16 @@ class FakeGCSFileSystem(GCSFileSystem):
             return self.exists(file)
         except ValueError:
             return False
+
+    @contextmanager
+    def open(
+        self,
+        path: GcsfsFilePath,
+        chunk_size: Optional[int] = None,
+        encoding: Optional[str] = None,
+    ) -> Iterator[TextIO]:
+        if not self.exists(path):
+            raise GCSBlobDoesNotExistError(f"Could not find blob at {path}")
+
+        with open(self.real_absolute_path_for_path(path), "r", encoding=encoding) as f:
+            yield f
