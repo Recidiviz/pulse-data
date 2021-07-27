@@ -25,12 +25,6 @@ export const InputWrapper = styled.div`
   width: 100%;
 `;
 
-export const NoteWrapper = styled.div`
-  align-items: flex-start;
-  display: flex;
-  justify-content: space-between;
-`;
-
 const noteTextAlignmentStyles = css`
   margin: 0;
   margin-right: ${rem(spacing.md)};

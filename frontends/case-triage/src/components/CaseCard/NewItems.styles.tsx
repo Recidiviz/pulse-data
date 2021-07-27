@@ -73,8 +73,11 @@ export const TabSectionBullet = styled.div`
 `;
 
 export const TabSectionContents = styled.div`
+  align-items: flex-start;
   align-self: center;
+  display: flex;
   flex: 1 1 auto;
+  justify-content: space-between;
 `;
 
 export const PlainBullet = styled(Icon).attrs({
