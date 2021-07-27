@@ -54,6 +54,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
             prioritized_race_or_ethnicity,
             supervision_type,
             supervision_level,
+            supervision_level_raw_text,
             case_type,
             level_1_supervision_location,
             level_2_supervision_location,
