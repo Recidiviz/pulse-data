@@ -49,10 +49,6 @@ GCP_PROJECT_ID_KEY = "GCP_PROJECT"
 _IAM_SCOPE = "https://www.googleapis.com/auth/iam"
 _OAUTH_TOKEN_URI = "https://www.googleapis.com/oauth2/v4/token"
 
-# Value to be passed to the GCSFileSystem cache_timeout to indicate that we
-# should not cache.
-GCSFS_NO_CACHING = -1
-
 # pylint: disable=protected-access
 
 

@@ -17,15 +17,13 @@
 
 """Exposes APIs for parsing and persisting aggregate reports."""
 import logging
-import os
-import tempfile
 from http import HTTPStatus
 from typing import Tuple
 
-import gcsfs
 from flask import Blueprint, request
 
-from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.ingest.aggregate.regions.ca import ca_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.co import co_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.fl import fl_aggregate_ingest
@@ -80,34 +78,38 @@ def state_aggregate() -> Tuple[str, HTTPStatus]:
     logging.info("The project id is %s", project_id)
     if not bucket or not state or not filename:
         raise StateAggregateError("All of state, bucket, and filename must be provided")
-    path = os.path.join(bucket, state, filename)
+    directory_path = GcsfsDirectoryPath(bucket, state)
+    path = GcsfsFilePath.from_directory_and_file_name(directory_path, filename)
     parser = STATE_TO_PARSER[state]
-    # Don't use the gcsfs cache
-    fs = gcsfs.GCSFileSystem(project=project_id, cache_timeout=GCSFS_NO_CACHING)
+    fs = GcsfsFactory.build()
     logging.info("The path to download from is %s", path)
 
-    # TODO(#3292): Uncomment once gcsfs.ls is more stable
-    # bucket_path = os.path.join(bucket, state)
-    # logging.info("The files in the directory are:")
-    # logging.info(fs.ls(bucket_path))
+    logging.info("The files in the directory are:")
+    logging.info(
+        fs.ls_with_blob_prefix(
+            bucket_name=directory_path.bucket_name,
+            blob_prefix=directory_path.relative_path,
+        )
+    )
 
     # Providing a stream buffer to tabula reader does not work because it
     # tries to load the file into the local filesystem, since appengine is a
     # read only filesystem (except for the tmpdir) we download the file into
     # the local tmpdir and pass that in.
-    tmpdir_path = os.path.join(tempfile.gettempdir(), filename)
-    fs.get(path, tmpdir_path)
-    logging.info("Successfully downloaded file from gcs: %s", path)
+    handle = fs.download_to_temp_file(path)
+    if not handle:
+        raise StateAggregateError(f"Unable to download file: {path}")
+    logging.info("Successfully downloaded file from gcs: %s", handle.local_file_path)
 
-    result = parser(tmpdir_path)
+    result = parser(handle.local_file_path)
     logging.info("Successfully parsed the report")
     for table, df in result.items():
         dao.write_df(table, df)
 
     # If we are successful, we want to move the file out of the cloud
     # function triggered directory, and into the historical path.
-    historical_path = os.path.join(
-        HISTORICAL_BUCKET.format(project_id), state, filename
+    historical_path = GcsfsFilePath.from_directory_and_file_name(
+        GcsfsDirectoryPath(HISTORICAL_BUCKET.format(project_id), state), filename
     )
     fs.mv(path, historical_path)
     return "", HTTPStatus.OK

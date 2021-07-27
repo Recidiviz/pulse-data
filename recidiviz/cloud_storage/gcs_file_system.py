@@ -50,6 +50,8 @@ class GCSBlobDoesNotExistError(ValueError):
 
 
 class GcsfsFileContentsHandle(FileContentsHandle[str, TextIO]):
+    """Handle to a local copy of a file from (or to be uploaded) to GCS"""
+
     def __init__(self, local_file_path: str, cleanup_file: bool = True):
         super().__init__(local_file_path=local_file_path)
         self.cleanup_file = cleanup_file
@@ -62,6 +64,13 @@ class GcsfsFileContentsHandle(FileContentsHandle[str, TextIO]):
                 if not line:
                     break
                 yield line
+
+    @classmethod
+    def from_bytes(cls, contents: bytes) -> "GcsfsFileContentsHandle":
+        local_path = generate_random_temp_path()
+        with open(local_path, "wb") as f:
+            f.write(contents)
+        return cls(local_path, cleanup_file=True)
 
     @contextmanager
     def open(self) -> Iterator[TextIO]:
