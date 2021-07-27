@@ -141,6 +141,8 @@ export default class UserStore {
         client_id: window.AUTH0_CONFIG.clientId,
         redirect_uri: window.location.origin,
         audience: window.AUTH0_CONFIG.audience,
+        useRefreshTokens: true,
+        cacheLocation: "localstorage",
       },
     });
   }
