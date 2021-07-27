@@ -51,6 +51,7 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_QUERY_TEMPLATE = """
         prioritized_race_or_ethnicity,
         supervision_type,
         supervision_level,
+        supervision_level_raw_text,
         case_type,
         IFNULL(level_1_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_1_supervision_location,
         IFNULL(level_2_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_2_supervision_location,
