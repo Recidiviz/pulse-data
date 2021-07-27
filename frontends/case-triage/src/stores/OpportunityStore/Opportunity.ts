@@ -131,6 +131,10 @@ export class Opportunity {
     }
   }
 
+  get title(): string {
+    return OPPORTUNITY_TITLES[this.opportunityType];
+  }
+
   get tooltipText(): string | undefined {
     let dueDaysFormatted;
     const { daysUntilDue } = this.opportunityMetadata;

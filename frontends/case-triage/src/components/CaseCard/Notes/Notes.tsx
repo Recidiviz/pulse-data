@@ -25,7 +25,6 @@ import {
   InputWrapper,
   KeyHint,
   NoteText,
-  NoteWrapper,
 } from "./Notes.styles";
 
 type InputProps = {
@@ -67,7 +66,7 @@ export const NoteInput = ({
 };
 
 export const NoteRow = observer(({ note }: { note: Note }) => (
-  <NoteWrapper>
+  <>
     <NoteText>{note.text}</NoteText>
     <Button
       kind="secondary"
@@ -78,7 +77,7 @@ export const NoteRow = observer(({ note }: { note: Note }) => (
         note.setResolution(true);
       }}
     />
-  </NoteWrapper>
+  </>
 ));
 
 export const AddNote = ({

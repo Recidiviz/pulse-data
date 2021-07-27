@@ -25,6 +25,7 @@ import {
   NewItemsWrapper,
   PlainBullet,
 } from "./NewItems.styles";
+import { OpportunityReview } from "../CaseOpportunities/OpportunityReview";
 import { AddNote, NoteInput, NoteRow } from "./Notes";
 
 export const NewItems = observer(({ client }: CaseCardProps): JSX.Element => {
@@ -33,6 +34,11 @@ export const NewItems = observer(({ client }: CaseCardProps): JSX.Element => {
   return (
     <NewItemsWrapper>
       <ItemsWrapper>
+        {client.opportunities.map((opp) => (
+          <Item key={opp.opportunityType}>
+            <OpportunityReview opportunity={opp} />
+          </Item>
+        ))}
         {client.activeNotes.map((note) => (
           <Item key={note.noteId}>
             <ActionRow bullet={<PlainBullet />}>
