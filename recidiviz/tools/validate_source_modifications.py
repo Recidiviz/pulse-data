@@ -43,7 +43,7 @@ from flask import Flask
 from werkzeug.routing import Rule
 
 from recidiviz.ingest.models import ingest_info, ingest_info_pb2
-from recidiviz.server import all_blueprints_with_url_prefixes
+from recidiviz.server import get_blueprints_for_documentation
 from recidiviz.tools.docs.endpoint_documentation_generator import (
     EndpointDocumentationGenerator,
 )
@@ -91,6 +91,7 @@ def _get_modified_endpoints() -> List[RequiredModificationSets]:
     """Returns the dynamic set of documentation for the App Engine endpoints and the corresponding
     source code modifications."""
     temp_app = Flask(__name__)
+    all_blueprints_with_url_prefixes = get_blueprints_for_documentation()
     for blueprint, url_prefix in all_blueprints_with_url_prefixes:
         temp_app.register_blueprint(blueprint, url_prefix=url_prefix)
 
