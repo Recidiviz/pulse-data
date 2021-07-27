@@ -157,20 +157,23 @@ class CheckAssertionsTest(unittest.TestCase):
 
     def test_endpoint_docs_unhappy(self) -> None:
         modified_files = [
-            "recidiviz/admin_panel/all_routes.py",
+            "recidiviz/ingest/direct/direct_ingest_control.py",
             "recidiviz/ingest/aggregate/single_count.py",
         ]
         expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str]]] = [
             (
-                frozenset(["recidiviz/admin_panel/all_routes.py"]),
-                frozenset(["docs/endpoints/admin"]),
-            ),
-            (
                 frozenset(["recidiviz/ingest/aggregate/single_count.py"]),
                 frozenset(["docs/endpoints/single_count/single_count.md"]),
             ),
+            (
+                frozenset(["recidiviz/ingest/direct/direct_ingest_control.py"]),
+                frozenset(["docs/endpoints/direct"]),
+            ),
         ]
         self._run_test(modified_files, expected_failures, [])
+
+    # TODO(#8217) excluding the admin panel from endpoint documentation,
+    #  write new test to test the admin panel routes
 
     def _run_test(
         self,

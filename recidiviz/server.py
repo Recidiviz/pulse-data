@@ -22,15 +22,16 @@ import logging
 from typing import List, Tuple
 
 import zope.event.classhandler
-from flask import Flask, Blueprint, request
+from flask import Blueprint, Flask, request
 from gevent import events
 from opencensus.common.transports.async_ import AsyncTransport
 from opencensus.ext.flask.flask_middleware import FlaskMiddleware
 from opencensus.ext.stackdriver import trace_exporter as stackdriver_trace
-from opencensus.trace import config_integration, file_exporter, samplers, base_exporter
+from opencensus.trace import base_exporter, config_integration, file_exporter, samplers
 from opencensus.trace.propagation import google_cloud_format
 
-from recidiviz.admin_panel.all_routes import admin_panel
+from recidiviz.admin_panel.all_routes import setup_admin_panel
+from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
 from recidiviz.backup.backup_manager import backup_manager_blueprint
 from recidiviz.calculator.calculation_data_storage_manager import (
     calculation_data_storage_manager_blueprint,
@@ -57,7 +58,6 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
 from recidiviz.reporting.reporting_endpoint import reporting_endpoint_blueprint
-from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
 from recidiviz.utils import environment, metadata, monitoring, structured_logging, trace
 from recidiviz.validation.validation_manager import validation_manager_blueprint
 
@@ -79,7 +79,7 @@ scraper_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (store_single_count_blueprint, "/single_count"),
 ]
 default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
-    (admin_panel, "/admin"),
+    (setup_admin_panel(), "/admin"),
     (auth_endpoint_blueprint, "/auth"),
     (backup_manager_blueprint, "/backup_manager"),
     (calculation_data_storage_manager_blueprint, "/calculation_data_storage_manager"),
@@ -91,9 +91,13 @@ default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (reporting_endpoint_blueprint, "/reporting"),
     (validation_manager_blueprint, "/validation_manager"),
 ]
-all_blueprints_with_url_prefixes = (
-    scraper_blueprints_with_url_prefixes + default_blueprints_with_url_prefixes
-)
+
+# TODO(#8217) remove exemption for /admin route in generating documentation
+def get_blueprints_for_documentation() -> List[Tuple[Blueprint, str]]:
+    all_blueprints_with_url_prefixes = scraper_blueprints_with_url_prefixes + list(
+        filter(lambda item: item[1] != "/admin", default_blueprints_with_url_prefixes)
+    )
+    return all_blueprints_with_url_prefixes
 
 
 if service_type is environment.ServiceType.SCRAPERS:
