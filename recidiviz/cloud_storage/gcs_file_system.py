@@ -22,21 +22,14 @@ import os
 import tempfile
 import uuid
 from contextlib import contextmanager
-from typing import (
-    Callable,
-    Dict,
-    Iterator,
-    List,
-    Optional,
-    TextIO,
-    Union,
-)
+from io import TextIOWrapper
+from typing import Callable, Dict, Iterator, List, Optional, TextIO, Union
 
 import pysftp
-from paramiko import SFTPFile
-from google.api_core import retry, exceptions
+from google.api_core import exceptions, retry
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
+from paramiko import SFTPFile
 
 from recidiviz.cloud_storage.content_types import (
     FileContentsHandle,
@@ -44,11 +37,12 @@ from recidiviz.cloud_storage.content_types import (
     IoType,
 )
 from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsPath,
-    GcsfsFilePath,
-    GcsfsDirectoryPath,
     GcsfsBucketPath,
+    GcsfsDirectoryPath,
+    GcsfsFilePath,
+    GcsfsPath,
 )
+from recidiviz.cloud_storage.verifiable_bytes_reader import VerifiableBytesReader
 
 
 class GCSBlobDoesNotExistError(ValueError):
@@ -185,6 +179,20 @@ class GCSFileSystem:
     @abc.abstractmethod
     def is_file(self, path: str) -> bool:
         """Returns whether the given path exists and is a GcsfsFilePath or not."""
+
+    @contextmanager
+    @abc.abstractmethod
+    def open(
+        self,
+        path: GcsfsFilePath,
+        chunk_size: Optional[int] = None,
+        encoding: Optional[str] = None,
+    ) -> Iterator[TextIO]:
+        """Returns a read-only file handler for the blob contents.
+
+        Streams the contents from GCS for reduced memory consumption. If all of the
+        contents are read, verifies that the checksum is correct (or raises).
+        """
 
 
 def retry_predicate(exception: Exception) -> Callable[[Exception], bool]:
@@ -376,3 +384,18 @@ class GCSFileSystemImpl(GCSFileSystem):
             return self.exists(file)
         except ValueError:
             return False
+
+    @contextmanager
+    def open(
+        self,
+        path: GcsfsFilePath,
+        chunk_size: Optional[int] = None,
+        encoding: Optional[str] = None,
+    ) -> Iterator[TextIO]:
+        blob = self._get_blob(path)
+        with blob.open("rb", chunk_size=chunk_size) as f:
+            verifiable_reader = VerifiableBytesReader(f, name=path.uri())
+            try:
+                yield TextIOWrapper(buffer=verifiable_reader, encoding=encoding)
+            finally:
+                verifiable_reader.verify_crc32c(blob.crc32c)

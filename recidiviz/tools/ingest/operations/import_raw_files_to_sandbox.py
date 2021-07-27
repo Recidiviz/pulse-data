@@ -40,8 +40,6 @@ import sys
 from collections import defaultdict
 from typing import List, Optional, Tuple
 
-import google
-
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
@@ -87,8 +85,6 @@ class SandboxDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
 
         check_is_valid_sandbox_bucket(test_ingest_bucket)
 
-        # Required to use the gcsfs.GCSFileSystem() locally
-        credentials, _ = google.auth.default()
         super().__init__(
             region=get_region(state_code.value.lower(), is_direct_ingest=True),
             fs=DirectIngestGCSFileSystem(GcsfsFactory.build()),
@@ -97,7 +93,6 @@ class SandboxDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
                 test_ingest_bucket, "temp_raw_data"
             ),
             big_query_client=BigQueryClientImpl(),
-            credentials=credentials,
         )
         self.sandbox_dataset = (
             f"{sandbox_dataset_prefix}_{super()._raw_tables_dataset()}"
