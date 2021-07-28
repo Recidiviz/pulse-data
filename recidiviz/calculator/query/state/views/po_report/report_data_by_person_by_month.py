@@ -56,7 +56,7 @@ REPORT_DATA_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
       absconsion_report_date,
       earned_discharge_date,
       IFNULL(assessment_count, 0) AS assessment_count,
-      num_days_assessment_overdue,
+      next_recommended_assessment_date,
       IFNULL(face_to_face_count, 0) AS face_to_face_count,
       face_to_face_frequency_sufficient
 

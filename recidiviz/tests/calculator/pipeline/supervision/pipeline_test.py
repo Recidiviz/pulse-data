@@ -2041,7 +2041,8 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 supervision_level=StateSupervisionLevel.MINIMUM,
                 supervision_level_raw_text="MIN",
                 case_compliance=SupervisionCaseCompliance(
-                    date_of_evaluation=date(2015, 3, 31), num_days_assessment_overdue=0
+                    date_of_evaluation=date(2015, 3, 31),
+                    next_recommended_assessment_date=None,
                 ),
                 projected_end_date=None,
             ),

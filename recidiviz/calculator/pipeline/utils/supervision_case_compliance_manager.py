@@ -19,8 +19,7 @@
     where necessary.
 """
 import abc
-import logging
-from datetime import date
+from datetime import date, timedelta
 from typing import List, Optional, Tuple
 
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
@@ -98,7 +97,7 @@ class StateSupervisionCaseComplianceManager:
         home_visit_count = self._home_visits_on_date(compliance_evaluation_date)
 
         most_recent_assessment_date = None
-        num_days_assessment_overdue = None
+        next_recommended_assessment_date = None
         face_to_face_frequency_sufficient = None
         home_visit_frequency_sufficient = None
 
@@ -114,8 +113,8 @@ class StateSupervisionCaseComplianceManager:
             if most_recent_assessment is not None:
                 most_recent_assessment_date = most_recent_assessment.assessment_date
 
-            num_days_assessment_overdue = self._num_days_assessment_overdue(
-                compliance_evaluation_date, most_recent_assessment
+            next_recommended_assessment_date = self._next_recommended_assessment_date(
+                most_recent_assessment
             )
 
             face_to_face_frequency_sufficient = (
@@ -132,7 +131,7 @@ class StateSupervisionCaseComplianceManager:
             date_of_evaluation=compliance_evaluation_date,
             assessment_count=assessment_count,
             most_recent_assessment_date=most_recent_assessment_date,
-            num_days_assessment_overdue=num_days_assessment_overdue,
+            next_recommended_assessment_date=next_recommended_assessment_date,
             face_to_face_count=face_to_face_count,
             most_recent_face_to_face_date=self._most_recent_face_to_face_contact(
                 compliance_evaluation_date
@@ -148,55 +147,22 @@ class StateSupervisionCaseComplianceManager:
             ),
         )
 
-    def _num_days_assessment_overdue(
-        self,
-        compliance_evaluation_date: date,
-        most_recent_assessment: Optional[StateAssessment],
-    ) -> int:
-        """Determines whether the supervision case represented by the given supervision_period has an "up-to-date
-        assessment" according to state-specific guidelines."""
-        days_since_start = (compliance_evaluation_date - self.start_of_supervision).days
-
-        initial_assessment_number_of_days = (
-            self._get_initial_assessment_number_of_days()
-        )
-
-        if days_since_start <= initial_assessment_number_of_days:
-            # This is a recently started supervision period, and the person has not yet hit the number of days from
-            # the start of their supervision at which the officer is required to have performed an assessment. This
-            # assessment is up to date regardless of when the last assessment was taken.
-            logging.debug(
-                "[%d] Supervision period %d started %d days before the compliance date %s. "
-                "Assessment is not overdue.",
-                self.supervision_period.state_code,
-                self.supervision_period.supervision_period_id,
-                days_since_start,
-                compliance_evaluation_date,
-            )
-            return 0
-
-        days_past_initial_assessment_deadline = (
-            days_since_start - initial_assessment_number_of_days
-        )
+    def _next_recommended_assessment_date(
+        self, most_recent_assessment: Optional[StateAssessment]
+    ) -> Optional[date]:
+        """Outputs what the next assessment date is for the person under supervision."""
         if (
             not most_recent_assessment
             or not most_recent_assessment.assessment_date
             or not most_recent_assessment.assessment_score
         ):
-            # If they have not had an assessment and are expected to, then their assessment is not up to date.
-            logging.debug(
-                "[%d] Supervision period %d started %d days before the compliance date %s, and they have not had "
-                "an assessment taken. Assessment is %d days overdue.",
-                self.supervision_period.state_code,
-                self.supervision_period.supervision_period_id,
-                days_since_start,
-                compliance_evaluation_date,
-                days_past_initial_assessment_deadline,
+            # No assessment has been filed, so the next recommended assessment date
+            # is the initial assessment date.
+            return self.start_of_supervision + timedelta(
+                days=self._get_initial_assessment_number_of_days()
             )
-            return days_past_initial_assessment_deadline
 
-        return self._num_days_past_required_reassessment(
-            compliance_evaluation_date,
+        return self._next_recommended_reassessment(
             most_recent_assessment.assessment_date,
             most_recent_assessment.assessment_score,
         )
@@ -382,14 +348,12 @@ class StateSupervisionCaseComplianceManager:
         `supervision_type`."""
 
     @abc.abstractmethod
-    def _num_days_past_required_reassessment(
+    def _next_recommended_reassessment(
         self,
-        compliance_evaluation_date: date,
         most_recent_assessment_date: date,
         most_recent_assessment_score: int,
-    ) -> int:
-        """Returns the number of days it has been since the required reassessment deadline. Returns 0
-        if the reassessment is not overdue."""
+    ) -> Optional[date]:
+        """Returns the next recommended reassessment date or None if no further reassessments are needed."""
 
     @abc.abstractmethod
     def _face_to_face_contact_frequency_is_sufficient(

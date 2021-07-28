@@ -1949,7 +1949,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_XX")
 
-    def test_num_days_past_required_reassessment_general_minimum(self) -> None:
+    def test_next_recommended_reassessment_general_minimum(self) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -1982,17 +1982,13 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_past_reassessment = (
-            us_id_supervision_compliance._num_days_past_required_reassessment(
-                start_of_supervision,
-                assessment_date,
-                assessment_score,
-            )
+        reassessment_date = us_id_supervision_compliance._next_recommended_reassessment(
+            assessment_date, assessment_score
         )
 
-        self.assertEqual(days_past_reassessment, 0)
+        self.assertEqual(reassessment_date, None)
 
-    def test_num_days_past_required_reassessment_sex_offense_with_score(self) -> None:
+    def test_next_recommended_reassessment_sex_offense_with_score(self) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -2025,15 +2021,11 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_past_reassessment = (
-            us_id_supervision_compliance._num_days_past_required_reassessment(
-                start_of_supervision,
-                assessment_date,
-                assessment_score,
-            )
+        reassessment_date = us_id_supervision_compliance._next_recommended_reassessment(
+            assessment_date, assessment_score
         )
 
-        self.assertEqual(days_past_reassessment, 0)
+        self.assertEqual(reassessment_date, date(2019, 4, 2))
 
     def test_reassessment_requirements_are_not_met(self) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
@@ -2067,15 +2059,12 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_past_reassessment = (
-            us_id_supervision_compliance._num_days_past_required_reassessment(
-                start_of_supervision,
-                assessment_date,
-                assessment_score,
-            )
+        reassessment_date = us_id_supervision_compliance._next_recommended_reassessment(
+            assessment_date,
+            assessment_score,
         )
 
-        self.assertEqual(days_past_reassessment, 2529)
+        self.assertEqual(reassessment_date, date(2011, 4, 2))
 
     @parameterized.expand(
         [
@@ -2120,13 +2109,14 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_past_reassessment = (
-            us_id_supervision_compliance_boundary._num_days_past_required_reassessment(
-                start_of_supervision,
+        boundary_deadline = (
+            us_id_supervision_compliance_boundary._next_recommended_reassessment(
                 assessment_date,
                 assessment_boundary_score,
             )
         )
+
+        self.assertEqual(boundary_deadline, date(2011, 4, 2))
 
         assessment_under_boundary = StateAssessment.new_with_defaults(
             state_code=StateCode.US_ID.value,
@@ -2144,13 +2134,14 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_past_reassessment = us_id_supervision_compliance_under_boundary._num_days_past_required_reassessment(
-            start_of_supervision,
-            assessment_date,
-            assessment_boundary_score - 1,
+        reassessment_deadline = (
+            us_id_supervision_compliance_under_boundary._next_recommended_reassessment(
+                assessment_date,
+                assessment_boundary_score - 1,
+            )
         )
 
-        self.assertEqual(days_past_reassessment, 0)
+        self.assertEqual(reassessment_deadline, None)
 
 
 class TestSupervisionDowngrades(unittest.TestCase):
