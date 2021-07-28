@@ -86,7 +86,7 @@ def _parse_table(filename: str) -> pd.DataFrame:
     # The CSV sometimes doesn't list all values for the Braxton County Central Jail.
     if df.loc[1, "county"] == "Braxton" and df.loc[1].isna().any():
         df.loc[1, "facility_name"] = "Central"
-        df.loc[1, "facility_type"] = "Jail"
+        df.loc[1, "facility_type"] = "JAIL"
 
     df["report_date"] = report_date
     return df.reset_index(drop=True)
