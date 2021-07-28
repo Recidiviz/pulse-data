@@ -98,4 +98,6 @@ def clean_up_supervising_officer_external_id() -> str:
 
 
 def generate_district_id_from_district_name(district_name_field: str) -> str:
-    return f"""REPLACE(REGEXP_REPLACE({district_name_field}, r"[',]", ''), ' ' , '_')"""
+    return (
+        f"""REPLACE(REGEXP_REPLACE({district_name_field}, r"[',-]", ''), ' ' , '_')"""
+    )

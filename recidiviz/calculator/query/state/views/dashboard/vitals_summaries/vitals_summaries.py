@@ -49,14 +49,13 @@ def generate_entity_summary_query(field: str, vitals_table: str) -> str:
         "supervising_officer_external_id = 'ALL' AND district_id != 'ALL'"
     )
 
-    district_level_type = f"""
-        IF(state_code in {VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS}, 'level_1_supervision_location', 'level_2_supervision_location')
-    """
-
     return f"""
     SELECT
       state_code,
       most_recent_date_of_supervision,
+      supervising_officer_external_id,
+      district_name,
+      district_id,
       MAX(IF(date_of_supervision = most_recent_supervision_dates_per_state.most_recent_date_of_supervision, {field}, null)) as most_recent_{field},
       MAX(IF(date_of_supervision = DATE_SUB(most_recent_supervision_dates_per_state.most_recent_date_of_supervision, INTERVAL 30 DAY), {field}, null)) as {field}_30_days_before,
       MAX(IF(date_of_supervision = DATE_SUB(most_recent_supervision_dates_per_state.most_recent_date_of_supervision, INTERVAL 90 DAY), {field}, null)) as {field}_90_days_before,
@@ -65,17 +64,7 @@ def generate_entity_summary_query(field: str, vitals_table: str) -> str:
         WHEN {district_condition} THEN {generate_district_id_from_district_name('district_name')}
         ELSE 'STATE_DOC'
       END as entity_id,
-      CASE
-        WHEN {po_condition} THEN {vitals_state_specific_po_name('state_code', 'supervising_officer_external_id')}
-        WHEN {district_condition} THEN {vitals_state_specific_district_display_name('state_code', 'district_name')}
-        ELSE 'STATE DOC'
-      END as entity_name,
-      IF( {po_condition}, {generate_district_id_from_district_name('district_name')}, 'STATE_DOC') as parent_entity_id,
-      CASE 
-        WHEN {po_condition} THEN 'po'
-        WHEN {district_condition} THEN {district_level_type}
-        ELSE 'state'
-      END as entity_type,
+      IF( {po_condition}, {generate_district_id_from_district_name('district_name')}, 'STATE_DOC') as parent_entity_id
     FROM
      `{{project_id}}.{{vitals_report_dataset}}.{vitals_table}` metric_table
     INNER JOIN
@@ -87,7 +76,7 @@ def generate_entity_summary_query(field: str, vitals_table: str) -> str:
         DATE_SUB(most_recent_supervision_dates_per_state.most_recent_date_of_supervision, INTERVAL 30 DAY),
         DATE_SUB(most_recent_supervision_dates_per_state.most_recent_date_of_supervision, INTERVAL 90 DAY))
       AND {make_enabled_states_filter_for_vital(field)}
-    GROUP BY state_code, most_recent_date_of_supervision, entity_id, entity_name, parent_entity_id, supervising_officer_external_id, district_id
+    GROUP BY state_code, most_recent_date_of_supervision, entity_id, parent_entity_id, supervising_officer_external_id, district_id, district_name
     """
 
 
@@ -177,31 +166,105 @@ VITALS_SUMMARIES_QUERY_TEMPLATE = f"""
     ),
     timely_downgrade AS (
      {generate_entity_summary_query('timely_downgrade', 'supervision_downgrade_opportunities_by_po_by_day')}
+    ),
+    officer_names AS (
+        SELECT
+            DISTINCT
+            state_code,
+            external_id AS supervising_officer_external_id,
+            CONCAT(IFNULL(MAX(given_names), ''), ' ', IFNULL(MAX(surname), '')) AS full_name,
+        FROM `{{project_id}}.{{reference_views_dataset}}.augmented_agent_info`
+        WHERE given_names IS NOT NULL OR surname IS NOT NULL
+        GROUP BY state_code, supervising_officer_external_id
+    ),
+    vitals_metrics AS (
+        SELECT
+          COALESCE(
+            timely_discharge.state_code,
+            timely_risk_assessment.state_code,
+            timely_contact.state_code,
+            timely_downgrade.state_code
+          ) AS state_code,
+          COALESCE(
+            timely_discharge.most_recent_date_of_supervision,
+            timely_risk_assessment.most_recent_date_of_supervision,
+            timely_contact.most_recent_date_of_supervision,
+            timely_downgrade.most_recent_date_of_supervision
+          ) AS most_recent_date_of_supervision,
+          COALESCE(
+            timely_discharge.supervising_officer_external_id,
+            timely_risk_assessment.supervising_officer_external_id,
+            timely_contact.supervising_officer_external_id,
+            timely_downgrade.supervising_officer_external_id
+          ) AS supervising_officer_external_id,
+         COALESCE(
+            timely_discharge.district_id,
+            timely_risk_assessment.district_id,
+            timely_contact.district_id,
+            timely_downgrade.district_id
+          ) AS district_id,
+        COALESCE(
+            timely_discharge.entity_id,
+            timely_risk_assessment.entity_id,
+            timely_contact.entity_id,
+            timely_downgrade.entity_id
+          ) AS entity_id,
+        COALESCE(
+            timely_discharge.district_name,
+            timely_risk_assessment.district_name,
+            timely_contact.district_name,
+            timely_downgrade.district_name
+          ) AS district_name,
+        COALESCE(
+            timely_discharge.parent_entity_id,
+            timely_risk_assessment.parent_entity_id,
+            timely_contact.parent_entity_id,
+            timely_downgrade.parent_entity_id
+          ) AS parent_entity_id,
+          ROUND(most_recent_timely_discharge) as timely_discharge,
+          ROUND(most_recent_timely_risk_assessment) as timely_risk_assessment,
+          ROUND(most_recent_timely_contact) as timely_contact,
+          ROUND(most_recent_timely_downgrade) as timely_downgrade,
+          {generate_overall_scores()}
+        FROM timely_discharge
+        FULL OUTER JOIN timely_risk_assessment
+          USING (state_code, entity_id, parent_entity_id)
+        FULL OUTER JOIN timely_contact
+          USING (state_code, entity_id, parent_entity_id)
+        FULL OUTER JOIN timely_downgrade
+          USING (state_code, entity_id, parent_entity_id)
+        WHERE entity_id is not null
+          AND entity_id != 'UNKNOWN'
+          AND ROUND(most_recent_timely_risk_assessment) != 0
+        ORDER BY most_recent_date_of_supervision DESC
     )
 
-    SELECT 
-      state_code,
-      timely_risk_assessment.most_recent_date_of_supervision,
-      timely_risk_assessment.entity_type,
-      timely_risk_assessment.entity_id,
-      timely_risk_assessment.entity_name,
-      timely_risk_assessment.parent_entity_id,
-      ROUND(most_recent_timely_discharge) as timely_discharge,
-      ROUND(most_recent_timely_risk_assessment) as timely_risk_assessment,
-      ROUND(most_recent_timely_contact) as timely_contact,
-      ROUND(most_recent_timely_downgrade) as timely_downgrade,
-      {generate_overall_scores()}
-    FROM timely_discharge
-    FULL OUTER JOIN timely_risk_assessment
-      USING (state_code, entity_id, parent_entity_id)
-    FULL OUTER JOIN timely_contact
-      USING (state_code, entity_id, parent_entity_id)
-    FULL OUTER JOIN timely_downgrade
-      USING (state_code, entity_id, parent_entity_id)
-    WHERE entity_id is not null
-      AND entity_id != 'UNKNOWN'
-      AND ROUND(most_recent_timely_risk_assessment) != 0
-    ORDER BY most_recent_date_of_supervision DESC
+    SELECT
+        state_code,
+        most_recent_date_of_supervision,
+        CASE
+            WHEN supervising_officer_external_id != 'ALL' AND district_id != 'ALL' THEN 'po'
+            WHEN supervising_officer_external_id = 'ALL' AND district_id != 'ALL'
+            THEN IF(state_code in {VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS}, 'level_1_supervision_location', 'level_2_supervision_location')
+        ELSE 'state'
+        END as entity_type,
+        entity_id,
+        CASE
+            WHEN vitals_metrics.supervising_officer_external_id != 'ALL' AND district_id != 'ALL' THEN {vitals_state_specific_po_name('state_code', 'vitals_metrics.supervising_officer_external_id', 'officer_names.full_name')}
+            WHEN vitals_metrics.supervising_officer_external_id = 'ALL' AND district_id != 'ALL' THEN {vitals_state_specific_district_display_name('state_code', 'district_name')}
+            ELSE 'STATE DOC'
+        END as entity_name,
+        parent_entity_id,
+        timely_discharge,
+        timely_risk_assessment,
+        timely_contact,
+        timely_downgrade,
+        overall,
+        overall_30d,
+        overall_90d
+    FROM vitals_metrics
+    LEFT JOIN officer_names
+    USING (state_code, supervising_officer_external_id)
 """
 
 VITALS_SUMMARIES_VIEW_BUILDER = MetricBigQueryViewBuilder(
@@ -212,6 +275,7 @@ VITALS_SUMMARIES_VIEW_BUILDER = MetricBigQueryViewBuilder(
     description=VITALS_SUMMARIES_DESCRIPTION,
     vitals_report_dataset=dataset_config.VITALS_REPORT_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
 if __name__ == "__main__":

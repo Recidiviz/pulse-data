@@ -283,11 +283,14 @@ def vitals_state_specific_join_with_supervision_population(right_table: str) -> 
         END"""
 
 
-def vitals_state_specific_po_name(state_code: str, officer_id: str) -> str:
+def vitals_state_specific_po_name(
+    state_code: str, officer_id: str, officer_name: str
+) -> str:
     """State-specific logic to format PO ids into displayable names."""
     return f"""
         CASE {state_code}
           WHEN 'US_ND' THEN REGEXP_REPLACE({officer_id}, r'\d+: ', '')
+          WHEN 'US_ID' THEN {officer_name}
           ELSE {officer_id}
         END
     """
@@ -304,6 +307,8 @@ def vitals_state_specific_district_display_name(
               INSTR(UPPER({district_name}), 'OFFICE') != 0,
               {district_name},
               CONCAT({district_name}, ' OFFICE'))
+          WHEN 'US_ID'
+            THEN REPLACE({district_name}, ' - ', ', ')
           ELSE {district_name}
         END
     """
