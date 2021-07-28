@@ -159,10 +159,9 @@ class TestMaAggregateIngest(TestCase):
             dao.write_df(table, df)
 
         # Assert
-        query = SessionFactory.for_database(self.database_key).query(
-            func.sum(MaFacilityAggregate.jail_total_male)
-        )
-        result = one(one(query.all()))
+        with SessionFactory.using_database(self.database_key) as session:
+            query = session.query(func.sum(MaFacilityAggregate.jail_total_male))
+            result = one(one(query.all()))
 
         expected_sum_male = 12366
         self.assertEqual(result, expected_sum_male)
