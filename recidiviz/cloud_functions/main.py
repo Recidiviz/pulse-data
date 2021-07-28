@@ -25,7 +25,6 @@ from typing import Any, Dict, Tuple, TypeVar
 from cloud_function_utils import (  # type: ignore[import]
     GCP_PROJECT_ID_KEY,
     IAP_CLIENT_ID,
-    build_query_param_string,
     get_dataflow_template_bucket,
     make_iap_request,
     trigger_dataflow_job_from_template,
@@ -38,7 +37,6 @@ from cloud_function_utils import (  # type: ignore[import]
 from direct_ingest_bucket_name_utils import (  # type: ignore[import]
     get_region_code_from_direct_ingest_bucket,
 )
-from flask import Request
 
 # A stand-in type for google.cloud.functions.Context for which no apparent type is available
 ContextType = TypeVar("ContextType", bound=Any)
@@ -60,13 +58,6 @@ _DIRECT_INGEST_NORMALIZE_RAW_PATH_URL = (
 _METRIC_VIEW_EXPORT_CLOUD_FUNCTION_URL = (
     "http://{}.appspot.com/export/create_metric_view_data_export_tasks"
 )
-_APP_ENGINE_PO_MONTHLY_REPORT_GENERATE_EMAILS_URL = (
-    "https://{}.appspot.com/reporting/start_new_batch{}"
-)
-_APP_ENGINE_PO_MONTHLY_REPORT_DELIVER_EMAILS_URL = (
-    "https://{}.appspot.com/reporting/deliver_emails_for_batch{}"
-)
-
 _APP_ENGINE_UPDATE_AUTH0_USER_METADATA_URL = (
     "https://{}.appspot.com/auth/update_auth0_user_metadata?region_code={}"
 )
@@ -399,109 +390,3 @@ def start_calculation_pipeline(
 
     logging.info("The response to triggering the Dataflow job is: %s", response)
     return str(response), HTTPStatus.OK
-
-
-def handle_start_new_batch_email_reporting(request: Request) -> Tuple[str, HTTPStatus]:
-    """Start a new batch of email generation for the indicated state.
-    This function is the entry point for generating a new batch. It hits the App Engine endpoint `/start_new_batch`.
-    It requires a JSON input containing the following keys:
-        state_code: (required) State code for the report (i.e. "US_ID")
-        report_type: (required) The type of report (i.e. "po_monthly_report")
-        test_address: (optional) A test address to generate emails for
-        region_code: (optional) The sub-region of the state to generate emails for (i.e. "US_ID_D5")
-        message_body_override: (optional) If included, overrides the default message body.
-    Args:
-        request: The HTTP request. Must contain JSON with "state_code" and
-        "report_type" keys, and may contain an optional "test_address" key.
-    Returns:
-        Nothing.
-    Raises:
-        Nothing. All exception raising is handled within the App Engine logic.
-    """
-    project_id = os.environ.get(GCP_PROJECT_ID_KEY)
-    if not project_id:
-        error_str = "No project id set, returning"
-        logging.error(error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
-
-    request_params = request.get_json()
-    if not request_params:
-        error_str = "No request params, returning"
-        logging.error(error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
-
-    query_params = build_query_param_string(
-        request_params,
-        [
-            "state_code",
-            "report_type",
-            "test_address",
-            "region_code",
-            "message_body_override",
-        ],
-    )
-
-    url = _APP_ENGINE_PO_MONTHLY_REPORT_GENERATE_EMAILS_URL.format(
-        project_id, query_params
-    )
-
-    logging.info("Calling URL: %s", url)
-
-    # Hit the App Engine endpoint `reporting/start_new_batch`.
-    response = make_iap_request(url, IAP_CLIENT_ID[project_id])
-    logging.info("The response status is %s", response.status_code)
-    return "", HTTPStatus(response.status_code)
-
-
-def handle_deliver_emails_for_batch_email_reporting(
-    request: Request,
-) -> Tuple[str, HTTPStatus]:
-    """Cloud function to deliver a batch of generated emails.
-    It hits the App Engine endpoint `reporting/deliver_emails_for_batch`. It requires a JSON input containing the
-    following keys:
-        batch_id: (required) Identifier for this batch
-        state_code: (required) State code needed for this batch to be triggered
-        redirect_address: (optional) An email address to which all emails should
-        be sent instead of to their actual recipients.
-        cc_address: (optional) List of email addresses to include in the CC field.
-            Example JSON:
-            { "batch_id": "XXXX", "cc_address": ["cc_address@domain.org"] }
-        subject_override: (optional) Override the subject of the sent out emails
-    Args:
-        request: HTTP request payload containing JSON with keys as described above
-    Returns:
-        Nothing.
-    Raises:
-        Nothing. All exception raising is handled within the App Engine logic.
-    """
-    project_id = os.environ.get(GCP_PROJECT_ID_KEY)
-    if not project_id:
-        error_str = "No project id set, returning"
-        logging.error(error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
-
-    request_params = request.get_json()
-    if not request_params:
-        error_str = "No request params, returning"
-        logging.error(error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
-
-    query_params = build_query_param_string(
-        request_params,
-        [
-            "batch_id",
-            "state_code",
-            "redirect_address",
-            "cc_address",
-            "subject_override",
-        ],
-    )
-
-    url = _APP_ENGINE_PO_MONTHLY_REPORT_DELIVER_EMAILS_URL.format(
-        project_id, query_params
-    )
-
-    logging.info("Calling URL: %s", url)
-    response = make_iap_request(url, IAP_CLIENT_ID[project_id])
-    logging.info("The response status is %s", response.status_code)
-    return "", HTTPStatus(response.status_code)

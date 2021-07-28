@@ -211,8 +211,10 @@ def add_case_triage_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
             state_code = StateCode(state_code_str)
             if state_code not in EMAIL_STATE_CODES:
                 raise ValueError("State code is invalid for PO monthly reports")
-            # report_type hardcoded for now, need to change when different reports are created
-            report_type = ReportType.POMonthlyReport
+            # TODO(#7790): Support more email types.
+            report_type = ReportType(data.get("reportType"))
+            if report_type != ReportType.POMonthlyReport:
+                raise ValueError(f"{report_type.value} is not a valid ReportType")
             test_address = data.get("testAddress")
             region_code = data.get("regionCode")
             message_body_override = data.get("messageBodyOverride")
@@ -220,13 +222,13 @@ def add_case_triage_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
 
             validate_email_address(test_address)
 
+            if email_allowlist is not None:
+                for recipient_email in email_allowlist:
+                    validate_email_address(recipient_email)
+
         except (ValueError, JSONDecodeError) as error:
             logging.error(error)
             return str(error), HTTPStatus.BAD_REQUEST
-
-        if email_allowlist is not None:
-            for recipient_email in email_allowlist:
-                validate_email_address(recipient_email)
 
         if test_address == "":
             test_address = None
@@ -263,7 +265,7 @@ def add_case_triage_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
         test_address_text = (
             f"Emails generated for test address: {test_address}" if test_address else ""
         )
-        counts_text = f"Successfully generate {len(result.successes)} email(s)"
+        counts_text = f"Successfully generated {len(result.successes)} email(s)"
         success_text = f"{new_batch_text} {test_address_text} {counts_text}."
         if result.failures and not result.successes:
             return (
