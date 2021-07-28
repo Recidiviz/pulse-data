@@ -451,16 +451,20 @@ class DirectIngestRawFileImportManager:
             self.ingest_bucket_path, GcsfsDirectIngestFileType.RAW_DATA
         )
         paths_to_import = []
+        unrecognized_file_tags = set()
         for path in unprocessed_paths:
             parts = filename_parts_from_path(path)
             if parts.file_tag in self.region_raw_file_config.raw_file_tags:
                 paths_to_import.append(path)
             else:
-                logging.warning(
-                    "Unrecognized raw file tag [%s] for region [%s].",
-                    parts.file_tag,
-                    self.region.region_code,
-                )
+                unrecognized_file_tags.add(parts.file_tag)
+
+        for file_tag in sorted(unrecognized_file_tags):
+            logging.warning(
+                "Unrecognized raw file tag [%s] for region [%s].",
+                file_tag,
+                self.region.region_code,
+            )
 
         return paths_to_import
 
