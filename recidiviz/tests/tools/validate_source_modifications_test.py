@@ -149,9 +149,9 @@ class CheckAssertionsTest(unittest.TestCase):
     def test_endpoint_docs_happy(self) -> None:
         modified_files = [
             "recidiviz/ingest/direct/direct_ingest_control.py",
-            "recidiviz/reporting/reporting_endpoint.py",
+            "recidiviz/validation/validation_manager.py",
             "docs/endpoints/direct/handle_new_files.md",
-            "docs/endpoints/reporting/start_new_batch.md",
+            "docs/endpoints/validation_manager/validate.md",
         ]
         self._run_test(modified_files, [], [])
 

@@ -57,7 +57,6 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.reporting.reporting_endpoint import reporting_endpoint_blueprint
 from recidiviz.utils import environment, metadata, monitoring, structured_logging, trace
 from recidiviz.validation.validation_manager import validation_manager_blueprint
 
@@ -88,7 +87,6 @@ default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (direct_ingest_control, "/direct"),
     (export_blueprint, "/export"),
     (justice_counts_control, "/justice_counts"),
-    (reporting_endpoint_blueprint, "/reporting"),
     (validation_manager_blueprint, "/validation_manager"),
 ]
 
