@@ -105,7 +105,7 @@ class TestCaseCompliance(unittest.TestCase):
         )
 
         assert compliance is not None
-        self.assertIsNone(compliance.num_days_assessment_overdue)
+        self.assertIsNone(compliance.next_recommended_assessment_date)
         self.assertIsNone(compliance.face_to_face_frequency_sufficient)
 
     @patch.object(UsIdSupervisionCaseCompliance, "_guidelines_applicable_for_case")
@@ -144,7 +144,7 @@ class TestCaseCompliance(unittest.TestCase):
         )
 
         assert compliance is not None
-        self.assertIsNone(compliance.num_days_assessment_overdue)
+        self.assertIsNone(compliance.next_recommended_assessment_date)
         self.assertIsNone(compliance.face_to_face_frequency_sufficient)
 
     def test_us_nd_get_case_compliance_on_date_no_assessments_but_within_one_month(
@@ -183,7 +183,7 @@ class TestCaseCompliance(unittest.TestCase):
             SupervisionCaseCompliance(
                 date_of_evaluation=compliance_evaluation_date,
                 assessment_count=0,
-                num_days_assessment_overdue=0,
+                next_recommended_assessment_date=date(2018, 4, 4),
                 face_to_face_count=0,
                 face_to_face_frequency_sufficient=False,
                 home_visit_count=0,
@@ -239,7 +239,7 @@ class TestCaseCompliance(unittest.TestCase):
                 date_of_evaluation=compliance_evaluation_date,
                 assessment_count=0,
                 most_recent_assessment_date=date(2020, 3, 6),
-                num_days_assessment_overdue=0,
+                next_recommended_assessment_date=date(2020, 10, 4),
                 face_to_face_count=0,
                 face_to_face_frequency_sufficient=False,
                 home_visit_count=0,
@@ -295,7 +295,7 @@ class TestCaseCompliance(unittest.TestCase):
             SupervisionCaseCompliance(
                 date_of_evaluation=compliance_evaluation_date,
                 assessment_count=0,
-                num_days_assessment_overdue=722,
+                next_recommended_assessment_date=date(2018, 3, 7),
                 face_to_face_count=0,
                 face_to_face_frequency_sufficient=False,
                 home_visit_frequency_sufficient=False,
@@ -351,7 +351,7 @@ class TestCaseCompliance(unittest.TestCase):
                 date_of_evaluation=compliance_evaluation_date,
                 most_recent_assessment_date=date(2018, 7, 10),
                 assessment_count=0,
-                num_days_assessment_overdue=0,
+                next_recommended_assessment_date=date(2019, 2, 7),
                 face_to_face_count=0,
                 face_to_face_frequency_sufficient=False,
                 home_visit_count=0,
@@ -421,7 +421,7 @@ class TestCaseCompliance(unittest.TestCase):
                 date_of_evaluation=compliance_evaluation_date,
                 assessment_count=0,
                 most_recent_assessment_date=date(2018, 3, 10),
-                num_days_assessment_overdue=0,
+                next_recommended_assessment_date=date(2019, 3, 10),
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 4, 30),
                 face_to_face_frequency_sufficient=True,
@@ -494,7 +494,7 @@ class TestCaseCompliance(unittest.TestCase):
                 date_of_evaluation=compliance_evaluation_date,
                 assessment_count=0,
                 most_recent_assessment_date=date(2018, 3, 10),
-                num_days_assessment_overdue=0,
+                next_recommended_assessment_date=date(2019, 3, 10),
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 4, 6),
                 face_to_face_frequency_sufficient=True,
@@ -539,7 +539,7 @@ class TestCaseCompliance(unittest.TestCase):
             SupervisionCaseCompliance(
                 date_of_evaluation=compliance_evaluation_date,
                 assessment_count=0,
-                num_days_assessment_overdue=70,
+                next_recommended_assessment_date=date(2018, 2, 19),
                 face_to_face_count=0,
                 face_to_face_frequency_sufficient=False,
                 home_visit_count=0,
@@ -602,7 +602,7 @@ class TestCaseCompliance(unittest.TestCase):
             SupervisionCaseCompliance(
                 date_of_evaluation=compliance_evaluation_date,
                 assessment_count=1,
-                num_days_assessment_overdue=None,
+                next_recommended_assessment_date=None,
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 3, 31),
                 face_to_face_frequency_sufficient=None,
@@ -647,7 +647,7 @@ class TestCaseCompliance(unittest.TestCase):
                 date_of_evaluation=compliance_evaluation_date,
                 assessment_count=0,
                 most_recent_assessment_date=None,
-                num_days_assessment_overdue=11,
+                next_recommended_assessment_date=date(2018, 4, 19),
                 face_to_face_count=0,
                 most_recent_face_to_face_date=None,
                 face_to_face_frequency_sufficient=False,
@@ -712,7 +712,7 @@ class TestCaseCompliance(unittest.TestCase):
                 date_of_evaluation=compliance_evaluation_date,
                 assessment_count=0,
                 most_recent_assessment_date=None,
-                num_days_assessment_overdue=11,
+                next_recommended_assessment_date=date(2018, 4, 19),
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 4, 30),
                 face_to_face_frequency_sufficient=True,
@@ -775,7 +775,7 @@ class TestCaseCompliance(unittest.TestCase):
                 date_of_evaluation=compliance_evaluation_date,
                 assessment_count=0,
                 most_recent_assessment_date=None,
-                num_days_assessment_overdue=11,
+                next_recommended_assessment_date=date(2018, 4, 19),
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 4, 30),
                 face_to_face_frequency_sufficient=True,
@@ -838,7 +838,7 @@ class TestCaseCompliance(unittest.TestCase):
                 date_of_evaluation=compliance_evaluation_date,
                 assessment_count=0,
                 most_recent_assessment_date=None,
-                num_days_assessment_overdue=11,
+                next_recommended_assessment_date=date(2018, 4, 19),
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 4, 30),
                 face_to_face_frequency_sufficient=True,
@@ -949,7 +949,7 @@ class TestCaseCompliance(unittest.TestCase):
                 date_of_evaluation=compliance_evaluation_date_1,
                 assessment_count=0,
                 most_recent_assessment_date=None,
-                num_days_assessment_overdue=11,
+                next_recommended_assessment_date=date(2018, 4, 19),
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 4, 30),
                 face_to_face_frequency_sufficient=True,
@@ -964,7 +964,7 @@ class TestCaseCompliance(unittest.TestCase):
                 date_of_evaluation=compliance_evaluation_date_2,
                 assessment_count=0,
                 most_recent_assessment_date=None,
-                num_days_assessment_overdue=11,
+                next_recommended_assessment_date=date(2019, 4, 19),
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2019, 4, 30),
                 face_to_face_frequency_sufficient=True,
@@ -1076,7 +1076,7 @@ class TestCaseCompliance(unittest.TestCase):
                 date_of_evaluation=compliance_evaluation_date_1,
                 assessment_count=0,
                 most_recent_assessment_date=None,
-                num_days_assessment_overdue=11,
+                next_recommended_assessment_date=date(2018, 4, 19),
                 face_to_face_count=0,
                 most_recent_face_to_face_date=None,
                 face_to_face_frequency_sufficient=False,
@@ -1091,7 +1091,7 @@ class TestCaseCompliance(unittest.TestCase):
                 date_of_evaluation=compliance_evaluation_date_2,
                 assessment_count=0,
                 most_recent_assessment_date=None,
-                num_days_assessment_overdue=11,
+                next_recommended_assessment_date=date(2019, 4, 19),
                 face_to_face_count=0,
                 most_recent_face_to_face_date=None,
                 face_to_face_frequency_sufficient=False,
@@ -1103,12 +1103,12 @@ class TestCaseCompliance(unittest.TestCase):
 
 
 class TestNumDaysAssessmentOverdue(unittest.TestCase):
-    """Tests the _num_days_assessment_overdue function."""
+    """Tests the _next_recommended_assessment_date function."""
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_XX")
 
-    def test_us_id_num_days_assessment_overdue(self) -> None:
+    def test_us_id_next_recommended_assessment_date(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
@@ -1130,8 +1130,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             assessment_date=date(2018, 3, 10),
         )
 
-        compliance_evaluation_date = date(2018, 4, 30)
-
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -1141,13 +1139,15 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_id_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, assessment
+        assessment_date = (
+            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
-        self.assertEqual(days_overdue, 0)
+        self.assertEqual(assessment_date, date(2019, 3, 10))
 
-    def test_us_id_num_days_assessment_overdue_no_assessment_new_period(self) -> None:
+    def test_us_id_next_recommended_assessment_date_no_assessment_new_period(
+        self,
+    ) -> None:
         start_date = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -1161,8 +1161,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         start_of_supervision = start_date
-        compliance_evaluation_date = start_date + relativedelta(days=1)
-
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -1172,13 +1170,15 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_id_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, most_recent_assessment=None
+        assessment_date = (
+            us_id_supervision_compliance._next_recommended_assessment_date(None)
         )
 
-        self.assertEqual(days_overdue, 0)
+        self.assertEqual(assessment_date, date(2018, 4, 19))
 
-    def test_us_id_num_days_assessment_overdue_no_assessment_old_period(self) -> None:
+    def test_us_id_next_recommended_assessment_date_no_assessment_old_period(
+        self,
+    ) -> None:
         start_date = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -1196,8 +1196,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
         )
-        compliance_evaluation_date = start_date + relativedelta(days=1)
-
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -1207,13 +1205,13 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_id_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, most_recent_assessment=None
+        assessment_date = (
+            us_id_supervision_compliance._next_recommended_assessment_date(None)
         )
 
-        self.assertEqual(days_overdue, 1)
+        self.assertEqual(assessment_date, date(2018, 3, 5))
 
-    def test_us_id_num_days_assessment_overdue_assessment_before_starting_parole(
+    def test_us_id_next_recommended_assessment_date_assessment_before_starting_parole(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1241,8 +1239,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
         )
-        compliance_evaluation_date = start_date + relativedelta(days=1)
-
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -1252,13 +1248,13 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_id_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, assessment
+        assessment_date = (
+            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
-        self.assertEqual(days_overdue, 0)
+        self.assertEqual(assessment_date, date(2019, 1, 3))
 
-    def test_us_id_num_days_assessment_overdue_assessment_before_starting_dual(
+    def test_us_id_next_recommended_assessment_date_assessment_before_starting_dual(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1286,8 +1282,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
         )
-        compliance_evaluation_date = start_date + relativedelta(days=1)
-
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -1297,12 +1291,12 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_id_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, assessment
+        assessment_date = (
+            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
         )
-        self.assertEqual(days_overdue, 0)
+        self.assertEqual(assessment_date, date(2019, 1, 3))
 
-    def test_us_id_num_days_assessment_overdue_assessment_before_starting_probation(
+    def test_us_id_next_recommended_assessment_date_assessment_before_starting_probation(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1330,8 +1324,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
         )
-        compliance_evaluation_date = start_date + relativedelta(days=1)
-
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -1341,13 +1333,13 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_id_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, assessment
+        assessment_date = (
+            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
-        self.assertEqual(days_overdue, 0)
+        self.assertEqual(assessment_date, date(2019, 1, 3))
 
-    def test_us_id_num_days_assessment_overdue_old_assessment_minimum_level_deprecated(
+    def test_us_id_next_recommended_assessment_date_old_assessment_minimum_level_deprecated(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1377,8 +1369,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
         )
-        compliance_evaluation_date = start_date + relativedelta(days=1)
-
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -1388,13 +1378,13 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_id_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, assessment
+        assessment_date = (
+            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
-        self.assertEqual(days_overdue, 0)
+        self.assertIsNone(assessment_date)
 
-    def test_us_id_num_days_assessment_overdue_old_assessment_minimum_level(
+    def test_us_id_next_recommended_assessment_date_old_assessment_minimum_level(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1424,8 +1414,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
         )
-        compliance_evaluation_date = start_date + relativedelta(days=1)
-
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -1435,13 +1423,13 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_id_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, assessment
+        assessment_date = (
+            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
-        self.assertEqual(days_overdue, 0)
+        self.assertIsNone(assessment_date)
 
-    def test_us_id_num_days_assessment_overdue_old_assessment_not_minimum_level(
+    def test_us_id_next_recommended_assessment_date_old_assessment_not_minimum_level(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1470,8 +1458,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
         )
-        compliance_evaluation_date = start_date + relativedelta(days=1)
-
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -1481,13 +1467,13 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_id_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, assessment
+        assessment_date = (
+            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
-        self.assertEqual(days_overdue, 62)
+        self.assertEqual(assessment_date, date(2018, 1, 3))
 
-    def test_us_id_num_days_assessment_overdue_sex_offense(self) -> None:
+    def test_us_id_next_recommended_assessment_date_sex_offense(self) -> None:
         start_date = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -1511,8 +1497,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         start_of_supervision = start_date
-        compliance_evaluation_date = date(2018, 4, 30)
-
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -1522,13 +1506,13 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_id_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, assessment
+        assessment_date = (
+            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
-        self.assertEqual(days_overdue, 0)
+        self.assertEqual(assessment_date, date(2019, 3, 10))
 
-    def test_us_id_num_days_assessment_overdue_no_assessment_new_period_sex_offense(
+    def test_us_id_next_recommended_assessment_date_no_assessment_new_period_sex_offense(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1544,8 +1528,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         )
 
         start_of_supervision = start_date
-        compliance_evaluation_date = start_date + relativedelta(days=1)
-
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -1555,13 +1537,13 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_id_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, most_recent_assessment=None
+        assessment_date = (
+            us_id_supervision_compliance._next_recommended_assessment_date(None)
         )
 
-        self.assertEqual(days_overdue, 0)
+        self.assertEqual(assessment_date, date(2018, 4, 19))
 
-    def test_us_id_num_days_assessment_overdue_no_assessment_old_period_probation_sex_offense(
+    def test_us_id_next_recommended_assessment_date_no_assessment_old_period_probation_sex_offense(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1581,8 +1563,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION
         )
-        compliance_evaluation_date = start_date + relativedelta(days=1)
-
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -1592,13 +1572,13 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_id_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, most_recent_assessment=None
+        assessment_date = (
+            us_id_supervision_compliance._next_recommended_assessment_date(None)
         )
 
-        self.assertEqual(days_overdue, 1)
+        self.assertEqual(assessment_date, date(2018, 3, 5))
 
-    def test_us_id_num_days_assessment_overdue_no_assessment_old_period_parole_sex_offense(
+    def test_us_id_next_recommended_assessment_date_no_assessment_old_period_parole_sex_offense(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1618,8 +1598,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE
         )
-        compliance_evaluation_date = start_date + relativedelta(days=1)
-
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -1629,13 +1607,13 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_id_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, most_recent_assessment=None
+        assessment_date = (
+            us_id_supervision_compliance._next_recommended_assessment_date(None)
         )
 
-        self.assertEqual(days_overdue, 1)
+        self.assertEqual(assessment_date, date(2018, 3, 5))
 
-    def test_us_id_num_days_assessment_overdue_assessment_before_starting_parole_sex_offense(
+    def test_us_id_next_recommended_assessment_date_assessment_before_starting_parole_sex_offense(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1663,8 +1641,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE
         )
-        compliance_evaluation_date = start_date + relativedelta(days=1)
-
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -1674,13 +1650,13 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_id_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, assessment
+        assessment_date = (
+            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
-        self.assertEqual(days_overdue, 0)
+        self.assertEqual(assessment_date, date(2018, 10, 3))
 
-    def test_us_id_num_days_assessment_overdue_assessment_before_starting_dual_sex_offense(
+    def test_us_id_next_recommended_assessment_date_assessment_before_starting_dual_sex_offense(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1708,8 +1684,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE
         )
-        compliance_evaluation_date = start_date + relativedelta(days=1)
-
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -1719,13 +1693,13 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_id_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, assessment
+        assessment_date = (
+            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
-        self.assertEqual(days_overdue, 0)
+        self.assertEqual(assessment_date, date(2018, 10, 3))
 
-    def test_us_id_num_days_assessment_overdue_assessment_before_starting_probation_sex_offense(
+    def test_us_id_next_recommended_assessment_date_assessment_before_starting_probation_sex_offense(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1753,8 +1727,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION
         )
-        compliance_evaluation_date = start_date + relativedelta(days=1)
-
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -1764,13 +1736,13 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_id_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, assessment
+        assessment_date = (
+            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
-        self.assertEqual(days_overdue, 0)
+        self.assertEqual(assessment_date, date(2019, 1, 3))
 
-    def test_us_id_num_days_assessment_overdue_old_assessment_greater_than_minimum_lsir_score_sex_offense(
+    def test_us_id_next_recommended_assessment_date_old_assessment_greater_than_minimum_lsir_score_sex_offense(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1799,8 +1771,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION
         )
-        compliance_evaluation_date = start_date + relativedelta(days=1)
-
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -1810,13 +1780,13 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_id_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, assessment
+        assessment_date = (
+            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
-        self.assertEqual(days_overdue, 62)
+        self.assertEqual(assessment_date, date(2018, 1, 3))
 
-    def test_us_id_num_days_assessment_overdue_old_assessment_less_than_minimum_lsir_score_sex_offense(
+    def test_us_id_next_recommended_assessment_date_old_assessment_less_than_minimum_lsir_score_sex_offense(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1845,8 +1815,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION
         )
-        compliance_evaluation_date = start_date + relativedelta(days=1)
-
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -1856,13 +1824,13 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_id_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, assessment
+        assessment_date = (
+            us_id_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
-        self.assertEqual(days_overdue, 0)
+        self.assertIsNone(assessment_date)
 
-    def test_us_id_num_days_assessment_overdue_no_old_assessment_sex_offense(
+    def test_us_id_next_recommended_assessment_date_no_old_assessment_sex_offense(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1883,8 +1851,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION
         )
-        compliance_evaluation_date = start_date + relativedelta(days=1)
-
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -1894,13 +1860,13 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_id_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, most_recent_assessment=None
+        assessment_date = (
+            us_id_supervision_compliance._next_recommended_assessment_date(None)
         )
 
-        self.assertEqual(days_overdue, 1)
+        self.assertEqual(assessment_date, date(2018, 3, 5))
 
-    def test_us_nd_num_days_assessment_overdue_no_assessment_initial_number_of_days(
+    def test_us_nd_next_recommended_assessment_date_no_assessment_initial_number_of_days(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1921,8 +1887,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE
         )
-        compliance_evaluation_date = start_date + relativedelta(days=1)
-
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -1932,13 +1896,13 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_nd_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, most_recent_assessment=None
+        assessment_date = (
+            us_nd_supervision_compliance._next_recommended_assessment_date(None)
         )
 
-        self.assertEqual(days_overdue, 1)
+        self.assertEqual(assessment_date, date(2018, 3, 5))
 
-    def test_us_nd_num_days_assessment_overdue_with_assessment_before_initial_number_of_days(
+    def test_us_nd_next_recommended_assessment_date_with_assessment_before_initial_number_of_days(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -1963,8 +1927,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE
         )
-        compliance_evaluation_date = start_date - relativedelta(days=1)
-
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -1974,13 +1936,13 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_nd_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, assessment
+        assessment_date = (
+            us_nd_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
-        self.assertEqual(days_overdue, 0)
+        self.assertEqual(assessment_date, date(2018, 3, 5))
 
-    def test_us_nd_num_days_assessment_overdue_with_assessment_after_initial_number_of_days_no_date(
+    def test_us_nd_next_recommended_assessment_date_with_assessment_after_initial_number_of_days_no_date(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -2005,8 +1967,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE
         )
-        compliance_evaluation_date = start_date + relativedelta(days=1)
-
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -2016,13 +1976,13 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_nd_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, assessment
+        assessment_date = (
+            us_nd_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
-        self.assertEqual(days_overdue, 1)
+        self.assertEqual(assessment_date, date(2018, 3, 5))
 
-    def test_us_nd_num_days_assessment_overdue_with_assessment_after_initial_number_of_days_with_date(
+    def test_us_nd_next_recommended_assessment_date_with_assessment_after_initial_number_of_days_with_date(
         self,
     ) -> None:
         start_date = date(2018, 3, 5)
@@ -2049,8 +2009,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
         start_of_supervision = start_date - relativedelta(
             days=LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE
         )
-        compliance_evaluation_date = start_date + relativedelta(days=1)
-
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
             person=self.person,
             supervision_period=supervision_period,
@@ -2060,8 +2018,8 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_overdue = us_nd_supervision_compliance._num_days_assessment_overdue(
-            compliance_evaluation_date, assessment
+        assessment_date = (
+            us_nd_supervision_compliance._next_recommended_assessment_date(assessment)
         )
 
-        self.assertEqual(days_overdue, 2742)
+        self.assertEqual(assessment_date, date(2010, 9, 2))

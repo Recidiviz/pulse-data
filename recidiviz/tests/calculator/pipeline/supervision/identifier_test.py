@@ -5128,7 +5128,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 person=self.person,
                 start_date=supervision_periods[0].start_date,
                 supervision_period=supervision_periods[1],
-                num_days_assessment_overdue_increment=0,
+                next_recommended_assessment_date=supervision_periods[0].start_date,
             ),
         )
 
@@ -5227,7 +5227,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 person=self.person,
                 start_date=supervision_periods[0].start_date,
                 supervision_period=supervision_periods[1],
-                num_days_assessment_overdue_increment=0,
+                next_recommended_assessment_date=supervision_periods[0].start_date,
             ),
         )
 
@@ -8678,7 +8678,7 @@ def _generate_case_compliances(
     assessments: Optional[List[StateAssessment]] = None,
     face_to_face_contacts: Optional[List[StateSupervisionContact]] = None,
     end_date_override: Optional[date] = None,
-    num_days_assessment_overdue_increment: Optional[int] = None,
+    next_recommended_assessment_date: Optional[date] = None,
 ) -> Dict[date, SupervisionCaseCompliance]:
     """Generates the expected list of supervision case compliances. Because case compliance logic is tested in
     supervision_case_compliance_manager_test and state-specific compliance tests, this function generates expected case
@@ -8723,14 +8723,11 @@ def _generate_case_compliances(
             current_date
         )
 
-        if num_days_assessment_overdue_increment:
-            # If there is value for `num_days_assessment_overdue_increment`, update the case compliance's value to it,
-            # and increment it.
-            num_days_assessment_overdue: int = num_days_assessment_overdue_increment
+        if next_recommended_assessment_date:
             case_compliance = attr.evolve(
-                case_compliance, num_days_assessment_overdue=num_days_assessment_overdue
+                case_compliance,
+                next_recommended_assessment_date=next_recommended_assessment_date,
             )
-            num_days_assessment_overdue_increment += 1
 
         if case_compliance:
             case_compliances[current_date] = case_compliance

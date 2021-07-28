@@ -136,10 +136,10 @@ class SupervisionPopulationEvent(
         return self.case_compliance.most_recent_assessment_date
 
     @property
-    def num_days_assessment_overdue(self) -> Optional[int]:
+    def next_recommended_assessment_date(self) -> Optional[date]:
         if not self.case_compliance:
             return None
-        return self.case_compliance.num_days_assessment_overdue
+        return self.case_compliance.next_recommended_assessment_date
 
     @property
     def face_to_face_count(self) -> Optional[int]:
