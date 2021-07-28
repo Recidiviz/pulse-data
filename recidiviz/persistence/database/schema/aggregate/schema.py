@@ -455,6 +455,48 @@ class KyFacilityAggregate(JailsBase, _AggregateTableMixin):
     federal_female_population = Column(Integer)
 
 
+class MaFacilityAggregate(JailsBase, _AggregateTableMixin):
+    """MA state-provided aggregate statistics."""
+
+    __tablename__ = "ma_facility_aggregate"
+    __table_args__ = (
+        UniqueConstraint("fips", "report_date", "aggregation_window", "facility_name"),
+        CheckConstraint(
+            "LENGTH(fips) = 5", name="ma_facility_aggregate_fips_length_check"
+        ),
+    )
+
+    facility_name = Column(String(255), nullable=False)
+    county = Column(String(255), nullable=False)
+    hoc_county_female = Column(Integer)
+    jail_county_female = Column(Integer)
+    hoc_federal_female = Column(Integer)
+    jail_federal_female = Column(Integer)
+    jail_jail_other_female = Column(Integer)
+    hoc_state_female = Column(Integer)
+    facility_total_female = Column(Integer)
+    hoc_total_female = Column(Integer)
+    jail_total_female = Column(Integer)
+    hoc_county_male = Column(Integer)
+    jail_county_male = Column(Integer)
+    hoc_federal_male = Column(Integer)
+    jail_federal_male = Column(Integer)
+    jail_jail_other_male = Column(Integer)
+    hoc_state_male = Column(Integer)
+    facility_total_male = Column(Integer)
+    hoc_total_male = Column(Integer)
+    jail_total_male = Column(Integer)
+    hoc_county_total = Column(Integer)
+    jail_county_total = Column(Integer)
+    hoc_federal_total = Column(Integer)
+    jail_federal_total = Column(Integer)
+    jail_jail_other_total = Column(Integer)
+    hoc_state_total = Column(Integer)
+    facility_total_total = Column(Integer)
+    hoc_total_total = Column(Integer)
+    jail_total_total = Column(Integer)
+
+
 class NyFacilityAggregate(JailsBase, _AggregateTableMixin):
     """NY state-provided aggregate statistics."""
 
