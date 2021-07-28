@@ -97,6 +97,9 @@ historical_pipelines:
   - pipeline: incarceration
     job_name: us-id-historical-incarceration-calculations-240
     state_code: US_ID
+    #TODO(#8450): Restructure yaml to map pipeline type & state to metadata, to support automatic sync with terraform
+    # This calculation_month_count value must stay in-sync with the calculation_month_count arg in the
+    # historical-pipelines.tf config for this pipeline
     calculation_month_count: 240
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     # This region value must stay in-sync with the REGION arg in the
@@ -105,6 +108,8 @@ historical_pipelines:
   - pipeline: supervision
     job_name: us-id-historical-supervision-calculations-240
     state_code: US_ID
+    # This calculation_month_count value must stay in-sync with the calculation_month_count arg in the
+    # historical-pipelines.tf config for this pipeline
     calculation_month_count: 240
     metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
     # This region value must stay in-sync with the REGION arg in the
@@ -113,6 +118,8 @@ historical_pipelines:
   - pipeline: violation
     job_name: us-id-historical-violation-calculations-240
     state_code: US_ID
+    # This calculation_month_count value must stay in-sync with the calculation_month_count arg in the
+    # historical-pipelines.tf config for this pipeline
     calculation_month_count: 240
     metric_types: VIOLATION
     # This region value must stay in-sync with the REGION arg in the
@@ -121,6 +128,8 @@ historical_pipelines:
   - pipeline: incarceration
     job_name: us-mo-historical-incarceration-calculations-240
     state_code: US_MO
+    # This calculation_month_count value must stay in-sync with the calculation_month_count arg in the
+    # historical-pipelines.tf config for this pipeline
     calculation_month_count: 240
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     # This region value must stay in-sync with the REGION arg in the
@@ -129,6 +138,8 @@ historical_pipelines:
   - pipeline: supervision
     job_name: us-mo-historical-supervision-calculations-240
     state_code: US_MO
+    # This calculation_month_count value must stay in-sync with the calculation_month_count arg in the
+    # historical-pipelines.tf config for this pipeline
     calculation_month_count: 240
     metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
     # This region value must stay in-sync with the REGION arg in the
@@ -137,6 +148,8 @@ historical_pipelines:
   - pipeline: violation
     job_name: us-mo-historical-violation-calculations-240
     state_code: US_MO
+    # This calculation_month_count value must stay in-sync with the calculation_month_count arg in the
+    # historical-pipelines.tf config for this pipeline
     calculation_month_count: 240
     metric_types: VIOLATION
     # This region value must stay in-sync with the REGION arg in the
@@ -145,6 +158,8 @@ historical_pipelines:
   - pipeline: incarceration
     job_name: us-nd-historical-incarceration-calculations-240
     state_code: US_ND
+    # This calculation_month_count value must stay in-sync with the calculation_month_count arg in the
+    # historical-pipelines.tf config for this pipeline
     calculation_month_count: 240
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     # This region value must stay in-sync with the REGION arg in the
@@ -153,6 +168,8 @@ historical_pipelines:
   - pipeline: supervision
     job_name: us-nd-historical-supervision-calculations-240
     state_code: US_ND
+    # This calculation_month_count value must stay in-sync with the calculation_month_count arg in the
+    # historical-pipelines.tf config for this pipeline
     calculation_month_count: 240
     metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION
     # This region value must stay in-sync with the REGION arg in the
@@ -161,6 +178,8 @@ historical_pipelines:
   - pipeline: program
     job_name: us-nd-historical-program-calculations-60
     state_code: US_ND
+    # This calculation_month_count value must stay in-sync with the calculation_month_count arg in the
+    # historical-pipelines.tf config for this pipeline
     calculation_month_count: 60
     metric_types: PROGRAM_PARTICIPATION PROGRAM_REFERRAL
     # This region value must stay in-sync with the REGION arg in the
@@ -169,6 +188,8 @@ historical_pipelines:
   - pipeline: incarceration
     job_name: us-pa-historical-incarceration-calculations-240
     state_code: US_PA
+    # This calculation_month_count value must stay in-sync with the calculation_month_count arg in the
+    # historical-pipelines.tf config for this pipeline
     calculation_month_count: 240
     metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     # This region value must stay in-sync with the REGION arg in the
@@ -177,6 +198,8 @@ historical_pipelines:
   - pipeline: supervision
     job_name: us-pa-historical-supervision-calculations-240
     state_code: US_PA
+    # This calculation_month_count value must stay in-sync with the calculation_month_count arg in the
+    # historical-pipelines.tf config for this pipeline
     calculation_month_count: 240
     metric_types: SUPERVISION_POPULATION SUPERVISION_START SUPERVISION_TERMINATION SUPERVISION_OUT_OF_STATE_POPULATION
     # This region value must stay in-sync with the REGION arg in the
@@ -185,6 +208,8 @@ historical_pipelines:
   - pipeline: violation
     job_name: us-pa-historical-violation-calculations-240
     state_code: US_PA
+    # This calculation_month_count value must stay in-sync with the calculation_month_count arg in the
+    # historical-pipelines.tf config for this pipeline
     calculation_month_count: 240
     metric_types: VIOLATION
     # This region value must stay in-sync with the REGION arg in the

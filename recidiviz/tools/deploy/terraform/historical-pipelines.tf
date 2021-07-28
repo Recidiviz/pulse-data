@@ -15,62 +15,103 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+#TODO(#8450): Decode metadata by pipeline & state directly from `production_calculation_pipeline_templates.yaml`
 module "incarceration_historical_pipelines" {
   source = "./modules/historical-pipeline"
   for_each = {
-    US_ID = "us-west1"
-    US_MO = "us-west3"
-    US_ND = "us-east1"
-    US_PA = "us-central1"
+    US_ID = {
+        region = "us-west1"
+        calculation_month_count = 240
+    }
+    US_MO = {
+        region = "us-west3"
+        calculation_month_count = 240
+    }
+    US_ND = {
+        region = "us-east1"
+        calculation_month_count = 240
+    }
+    US_PA = {
+        region = "us-central1"
+        calculation_month_count = 240
+    }
   }
 
   project_id     = var.project_id
   repo_url       = local.repo_url
   pipeline_type  = "incarceration"
   state_code     = each.key
-  region         = each.value
+  region         = each.value.region
+  calculation_month_count = each.value.calculation_month_count
 }
 
 module "supervision_historical_pipelines" {
   source = "./modules/historical-pipeline"
   for_each = {
-    US_ID = "us-west1"
-    US_MO = "us-west3"
-    US_ND = "us-east1"
-    US_PA = "us-central1"
+    US_ID = {
+        region = "us-west1"
+        calculation_month_count = 240
+    }
+    US_MO = {
+        region = "us-west3"
+        calculation_month_count = 240
+    }
+    US_ND = {
+        region = "us-east1"
+        calculation_month_count = 240
+    }
+    US_PA = {
+        region = "us-central1"
+        calculation_month_count = 240
+    }
   }
 
   project_id     = var.project_id
   repo_url       = local.repo_url
   pipeline_type  = "supervision"
   state_code     = each.key
-  region         = each.value
+  region         = each.value.region
+  calculation_month_count = each.value.calculation_month_count
 }
 
 module "violation_historical_pipelines" {
   source = "./modules/historical-pipeline"
   for_each = {
-    US_ID = "us-west1"
-    US_MO = "us-west3"
-    US_PA = "us-central1"
+    US_ID = {
+        region = "us-west1"
+        calculation_month_count = 240
+    }
+    US_MO = {
+        region = "us-west3"
+        calculation_month_count = 240
+    }
+    US_PA = {
+        region = "us-central1"
+        calculation_month_count = 240
+    }
   }
 
   project_id     = var.project_id
   repo_url       = local.repo_url
   pipeline_type  = "violation"
   state_code     = each.key
-  region         = each.value
+  region         = each.value.region
+  calculation_month_count = each.value.calculation_month_count
 }
 
 module "program_historical_pipelines" {
   source = "./modules/historical-pipeline"
   for_each = {
-    US_ND = "us-east1"
+    US_ND = {
+        region = "us-east1"
+        calculation_month_count = 60
+    }
   }
 
   project_id     = var.project_id
   repo_url       = local.repo_url
   pipeline_type  = "program"
   state_code     = each.key
-  region         = each.value
+  region         = each.value.region
+  calculation_month_count = each.value.calculation_month_count
 }

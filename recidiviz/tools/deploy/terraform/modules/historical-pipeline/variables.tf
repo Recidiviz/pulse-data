@@ -37,9 +37,13 @@ variable "repo_url" {
   type = string
 }
 
+variable "calculation_month_count" {
+  type = number
+}
+
 locals {
   lower_state_code        = lower(var.state_code)
   lower_dashed_state_code = replace(local.lower_state_code, "_", "-")
 
-  template_name = "${local.lower_dashed_state_code}-historical-${var.pipeline_type}-calculations-240"
+  template_name = "${local.lower_dashed_state_code}-historical-${var.pipeline_type}-calculations-${var.calculation_month_count}"
 }
