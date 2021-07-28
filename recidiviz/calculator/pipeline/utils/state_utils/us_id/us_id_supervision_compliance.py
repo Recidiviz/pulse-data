@@ -242,18 +242,17 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
 
         raise ValueError(f"Found unexpected case_type: [{self.case_type}]")
 
-    def _num_days_past_required_reassessment(
+    def _next_recommended_reassessment(
         self,
-        compliance_evaluation_date: date,
         most_recent_assessment_date: date,
         most_recent_assessment_score: int,
-    ) -> int:
-        """Returns the number of days it has been since the required reassessment deadline. Returns 0
-        if the reassessment is not overdue."""
+    ) -> Optional[date]:
+        """Returns the next recommended reassessment date or None if no further reassessments are needed."""
         if self.case_type == StateSupervisionCaseType.GENERAL and (
             self.supervision_period.supervision_level == StateSupervisionLevel.MINIMUM
         ):
-            return 0
+            # No reassessment needed.
+            return None
         if self.case_type == StateSupervisionCaseType.SEX_OFFENSE:
             if (
                 not (gender := self.person.gender)
@@ -271,18 +270,17 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
 
             if most_recent_assessment_score < threshold_score:
                 # No reassessment needed.
-                return 0
+                return None
 
         reassessment_deadline = most_recent_assessment_date + relativedelta(
             days=REASSESSMENT_DEADLINE_DAYS
         )
         logging.debug(
-            "Last assessment was taken on %s. Re-assessment due by %s, and the compliance evaluation date is %s",
+            "Last assessment was taken on %s. Re-assessment due by %s.",
             most_recent_assessment_date,
             reassessment_deadline,
-            compliance_evaluation_date,
         )
-        return max(0, (compliance_evaluation_date - reassessment_deadline).days)
+        return reassessment_deadline
 
     def _face_to_face_contact_frequency_is_sufficient(
         self, compliance_evaluation_date: date

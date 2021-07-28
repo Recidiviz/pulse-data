@@ -98,25 +98,21 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         """Returns the number of days that an initial assessment should take place."""
         return NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
 
-    def _num_days_past_required_reassessment(
+    def _next_recommended_reassessment(
         self,
-        compliance_evaluation_date: date,
         most_recent_assessment_date: date,
         most_recent_assessment_score: int,
-    ) -> int:
-        """Returns the number of days it has been since the required reassessment deadline. Returns 0
-        if the reassessment is not overdue."""
-
+    ) -> Optional[date]:
+        """Returns the next recommended reassessment date or None if no further reassessments are needed."""
         reassessment_deadline = most_recent_assessment_date + relativedelta(
             days=REASSESSMENT_DEADLINE_DAYS
         )
         logging.debug(
-            "Last assessment was taken on %s. Re-assessment due by %s, and the compliance evaluation date is %s",
+            "Last assessment was taken on %s. Re-assessment due by %s.",
             most_recent_assessment_date,
             reassessment_deadline,
-            compliance_evaluation_date,
         )
-        return max(0, (compliance_evaluation_date - reassessment_deadline).days)
+        return reassessment_deadline
 
     def _face_to_face_contact_frequency_is_sufficient(
         self, compliance_evaluation_date: date

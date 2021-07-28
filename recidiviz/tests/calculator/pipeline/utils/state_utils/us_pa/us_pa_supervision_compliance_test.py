@@ -1325,7 +1325,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_XX")
 
-    def test_num_days_past_required_reassessment(self) -> None:
+    def test_next_recommended_reassessment(self) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -1358,15 +1358,11 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_past_reassessment = (
-            us_pa_supervision_compliance._num_days_past_required_reassessment(
-                start_of_supervision,
-                assessment_date,
-                assessment_score,
-            )
+        reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
+            assessment_date, assessment_score
         )
 
-        self.assertEqual(days_past_reassessment, 0)
+        self.assertEqual(reassessment_date, date(2019, 4, 2))
 
     def test_reassessment_requirements_are_not_met(self) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
@@ -1400,15 +1396,11 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        days_past_reassessment = (
-            us_pa_supervision_compliance._num_days_past_required_reassessment(
-                start_of_supervision,
-                assessment_date,
-                assessment_score,
-            )
+        reassessment_date = us_pa_supervision_compliance._next_recommended_reassessment(
+            assessment_date, assessment_score
         )
 
-        self.assertEqual(days_past_reassessment, 2529)
+        self.assertEqual(reassessment_date, date(2011, 4, 2))
 
 
 class TestSupervisionDowngrades(unittest.TestCase):

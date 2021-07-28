@@ -297,9 +297,10 @@ class SupervisionCaseComplianceMetric(SupervisionPopulationMetric):
     # The date that the last assessment happened. If no assessment has yet happened, this is None.
     most_recent_assessment_date: Optional[date] = attr.ib(default=None)
 
-    # The number of days that an assessment is overdue according to compliance standards. If it is not overdue,
-    # its value is zero. We set it to None if we do not know the compliance standards for this person.
-    num_days_assessment_overdue: Optional[int] = attr.ib(default=None)
+    # If this value is set, then this is the next recommended assessment date
+    # according to department policy. If this value is in the past, this implies that the
+    # assessment is overdue.
+    next_recommended_assessment_date: Optional[date] = attr.ib(default=None)
 
     # The date that the last face-to-face contact happened. If no meetings have yet happened, this is None.
     most_recent_face_to_face_date: Optional[date] = attr.ib(default=None)
