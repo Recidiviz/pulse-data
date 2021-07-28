@@ -128,6 +128,7 @@ _COUNTY_CODE = "Iredell"
 _STATE_CODE = "US_XX"
 _DATE_1 = datetime.date(year=2019, month=1, day=1)
 _DATE_2 = datetime.date(year=2019, month=2, day=1)
+_DATE_3 = datetime.date(year=2019, month=3, day=1)
 
 
 class FakeStateMatchingDelegate(BaseStateMatchingDelegate):
@@ -4545,6 +4546,132 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         # Assert
         self.assert_people_match_pre_and_post_commit(
             [expected_person], matched_entities.people, session
+        )
+        self.assert_no_errors(matched_entities)
+        self.assertEqual(1, matched_entities.total_root_entities)
+
+    def test_mergePersonIntoPersonWithPlaceholderChains(self) -> None:
+        # Arrange
+        db_person_1 = generate_person(person_id=_ID, state_code=_STATE_CODE)
+        db_external_id_1 = generate_external_id(
+            person_external_id_id=_ID,
+            state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID,
+            id_type=_ID_TYPE,
+        )
+        db_person_1.external_ids = [db_external_id_1]
+
+        self._commit_to_db(db_person_1)
+
+        db_person_2 = generate_person(person_id=_ID_2, state_code=_STATE_CODE)
+        db_external_id_2 = generate_external_id(
+            person_external_id_id=_ID_2,
+            state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID_2,
+            id_type=_ID_TYPE_ANOTHER,
+        )
+        db_person_2.external_ids = [db_external_id_2]
+
+        db_placeholder_sentence_group_2a = generate_sentence_group(
+            sentence_group_id=_ID,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE,
+            county_code="county_code",
+            supervision_sentences=[],
+        )
+        db_placeholder_sentence_group_2b = generate_sentence_group(
+            sentence_group_id=_ID_2,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_STATE_CODE,
+            county_code="county_code",
+        )
+        db_person_2.sentence_groups = [
+            db_placeholder_sentence_group_2a,
+            db_placeholder_sentence_group_2b,
+        ]
+
+        db_placeholder_supervision_sentence_2a = generate_supervision_sentence(
+            supervision_sentence_id=_ID,
+            person=db_person_2,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_STATE_CODE,
+        )
+        db_placeholder_sentence_group_2a.supervision_sentences = [
+            db_placeholder_supervision_sentence_2a
+        ]
+
+        db_supervision_period_2a_1 = generate_supervision_period(
+            person=db_person_2,
+            supervision_period_id=_ID,
+            external_id=_EXTERNAL_ID,
+            start_date=_DATE_1,
+            termination_date=_DATE_2,
+        )
+        db_supervision_period_2a_b = generate_supervision_period(
+            person=db_person_2,
+            supervision_period_id=_ID_2,
+            external_id=_EXTERNAL_ID_2,
+            start_date=_DATE_2,
+            termination_date=_DATE_3,
+        )
+
+        # Dangling placeholder "chain" #1
+        db_placeholder_supervision_period_2a = generate_supervision_period(
+            person=db_person_2,
+            supervision_period_id=_ID_3,
+        )
+        db_placeholder_supervision_sentence_2a.supervision_periods = [
+            db_supervision_period_2a_1,
+            db_supervision_period_2a_b,
+            db_placeholder_supervision_period_2a,
+        ]
+
+        # Start dangling placeholder chain 2
+        db_placeholder_supervision_sentence_2b = generate_supervision_sentence(
+            supervision_sentence_id=_ID_2,
+            person=db_person_2,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
+            state_code=_STATE_CODE,
+        )
+
+        db_placeholder_sentence_group_2b.supervision_sentences = [
+            db_placeholder_supervision_sentence_2b
+        ]
+
+        db_placeholder_supervision_period_2b = generate_supervision_period(
+            person=db_person_2,
+            supervision_period_id=_ID_4,
+        )
+
+        db_placeholder_supervision_sentence_2b.supervision_periods = [
+            db_placeholder_supervision_period_2b
+        ]
+        # End dangling placeholder chain 2
+
+        self._commit_to_db(db_person_2)
+
+        person = StatePerson.new_with_defaults(
+            state_code=_STATE_CODE,
+            sentence_groups=[],
+            external_ids=[
+                StatePersonExternalId.new_with_defaults(
+                    state_code=_STATE_CODE,
+                    external_id=_EXTERNAL_ID,
+                    id_type=_ID_TYPE,
+                ),
+                StatePersonExternalId.new_with_defaults(
+                    state_code=_STATE_CODE,
+                    external_id=_EXTERNAL_ID_2,
+                    id_type=_ID_TYPE_ANOTHER,
+                ),
+            ],
+        )
+
+        # Act
+        session = self._session()
+        matched_entities = entity_matching.match(
+            session, _STATE_CODE, ingested_people=[person]
         )
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
