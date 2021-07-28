@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Tests for reporting/email_generation.py."""
+"""Tests for admin_panel/routes/case_triage.py"""
+import datetime
 import json
 from http import HTTPStatus
 from typing import Any, Dict
@@ -23,13 +24,14 @@ from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 import flask
-from flask import Flask
+from flask import Blueprint, Flask
 
+from recidiviz.admin_panel.all_routes import admin_stores
+from recidiviz.admin_panel.routes.case_triage import add_case_triage_routes
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.results import MultiRequestResult
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
-from recidiviz.reporting.reporting_endpoint import reporting_endpoint_blueprint
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 FIXTURE_FILE = "po_monthly_report_data_fixture.json"
@@ -48,50 +50,69 @@ class ReportingEndpointTests(TestCase):
         self.gcs_file_system_patcher = patch(
             "recidiviz.cloud_storage.gcsfs_factory.GcsfsFactory.build"
         )
+        self.requires_gae_auth_patcher = patch(
+            "recidiviz.admin_panel.routes.case_triage.requires_gae_auth",
+            side_effect=lambda route: route,
+        )
+
+        self.requires_gae_auth_patcher.start()
+
         self.gcs_file_system = FakeGCSFileSystem()
         self.mock_gcs_file_system = self.gcs_file_system_patcher.start()
         self.mock_gcs_file_system.return_value = self.gcs_file_system
 
         self.app = Flask(__name__)
-        self.app.register_blueprint(reporting_endpoint_blueprint)
+
+        blueprint = Blueprint("email_reporting_test", __name__)
         self.app.config["TESTING"] = True
 
         self.client = self.app.test_client()
-        self.headers: Dict[str, Dict[Any, Any]] = {"x-goog-iap-jwt-assertion": {}}
+
+        add_case_triage_routes(blueprint, admin_stores)
+        self.app.register_blueprint(blueprint)
 
         with self.app.test_request_context():
-            self.start_new_batch_url = flask.url_for(
-                "reporting_endpoint_blueprint.start_new_batch"
-            )
-            self.deliver_emails_for_batch_url = flask.url_for(
-                "reporting_endpoint_blueprint.deliver_emails_for_batch"
-            )
             self.state_code = StateCode.US_ID
+            self.generate_emails_url = flask.url_for(
+                "email_reporting_test._generate_emails",
+                state_code_str=self.state_code.value,
+            )
+
+            self.send_emails_url = flask.url_for(
+                "email_reporting_test._send_emails",
+                state_code_str=self.state_code.value,
+            )
             self.review_year = 2021
             self.review_month = 5
 
     def tearDown(self) -> None:
         self.gcs_file_system_patcher.stop()
+        self.requires_gae_auth_patcher.stop()
 
-    def test_start_new_batch_validation(self) -> None:
+    def test_generate_emails_validation(self) -> None:
         with self.app.test_request_context():
-            base_query_string = {
+            base_json = {
                 "state_code": self.state_code.value,
-                "report_type": ReportType.POMonthlyReport.value,
+                "reportType": ReportType.TopOpportunities.value,
             }
-            response = self.client.get(self.start_new_batch_url, headers=self.headers)
-
+            response = self.client.post(
+                self.generate_emails_url,
+                json={**base_json},
+            )
             self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
             self.assertEqual(
                 response.data,
-                b"None is not a valid ReportType",
+                b"top_opportunities is not a valid ReportType",
             )
 
             # Invalid test address
-            response = self.client.get(
-                self.start_new_batch_url,
-                query_string={**base_query_string, "test_address": "fake-email"},
-                headers=self.headers,
+            base_json = {
+                "state_code": self.state_code.value,
+                "reportType": ReportType.POMonthlyReport.value,
+            }
+            response = self.client.post(
+                self.generate_emails_url,
+                json={**base_json, "testAddress": "fake-email"},
             )
 
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
@@ -100,13 +121,13 @@ class ReportingEndpointTests(TestCase):
             )
 
             # Invalid recipient email
-            response = self.client.get(
-                self.start_new_batch_url,
-                query_string={
-                    **base_query_string,
-                    "email_allowlist": json.dumps(["dev@recidiviz.org", "foo"]),
+            response = self.client.post(
+                self.generate_emails_url,
+                json={
+                    "state_code": self.state_code.value,
+                    "reportType": ReportType.POMonthlyReport.value,
+                    "emailAllowlist": ["dev@recidiviz.org", "foo"],
                 },
-                headers=self.headers,
             )
 
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
@@ -114,7 +135,7 @@ class ReportingEndpointTests(TestCase):
 
     @patch("recidiviz.reporting.email_reporting_utils.generate_batch_id")
     @patch("recidiviz.reporting.data_retrieval.start")
-    def test_integration_start_new_batch(
+    def test_integration_generate_emails(
         self, mock_start: MagicMock, mock_generate: MagicMock
     ) -> None:
         with self.app.test_request_context():
@@ -123,22 +144,21 @@ class ReportingEndpointTests(TestCase):
                 successes=["dev@recidiviz.org"], failures=[]
             )
 
-            response = self.client.get(
-                self.start_new_batch_url,
-                query_string={
+            response = self.client.post(
+                self.generate_emails_url,
+                json={
                     "state_code": self.state_code.value,
-                    "report_type": ReportType.POMonthlyReport.value,
-                    "email_allowlist": json.dumps(
-                        ["dev@recidiviz.org", "other@recidiviz.org"]
-                    ),
+                    "reportType": ReportType.POMonthlyReport.value,
+                    "emailAllowlist": ["dev@recidiviz.org", "other@recidiviz.org"],
                 },
-                headers=self.headers,
             )
+
+            timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
             mock_start.assert_called_with(
                 state_code=self.state_code,
                 report_type=ReportType.POMonthlyReport,
-                batch_id="test_batch_id",
+                batch_id=timestamp,
                 test_address=None,
                 region_code=None,
                 email_allowlist=["dev@recidiviz.org", "other@recidiviz.org"],
@@ -147,12 +167,12 @@ class ReportingEndpointTests(TestCase):
 
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.assertIn(
-                f"New batch started for {self.state_code.value}", str(response.data)
+                f"New batch started for {self.state_code}", str(response.data)
             )
 
     @patch("recidiviz.reporting.email_reporting_utils.generate_batch_id")
     @patch("recidiviz.reporting.data_retrieval.start")
-    def test_integration_start_new_batch_with_no_allowlist(
+    def test_integration_generate_emails_with_no_allowlist(
         self, mock_start: MagicMock, mock_generate: MagicMock
     ) -> None:
         with self.app.test_request_context():
@@ -161,19 +181,20 @@ class ReportingEndpointTests(TestCase):
                 successes=["letter@kenny.ca"], failures=[]
             )
 
-            response = self.client.get(
-                self.start_new_batch_url,
-                query_string={
+            response = self.client.post(
+                self.generate_emails_url,
+                json={
                     "state_code": self.state_code.value,
-                    "report_type": ReportType.POMonthlyReport.value,
+                    "reportType": ReportType.POMonthlyReport.value,
                 },
-                headers=self.headers,
             )
+
+            timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
             mock_start.assert_called_with(
                 state_code=self.state_code,
                 report_type=ReportType.POMonthlyReport,
-                batch_id="test_batch_id",
+                batch_id=timestamp,
                 test_address=None,
                 region_code=None,
                 email_allowlist=None,
@@ -182,7 +203,7 @@ class ReportingEndpointTests(TestCase):
 
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.assertIn(
-                f"New batch started for {self.state_code.value}", str(response.data)
+                f"New batch started for {self.state_code}", str(response.data)
             )
 
     @patch("recidiviz.reporting.email_reporting_utils.generate_batch_id")
@@ -195,21 +216,19 @@ class ReportingEndpointTests(TestCase):
             mock_start.return_value = MultiRequestResult[str, str](
                 successes=["dev@recidiviz.org"], failures=[]
             )
-            response = self.client.get(
-                self.start_new_batch_url,
-                query_string={
+
+            response = self.client.post(
+                self.generate_emails_url,
+                json={
                     "state_code": self.state_code.value,
-                    "report_type": ReportType.POMonthlyReport.value,
-                    "email_allowlist": json.dumps(
-                        ["dev@recidiviz.org", "other@recidiviz.org"]
-                    ),
+                    "reportType": ReportType.POMonthlyReport.value,
+                    "emailAllowlist": ["dev@recidiviz.org", "other@recidiviz.org"],
                 },
-                headers=self.headers,
             )
 
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.assertIn(
-                f"New batch started for {self.state_code.value}", str(response.data)
+                f"New batch started for {self.state_code}", str(response.data)
             )
             self.assertIn("Successfully generated 1 email(s)", str(response.data))
             self.assertNotIn("Failed to generate", str(response.data))
@@ -219,21 +238,18 @@ class ReportingEndpointTests(TestCase):
                 failures=["other@recidiviz.org", "letter@kenny.ca"],
             )
 
-            response = self.client.get(
-                self.start_new_batch_url,
-                query_string={
+            response = self.client.post(
+                self.generate_emails_url,
+                json={
                     "state_code": self.state_code.value,
-                    "report_type": ReportType.POMonthlyReport.value,
-                    "email_allowlist": json.dumps(
-                        ["dev@recidiviz.org", "other@recidiviz.org"]
-                    ),
+                    "reportType": ReportType.POMonthlyReport.value,
+                    "emailAllowlist": ["dev@recidiviz.org", "other@recidiviz.org"],
                 },
-                headers=self.headers,
             )
 
             self.assertEqual(HTTPStatus.MULTI_STATUS, response.status_code)
             self.assertIn(
-                f"New batch started for {self.state_code.value}", str(response.data)
+                f"New batch started for {self.state_code}", str(response.data)
             )
             self.assertIn("Successfully generated 1 email(s)", str(response.data))
             self.assertIn("Failed to generate 2 email(s)", str(response.data))
@@ -246,16 +262,13 @@ class ReportingEndpointTests(TestCase):
                     "letter@kenny.ca",
                 ],
             )
-            response = self.client.get(
-                self.start_new_batch_url,
-                query_string={
+            response = self.client.post(
+                self.generate_emails_url,
+                json={
                     "state_code": self.state_code.value,
-                    "report_type": ReportType.POMonthlyReport.value,
-                    "email_allowlist": json.dumps(
-                        ["dev@recidiviz.org", "other@recidiviz.org"]
-                    ),
+                    "reportType": ReportType.POMonthlyReport.value,
+                    "emailAllowlist": ["dev@recidiviz.org", "other@recidiviz.org"],
                 },
-                headers=self.headers,
             )
 
             self.assertEqual(HTTPStatus.INTERNAL_SERVER_ERROR, response.status_code)
@@ -275,14 +288,14 @@ class ReportingEndpointTests(TestCase):
                     "review_month": "12",
                 }
             )
-            response = self.client.get(
-                self.deliver_emails_for_batch_url,
-                query_string={
-                    "batch_id": "test_batch_id",
+            response = self.client.post(
+                self.send_emails_url,
+                json={
+                    "batchId": "test_batch_id",
                     "state_code": self.state_code.value,
                 },
-                headers=self.headers,
             )
+
             self.assertEqual(HTTPStatus.OK, response.status_code, msg=response.data)
 
             # Test that it fails if missing year/month
@@ -292,13 +305,12 @@ class ReportingEndpointTests(TestCase):
                     "review_month": "12",
                 }
             )
-            response = self.client.get(
-                self.deliver_emails_for_batch_url,
-                query_string={
-                    "batch_id": "test_batch_id",
+            response = self.client.post(
+                self.send_emails_url,
+                json={
+                    "batchId": "test_batch_id",
                     "state_code": self.state_code.value,
                 },
-                headers=self.headers,
             )
             self.assertEqual(
                 HTTPStatus.BAD_REQUEST, response.status_code, msg=response.data
@@ -310,14 +322,14 @@ class ReportingEndpointTests(TestCase):
                     "review_year": "3000",
                 }
             )
-            response = self.client.get(
-                self.deliver_emails_for_batch_url,
-                query_string={
-                    "batch_id": "test_batch_id",
+            response = self.client.post(
+                self.send_emails_url,
+                json={
+                    "batchId": "test_batch_id",
                     "state_code": self.state_code.value,
                 },
-                headers=self.headers,
             )
+
             self.assertEqual(
                 HTTPStatus.BAD_REQUEST, response.status_code, msg=response.data
             )
@@ -328,22 +340,19 @@ class ReportingEndpointTests(TestCase):
                     "report_type": ReportType.TopOpportunities.value,
                 }
             )
-            response = self.client.get(
-                self.deliver_emails_for_batch_url,
-                query_string={
-                    "batch_id": "test_batch_id",
+            response = self.client.post(
+                self.send_emails_url,
+                json={
+                    "batchId": "test_batch_id",
                     "state_code": self.state_code.value,
                 },
-                headers=self.headers,
             )
             self.assertEqual(
                 HTTPStatus.NOT_IMPLEMENTED, response.status_code, msg=response.data
             )
 
     @patch("recidiviz.reporting.email_delivery.deliver")
-    def test_integration_deliver_emails_for_batch(
-        self, mock_deliver: MagicMock
-    ) -> None:
+    def test_integration_send_emails(self, mock_deliver: MagicMock) -> None:
         self._upload_metadata(
             {
                 "report_type": ReportType.POMonthlyReport.value,
@@ -356,26 +365,24 @@ class ReportingEndpointTests(TestCase):
             mock_deliver.return_value = MultiRequestResult[str, str](
                 successes=["dev@recidiviz.org"], failures=[]
             )
-            response = self.client.get(
-                self.deliver_emails_for_batch_url,
-                query_string={
-                    "batch_id": "test_batch_id",
+            response = self.client.post(
+                self.send_emails_url,
+                json={
+                    "batchId": "test_batch_id",
                     "state_code": self.state_code.value,
                 },
-                headers=self.headers,
             )
             self.assertEqual(HTTPStatus.OK, response.status_code, msg=response.data)
 
             mock_deliver.return_value = MultiRequestResult[str, str](
                 successes=["dev@recidiviz.org"], failures=["other@recidiviz.org"]
             )
-            response = self.client.get(
-                self.deliver_emails_for_batch_url,
-                query_string={
-                    "batch_id": "test_batch_id",
+            response = self.client.post(
+                self.send_emails_url,
+                json={
+                    "batchId": "test_batch_id",
                     "state_code": self.state_code.value,
                 },
-                headers=self.headers,
             )
             self.assertEqual(
                 HTTPStatus.MULTI_STATUS, response.status_code, msg=response.data
@@ -384,13 +391,12 @@ class ReportingEndpointTests(TestCase):
             mock_deliver.return_value = MultiRequestResult[str, str](
                 successes=[], failures=["dev@recidiviz.org", "other@recidiviz.org"]
             )
-            response = self.client.get(
-                self.deliver_emails_for_batch_url,
-                query_string={
-                    "batch_id": "test_batch_id",
+            response = self.client.post(
+                self.send_emails_url,
+                json={
+                    "batchId": "test_batch_id",
                     "state_code": self.state_code.value,
                 },
-                headers=self.headers,
             )
             self.assertEqual(
                 HTTPStatus.INTERNAL_SERVER_ERROR,

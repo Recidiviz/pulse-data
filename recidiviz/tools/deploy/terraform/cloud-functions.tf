@@ -111,54 +111,6 @@ resource "google_cloudfunctions_function" "parse-state-aggregate" {
   timeout = 540
 }
 
-
-resource "google_cloudfunctions_function" "report_deliver_emails_for_batch" {
-  name    = "report_deliver_emails_for_batch"
-  runtime = "python38"
-  labels = {
-    "deployment-tool" = "terraform"
-  }
-
-  entry_point = "handle_deliver_emails_for_batch_email_reporting"
-  environment_variables = {
-    "FROM_EMAIL_ADDRESS" = "reports@recidiviz.org"
-    "FROM_EMAIL_NAME"    = "Recidiviz Reports"
-    "GCP_PROJECT"        = var.project_id
-    "SENDGRID_API_KEY"   = data.google_secret_manager_secret_version.sendgrid_api_key.secret_data
-  }
-  trigger_http = true
-
-  source_repository {
-    url = local.repo_url
-  }
-
-  timeout = 300
-
-  timeouts {}
-}
-
-
-resource "google_cloudfunctions_function" "report_start_new_batch" {
-  name    = "report_start_new_batch"
-  runtime = "python38"
-  labels = {
-    "deployment-tool" = "terraform"
-  }
-
-  entry_point = "handle_start_new_batch_email_reporting"
-  environment_variables = {
-    "CDN_STATIC_IP" = data.google_secret_manager_secret_version.po_report_cdn_static_ip.secret_data
-    "GCP_PROJECT"   = var.project_id
-  }
-  trigger_http = true
-
-  source_repository {
-    url = local.repo_url
-  }
-
-  timeout = 300
-}
-
 resource "google_cloudfunctions_function" "trigger_daily_calculation_pipeline_dag" {
   name    = "trigger_daily_calculation_pipeline_dag"
   runtime = "python38"
