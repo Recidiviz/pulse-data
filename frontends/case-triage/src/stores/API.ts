@@ -125,17 +125,16 @@ class API {
       const params = new URLSearchParams(window.location.search);
       const impersonate = params.get(IMPERSONATED_EMAIL_KEY);
       if (impersonate) {
-        await this.post(IMPERSONATE_ROUTE, {
-          [IMPERSONATED_EMAIL_KEY]: impersonate,
-        });
-
         params.delete(IMPERSONATED_EMAIL_KEY);
-
         window.history.replaceState(
           null,
           window.document.title,
           params.toString() ? `/?${params.toString()}` : "/"
         );
+        await this.post(IMPERSONATE_ROUTE, {
+          [IMPERSONATED_EMAIL_KEY]: impersonate,
+        });
+        window.location.reload();
       }
       // Defer all requests until the API client has bootstrapped itself
       if (!this.bootstrapped && path !== BOOTSTRAP_ROUTE) {
