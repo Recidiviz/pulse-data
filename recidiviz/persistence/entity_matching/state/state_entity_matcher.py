@@ -1026,15 +1026,20 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                 child_field_name, placeholder_children
             )
 
-        # If we updated any of the entity trees, check to see if the placeholder
-        # tree still has any children. If it doesn't have any children, it
-        # doesn't need to be committed into our DB.
-        set_child_fields = get_set_entity_field_names(
-            db_placeholder_tree.entity, entity_field_type=EntityFieldType.FORWARD_EDGE
-        )
-
-        if set_child_fields:
+        if db_placeholder_tree.entity.get_id():
+            # If this object has already been committed to the DB, we always return it
+            # as a result.
             updated_entity_trees.append(db_placeholder_tree)
+        else:
+            # If we updated any of the entity trees, check to see if the placeholder
+            # tree still has any children. If it doesn't have any children, it
+            # doesn't need to be committed into our DB.
+            set_child_fields = get_set_entity_field_names(
+                db_placeholder_tree.entity,
+                entity_field_type=EntityFieldType.FORWARD_EDGE,
+            )
+            if set_child_fields:
+                updated_entity_trees.append(db_placeholder_tree)
 
         return IndividualMatchResult(
             merged_entity_trees=updated_entity_trees, error_count=error_count
@@ -1331,7 +1336,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         db_entity_match: DatabaseEntity,
         ingested_entity: DatabaseEntity,
         matched_entities_by_db_ids: Dict[int, List[DatabaseEntity]],
-    ):
+    ) -> None:
         """If the provided |db_entity_match| and |ingested_entity| represent a
         new match, records the match in |matched_entities_by_db_ids|. Throws an
         error if this new match is disallowed.
@@ -1441,7 +1446,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
             )
         return match_tree
 
-    def merge_multiparent_entities(self, persons: List[schema.StatePerson]):
+    def merge_multiparent_entities(self, persons: List[schema.StatePerson]) -> None:
         """For each person in the provided |persons|, looks at all of the child
         entities that can have multiple parents, and merges these entities where
         possible.
@@ -1456,7 +1461,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
     def _merge_multiparent_entities_from_map(
         self, multiparent_map: Dict[str, List[_EntityWithParentInfo]]
-    ):
+    ) -> None:
         """Merges entities from the provided |multiparent_map|."""
         for _external_id, entities_with_parents in multiparent_map.items():
             merged_entity_with_parents = None
@@ -1532,7 +1537,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         entity: DatabaseEntity,
         to_replace: DatabaseEntity,
         linked_parents: List[_ParentInfo],
-    ):
+    ) -> None:
         """For all parent entities in |to_replace_parents|, replaces
         |to_replace| with |entity|.
         """
@@ -1553,7 +1558,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         entity: DatabaseEntity,
         entity_cls: Type[DatabaseEntity],
         multiparent_map: Dict[str, List[_EntityWithParentInfo]],
-    ):
+    ) -> None:
         """Looks through all children in the provided |entity|, and if they are
         of type |entity_cls|, adds an entry to the provided |multiparent_map|.
         """
