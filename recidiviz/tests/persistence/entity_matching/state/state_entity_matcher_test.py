@@ -78,6 +78,10 @@ from recidiviz.persistence.entity_matching.state import (
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
     BaseStateMatchingDelegate,
 )
+from recidiviz.persistence.entity_matching.state.state_entity_matcher import (
+    MAX_NUM_TREES_TO_SEARCH_FOR_NON_PLACEHOLDER_TYPES,
+    StateEntityMatcher,
+)
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
     generate_agent,
     generate_alias,
@@ -3859,7 +3863,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         )
 
     @patch(
-        f"{state_entity_matcher.__name__}.NUM_TREES_TO_SEARCH_FOR_NON_PLACEHOLDER_TYPES",
+        f"{state_entity_matcher.__name__}.MAX_NUM_TREES_TO_SEARCH_FOR_NON_PLACEHOLDER_TYPES",
         1,
     )
     def test_mismatchedTreeShapeEnumTypesOnly(self) -> None:
@@ -4675,3 +4679,18 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         )
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
+
+    def test_get_non_placeholder_ingest_types_indices_to_search(self) -> None:
+        for i in range(0, 2500 + 1):
+            indices = (
+                StateEntityMatcher.get_non_placeholder_ingest_types_indices_to_search(i)
+            )
+            if i < MAX_NUM_TREES_TO_SEARCH_FOR_NON_PLACEHOLDER_TYPES:
+                self.assertEqual(i, len(indices))
+            else:
+                self.assertEqual(
+                    MAX_NUM_TREES_TO_SEARCH_FOR_NON_PLACEHOLDER_TYPES, len(indices)
+                )
+
+            # Make sure all indices are in bounds
+            self.assertFalse(any(index > i - 1 for index in indices))
