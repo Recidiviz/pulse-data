@@ -8,7 +8,7 @@ columns:
      Unique ID for each LSI need
  - name : LSI_SUPERPLAN_ID
    description : |-
-     ID for an overall LSI supervision plan. Maps onto docstars_lsi_superplan.LSI_SUPERPLAN_ID
+     ID for an overall LSI supervision plan. Maps onto recidiviz_docstars_LSI_SUPERPLAN.LSI_SUPERPLAN_ID
  - name : NEED_TYPE
    description : |-
      Code of the need that is being addressed, maps onto docstars_ref_lsi_need.NEED_TYPE
