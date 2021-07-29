@@ -15,18 +15,40 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Returns the csv urls for West Virginia state jail data collection."""
+import ssl
 from typing import Set
 
 import requests
 from lxml import html
+from requests.adapters import HTTPAdapter
+from urllib3 import poolmanager
 
 STATE_AGGREGATE_URL = (
     "https://dhhr.wv.gov/COVID-19/Pages/Correctional-Facilities-report-archive.aspx"
 )
 
 
+class TLSAdapter(HTTPAdapter):
+    """Lower the security level for dhhr.wv.gov"""
+
+    def init_poolmanager(self, connections, maxsize, block=False, **pool_kwargs):
+        ctx = ssl.create_default_context()
+        ctx.set_ciphers("DEFAULT@SECLEVEL=1")
+        self.poolmanager = poolmanager.PoolManager(
+            num_pools=connections,
+            maxsize=maxsize,
+            block=block,
+            ssl_version=ssl.PROTOCOL_TLS,
+            ssl_context=ctx,
+            **pool_kwargs,
+        )
+
+
 def get_urls_to_download() -> Set[str]:
-    content = html.fromstring(requests.get(STATE_AGGREGATE_URL, verify=False).text)
+    session = requests.session()
+    session.mount("https://dhhr.wv.gov", TLSAdapter())
+    response = session.get(STATE_AGGREGATE_URL)
+    content = html.fromstring(response.text)
 
     return {
         f"https://dhhr.wv.gov{url}"
