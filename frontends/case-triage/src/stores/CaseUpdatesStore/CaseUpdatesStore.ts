@@ -17,18 +17,17 @@
 import { makeAutoObservable, remove, runInAction, set } from "mobx";
 import moment from "moment";
 import {
+  trackPersonActionRemoved,
+  trackPersonActionTaken,
+} from "../../analytics";
+import API from "../API";
+import ClientsStore, { Client } from "../ClientsStore";
+import UserStore from "../UserStore";
+import {
   CaseUpdate,
   CaseUpdateActionType,
   CaseUpdateStatus,
 } from "./CaseUpdates";
-import ClientsStore, { Client } from "../ClientsStore";
-import UserStore from "../UserStore";
-
-import API from "../API";
-import {
-  trackPersonActionRemoved,
-  trackPersonActionTaken,
-} from "../../analytics";
 
 interface CaseUpdatesStoreProps {
   api: API;
@@ -77,11 +76,18 @@ class CaseUpdatesStore {
       });
     });
 
-    const response = await this.api.post<CaseUpdate>("/api/case_updates", {
-      personExternalId: client.personExternalId,
-      actionType,
-      comment,
-    });
+    let response: CaseUpdate;
+    try {
+      response = await this.api.post<CaseUpdate>("/api/case_updates", {
+        personExternalId: client.personExternalId,
+        actionType,
+        comment,
+      });
+    } catch (error) {
+      runInAction(() => remove(client.caseUpdates, actionType));
+      this.isLoading = false;
+      throw error;
+    }
 
     runInAction(() => {
       set(client, "caseUpdates", {
@@ -106,11 +112,23 @@ class CaseUpdatesStore {
       return;
     }
 
+    const originalAction = client.caseUpdates[actionType];
     runInAction(() => {
       remove(client.caseUpdates, actionType);
     });
 
-    await this.api.delete(`/api/case_updates/${updateId}`);
+    try {
+      await this.api.delete(`/api/case_updates/${updateId}`);
+    } catch (error) {
+      runInAction(() =>
+        set(client, "caseUpdates", {
+          ...client.caseUpdates,
+          [actionType]: originalAction,
+        })
+      );
+      this.isLoading = false;
+      throw error;
+    }
     trackPersonActionRemoved(client, updateId, actionType);
 
     this.isLoading = false;
