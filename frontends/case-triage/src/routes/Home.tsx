@@ -26,7 +26,7 @@ import {
 } from "@recidiviz/design-system";
 import { observer } from "mobx-react-lite";
 import { rem } from "polished";
-import React, { ReactElement } from "react";
+import React, { ReactElement, useEffect } from "react";
 import styled from "styled-components/macro";
 import {
   trackSearchBarEnterPressed,
@@ -61,12 +61,20 @@ const ErrorToasts = observer((): JSX.Element => {
 });
 
 const Home = (props: RouteComponentProps): ReactElement => {
-  const { clientsStore, userStore } = useRootStore();
+  const { clientsStore, userStore, api } = useRootStore();
 
   const ClientCard =
     clientsStore.activeClient && clientsStore.activeClient.isVisible ? (
       <CaseCard client={clientsStore.activeClient} />
     ) : null;
+
+  useEffect(() => {
+    window.onbeforeunload = async () => {
+      if (userStore.isImpersonating) {
+        await api.delete("/api/impersonation");
+      }
+    };
+  }, [userStore, api]);
 
   return (
     <AuthWall>
