@@ -817,12 +817,16 @@ class UsPaController(CsvGcsfsDirectIngestController):
     @staticmethod
     def _get_id_type(file_tag: str) -> Optional[str]:
         if file_tag in [
-            "dbo_Senrec",
             "sci_incarceration_period",
             "ccis_incarceration_period",
             "dbo_Miscon",
         ]:
             return US_PA_CONTROL
+
+        if file_tag in [
+            "dbo_Senrec",
+        ]:
+            return US_PA_INMATE
 
         if file_tag in [
             # TODO(#8337): Cleanup reference to `supervision_period`

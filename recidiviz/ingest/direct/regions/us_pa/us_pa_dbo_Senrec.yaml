@@ -1,7 +1,8 @@
 key_mappings:
-  curr_inmate_num: state_sentence_group.state_sentence_group_id
+  curr_inmate_num: state_person.state_person_id
 
 child_key_mappings:
+  curr_inmate_num: state_sentence_group.state_sentence_group_id
   type_number: state_incarceration_sentence.state_incarceration_sentence_id  # This gets overridden in the controller, and exists here only to let the data extractor create separate sentences with separate curr_inmate_num + type_number combinations
   sent_status_code: state_incarceration_sentence.status
   type_of_sent: state_incarceration_sentence.incarceration_type
@@ -16,10 +17,7 @@ child_key_mappings:
   Grade: state_charge.classification_subtype
 
 primary_key:
-  curr_inmate_num: state_sentence_group.state_sentence_group_id
-
-ancestor_keys:
-  control_number: state_person.state_person_id
+  curr_inmate_num: state_person.state_person_id
 
 enforced_ancestor_types:
   state_sentence: state_incarceration_sentence
