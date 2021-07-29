@@ -18,13 +18,13 @@
 """Tool to create skeleton ingest raw file config yamls from raw data dumps.
 
 Usage:
-    python -m recidiviz.tools.create_ingest_config_skeleton --state [us_xx] \
+    python -m recidiviz.tools.create_ingest_config_skeleton --state [US_XX] \
     --delimiter <field separator> (--file|--folder) [path_to_raw_table(s)] \
     [--allow-overwrite] [--initialize-state]
 
 Example:
-    python -m recidiviz.tools.ingest.development.create_ingest_config_skeleton --state-code us_xx \
-    --delimiter '|' --path Xxandland/db/historical/
+    python -m recidiviz.tools.ingest.development.create_ingest_config_skeleton --state-code US_XX \
+    --delimiter '|' --file Xxandland/db/historical/filename
 """
 import argparse
 import logging
@@ -106,8 +106,10 @@ def write_skeleton_config(
         "primary_key_cols: []",
         "columns:",
     ]
-
-    config += [f"  - name : {field}" for field in fields]
+    config += [
+        f"  - name : {field}\n    description : |-\n      {PLACEHOLDER_TO_DO_STRING}"
+        for field in fields
+    ]
 
     with open(config_path, "w") as config_file:
         for line in config:
