@@ -161,7 +161,7 @@ class TestAccessPermissions(TestCase):
 
         self.both_user_different_state = generate_fake_user_restrictions(
             "US_YY",
-            "both-diff@not-recidiviz.org",
+            "different-state@not-recidiviz.org",
             can_access_leadership_dashboard=True,
             can_access_case_triage=True,
         )
@@ -248,14 +248,16 @@ class TestAccessPermissions(TestCase):
     @parameterized.expand(
         [
             ("test@recidiviz.org", False),
-            ("leadership@not-recidiviz.org", False),
+            ("leadership@not-recidiviz.org", True),
             ("both@not-recidiviz.org", True),
             ("user@not-recidiviz.org", True),
-            ("both-diff@not-recidiviz.org", False),
+            ("different-state@not-recidiviz.org", False),
+            ("case-triage@not-recidiviz.org", False),
         ]
     )
-    def test_can_impersonate(self, email: str, can_impersonate: bool) -> None:
-        print(self.auth_store.get_access_permissions("admin@not-recidiviz.org"))
+    def test_can_impersonate_state_US_XX(
+        self, email: str, can_impersonate: bool
+    ) -> None:
         self.assertEqual(
             self.auth_store.can_impersonate(
                 email,
