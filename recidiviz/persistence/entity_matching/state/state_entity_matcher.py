@@ -82,7 +82,7 @@ from recidiviz.persistence.errors import (
 )
 
 # How many person trees to search to fill the non_placeholder_ingest_types set.
-NUM_TREES_TO_SEARCH_FOR_NON_PLACEHOLDER_TYPES = 10
+MAX_NUM_TREES_TO_SEARCH_FOR_NON_PLACEHOLDER_TYPES = 20
 
 
 class _ParentInfo:
@@ -203,6 +203,26 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
         return entity_is_placeholder
 
+    @staticmethod
+    def get_non_placeholder_ingest_types_indices_to_search(
+        num_total_trees: int,
+    ) -> List[int]:
+        """
+        We search through 20 trees (evenly distributed across the list) to find all
+        applicable non-placeholder types.
+        """
+        if num_total_trees == 0:
+            return []
+
+        num_trees_to_search = min(
+            MAX_NUM_TREES_TO_SEARCH_FOR_NON_PLACEHOLDER_TYPES,
+            num_total_trees,
+        )
+        indices_to_search = list(range(num_total_trees))[
+            0 :: num_total_trees // num_trees_to_search
+        ]
+        return indices_to_search[0:num_trees_to_search]
+
     def get_non_placeholder_ingest_types(
         self, ingested_db_persons: List[schema.StatePerson]
     ) -> Set[Type[DatabaseEntity]]:
@@ -210,19 +230,17 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         placeholders.
 
         NOTE: This assumes that ingested trees are largely similar and all
-        non-placeholder types will show up in the first 10 person trees.
+        non-placeholder types will show up in a selected set of 20 person trees. If the
+        first 20 do not surface all types, we will log an error later in the
+        _is_placeholder() helper and entity matching might not work correctly.
         """
         non_placeholder_ingest_types: Set[Type[DatabaseEntity]] = set()
-        # We search through the first 10 trees to find all applicable non-placeholder
-        # types. If the first 10 do not surface all types, we will crash later in
-        # the _is_placeholder() helper.
-        for i in range(
-            0,
-            min(
-                NUM_TREES_TO_SEARCH_FOR_NON_PLACEHOLDER_TYPES,
-                len(ingested_db_persons),
-            ),
-        ):
+
+        indices_to_search = self.get_non_placeholder_ingest_types_indices_to_search(
+            num_total_trees=len(ingested_db_persons)
+        )
+
+        for i in indices_to_search:
             ingested_person = ingested_db_persons[i]
             for obj in get_all_db_objs_from_tree(ingested_person):
                 if not is_placeholder(obj):
@@ -231,7 +249,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
 
     def set_ingest_objs_for_persons(
         self, ingested_db_persons: List[schema.StatePerson]
-    ):
+    ) -> None:
         if self.do_ingest_obj_consistency_check:
             logging.info(
                 "[Entity matching] Setting ingest object mappings for [%s] "
@@ -250,7 +268,7 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
                 len(ingested_db_persons),
             )
 
-    def check_no_ingest_objs(self, db_objs: List[DatabaseEntity]):
+    def check_no_ingest_objs(self, db_objs: List[DatabaseEntity]) -> None:
         if self.do_ingest_obj_consistency_check:
             ingest_objs = self.get_ingest_objs_from_list(db_objs)
             if ingest_objs:
