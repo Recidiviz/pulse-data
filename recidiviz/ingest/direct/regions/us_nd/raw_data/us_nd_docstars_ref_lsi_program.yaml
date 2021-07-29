@@ -1,0 +1,20 @@
+file_tag: docstars_ref_lsi_program
+file_description: |-
+  Reference file where each row refers to a specific program provider
+primary_key_cols: [PROGRAM_ID]
+columns:
+ - name : PROGRAM_ID
+   description : |-
+     Unique ID of each program
+ - name : WORK_STEP
+   description : |-
+     Broad category of program type
+ - name : CATEGORY
+   description : |-
+     Specific category of program type
+ - name : DESCRIPTION
+   description : |-
+     Name of program provider, often includes location
+ - name : ACTIVE
+   description : |-
+     Flag for whether program is active
