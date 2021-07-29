@@ -134,7 +134,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                     state_person_id="RECIDIVIZ_MASTER_CONTROL_NUMBER_123456",
                     state_person_external_ids=[
                         StatePersonExternalId(
-                            state_person_external_id_id="12345678",
+                            state_person_external_id_id="AB7413",
                             id_type=US_PA_INMATE,
                         ),
                         StatePersonExternalId(
@@ -149,11 +149,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                     state_person_id="RECIDIVIZ_MASTER_CONTROL_NUMBER_654321",
                     state_person_external_ids=[
                         StatePersonExternalId(
-                            state_person_external_id_id="55554444",
-                            id_type=US_PA_INMATE,
-                        ),
-                        StatePersonExternalId(
-                            state_person_external_id_id="66665555",
+                            state_person_external_id_id="GF3374",
                             id_type=US_PA_INMATE,
                         ),
                         StatePersonExternalId(
@@ -168,6 +164,10 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                     state_person_id="RECIDIVIZ_MASTER_CONTROL_NUMBER_445566",
                     state_person_external_ids=[
                         StatePersonExternalId(
+                            state_person_external_id_id="CJ1991",
+                            id_type=US_PA_INMATE,
+                        ),
+                        StatePersonExternalId(
                             state_person_external_id_id="445566", id_type=US_PA_CONTROL
                         ),
                     ],
@@ -176,7 +176,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                     state_person_id="RECIDIVIZ_MASTER_CONTROL_NUMBER_778899",
                     state_person_external_ids=[
                         StatePersonExternalId(
-                            state_person_external_id_id="09876543",
+                            state_person_external_id_id="JE1989",
                             id_type=US_PA_INMATE,
                         ),
                         StatePersonExternalId(
@@ -511,10 +511,10 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         expected = IngestInfo(
             state_people=[
                 StatePerson(
-                    state_person_id="123456",
+                    state_person_id="AB7413",
                     state_person_external_ids=[
                         StatePersonExternalId(
-                            state_person_external_id_id="123456", id_type=US_PA_CONTROL
+                            state_person_external_id_id="AB7413", id_type=US_PA_INMATE
                         ),
                     ],
                     state_sentence_groups=[
@@ -550,10 +550,10 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                     ],
                 ),
                 StatePerson(
-                    state_person_id="654321",
+                    state_person_id="GF3374",
                     state_person_external_ids=[
                         StatePersonExternalId(
-                            state_person_external_id_id="654321", id_type=US_PA_CONTROL
+                            state_person_external_id_id="GF3374", id_type=US_PA_INMATE
                         ),
                     ],
                     state_sentence_groups=[
@@ -589,10 +589,10 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                     ],
                 ),
                 StatePerson(
-                    state_person_id="445566",
+                    state_person_id="CJ1991",
                     state_person_external_ids=[
                         StatePersonExternalId(
-                            state_person_external_id_id="445566", id_type=US_PA_CONTROL
+                            state_person_external_id_id="CJ1991", id_type=US_PA_INMATE
                         ),
                     ],
                     state_sentence_groups=[
@@ -628,10 +628,10 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                     ],
                 ),
                 StatePerson(
-                    state_person_id="778899",
+                    state_person_id="JE1989",
                     state_person_external_ids=[
                         StatePersonExternalId(
-                            state_person_external_id_id="778899", id_type=US_PA_CONTROL
+                            state_person_external_id_id="JE1989", id_type=US_PA_INMATE
                         ),
                     ],
                     state_sentence_groups=[
@@ -2369,7 +2369,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 ),
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
-                    external_id="12345678",
+                    external_id="AB7413",
                     id_type=US_PA_INMATE,
                 ),
             ],
@@ -2388,12 +2388,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 ),
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
-                    external_id="55554444",
-                    id_type=US_PA_INMATE,
-                ),
-                entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER,
-                    external_id="66665555",
+                    external_id="GF3374",
                     id_type=US_PA_INMATE,
                 ),
             ],
@@ -2406,6 +2401,11 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                     state_code=_STATE_CODE_UPPER,
                     external_id="445566",
                     id_type=US_PA_CONTROL,
+                ),
+                entities.StatePersonExternalId.new_with_defaults(
+                    state_code=_STATE_CODE_UPPER,
+                    external_id="CJ1991",
+                    id_type=US_PA_INMATE,
                 ),
             ],
         )
@@ -2431,7 +2431,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 ),
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
-                    external_id="09876543",
+                    external_id="JE1989",
                     id_type=US_PA_INMATE,
                 ),
             ],
