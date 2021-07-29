@@ -32,7 +32,6 @@ class TestComputedOpportunity(TestCase):
     def test_employment(self) -> None:
         client = generate_fake_client("abc")
         client.client_info = generate_fake_client_info(client)
-        print(ComputedOpportunity.build_all_for_client(client))
         opp = ComputedOpportunity.build_all_for_client(client).get(
             OpportunityType.EMPLOYMENT
         )

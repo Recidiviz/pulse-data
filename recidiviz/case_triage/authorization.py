@@ -179,10 +179,7 @@ class AuthorizationStore:
         """Determines whether or not the current user with email
         can impersonate another user with other_email."""
         access_permissions = self.get_access_permissions(email.lower())
-        if (
-            access_permissions.can_access_case_triage
-            and access_permissions.can_access_leadership_dashboard
-        ):
+        if access_permissions.can_access_leadership_dashboard:
             return (
                 other_officer.state_code
                 in access_permissions.impersonatable_state_codes
