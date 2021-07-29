@@ -14,7 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Creates the view builder and view for listing all known officers."""
+"""Creates the view builder and view for listing all known officers.
+
+Print view with:
+    python -m recidiviz.case_triage.views.etl_officers
+"""
 
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
@@ -45,7 +49,7 @@ GROUP BY state_code, external_id
 ),
 id_roster AS (
     SELECT
-        UPPER(SPLIT(email_address, "@")[OFFSET(0)]) AS external_id,
+        external_id,
         LOWER(email_address) AS email_address,
         'US_ID' AS state_code
     FROM `{project_id}.{static_reference_dataset}.us_id_roster`
