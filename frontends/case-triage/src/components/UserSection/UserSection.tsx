@@ -125,19 +125,15 @@ const UserSection = () => {
     <UserFlex className="fs-exclude">
       <LoginButton />
       {isAuthorized && user ? <UserComponent user={user} /> : null}
-      {isImpersonating && (
+      {isImpersonating && userStore.canAccessCaseTriage && (
         <ToolbarButton
           kind="primary"
           onClick={async () => {
             await api.post("/impersonate_user", {});
-            if (userStore.canAccessCaseTriage) {
-              window.location.reload();
-            } else {
-              window.close();
-            }
+            window.location.reload();
           }}
         >
-          Close
+          Return to my Caseload
         </ToolbarButton>
       )}
     </UserFlex>
