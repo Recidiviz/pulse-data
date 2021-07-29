@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests to enforce that demo users work."""
-from datetime import date
+from datetime import date, timedelta
 from http import HTTPStatus
 from typing import Optional
 from unittest import TestCase
@@ -92,7 +92,9 @@ class TestDemoUser(TestCase):
         test_client = next(
             (c for c in self.demo_clients if c.person_external_id == "227")
         )
-        self.assertEqual(test_client.most_recent_face_to_face_date, date.today())
+        self.assertEqual(
+            test_client.most_recent_face_to_face_date, date.today() - timedelta(days=31)
+        )
 
     def test_get_clients(self) -> None:
         with self.helpers.using_demo_user():
@@ -154,10 +156,10 @@ class TestDemoUser(TestCase):
             # these numbers reflect the conditions represented in data fixtures
             # that result in opportunities
             num_unemployed = 58
-            num_assessment_overdue = 31
-            num_assessment_upcoming = 2
-            num_contact_overdue = 4
-            num_contact_upcoming = 1
+            num_assessment_overdue = 33
+            num_assessment_upcoming = 5
+            num_contact_overdue = 31
+            num_contact_upcoming = 4
 
             expected_opportunity_count = sum(
                 [

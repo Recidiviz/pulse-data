@@ -29,7 +29,7 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
 
 DEMO_FROZEN_DATETIME = datetime(
     year=2021,
-    month=3,
+    month=4,
     day=9,
     tzinfo=pytz.UTC,
 )
