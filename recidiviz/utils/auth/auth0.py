@@ -161,7 +161,6 @@ def build_auth0_authorization_decorator(
                         description="incorrect claims, please check the audience and issuer",
                     ) from e
                 except Exception as e:
-                    print(e)
                     raise AuthorizationError(
                         code="invalid_header",
                         description="Unable to parse authentication token.",

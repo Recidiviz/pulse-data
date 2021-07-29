@@ -114,7 +114,7 @@ class ClientsStore {
       : searchParam || "";
 
     const checkAuthAndFetchClients = () => {
-      if (!this.userStore.isAuthorized || this.userStore.isLoading) {
+      if (!this.api.ready) {
         return;
       }
 

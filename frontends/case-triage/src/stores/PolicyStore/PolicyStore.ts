@@ -49,7 +49,7 @@ class PolicyStore {
     this.isLoading = false;
 
     autorun(() => {
-      if (!this.userStore.isAuthorized) {
+      if (!this.api.ready) {
         return;
       }
 
