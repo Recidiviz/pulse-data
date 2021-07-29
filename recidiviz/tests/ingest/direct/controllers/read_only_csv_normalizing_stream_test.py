@@ -16,22 +16,21 @@
 # =============================================================================
 """Tests for CsvNormalizing IO."""
 import csv
-from typing import List, Optional
 import unittest
+from typing import List, Optional
 
 import pandas as pd
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.controllers.read_only_csv_normalizing_stream import (
-    ReadOnlyCsvNormalizingStream,
-)
+from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader_delegates import (
     SimpleGcsfsCsvReaderDelegate,
 )
-
+from recidiviz.ingest.direct.controllers.read_only_csv_normalizing_stream import (
+    ReadOnlyCsvNormalizingStream,
+)
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest import fixtures
-from recidiviz.tests.ingest.direct.direct_ingest_util import _TestSafeGcsCsvReader
 
 NO_TRAILING_LINE_TERMINATOR_PATH = fixtures.as_filepath(
     "example_file_structure_windows_1252_no_trailing_newline.csv"
@@ -192,7 +191,7 @@ class TestCsvNormalizingIO(unittest.TestCase):
         input_gcs_path = GcsfsFilePath.from_absolute_path("gs://my-bucket/input.csv")
         fake_fs.test_add_path(path=input_gcs_path, local_path=input_file_path)
         input_delegate = _FakeDfCapturingDelegate()
-        csv_reader = _TestSafeGcsCsvReader(fake_fs)
+        csv_reader = GcsfsCsvReader(fake_fs)
         csv_reader.streaming_read(
             path=input_gcs_path,
             delegate=input_delegate,
@@ -236,7 +235,7 @@ class TestCsvNormalizingIO(unittest.TestCase):
         input_gcs_path = GcsfsFilePath.from_absolute_path("gs://my-bucket/input.csv")
         fake_fs.test_add_path(path=input_gcs_path, local_path=input_file_path)
         input_delegate = _FakeDfCapturingDelegate()
-        csv_reader = _TestSafeGcsCsvReader(fake_fs)
+        csv_reader = GcsfsCsvReader(fake_fs)
         csv_reader.streaming_read(
             path=input_gcs_path,
             dtype=str,
