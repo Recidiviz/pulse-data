@@ -24,7 +24,10 @@ from typing import Callable, Dict, List, Optional
 
 import pandas as pd
 
-from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
+from recidiviz.cloud_storage.gcs_file_system import (
+    GCSBlobDoesNotExistError,
+    GcsfsFileContentsHandle,
+)
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsBucketPath,
@@ -114,7 +117,7 @@ class CsvGcsfsDirectIngestController(BaseDirectIngestController):
             self.csv_reader.streaming_read(
                 path, delegate=delegate, chunk_size=(line_limit + 1)
             )
-        except FileNotFoundError:
+        except GCSBlobDoesNotExistError:
             return True
 
         if delegate.df is None:

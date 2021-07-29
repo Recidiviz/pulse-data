@@ -18,13 +18,11 @@
 import datetime
 import time
 import unittest
-from contextlib import contextmanager
 from types import ModuleType
-from typing import Dict, Iterator, List, Optional, TextIO, Type
+from typing import Dict, List, Optional, Type
 
 import attr
-import gcsfs
-from mock import Mock, create_autospec, patch
+from mock import Mock, patch
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
@@ -92,22 +90,6 @@ from recidiviz.utils import metadata
 from recidiviz.utils.regions import Region
 
 PLACEHOLDER_TO_DO_STRING = "TO" + "DO"
-
-
-class _TestSafeGcsCsvReader(GcsfsCsvReader):
-    def __init__(self, fs: FakeGCSFileSystem):
-        super().__init__(create_autospec(gcsfs.GCSFileSystem))
-        self.fs = fs
-
-    @contextmanager
-    def _file_pointer_for_path(
-        self, path: GcsfsFilePath, encoding: str
-    ) -> Iterator[TextIO]:
-        try:
-            path_str = self.fs.real_absolute_path_for_path(path)
-        except AttributeError:
-            path_str = self.fs.real_absolute_path_for_path(path)
-        yield open(path_str, encoding=encoding)
 
 
 class DirectIngestFakeGCSFileSystemDelegate(FakeGCSFileSystemDelegate):
@@ -364,7 +346,7 @@ def build_gcsfs_controller_for_tests(
                                     project_id="recidiviz-xxx",
                                 )
                             )
-                            controller.csv_reader = _TestSafeGcsCsvReader(fake_fs)
+                            controller.csv_reader = GcsfsCsvReader(fake_fs)
                             controller.raw_file_import_manager.csv_reader = (
                                 controller.csv_reader
                             )

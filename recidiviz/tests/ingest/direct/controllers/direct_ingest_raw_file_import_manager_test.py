@@ -42,6 +42,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager i
     DirectIngestRegionRawFileConfig,
     RawTableColumnInfo,
 )
+from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     filename_parts_from_path,
@@ -51,7 +52,6 @@ from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tests.ingest.direct import fixture_util
 from recidiviz.tests.ingest.direct.direct_ingest_util import (
-    _TestSafeGcsCsvReader,
     path_for_fixture_file_in_test_gcs_directory,
 )
 from recidiviz.tests.ingest.direct.fake_regions.us_xx.raw_data.migrations import (
@@ -246,7 +246,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             region_raw_file_config=self.region_raw_file_config,
             big_query_client=self.mock_big_query_client,
         )
-        self.import_manager.csv_reader = _TestSafeGcsCsvReader(self.fs.gcs_file_system)
+        self.import_manager.csv_reader = GcsfsCsvReader(self.fs.gcs_file_system)
 
         self.time_patcher = patch(
             "recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager.time"
