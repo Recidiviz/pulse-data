@@ -1,0 +1,15 @@
+file_tag: docstars_ref_lsi_need
+file_description: |-
+  Reference file where each row maps to a specific LSI need area
+primary_key_cols: [NEED_TYPE]
+columns:
+ - name : NEED_TYPE
+   description : |-
+     Code of the LSI Need
+ - name : DESCRIPTION
+   description : |-
+     Description of the LSI NEED
+ - name : ACTIVE
+   description : |-
+     Flag for whether this need is active
+ - name : SORT_ORDER

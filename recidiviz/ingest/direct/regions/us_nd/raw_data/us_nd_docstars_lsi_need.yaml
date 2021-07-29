@@ -1,0 +1,18 @@
+file_tag: docstars_lsi_need
+file_description: |-
+  Each row is a need that is being addressed by an LSI supervision plan
+primary_key_cols: [NEED_ID]
+columns:
+ - name : NEED_ID
+   description : |-
+     Unique ID for each LSI need
+ - name : LSI_SUPERPLAN_ID
+   description : |-
+     ID for an overall LSI supervision plan. Maps onto docstars_lsi_superplan.LSI_SUPERPLAN_ID
+ - name : NEED_TYPE
+   description : |-
+     Code of the need that is being addressed, maps onto docstars_ref_lsi_need.NEED_TYPE
+ - name : OBJECTIVE
+   description : |-
+     Goal of identifying this need
+ - name : INACTIVEDATE

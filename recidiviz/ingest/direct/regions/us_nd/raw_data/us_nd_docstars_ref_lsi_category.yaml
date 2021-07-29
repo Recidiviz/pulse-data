@@ -1,0 +1,17 @@
+file_tag: docstars_ref_lsi_category
+file_description: |-
+  Reference file where each row refers to a category of program referrals
+primary_key_cols: [CATEGORY_ID]
+columns:
+ - name : CATEGORY_ID
+   description : |-
+     ID that uniquely identifies a type of program referral
+ - name : WORK_STEP
+   description : |-
+     Broad category of program referrals
+ - name : CATEGORY
+   description : |-
+     Specific category of program referrals
+ - name : ACTIVE
+   description : |-
+     Whether the program category is active
