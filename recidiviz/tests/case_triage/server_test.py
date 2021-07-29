@@ -25,11 +25,8 @@ import pytest
 from flask import Flask, Response, g, jsonify, session
 from sqlalchemy.orm import Session
 
-from recidiviz.case_triage.admin_flask_views import (
-    IMPERSONATED_EMAIL_KEY,
-    ImpersonateUser,
-)
-from recidiviz.case_triage.authorization import AuthorizationStore
+from recidiviz.case_triage.api_routes import IMPERSONATED_EMAIL_KEY
+from recidiviz.case_triage.authorization import AccessPermissions, AuthorizationStore
 from recidiviz.case_triage.case_updates.serializers import serialize_client_case_version
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.client_info.types import PreferredContactMethod
@@ -44,10 +41,7 @@ from recidiviz.case_triage.user_context import UserContext
 from recidiviz.persistence.database.schema.case_triage.schema import ETLOfficer
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.tests.case_triage.api_test_helpers import (
-    CaseTriageTestHelpers,
-    passthrough_authorization_decorator,
-)
+from recidiviz.tests.case_triage.api_test_helpers import CaseTriageTestHelpers
 from recidiviz.tests.case_triage.case_triage_helpers import (
     generate_fake_case_update,
     generate_fake_client,
@@ -216,12 +210,12 @@ class TestCaseTriageAPIRoutes(TestCase):
     def test_defer_opportunity_malformed_input(self) -> None:
         with self.helpers.using_officer(self.officer) as test_client:
             # GET instead of POST
-            response = self.test_client.get("/opportunity_deferrals")
+            response = self.test_client.get("/api/opportunity_deferrals")
             self.assertEqual(response.status_code, HTTPStatus.METHOD_NOT_ALLOWED)
 
             # `personExternalId` doesn't map to a real person
             response = test_client.post(
-                "/opportunity_deferrals",
+                "/api/opportunity_deferrals",
                 json={
                     "personExternalId": "nonexistent-person",
                     "opportunityType": OpportunityType.EARLY_DISCHARGE.value,
@@ -304,7 +298,7 @@ class TestCaseTriageAPIRoutes(TestCase):
         # Fetch original deferral id
         with self.helpers.using_officer(self.officer_without_clients) as test_client:
             response = test_client.delete(
-                f"/opportunity_deferrals/{self.deferral_1.deferral_id}"
+                f"/api/opportunity_deferrals/{self.deferral_1.deferral_id}"
             )
             self.assertEqual(
                 response.status_code, HTTPStatus.BAD_REQUEST, response.get_json()
@@ -313,12 +307,12 @@ class TestCaseTriageAPIRoutes(TestCase):
     def test_case_updates_malformed_input(self) -> None:
         with self.helpers.using_officer(self.officer) as test_client:
             # GET instead of POST
-            response = test_client.get("/case_updates")
+            response = test_client.get("/api/case_updates")
             self.assertEqual(response.status_code, HTTPStatus.METHOD_NOT_ALLOWED)
 
             # `personExternalId` doesn't map to a real person
             response = test_client.post(
-                "/case_updates",
+                "/api/case_updates",
                 json={
                     "personExternalId": "nonexistent-person",
                     "actionType": CaseUpdateActionType.NOT_ON_CASELOAD.value,
@@ -388,7 +382,7 @@ class TestCaseTriageAPIRoutes(TestCase):
                 client["caseUpdates"],
             )
 
-            response = test_client.delete(f"/case_updates/{case_update.update_id}")
+            response = test_client.delete(f"/api/case_updates/{case_update.update_id}")
             self.assertEqual(response.status_code, 200)
             self.mock_segment_client.track_person_action_removed.assert_called()
 
@@ -405,18 +399,18 @@ class TestCaseTriageAPIRoutes(TestCase):
 
         # Officer trying to delete another officer's update
         with self.helpers.using_officer(self.officer_without_clients) as test_client:
-            response = test_client.delete(f"/case_updates/{case_update.update_id}")
+            response = test_client.delete(f"/api/case_updates/{case_update.update_id}")
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
 
         # No signed in user
         with self.helpers.using_demo_user() as test_client:
-            response = test_client.delete(f"/case_updates/{case_update.update_id}")
+            response = test_client.delete(f"/api/case_updates/{case_update.update_id}")
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
 
     def test_post_state_policy(self) -> None:
         with self.helpers.using_officer(self.officer) as test_client:
             response = test_client.post(
-                "/policy_requirements_for_state", json={"state": "US_ID"}
+                "/api/policy_requirements_for_state", json={"state": "US_ID"}
             )
             self.assertEqual(response.status_code, HTTPStatus.OK)
 
@@ -461,7 +455,7 @@ class TestCaseTriageAPIRoutes(TestCase):
 
             # Unset preferred contact fails
             response = test_client.post(
-                "/set_preferred_contact_method",
+                "/api/set_preferred_contact_method",
                 json={
                     "personExternalId": self.client_1.person_external_id,
                     "contactMethod": None,
@@ -498,7 +492,7 @@ class TestCaseTriageAPIRoutes(TestCase):
         with self.helpers.using_officer(self.officer_without_clients) as test_client:
             # Test that you cannot set preferred contact
             response = test_client.post(
-                "/set_preferred_contact_method",
+                "/api/set_preferred_contact_method",
                 json={
                     "personExternalId": self.client_1.person_external_id,
                     "contactMethod": PreferredContactMethod.Call.value,
@@ -508,7 +502,7 @@ class TestCaseTriageAPIRoutes(TestCase):
 
             # Test that you cannot set preferred name
             response = test_client.post(
-                "/set_preferred_name",
+                "/api/set_preferred_name",
                 json={
                     "personExternalId": self.client_1.person_external_id,
                     "name": "Preferred",
@@ -518,7 +512,7 @@ class TestCaseTriageAPIRoutes(TestCase):
 
             # Test that you cannot mark as receiving SSI/disability income
             response = test_client.post(
-                "/set_receiving_ssi_or_disability_income",
+                "/api/set_receiving_ssi_or_disability_income",
                 json={
                     "personExternalId": self.client_1.person_external_id,
                     "markReceiving": True,
@@ -631,7 +625,7 @@ class TestCaseTriageAPIRoutes(TestCase):
         with self.helpers.using_officer(self.officer) as test_client:
             # Check that creating an empty note fails
             response = test_client.post(
-                "/create_note",
+                "/api/create_note",
                 json={
                     "personExternalId": self.officer.external_id,
                     "text": "",
@@ -647,7 +641,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             )
 
             response = test_client.post(
-                "/update_note",
+                "/api/update_note",
                 json={
                     "noteId": note_id,
                     "text": "",
@@ -675,17 +669,17 @@ class TestCaseTriageAPIRoutes(TestCase):
         with self.helpers.using_readonly_user(
             self.officer.email_address
         ) as test_client:
-            read_operations: List[str] = ["/clients", "/opportunities"]
+            read_operations: List[str] = ["/api/clients", "/api/opportunities"]
             post_operations: List[Tuple[str, Dict[str, Any]]] = [
                 (
-                    "/create_note",
+                    "/api/create_note",
                     {
                         "personExternalId": self.client_1.person_external_id,
                         "text": "test_text",
                     },
                 ),
                 (
-                    "/opportunity_deferrals",
+                    "/api/opportunity_deferrals",
                     {
                         "personExternalId": self.client_2.person_external_id,
                         "opportunityType": OpportunityType.EARLY_DISCHARGE.value,
@@ -695,7 +689,7 @@ class TestCaseTriageAPIRoutes(TestCase):
                     },
                 ),
                 (
-                    "/case_updates",
+                    "/api/case_updates",
                     {
                         "personExternalId": self.client_3.person_external_id,
                         "actionType": CaseUpdateActionType.COMPLETED_ASSESSMENT.value,
@@ -704,8 +698,8 @@ class TestCaseTriageAPIRoutes(TestCase):
                 ),
             ]
             delete_operations: List[str] = [
-                f"/opportunity_deferrals/{self.deferral_1.deferral_id}",
-                f"/case_updates/{self.case_update_1.update_id}",
+                f"/api/opportunity_deferrals/{self.deferral_1.deferral_id}",
+                f"/api/case_updates/{self.case_update_1.update_id}",
             ]
             for read_endpoint in read_operations:
                 response = test_client.get(read_endpoint)
@@ -723,14 +717,17 @@ class TestCaseTriageAPIRoutes(TestCase):
     def test_fetch_user_info_correct_officer_when_impersonating(
         self, mock_officer_for_email: MagicMock
     ) -> None:
-        def mock_officer(_session: Session, _email: str) -> ETLOfficer:
-            return self.officer
+        def mock_officer(_session: Session, email: str) -> ETLOfficer:
+            if email == self.officer.email_address:
+                return self.officer
+            return generate_fake_officer("test", email)
 
         mock_officer_for_email.side_effect = mock_officer
+
         with self.helpers.using_readonly_user(
             self.officer.email_address
         ) as test_client:
-            test_client.get("/clients")
+            self.test_client.get("/api/clients")
             # Impersonated user
             self.assertIn(
                 self.officer.email_address,
@@ -738,7 +735,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             )
 
         with self.helpers.using_ordinary_user("admin@recidiviz.org") as test_client:
-            test_client.get("/clients")
+            test_client.get("/api/clients")
             # Non-impersonated user
             self.assertIn(
                 "admin@recidiviz.org", mock_officer_for_email.call_args_list[1].args
@@ -755,7 +752,7 @@ class TestCaseTriageAPIRoutes(TestCase):
 
         mock_officer_for_email.side_effect = mock_officer
         with self.helpers.using_readonly_user("not-found@recidiviz.org") as test_client:
-            test_client.get("/clients")
+            test_client.get("/api/clients")
             # Assert that we called officer_for_email twice
             self.assertEqual(mock_officer_for_email.call_count, 2)
             # Assert that we attempted to call impersonated user, but this ran into exception
@@ -766,6 +763,41 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.assertIn(
                 "admin@recidiviz.org", mock_officer_for_email.call_args_list[1].args
             )
+
+    @patch("recidiviz.case_triage.querier.querier.CaseTriageQuerier.officer_for_email")
+    def test_no_exception_if_both_impersonated_officer_and_self_not_found(
+        self, mock_officer_for_email: MagicMock
+    ) -> None:
+        def mock_officer(_session: Session, _email: str) -> ETLOfficer:
+            raise OfficerDoesNotExistError
+
+        mock_officer_for_email.side_effect = mock_officer
+        auth_store = AuthorizationStore()
+        with self.test_app.test_request_context():
+            auth_store.case_triage_admin_users = ["not-found-admin@recidiviz.org"]
+            with self.test_client.session_transaction() as sess:  # type: ignore
+                sess["user_info"] = {"email": "not-found-admin@recidiviz.org"}
+            g.user_context = UserContext.base_context_for_email(
+                "not-found-admin@recidiviz.org", auth_store
+            )
+            # Perform initial impersonation
+            response = self.test_client.get(
+                f"/api/bootstrap?{IMPERSONATED_EMAIL_KEY}=non-existent%40recidiviz.org"
+            )
+            # Assert we called officer_for_email twice, once for the non-existent impersonated user, once for non-existent self
+            self.assertEqual(mock_officer_for_email.call_count, 2)
+            self.assertIn(
+                "non-existent@recidiviz.org",
+                mock_officer_for_email.call_args_list[0].args,
+            )
+            self.assertIn(
+                "not-found-admin@recidiviz.org",
+                mock_officer_for_email.call_args_list[1].args,
+            )
+            self.assertIsNone(g.user_context.current_user)
+            with self.test_client.session_transaction() as sess:  # type: ignore
+                self.assertTrue(IMPERSONATED_EMAIL_KEY not in session)
+            self.assertEqual(response.status_code, HTTPStatus.OK)
 
 
 class TestUserImpersonation(TestCase):
@@ -781,23 +813,12 @@ class TestUserImpersonation(TestCase):
         self.metadata_patcher.start().return_value = "recidiviz-456"
 
         self.auth_store = AuthorizationStore()
-
-        def no_op() -> str:
-            return ""
+        self.officer = generate_fake_officer("officer_id_1", "officer1@recidiviz.org")
 
         self.test_app = Flask(__name__)
         self.test_app.secret_key = "NOT-A-SECRET"
-        self.test_app.add_url_rule("/", view_func=no_op)
-        self.test_app.add_url_rule(
-            "/impersonate_user",
-            view_func=ImpersonateUser.as_view(
-                "impersonate_user",
-                redirect_url="/",
-                authorization_store=self.auth_store,
-                authorization_decorator=passthrough_authorization_decorator(),
-            ),
-        )
-        self.test_client = self.test_app.test_client()
+        self.helpers = CaseTriageTestHelpers.from_test(self, self.test_app)
+        self.test_client = self.helpers.test_client
 
         @self.test_app.errorhandler(FlaskException)
         def _handle_auth_error(ex: FlaskException) -> Response:
@@ -815,8 +836,14 @@ class TestUserImpersonation(TestCase):
 
     @patch("recidiviz.case_triage.authorization.AuthorizationStore.can_impersonate")
     @patch("recidiviz.case_triage.querier.querier.CaseTriageQuerier.officer_for_email")
+    @patch(
+        "recidiviz.case_triage.authorization.AuthorizationStore.get_access_permissions"
+    )
     def test_non_admin(
-        self, mock_officer_for_email: MagicMock, mock_can_impersonate: MagicMock
+        self,
+        mock_get_access_permissions: MagicMock,
+        mock_officer_for_email: MagicMock,
+        mock_can_impersonate: MagicMock,
     ) -> None:
         def test_officer_for_email(_: Session, email: str) -> ETLOfficer:
             return generate_fake_officer(officer_id="test", email=email)
@@ -824,8 +851,16 @@ class TestUserImpersonation(TestCase):
         def test_impersonate(_email: str, _other_email: str) -> bool:
             return False
 
+        def test_get_access_permissions(_email: str) -> AccessPermissions:
+            return AccessPermissions(
+                can_access_case_triage=True,
+                can_access_leadership_dashboard=False,
+                impersonatable_state_codes=[],
+            )
+
         mock_can_impersonate.side_effect = test_impersonate
         mock_officer_for_email.side_effect = test_officer_for_email
+        mock_get_access_permissions.side_effect = test_get_access_permissions
         with self.test_app.test_request_context():
             # Test that if there's no given email, a non-admin falls through as if
             # impersonation didn't happen at all.
@@ -834,8 +869,8 @@ class TestUserImpersonation(TestCase):
                     "email": "non-admin@recidiviz.org",
                 }
             g.user_context = UserContext("non-admin@recidiviz.org", self.auth_store)
-            response = self.test_client.get("/impersonate_user")
-            self.assertEqual(response.status_code, HTTPStatus.FOUND)
+            response = self.test_client.get("/api/bootstrap")
+            self.assertEqual(response.status_code, HTTPStatus.OK)
 
             # Test that if there's a given email, a non-admin also falls through as if
             # impersonation didn't happen at all and that key is no longer in the session.
@@ -845,25 +880,14 @@ class TestUserImpersonation(TestCase):
                 }
             g.user_context = UserContext("non-admin@recidiviz.org", self.auth_store)
             response = self.test_client.get(
-                f"/impersonate_user?{IMPERSONATED_EMAIL_KEY}=user%40recidiviz.org"
+                f"/api/bootstrap?{IMPERSONATED_EMAIL_KEY}=user%40recidiviz.org"
             )
             with self.test_client.session_transaction() as sess:  # type: ignore
                 self.assertTrue(IMPERSONATED_EMAIL_KEY not in session)
-            self.assertEqual(response.status_code, HTTPStatus.FOUND)
-
-    def test_no_query_params(self) -> None:
-        with self.test_app.test_request_context():
-            self.auth_store.case_triage_admin_users = ["admin@recidiviz.org"]
-            with self.test_client.session_transaction() as sess:  # type: ignore
-                sess["user_info"] = {
-                    "email": "admin@recidiviz.org",
-                }
-            g.user_context = UserContext("admin@recidiviz.org", self.auth_store)
-            response = self.test_client.get("/impersonate_user")
-            self.assertEqual(response.status_code, HTTPStatus.FOUND)
-
-            with self.test_client.session_transaction() as sess:  # type: ignore
-                self.assertTrue(IMPERSONATED_EMAIL_KEY not in session)
+            self.assertEqual(response.status_code, HTTPStatus.OK)
+            self.assertEqual(
+                g.user_context.current_user.email_address, "non-admin@recidiviz.org"
+            )
 
     @patch("recidiviz.case_triage.querier.querier.CaseTriageQuerier.officer_for_email")
     def test_happy_path(self, mock_officer_for_email: MagicMock) -> None:
@@ -879,16 +903,24 @@ class TestUserImpersonation(TestCase):
                 }
             g.user_context = UserContext("admin@recidiviz.org", self.auth_store)
             response = self.test_client.get(
-                f"/impersonate_user?{IMPERSONATED_EMAIL_KEY}=non-admin%40recidiviz.org"
+                f"/api/bootstrap?{IMPERSONATED_EMAIL_KEY}=non-admin%40recidiviz.org"
             )
-            self.assertEqual(response.status_code, HTTPStatus.FOUND)
+            self.assertEqual(response.status_code, HTTPStatus.OK)
 
             with self.test_client.session_transaction() as sess:  # type: ignore
                 self.assertEqual(
                     sess[IMPERSONATED_EMAIL_KEY], "non-admin@recidiviz.org"
                 )
+            self.assertEqual(
+                g.user_context.current_user.email_address, "non-admin@recidiviz.org"
+            )
 
-    def test_remove_impersonation(self) -> None:
+    @patch("recidiviz.case_triage.querier.querier.CaseTriageQuerier.officer_for_email")
+    def test_remove_impersonation(self, mock_officer_for_email: MagicMock) -> None:
+        def test_officer_for_email(_: Session, email: str) -> ETLOfficer:
+            return generate_fake_officer(officer_id="test", email=email)
+
+        mock_officer_for_email.side_effect = test_officer_for_email
         with self.test_app.test_request_context():
             self.auth_store.case_triage_admin_users = ["admin@recidiviz.org"]
             with self.test_client.session_transaction() as sess:  # type: ignore
@@ -898,12 +930,12 @@ class TestUserImpersonation(TestCase):
             g.user_context = UserContext("admin@recidiviz.org", self.auth_store)
             # Perform initial impersonation
             self.test_client.get(
-                f"/impersonate_user?{IMPERSONATED_EMAIL_KEY}=non-admin%40recidiviz.org"
+                f"/api/bootstrap?{IMPERSONATED_EMAIL_KEY}=non-admin%40recidiviz.org"
             )
 
             # Undo impersonation
-            response = self.test_client.get("/impersonate_user")
-            self.assertEqual(response.status_code, HTTPStatus.FOUND)
+            response = self.test_client.delete("/api/impersonation")
+            self.assertEqual(response.status_code, HTTPStatus.OK)
             with self.test_client.session_transaction() as sess:  # type: ignore
                 self.assertTrue(IMPERSONATED_EMAIL_KEY not in sess)
 

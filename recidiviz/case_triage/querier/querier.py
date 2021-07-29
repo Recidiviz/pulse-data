@@ -56,6 +56,10 @@ class PersonDoesNotExistError(ValueError):
     pass
 
 
+class NoCaseloadException(ValueError):
+    pass
+
+
 class CaseTriageQuerier:
     """Implements Querier abstraction for Case Triage data sources."""
 
@@ -110,7 +114,8 @@ class CaseTriageQuerier:
                 raise PersonDoesNotExistError(
                     f"could not find id: {person_external_id}"
                 ) from e
-        raise ValueError("Not authorized to view clients")
+
+        raise NoCaseloadException()
 
     @staticmethod
     def case_for_client_and_officer(
@@ -202,7 +207,7 @@ class CaseTriageQuerier:
             )
             return [CasePresenter(client, client.case_updates) for client in clients]
 
-        raise ValueError("Not authorized to view clients")
+        raise NoCaseloadException()
 
     @staticmethod
     def officer_for_email(session: Session, officer_email: str) -> ETLOfficer:
@@ -340,7 +345,7 @@ class CaseTriageQuerier:
                 ],
             ]
 
-        raise ValueError("Not authorized to view client opportunities.")
+        raise NoCaseloadException()
 
     @staticmethod
     def fetch_opportunity(

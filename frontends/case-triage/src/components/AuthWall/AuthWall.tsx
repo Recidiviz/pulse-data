@@ -49,7 +49,7 @@ const AuthWall: React.FC = ({ children }): ReactElement | null => {
     throw userStore.authError;
   }
 
-  if (userStore.isLoading) {
+  if (userStore.isLoading || !api.bootstrapped) {
     return (
       <>
         <Header
@@ -67,10 +67,11 @@ const AuthWall: React.FC = ({ children }): ReactElement | null => {
 
   if (
     userStore.canAccessLeadershipDashboard &&
-    !userStore.canAccessCaseTriage
+    !userStore.canAccessCaseTriage &&
+    !userStore.isImpersonating
   ) {
     redirectTo(api.dashboardURL);
-  } else if (!userStore.canAccessCaseTriage) {
+  } else if (!userStore.canAccessCaseTriage && !userStore.isImpersonating) {
     return (
       <ErrorPage headerText="Thank you for your interest in Recidiviz.">
         <p>

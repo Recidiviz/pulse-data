@@ -84,7 +84,7 @@ class UserContext:
     def permission(self) -> Permission:
         if self.should_see_demo:
             return Permission.READ_WRITE
-        if self.email == self.current_user.email_address:
+        if self.current_user and self.email == self.current_user.email_address:
             return Permission.READ_WRITE
         return Permission.READ_ONLY
 
