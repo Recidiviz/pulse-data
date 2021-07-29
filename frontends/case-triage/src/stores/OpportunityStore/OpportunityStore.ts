@@ -54,7 +54,7 @@ class OpportunityStore {
     this.isLoading = false;
 
     const checkAuthAndFetch = () => {
-      if (!this.userStore.isAuthorized) {
+      if (!this.api.ready) {
         return;
       }
 

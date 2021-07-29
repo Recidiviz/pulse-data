@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import * as Sentry from "@sentry/react";
+import { computed, makeObservable, observable, when } from "mobx";
 import { identify } from "../analytics";
 import ErrorMessageStore from "./ErrorMessageStore";
 import UserStore, { FeatureVariants } from "./UserStore";
@@ -28,6 +29,7 @@ interface RequestProps {
   path: string;
   method: "GET" | "POST" | "DELETE";
   body?: Record<string, unknown>;
+  retrying?: boolean;
 }
 
 interface BootstrapResponse {
@@ -57,10 +59,33 @@ export function isErrorResponse(x: {
 }
 
 const BOOTSTRAP_ROUTE = "/api/bootstrap";
-const IMPERSONATE_ROUTE = "/impersonate_user";
 const IMPERSONATED_EMAIL_KEY = "impersonated_email";
 
+interface BootstrapProps {
+  impersonate: string | null;
+}
+
+function popImpersonateParameter(): string | null {
+  const params = new URLSearchParams(window.location.search);
+
+  const impersonate = params.get(IMPERSONATED_EMAIL_KEY);
+  if (impersonate) {
+    params.delete(IMPERSONATED_EMAIL_KEY);
+
+    window.history.replaceState(
+      null,
+      window.document.title,
+      params.toString() ? `/?${params.toString()}` : "/"
+    );
+  }
+  return impersonate;
+}
+
 class API {
+  /* Boolean indicating whether we have received a response from `/api/bootstrap`.
+    When true, we know whether user has access to Case Triage / Leadership tools. If they do have access, the rest of
+    their user-specific information is known.
+   */
   bootstrapped?: boolean;
 
   bootstrapping?: Promise<void>;
@@ -78,67 +103,83 @@ class API {
     this.dashboardURL = "";
     this.errorMessageStore = errorMessageStore;
     this.userStore = userStore;
+    makeObservable(this, {
+      bootstrapped: observable,
+      ready: computed,
+    });
+
+    when(
+      () => userStore.isAuthorized,
+      () => this.bootstrap({ impersonate: popImpersonateParameter() })
+    );
   }
 
-  bootstrap(): Promise<void> {
+  get ready(): boolean {
+    // Indicates whether the API is ready to make requests
+    return !!this.bootstrapped && !!this.csrfToken;
+  }
+
+  bootstrap({ impersonate = "" }: BootstrapProps): Promise<void> {
+    const body = impersonate
+      ? { [IMPERSONATED_EMAIL_KEY]: impersonate }
+      : undefined;
+
     this.bootstrapping =
       this.bootstrapping ||
-      this.get<BootstrapResponse>(BOOTSTRAP_ROUTE).then(
-        ({
-          csrf,
-          segmentUserId,
-          knownExperiments: featureVariants,
-          dashboardURL,
-          officerGivenNames,
-          officerSurname,
-          isImpersonating,
-          canAccessCaseTriage,
-          canAccessLeadershipDashboard,
-        }) => {
-          this.csrfToken = csrf;
-          identify(segmentUserId);
-          this.dashboardURL = dashboardURL;
-          this.userStore.setFeatureVariants(featureVariants);
-          this.userStore.setCaseTriageAccess(canAccessCaseTriage);
-          this.userStore.setLeadershipDashboardAccess(
-            canAccessLeadershipDashboard
-          );
-
-          Sentry.setUser({ id: segmentUserId });
-          Sentry.setTag("app.version", this.userStore.currentVersion);
-
-          this.userStore.setOfficerMetadata(
+      this.get<BootstrapResponse>(BOOTSTRAP_ROUTE, body)
+        .then(
+          ({
+            csrf,
+            segmentUserId,
+            knownExperiments: featureVariants,
+            dashboardURL,
             officerGivenNames,
             officerSurname,
-            isImpersonating
-          );
-          this.bootstrapped = true;
-        }
-      );
+            isImpersonating,
+            canAccessCaseTriage,
+            canAccessLeadershipDashboard,
+          }) => {
+            this.csrfToken = csrf;
+            identify(segmentUserId);
+            this.dashboardURL = dashboardURL;
+            this.userStore.setFeatureVariants(featureVariants);
+            this.userStore.setCaseTriageAccess(canAccessCaseTriage);
+            this.userStore.setLeadershipDashboardAccess(
+              canAccessLeadershipDashboard
+            );
+
+            Sentry.setUser({ id: segmentUserId });
+            Sentry.setTag("app.version", this.userStore.currentVersion);
+
+            this.userStore.setOfficerMetadata(
+              officerGivenNames,
+              officerSurname,
+              isImpersonating
+            );
+            this.bootstrapped = true;
+          }
+        )
+        .catch((error) => {
+          if (error.code === "no_case_triage_access") {
+            this.userStore.setCaseTriageAccess(false);
+            this.userStore.setLeadershipDashboardAccess(false);
+            this.bootstrapped = true;
+          }
+        });
 
     return this.bootstrapping;
   }
 
-  async request<T>({ path, method, body }: RequestProps): Promise<T> {
+  async request<T>({
+    path,
+    method,
+    body,
+    retrying = false,
+  }: RequestProps): Promise<T> {
     try {
-      // Check if it's an impersonation request
-      const params = new URLSearchParams(window.location.search);
-      const impersonate = params.get(IMPERSONATED_EMAIL_KEY);
-      if (impersonate) {
-        params.delete(IMPERSONATED_EMAIL_KEY);
-        window.history.replaceState(
-          null,
-          window.document.title,
-          params.toString() ? `/?${params.toString()}` : "/"
-        );
-        await this.post(IMPERSONATE_ROUTE, {
-          [IMPERSONATED_EMAIL_KEY]: impersonate,
-        });
-        window.location.reload();
-      }
       // Defer all requests until the API client has bootstrapped itself
-      if (!this.bootstrapped && path !== BOOTSTRAP_ROUTE) {
-        await this.bootstrap();
+      if (!this.bootstrapped && path.indexOf(BOOTSTRAP_ROUTE) === -1) {
+        await this.bootstrap({ impersonate: popImpersonateParameter() });
       }
 
       if (!this.userStore.getTokenSilently) {
@@ -171,11 +212,14 @@ class API {
 
       if (response.status === 400 && json.code === "invalid_csrf_token") {
         this.invalidateBootstrap();
-        return this.request<T>({ path, method, body });
+        if (!retrying) {
+          return this.request<T>({ path, method, body, retrying: true });
+        }
       }
 
       if (response.status === 401 && json.code === "no_case_triage_access") {
         this.userStore.setCaseTriageAccess(false);
+        this.userStore.setLeadershipDashboardAccess(false);
       }
 
       if (isErrorResponse(json)) {
@@ -194,8 +238,13 @@ class API {
     return this.request({ path, method: "DELETE" });
   }
 
-  async get<T>(path: string): Promise<T> {
-    return this.request({ path, method: "GET" });
+  async get<T>(path: string, body: Record<string, string> = {}): Promise<T> {
+    const search = new URLSearchParams(body).toString();
+    let pathWithSearch = path;
+    if (search) {
+      pathWithSearch = `${path}?${search}`;
+    }
+    return this.request({ path: pathWithSearch, method: "GET" });
   }
 
   async post<T>(path: string, body: Record<string, unknown>): Promise<T> {

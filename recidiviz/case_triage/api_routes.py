@@ -15,17 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements API routes for the Case Triage app."""
+import logging
 import os
 from functools import wraps
 from http import HTTPStatus
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 from flask import Blueprint, Response, current_app, g, jsonify
-from flask.globals import session
+from flask.globals import request, session
 from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import generate_csrf
 
-from recidiviz.case_triage.admin_flask_views import IMPERSONATED_EMAIL_KEY
 from recidiviz.case_triage.analytics import CaseTriageSegmentClient
 from recidiviz.case_triage.api_schemas import (
     CaseUpdateSchema,
@@ -73,6 +73,8 @@ from recidiviz.case_triage.querier.querier import (
 from recidiviz.case_triage.state_utils.requirements import policy_requirements_for_state
 from recidiviz.case_triage.user_context import Permission
 from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
+
+IMPERSONATED_EMAIL_KEY = "impersonated_email"
 
 
 def load_client(person_external_id: str) -> ETLClient:
@@ -125,6 +127,14 @@ def create_api_blueprint(
             # However, in the case that it doesn't successfully happen, this is to check
             # for that.
             raise CaseTriageSecretForbiddenException()
+
+        impersonated_email: Optional[str] = None
+        if request.url_rule and request.url_rule.rule == "/api/bootstrap":
+            impersonated_email = request.args.get(IMPERSONATED_EMAIL_KEY)
+
+            if impersonated_email:
+                session[IMPERSONATED_EMAIL_KEY] = impersonated_email
+
         if IMPERSONATED_EMAIL_KEY in session:
             try:
                 impersonated_officer = CaseTriageQuerier.officer_for_email(
@@ -132,7 +142,10 @@ def create_api_blueprint(
                 )
                 if g.user_context.can_impersonate(impersonated_officer):
                     g.user_context.current_user = impersonated_officer
-            except OfficerDoesNotExistError as e:
+                else:
+                    session.pop(IMPERSONATED_EMAIL_KEY)
+            except OfficerDoesNotExistError:
+                logging.warning("Cannot find officer for email %s", impersonated_email)
                 session.pop(IMPERSONATED_EMAIL_KEY)
 
         if not g.user_context.current_user:
@@ -140,12 +153,18 @@ def create_api_blueprint(
                 g.user_context.current_user = CaseTriageQuerier.officer_for_email(
                     current_session, g.user_context.email
                 )
-            except OfficerDoesNotExistError as e:
-                if not g.user_context.can_see_demo_data:
-                    raise CaseTriageAuthorizationError(
-                        code="no_case_triage_access",
-                        description="You are not authorized to access this application",
-                    ) from e
+            except OfficerDoesNotExistError:
+                pass
+
+    @route_with_permissions(
+        api,
+        "/impersonation",
+        [Permission.READ_WRITE, Permission.READ_ONLY],
+        methods=["DELETE"],
+    )
+    def _delete_impersonation() -> Response:
+        session.pop(IMPERSONATED_EMAIL_KEY)
+        return jsonify({"status": "ok"})
 
     @route_with_permissions(
         api, "/clients", [Permission.READ_WRITE, Permission.READ_ONLY]

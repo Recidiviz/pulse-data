@@ -85,13 +85,14 @@ const UserComponent = ({ user }: UserProps): JSX.Element => {
             <DropdownLinkButton
               kind="link"
               onClick={async () => {
-                await api.post(
-                  // To impersonate a user, add to the body
-                  // impersonated_email: some-user@recidiviz.org
-                  "/impersonate_user",
-                  { impersonated_email: "nikhil@recidiviz.org" }
-                );
-                window.location.reload();
+                const url = new URL(window.location.origin);
+                url.search = new URLSearchParams({
+                  impersonated_email:
+                    // eslint-disable-next-line no-alert
+                    window.prompt("Enter the officer's email:") || "",
+                }).toString();
+
+                window.location.href = url.toString();
               }}
             >
               Impersonate User
@@ -129,7 +130,7 @@ const UserSection = () => {
         <ToolbarButton
           kind="primary"
           onClick={async () => {
-            await api.post("/impersonate_user", {});
+            await api.delete("/api/impersonation");
             window.location.reload();
           }}
         >

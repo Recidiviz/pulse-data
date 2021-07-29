@@ -24,7 +24,7 @@ from flask import Flask, Response, g, send_from_directory, session
 from flask_wtf.csrf import CSRFProtect
 from sentry_sdk.integrations.flask import FlaskIntegration
 
-from recidiviz.case_triage.admin_flask_views import ImpersonateUser, RefreshAuthStore
+from recidiviz.case_triage.admin_flask_views import RefreshAuthStore
 from recidiviz.case_triage.analytics import CaseTriageSegmentClient
 from recidiviz.case_triage.api_routes import create_api_blueprint
 from recidiviz.case_triage.authorization import AuthorizationStore
@@ -85,15 +85,19 @@ setup_scoped_sessions(app, db_url)
 
 
 # Auth setup
-def on_successful_authorization(_payload: Dict[str, str], token: str) -> None:
+def on_successful_authorization(payload: Dict[str, str], token: str) -> None:
     """
     Memoize the user's info (email_address, picture, etc) into our session
     """
-    if "user_info" not in session:
+
+    # Populate the session with user information; This could have changed since the last request
+    if session.get("jwt_sub", None) != payload["sub"]:
+        session["jwt_sub"] = payload["sub"]
         session["user_info"] = get_userinfo(authorization_config.domain, token)
 
     email = session["user_info"]["email"].lower()
     g.user_context = UserContext(email, authorization_store)
+
     if (
         not g.user_context.access_permissions.can_access_case_triage
         and not g.user_context.access_permissions.can_access_leadership_dashboard
@@ -152,16 +156,6 @@ api = create_api_blueprint(segment_client, requires_authorization)
 app.register_blueprint(api, url_prefix="/api")
 app.register_blueprint(e2e_blueprint, url_prefix="/e2e")
 
-app.add_url_rule(
-    "/impersonate_user",
-    view_func=ImpersonateUser.as_view(
-        "impersonate_user",
-        redirect_url="/",
-        authorization_store=authorization_store,
-        authorization_decorator=requires_authorization,
-    ),
-    methods=["GET", "POST"],
-)
 app.add_url_rule(
     "/refresh_auth_store",
     view_func=RefreshAuthStore.as_view(

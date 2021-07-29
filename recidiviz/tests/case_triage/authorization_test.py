@@ -255,9 +255,7 @@ class TestAccessPermissions(TestCase):
             ("case-triage@not-recidiviz.org", False),
         ]
     )
-    def test_can_impersonate_state_US_XX(
-        self, email: str, can_impersonate: bool
-    ) -> None:
+    def test_can_impersonate_US_XX(self, email: str, can_impersonate: bool) -> None:
         self.assertEqual(
             self.auth_store.can_impersonate(
                 email,

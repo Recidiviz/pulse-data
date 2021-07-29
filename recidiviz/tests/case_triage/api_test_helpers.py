@@ -27,8 +27,10 @@ from flask import Flask, g
 from flask.testing import FlaskClient
 from mock import MagicMock
 
-from recidiviz.case_triage.admin_flask_views import IMPERSONATED_EMAIL_KEY
-from recidiviz.case_triage.api_routes import create_api_blueprint
+from recidiviz.case_triage.api_routes import (
+    IMPERSONATED_EMAIL_KEY,
+    create_api_blueprint,
+)
 from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.client_info.types import PreferredContactMethod
 from recidiviz.case_triage.error_handlers import register_error_handlers
@@ -68,7 +70,7 @@ class CaseTriageTestHelpers:
             self.mock_segment_client,
             passthrough_authorization_decorator(),
         )
-        self.test_app.register_blueprint(api)
+        self.test_app.register_blueprint(api, url_prefix="/api")
         self.test_client = self.test_app.test_client()
 
     def set_session_user_info(self, email: str) -> None:
@@ -119,12 +121,12 @@ class CaseTriageTestHelpers:
             yield self.test_client
 
     def get_clients(self) -> List[Dict[Any, Any]]:
-        response = self.test_client.get("/clients")
+        response = self.test_client.get("/api/clients")
         self.test.assertEqual(response.status_code, HTTPStatus.OK)
         return response.get_json()
 
     def get_opportunities(self) -> List[Dict[Any, Any]]:
-        response = self.test_client.get("/opportunities")
+        response = self.test_client.get("/api/opportunities")
         self.test.assertEqual(response.status_code, HTTPStatus.OK)
         return response.get_json()
 
@@ -146,7 +148,7 @@ class CaseTriageTestHelpers:
         self, person_external_id: str, action_type: str, comment: str = ""
     ) -> None:
         response = self.test_client.post(
-            "/case_updates",
+            "/api/case_updates",
             json={
                 "personExternalId": person_external_id,
                 "actionType": action_type,
@@ -159,7 +161,7 @@ class CaseTriageTestHelpers:
 
     def create_note(self, person_external_id: str, text: str) -> str:
         response = self.test_client.post(
-            "/create_note",
+            "/api/create_note",
             json={
                 "personExternalId": person_external_id,
                 "text": text,
@@ -178,7 +180,7 @@ class CaseTriageTestHelpers:
         deferral_type: str = "REMINDER",
     ) -> None:
         response = self.test_client.post(
-            "/opportunity_deferrals",
+            "/api/opportunity_deferrals",
             json={
                 "personExternalId": person_external_id,
                 "opportunityType": opportunity_type,
@@ -194,7 +196,7 @@ class CaseTriageTestHelpers:
         self,
         deferral_id: str,
     ) -> None:
-        response = self.test_client.delete(f"/opportunity_deferrals/{deferral_id}")
+        response = self.test_client.delete(f"/api/opportunity_deferrals/{deferral_id}")
         self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
 
     def find_client_in_api_response(self, person_external_id: str) -> Dict[Any, Any]:
@@ -219,7 +221,7 @@ class CaseTriageTestHelpers:
 
     def resolve_note(self, note_id: str, is_resolved: bool) -> None:
         response = self.test_client.post(
-            "/resolve_note",
+            "/api/resolve_note",
             json={"noteId": note_id, "isResolved": is_resolved},
         )
 
@@ -229,7 +231,7 @@ class CaseTriageTestHelpers:
         self, person_external_id: str, contact_method: PreferredContactMethod
     ) -> None:
         response = self.test_client.post(
-            "/set_preferred_contact_method",
+            "/api/set_preferred_contact_method",
             json={
                 "personExternalId": person_external_id,
                 "contactMethod": contact_method.value,
@@ -240,7 +242,7 @@ class CaseTriageTestHelpers:
 
     def set_preferred_name(self, person_external_id: str, name: Optional[str]) -> None:
         response = self.test_client.post(
-            "/set_preferred_name",
+            "/api/set_preferred_name",
             json={
                 "personExternalId": person_external_id,
                 "name": name,
@@ -253,7 +255,7 @@ class CaseTriageTestHelpers:
         self, person_external_id: str, mark_receiving: bool
     ) -> None:
         response = self.test_client.post(
-            "/set_receiving_ssi_or_disability_income",
+            "/api/set_receiving_ssi_or_disability_income",
             json={
                 "personExternalId": person_external_id,
                 "markReceiving": mark_receiving,
@@ -264,7 +266,7 @@ class CaseTriageTestHelpers:
 
     def update_note(self, note_id: str, text: str) -> None:
         response = self.test_client.post(
-            "/update_note",
+            "/api/update_note",
             json={
                 "noteId": note_id,
                 "text": text,

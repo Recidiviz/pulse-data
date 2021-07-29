@@ -141,7 +141,7 @@ class TestDemoUser(TestCase):
                 CaseUpdateActionType.COMPLETED_ASSESSMENT.value
             ]["updateId"]
 
-            response = test_client.delete(f"/case_updates/{case_update_id}")
+            response = test_client.delete(f"/api/case_updates/{case_update_id}")
             self.assertEqual(response.status_code, HTTPStatus.OK)
 
             new_client = self.helpers.find_client_in_api_response(
@@ -256,7 +256,7 @@ class TestDemoUser(TestCase):
 
             # Unset preferred contact fails
             response = test_client.post(
-                "/set_preferred_contact_method",
+                "/api/set_preferred_contact_method",
                 json={
                     "personExternalId": client.person_external_id,
                     "contactMethod": None,

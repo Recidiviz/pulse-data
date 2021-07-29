@@ -15,68 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements a flask view for impersonating a user."""
-import logging
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
-from flask import g, jsonify, redirect, request, session
+from flask import redirect, session
 from flask.views import View
-from flask_sqlalchemy_session import current_session
 from werkzeug.wrappers import Response
 
 from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.exceptions import CaseTriageSecretForbiddenException
-from recidiviz.case_triage.querier.querier import (
-    CaseTriageQuerier,
-    OfficerDoesNotExistError,
-)
-
-IMPERSONATED_EMAIL_KEY = "impersonated_email"
-
-
-class ImpersonateUser(View):
-    """Implements a flask view for impersonating a user."""
-
-    def __init__(
-        self,
-        redirect_url: str,
-        authorization_store: AuthorizationStore,
-        authorization_decorator: Callable,
-    ):
-        self.redirect_url = redirect_url
-        self.authorization_store = authorization_store
-        self.authorization_decorator = authorization_decorator
-
-    def _set_impersonation(self) -> Response:
-        """Appropriately reroutes the request if a user requests to impersonate
-        another user and has the permissions to do so."""
-        if not hasattr(g, "user_context"):
-            raise CaseTriageSecretForbiddenException()
-
-        impersonated_email: Optional[str] = None
-        if request.method == "GET" and IMPERSONATED_EMAIL_KEY in request.args:
-            impersonated_email = request.args.get(IMPERSONATED_EMAIL_KEY)
-        elif request.method == "POST" and request.json:
-            impersonated_email = request.json.get(IMPERSONATED_EMAIL_KEY)
-
-        if IMPERSONATED_EMAIL_KEY in session:
-            session.pop(IMPERSONATED_EMAIL_KEY)
-
-        if impersonated_email:
-            try:
-                officer = CaseTriageQuerier.officer_for_email(
-                    current_session, impersonated_email
-                )
-                if g.user_context.can_impersonate(officer):
-                    session[IMPERSONATED_EMAIL_KEY] = impersonated_email.lower()
-            except OfficerDoesNotExistError:
-                logging.warning("Cannot find officer for email %s", impersonated_email)
-
-        if request.method == "POST":
-            return jsonify({"status": "ok"})
-        return redirect(self.redirect_url)
-
-    def dispatch_request(self, *_args: Any, **_kwargs: Any) -> Response:
-        return self.authorization_decorator(self._set_impersonation)()
 
 
 class RefreshAuthStore(View):
