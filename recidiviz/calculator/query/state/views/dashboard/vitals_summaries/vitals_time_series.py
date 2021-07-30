@@ -51,7 +51,11 @@ def generate_time_series_query(
       END as entity_id,
       "{metric_name.upper()}" as metric,
       ROUND({metric_field}) as value,
-      ROUND(AVG({metric_field}) OVER (ORDER BY district_id, supervising_officer_external_id, date_of_supervision ROWS BETWEEN 29 PRECEDING AND CURRENT ROW)) as avg_30d
+      ROUND(AVG(ROUND({metric_field})) OVER (
+        PARTITION BY state_code, district_id, supervising_officer_external_id
+        ORDER BY date_of_supervision
+        ROWS BETWEEN 29 PRECEDING AND CURRENT ROW
+      ), 1) as avg_30d,
     FROM `{{project_id}}.{{vitals_report_dataset}}.{table_name}`
     WHERE (supervising_officer_external_id = 'ALL' OR district_id = 'ALL')
       AND district_id <> "UNKNOWN"
