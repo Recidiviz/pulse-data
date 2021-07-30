@@ -799,6 +799,19 @@ class TestCaseTriageAPIRoutes(TestCase):
                 self.assertTrue(IMPERSONATED_EMAIL_KEY not in session)
             self.assertEqual(response.status_code, HTTPStatus.OK)
 
+    def test_unimpersonating_without_impersonating(self) -> None:
+        auth_store = AuthorizationStore()
+        auth_store.case_triage_admin_users = ["admin@recidiviz.org"]
+        with self.test_app.test_request_context():
+            with self.test_client.session_transaction() as sess:  # type: ignore
+                sess["user_info"] = {"email": "admin@recidiviz.org"}
+            g.user_context = UserContext.base_context_for_email(
+                "admin@recidiviz.org", auth_store
+            )
+            # Perform initial impersonation
+            response = self.test_client.delete("/api/impersonation")
+            self.assertEqual(response.status_code, HTTPStatus.OK)
+
 
 class TestUserImpersonation(TestCase):
     """Implements tests for user impersonation.
