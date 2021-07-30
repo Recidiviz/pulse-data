@@ -163,7 +163,8 @@ def create_api_blueprint(
         methods=["DELETE"],
     )
     def _delete_impersonation() -> Response:
-        session.pop(IMPERSONATED_EMAIL_KEY)
+        if IMPERSONATED_EMAIL_KEY in session:
+            session.pop(IMPERSONATED_EMAIL_KEY)
         return jsonify({"status": "ok"})
 
     @route_with_permissions(
