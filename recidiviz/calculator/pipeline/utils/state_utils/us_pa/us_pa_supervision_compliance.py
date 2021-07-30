@@ -40,13 +40,15 @@ REASSESSMENT_DEADLINE_DAYS = 365
 # Dictionary from case type -> supervision level -> tuple of number of times they must be contacted per time period.
 # A tuple (x, y) should be interpreted as x home visits every y days.
 SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS: Dict[
-    StateSupervisionLevel, Tuple[int, int]
+    StateSupervisionCaseType, Dict[StateSupervisionLevel, Tuple[int, int]]
 ] = {
-    StateSupervisionLevel.LIMITED: (1, 365),
-    StateSupervisionLevel.MINIMUM: (1, 90),
-    StateSupervisionLevel.MEDIUM: (1, 30),
-    StateSupervisionLevel.MAXIMUM: (2, 30),
-    StateSupervisionLevel.HIGH: (4, 30),
+    StateSupervisionCaseType.GENERAL: {
+        StateSupervisionLevel.LIMITED: (1, 365),
+        StateSupervisionLevel.MINIMUM: (1, 90),
+        StateSupervisionLevel.MEDIUM: (1, 30),
+        StateSupervisionLevel.MAXIMUM: (2, 30),
+        StateSupervisionLevel.HIGH: (4, 30),
+    }
 }
 # Dictionary from supervision level -> tuple of number of times they must be contacted per time period.
 # A tuple (x, y) should be interpreted as x home visits every y days.
@@ -187,7 +189,9 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             raise ValueError(
                 "Supervision level not provided and so cannot calculate required face to face contact frequency."
             )
-        return SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[supervision_level]
+        return SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[self.case_type][
+            supervision_level
+        ]
 
     def _home_visit_frequency_is_sufficient(
         self, compliance_evaluation_date: date

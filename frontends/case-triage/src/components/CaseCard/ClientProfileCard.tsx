@@ -66,6 +66,11 @@ const SummaryItem: React.FC<SummaryItemProps> = ({ children, icon }) => {
 const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
   const { policyStore } = useRootStore();
 
+  const contactText = getContactFrequencyText(
+    policyStore.findContactFrequencyForClient(client),
+    "contact"
+  );
+
   return (
     <>
       <DetailsPanelSection>
@@ -122,11 +127,7 @@ const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
         </DetailsLineItem>
         <DetailsLineItem>
           <Caption>
-            {getContactFrequencyText(
-              policyStore.findContactFrequencyForClient(client),
-              "contact"
-            )}
-            .
+            {contactText && <>{contactText}.</>}
             {policyStore.policies?.supervisionPolicyReference && (
               <>
                 {" "}
