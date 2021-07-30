@@ -29,8 +29,26 @@ export type AssessmentScoreCutoffs = Record<
   ScoreMinMaxBySupervisionLevel
 >;
 
-// X contacts every Y days
+/**
+ * [X, Y] representing X contacts every Y days
+ */
 export type SupervisionContactFrequency = [number, number];
+/**
+ * Returns tuple of ["X contact(s)", "X day(s)"] for use in text.
+ * Will replace "contact" in the returned string with `singularUnit` if passed
+ */
+export function parseContactFrequency(
+  contactFrequency: SupervisionContactFrequency,
+  singularUnit = "contact"
+): [string, string] {
+  const [contacts, days] = contactFrequency;
+  const pluralized = contacts === 1 ? "" : "s";
+  const daysPluralized = days === 1 ? "day" : "days";
+  return [
+    `${contacts} ${singularUnit}${pluralized}`,
+    `${days} ${daysPluralized}`,
+  ];
+}
 
 export type ContactFrequencyByRisk = Record<
   SupervisionLevel,

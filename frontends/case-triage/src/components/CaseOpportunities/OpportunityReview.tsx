@@ -22,8 +22,10 @@ import {
   DropdownMenuLabel,
   DropdownToggle,
   Icon,
+  Link,
 } from "@recidiviz/design-system";
 import assertNever from "assert-never";
+import { paramCase } from "param-case";
 import React from "react";
 import { useRootStore } from "../../stores";
 import {
@@ -33,6 +35,7 @@ import {
 import { Client } from "../../stores/ClientsStore";
 import { Opportunity } from "../../stores/OpportunityStore";
 import { OpportunityType } from "../../stores/OpportunityStore/Opportunity";
+import { parseContactFrequency } from "../../stores/PolicyStore/Policy";
 import { titleCase } from "../../utils";
 import { ActionRow } from "../CaseCard/ActionRow";
 import { Caption } from "../CaseCard/CaseCard.styles";
@@ -42,9 +45,8 @@ import { ReviewContents } from "./OpportunityReview.styles";
 import { PolicyLink } from "./PolicyLink";
 
 const AlertText = ({ client, opportunity }: OpportunityReviewProps) => {
-  const {
-    policyStore: { omsName },
-  } = useRootStore();
+  const { policyStore } = useRootStore();
+  const { omsName } = policyStore;
 
   switch (opportunity.opportunityType) {
     case OpportunityType.OVERDUE_DOWNGRADE:
@@ -60,10 +62,64 @@ const AlertText = ({ client, opportunity }: OpportunityReviewProps) => {
           {client.possessivePronoun} supervision level in {omsName}.
         </>
       );
-    case OpportunityType.EMPLOYMENT: // TODO(#8191)
-    case OpportunityType.ASSESSMENT: // TODO(#8194)
-    case OpportunityType.CONTACT: // TODO(#8196)
-      return <></>;
+    case OpportunityType.EMPLOYMENT:
+      return (
+        <>
+          Unemployed according to {omsName}.<br />
+          <Link
+            href={`https://www.recidiviz.org/app/resources/${paramCase(
+              opportunity.stateCode
+            )}`}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Click to view resources.
+          </Link>
+        </>
+      );
+    case OpportunityType.ASSESSMENT: {
+      if (client.mostRecentAssessmentDate) {
+        return (
+          <>
+            Last assessed on{" "}
+            {client.mostRecentAssessmentDate.format("MMMM Do, YYYY")}
+            <br />
+            Score: {client.assessmentScore}, {client.assessmentScoreDetails}
+          </>
+        );
+      }
+      return <>A risk assessment has never been completed.</>;
+    }
+    case OpportunityType.CONTACT: {
+      let contactPolicyText;
+      const contactFrequency =
+        policyStore.findContactFrequencyForClient(client);
+      if (contactFrequency) {
+        const [contacts, days] = parseContactFrequency(contactFrequency);
+        contactPolicyText = (
+          <>
+            {contacts} needed every {days} (view{" "}
+            <PolicyLink opportunity={opportunity} />)
+          </>
+        );
+      }
+      return (
+        <>
+          {client.currentAddress || "No address on file"} <br />
+          {client.mostRecentFaceToFaceDate
+            ? `Last contacted on ${client.mostRecentFaceToFaceDate.format(
+                "MMMM Do, YYYY"
+              )}`
+            : "No contact on file."}
+          {contactPolicyText && (
+            <>
+              <br />
+              {contactPolicyText}
+            </>
+          )}
+        </>
+      );
+    }
     default:
       assertNever(opportunity.opportunityType);
   }
@@ -76,6 +132,15 @@ const MenuActions = ({ client, opportunity }: OpportunityReviewProps) => {
 
   return (
     <>
+      {opportunity.opportunityType === OpportunityType.EMPLOYMENT && (
+        <DropdownMenuItem
+          onClick={() => {
+            client.updateReceivingSSIOrDisabilityIncome(true);
+          }}
+        >
+          Mark as SSI/Disability
+        </DropdownMenuItem>
+      )}
       <DropdownMenuItem
         onClick={() => {
           setFeedbackModalIsOpen(true);

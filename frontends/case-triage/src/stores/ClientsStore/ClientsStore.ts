@@ -18,6 +18,7 @@ import assertNever from "assert-never";
 import { action, autorun, makeAutoObservable, runInAction, set } from "mobx";
 import { parse } from "query-string";
 import API, { ErrorResponse } from "../API";
+import ErrorMessageStore from "../ErrorMessageStore";
 import OpportunityStore from "../OpportunityStore";
 import PolicyStore from "../PolicyStore";
 import RootStore from "../RootStore";
@@ -88,12 +89,15 @@ class ClientsStore {
 
   opportunityStore: OpportunityStore;
 
+  errorMessageStore: ErrorMessageStore;
+
   constructor({ api, clientListBuilder, rootStore }: ClientsStoreProps) {
     makeAutoObservable(this, {
       view: action,
       userStore: false,
       policyStore: false,
       opportunityStore: false,
+      errorMessageStore: false,
     });
     this.api = api;
 
@@ -105,6 +109,7 @@ class ClientsStore {
     this.policyStore = rootStore.policyStore;
     this.userStore = rootStore.userStore;
     this.opportunityStore = rootStore.opportunityStore;
+    this.errorMessageStore = rootStore.errorMessageStore;
     this.clientPendingAnimation = false;
     this.isLoading = false;
 
@@ -142,6 +147,7 @@ class ClientsStore {
             clientsStore: this,
             opportunityStore: this.opportunityStore,
             policyStore: this.policyStore,
+            errorMessageStore: this.errorMessageStore,
           })
         );
       });
