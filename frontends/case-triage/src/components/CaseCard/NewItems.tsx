@@ -34,9 +34,9 @@ export const NewItems = observer(({ client }: CaseCardProps): JSX.Element => {
   return (
     <NewItemsWrapper>
       <ItemsWrapper>
-        {client.opportunities.map((opp) => (
+        {client.activeOpportunities.map((opp) => (
           <Item key={opp.opportunityType}>
-            <OpportunityReview opportunity={opp} />
+            <OpportunityReview client={client} opportunity={opp} />
           </Item>
         ))}
         {client.activeNotes.map((note) => (

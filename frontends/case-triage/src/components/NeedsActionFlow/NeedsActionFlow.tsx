@@ -13,27 +13,7 @@ import { NeedsCheckboxButton } from "../CaseCard/CaseCardButtons";
 import NeedsCorrectionDropdown from "./NeedsCorrectionDropdown";
 import { OpportunityDeferralDropdown } from "./OpportunityDeferralDropdown";
 import { Opportunity } from "../../stores/OpportunityStore";
-
-export const ACTION_TITLES: Record<CaseUpdateActionType, string> = {
-  [CaseUpdateActionType.COMPLETED_ASSESSMENT]:
-    "I completed their risk assessment",
-  [CaseUpdateActionType.FOUND_EMPLOYMENT]: "I helped them find employment",
-  [CaseUpdateActionType.SCHEDULED_FACE_TO_FACE]:
-    "I scheduled our next face-to-face contact",
-  [CaseUpdateActionType.DISCHARGE_INITIATED]: "DISCHARGE_INITIATED",
-  [CaseUpdateActionType.DOWNGRADE_INITIATED]:
-    "I updated their supervision level",
-  [CaseUpdateActionType.INCORRECT_SUPERVISION_LEVEL_DATA]:
-    "Incorrect supervision level data",
-
-  [CaseUpdateActionType.INCORRECT_ASSESSMENT_DATA]:
-    "Incorrect assessment status",
-  [CaseUpdateActionType.INCORRECT_EMPLOYMENT_DATA]:
-    "Incorrect employment status",
-  [CaseUpdateActionType.INCORRECT_CONTACT_DATA]: "Incorrect contact status",
-  [CaseUpdateActionType.NOT_ON_CASELOAD]: "Not on Caseload",
-  [CaseUpdateActionType.CURRENTLY_IN_CUSTODY]: "In Custody",
-};
+import { ACTION_TITLES } from "../../stores/CaseUpdatesStore/CaseUpdates";
 
 interface NeedsActionFlowProps {
   actionable: boolean;

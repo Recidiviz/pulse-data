@@ -19,7 +19,10 @@ import { observer } from "mobx-react-lite";
 import * as React from "react";
 import { trackPersonSelected } from "../../analytics";
 import { useRootStore } from "../../stores";
-import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
+import {
+  ACTION_TITLES,
+  isErrorReport,
+} from "../../stores/CaseUpdatesStore/CaseUpdates";
 import Tooltip from "../Tooltip";
 import CardPillsLayout from "./CardPillsLayout";
 import {
@@ -30,7 +33,7 @@ import { ClientProps } from "./ClientList.types";
 
 const ClientComponent: React.FC<ClientProps> = observer(
   ({ client }: ClientProps) => {
-    const { clientsStore, policyStore } = useRootStore();
+    const { clientsStore, policyStore, userStore } = useRootStore();
     const cardRef = React.useRef<HTMLDivElement>(null);
 
     const viewClient = React.useCallback(() => {
@@ -52,20 +55,27 @@ const ClientComponent: React.FC<ClientProps> = observer(
       });
     }, [client, clientsStore, viewClient]);
 
-    // Counts in-progress (non-deprecated) actions
-    const numInProgressActions = Object.values(CaseUpdateActionType).reduce(
-      (accumulator, actionType) =>
-        accumulator +
-        (client.hasInProgressUpdate(actionType as CaseUpdateActionType)
-          ? 1
-          : 0),
-      0
-    );
-
-    const omsName = policyStore.policies?.omsName || "OMS";
+    const { omsName } = policyStore;
 
     const active =
       clientsStore.activeClient?.personExternalId === client.personExternalId;
+
+    let tooltipTitle: React.ReactNode;
+
+    if (userStore.canSeeProfileV2) {
+      tooltipTitle = client.inProgressUpdates
+        .filter(isErrorReport)
+        .map((actionType) => `${ACTION_TITLES[actionType]} report pending.`)
+        .join(" ");
+    } else {
+      tooltipTitle = client.inProgressUpdates.length ? (
+        <>
+          <strong>{client.inProgressUpdates.length}</strong> action
+          {client.inProgressUpdates.length !== 1 ? "s" : ""} being confirmed
+          with {omsName}
+        </>
+      ) : null;
+    }
 
     return (
       <ClientListCardElement
@@ -78,19 +88,11 @@ const ClientComponent: React.FC<ClientProps> = observer(
       >
         <CardPillsLayout client={client} />
 
-        {numInProgressActions > 0 ? (
-          <Tooltip
-            title={
-              <>
-                <strong>{numInProgressActions}</strong> action
-                {numInProgressActions !== 1 ? "s" : ""} being confirmed with{" "}
-                {omsName}
-              </>
-            }
-          >
+        {tooltipTitle && (
+          <Tooltip title={tooltipTitle}>
             <InProgressIndicator />
           </Tooltip>
-        ) : null}
+        )}
       </ClientListCardElement>
     );
   }

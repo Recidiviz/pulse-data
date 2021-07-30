@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { IconSVG, Need, NeedState, palette } from "@recidiviz/design-system";
+import { IconSVG, Need, NeedState } from "@recidiviz/design-system";
 import * as React from "react";
 import { observer } from "mobx-react-lite";
 import {
@@ -26,8 +26,8 @@ import { Client } from "../../stores/ClientsStore/Client";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 import { NeedsActionFlow } from "../NeedsActionFlow/NeedsActionFlow";
 import { titleCase } from "../../utils";
-import { useRootStore } from "../../stores";
 import { Opportunity } from "../../stores/OpportunityStore";
+import { PolicyLink } from "./PolicyLink";
 
 interface OpportunitySupervisionLevelReviewProps {
   className: string;
@@ -41,26 +41,6 @@ const OpportunitySupervisionLevelReview: React.FC<OpportunitySupervisionLevelRev
     client,
     opportunity,
   }: OpportunitySupervisionLevelReviewProps) => {
-    const { policyStore } = useRootStore();
-
-    const policyText = `${policyStore.getDOCName()} policy`;
-    const policyLink =
-      policyStore.policies?.policyReferencesForOpportunities[
-        opportunity.opportunityType
-      ];
-    const policyLinkElement = policyLink ? (
-      <a
-        href={policyLink}
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{ color: palette.signal.links }}
-      >
-        {policyText}
-      </a>
-    ) : (
-      policyText
-    );
-
     return (
       <CaseCardBody className={className}>
         <Need kind={IconSVG.Star} state={NeedState.NOT_MET} />
@@ -74,7 +54,7 @@ const OpportunitySupervisionLevelReview: React.FC<OpportunitySupervisionLevelRev
             {titleCase(client.possessivePronoun)} risk level is recorded as{" "}
             <strong>{client.supervisionLevelText}</strong> but should be{" "}
             <strong>{client.riskLevelLabel}</strong> according to{" "}
-            {policyLinkElement}.
+            <PolicyLink opportunity={opportunity} />.
           </Caption>
 
           <NeedsActionFlow

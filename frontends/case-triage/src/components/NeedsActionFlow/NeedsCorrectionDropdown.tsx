@@ -9,7 +9,7 @@ import {
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 import FeedbackFormModal from "../FeedbackFormModal";
 import { Client } from "../../stores/ClientsStore";
-import { ACTION_TITLES } from "./NeedsActionFlow";
+import { ACTION_TITLES } from "../../stores/CaseUpdatesStore/CaseUpdates";
 
 interface NeedsCorrectionDropdownProps {
   actions: CaseUpdateActionType[];
