@@ -371,6 +371,7 @@ def spotlight_state_specific_facility() -> str:
                         "QUE",
                         "ROC",
                         "SMI",
+                        "SMR",
                         "WAM"
                     ) THEN facility
                     WHEN {PA_COMMUNITY_CORRECTIONS_MATCH} THEN facility
