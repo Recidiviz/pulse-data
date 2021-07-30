@@ -1,11 +1,15 @@
 file_tag: lgl_stat_cd
 file_description: |-
-  Not in use
+  Code table with descriptions for legal status codes.
 primary_key_cols:
   - lgl_stat_cd
 columns:
   - name: lgl_stat_cd
+    description: |-
+      Code for current legal status. Can be joined to ofndr_lgl_stat.lgl_stat_cd
   - name: lgl_stat_desc
+    description: |-
+      Description of legal status
   - name: terminated_flg
   - name: need_spr_agnt_flg
   - name: lgl_stat_displaycd
