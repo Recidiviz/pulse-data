@@ -37,8 +37,8 @@ from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.user_context import UserContext
 from recidiviz.persistence.database.schema.case_triage.schema import ETLOfficer
 
-DEMO_USER_EMAIL = "demo_user@recidiviz.org"
-ADMIN_USER_EMAIL = "admin@recidiviz.org"
+DEMO_USER_EMAIL = "demo_user@not-recidiviz.org"
+ADMIN_USER_EMAIL = "admin@not-recidiviz.org"
 
 
 def passthrough_authorization_decorator() -> Callable:

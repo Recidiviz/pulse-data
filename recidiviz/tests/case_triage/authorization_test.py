@@ -18,7 +18,7 @@
 import os
 from datetime import date
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional, Set
 from unittest import TestCase, mock
 
 import pytest
@@ -193,7 +193,7 @@ class TestAccessPermissions(TestCase):
         *,
         can_access_case_triage: bool,
         can_access_leadership_dashboard: bool,
-        impersonatable_state_codes: List[str]
+        impersonatable_state_codes: Set[str]
     ) -> None:
         self.assertEqual(
             self.auth_store.get_access_permissions(email),
@@ -209,31 +209,31 @@ class TestAccessPermissions(TestCase):
             self.case_triage_user.restricted_user_email,
             can_access_case_triage=True,
             can_access_leadership_dashboard=False,
-            impersonatable_state_codes=[],
+            impersonatable_state_codes=set(),
         )
         self.assert_email_has_permissions(
             self.dashboard_user.restricted_user_email,
             can_access_case_triage=False,
             can_access_leadership_dashboard=True,
-            impersonatable_state_codes=["US_XX"],
+            impersonatable_state_codes={"US_XX"},
         )
         self.assert_email_has_permissions(
             self.both_user.restricted_user_email,
             can_access_case_triage=True,
             can_access_leadership_dashboard=True,
-            impersonatable_state_codes=["US_XX"],
+            impersonatable_state_codes={"US_XX"},
         )
         self.assert_email_has_permissions(
             "nonexistent@not-recidiviz.org",
             can_access_case_triage=False,
             can_access_leadership_dashboard=False,
-            impersonatable_state_codes=[],
+            impersonatable_state_codes=set(),
         )
         self.assert_email_has_permissions(
             self.both_user_different_state.restricted_user_email,
             can_access_case_triage=True,
             can_access_leadership_dashboard=True,
-            impersonatable_state_codes=["US_YY"],
+            impersonatable_state_codes={"US_YY"},
         )
 
     def test_allowlist_override_succeeds(self) -> None:
@@ -242,7 +242,7 @@ class TestAccessPermissions(TestCase):
             self.overridden_user.restricted_user_email,
             can_access_case_triage=True,
             can_access_leadership_dashboard=True,
-            impersonatable_state_codes=["US_XX"],
+            impersonatable_state_codes={"US_XX"},
         )
 
     @parameterized.expand(
@@ -303,5 +303,15 @@ class TestAccessPermissions(TestCase):
             "demoer@not-recidiviz.org",
             can_access_case_triage=True,
             can_access_leadership_dashboard=False,
-            impersonatable_state_codes=[],
+            impersonatable_state_codes=set(),
+        )
+
+    def test_recidiviz_employees_can_access(self) -> None:
+        self.assertEqual(
+            self.auth_store.get_access_permissions("new-employee@recidiviz.org"),
+            AccessPermissions(
+                can_access_case_triage=True,
+                can_access_leadership_dashboard=True,
+                impersonatable_state_codes=set(),
+            ),
         )

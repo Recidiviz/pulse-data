@@ -29,7 +29,7 @@ local_path = os.path.join(
     os.path.realpath(os.path.dirname(os.path.realpath(__file__))), "local"
 )
 
-CASE_TRIAGE_STATES = ["US_ID"]
+CASE_TRIAGE_STATES = {"US_ID"}
 
 
 def get_local_secret(secret_name: str) -> Optional[str]:

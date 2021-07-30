@@ -65,8 +65,8 @@ class TestCaseTriageQuerier(TestCase):
         )
 
     def test_fetch_officer_id_happy_path(self) -> None:
-        officer_1 = generate_fake_officer("id_1", "officer1@recidiviz.org")
-        officer_2 = generate_fake_officer("id_2", "officer2@recidiviz.org")
+        officer_1 = generate_fake_officer("id_1", "officer1@not-recidiviz.org")
+        officer_2 = generate_fake_officer("id_2", "officer2@not-recidiviz.org")
         with SessionFactory.using_database(self.database_key) as session:
             session.add(officer_1)
             session.add(officer_2)
@@ -75,11 +75,11 @@ class TestCaseTriageQuerier(TestCase):
             self.database_key, autocommit=False
         ) as read_session:
             first_fetch = CaseTriageQuerier.officer_for_email(
-                read_session, "officer1@recidiviz.org"
+                read_session, "officer1@not-recidiviz.org"
             )
             self.assertEqual(first_fetch.external_id, "id_1")
             second_fetch = CaseTriageQuerier.officer_for_email(
-                read_session, "OFFICER2@RECIDIVIZ.ORG"
+                read_session, "OFFICER2@NOT-RECIDIVIZ.ORG"
             )
             self.assertEqual(second_fetch.external_id, "id_2")
 
