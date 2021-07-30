@@ -19,16 +19,17 @@ import { makeAutoObservable, runInAction, set } from "mobx";
 import moment from "moment";
 import { caseInsensitiveIncludes, titleCase } from "../../utils";
 import type API from "../API";
-import { ErrorResponse } from "../API";
 import {
   CaseUpdate,
   CaseUpdateActionType,
   CaseUpdateStatus,
 } from "../CaseUpdatesStore";
 import { CASE_UPDATE_OPPORTUNITY_ASSOCIATION } from "../CaseUpdatesStore/CaseUpdates";
+import ErrorMessageStore from "../ErrorMessageStore";
 import type OpportunityStore from "../OpportunityStore";
 import { Opportunity } from "../OpportunityStore/Opportunity";
 import type PolicyStore from "../PolicyStore";
+import { ScoreMinMax } from "../PolicyStore";
 import type ClientsStore from "./ClientsStore";
 import { Note, NoteData } from "./Note";
 
@@ -110,6 +111,14 @@ const parseDate = (date?: APIDate) => {
   return moment(date);
 };
 
+const formatCutoffs = ([min, max]: ScoreMinMax) => {
+  if (max === null) {
+    return `${min}+`;
+  }
+
+  return `${min}-${max}`;
+};
+
 /**
  * Data model representing a single client. To instantiate, it is recommended
  * to use the static `build` method.
@@ -178,7 +187,8 @@ export class Client {
     private api: API,
     private clientsStore: ClientsStore,
     private opportunityStore: OpportunityStore,
-    private policyStore: PolicyStore
+    private policyStore: PolicyStore,
+    private errorMessageStore: ErrorMessageStore
   ) {
     makeAutoObservable<
       Client,
@@ -253,24 +263,33 @@ export class Client {
     clientsStore,
     opportunityStore,
     policyStore,
+    errorMessageStore,
   }: {
     api: API;
     client: ClientData;
     clientsStore: ClientsStore;
     opportunityStore: OpportunityStore;
     policyStore: PolicyStore;
+    errorMessageStore: ErrorMessageStore;
   }): Client {
     return new Client(
       { ...client },
       api,
       clientsStore,
       opportunityStore,
-      policyStore
+      policyStore,
+      errorMessageStore
     );
   }
 
   get supervisionLevelText(): string {
     return this.policyStore.getSupervisionLevelNameForClient(this);
+  }
+
+  get supervisionLevelCutoffs(): ReturnType<
+    PolicyStore["getSupervisionLevelCutoffsForClient"]
+  > {
+    return this.policyStore.getSupervisionLevelCutoffsForClient(this);
   }
 
   hasCaseUpdateInStatus(
@@ -291,11 +310,21 @@ export class Client {
     );
   }
 
-  get riskLevelLabel(): string | undefined {
+  get riskLevelLabel(): string {
     const { riskLevel } = this;
-    return riskLevel
-      ? this.policyStore.getSupervisionLevelName(riskLevel)
-      : undefined;
+    return riskLevel ? this.policyStore.getSupervisionLevelName(riskLevel) : "";
+  }
+
+  get assessmentScoreDetails(): string | null {
+    const cutoff =
+      this.riskLevel && this.supervisionLevelCutoffs?.[this.riskLevel];
+
+    if (this.assessmentScore === null || cutoff === undefined) {
+      return null;
+    }
+    return `${titleCase(this.riskLevelLabel)} (${titleCase(
+      this.gender
+    )} ${formatCutoffs(cutoff)})`;
   }
 
   findInProgressUpdate(
@@ -433,7 +462,7 @@ export class Client {
 
   async updateReceivingSSIOrDisabilityIncome(
     markReceiving: boolean
-  ): Promise<void | ErrorResponse> {
+  ): Promise<void> {
     const {
       receivingSSIOrDisabilityIncome: previousExternalIncomeStatus,
       personExternalId,
@@ -447,6 +476,11 @@ export class Client {
         personExternalId,
         markReceiving,
       })
+      .then(() => {
+        // We check to see if their opportunities have changed
+        // now that we've changed SSI/Disability income information.
+        this.opportunityStore.fetchOpportunities();
+      })
       .catch((error) => {
         runInAction(() =>
           set(
@@ -455,7 +489,10 @@ export class Client {
             previousExternalIncomeStatus
           )
         );
-        throw error;
+
+        this.errorMessageStore.pushErrorMessage(
+          "Failed to update SSI/Disability income"
+        );
       });
   }
 }

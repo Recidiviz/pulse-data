@@ -24,7 +24,6 @@ import {
 } from "@recidiviz/design-system";
 import { observer } from "mobx-react-lite";
 import * as React from "react";
-import { useRootStore } from "../../stores";
 import { Client } from "../../stores/ClientsStore/Client";
 
 export interface ReceivingSSIOrDisabilityIncomeSelectorProps {
@@ -33,8 +32,6 @@ export interface ReceivingSSIOrDisabilityIncomeSelectorProps {
 
 export const ReceivingSSIOrDisabilityIncomeSelector: React.FC<ReceivingSSIOrDisabilityIncomeSelectorProps> =
   observer(({ client }) => {
-    const { opportunityStore, errorMessageStore } = useRootStore();
-
     return (
       <Dropdown>
         <DropdownToggle kind="link">
@@ -48,19 +45,10 @@ export const ReceivingSSIOrDisabilityIncomeSelector: React.FC<ReceivingSSIOrDisa
             label={`${
               client.receivingSSIOrDisabilityIncome ? "Remove" : "Add"
             } SSI or Disability`}
-            onClick={async () => {
-              try {
-                await client.updateReceivingSSIOrDisabilityIncome(
-                  !client.receivingSSIOrDisabilityIncome
-                );
-              } catch (error) {
-                errorMessageStore.pushErrorMessage(
-                  "Failed to update SSI/Disability income"
-                );
-              }
-              // We check to see if their opportunities have changed
-              // now that we've changed SSI/Disability income information.
-              await opportunityStore.fetchOpportunities();
+            onClick={() => {
+              client.updateReceivingSSIOrDisabilityIncome(
+                !client.receivingSSIOrDisabilityIncome
+              );
             }}
           />
         </DropdownMenu>

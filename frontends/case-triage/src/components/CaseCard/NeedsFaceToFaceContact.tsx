@@ -43,10 +43,7 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
     ? `Face to Face Contact: Up To Date`
     : `Face to Face Contact Needed`;
   const contactFrequency = policyStore.findContactFrequencyForClient(client);
-  const contactFrequencyText = getContactFrequencyText(
-    contactFrequency,
-    "contact"
-  );
+  const contactFrequencyText = getContactFrequencyText(contactFrequency);
 
   return (
     <CaseCardBody

@@ -67,8 +67,7 @@ const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
   const { policyStore } = useRootStore();
 
   const contactText = getContactFrequencyText(
-    policyStore.findContactFrequencyForClient(client),
-    "contact"
+    policyStore.findContactFrequencyForClient(client)
   );
 
   return (

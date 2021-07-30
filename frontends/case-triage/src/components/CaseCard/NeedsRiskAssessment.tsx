@@ -20,12 +20,6 @@ import * as React from "react";
 import { observer } from "mobx-react-lite";
 import { Caption, CaseCardBody, CaseCardInfo } from "./CaseCard.styles";
 import { Client } from "../../stores/ClientsStore/Client";
-import { useRootStore } from "../../stores";
-import {
-  ScoreMinMax,
-  ScoreMinMaxBySupervisionLevel,
-} from "../../stores/PolicyStore";
-import { titleCase } from "../../utils";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 import { NeedsActionFlow } from "../NeedsActionFlow/NeedsActionFlow";
 import TEST_IDS from "../TestIDs";
@@ -35,46 +29,13 @@ interface NeedsRiskAssessmentProps {
   client: Client;
 }
 
-const getAssessmentLevelText = (
-  client: Client,
-  cutoffs?: ScoreMinMaxBySupervisionLevel
-) => {
-  if (cutoffs) {
-    const cutoff = cutoffs[client.supervisionLevel];
-    if (!cutoff) {
-      return null;
-    }
-
-    return (
-      <>
-        , {titleCase(client.supervisionLevelText)}, ({titleCase(client.gender)}{" "}
-        {getCutoffsText(cutoff)})
-      </>
-    );
-  }
-
-  return null;
-};
-
 const getAssessmentScoreText = (client: Client) =>
   client.assessmentScore !== null ? `Score: ${client.assessmentScore}` : null;
-
-const getCutoffsText = ([min, max]: ScoreMinMax) => {
-  if (max === null) {
-    return `${min}+`;
-  }
-
-  return `${min}-${max}`;
-};
 
 const NeedsRiskAssessment: React.FC<NeedsRiskAssessmentProps> = ({
   className,
   client,
 }: NeedsRiskAssessmentProps) => {
-  const { policyStore } = useRootStore();
-  const supervisionLevelCutoffs =
-    policyStore.getSupervisionLevelCutoffsForClient(client);
-
   const {
     needsMet: { assessment: met },
     mostRecentAssessmentDate,
@@ -88,7 +49,8 @@ const NeedsRiskAssessment: React.FC<NeedsRiskAssessmentProps> = ({
       <>
         <div>
           {getAssessmentScoreText(client)}
-          {getAssessmentLevelText(client, supervisionLevelCutoffs)}
+          {client.assessmentScoreDetails &&
+            `, ${client.assessmentScoreDetails}`}
         </div>
         <div>
           Last assessed on {mostRecentAssessmentDate.format("MMMM Do, YYYY")}

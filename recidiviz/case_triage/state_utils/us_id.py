@@ -34,6 +34,7 @@ US_ID_SUPERVISION_LEVEL_NAMES = {
 
 US_ID_POLICY_REFERENCES_FOR_OPPORTUNITIES = {
     OpportunityType.OVERDUE_DOWNGRADE: "https://forms.idoc.idaho.gov/WebLink/0/edoc/281944/Interim%20Standards%20to%20Probation%20and%20Parole%20Supervision%20Strategies.pdf",
+    OpportunityType.CONTACT: "http://forms.idoc.idaho.gov/WebLink/0/edoc/281944/Interim%20Standards%20to%20Probation%20and%20Parole%20Supervision%20Strategies.pdf",
 }
 
 US_ID_SUPERVISION_POLICY_REFERENCE = "http://forms.idoc.idaho.gov/WebLink/0/edoc/281944/Interim%20Standards%20to%20Probation%20and%20Parole%20Supervision%20Strategies.pdf"

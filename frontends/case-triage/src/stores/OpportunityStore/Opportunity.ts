@@ -137,25 +137,42 @@ export class Opportunity {
     }
   }
 
+  get dueDaysFormatted(): string {
+    const { daysUntilDue } = this.opportunityMetadata;
+    if (typeof daysUntilDue === "number") {
+      return getTimeDifference(moment().add(daysUntilDue, "days"));
+    }
+    return "";
+  }
+
   get title(): string {
-    return OPPORTUNITY_TITLES[this.opportunityType];
+    const titleBase = OPPORTUNITY_TITLES[this.opportunityType];
+
+    switch (this.opportunityType) {
+      case OpportunityType.OVERDUE_DOWNGRADE:
+      case OpportunityType.EMPLOYMENT:
+        return titleBase;
+      case OpportunityType.CONTACT:
+      case OpportunityType.ASSESSMENT: {
+        if (this.opportunityMetadata.status === "OVERDUE") {
+          return `${titleBase} overdue`;
+        }
+        return `${titleBase} due ${this.dueDaysFormatted}`;
+      }
+      default:
+        assertNever(this.opportunityType);
+    }
   }
 
   get tooltipText(): string | undefined {
-    let dueDaysFormatted;
-    const { daysUntilDue } = this.opportunityMetadata;
-    if (typeof daysUntilDue === "number") {
-      dueDaysFormatted = getTimeDifference(moment().add(daysUntilDue, "days"));
-    }
-
     switch (this.opportunityType) {
       case OpportunityType.OVERDUE_DOWNGRADE:
       case OpportunityType.EMPLOYMENT:
         return undefined;
       case OpportunityType.ASSESSMENT:
-        return `Risk Assessment needed ${dueDaysFormatted}`;
+        return `Risk Assessment needed ${this.dueDaysFormatted}`;
       case OpportunityType.CONTACT:
-        return `Face to Face Contact recommended ${dueDaysFormatted}`;
+        return `Face to Face Contact recommended ${this.dueDaysFormatted}`;
       default:
         assertNever(this.opportunityType);
     }
