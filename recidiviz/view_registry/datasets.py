@@ -30,6 +30,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
+from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_FEDERATED_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 from recidiviz.validation.views.dataset_config import EXTERNAL_ACCURACY_DATASET
@@ -47,6 +48,7 @@ SUPPLEMENTAL_DATASETS = {
 }
 
 OTHER_SOURCE_TABLE_DATASETS = {
+    CASE_TRIAGE_FEDERATED_DATASET,
     CASE_TRIAGE_SEGMENT_DATASET,
     COUNTY_BASE_DATASET,
     COVID_DASHBOARD_REFERENCE_DATASET,
@@ -76,6 +78,7 @@ SUPPLEMENTAL_DATASETS_TO_DESCRIPTIONS = {
 }
 
 OTHER_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS = {
+    CASE_TRIAGE_FEDERATED_DATASET: "Case Triage data. This dataset is a copy of the case-triage postgres database.",
     CASE_TRIAGE_SEGMENT_DATASET: "Stores metrics about users on case triage",
     COUNTY_BASE_DATASET: "Ingested county jail data. This dataset is a copy of the jails postgres database.",
     COVID_DASHBOARD_REFERENCE_DATASET: "Reference tables used by the COVID dashboard. Updated manually.",

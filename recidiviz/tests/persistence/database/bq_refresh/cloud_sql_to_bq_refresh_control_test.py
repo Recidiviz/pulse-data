@@ -211,7 +211,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         mock_federated_refresh: mock.MagicMock,
         mock_kick_all_schedulers: mock.MagicMock,
     ) -> None:
-        route = f"/refresh_bq_schema/{SchemaType.CASE_TRIAGE.value}"
+        route = f"/refresh_bq_schema/{SchemaType.JUSTICE_COUNTS.value}"
 
         response = self.mock_flask_client.post(
             route,
@@ -221,7 +221,8 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         )
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
         self.assertEqual(
-            response.data.decode(), "Unsuppported schema type: [SchemaType.CASE_TRIAGE]"
+            response.data.decode(),
+            "Unsupported schema type: [SchemaType.JUSTICE_COUNTS]",
         )
         mock_federated_refresh.assert_not_called()
         self.mock_pubsub_helper.publish_message_to_topic.assert_not_called()
