@@ -22,7 +22,7 @@ selection.
 import json
 import logging
 from datetime import date
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 import attr
 import dateutil.parser
@@ -76,13 +76,13 @@ class AccessPermissions:
     can_access_case_triage: bool
     can_access_leadership_dashboard: bool
     # The state codes that are accessible by users, by default empty
-    impersonatable_state_codes: List[str]
+    impersonatable_state_codes: Set[str]
 
     def to_json(self) -> Dict[str, Any]:
         return {
             "canAccessCaseTriage": self.can_access_case_triage,
             "canAccessLeadershipDashboard": self.can_access_leadership_dashboard,
-            "impersonatableStateCodes": self.impersonatable_state_codes,
+            "impersonatableStateCodes": list(self.impersonatable_state_codes),
         }
 
 
@@ -137,15 +137,26 @@ class AuthorizationStore:
         }
 
     def get_access_permissions(self, email: str) -> AccessPermissions:
-        """Retrieves the appropriate access permissions for different users of Case Triage."""
+        """Retrieves the appropriate access permissions for different users of Case Triage.
+
+        This method works by assuming no access and then adding access based on different
+        access-granting sources.
+        """
         email = email.lower()
 
+        can_access_case_triage = False
+        can_access_leadership_dashboard = False
+        impersonatable_state_codes = set()
+
+        if email in self.case_triage_allowed_users:
+            can_access_case_triage |= True
+
         if email in self.case_triage_admin_users:
-            return AccessPermissions(
-                can_access_case_triage=True,
-                can_access_leadership_dashboard=True,
-                impersonatable_state_codes=CASE_TRIAGE_STATES,
-            )
+            impersonatable_state_codes |= CASE_TRIAGE_STATES
+
+        if _is_recidiviz_employee(email):
+            can_access_case_triage |= True
+            can_access_leadership_dashboard |= True
 
         with SessionFactory.using_database(
             self.database_key, autocommit=False
@@ -156,36 +167,33 @@ class AuthorizationStore:
                     .filter(DashboardUserRestrictions.restricted_user_email == email)
                     .one()
                 )
-                return AccessPermissions(
-                    can_access_case_triage=(
-                        permissions.can_access_case_triage
-                        or email in self.case_triage_allowed_users
-                    ),
-                    can_access_leadership_dashboard=permissions.can_access_leadership_dashboard,
-                    impersonatable_state_codes=(
-                        [permissions.state_code]
-                        if permissions.can_access_leadership_dashboard
-                        else []
-                    ),
+
+                can_access_case_triage |= permissions.can_access_case_triage
+                can_access_leadership_dashboard |= (
+                    permissions.can_access_leadership_dashboard
                 )
+                if permissions.can_access_leadership_dashboard:
+                    # People who generally can accesss the leadership dashboard cannot impersonate others,
+                    # but people who are marked as being able to access the leadership dashboard within
+                    # dashboard_user_restrictions are currently allowed to impersonate others in their
+                    # same state.
+                    impersonatable_state_codes |= {permissions.state_code}
             except sqlalchemy.orm.exc.NoResultFound:
-                return AccessPermissions(
-                    can_access_case_triage=(email in self.case_triage_allowed_users),
-                    can_access_leadership_dashboard=False,
-                    impersonatable_state_codes=[],
+                logging.debug(
+                    "Email %s has no entry in dashboard_user_restrictions", email
                 )
+
+        return AccessPermissions(
+            can_access_case_triage=can_access_case_triage,
+            can_access_leadership_dashboard=can_access_leadership_dashboard,
+            impersonatable_state_codes=impersonatable_state_codes,
+        )
 
     def can_impersonate(self, email: str, other_officer: ETLOfficer) -> bool:
         """Determines whether or not the current user with email
         can impersonate another user with other_email."""
         access_permissions = self.get_access_permissions(email.lower())
-        if access_permissions.can_access_leadership_dashboard:
-            return (
-                other_officer.state_code
-                in access_permissions.impersonatable_state_codes
-            )
-
-        return False
+        return other_officer.state_code in access_permissions.impersonatable_state_codes
 
     def can_refresh_auth_store(self, email: str) -> bool:
         return email in self.case_triage_admin_users
