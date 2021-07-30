@@ -1,0 +1,85 @@
+file_tag: ofndr_lgl_stat
+file_description: |-
+  Contains a single row for current legal status as it exists in the Idaho CIS system.
+  In cases where a person has multiple statuses (in offstat), this table lists only
+  the "most restrictive" custody type.
+primary_key_cols:
+  - ofndr_num
+  - stat_beg_dt
+  - lgl_stat_cd
+  - stat_beg_tm
+columns:
+  - name: ofndr_num
+    description: |-
+      ID of the person
+  - name: lgl_stat_cd
+    description: |-
+      Code for current legal status. Can be joined to lgl_stat_cd.lgl_stat_cd
+    known_values:
+      - value: A
+        description: PARDON APPLICANT
+      - value: B
+        description: PROBATION
+      - value: C
+        description: CIVIL COMMITMENT
+      - value: D
+        description: DEATH SENTENCE
+      - value: E
+        description: COMPACT DENIED
+      - value: "F"
+        description: COMMUNITY RIDER
+      - value: G
+        description: FIREARM APPLICANT
+      - value: H
+        description: HISTORY
+      - value: I
+        description: PSI
+      - value: J
+        description: INTERSTATE PAROLE
+      - value: K
+        description: INTERSTATE PROBATION
+      - value: L
+        description: ADMINISTRATIVE HOLD
+      - value: M
+        description: MULTI STATUS CLOSE
+      - value: "N"
+        description: NON-IDAHO COMMITMENT
+      - value: O
+        description: PARDONED
+      - value: P
+        description: PAROLE
+      - value: Q
+        description: INSTITUTIONAL PROBATION
+      - value: R
+        description: RIDER
+      - value: S
+        description: STAYED
+      - value: "T"
+        description: TERMER
+      - value: U
+        description: UNSENTENCED
+      - value: V
+        description: PAROLE VIOLATOR
+      - value: W
+        description: COURT PROBATION
+      - value: X
+        description: DRUG COURT
+      - value: "Y"
+        description: REVOKED
+      - value: Z
+        description: NONE/NO PRIOR STATUS
+  - name: stat_beg_dt
+    is_datetime: True
+    description: Date when this status started
+  - name: stat_beg_tm
+    description: Time when this status started. Can be combined with stat_beg_dt to give complete datetime.
+  - name: stat_end_dt
+    is_datetime: True
+    description: Date when this status ended
+  - name: lgl_stat_chg_cd
+  - name: prev_lgl_stat_cd
+  - name: updt_usr_id
+    description: ID of user who updated record
+  - name: updt_dt
+    is_datetime: True
+    description: Date when this record was updated
