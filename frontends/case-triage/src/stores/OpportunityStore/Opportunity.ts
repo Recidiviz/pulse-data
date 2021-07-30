@@ -14,9 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import { palette } from "@recidiviz/design-system";
 import assertNever from "assert-never";
 import { makeAutoObservable } from "mobx";
 import moment from "moment";
+import { PillKind } from "../../components/Pill";
 import { getTimeDifference } from "../../utils";
 
 // =============================================================================
@@ -101,6 +103,10 @@ export class Opportunity {
     makeAutoObservable(this);
   }
 
+  get isDeferred(): boolean {
+    return this.deferredUntil !== undefined;
+  }
+
   get previewText(): string {
     switch (this.opportunityType) {
       case OpportunityType.OVERDUE_DOWNGRADE:
@@ -153,5 +159,48 @@ export class Opportunity {
       default:
         assertNever(this.opportunityType);
     }
+  }
+
+  get alertOptions(): {
+    icon: {
+      kind: string;
+      color: string;
+    };
+    pill: {
+      kind: PillKind;
+    };
+  } {
+    let iconKind = "Alert";
+    let iconColor;
+    let pillKind: PillKind;
+
+    switch (this.opportunityType) {
+      case OpportunityType.OVERDUE_DOWNGRADE:
+        iconKind = "StarCircled";
+        iconColor = palette.signal.highlight;
+        pillKind = "highlight";
+        break;
+      case OpportunityType.EMPLOYMENT:
+        iconColor = palette.data.gold1;
+        pillKind = "warn";
+        break;
+      case OpportunityType.ASSESSMENT:
+      case OpportunityType.CONTACT:
+        if (this.opportunityMetadata.status === "OVERDUE") {
+          iconColor = palette.signal.error;
+          pillKind = "error";
+        } else {
+          iconColor = palette.data.gold1;
+          pillKind = "warn";
+        }
+        break;
+      default:
+        assertNever(this.opportunityType);
+    }
+
+    return {
+      icon: { kind: iconKind, color: iconColor },
+      pill: { kind: pillKind },
+    };
   }
 }

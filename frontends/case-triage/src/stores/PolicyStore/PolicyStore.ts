@@ -82,6 +82,10 @@ class PolicyStore {
     return this.policies?.docShortName || "DOC";
   }
 
+  get omsName(): string {
+    return this.policies?.omsName || "OMS";
+  }
+
   getSupervisionLevelCutoffsForClient(
     client: Client
   ): ScoreMinMaxBySupervisionLevel | undefined {

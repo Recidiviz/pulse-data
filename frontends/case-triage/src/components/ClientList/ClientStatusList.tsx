@@ -17,30 +17,11 @@
 import * as React from "react";
 import moment from "moment";
 import { observer } from "mobx-react-lite";
-import assertNever from "assert-never";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
-import {
-  OpportunityType,
-  Opportunity,
-} from "../../stores/OpportunityStore/Opportunity";
-import { Pill, PillKind } from "../Pill";
+import { Pill } from "../Pill";
 import { ClientProps } from "./ClientList.types";
 import { StatusList } from "./ClientList.styles";
 import AlertPreview from "../AlertPreview";
-
-const opportunityToPillKind = (opp: Opportunity): PillKind => {
-  switch (opp.opportunityType) {
-    case OpportunityType.OVERDUE_DOWNGRADE:
-      return "highlight";
-    case OpportunityType.EMPLOYMENT:
-      return "warn";
-    case OpportunityType.ASSESSMENT:
-    case OpportunityType.CONTACT:
-      return opp.opportunityMetadata.status === "OVERDUE" ? "error" : "warn";
-    default:
-      assertNever(opp.opportunityType);
-  }
-};
 
 export const ClientStatusList: React.FC<ClientProps> = observer(
   ({ client }: ClientProps): JSX.Element => {
@@ -73,8 +54,8 @@ export const ClientStatusList: React.FC<ClientProps> = observer(
         statusPills.push(
           <AlertPreview
             key={opportunity.opportunityType}
-            kind={opportunityToPillKind(opportunity)}
             tooltip={opportunity.tooltipText}
+            {...opportunity.alertOptions.pill}
           >
             {opportunity.previewText}
           </AlertPreview>

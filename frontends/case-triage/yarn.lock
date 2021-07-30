@@ -1968,10 +1968,10 @@
     prop-types "^15.6.1"
     react-lifecycles-compat "^3.0.4"
 
-"@recidiviz/design-system@^2.4.0":
-  version "2.4.0"
-  resolved "https://registry.yarnpkg.com/@recidiviz/design-system/-/design-system-2.4.0.tgz#94861321ed69bfd4f4d7d25725683e356cdf7768"
-  integrity sha512-09TLT0iMPSPM0Gprpk/x9qeI15HVpkKkT0rt67W3MWa0yVNkQGJBa3ZcZOZ4zLiDCCkiSpR7we1kmwkiRSd3tw==
+"@recidiviz/design-system@^2.5.0":
+  version "2.5.0"
+  resolved "https://registry.yarnpkg.com/@recidiviz/design-system/-/design-system-2.5.0.tgz#0c75fa8ae0ef057d5030cf4858e37c39b955a6e1"
+  integrity sha512-Jghcy/9j6nZgh4wViR0P5MmnjZ6Hl9hFU8pzdUzfbLzcWIu3sj3U05275DC2S/NBvSkxGbKlcQ2sWTVXkmFMkA==
   dependencies:
     "@fontsource/libre-baskerville" "^4.1.0"
     "@fontsource/libre-franklin" "^4.1.0"

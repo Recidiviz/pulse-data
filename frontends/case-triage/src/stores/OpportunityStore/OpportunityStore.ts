@@ -92,7 +92,6 @@ class OpportunityStore {
   }
 
   get opportunities(): Opportunity[] | undefined {
-    // TODO(#7635): filter out snoozed and incorrect opportunities
     return this.opportunitiesFetched
       ?.slice()
       .sort((a, b) => a.priority - b.priority);
