@@ -32,6 +32,19 @@ import { useRootStore } from "../../stores";
 import Loading from "../Loading";
 import UserSection from "../UserSection";
 
+const TopLevelHeader = (): JSX.Element => {
+  return (
+    <Header
+      left={
+        <Link to="/">
+          <img src={Assets.LOGO} alt="Recidiviz - Case Triage" />
+        </Link>
+      }
+      right={<UserSection />}
+    />
+  );
+};
+
 const AuthWall: React.FC = ({ children }): ReactElement | null => {
   const { userStore, api } = useRootStore();
 
@@ -52,14 +65,7 @@ const AuthWall: React.FC = ({ children }): ReactElement | null => {
   if (userStore.isLoading || !api.bootstrapped) {
     return (
       <>
-        <Header
-          left={
-            <Link to="/">
-              <img src={Assets.LOGO} alt="Recidiviz - Case Triage" />
-            </Link>
-          }
-          right={<UserSection />}
-        />
+        <TopLevelHeader />
         <Loading />
       </>
     );
@@ -73,16 +79,19 @@ const AuthWall: React.FC = ({ children }): ReactElement | null => {
     redirectTo(api.dashboardURL);
   } else if (!userStore.canAccessCaseTriage && !userStore.isImpersonating) {
     return (
-      <ErrorPage headerText="Thank you for your interest in Recidiviz.">
-        <p>
-          This page is currently unavailable for your account. Please reach out
-          to{" "}
-          <TypographyLink href="mailto:web-support@recidiviz.org?subject=Access to Recidiviz app">
-            Recidiviz Support
-          </TypographyLink>{" "}
-          with any questions.
-        </p>
-      </ErrorPage>
+      <>
+        <TopLevelHeader />
+        <ErrorPage headerText="Thank you for your interest in Recidiviz.">
+          <p>
+            This page is currently unavailable for your account. Please reach
+            out to{" "}
+            <TypographyLink href="mailto:web-support@recidiviz.org?subject=Access to Recidiviz app">
+              Recidiviz Support
+            </TypographyLink>{" "}
+            with any questions.
+          </p>
+        </ErrorPage>
+      </>
     );
   }
 
