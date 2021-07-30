@@ -15,14 +15,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { Icon, IconSVG, Need, NeedState } from "@recidiviz/design-system";
-import * as React from "react";
 import { observer } from "mobx-react-lite";
-import { Caption, CaseCardBody, CaseCardInfo } from "./CaseCard.styles";
-import { Client } from "../../stores/ClientsStore";
+import * as React from "react";
 import { useRootStore } from "../../stores";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
+import { Client } from "../../stores/ClientsStore";
 import { NeedsActionFlow } from "../NeedsActionFlow/NeedsActionFlow";
 import TEST_IDS from "../TestIDs";
+import { Caption, CaseCardBody, CaseCardInfo } from "./CaseCard.styles";
 import { getContactFrequencyText, getLastContactedText } from "./strings";
 
 interface NeedsFaceToFaceContactProps {
@@ -43,6 +43,10 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
     ? `Face to Face Contact: Up To Date`
     : `Face to Face Contact Needed`;
   const contactFrequency = policyStore.findContactFrequencyForClient(client);
+  const contactFrequencyText = getContactFrequencyText(
+    contactFrequency,
+    "contact"
+  );
 
   return (
     <CaseCardBody
@@ -62,8 +66,12 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
             {client.currentAddress || "No address on file"}
           </div>
           <div>
-            {getContactFrequencyText(contactFrequency, "contact")}
-            <br />
+            {contactFrequencyText && (
+              <>
+                {contactFrequencyText}
+                <br />
+              </>
+            )}
             {getLastContactedText(client)}
           </div>
         </Caption>

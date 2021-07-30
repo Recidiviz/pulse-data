@@ -18,7 +18,7 @@ from functools import wraps
 from typing import Any, Callable, Dict, List, Type
 
 from flask import g, request
-from marshmallow import Schema, ValidationError, fields, validate
+from marshmallow import Schema, ValidationError, fields
 from marshmallow.fields import Field
 from marshmallow_enum import EnumField
 
@@ -28,6 +28,7 @@ from recidiviz.case_triage.opportunities.types import (
     OpportunityDeferralType,
     OpportunityType,
 )
+from recidiviz.common.constants.states import StateCode
 
 
 def camelcase(s: str) -> str:
@@ -50,7 +51,7 @@ class CamelCaseSchema(Schema):
 
 
 class PolicyRequirementsSchema(CamelCaseSchema):
-    state = fields.Str(validate=validate.OneOf(["US_ID"]), required=True)
+    state = EnumField(StateCode, by_value=True, required=True)
 
 
 class CaseUpdateSchema(CamelCaseSchema):

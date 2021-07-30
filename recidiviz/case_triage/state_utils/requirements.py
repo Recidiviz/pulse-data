@@ -18,10 +18,13 @@
 from recidiviz.case_triage.exceptions import CaseTriageInvalidStateException
 from recidiviz.case_triage.state_utils.types import PolicyRequirements
 from recidiviz.case_triage.state_utils.us_id import us_id_policy_requirements
-from recidiviz.case_triage.util import CASE_TRIAGE_STATES
+from recidiviz.case_triage.state_utils.us_pa import us_pa_policy_requirements
+from recidiviz.common.constants.states import StateCode
 
 
-def policy_requirements_for_state(state: str) -> PolicyRequirements:
-    if state not in CASE_TRIAGE_STATES:
-        raise CaseTriageInvalidStateException(state)
-    return us_id_policy_requirements()
+def policy_requirements_for_state(state: StateCode) -> PolicyRequirements:
+    if state == StateCode.US_ID:
+        return us_id_policy_requirements()
+    if state == StateCode.US_PA:
+        return us_pa_policy_requirements()
+    raise CaseTriageInvalidStateException(state.value)

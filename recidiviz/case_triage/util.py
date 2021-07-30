@@ -25,7 +25,6 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.utils.environment import in_development
 from recidiviz.utils.secrets import get_secret
 
-
 local_path = os.path.join(
     os.path.realpath(os.path.dirname(os.path.realpath(__file__))), "local"
 )

@@ -233,7 +233,9 @@ def _get_mismatch_data_for_officer(
             return []
 
         try:
-            policy_requirements = policy_requirements_for_state(officer.state_code)
+            policy_requirements = policy_requirements_for_state(
+                StateCode(officer.state_code)
+            )
         except Exception:
             # If for some reason we can't fetch the policy requirements, we should not show mismatches.
             return []
