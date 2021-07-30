@@ -43,6 +43,7 @@ beforeEach(() => {
     clientsStore: rootStore.clientsStore,
     opportunityStore: rootStore.opportunityStore,
     policyStore: rootStore.policyStore,
+    errorMessageStore: rootStore.errorMessageStore,
   });
   APIMock.prototype.post.mockResolvedValue({});
 });
@@ -61,6 +62,7 @@ test("phone number parsing", () => {
     clientsStore: rootStore.clientsStore,
     opportunityStore: rootStore.opportunityStore,
     policyStore: rootStore.policyStore,
+    errorMessageStore: rootStore.errorMessageStore,
   });
 
   expect(testClient.phoneNumber).toBe(undefined);
@@ -74,6 +76,7 @@ test("phone number parsing", () => {
     clientsStore: rootStore.clientsStore,
     opportunityStore: rootStore.opportunityStore,
     policyStore: rootStore.policyStore,
+    errorMessageStore: rootStore.errorMessageStore,
   });
 
   expect(testClient.phoneNumber).toEqual("(510) 867-5309");
