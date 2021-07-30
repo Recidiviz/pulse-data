@@ -64,6 +64,7 @@ export const DropdownContainer = styled.div`
   top: 40px;
   right: 0px;
   width: 200px;
+  z-index: 1000;
 
   border: 1px solid ${palette.slate20};
   border-radius: 8px;
