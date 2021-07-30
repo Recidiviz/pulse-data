@@ -309,6 +309,23 @@ export class Client {
     return this.caseUpdates[found];
   }
 
+  /**
+   * Counts in-progress (non-deprecated) actions
+   */
+  get inProgressUpdates(): CaseUpdateActionType[] {
+    return Object.values(CaseUpdateActionType)
+      .map((actionType) => {
+        if (this.hasInProgressUpdate(actionType)) {
+          return actionType;
+        }
+        return undefined;
+      })
+      .filter(
+        (actionType): actionType is CaseUpdateActionType =>
+          actionType !== undefined
+      );
+  }
+
   get isVisible(): boolean {
     return caseInsensitiveIncludes(
       this.name,
@@ -368,8 +385,7 @@ export class Client {
   get activeOpportunities(): Opportunity[] {
     return this.opportunities.filter(
       (opp) =>
-        // not deferred
-        !opp.deferredUntil &&
+        !opp.isDeferred &&
         // not overridden by a case update
         CASE_UPDATE_OPPORTUNITY_ASSOCIATION[opp.opportunityType].every(
           (updateKey) => !this.hasInProgressUpdate(updateKey)

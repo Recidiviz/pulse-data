@@ -68,7 +68,7 @@ export const TabSectionBullet = styled.div`
   align-items: center;
   display: flex;
   flex: 0 0 auto;
-  height: ${rem(32)};
+  height: ${rem(24)};
   width: ${rem(spacing.xxl)};
 `;
 
@@ -87,4 +87,5 @@ export const PlainBullet = styled(Icon).attrs({
   height: 8,
 })`
   margin-left: ${rem(spacing.xs)};
+  margin-top: ${rem(spacing.xs)};
 `;
