@@ -58,7 +58,7 @@ class PolicyRequirements:
     supervision_level_names: Dict[StateSupervisionLevel, str]
 
     # External reference to policy doc describing supervision policies
-    supervision_policy_reference: str
+    supervision_policy_reference: Optional[str]
 
     def get_supervision_level_name(
         self, supervision_level: StateSupervisionLevel

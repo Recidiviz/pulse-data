@@ -59,5 +59,5 @@ export type Policy = {
   supervisionContactFrequencies: SupervisionContactFrequencies;
   supervisionLevelNames: SupervisionLevelNames;
   supervisionHomeVisitFrequencies: SupervisionHomeVisitFrequencies;
-  supervisionPolicyReference: string;
+  supervisionPolicyReference: string | null;
 };
