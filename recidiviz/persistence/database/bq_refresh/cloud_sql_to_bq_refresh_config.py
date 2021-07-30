@@ -73,6 +73,9 @@ from recidiviz.persistence.database import base_schema
 # way to achieve this and have the tables loaded alongside the DeclarativeMeta base class.
 # pylint:disable=unused-import
 from recidiviz.persistence.database.schema.aggregate import schema as aggregate_schema
+from recidiviz.persistence.database.schema.case_triage import (
+    schema as case_triage_schema,
+)
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.justice_counts import (
     schema as justice_counts_schema,
@@ -134,7 +137,10 @@ class CloudSqlToBQConfig:
         """Returns True if the data for the config's schema can and should be refreshed
         on a per-state basis.
         """
-        if self.schema_type in (SchemaType.STATE, SchemaType.OPERATIONS):
+        if self.schema_type in (
+            SchemaType.STATE,
+            SchemaType.OPERATIONS,
+        ):
             return True
 
         if self.schema_type in (
@@ -296,6 +302,12 @@ class CloudSqlToBQConfig:
                 and table.name not in self.history_tables_to_include
             )
 
+        if self.metadata_base == base_schema.CaseTriageBase:
+            etl_tables = [base.__tablename__ for base in case_triage_schema.ETL_TABLES]
+            return list(
+                table for table in self.sorted_tables if table.name not in etl_tables
+            )
+
         return []
 
     def _get_table_columns_to_export(self, table: Table) -> List[str]:
@@ -402,14 +414,17 @@ class CloudSqlToBQConfig:
 
     @classmethod
     def is_valid_schema_type(cls, schema_type: SchemaType) -> bool:
-        if schema_type in (SchemaType.JAILS, SchemaType.STATE, SchemaType.OPERATIONS):
+        if schema_type in (
+            SchemaType.JAILS,
+            SchemaType.STATE,
+            SchemaType.OPERATIONS,
+            SchemaType.CASE_TRIAGE,
+        ):
             return True
         if schema_type in (
             # TODO(#7285): Enable for justice counts once standardized federated export
             #  has shipped to prod and support for Justice Counts schema is in place.
             SchemaType.JUSTICE_COUNTS,
-            # Case Triage does not need to be exported to BigQuery
-            SchemaType.CASE_TRIAGE,
         ):
             return False
 
@@ -467,5 +482,7 @@ class CloudSqlToBQConfig:
                     "state_history_tables_to_include", []
                 ),
             )
+        if schema_type == SchemaType.CASE_TRIAGE:
+            return CloudSqlToBQConfig(schema_type=SchemaType.CASE_TRIAGE)
 
         raise ValueError(f"Unexpected schema type value [{schema_type}]")

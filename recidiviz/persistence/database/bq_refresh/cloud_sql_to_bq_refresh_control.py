@@ -108,7 +108,7 @@ def refresh_bq_schema(schema_arg: str) -> Tuple[str, HTTPStatus]:
         )
     if not CloudSqlToBQConfig.is_valid_schema_type(schema_type):
         return (
-            f"Unsuppported schema type: [{schema_type}]",
+            f"Unsupported schema type: [{schema_type}]",
             HTTPStatus.BAD_REQUEST,
         )
 
