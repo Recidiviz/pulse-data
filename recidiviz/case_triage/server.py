@@ -26,7 +26,10 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 
 from recidiviz.case_triage.admin_flask_views import RefreshAuthStore
 from recidiviz.case_triage.analytics import CaseTriageSegmentClient
-from recidiviz.case_triage.api_routes import create_api_blueprint
+from recidiviz.case_triage.api_routes import (
+    IMPERSONATED_EMAIL_KEY,
+    create_api_blueprint,
+)
 from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.e2e_routes import e2e_blueprint
 from recidiviz.case_triage.error_handlers import register_error_handlers
@@ -94,6 +97,9 @@ def on_successful_authorization(payload: Dict[str, str], token: str) -> None:
     if session.get("jwt_sub", None) != payload["sub"]:
         session["jwt_sub"] = payload["sub"]
         session["user_info"] = get_userinfo(authorization_config.domain, token)
+        # Also pop the impersonated email key if it exists, since the request could've been an impersonation request prior.
+        if IMPERSONATED_EMAIL_KEY in session:
+            session.pop(IMPERSONATED_EMAIL_KEY)
 
     email = session["user_info"]["email"].lower()
     g.user_context = UserContext(email, authorization_store)
