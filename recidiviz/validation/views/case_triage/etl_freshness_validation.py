@@ -24,36 +24,37 @@ from recidiviz.validation.views.utils.freshness_validation import (
     FreshnessValidationAssertion,
 )
 
+ETL_TABLES = ["etl_clients", "etl_officers", "etl_opportunities"]
+
+ETL_EXPORTED_ASSERTIONS = [
+    FreshnessValidationAssertion.build_assertion(
+        region_code="US_ID",
+        assertion=f"{etl_table.upper()}_WAS_EXPORTED",
+        description="Checks that we've exported data in the last 24 hours",
+        dataset="case_triage",
+        table=f"{etl_table}_materialized",
+        freshness_clause=f"CAST(exported_at AS DATE) BETWEEN {FRESHNESS_FRAGMENT}",
+    )
+    for etl_table in ETL_TABLES
+]
+
+ETL_EXPORTED_CLOUDSQL_BIGQUERY_ASSERTIONS = [
+    FreshnessValidationAssertion.build_assertion(
+        region_code="US_ID",
+        assertion=f"{etl_table.upper()}_WAS_EXPORTED_FROM_CLOUDSQL_TO_BIGQUERY",
+        description="Checks that we've exported data in the last 24 hours after data was exported from CloudSQL back to BigQuery",
+        dataset="case_triage_federated",
+        table=etl_table,
+        freshness_clause=f"CAST(exported_at AS DATE) BETWEEN {FRESHNESS_FRAGMENT}",
+    )
+    for etl_table in ETL_TABLES
+]
+
 ETL_FRESHNESS_VALIDATION_VIEW_BUILDER = FreshnessValidation(
     dataset=VIEWS_DATASET,
     view_id="case_triage_etl_freshness",
     description="Builds validation table to ensure Case Triage ETL tables are exported within SLA.",
-    assertions=[
-        FreshnessValidationAssertion.build_assertion(
-            region_code="US_ID",
-            assertion="ETL_WAS_EXPORTED",
-            description="Checks that we've exported data in the last 24 hours",
-            dataset="case_triage",
-            table="etl_clients_materialized",
-            freshness_clause=f"CAST(exported_at AS DATE) BETWEEN {FRESHNESS_FRAGMENT}",
-        ),
-        FreshnessValidationAssertion.build_assertion(
-            region_code="US_ID",
-            assertion="ETL_WAS_EXPORTED",
-            description="Checks that we've exported data in the last 24 hours",
-            dataset="case_triage",
-            table="etl_officers_materialized",
-            freshness_clause=f"CAST(exported_at AS DATE) BETWEEN {FRESHNESS_FRAGMENT}",
-        ),
-        FreshnessValidationAssertion.build_assertion(
-            region_code="US_ID",
-            assertion="ETL_WAS_EXPORTED",
-            description="Checks that we've exported data in the last 24 hours",
-            dataset="case_triage",
-            table="etl_opportunities_materialized",
-            freshness_clause=f"CAST(exported_at AS DATE) BETWEEN {FRESHNESS_FRAGMENT}",
-        ),
-    ],
+    assertions=ETL_EXPORTED_ASSERTIONS + ETL_EXPORTED_CLOUDSQL_BIGQUERY_ASSERTIONS,
 ).to_big_query_view_builder()
 
 if __name__ == "__main__":

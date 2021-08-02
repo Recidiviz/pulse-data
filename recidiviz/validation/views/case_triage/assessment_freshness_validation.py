@@ -74,6 +74,14 @@ ASSESSMENT_FRESHNESS_VALIDATION_VIEW_BUILDER = FreshnessValidation(
             table="etl_clients_materialized",
             freshness_clause=f"state_code = 'US_ID' AND most_recent_assessment_date BETWEEN {FRESHNESS_FRAGMENT}",
         ),
+        FreshnessValidationAssertion.build_assertion(
+            region_code="US_ID",
+            assertion="CASE_TRIAGE_ETL_CONTAINS_FRESH_DATA_AFTER_EXPORT",
+            description="Checks that the Case Triage ETL was successfully updated after the Cloud SQL export to BigQuery",
+            dataset="case_triage_federated",
+            table="etl_clients",
+            freshness_clause=f"state_code = 'US_ID' AND most_recent_assessment_date BETWEEN {FRESHNESS_FRAGMENT}",
+        ),
     ],
 ).to_big_query_view_builder()
 
