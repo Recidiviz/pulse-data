@@ -176,6 +176,8 @@ const readableNameForCategory = (category: string): string => {
       return "External Individual";
     case "INVARIANT":
       return "Invariant";
+    case "FRESHNESS":
+      return "Freshness";
     default:
       return category;
   }
@@ -191,6 +193,8 @@ const chooseIDNameForCategory = (category: string): string => {
       return "EXTERNAL_INDIVIDUAL";
     case "INVARIANT":
       return "INVARIANT";
+    case "FRESHNESS":
+      return "FRESHNESS";
     default:
       return category;
   }
