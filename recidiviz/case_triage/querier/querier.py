@@ -21,6 +21,7 @@ from itertools import chain, groupby
 from typing import Dict, List, Optional, Tuple
 
 import sqlalchemy.orm.exc
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
 from recidiviz.case_triage.demo_helpers import (
@@ -212,8 +213,16 @@ class CaseTriageQuerier:
     @staticmethod
     def officer_for_email(session: Session, officer_email: str) -> ETLOfficer:
         try:
-            email = officer_email.lower()
-            return session.query(ETLOfficer).filter_by(email_address=email).one()
+            return (
+                session.query(ETLOfficer)
+                .filter(
+                    or_(
+                        ETLOfficer.email_address == officer_email.lower(),
+                        ETLOfficer.hashed_email_address == officer_email,
+                    )
+                )
+                .one()
+            )
         except sqlalchemy.orm.exc.NoResultFound as e:
             raise OfficerDoesNotExistError(f"Cannot find {officer_email=}") from e
 
