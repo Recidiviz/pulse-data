@@ -19,6 +19,12 @@ import datetime
 import unittest
 
 from recidiviz.calculator.pipeline.utils import violation_utils
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violations_delegate import (
+    UsMoViolationDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violations_delegate import (
+    UsPaViolationDelegate,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -28,11 +34,14 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.persistence.entity.state.entities import (
-    StateSupervisionViolation,
-    StateSupervisionViolationTypeEntry,
     StateSupervisionViolatedConditionEntry,
-    StateSupervisionViolationResponseDecisionEntry,
+    StateSupervisionViolation,
     StateSupervisionViolationResponse,
+    StateSupervisionViolationResponseDecisionEntry,
+    StateSupervisionViolationTypeEntry,
+)
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violations_delegate import (
+    UsXxViolationDelegate,
 )
 
 _DEFAULT_SSVR_ID = 999
@@ -59,7 +68,9 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
         (
             most_severe_violation_type,
             most_severe_violation_type_subtype,
-        ) = violation_utils.identify_most_severe_violation_type_and_subtype([violation])
+        ) = violation_utils.identify_most_severe_violation_type_and_subtype(
+            [violation], UsXxViolationDelegate()
+        )
 
         self.assertEqual(
             most_severe_violation_type, StateSupervisionViolationType.FELONY
@@ -83,7 +94,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
                 most_severe_violation_type,
                 most_severe_violation_type_subtype,
             ) = violation_utils.identify_most_severe_violation_type_and_subtype(
-                [violation]
+                [violation], UsXxViolationDelegate()
             )
 
             self.assertEqual(most_severe_violation_type, violation_type)
@@ -111,7 +122,9 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
         ]
 
         violation_type_frequency_counter = (
-            violation_utils.get_violation_type_frequency_counter(violations)
+            violation_utils.get_violation_type_frequency_counter(
+                violations, UsXxViolationDelegate()
+            )
         )
 
         self.assertEqual([["ABSCONDED", "FELONY"]], violation_type_frequency_counter)
@@ -120,7 +133,9 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
         violations = [StateSupervisionViolation.new_with_defaults(state_code="US_XX")]
 
         violation_type_frequency_counter = (
-            violation_utils.get_violation_type_frequency_counter(violations)
+            violation_utils.get_violation_type_frequency_counter(
+                violations, UsXxViolationDelegate()
+            )
         )
 
         self.assertIsNone(violation_type_frequency_counter)
@@ -148,7 +163,9 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
         ]
 
         violation_type_frequency_counter = (
-            violation_utils.get_violation_type_frequency_counter(violations)
+            violation_utils.get_violation_type_frequency_counter(
+                violations, UsMoViolationDelegate()
+            )
         )
 
         self.assertEqual(
@@ -175,7 +192,9 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
         ]
 
         violation_type_frequency_counter = (
-            violation_utils.get_violation_type_frequency_counter(violations)
+            violation_utils.get_violation_type_frequency_counter(
+                violations, UsMoViolationDelegate()
+            )
         )
 
         self.assertEqual([["SUBSTANCE_ABUSE"]], violation_type_frequency_counter)
@@ -196,7 +215,9 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
         ]
 
         violation_type_frequency_counter = (
-            violation_utils.get_violation_type_frequency_counter(violations)
+            violation_utils.get_violation_type_frequency_counter(
+                violations, UsMoViolationDelegate()
+            )
         )
 
         self.assertEqual(
@@ -250,7 +271,9 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
         ]
 
         violation_type_frequency_counter = (
-            violation_utils.get_violation_type_frequency_counter(violations)
+            violation_utils.get_violation_type_frequency_counter(
+                violations, UsMoViolationDelegate()
+            )
         )
 
         self.assertEqual(
@@ -295,7 +318,9 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
         ]
 
         violation_type_frequency_counter = (
-            violation_utils.get_violation_type_frequency_counter(violations)
+            violation_utils.get_violation_type_frequency_counter(
+                violations, UsPaViolationDelegate()
+            )
         )
 
         self.assertEqual(
@@ -350,7 +375,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = datetime.date(2009, 2, 13)
 
         violation_history = violation_utils.get_violation_and_response_history(
-            revocation_date, [supervision_violation_response]
+            revocation_date, [supervision_violation_response], UsXxViolationDelegate()
         )
 
         expected_output = violation_utils.ViolationHistory(
@@ -423,8 +448,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         end_date = datetime.date(2019, 9, 5)
 
         violation_history = violation_utils.get_violation_and_response_history(
-            end_date,
-            violation_responses,
+            end_date, violation_responses, UsXxViolationDelegate()
         )
 
         expected_output = violation_utils.ViolationHistory(
@@ -482,7 +506,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = datetime.date(2009, 2, 13)
 
         violation_history = violation_utils.get_violation_and_response_history(
-            revocation_date, [supervision_violation_response]
+            revocation_date, [supervision_violation_response], UsMoViolationDelegate()
         )
 
         expected_output = violation_utils.ViolationHistory(
@@ -538,7 +562,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = datetime.date(2009, 2, 13)
 
         violation_history = violation_utils.get_violation_and_response_history(
-            revocation_date, [supervision_violation_response]
+            revocation_date, [supervision_violation_response], UsPaViolationDelegate()
         )
 
         expected_output = violation_utils.ViolationHistory(
@@ -589,7 +613,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = datetime.date(2009, 2, 13)
 
         violation_history = violation_utils.get_violation_and_response_history(
-            revocation_date, [supervision_violation_response]
+            revocation_date, [supervision_violation_response], UsPaViolationDelegate()
         )
 
         expected_output = violation_utils.ViolationHistory(
@@ -642,7 +666,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = datetime.date(2009, 2, 13)
 
         violation_history = violation_utils.get_violation_and_response_history(
-            revocation_date, [supervision_violation_response]
+            revocation_date, [supervision_violation_response], UsPaViolationDelegate()
         )
 
         expected_output = violation_utils.ViolationHistory(
@@ -745,6 +769,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
                 supervision_violation_response_2,
                 supervision_violation_response_1,
             ],
+            UsPaViolationDelegate(),
         )
 
         expected_output = violation_utils.ViolationHistory(
@@ -781,7 +806,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = datetime.date(2009, 2, 13)
 
         violation_history = violation_utils.get_violation_and_response_history(
-            revocation_date, [supervision_violation_response]
+            revocation_date, [supervision_violation_response], UsXxViolationDelegate()
         )
 
         expected_output = violation_utils.ViolationHistory(
@@ -799,7 +824,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = datetime.date(2009, 2, 13)
 
         violation_history = violation_utils.get_violation_and_response_history(
-            revocation_date, []
+            revocation_date, [], UsXxViolationDelegate()
         )
 
         expected_output = violation_utils.ViolationHistory(
@@ -852,8 +877,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = datetime.date(2009, 2, 13)
 
         violation_history = violation_utils.get_violation_and_response_history(
-            revocation_date,
-            [supervision_violation_response],
+            revocation_date, [supervision_violation_response], UsXxViolationDelegate()
         )
 
         expected_output = violation_utils.ViolationHistory(
@@ -912,8 +936,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = datetime.date(2009, 2, 13)
 
         violation_history = violation_utils.get_violation_and_response_history(
-            revocation_date,
-            [supervision_violation_response],
+            revocation_date, [supervision_violation_response], UsMoViolationDelegate()
         )
 
         expected_output = violation_utils.ViolationHistory(

@@ -4241,6 +4241,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 violation_reports,
                 supervision_contacts,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+                violation_delegate=UsXxViolationDelegate(),
             )
         )
 
@@ -4347,6 +4348,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 violation_responses,
                 supervision_contacts,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+                violation_delegate=UsXxViolationDelegate(),
             )
         )
 
@@ -4455,6 +4457,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 violation_reports,
                 supervision_contacts,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+                violation_delegate=UsXxViolationDelegate(),
             )
         )
 
@@ -4541,6 +4544,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 violation_reports,
                 supervision_contacts,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+                violation_delegate=UsXxViolationDelegate(),
             )
         )
 
@@ -4642,6 +4646,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 violation_reports,
                 supervision_contacts,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+                violation_delegate=UsXxViolationDelegate(),
             )
         )
 
@@ -4722,6 +4727,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 violation_reports,
                 supervision_contacts,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+                violation_delegate=UsXxViolationDelegate(),
             )
         )
 
@@ -4802,6 +4808,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 violation_reports,
                 supervision_contacts,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+                violation_delegate=UsXxViolationDelegate(),
             )
         )
 
@@ -4857,6 +4864,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 violation_reports,
                 supervision_contacts,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+                violation_delegate=UsXxViolationDelegate(),
             )
         )
 
@@ -4973,6 +4981,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 violation_responses,
                 supervision_contacts,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+                violation_delegate=UsXxViolationDelegate(),
             )
         )
 
@@ -5056,6 +5065,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 violation_responses,
                 supervision_contacts,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+                violation_delegate=UsXxViolationDelegate(),
             )
         )
 
@@ -5144,6 +5154,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 violation_responses,
                 supervision_contacts,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+                violation_delegate=UsXxViolationDelegate(),
             )
         )
 
@@ -5213,6 +5224,7 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
                 violation_responses,
                 supervision_contacts,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+                violation_delegate=UsXxViolationDelegate(),
             )
         )
 
@@ -6567,6 +6579,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             assessments,
             violation_responses,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            violation_delegate=UsXxViolationDelegate(),
         )
 
         assessment_score_change = last_assessment_score - first_reassessment_score
@@ -6638,6 +6651,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             assessments,
             violation_responses,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            violation_delegate=UsXxViolationDelegate(),
         )
 
         supervision_period_supervision_type = (
@@ -6714,6 +6728,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             assessments,
             violation_responses,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            violation_delegate=UsXxViolationDelegate(),
         )
 
         supervision_period_supervision_type = (
@@ -6779,6 +6794,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             assessments,
             violation_responses,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            violation_delegate=UsXxViolationDelegate(),
         )
 
         self.assertEqual(None, termination_event)
@@ -6872,6 +6888,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             assessments,
             violation_responses,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            violation_delegate=UsXxViolationDelegate(),
         )
 
         first_supervision_period_supervision_type = (
@@ -6938,6 +6955,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             assessments=[],
             violation_responses_for_history=[],
             supervision_period_to_agent_associations=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            violation_delegate=UsXxViolationDelegate(),
         )
 
         supervision_period_supervision_type = (
@@ -7082,6 +7100,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             assessments,
             violation_responses,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            violation_delegate=UsXxViolationDelegate(),
         )
 
         supervision_period_supervision_type = (
@@ -7193,6 +7212,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             assessments,
             violation_responses,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            violation_delegate=UsXxViolationDelegate(),
         )
 
         supervision_period_supervision_type = (
@@ -7292,6 +7312,7 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
             assessments,
             violation_responses,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            violation_delegate=UsXxViolationDelegate(),
         )
 
         supervision_period_supervision_type = (

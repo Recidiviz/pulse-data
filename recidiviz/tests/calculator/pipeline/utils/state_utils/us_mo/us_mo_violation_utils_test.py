@@ -16,20 +16,23 @@
 # =============================================================================
 """Tests the us_mo_violation_utils.py file."""
 import unittest
-from typing import List
 
 import pytest
 
+# TODO(#8106): Delete these imports before closing this task
 # pylint: disable=protected-access
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils import (
-    _LAW_CITATION_SUBTYPE_STR,
-    _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES,
-    _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP,
     _normalize_violations_on_responses,
-    us_mo_get_violation_type_subtype_strings_for_violation,
     us_mo_shorthand_for_violation_subtype,
     us_mo_sorted_violation_subtypes_by_severity,
     us_mo_violation_type_from_subtype,
+)
+
+# pylint: disable=protected-access
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violations_delegate import (
+    _LAW_CITATION_SUBTYPE_STR,
+    _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES,
+    _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -45,130 +48,6 @@ from recidiviz.persistence.entity.state.entities import (
 )
 
 _STATE_CODE = "US_MO"
-
-
-class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
-    """Tests the us_mo_get_violation_type_subtype_strings_for_violation function."""
-
-    def test_us_mo_get_violation_type_subtype_strings_for_violation(self) -> None:
-        # Arrange
-        violation = StateSupervisionViolation.new_with_defaults(
-            state_code=_STATE_CODE,
-            supervision_violation_types=[
-                StateSupervisionViolationTypeEntry.new_with_defaults(
-                    state_code=_STATE_CODE,
-                    violation_type=StateSupervisionViolationType.FELONY,
-                )
-            ],
-        )
-
-        # Act
-        type_subtype_strings = us_mo_get_violation_type_subtype_strings_for_violation(
-            violation
-        )
-
-        # Assert
-        expected_type_subtype_strings = ["FELONY"]
-        self.assertEqual(expected_type_subtype_strings, type_subtype_strings)
-
-    def test_us_mo_get_violation_type_subtype_strings_for_violation_substance(
-        self,
-    ) -> None:
-        # Arrange
-        violation = StateSupervisionViolation.new_with_defaults(
-            state_code=_STATE_CODE,
-            supervision_violation_types=[
-                StateSupervisionViolationTypeEntry.new_with_defaults(
-                    state_code=_STATE_CODE,
-                    violation_type=StateSupervisionViolationType.TECHNICAL,
-                )
-            ],
-            supervision_violated_conditions=[
-                StateSupervisionViolatedConditionEntry.new_with_defaults(
-                    state_code=_STATE_CODE, condition="DRG"
-                )
-            ],
-        )
-
-        # Act
-        type_subtype_strings = us_mo_get_violation_type_subtype_strings_for_violation(
-            violation
-        )
-
-        # Assert
-        expected_type_subtype_strings = ["SUBSTANCE_ABUSE"]
-        self.assertEqual(expected_type_subtype_strings, type_subtype_strings)
-
-    def test_us_mo_get_violation_type_subtype_strings_for_violation_law_citation(
-        self,
-    ) -> None:
-        # Arrange
-        violation = StateSupervisionViolation.new_with_defaults(
-            state_code=_STATE_CODE,
-            supervision_violation_types=[
-                StateSupervisionViolationTypeEntry.new_with_defaults(
-                    state_code=_STATE_CODE,
-                    violation_type=StateSupervisionViolationType.TECHNICAL,
-                )
-            ],
-            supervision_violated_conditions=[
-                StateSupervisionViolatedConditionEntry.new_with_defaults(
-                    state_code=_STATE_CODE, condition="LAW_CITATION"
-                )
-            ],
-        )
-
-        # Act
-        type_subtype_strings = us_mo_get_violation_type_subtype_strings_for_violation(
-            violation
-        )
-
-        # Assert
-        expected_type_subtype_strings = ["LAW_CITATION"]
-        self.assertEqual(expected_type_subtype_strings, type_subtype_strings)
-
-    def test_us_mo_get_violation_type_subtype_strings_for_violation_technical(
-        self,
-    ) -> None:
-        # Arrange
-        violation = StateSupervisionViolation.new_with_defaults(
-            state_code=_STATE_CODE,
-            supervision_violation_types=[
-                StateSupervisionViolationTypeEntry.new_with_defaults(
-                    state_code=_STATE_CODE,
-                    violation_type=StateSupervisionViolationType.TECHNICAL,
-                )
-            ],
-            supervision_violated_conditions=[
-                StateSupervisionViolatedConditionEntry.new_with_defaults(
-                    state_code=_STATE_CODE, condition="EMP"
-                )
-            ],
-        )
-
-        # Act
-        type_subtype_strings = us_mo_get_violation_type_subtype_strings_for_violation(
-            violation
-        )
-
-        # Assert
-        expected_type_subtype_strings = ["EMP", "TECHNICAL"]
-        self.assertEqual(expected_type_subtype_strings, type_subtype_strings)
-
-    def test_us_mo_get_violation_type_subtype_strings_for_violation_no_types(
-        self,
-    ) -> None:
-        # Arrange
-        violation = StateSupervisionViolation.new_with_defaults(state_code=_STATE_CODE)
-
-        # Act
-        type_subtype_strings = us_mo_get_violation_type_subtype_strings_for_violation(
-            violation
-        )
-
-        # Assert
-        expected_type_subtype_strings: List[str] = []
-        self.assertEqual(expected_type_subtype_strings, type_subtype_strings)
 
 
 class TestUsMoSortedViolationSubtypesBySeverity(unittest.TestCase):

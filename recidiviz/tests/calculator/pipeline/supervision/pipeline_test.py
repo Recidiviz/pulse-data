@@ -150,6 +150,9 @@ class TestSupervisionPipeline(unittest.TestCase):
         self.violation_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.supervision.identifier.get_state_specific_violation_delegate"
         )
+        self.violation_delegate_patcher_2 = mock.patch(
+            "recidiviz.calculator.pipeline.utils.violation_utils.get_state_specific_violation_delegate"
+        )
         self.mock_violation_delegate = self.violation_delegate_patcher.start()
         self.mock_violation_delegate.return_value = UsXxViolationDelegate()
 

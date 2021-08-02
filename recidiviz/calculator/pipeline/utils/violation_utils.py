@@ -22,7 +22,6 @@ from typing import Dict, List, NamedTuple, Optional, Set, Tuple
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    get_violation_type_subtype_strings_for_violation,
     shorthand_for_violation_subtype,
     sorted_violation_subtypes_by_severity,
     violation_type_from_subtype,
@@ -127,6 +126,7 @@ def shorthand_description_for_ranked_violation_counts(
 
 def identify_most_severe_violation_type_and_subtype(
     violations: List[StateSupervisionViolation],
+    violation_delegate: StateSpecificViolationDelegate,
 ) -> Tuple[Optional[StateSupervisionViolationType], Optional[str]]:
     """Identifies the most severe violation type on the provided |violations|, and, if relevant, the subtype of that
     most severe violation type. Returns both as a tuple.
@@ -137,10 +137,11 @@ def identify_most_severe_violation_type_and_subtype(
         return None, None
 
     state_code = get_single_state_code(violations)
-
     for violation in violations:
         violation_subtypes.extend(
-            get_violation_type_subtype_strings_for_violation(violation)
+            violation_delegate.get_violation_type_subtype_strings_for_violation(
+                violation
+            )
         )
 
     if not violation_subtypes:
@@ -178,6 +179,7 @@ def most_severe_violation_subtype(
 
 def get_violation_type_frequency_counter(
     violations: List[StateSupervisionViolation],
+    violation_delegate: StateSpecificViolationDelegate,
 ) -> Optional[List[List[str]]]:
     """For every violation in violations, builds a list of strings, where each string is a violation type or a
     condition violated that is recorded on the given violation. Returns a list of all lists of strings, where the length
@@ -185,8 +187,15 @@ def get_violation_type_frequency_counter(
 
     violation_type_frequency_counter: List[List[str]] = []
 
+    if not violations:
+        return None
+
     for violation in violations:
-        violation_types = get_violation_type_subtype_strings_for_violation(violation)
+        violation_types = (
+            violation_delegate.get_violation_type_subtype_strings_for_violation(
+                violation
+            )
+        )
 
         if violation_types:
             violation_type_frequency_counter.append(violation_types)
@@ -215,6 +224,7 @@ ViolationHistory = NamedTuple(
 def get_violation_and_response_history(
     upper_bound_exclusive_date: date,
     violation_responses_for_history: List[StateSupervisionViolationResponse],
+    violation_delegate: StateSpecificViolationDelegate,
     incarceration_period: Optional[StateIncarcerationPeriod] = None,
     lower_bound_inclusive_date_override: Optional[date] = None,
 ) -> ViolationHistory:
@@ -267,18 +277,20 @@ def get_violation_and_response_history(
     (
         most_severe_violation_type,
         most_severe_violation_type_subtype,
-    ) = identify_most_severe_violation_type_and_subtype(violations_in_window)
+    ) = identify_most_severe_violation_type_and_subtype(
+        violations_in_window, violation_delegate
+    )
 
     violation_type_entries = []
     for violation in violations_in_window:
         violation_type_entries.extend(violation.supervision_violation_types)
 
     violation_history_description = get_violation_history_description(
-        violations_in_window
+        violations_in_window, violation_delegate
     )
 
     violation_type_frequency_counter = get_violation_type_frequency_counter(
-        violations_in_window
+        violations_in_window, violation_delegate
     )
 
     # Count the number of responses in the window
@@ -302,6 +314,7 @@ def get_violation_and_response_history(
 
 def get_violation_history_description(
     violations: List[StateSupervisionViolation],
+    violation_delegate: StateSpecificViolationDelegate,
 ) -> Optional[str]:
     """Returns a string description of the violation history given the violation type entries. Tallies the number of
     each violation type, and then builds a string that lists the number of each of the represented types in the order
@@ -317,7 +330,9 @@ def get_violation_history_description(
     # Count all violation types and subtypes
     for violation in violations:
         most_severe_violation_type_and_subtype = (
-            identify_most_severe_violation_type_and_subtype([violation])
+            identify_most_severe_violation_type_and_subtype(
+                [violation], violation_delegate
+            )
         )
         if not most_severe_violation_type_and_subtype:
             continue
