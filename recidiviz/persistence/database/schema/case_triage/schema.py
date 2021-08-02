@@ -216,6 +216,7 @@ class ETLOfficer(CaseTriageBase, ETLDerivedEntity):
     email_address = Column(String(255), nullable=False)
     given_names = Column(String(255), nullable=False)
     surname = Column(String(255), nullable=False)
+    hashed_email_address = Column(Text, nullable=True)
 
 
 class ETLOpportunity(CaseTriageBase, ETLDerivedEntity):

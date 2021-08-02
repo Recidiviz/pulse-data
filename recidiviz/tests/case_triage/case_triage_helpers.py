@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements helper functions for use in Case Triage tests."""
+import hashlib
 import json
+from base64 import b64encode
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, Optional
 
@@ -49,6 +51,7 @@ def generate_fake_officer(
         state_code=state_code,
         given_names="Test",
         surname="Officer",
+        hashed_email_address=b64encode(hashlib.sha256(email.encode("ascii")).digest()),
     )
 
 

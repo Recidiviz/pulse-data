@@ -51,6 +51,7 @@ id_roster AS (
     SELECT
         external_id,
         LOWER(email_address) AS email_address,
+        TO_BASE64(SHA256(LOWER(email_address))) AS hashed_email_address,
         'US_ID' AS state_code
     FROM `{project_id}.{static_reference_dataset}.us_id_roster`
 ),
@@ -63,7 +64,8 @@ all_officers AS (
         external_id,
         id_roster.email_address AS email_address,
         given_names,
-        names.surname AS surname
+        names.surname AS surname,
+        id_roster.hashed_email_address AS hashed_email_address
     FROM
         id_roster
     JOIN
@@ -89,6 +91,7 @@ OFFICER_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "email_address",
         "given_names",
         "surname",
+        "hashed_email_address",
         "exported_at",
     ],
     reference_views_dataset=REFERENCE_VIEWS_DATASET,
