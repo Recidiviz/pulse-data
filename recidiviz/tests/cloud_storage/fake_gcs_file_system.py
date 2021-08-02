@@ -21,7 +21,7 @@ import os
 import shutil
 import threading
 from contextlib import contextmanager
-from typing import Dict, Iterator, List, Optional, Set, TextIO, Union
+from typing import Any, Dict, Iterator, List, Optional, Set, TextIO, Union
 
 import attr
 
@@ -124,6 +124,14 @@ class FakeGCSFileSystem(GCSFileSystem):
         raise ValueError("Must be implemented for use in tests.")
 
     def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, str]]:
+        raise ValueError("Must be implemented for use in tests.")
+
+    def set_metadata(
+        self,
+        path: GcsfsFilePath,
+        new_metadata: Dict[str, Any],
+        clear_preexisting_metadata: bool,
+    ) -> None:
         raise ValueError("Must be implemented for use in tests.")
 
     def real_absolute_path_for_path(self, path: GcsfsFilePath) -> str:
