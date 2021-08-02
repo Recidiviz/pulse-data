@@ -81,10 +81,25 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
         FULL OUTER JOIN
             `{project_id}.{static_reference_dataset_id}.case_triage_users` case_triage
         USING (state_code, email_address)
+    ),
+    recidiviz_test_users AS (
+        SELECT
+            state_code,
+            email_address AS restricted_user_email,
+            allowed_supervision_location_ids,
+            allowed_level_1_supervision_location_ids,
+            allowed_supervision_location_level,
+            internal_role,
+            can_access_leadership_dashboard,
+            can_access_case_triage
+        FROM `{project_id}.{static_reference_dataset_id}.recidiviz_unified_product_test_users`
     )
+
     SELECT {columns} FROM mo_restricted_access
     UNION ALL
-    SELECT {columns} FROM id_restricted_access;
+    SELECT {columns} FROM id_restricted_access
+    UNION ALL
+    SELECT {columns} FROM recidiviz_test_users;
     """
 
 DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
