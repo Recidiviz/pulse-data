@@ -36,6 +36,7 @@ from recidiviz.tests.case_triage.case_triage_helpers import (
     generate_fake_etl_opportunity,
     generate_fake_officer,
     generate_fake_reminder,
+    hash_email,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
 
@@ -89,6 +90,26 @@ class TestCaseTriageQuerier(TestCase):
         ) as session:
             with self.assertRaises(OfficerDoesNotExistError):
                 CaseTriageQuerier.officer_for_email(session, "nonexistent@email.com")
+
+    def test_fetch_officer_by_email_or_hash(self) -> None:
+        officer_1 = generate_fake_officer("id_1", "officer1@not-recidiviz.org")
+        officer_2 = generate_fake_officer("id_2", "officer2@not-recidiviz.org")
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(officer_1)
+            session.add(officer_2)
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as read_session:
+            fetch_by_email_address = CaseTriageQuerier.officer_for_email(
+                read_session, "officer1@not-recidiviz.org"
+            )
+            self.assertEqual(fetch_by_email_address.external_id, "id_1")
+            fetch_by_hashed_email = CaseTriageQuerier.officer_for_email(
+                read_session,
+                hash_email("officer2@not-recidiviz.org"),
+            )
+            self.assertEqual(fetch_by_hashed_email.external_id, "id_2")
 
     def test_clients_for_officer(self) -> None:
         officer_1 = generate_fake_officer("id_1")
