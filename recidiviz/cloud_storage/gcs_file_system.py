@@ -23,7 +23,7 @@ import tempfile
 import uuid
 from contextlib import contextmanager
 from io import TextIOWrapper
-from typing import Callable, Dict, Iterator, List, Optional, TextIO, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional, TextIO, Union
 
 import pysftp
 from google.api_core import exceptions, retry
@@ -135,8 +135,17 @@ class GCSFileSystem:
         """Returns the file size of the object if it exists in the fs, None otherwise."""
 
     @abc.abstractmethod
-    def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, str]]:
+    def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, Any]]:
         """Returns the metadata for the object at the given path if it exists in the fs, None otherwise."""
+
+    @abc.abstractmethod
+    def set_metadata(
+        self,
+        path: GcsfsFilePath,
+        new_metadata: Dict[str, Any],
+        clear_preexisting_metadata: bool,
+    ) -> None:
+        """Sets the custom metadata for the object at the given path if it exists in the fs"""
 
     @abc.abstractmethod
     def download_as_string(self, path: GcsfsFilePath, encoding: str = "utf-8") -> str:
@@ -271,12 +280,32 @@ class GCSFileSystemImpl(GCSFileSystem):
             return None
 
     @retry.Retry(predicate=retry_predicate)
-    def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, str]]:
+    def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, Any]]:
         try:
             blob = self._get_blob(path)
             return blob.metadata
         except GCSBlobDoesNotExistError:
             return None
+
+    @retry.Retry(predicate=retry_predicate)
+    def set_metadata(
+        self,
+        path: GcsfsFilePath,
+        new_metadata: Dict[str, Any],
+        clear_preexisting_metadata: bool,
+    ) -> None:
+        try:
+            blob = self._get_blob(path)
+            if clear_preexisting_metadata:
+                # clears all preexisting metadata
+                blob.metadata = None
+                blob.patch()
+            # keys in new_metadata must match keys in the metadata to overwrite data.
+            # if new_metadata keys do not match the existing keys the old keys and values will still exist.
+            blob.metadata = new_metadata
+            blob.patch()
+        except GCSBlobDoesNotExistError:
+            return
 
     @retry.Retry(predicate=retry_predicate)
     def copy(self, src_path: GcsfsFilePath, dst_path: GcsfsPath) -> None:

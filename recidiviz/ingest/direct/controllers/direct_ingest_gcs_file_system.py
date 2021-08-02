@@ -25,6 +25,7 @@ import tempfile
 import uuid
 from contextlib import contextmanager
 from typing import (
+    Any,
     Callable,
     Dict,
     Generic,
@@ -239,6 +240,16 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
 
     def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict]:
         return self.gcs_file_system.get_metadata(path)
+
+    def set_metadata(
+        self,
+        path: GcsfsFilePath,
+        new_metadata: Dict[str, Any],
+        clear_preexisting_metadata: bool,
+    ) -> None:
+        self.gcs_file_system.set_metadata(
+            path, new_metadata, clear_preexisting_metadata
+        )
 
     def mv(self, src_path: GcsfsFilePath, dst_path: GcsfsPath) -> None:
         self.gcs_file_system.mv(src_path, dst_path)
