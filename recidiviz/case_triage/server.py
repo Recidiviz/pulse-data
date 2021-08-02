@@ -168,6 +168,7 @@ app.add_url_rule(
         "refresh_auth_store",
         redirect_url="/",
         authorization_store=authorization_store,
+        authorization_decorator=requires_authorization,
     ),
 )
 
