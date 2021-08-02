@@ -42,6 +42,10 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
 )
 
 
+def hash_email(email: str) -> str:
+    return b64encode(hashlib.sha256(email.encode("ascii")).digest()).decode("ascii")
+
+
 def generate_fake_officer(
     officer_id: str, email: str = "nonexistent_email.com", state_code: str = "US_ID"
 ) -> ETLOfficer:
@@ -51,7 +55,7 @@ def generate_fake_officer(
         state_code=state_code,
         given_names="Test",
         surname="Officer",
-        hashed_email_address=b64encode(hashlib.sha256(email.encode("ascii")).digest()),
+        hashed_email_address=hash_email(email),
     )
 
 
