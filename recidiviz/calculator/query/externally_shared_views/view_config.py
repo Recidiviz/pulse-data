@@ -14,22 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Experiments view configuration."""
+"""Configuration for views in externally_shared_views."""
+
 from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.externally_shared_views.views.most_recent_program_participation_metrics_materialized import (
-    FTR_PROGRAM_PARTICIPATION_VIEW_BUILDERS,
-)
-from recidiviz.calculator.query.externally_shared_views.views.most_recent_program_referral_metrics_materialized import (
-    FTR_PROGRAM_REFERRALS_VIEW_BUILDERS,
+from recidiviz.calculator.query.externally_shared_views.views.sessions import (
+    PARTNER_SHARED_SESSIONS_VIEW_BUILDERS,
 )
 from recidiviz.calculator.query.externally_shared_views.views.state_person_external_id import (
-    STATE_PERSON_EXTERNAL_ID_VIEW_BUILDERS,
+    PARTNER_SHARED_STATE_PERSON_EXTERNAL_ID_VIEW_BUILDERS,
 )
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = (
-    STATE_PERSON_EXTERNAL_ID_VIEW_BUILDERS
-    + FTR_PROGRAM_PARTICIPATION_VIEW_BUILDERS
-    + FTR_PROGRAM_REFERRALS_VIEW_BUILDERS
+    PARTNER_SHARED_SESSIONS_VIEW_BUILDERS
+    + PARTNER_SHARED_STATE_PERSON_EXTERNAL_ID_VIEW_BUILDERS
 )
