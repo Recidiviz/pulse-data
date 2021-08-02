@@ -69,6 +69,11 @@ class FreshnessValidation:
     description: str
     assertions: List[FreshnessValidationAssertion]
 
+    def __attrs_post_init__(self) -> None:
+        # Every single assertion should have a unique statement
+        assertion_statements = [assertion.assertion for assertion in self.assertions]
+        assert len(set(assertion_statements)) == len(assertion_statements)
+
     def build_query_template(self) -> str:
         assertion_queries = "\n UNION ALL \n".join(
             [assertion.to_sql_query() for assertion in self.assertions]
