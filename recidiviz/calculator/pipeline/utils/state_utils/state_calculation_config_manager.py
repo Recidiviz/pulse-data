@@ -20,7 +20,7 @@ import logging
 # TODO(#2995): Make a state config file for every state and every one of these state-specific calculation methodologies
 import sys
 from datetime import date
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
 from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
@@ -136,7 +136,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionContact,
     StateSupervisionPeriod,
     StateSupervisionSentence,
-    StateSupervisionViolation,
     StateSupervisionViolationResponse,
 )
 
@@ -539,49 +538,6 @@ def get_state_specific_supervising_officer_and_location_info_function(
         return us_pa_get_supervising_officer_and_location_info_from_supervision_period
 
     return default_get_state_specific_supervising_officer_and_location_info_function
-
-
-def get_violation_type_subtype_strings_for_violation(
-    violation: StateSupervisionViolation,
-) -> List[str]:
-    """Returns a list of strings that represent the violation subtypes present on the given |violation|. If there's no
-    state-specific logic for determining the subtypes, then a list of the violation_type raw values in the violation's
-    supervision_violation_types is returned."""
-    if violation.state_code.upper() == "US_MO":
-        return us_mo_violation_utils.us_mo_get_violation_type_subtype_strings_for_violation(
-            violation
-        )
-    if violation.state_code.upper() == "US_PA":
-        return us_pa_violation_utils.us_pa_get_violation_type_subtype_strings_for_violation(
-            violation
-        )
-
-    supervision_violation_types = violation.supervision_violation_types
-
-    if supervision_violation_types:
-        return [
-            violation_type_entry.violation_type.value
-            for violation_type_entry in supervision_violation_types
-            if violation_type_entry.violation_type
-        ]
-
-    return []
-
-
-def state_specific_violation_type_subtypes_with_violation_type_mappings(
-    state_code: str,
-) -> Set[str]:
-    """Returns the set of violation_type_subtype values that have a defined mapping
-    to a violation_type value for the given |state_code|."""
-    if state_code.upper() == StateCode.US_MO.value:
-        return (
-            us_mo_violation_utils.us_mo_violation_type_subtypes_with_violation_type_mappings()
-        )
-    if state_code.upper() == StateCode.US_PA.value:
-        return (
-            us_pa_violation_utils.us_pa_violation_type_subtypes_with_violation_type_mappings()
-        )
-    return {violation_type.value for violation_type in StateSupervisionViolationType}
 
 
 def sorted_violation_subtypes_by_severity(
