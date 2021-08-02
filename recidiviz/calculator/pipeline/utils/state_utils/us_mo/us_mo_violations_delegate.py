@@ -17,19 +17,70 @@
 """Utils for state-specific logic related to violations
 in US_MO."""
 
-from typing import Optional
+from typing import List, Optional, Set, Tuple
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
+)
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseType,
 )
 from recidiviz.persistence.entity.state.entities import (
+    StateSupervisionViolation,
     StateSupervisionViolationResponse,
 )
 
 FOLLOW_UP_RESPONSE_SUBTYPE = "SUP"
+_SUBSTANCE_ABUSE_CONDITION_STR = "DRG"
+_LAW_CONDITION_STR = "LAW"
+
+_LAW_CITATION_SUBTYPE_STR: str = "LAW_CITATION"
+_SUBSTANCE_ABUSE_SUBTYPE_STR: str = "SUBSTANCE_ABUSE"
+
+_UNSUPPORTED_VIOLATION_SUBTYPE_VALUES = [
+    # We don't expect to see these types in US_MO
+    StateSupervisionViolationType.LAW.value,
+]
+
+_VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP: List[
+    Tuple[StateSupervisionViolationType, str, str]
+] = [
+    (
+        StateSupervisionViolationType.FELONY,
+        StateSupervisionViolationType.FELONY.value,
+        "fel",
+    ),
+    (
+        StateSupervisionViolationType.MISDEMEANOR,
+        StateSupervisionViolationType.MISDEMEANOR.value,
+        "misd",
+    ),
+    (StateSupervisionViolationType.TECHNICAL, _LAW_CITATION_SUBTYPE_STR, "law_cit"),
+    (
+        StateSupervisionViolationType.ABSCONDED,
+        StateSupervisionViolationType.ABSCONDED.value,
+        "absc",
+    ),
+    (
+        StateSupervisionViolationType.MUNICIPAL,
+        StateSupervisionViolationType.MUNICIPAL.value,
+        "muni",
+    ),
+    (
+        StateSupervisionViolationType.ESCAPED,
+        StateSupervisionViolationType.ESCAPED.value,
+        "esc",
+    ),
+    (StateSupervisionViolationType.TECHNICAL, _SUBSTANCE_ABUSE_SUBTYPE_STR, "subs"),
+    (
+        StateSupervisionViolationType.TECHNICAL,
+        StateSupervisionViolationType.TECHNICAL.value,
+        "tech",
+    ),
+]
 
 
 class UsMoViolationDelegate(StateSpecificViolationDelegate):
@@ -52,6 +103,70 @@ class UsMoViolationDelegate(StateSpecificViolationDelegate):
                 )
             )
         )
+
+    def get_violation_type_subtype_strings_for_violation(
+        self,
+        violation: StateSupervisionViolation,
+    ) -> List[str]:
+        """Returns a list of strings that represent the violation subtypes present on
+        the given |violation|.
+
+        For all non-TECHNICAL violation types on the |violation|, includes the raw
+        violation_type value string. If the |violation| includes a TECHNICAL
+        violation type, looks at the conditions violated to see if the violation
+        contains substance abuse or law citation subtypes. If the violation contains a
+        TECHNICAL violation_type without either a SUBSTANCE_ABUSE or LAW_CITATION
+        condition, then the general 'TECHNICAL' value is included in the list. If the
+        violation does contain one or more of these TECHNICAL subtypes,
+        then the subtype values are included in the list and 'TECHNICAL' is not
+        included.
+        """
+        violation_type_list: List[str] = []
+
+        includes_technical_violation = False
+        includes_special_case_violation_subtype = False
+
+        supervision_violation_types = violation.supervision_violation_types
+
+        if not supervision_violation_types:
+            return violation_type_list
+
+        for violation_type_entry in violation.supervision_violation_types:
+            if (
+                violation_type_entry.violation_type
+                and violation_type_entry.violation_type
+                != StateSupervisionViolationType.TECHNICAL
+            ):
+                violation_type_list.append(violation_type_entry.violation_type.value)
+            else:
+                includes_technical_violation = True
+
+        for condition_entry in violation.supervision_violated_conditions:
+            condition = condition_entry.condition
+            if condition:
+                if condition.upper() == _SUBSTANCE_ABUSE_CONDITION_STR:
+                    violation_type_list.append(_SUBSTANCE_ABUSE_SUBTYPE_STR)
+                    includes_special_case_violation_subtype = True
+                else:
+                    if condition.upper() == _LAW_CITATION_SUBTYPE_STR:
+                        includes_special_case_violation_subtype = True
+
+                    # Condition values are free text so we standardize all to be upper case
+                    violation_type_list.append(condition.upper())
+
+        # If this is a TECHNICAL violation without either a SUBSTANCE_ABUSE or LAW_CITATION condition, then add
+        # 'TECHNICAL' to the type list so that this will get classified as a TECHNICAL violation
+        if includes_technical_violation and not includes_special_case_violation_subtype:
+            violation_type_list.append(StateSupervisionViolationType.TECHNICAL.value)
+
+        return violation_type_list
+
+    def violation_type_subtypes_with_violation_type_mappings(self) -> Set[str]:
+        """Returns a the set of supported subtypes for US_MO based on the ordered map."""
+        return {
+            subtype
+            for _, subtype, _ in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP
+        }
 
 
 def _get_violation_report_subtype_should_be_included_in_calculations(

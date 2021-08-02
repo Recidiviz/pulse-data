@@ -23,10 +23,8 @@ from recidiviz.calculator.pipeline.base_identifier import (
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_state_specific_violation_delegate,
-    get_violation_type_subtype_strings_for_violation,
     sorted_violation_subtypes_by_severity,
     state_specific_violation_response_pre_processing_function,
-    state_specific_violation_type_subtypes_with_violation_type_mappings,
     violation_type_from_subtype,
 )
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
@@ -142,22 +140,22 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
                 "Invalid control: All responses should have response_dates."
             )
 
-        violation_subtypes = get_violation_type_subtype_strings_for_violation(
+        violation_subtypes = violation_delegate.get_violation_type_subtype_strings_for_violation(
             first_violation_response.supervision_violation  # type: ignore
         )
         sorted_violation_subtypes = sorted_violation_subtypes_by_severity(
             state_code, violation_subtypes, DEFAULT_VIOLATION_SUBTYPE_SEVERITY_ORDER
         )
         supported_violation_subtypes = (
-            state_specific_violation_type_subtypes_with_violation_type_mappings(
-                state_code
-            )
+            violation_delegate.violation_type_subtypes_with_violation_type_mappings()
         )
+
         for index, violation_subtype in enumerate(sorted_violation_subtypes):
             if violation_subtype not in supported_violation_subtypes:
-                # It's possible for violations to have subtypes that don't explicitly map to a StateSupervisionViolationType value.
-                # We only want to record violation events for the defined StateSupervisionViolationType values on a violation,
-                # so we avoid creating events for subtypes without supported mappings to these values.
+                # It's possible for violations to have subtypes that don't explicitly map to a
+                # StateSupervisionViolationType value. We only want to record violation events for the defined
+                # StateSupervisionViolationType values on a violation, so we avoid creating events for subtypes
+                # without supported mappings to these values.
                 continue
             violation_type = violation_type_from_subtype(state_code, violation_subtype)
             is_most_severe_violation_type = index == 0

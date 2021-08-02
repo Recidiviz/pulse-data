@@ -65,6 +65,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     supervision_types_mutually_exclusive_for_state,
     terminating_supervision_period_supervision_type,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
+    StateSpecificViolationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     identify_most_severe_case_type,
 )
@@ -237,6 +240,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                         violation_responses_for_history=violation_responses_for_history,
                         supervision_contacts=supervision_contacts,
                         supervision_period_to_agent_associations=supervision_period_to_agent_associations,
+                        violation_delegate=violation_delegate,
                         judicial_district_code=judicial_district_code,
                     )
                 )
@@ -250,6 +254,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     assessments=assessments,
                     violation_responses_for_history=violation_responses_for_history,
                     supervision_period_to_agent_associations=supervision_period_to_agent_associations,
+                    violation_delegate=violation_delegate,
                     judicial_district_code=judicial_district_code,
                 )
 
@@ -289,6 +294,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         violation_responses_for_history: List[StateSupervisionViolationResponse],
         supervision_contacts: List[StateSupervisionContact],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
+        violation_delegate: StateSpecificViolationDelegate,
         judicial_district_code: Optional[str] = None,
     ) -> List[SupervisionPopulationEvent]:
         """Finds days that this person was on supervision for the given
@@ -307,6 +313,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 filtered to those that are applicable when analyzing violation history
             - supervision_period_to_agent_associations: dictionary associating StateSupervisionPeriod ids to information
                 about the corresponding StateAgent on the period
+            - violation_delegate: the state-specific violation delegate
             - judicial_district_code: The judicial district responsible for the period of supervision
         Returns
             - A set of unique SupervisionPopulationEvents for the person for the given
@@ -415,6 +422,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 violation_history = get_violation_and_response_history(
                     upper_bound_exclusive_date=(event_date + relativedelta(days=1)),
                     violation_responses_for_history=violation_responses_for_history,
+                    violation_delegate=violation_delegate,
                 )
 
                 case_compliance: Optional[SupervisionCaseCompliance] = None
@@ -655,6 +663,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         assessments: List[StateAssessment],
         violation_responses_for_history: List[StateSupervisionViolationResponse],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
+        violation_delegate: StateSpecificViolationDelegate,
         judicial_district_code: Optional[str] = None,
     ) -> Optional[SupervisionEvent]:
         """Identifies an instance of supervision termination. If the given supervision_period has a valid start_date and
@@ -722,6 +731,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             violation_history = get_violation_and_response_history(
                 upper_bound_exclusive_date=(termination_date + relativedelta(days=1)),
                 violation_responses_for_history=violation_responses_for_history,
+                violation_delegate=violation_delegate,
             )
 
             (

@@ -16,9 +16,17 @@
 # =============================================================================
 """Utils for state-specific calculations related to violations for US_MO."""
 import sys
-from typing import List, Set, Tuple
+from typing import List
 
 from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
+
+# TODO(#8106): Delete these imports before closing this task
+# pylint: disable=protected-access
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violations_delegate import (
+    _LAW_CITATION_SUBTYPE_STR,
+    _LAW_CONDITION_STR,
+    _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -26,58 +34,9 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.persistence.entity.state.entities import (
-    StateSupervisionViolation,
     StateSupervisionViolationResponse,
     StateSupervisionViolationTypeEntry,
 )
-
-_SUBSTANCE_ABUSE_CONDITION_STR = "DRG"
-_LAW_CONDITION_STR = "LAW"
-
-_LAW_CITATION_SUBTYPE_STR: str = "LAW_CITATION"
-_SUBSTANCE_ABUSE_SUBTYPE_STR: str = "SUBSTANCE_ABUSE"
-
-_UNSUPPORTED_VIOLATION_SUBTYPE_VALUES = [
-    # We don't expect to see these types in US_MO
-    StateSupervisionViolationType.LAW.value,
-]
-
-_VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP: List[
-    Tuple[StateSupervisionViolationType, str, str]
-] = [
-    (
-        StateSupervisionViolationType.FELONY,
-        StateSupervisionViolationType.FELONY.value,
-        "fel",
-    ),
-    (
-        StateSupervisionViolationType.MISDEMEANOR,
-        StateSupervisionViolationType.MISDEMEANOR.value,
-        "misd",
-    ),
-    (StateSupervisionViolationType.TECHNICAL, _LAW_CITATION_SUBTYPE_STR, "law_cit"),
-    (
-        StateSupervisionViolationType.ABSCONDED,
-        StateSupervisionViolationType.ABSCONDED.value,
-        "absc",
-    ),
-    (
-        StateSupervisionViolationType.MUNICIPAL,
-        StateSupervisionViolationType.MUNICIPAL.value,
-        "muni",
-    ),
-    (
-        StateSupervisionViolationType.ESCAPED,
-        StateSupervisionViolationType.ESCAPED.value,
-        "esc",
-    ),
-    (StateSupervisionViolationType.TECHNICAL, _SUBSTANCE_ABUSE_SUBTYPE_STR, "subs"),
-    (
-        StateSupervisionViolationType.TECHNICAL,
-        StateSupervisionViolationType.TECHNICAL.value,
-        "tech",
-    ),
-]
 
 
 def us_mo_prepare_violation_responses_for_calculations(
@@ -126,51 +85,6 @@ def _normalize_violations_on_responses(
     return response
 
 
-def us_mo_get_violation_type_subtype_strings_for_violation(
-    violation: StateSupervisionViolation,
-) -> List[str]:
-    """Returns a list of strings that represent the violation subtypes present on the given |violation|."""
-    violation_type_list: List[str] = []
-
-    includes_technical_violation = False
-    includes_special_case_violation_subtype = False
-
-    supervision_violation_types = violation.supervision_violation_types
-
-    if not supervision_violation_types:
-        return violation_type_list
-
-    for violation_type_entry in violation.supervision_violation_types:
-        if (
-            violation_type_entry.violation_type
-            and violation_type_entry.violation_type
-            != StateSupervisionViolationType.TECHNICAL
-        ):
-            violation_type_list.append(violation_type_entry.violation_type.value)
-        else:
-            includes_technical_violation = True
-
-    for condition_entry in violation.supervision_violated_conditions:
-        condition = condition_entry.condition
-        if condition:
-            if condition.upper() == _SUBSTANCE_ABUSE_CONDITION_STR:
-                violation_type_list.append(_SUBSTANCE_ABUSE_SUBTYPE_STR)
-                includes_special_case_violation_subtype = True
-            else:
-                if condition.upper() == _LAW_CITATION_SUBTYPE_STR:
-                    includes_special_case_violation_subtype = True
-
-                # Condition values are free text so we standardize all to be upper case
-                violation_type_list.append(condition.upper())
-
-    # If this is a TECHNICAL violation without either a SUBSTANCE_ABUSE or LAW_CITATION condition, then add
-    # 'TECHNICAL' to the type list so that this will get classified as a TECHNICAL violation
-    if includes_technical_violation and not includes_special_case_violation_subtype:
-        violation_type_list.append(StateSupervisionViolationType.TECHNICAL.value)
-
-    return violation_type_list
-
-
 def us_mo_sorted_violation_subtypes_by_severity(
     violation_subtypes: List[str],
 ) -> List[str]:
@@ -214,10 +128,3 @@ def us_mo_shorthand_for_violation_subtype(violation_subtype: str) -> str:
             return subtype_shorthand
 
     raise ValueError(f"Unexpected violation_subtype {violation_subtype} for US_MO.")
-
-
-def us_mo_violation_type_subtypes_with_violation_type_mappings() -> Set[str]:
-    """Returns a the set of supported subtypes for US_MO based on the ordered map."""
-    return {
-        subtype for _, subtype, _ in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP
-    }

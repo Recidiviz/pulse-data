@@ -44,11 +44,20 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
+    StateSpecificViolationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
     SupervisionTypeSpan,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violations_delegate import (
+    UsMoViolationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_delegate import (
     UsNdCommitmentFromSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_violations_delegate import (
+    UsNdViolationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_period_pre_processing_delegate import (
     SHOCK_INCARCERATION_9_MONTHS,
@@ -3101,7 +3110,6 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
 
     def setUp(self) -> None:
         self.identifier = identifier.IncarcerationIdentifier()
-
         self.violation_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_violation_delegate"
         )
@@ -3118,6 +3126,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         self,
         incarceration_period: StateIncarcerationPeriod,
         pre_commitment_supervision_period: Optional[StateSupervisionPeriod],
+        violation_delegate: StateSpecificViolationDelegate,
         incarceration_period_index: Optional[
             PreProcessedIncarcerationPeriodIndex
         ] = None,
@@ -3173,6 +3182,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             supervision_period_to_agent_associations=_DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
             county_of_residence=_COUNTY_OF_RESIDENCE,
             commitment_from_supervision_delegate=commitment_from_supervision_delegate,
+            violation_delegate=violation_delegate,
         )
 
     def test_commitment_from_supervision_event_violation_history_cutoff(self):
@@ -3294,6 +3304,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
                 pre_commitment_supervision_period=supervision_period,
                 incarceration_period=incarceration_period,
                 violation_responses=violation_responses,
+                violation_delegate=UsXxViolationDelegate(),
             )
         )
 
@@ -3422,6 +3433,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
                 pre_commitment_supervision_period=supervision_period,
                 incarceration_period=incarceration_period,
                 violation_responses=violation_responses,
+                violation_delegate=UsXxViolationDelegate(),
             )
         )
 
@@ -3601,6 +3613,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
                 violation_responses=violation_responses,
                 supervision_sentences=[supervision_sentence],
                 incarceration_sentences=[incarceration_sentence],
+                violation_delegate=UsMoViolationDelegate(),
             )
         )
 
@@ -3694,6 +3707,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             supervision_sentences=[supervision_sentence],
             incarceration_sentences=[],
             commitment_from_supervision_delegate=UsNdCommitmentFromSupervisionDelegate(),
+            violation_delegate=UsNdViolationDelegate(),
         )
 
         expected_commitment_from_supervision_event = IncarcerationCommitmentFromSupervisionAdmissionEvent(
