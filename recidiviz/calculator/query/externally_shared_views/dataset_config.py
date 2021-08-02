@@ -16,11 +16,12 @@
 # =============================================================================
 """Dataset configuration for case triage experimentation platform."""
 
-CEMENTING_THE_CHANGE_DATASET: str = "cementing_the_change"
-EXTERNALLY_SHARED_VIEWS_DATASET: str = "externally_shared_views"
-USDR_FTR_DATASET: str = "usdr_ftr"
+from typing import Tuple
 
-# state access permissions
-all_ingested_states = ["US_ID", "US_MO", "US_ND", "US_PA"]
-RISC_STATE_PERMISSIONS: list = all_ingested_states
-USDR_STATE_PERMISSIONS: list = all_ingested_states
+EXTERNALLY_SHARED_VIEWS_DATASET: str = "externally_shared_views"
+CSG_DATASET: str = "partner_data_csg"
+
+# Partner-specific configs
+# Each has a view prefix, destination dataset, and state permissions
+# all_ingested_states = ("US_ID", "US_MO", "US_ND", "US_PA")
+CSG_CONFIG: Tuple[str, str, Tuple[str, ...]] = ("csg_", CSG_DATASET, ("US_MO", "US_PA"))
