@@ -29,13 +29,13 @@ from __future__ import absolute_import
 import argparse
 import logging
 import sys
-from typing import List, Tuple, Dict
+from typing import Dict, List, Tuple
 
+from recidiviz.calculator.dataflow_config import PRODUCTION_TEMPLATES_PATH
 from recidiviz.cloud_functions.cloud_function_utils import (
     trigger_dataflow_job_from_template,
 )
-from recidiviz.calculator.dataflow_config import PRODUCTION_TEMPLATES_PATH
-from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.yaml_dict import YAMLDict
 
 

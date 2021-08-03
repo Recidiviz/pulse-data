@@ -58,7 +58,7 @@ REQUIRED_PACKAGES = [
 setuptools.setup(
     name="recidiviz-calculation-pipelines",
     # TODO(#2031): Dynamically set the package version
-    version="1.0.76",
+    version="1.0.0",
     install_requires=REQUIRED_PACKAGES,
     packages=setuptools.find_packages(),
     package_data={"recidiviz.common": ["data_sets/*.csv"]},

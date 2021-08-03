@@ -119,13 +119,11 @@ function pre_deploy_configure_infrastructure {
     # Deploy pipeline templates.
     if [[ ${PROJECT} == 'recidiviz-staging' ]]; then
         echo "Deploying stage-only calculation pipelines to templates in ${PROJECT}."
-        verify_hash $COMMIT_HASH
-        run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_pipeline_templates --project_id ${PROJECT} --templates_to_deploy staging
+        deploy_pipeline_templates ${PROJECT} staging || exit_on_fail
     fi
 
     echo "Deploying prod-ready calculation pipelines to templates in ${PROJECT}."
-    verify_hash $COMMIT_HASH
-    run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_pipeline_templates --project_id ${PROJECT} --templates_to_deploy production
+    deploy_pipeline_templates ${PROJECT} production || exit_on_fail
 }
 
 function check_running_in_pipenv_shell {
@@ -251,6 +249,22 @@ function reconfigure_terraform_backend {
   echo "Reconfiguring Terraform backend..."
   rm -rf ${BASH_SOURCE_DIR}/.terraform/
   run_cmd terraform -chdir=${BASH_SOURCE_DIR}/terraform init -backend-config "bucket=${PROJECT_ID}-tf-state" -reconfigure
+}
+
+function deploy_pipeline_templates {
+    PROJECT_ID=$1
+    TEMPLATES_TO_DEPLOY=$2
+    while true
+    do
+        verify_hash $COMMIT_HASH
+        pipenv run python -m recidiviz.tools.deploy.deploy_all_pipeline_templates --project_id ${PROJECT_ID} --templates_to_deploy ${TEMPLATES_TO_DEPLOY}
+        return_code=$?
+
+        if [[ $return_code -eq 0 ]]; then
+            break
+        fi
+        script_prompt $'\n\nThere was an error deploying the pipeline templates. Check the logs in recidiviz/tools/deploy/log/deploy_all_pipeline_templates.log.\nWould you like to retry? [no exits the script]'
+    done
 }
 
 

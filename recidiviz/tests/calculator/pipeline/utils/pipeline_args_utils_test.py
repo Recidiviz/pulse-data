@@ -52,7 +52,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
         "regions/us-west1/subnetworks/default",
         "use_public_ips": False,
         "experiments": ["shuffle_mode=service", "use_beam_bq_sink"],
-        "setup_file": "./setup.py",
+        "extra_packages": ["dist/recidiviz-calculation-pipelines.tar.gz"],
         "disk_size_gb": 50,
     }
 
@@ -65,6 +65,8 @@ class TestPipelineArgsUtils(unittest.TestCase):
             "incarceration-args-test",
             "--project",
             "recidiviz-staging",
+            "--extra_package",
+            "dist/recidiviz-calculation-pipelines.tar.gz",
         ]
 
         # Act
@@ -91,6 +93,8 @@ class TestPipelineArgsUtils(unittest.TestCase):
             "--project",
             "recidiviz-staging",
             "--save_as_template",
+            "--extra_package",
+            "dist/recidiviz-calculation-pipelines.tar.gz",
         ]
         # Act
         (
@@ -123,8 +127,8 @@ class TestPipelineArgsUtils(unittest.TestCase):
             "DirectRunner",
             "--project",
             "recidiviz-staging",
-            "--setup_file",
-            "./setup2.py",
+            "--extra_package",
+            "dist/recidiviz-calculation-pipelines.tar.gz",
             "--bucket",
             "recidiviz-123-my-bucket",
             "--region=us-central1",
@@ -180,7 +184,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
             "regions/us-central1/subnetworks/default",
             "use_public_ips": False,
             "experiments": ["shuffle_mode=service", "use_beam_bq_sink"],
-            "setup_file": "./setup2.py",
+            "extra_packages": ["dist/recidiviz-calculation-pipelines.tar.gz"],
             "disk_size_gb": 50,
         }
 
@@ -200,8 +204,8 @@ class TestPipelineArgsUtils(unittest.TestCase):
             "685253",
             "12345",
             "99999",
-            "--setup_file",
-            "./setup.py",
+            "--extra_package",
+            "dist/recidiviz-calculation-pipelines.tar.gz",
         ]
 
         # Act
@@ -235,8 +239,6 @@ class TestPipelineArgsUtils(unittest.TestCase):
             "DirectRunner",
             "--project",
             "recidiviz-staging",
-            "--setup_file",
-            "./setup2.py",
             "--bucket",
             "recidiviz-123-my-bucket",
             "--region=us-central1",
@@ -270,8 +272,8 @@ class TestPipelineArgsUtils(unittest.TestCase):
             "--runner",
             "DirectRunner",
             # project arg omitted here
-            "--setup_file",
-            "./setup2.py",
+            "--extra_package",
+            "dist/recidiviz-calculation-pipelines.tar.gz",
             "--bucket",
             "recidiviz-123-my-bucket",
             "--region=us-central1",

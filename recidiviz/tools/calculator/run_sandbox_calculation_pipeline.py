@@ -54,6 +54,9 @@ from typing import List, Optional, Tuple
 
 from recidiviz.calculator.pipeline.pipeline_type import PipelineType
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
+from recidiviz.tools.deploy.build_dataflow_source_distribution import (
+    build_source_distribution,
+)
 from recidiviz.tools.pipeline_launch_util import (
     get_pipeline,
     load_all_pipelines,
@@ -142,6 +145,9 @@ def validated_run_arguments(
     # must be last
     arguments.insert(0, job_name_for_pipeline)
     arguments.insert(0, "--job_name")
+
+    arguments.insert(0, build_source_distribution())
+    arguments.insert(0, "--extra_package")
 
     return arguments
 
