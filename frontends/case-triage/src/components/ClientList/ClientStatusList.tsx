@@ -23,6 +23,7 @@ import { ClientProps } from "./ClientList.types";
 import { StatusList } from "./ClientList.styles";
 import AlertPreview from "../AlertPreview";
 import { LONG_DATE_FORMAT } from "../../utils";
+import { useRootStore } from "../../stores";
 
 export const ClientStatusList: React.FC<ClientProps> = observer(
   ({ client }: ClientProps): JSX.Element => {
@@ -56,14 +57,27 @@ export const ClientStatusList: React.FC<ClientProps> = observer(
       });
     }
 
+    const { userStore } = useRootStore();
+    const includeNoteCount = userStore.canSeeProfileV2;
+    const noteCount = client.activeNotes.length;
+
     return (
       <StatusList
+        alwaysShowTruncator
         renderTruncator={({ hiddenItemsCount }) => {
-          return (
-            <Pill kind="muted" filled>
-              +{hiddenItemsCount}
-            </Pill>
-          );
+          let additionalItemsCount = hiddenItemsCount;
+          if (includeNoteCount) {
+            additionalItemsCount += noteCount;
+          }
+
+          if (additionalItemsCount) {
+            return (
+              <Pill kind="muted" filled>
+                +{additionalItemsCount}
+              </Pill>
+            );
+          }
+          return null;
         }}
       >
         {statusPills}
