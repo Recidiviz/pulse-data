@@ -19,32 +19,29 @@
 # pylint: disable=protected-access
 import datetime
 import random
-from concurrent import futures
 import unittest
+from concurrent import futures
 from typing import Iterator, List
 from unittest import mock
 
 import pytest
 from freezegun import freeze_time
-from google.api_core.future.polling import PollingFuture, DEFAULT_RETRY
+from google.api_core.future.polling import DEFAULT_RETRY, PollingFuture
 from google.api_core.retry import Retry
 from google.cloud import bigquery, exceptions
-from google.cloud.bigquery import SchemaField, QueryJobConfig
+from google.cloud.bigquery import QueryJobConfig, SchemaField
 from google.cloud.bigquery_datatransfer import (
     DataTransferServiceClient,
-    TransferRun,
     StartManualTransferRunsResponse,
     TransferConfig,
+    TransferRun,
     TransferState,
 )
 from mock import call, create_autospec
 
 from recidiviz.big_query import big_query_client
-from recidiviz.big_query.big_query_client import (
-    BigQueryClientImpl,
-    BigQueryClient,
-)
-from recidiviz.big_query.big_query_view import BigQueryView, BigQueryAddress
+from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
+from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryView
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 
 
@@ -138,11 +135,10 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_table_exists_does_not_exist(self) -> None:
         """Check that table_exists returns False if the table does not exist."""
         self.mock_client.get_table.side_effect = exceptions.NotFound("!")
-        with self.assertLogs(level="WARNING"):
-            table_exists = self.bq_client.table_exists(
-                self.mock_dataset_ref, self.mock_table_id
-            )
-            self.assertFalse(table_exists)
+        table_exists = self.bq_client.table_exists(
+            self.mock_dataset_ref, self.mock_table_id
+        )
+        self.assertFalse(table_exists)
 
     def test_create_or_update_view_creates_view(self) -> None:
         """create_or_update_view creates a View if it does not exist."""

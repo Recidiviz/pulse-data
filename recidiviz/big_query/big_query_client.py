@@ -735,7 +735,6 @@ class BigQueryClientImpl(BigQueryClient):
             self.client.get_dataset(dataset_ref)
             return True
         except exceptions.NotFound:
-            logging.warning("Dataset [%s] does not exist", str(dataset_ref))
             return False
 
     def delete_dataset(
@@ -763,9 +762,6 @@ class BigQueryClientImpl(BigQueryClient):
             self.client.get_table(table_ref)
             return True
         except exceptions.NotFound:
-            logging.warning(
-                "Table [%s] does not exist in dataset [%s]", table_id, str(dataset_ref)
-            )
             return False
 
     def list_tables(self, dataset_id: str) -> Iterator[bigquery.table.TableListItem]:
