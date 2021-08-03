@@ -15,10 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for state-specific calculations related to violations for US_PA."""
-import sys
-from typing import List
-
-from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
 
 # TODO(#8106): Delete these imports before closing this task
 # pylint: disable=protected-access
@@ -28,23 +24,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violations_dele
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
-
-
-def us_pa_sorted_violation_subtypes_by_severity(
-    violation_subtypes: List[str],
-) -> List[str]:
-    """Returns the list of |violation_subtypes| sorted in order of the subtype values in the
-    _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP."""
-    subtype_sort_order = [
-        subtype for _, subtype, _ in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP
-    ]
-
-    sorted_violation_subtypes = sorted(
-        violation_subtypes,
-        key=lambda subtype: safe_list_index(subtype_sort_order, subtype, sys.maxsize),
-    )
-
-    return sorted_violation_subtypes
 
 
 def us_pa_violation_type_from_subtype(

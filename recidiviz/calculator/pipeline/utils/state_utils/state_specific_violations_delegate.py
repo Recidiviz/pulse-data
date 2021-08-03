@@ -29,6 +29,16 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationType,
 )
 
+DEFAULT_VIOLATION_SUBTYPE_SEVERITY_ORDER: List[str] = [
+    StateSupervisionViolationType.FELONY.value,
+    StateSupervisionViolationType.MISDEMEANOR.value,
+    StateSupervisionViolationType.LAW.value,
+    StateSupervisionViolationType.ABSCONDED.value,
+    StateSupervisionViolationType.MUNICIPAL.value,
+    StateSupervisionViolationType.ESCAPED.value,
+    StateSupervisionViolationType.TECHNICAL.value,
+]
+
 
 class StateSpecificViolationDelegate(abc.ABC):
     """Interface for state-specific decisions involved in categorizing various
@@ -83,3 +93,8 @@ class StateSpecificViolationDelegate(abc.ABC):
         return {
             violation_type.value for violation_type in StateSupervisionViolationType
         }
+
+    def get_violation_subtype_severity_order(self) -> List[str]:
+        """Returns the sort order of violation subtypes by severity. Default behavior is to follow
+        DEFAULT_VIOLATION_SUBTYPE_SEVERITY_ORDER"""
+        return DEFAULT_VIOLATION_SUBTYPE_SEVERITY_ORDER

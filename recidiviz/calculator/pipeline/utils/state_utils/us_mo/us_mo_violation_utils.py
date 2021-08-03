@@ -15,10 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for state-specific calculations related to violations for US_MO."""
-import sys
 from typing import List
-
-from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
 
 # TODO(#8106): Delete these imports before closing this task
 # pylint: disable=protected-access
@@ -83,23 +80,6 @@ def _normalize_violations_on_responses(
                 condition_entry.condition = _LAW_CITATION_SUBTYPE_STR
 
     return response
-
-
-def us_mo_sorted_violation_subtypes_by_severity(
-    violation_subtypes: List[str],
-) -> List[str]:
-    """Returns the list of |violation_subtypes| sorted in order of the subtype values in the
-    _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP."""
-    subtype_sort_order = [
-        subtype for _, subtype, _ in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP
-    ]
-
-    sorted_violation_subtypes = sorted(
-        violation_subtypes,
-        key=lambda subtype: safe_list_index(subtype_sort_order, subtype, sys.maxsize),
-    )
-
-    return sorted_violation_subtypes
 
 
 def us_mo_violation_type_from_subtype(

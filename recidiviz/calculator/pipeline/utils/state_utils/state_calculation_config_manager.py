@@ -18,12 +18,10 @@
 import logging
 
 # TODO(#2995): Make a state config file for every state and every one of these state-specific calculation methodologies
-import sys
 from datetime import date
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
-from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
     StateSpecificIncarcerationPreProcessingDelegate,
 )
@@ -538,34 +536,6 @@ def get_state_specific_supervising_officer_and_location_info_function(
         return us_pa_get_supervising_officer_and_location_info_from_supervision_period
 
     return default_get_state_specific_supervising_officer_and_location_info_function
-
-
-def sorted_violation_subtypes_by_severity(
-    state_code: str, violation_subtypes: List[str], default_severity_order: List[str]
-) -> List[str]:
-    """Sorts the provided |violation_subtypes| by severity, and returns the list in order of descending severity.
-    Defers to the severity ordering in the |default_severity_order| if no state-specific logic is implemented."""
-    if state_code.upper() == "US_MO":
-        return us_mo_violation_utils.us_mo_sorted_violation_subtypes_by_severity(
-            violation_subtypes
-        )
-    if state_code.upper() == "US_PA":
-        return us_pa_violation_utils.us_pa_sorted_violation_subtypes_by_severity(
-            violation_subtypes
-        )
-
-    logging.warning(
-        "No implemented violation subtype ordering for state [%s]", state_code
-    )
-
-    sorted_violation_subtypes = sorted(
-        violation_subtypes,
-        key=lambda subtype: safe_list_index(
-            default_severity_order, subtype, sys.maxsize
-        ),
-    )
-
-    return sorted_violation_subtypes
 
 
 def violation_type_from_subtype(
