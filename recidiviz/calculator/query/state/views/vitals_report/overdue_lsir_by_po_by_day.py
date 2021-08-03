@@ -66,16 +66,13 @@ WITH overdue_lsir AS (
         overdue_lsir.state_code,
         overdue_lsir.date_of_supervision,
         IFNULL(overdue_lsir.supervising_officer_external_id, 'UNKNOWN') as supervising_officer_external_id,
-        {vitals_state_specific_district_id},
-        {vitals_state_specific_district_name},
+        sup_pop.district_id,
+        sup_pop.district_name,
         total_overdue,
         sup_pop.supervisees_requiring_risk_assessment AS total_requiring_risk_assessment,
         IFNULL(SAFE_DIVIDE((sup_pop.supervisees_requiring_risk_assessment - total_overdue), sup_pop.supervisees_requiring_risk_assessment), 1) * 100 AS timely_risk_assessment,
     FROM overdue_lsir
-    LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names` locations
-        ON overdue_lsir.state_code = locations.state_code
-        AND {vitals_state_specific_join_with_supervision_location_ids}
-    LEFT JOIN `{project_id}.{vitals_views_dataset}.supervision_population_by_po_by_day_materialized` sup_pop
+    INNER JOIN `{project_id}.{vitals_views_dataset}.supervision_population_by_po_by_day_materialized` sup_pop
         ON sup_pop.state_code = overdue_lsir.state_code
         AND sup_pop.date_of_supervision = overdue_lsir.date_of_supervision
         AND sup_pop.supervising_officer_external_id = overdue_lsir.supervising_officer_external_id
@@ -90,17 +87,7 @@ OVERDUE_LSIR_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=OVERDUE_LSIR_BY_PO_BY_DAY_QUERY_TEMPLATE,
     description=OVERDUE_LSIR_BY_PO_BY_DAY_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     vitals_views_dataset=dataset_config.VITALS_REPORT_DATASET,
-    vitals_state_specific_district_id=state_specific_query_strings.vitals_state_specific_district_id(
-        "overdue_lsir"
-    ),
-    vitals_state_specific_district_name=state_specific_query_strings.vitals_state_specific_district_name(
-        "overdue_lsir"
-    ),
-    vitals_state_specific_join_with_supervision_location_ids=state_specific_query_strings.vitals_state_specific_join_with_supervision_location_ids(
-        "overdue_lsir"
-    ),
     vitals_state_specific_join_with_supervision_population=state_specific_query_strings.vitals_state_specific_join_with_supervision_population(
         "overdue_lsir"
     ),

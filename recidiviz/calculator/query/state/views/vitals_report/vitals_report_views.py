@@ -24,6 +24,9 @@ from recidiviz.calculator.query.state.views.vitals_report.overdue_lsir_by_po_by_
 from recidiviz.calculator.query.state.views.vitals_report.supervision_downgrade_opportunities_by_po_by_day import (
     SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.vitals_report.supervision_officers_and_districts import (
+    SUPERVISION_OFFICERS_AND_DISTRICTS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.vitals_report.supervision_population_by_po_by_day import (
     SUPERVISION_POPULATION_BY_PO_BY_DAY_VIEW_BUILDER,
 )
@@ -38,6 +41,7 @@ from recidiviz.calculator.query.state.views.vitals_report.timely_contact_by_po_b
 # appear in the list before view Y.
 
 VITALS_REPORT_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    SUPERVISION_OFFICERS_AND_DISTRICTS_VIEW_BUILDER,
     SUPERVISION_POPULATION_BY_PO_BY_DAY_VIEW_BUILDER,
     OVERDUE_LSIR_BY_PO_BY_DAY_VIEW_BUILDER,
     SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_VIEW_BUILDER,

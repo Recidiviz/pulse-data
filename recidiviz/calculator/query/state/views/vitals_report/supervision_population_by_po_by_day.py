@@ -62,21 +62,41 @@ def generate_state_specific_population(
 
 SUPERVISION_POPULATION_BY_PO_BY_DAY_QUERY_TEMPLATE = f"""
     /*{{description}}*/
-   SELECT
+    WITH supervision_population AS (
+        SELECT
+            state_code,
+            date_of_supervision,
+            supervising_district_external_id,
+            supervising_officer_external_id,
+            CASE WHEN supervising_district_external_id = 'ALL' THEN 'ALL' ELSE district_id END AS district_id,
+            CASE WHEN supervising_district_external_id = 'ALL' THEN 'ALL' ELSE district_name END AS district_name,
+            COUNT(DISTINCT(person_id)) AS people_under_supervision,
+            COUNT (DISTINCT IF(projected_end_date < date_of_supervision AND projected_end_date IS NOT NULL, person_id, NULL)) AS due_for_release_count,
+            -- TODO(#7470): Expand contact population here once we process DIVERSION
+            {generate_state_specific_population(contact_population_by_state, 'supervisees_requiring_contact')},
+            {generate_state_specific_population(risk_assessment_population_by_state, 'supervisees_requiring_risk_assessment')},
+        FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_metrics_materialized`
+        INNER JOIN `{{project_id}}.{{vitals_views_dataset}}.supervision_officers_and_districts_materialized` officers
+            USING (state_code, supervising_officer_external_id),
+        UNNEST ([officers.supervising_district_external_id, 'ALL']) AS supervising_district_external_id,
+        UNNEST ([officers.supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
+        WHERE date_of_supervision > DATE_SUB(CURRENT_DATE(), INTERVAL 217 DAY) -- 217 = 210 days back for avgs + 7-day buffer for late data
+            AND state_code in {enabled_states}
+        GROUP BY state_code, date_of_supervision, supervising_district_external_id, supervising_officer_external_id, district_id, district_name
+    )
+    
+    SELECT 
         state_code,
         date_of_supervision,
         supervising_district_external_id,
         supervising_officer_external_id,
-        COUNT(DISTINCT(person_id)) AS people_under_supervision,
-        -- TODO(#7470): Expand contact population here once we process DIVERSION
-        {generate_state_specific_population(contact_population_by_state, 'supervisees_requiring_contact')},
-        {generate_state_specific_population(risk_assessment_population_by_state, 'supervisees_requiring_risk_assessment')},
-    FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_metrics_materialized`,
-    UNNEST ([supervising_district_external_id, 'ALL']) AS supervising_district_external_id,
-    UNNEST ([supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
-    WHERE date_of_supervision > DATE_SUB(CURRENT_DATE(), INTERVAL 217 DAY) -- 217 = 210 days back for avgs + 7-day buffer for late data
-        AND state_code in {enabled_states}
-    GROUP BY state_code, date_of_supervision, supervising_district_external_id, supervising_officer_external_id
+        district_id,
+        district_name,
+        people_under_supervision,
+        due_for_release_count,
+        supervisees_requiring_contact,
+        supervisees_requiring_risk_assessment
+    FROM supervision_population
     """
 
 SUPERVISION_POPULATION_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -85,6 +105,7 @@ SUPERVISION_POPULATION_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=SUPERVISION_POPULATION_BY_PO_BY_DAY_QUERY_TEMPLATE,
     description=SUPERVISION_POPULATION_BY_PO_BY_DAY_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    vitals_views_dataset=dataset_config.VITALS_REPORT_DATASET,
     should_materialize=True,
 )
 

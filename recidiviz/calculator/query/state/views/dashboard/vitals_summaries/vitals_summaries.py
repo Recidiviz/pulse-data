@@ -126,7 +126,7 @@ def generate_overall_scores(
       END as overall,"""
 
     overall_30_cases = "\n        ".join(
-        f"WHEN '{state}' THEN ROUND({most_recent_vitals_sum(vitals)} - {historic_vitals_sum(vitals, 30)}, 0)"
+        f"WHEN '{state}' THEN ROUND({most_recent_vitals_sum(vitals)} - {historic_vitals_sum(vitals, 30)}, 1)"
         for state, vitals in enabled_vitals.items()
     )
     overall_30_query = f"""
@@ -135,7 +135,7 @@ def generate_overall_scores(
       END as overall_30d,"""
 
     overall_90_cases = "\n        ".join(
-        f"WHEN '{state}' THEN ROUND({most_recent_vitals_sum(vitals)} - {historic_vitals_sum(vitals, 90)}, 0)"
+        f"WHEN '{state}' THEN ROUND({most_recent_vitals_sum(vitals)} - {historic_vitals_sum(vitals, 90)}, 1)"
         for state, vitals in enabled_vitals.items()
     )
     overall_90_query = f"""
