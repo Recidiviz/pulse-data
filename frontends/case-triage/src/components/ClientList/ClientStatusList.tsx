@@ -22,34 +22,27 @@ import { Pill } from "../Pill";
 import { ClientProps } from "./ClientList.types";
 import { StatusList } from "./ClientList.styles";
 import AlertPreview from "../AlertPreview";
+import { LONG_DATE_FORMAT } from "../../utils";
 
 export const ClientStatusList: React.FC<ClientProps> = observer(
   ({ client }: ClientProps): JSX.Element => {
     const statusPills = [] as JSX.Element[];
 
-    const notOnCaseloadAction =
-      client.caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD];
+    const { pendingCaseloadRemoval } = client;
 
-    const currentlyInCustodyAction =
-      client.caseUpdates[CaseUpdateActionType.CURRENTLY_IN_CUSTODY];
-
-    if (notOnCaseloadAction) {
+    if (pendingCaseloadRemoval) {
+      const { actionType, actionTs } = pendingCaseloadRemoval;
       statusPills.push(
-        <AlertPreview key="notOnCaseload" kind="info">
-          Incorrect data reported{" "}
-          {moment(notOnCaseloadAction.actionTs).format("MMMM Do, YYYY")}
+        <AlertPreview key={actionType} kind="info">
+          {actionType === CaseUpdateActionType.CURRENTLY_IN_CUSTODY
+            ? "In custody"
+            : `Incorrect data reported ${moment(actionTs).format(
+                LONG_DATE_FORMAT
+              )}`}
         </AlertPreview>
       );
-    } else if (currentlyInCustodyAction) {
-      statusPills.push(
-        <AlertPreview key="inCustody" kind="info">
-          In custody
-        </AlertPreview>
-      );
-    }
-
-    // if we picked up one of the above statuses, the rest of these should be ignored
-    if (!statusPills.length) {
+    } else {
+      // these will be suppressed if removal is pending
       client.activeOpportunities.forEach((opportunity) => {
         statusPills.push(
           <AlertPreview

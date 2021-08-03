@@ -17,6 +17,6 @@
 
 import styled from "styled-components/macro";
 
-export const ReviewContents = styled.div`
+export const AlertContents = styled.div`
   align-self: center;
 `;

@@ -16,33 +16,29 @@
 // =============================================================================
 
 import {
-  Dropdown,
-  DropdownMenu,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownToggle,
   Icon,
   Link,
 } from "@recidiviz/design-system";
 import assertNever from "assert-never";
 import { paramCase } from "param-case";
 import React from "react";
-import { useRootStore } from "../../stores";
+import { observer } from "mobx-react-lite";
+import { useRootStore } from "../../../stores";
 import {
   ACTION_TITLES,
   CASE_UPDATE_OPPORTUNITY_ASSOCIATION,
-} from "../../stores/CaseUpdatesStore/CaseUpdates";
-import { Client } from "../../stores/ClientsStore";
-import { Opportunity } from "../../stores/OpportunityStore";
-import { OpportunityType } from "../../stores/OpportunityStore/Opportunity";
-import { parseContactFrequency } from "../../stores/PolicyStore/Policy";
-import { titleCase } from "../../utils";
-import { ActionRow } from "../CaseCard/ActionRow";
-import { Caption } from "../CaseCard/CaseCard.styles";
-import FeedbackFormModal from "../FeedbackFormModal";
-import { ReminderMenuItems } from "../NeedsActionFlow/ReminderMenuItems";
-import { ReviewContents } from "./OpportunityReview.styles";
-import { PolicyLink } from "./PolicyLink";
+} from "../../../stores/CaseUpdatesStore/CaseUpdates";
+import { Client } from "../../../stores/ClientsStore";
+import { Opportunity } from "../../../stores/OpportunityStore";
+import { OpportunityType } from "../../../stores/OpportunityStore/Opportunity";
+import { parseContactFrequency } from "../../../stores/PolicyStore/Policy";
+import { LONG_DATE_FORMAT, titleCase } from "../../../utils";
+import FeedbackFormModal from "../../FeedbackFormModal";
+import { ReminderMenuItems } from "../../NeedsActionFlow/ReminderMenuItems";
+import { PolicyLink } from "../../CaseOpportunities/PolicyLink";
+import { Alert } from "./Alert";
 
 const AlertText = ({ client, opportunity }: OpportunityReviewProps) => {
   const { policyStore } = useRootStore();
@@ -82,7 +78,7 @@ const AlertText = ({ client, opportunity }: OpportunityReviewProps) => {
         return (
           <>
             Last assessed on{" "}
-            {client.mostRecentAssessmentDate.format("MMMM Do, YYYY")}
+            {client.mostRecentAssessmentDate.format(LONG_DATE_FORMAT)}
             <br />
             Score: {client.assessmentScore}, {client.assessmentScoreDetails}
           </>
@@ -108,7 +104,7 @@ const AlertText = ({ client, opportunity }: OpportunityReviewProps) => {
           {client.currentAddress || "No address on file"} <br />
           {client.mostRecentFaceToFaceDate
             ? `Last contacted on ${client.mostRecentFaceToFaceDate.format(
-                "MMMM Do, YYYY"
+                LONG_DATE_FORMAT
               )}`
             : "No contact on file."}
           {contactPolicyText && (
@@ -163,37 +159,30 @@ type OpportunityReviewProps = {
   opportunity: Opportunity;
 };
 
-export const OpportunityReview = ({
-  client,
-  opportunity,
-}: OpportunityReviewProps): JSX.Element => {
-  const { opportunityStore } = useRootStore();
+export const OpportunityAlert = observer(
+  ({ client, opportunity }: OpportunityReviewProps): JSX.Element => {
+    const { opportunityStore } = useRootStore();
 
-  return (
-    <ActionRow bullet={<Icon size={16} {...opportunity.alertOptions.icon} />}>
-      <ReviewContents>
-        <div>
-          <strong>{opportunity.title}</strong>
-        </div>
-        <Caption>
-          <AlertText {...{ client, opportunity }} />
-        </Caption>
-      </ReviewContents>
-      <Dropdown>
-        <DropdownToggle kind="borderless" icon="TripleDot" shape="block" />
-        <DropdownMenu alignment="right">
-          <ReminderMenuItems
-            onDeferred={(deferUntil) => {
-              opportunityStore.createOpportunityDeferral(
-                opportunity,
-                deferUntil
-              );
-            }}
-          />
-          <DropdownMenuLabel>Other Actions</DropdownMenuLabel>
-          <MenuActions {...{ client, opportunity }} />
-        </DropdownMenu>
-      </Dropdown>
-    </ActionRow>
-  );
-};
+    return (
+      <Alert
+        bullet={<Icon size={16} {...opportunity.alertOptions.icon} />}
+        title={opportunity.title}
+        body={<AlertText {...{ client, opportunity }} />}
+        menuItems={
+          <>
+            <ReminderMenuItems
+              onDeferred={(deferUntil) => {
+                opportunityStore.createOpportunityDeferral(
+                  opportunity,
+                  deferUntil
+                );
+              }}
+            />
+            <DropdownMenuLabel>Other Actions</DropdownMenuLabel>
+            <MenuActions {...{ client, opportunity }} />
+          </>
+        }
+      />
+    );
+  }
+);
