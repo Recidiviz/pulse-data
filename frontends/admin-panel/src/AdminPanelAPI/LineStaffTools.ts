@@ -57,6 +57,7 @@ export const generateEmails = async (
       testAddress,
       regionCode,
       messageBodyOverride,
+      reportType: "po_monthly_report",
     }
   );
 };
