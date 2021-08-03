@@ -121,9 +121,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
 )
-from recidiviz.common.constants.state.state_supervision_violation import (
-    StateSupervisionViolationType,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.state.entities import (
@@ -536,30 +533,6 @@ def get_state_specific_supervising_officer_and_location_info_function(
         return us_pa_get_supervising_officer_and_location_info_from_supervision_period
 
     return default_get_state_specific_supervising_officer_and_location_info_function
-
-
-def violation_type_from_subtype(
-    state_code: str, violation_subtype: str
-) -> StateSupervisionViolationType:
-    """Determines which StateSupervisionViolationType corresponds to the |violation_subtype| value for the given
-    |state_code|. If no state-specific logic is implemented, returns the StateSupervisionViolationType corresponding to
-    the |violation_subtype|."""
-    if state_code.upper() == "US_MO":
-        return us_mo_violation_utils.us_mo_violation_type_from_subtype(
-            violation_subtype
-        )
-    if state_code.upper() == "US_PA":
-        return us_pa_violation_utils.us_pa_violation_type_from_subtype(
-            violation_subtype
-        )
-
-    for violation_type in StateSupervisionViolationType:
-        if violation_subtype == violation_type.value:
-            return violation_type
-
-    raise ValueError(
-        f"Unexpected violation_subtype {violation_subtype} for {state_code}."
-    )
 
 
 def shorthand_for_violation_subtype(state_code: str, violation_subtype: str) -> str:

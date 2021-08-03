@@ -24,7 +24,6 @@ from recidiviz.calculator.pipeline.base_identifier import (
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_state_specific_violation_delegate,
     state_specific_violation_response_pre_processing_function,
-    violation_type_from_subtype,
 )
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     get_most_severe_response_decision,
@@ -156,7 +155,9 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
                 # StateSupervisionViolationType values on a violation, so we avoid creating events for subtypes
                 # without supported mappings to these values.
                 continue
-            violation_type = violation_type_from_subtype(state_code, violation_subtype)
+            violation_type = violation_delegate.violation_type_from_subtype(
+                violation_subtype
+            )
             is_most_severe_violation_type = index == 0
             violation_with_response_events.append(
                 ViolationWithResponseEvent(

@@ -82,21 +82,6 @@ def _normalize_violations_on_responses(
     return response
 
 
-def us_mo_violation_type_from_subtype(
-    violation_subtype: str,
-) -> StateSupervisionViolationType:
-    """Determines which StateSupervisionViolationType corresponds to the |violation_subtype| value."""
-    for (
-        violation_type,
-        violation_subtype_value,
-        _,
-    ) in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP:
-        if violation_subtype == violation_subtype_value:
-            return violation_type
-
-    raise ValueError(f"Unexpected violation_subtype {violation_subtype} for US_MO.")
-
-
 def us_mo_shorthand_for_violation_subtype(violation_subtype: str) -> str:
     """Returns the shorthand string corresponding to the |violation_subtype| value."""
     for (

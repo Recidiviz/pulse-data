@@ -98,3 +98,16 @@ class StateSpecificViolationDelegate(abc.ABC):
         """Returns the sort order of violation subtypes by severity. Default behavior is to follow
         DEFAULT_VIOLATION_SUBTYPE_SEVERITY_ORDER"""
         return DEFAULT_VIOLATION_SUBTYPE_SEVERITY_ORDER
+
+    def violation_type_from_subtype(
+        self, violation_subtype: str
+    ) -> StateSupervisionViolationType:
+        """Determines which StateSupervisionViolationType corresponds to the |violation_subtype| value for the given
+        |state_code|. Default behavior is to return the StateSupervisionViolationType corresponding to
+        the |violation_subtype|."""
+
+        for violation_type in StateSupervisionViolationType:
+            if violation_subtype == violation_type.value:
+                return violation_type
+
+        raise ValueError(f"Unexpected violation_subtype {violation_subtype}.")

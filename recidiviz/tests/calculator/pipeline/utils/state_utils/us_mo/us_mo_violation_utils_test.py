@@ -23,15 +23,12 @@ import pytest
 # pylint: disable=protected-access
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils import (
     _normalize_violations_on_responses,
-    us_mo_shorthand_for_violation_subtype,
-    us_mo_violation_type_from_subtype,
 )
 
+# TODO(#8106): Delete these imports before closing this task
 # pylint: disable=protected-access
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violations_delegate import (
     _LAW_CITATION_SUBTYPE_STR,
-    _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES,
-    _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -47,58 +44,6 @@ from recidiviz.persistence.entity.state.entities import (
 )
 
 _STATE_CODE = "US_MO"
-
-
-class TestUsMoViolationUtilsSubtypeFunctions(unittest.TestCase):
-    """Tests multiple functions in us_mo_violation_utils related to violation subtypes."""
-
-    def test_us_mo_violation_type_from_subtype(self) -> None:
-        # Assert that all of the StateSupervisionViolationType raw values map to their corresponding violation_type
-        for violation_type in StateSupervisionViolationType:
-            if violation_type.value not in _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES:
-                violation_type_from_subtype = us_mo_violation_type_from_subtype(
-                    violation_type.value
-                )
-
-                self.assertEqual(violation_type, violation_type_from_subtype)
-
-    def test_us_mo_violation_type_from_subtype_law_citation(self) -> None:
-        violation_subtype = "LAW_CITATION"
-
-        violation_type_from_subtype = us_mo_violation_type_from_subtype(
-            violation_subtype
-        )
-
-        self.assertEqual(
-            StateSupervisionViolationType.TECHNICAL, violation_type_from_subtype
-        )
-
-    def test_us_mo_violation_type_from_subtype_substance_abuse(self) -> None:
-        violation_subtype = "SUBSTANCE_ABUSE"
-
-        violation_type_from_subtype = us_mo_violation_type_from_subtype(
-            violation_subtype
-        )
-
-        self.assertEqual(
-            StateSupervisionViolationType.TECHNICAL, violation_type_from_subtype
-        )
-
-    def test_us_mo_shorthand_for_violation_subtype(self) -> None:
-        # Assert that all of the StateSupervisionViolationType values are supported
-        for violation_type in StateSupervisionViolationType:
-            if violation_type.value not in _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES:
-                _ = us_mo_shorthand_for_violation_subtype(violation_type.value)
-
-    def test_violationTypeAndSubtypeShorthandMap_isComplete(self) -> None:
-        all_types_subtypes = [
-            violation_type
-            for violation_type, _, _ in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP
-        ]
-
-        for violation_type in StateSupervisionViolationType:
-            if violation_type.value not in _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES:
-                self.assertTrue(violation_type in all_types_subtypes)
 
 
 class TestNormalizeViolationsOnResponsesUsMo(unittest.TestCase):
