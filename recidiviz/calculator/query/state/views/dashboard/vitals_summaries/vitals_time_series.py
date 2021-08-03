@@ -50,7 +50,7 @@ def generate_time_series_query(
         ELSE 'STATE_DOC'
       END as entity_id,
       "{metric_name.upper()}" as metric,
-      ROUND({metric_field}) as value,
+      {metric_field} AS value,
       ROUND(AVG(ROUND({metric_field})) OVER (
         PARTITION BY state_code, district_id, supervising_officer_external_id
         ORDER BY date_of_supervision
@@ -73,7 +73,7 @@ VITALS_TIME_SERIES_DESCRIPTION = """
 
 def make_overall_score_queries_by_state(field: str) -> str:
     """Generate a SELECT expression to generate a state-specific overall score using the
-    mappings defined in ENABLED_VITALS."""
+    mappings defined in ENABLED_VITALS. Values are rounded to the nearest 1/10th decimal."""
 
     # Example generated statement:
     # CASE state_code
@@ -82,7 +82,7 @@ def make_overall_score_queries_by_state(field: str) -> str:
     # END as {field},
 
     state_clauses = "\n        ".join(
-        f"WHEN '{state}' THEN ROUND(({' + '.join(f'{vital}.{field}' for vital in vitals)}) / {len(vitals)})"
+        f"WHEN '{state}' THEN ROUND(({' + '.join(f'{vital}.{field}' for vital in vitals)}) / {len(vitals)}, 1)"
         for state, vitals in ENABLED_VITALS.items()
     )
 
@@ -117,7 +117,6 @@ VITALS_TIME_SERIES_TEMPLATE = f"""
       USING (state_code, date, entity_id)
     FULL OUTER JOIN timely_downgrade
       USING (state_code, date, entity_id)
-    ORDER BY entity_id, date
   )
   SELECT
    *
@@ -134,7 +133,6 @@ VITALS_TIME_SERIES_TEMPLATE = f"""
   )
   WHERE value != 0
     OR metric = "CONTACT"
-  ORDER BY entity_id, date, metric
 """
 
 VITALS_TIME_SERIES_VIEW_BUILDER = MetricBigQueryViewBuilder(
