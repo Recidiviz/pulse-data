@@ -14,10 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+"""A view revealing when any of the required columns in the PO report table are missing.
 
-"""A view revealing when any of the required columns in the PO report table are missing."""
-
-# pylint: disable=trailing-whitespace
+To generate the view for this validation, run:
+    python -m recidiviz.validation.views.state.po_report_missing_fields
+"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -90,10 +91,7 @@ PO_REPORT_MISSING_FIELDS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=PO_REPORT_MISSING_FIELDS_DESCRIPTION,
     po_report_dataset=state_dataset_config.PO_REPORT_DATASET,
     non_null_column_count=",\n  ".join(
-        [
-            f"SUM(IF({col} IS NOT NULL, 1, 0)) AS {col}"
-            for col in PO_REPORT_REQUIRED_FIELDS
-        ]
+        [f"COUNTIF({col} IS NOT NULL) AS {col}" for col in PO_REPORT_REQUIRED_FIELDS]
     ),
 )
 

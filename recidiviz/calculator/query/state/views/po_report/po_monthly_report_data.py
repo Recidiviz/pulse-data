@@ -83,8 +83,8 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
     compliance_caseloads AS (
       SELECT
         state_code, year, month, officer_external_id,
-        COUNT(DISTINCT IF(next_recommended_assessment_date IS NOT NULL, person_id, NULL)) AS assessment_compliance_caseload_count,
-        COUNT(DISTINCT IF(face_to_face_frequency_sufficient IS NOT NULL, person_id, NULL)) AS facetoface_compliance_caseload_count
+        COALESCE(COUNT(DISTINCT IF(next_recommended_assessment_date IS NOT NULL, person_id, NULL)), 0) AS assessment_compliance_caseload_count,
+        COALESCE(COUNT(DISTINCT IF(face_to_face_frequency_sufficient IS NOT NULL, person_id, NULL)), 0) AS facetoface_compliance_caseload_count
       FROM `{project_id}.{po_report_dataset}.supervision_compliance_by_person_by_month_materialized`
       GROUP BY state_code, year, month, officer_external_id
     ),
@@ -149,10 +149,14 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       state_avg.avg_absconsions AS absconsions_state_average,
       report_month.assessments_out_of_date_clients,
       report_month.assessments,
-      IEEE_DIVIDE(report_month.assessments_up_to_date, assessment_compliance_caseload_count) * 100 AS assessments_percent,
+      IF(assessment_compliance_caseload_count = 0,
+        1,
+        IEEE_DIVIDE(report_month.assessments_up_to_date, assessment_compliance_caseload_count)) * 100 AS assessments_percent,
       report_month.facetoface_out_of_date_clients,
       report_month.facetoface,
-      IEEE_DIVIDE(report_month.facetoface_frequencies_sufficient, facetoface_compliance_caseload_count) * 100 as facetoface_percent
+      IF(facetoface_compliance_caseload_count = 0,
+        1,
+        IEEE_DIVIDE(report_month.facetoface_frequencies_sufficient, facetoface_compliance_caseload_count)) * 100 as facetoface_percent
     FROM `{project_id}.{static_reference_dataset}.po_report_recipients`
     LEFT JOIN report_data_per_officer report_month
       USING (state_code, officer_external_id)
