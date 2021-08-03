@@ -46,6 +46,7 @@ STAGING_MULTI_DB_STATES: List[StateCode] = [
 PROD_MULTI_DB_STATES: List[StateCode] = [
     StateCode.US_ID,
     StateCode.US_MI,
+    StateCode.US_MO,
     StateCode.US_PA,
     StateCode.US_TN,
 ]
