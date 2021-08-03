@@ -16,7 +16,6 @@
 # =============================================================================
 """Utils for state-specific logic related to violations
 in US_MO."""
-
 from typing import List, Optional, Set, Tuple
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
@@ -167,6 +166,15 @@ class UsMoViolationDelegate(StateSpecificViolationDelegate):
             subtype
             for _, subtype, _ in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP
         }
+
+    def get_violation_subtype_severity_order(self) -> List[str]:
+        """Returns the sort order of violation subtypes by severity following MO's
+        _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP"""
+        subtype_sort_order = [
+            subtype
+            for _, subtype, _ in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP
+        ]
+        return subtype_sort_order
 
 
 def _get_violation_report_subtype_should_be_included_in_calculations(

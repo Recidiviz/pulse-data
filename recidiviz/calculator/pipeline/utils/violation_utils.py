@@ -15,15 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for working with StateSupervisionViolations and their related entities."""
+import sys
 from collections import OrderedDict, defaultdict
 from datetime import date
 from typing import Dict, List, NamedTuple, Optional, Set, Tuple
 
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     shorthand_for_violation_subtype,
-    sorted_violation_subtypes_by_severity,
     violation_type_from_subtype,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
@@ -47,16 +48,6 @@ from recidiviz.persistence.entity.state.entities import (
 )
 
 SUBSTANCE_ABUSE_SUBTYPE_STR: str = "SUBSTANCE_ABUSE"
-
-DEFAULT_VIOLATION_SUBTYPE_SEVERITY_ORDER: List[str] = [
-    StateSupervisionViolationType.FELONY.value,
-    StateSupervisionViolationType.MISDEMEANOR.value,
-    StateSupervisionViolationType.LAW.value,
-    StateSupervisionViolationType.ABSCONDED.value,
-    StateSupervisionViolationType.MUNICIPAL.value,
-    StateSupervisionViolationType.ESCAPED.value,
-    StateSupervisionViolationType.TECHNICAL.value,
-]
 
 # The number of months for the window of time in which violations and violation
 # responses should be considered when producing metrics related to a person's violation
@@ -89,15 +80,15 @@ def is_violation_of_type(
 
 
 def shorthand_description_for_ranked_violation_counts(
-    state_code: str, subtype_counts: Dict[str, int]
+    state_code: str,
+    subtype_counts: Dict[str, int],
+    violation_delegate: StateSpecificViolationDelegate,
 ) -> Optional[str]:
     """Converts the dictionary mapping types of violations to the number of that type into a string listing the types
     and counts, ordered by the violation type severity defined by state-specific logic. If there aren't any counts of
     any violations, returns None."""
     sorted_subtypes = sorted_violation_subtypes_by_severity(
-        state_code,
-        list(subtype_counts.keys()),
-        DEFAULT_VIOLATION_SUBTYPE_SEVERITY_ORDER,
+        list(subtype_counts.keys()), violation_delegate
     )
 
     if not sorted_subtypes:
@@ -148,7 +139,7 @@ def identify_most_severe_violation_type_and_subtype(
         return None, None
 
     most_severe_subtype = most_severe_violation_subtype(
-        state_code, violation_subtypes, DEFAULT_VIOLATION_SUBTYPE_SEVERITY_ORDER
+        violation_subtypes, violation_delegate
     )
 
     most_severe_type = None
@@ -160,7 +151,7 @@ def identify_most_severe_violation_type_and_subtype(
 
 
 def most_severe_violation_subtype(
-    state_code: str, violation_subtypes: List[str], default_severity_order: List[str]
+    violation_subtypes: List[str], violation_delegate: StateSpecificViolationDelegate
 ) -> Optional[str]:
     """Given the |state_code| and list of |violation_subtypes|, determines the most severe subtype present. Defers to
     the severity in the |default_severity_order| if no state-specific logic is implemented."""
@@ -168,7 +159,7 @@ def most_severe_violation_subtype(
         return None
 
     sorted_subtypes = sorted_violation_subtypes_by_severity(
-        state_code, violation_subtypes, default_severity_order
+        violation_subtypes, violation_delegate
     )
 
     if sorted_subtypes:
@@ -343,7 +334,9 @@ def get_violation_history_description(
 
     state_code = get_single_state_code(violations)
 
-    return shorthand_description_for_ranked_violation_counts(state_code, subtype_counts)
+    return shorthand_description_for_ranked_violation_counts(
+        state_code, subtype_counts, violation_delegate
+    )
 
 
 def filter_violation_responses_for_violation_history(
@@ -364,3 +357,21 @@ def filter_violation_responses_for_violation_history(
         )
     ]
     return filtered_responses
+
+
+def sorted_violation_subtypes_by_severity(
+    violation_subtypes: List[str], violation_delegate: StateSpecificViolationDelegate
+) -> List[str]:
+    """Sorts the provided |violation_subtypes| by severity, and returns the list in order of descending severity.
+    Follows the severity ordering returned by the state-specific violation delegate"""
+
+    sorted_violation_subtypes = sorted(
+        violation_subtypes,
+        key=lambda subtype: safe_list_index(
+            violation_delegate.get_violation_subtype_severity_order(),
+            subtype,
+            sys.maxsize,
+        ),
+    )
+
+    return sorted_violation_subtypes

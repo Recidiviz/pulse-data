@@ -16,13 +16,11 @@
 # =============================================================================
 """Tests the various functions in the us_pa_violation_utils file."""
 import unittest
-from typing import List
 
 import pytest
 
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violation_utils import (
     us_pa_shorthand_for_violation_subtype,
-    us_pa_sorted_violation_subtypes_by_severity,
     us_pa_violation_type_from_subtype,
 )
 
@@ -36,67 +34,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 )
 
 _STATE_CODE = "US_PA"
-
-
-class TestUsPaSortedViolationSubtypesBySeverity(unittest.TestCase):
-    """Tests the us_pa_sorted_violation_subtypes_by_severity function."""
-
-    def test_us_pa_sorted_violation_subtypes_by_severity(self) -> None:
-        violation_subtypes = ["LOW_TECH", "LAW", "ABSCONDED"]
-
-        sorted_subtypes = us_pa_sorted_violation_subtypes_by_severity(
-            violation_subtypes
-        )
-
-        expected_sorted_subtypes = ["LAW", "ABSCONDED", "LOW_TECH"]
-
-        self.assertEqual(expected_sorted_subtypes, sorted_subtypes)
-
-    def test_us_pa_sorted_violation_subtypes_by_severity_high_tech(self) -> None:
-        violation_subtypes = ["ABSCONDED", "SUBSTANCE_ABUSE", "HIGH_TECH"]
-
-        sorted_subtypes = us_pa_sorted_violation_subtypes_by_severity(
-            violation_subtypes
-        )
-
-        expected_sorted_subtypes = ["HIGH_TECH", "ABSCONDED", "SUBSTANCE_ABUSE"]
-
-        self.assertEqual(expected_sorted_subtypes, sorted_subtypes)
-
-    def test_us_pa_sorted_violation_subtypes_by_severity_substance_abuse(self) -> None:
-        violation_subtypes = ["LOW_TECH", "SUBSTANCE_ABUSE", "ELEC_MONITORING"]
-
-        sorted_subtypes = us_pa_sorted_violation_subtypes_by_severity(
-            violation_subtypes
-        )
-
-        expected_sorted_subtypes = ["SUBSTANCE_ABUSE", "ELEC_MONITORING", "LOW_TECH"]
-
-        self.assertEqual(expected_sorted_subtypes, sorted_subtypes)
-
-    def test_us_pa_sorted_violation_subtypes_by_severity_electronic_monitoring(
-        self,
-    ) -> None:
-        violation_subtypes = ["LOW_TECH", "MED_TECH", "ELEC_MONITORING"]
-
-        sorted_subtypes = us_pa_sorted_violation_subtypes_by_severity(
-            violation_subtypes
-        )
-
-        expected_sorted_subtypes = ["ELEC_MONITORING", "MED_TECH", "LOW_TECH"]
-
-        self.assertEqual(expected_sorted_subtypes, sorted_subtypes)
-
-    def test_us_pa_sorted_violation_subtypes_by_severity_empty_list(self) -> None:
-        violation_subtypes: List[str] = []
-
-        sorted_subtypes = us_pa_sorted_violation_subtypes_by_severity(
-            violation_subtypes
-        )
-
-        expected_sorted_subtypes: List[str] = []
-
-        self.assertEqual(expected_sorted_subtypes, sorted_subtypes)
 
 
 class TestUsPaViolationUtilsSubtypeFunctions(unittest.TestCase):
