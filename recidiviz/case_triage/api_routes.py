@@ -226,7 +226,7 @@ def create_api_blueprint(
         etl_client = load_client(g.api_data["person_external_id"])
         deferred_until = g.api_data["defer_until"]
         try:
-            OpportunitiesInterface.defer_opportunity(
+            deferral = OpportunitiesInterface.defer_opportunity(
                 current_session,
                 g.user_context,
                 etl_client,
@@ -248,7 +248,7 @@ def create_api_blueprint(
             g.api_data["request_reminder"],
         )
 
-        return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+        return jsonify(deferral.to_json())
 
     @route_with_permissions(
         api,

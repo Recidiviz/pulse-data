@@ -179,18 +179,24 @@ class CaseTriageTestHelpers:
         opportunity_type: str,
         deferral_type: str = "REMINDER",
     ) -> None:
+        defer_until = datetime.now() + timedelta(days=1)
+
         response = self.test_client.post(
             "/api/opportunity_deferrals",
             json={
                 "personExternalId": person_external_id,
                 "opportunityType": opportunity_type,
                 "deferralType": deferral_type,
-                "deferUntil": str(datetime.now() + timedelta(days=1)),
+                "deferUntil": str(defer_until),
                 "requestReminder": True,
             },
         )
 
-        self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+        response_body = response.get_json()
+        self.test.assertEqual(response.status_code, HTTPStatus.OK, response_body)
+        self.test.assertIsInstance(response_body["deferralId"], str, response_body)
+        self.test.assertIsInstance(response_body["deferredUntil"], str, response_body)
+        self.test.assertEqual(response_body["deferralType"], deferral_type)
 
     def delete_opportunity_deferral(
         self,

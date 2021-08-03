@@ -389,6 +389,13 @@ class OpportunityDeferral(CaseTriageBase):
     reminder_was_requested = Column(Boolean, nullable=False)
     opportunity_metadata = Column(JSONB, nullable=False)
 
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            "deferralId": self.deferral_id,
+            "deferralType": self.deferral_type,
+            "deferredUntil": self.deferred_until,
+        }
+
 
 class DashboardUserRestrictions(CaseTriageBase):
     """Represents a user's access restrictions for Unified Product dashboards."""

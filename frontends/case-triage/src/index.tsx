@@ -80,7 +80,7 @@ const RoutingContainer = styled(Router)`
 ReactDOM.render(
   <BreakpointProvider>
     <StoreProvider>
-      <ToastProvider>
+      <ToastProvider placement="bottom-left">
         <GlobalStyle />
         <RoutingContainer>
           <Verify path="verify" />
