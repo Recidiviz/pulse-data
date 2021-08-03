@@ -22,9 +22,17 @@ import UserStore, { KNOWN_EXPERIMENTS } from "../UserStore";
 import {
   Opportunity,
   OpportunityData,
+  OpportunityDeferralType,
   opportunityPriorityComparator,
   OpportunityType,
 } from "./Opportunity";
+
+// eslint-disable-next-line camelcase
+type CreateDeferralResponse = {
+  deferralId: string;
+  deferralType: OpportunityDeferralType;
+  deferredUntil: string;
+};
 
 interface OpportunityStoreProps {
   api: API;
@@ -115,16 +123,31 @@ class OpportunityStore {
   *createOpportunityDeferral(
     opportunity: Opportunity,
     deferUntil: moment.Moment
-  ): Generator {
-    yield this.api.post("/api/opportunity_deferrals", {
-      personExternalId: opportunity.personExternalId,
-      opportunityType: opportunity.opportunityType,
-      deferralType: "REMINDER",
-      deferUntil: deferUntil.format(),
-      requestReminder: true,
-    });
+  ): Generator<unknown, Opportunity> {
+    const deferralType = OpportunityDeferralType.REMINDER;
+    const deferUntilFormatted = deferUntil.format();
 
-    yield this.fetchOpportunities();
+    const response = yield this.api.post<CreateDeferralResponse>(
+      "/api/opportunity_deferrals",
+      {
+        personExternalId: opportunity.personExternalId,
+        opportunityType: opportunity.opportunityType,
+        deferralType,
+        deferUntil: deferUntilFormatted,
+        requestReminder: true,
+      }
+    );
+
+    // the response promise has been resolved via MobX magic
+    const { deferralId, deferredUntil } = response as CreateDeferralResponse;
+
+    /* eslint-disable no-param-reassign */
+    opportunity.deferredUntil = deferredUntil;
+    opportunity.deferralType = deferralType;
+    opportunity.deferralId = deferralId;
+    /* eslint-enable no-param-reassign */
+
+    return opportunity;
   }
 
   *deleteOpportunityDeferral(opportunity: Opportunity): Generator {

@@ -15,8 +15,17 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { spacing } from "@recidiviz/design-system";
+import { rem } from "polished";
 import styled from "styled-components/macro";
 
 export const AlertContents = styled.div`
   align-self: center;
+`;
+
+export const UndoContents = styled.div`
+  button {
+    display: inline-flex;
+    margin-left: ${rem(spacing.md)};
+  }
 `;
