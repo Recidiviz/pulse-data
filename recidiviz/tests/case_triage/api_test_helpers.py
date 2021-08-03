@@ -36,6 +36,7 @@ from recidiviz.case_triage.client_info.types import PreferredContactMethod
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.user_context import UserContext
 from recidiviz.persistence.database.schema.case_triage.schema import ETLOfficer
+from recidiviz.tests.case_triage.case_triage_helpers import hash_email
 
 DEMO_USER_EMAIL = "demo_user@not-recidiviz.org"
 ADMIN_USER_EMAIL = "admin@not-recidiviz.org"
@@ -102,7 +103,7 @@ class CaseTriageTestHelpers:
         with self.test_app.test_request_context():
             with self.test_client.session_transaction() as sess:  # type: ignore
                 sess["user_info"] = {"email": ADMIN_USER_EMAIL}
-                sess[IMPERSONATED_EMAIL_KEY] = email
+                sess[IMPERSONATED_EMAIL_KEY] = hash_email(email)
             g.user_context = UserContext.base_context_for_email(
                 ADMIN_USER_EMAIL, self.mock_auth_store
             )
