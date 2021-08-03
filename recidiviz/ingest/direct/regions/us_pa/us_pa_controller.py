@@ -83,6 +83,9 @@ from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller impo
     IngestPrimaryKeyOverrideCallable,
     IngestRowPosthookCallable,
 )
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     create_if_not_exists,
     update_overrides_from_maps,
@@ -722,8 +725,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
         # TODO(#8337): Cleanup reference to `supervision_period` and delete view file
         if (
-            # Gate to staging
+            # Gate to staging or prod secondary
             not environment.in_gcp_production()
+            or self.ingest_instance is DirectIngestInstance.SECONDARY
         ):
             launched_file_tags.append("supervision_period_v3")
         else:
