@@ -14,11 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the pulse-data/setup.py file that specifies required packages for the Dataflow VM workers."""
+"""Tests the pulse-data/recidiviz/tools/deploy/dataflow_template_setup.py file that specifies required packages
+for the Dataflow VM workers. """
 import json
 import os
 import unittest
 
+import recidiviz
 
 PIPFILE_LOCK_PATH = os.path.join(
     os.path.dirname(
@@ -28,10 +30,8 @@ PIPFILE_LOCK_PATH = os.path.join(
 )
 
 SETUP_PATH = os.path.join(
-    os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-    ),
-    "setup.py",
+    os.path.dirname(recidiviz.__file__),
+    "tools/deploy/dataflow_setup.py",
 )
 
 
@@ -62,8 +62,8 @@ class TestSetupFilePinnedDependencies(unittest.TestCase):
                         self.assertEqual(
                             pipfile_dependency,
                             dependency_with_version,
-                            "Try verifying the package's version in setup.py or running pipenv sync --dev "
-                            "before running this test again.",
+                            "Try verifying the package's version in dataflow_template_setup.py or running pipenv sync "
+                            "--dev before running this test again.",
                         )
 
     def test_setup_file_non_pinned_dependency(self) -> None:

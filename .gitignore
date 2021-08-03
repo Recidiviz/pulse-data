@@ -158,3 +158,8 @@ recidiviz/case_triage/local/**/*
 
 # ESLint Cache
 .eslintcache
+
+# Deployment artifacts
+recidiviz/tools/deploy/dist/
+recidiviz/tools/deploy/log/
+

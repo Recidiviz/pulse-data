@@ -19,9 +19,10 @@
 from concurrent import futures
 from concurrent.futures import Future
 from contextlib import contextmanager
-from typing import List, Generator, Dict, Callable, Optional
+from typing import Callable, Dict, Generator, List, Optional
 
 import attr
+from progress.bar import Bar
 
 from recidiviz.utils import structured_logging
 
@@ -68,6 +69,17 @@ class FutureExecutor:
 
         # Aggregate results, raising any exceptions that a future may have encountered
         self.results()
+
+    def wait_with_progress_bar(
+        self, message: str, timeout: Optional[int] = PROGRESS_TIMEOUT
+    ) -> None:
+        progress_bar = Bar(message, max=self.futures_count, check_tty=False)
+        progress_bar.start()
+
+        for progress in self.progress(timeout=timeout):
+            progress_bar.goto(progress.completed)
+
+        progress_bar.finish()
 
     def results(self) -> List:
         return [task_future.result() for task_future in self.task_futures]
