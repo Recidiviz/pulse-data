@@ -68,16 +68,13 @@ WITH downgrade_opportunities AS (
         downgrade_opportunities.state_code,
         downgrade_opportunities.date_of_supervision,
         IFNULL(downgrade_opportunities.supervising_officer_external_id, 'UNKNOWN') as supervising_officer_external_id,
-        {vitals_state_specific_district_id},
-        {vitals_state_specific_district_name},
+        sup_pop.district_id,
+        sup_pop.district_name,
         total_downgrade_opportunities,
         sup_pop.people_under_supervision AS total_under_supervision,
         IFNULL(SAFE_DIVIDE((sup_pop.people_under_supervision - total_downgrade_opportunities), sup_pop.people_under_supervision), 1) * 100 AS timely_downgrade,
     FROM downgrade_opportunities
-    LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names` locations
-        ON downgrade_opportunities.state_code = locations.state_code
-        AND {vitals_state_specific_join_with_supervision_location_ids}
-    LEFT JOIN `{project_id}.{vitals_views_dataset}.supervision_population_by_po_by_day_materialized` sup_pop
+    INNER JOIN `{project_id}.{vitals_views_dataset}.supervision_population_by_po_by_day_materialized` sup_pop
         ON sup_pop.state_code = downgrade_opportunities.state_code
         AND sup_pop.date_of_supervision = downgrade_opportunities.date_of_supervision
         AND sup_pop.supervising_officer_external_id = downgrade_opportunities.supervising_officer_external_id
@@ -94,15 +91,6 @@ SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryVi
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     vitals_views_dataset=dataset_config.VITALS_REPORT_DATASET,
-    vitals_state_specific_district_id=state_specific_query_strings.vitals_state_specific_district_id(
-        "downgrade_opportunities"
-    ),
-    vitals_state_specific_district_name=state_specific_query_strings.vitals_state_specific_district_name(
-        "downgrade_opportunities"
-    ),
-    vitals_state_specific_join_with_supervision_location_ids=state_specific_query_strings.vitals_state_specific_join_with_supervision_location_ids(
-        "downgrade_opportunities"
-    ),
     vitals_state_specific_join_with_supervision_population=state_specific_query_strings.vitals_state_specific_join_with_supervision_population(
         "downgrade_opportunities"
     ),

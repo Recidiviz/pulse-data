@@ -62,8 +62,8 @@ WITH overdue_contacts AS (
         overdue_contacts.state_code,
         overdue_contacts.date_of_supervision,
         IFNULL(overdue_contacts.supervising_officer_external_id, 'UNKNOWN') as supervising_officer_external_id,
-        {vitals_state_specific_district_id},
-        {vitals_state_specific_district_name},
+        sup_pop.district_id,
+        sup_pop.district_name,
         total_overdue,
         sup_pop.supervisees_requiring_contact AS supervisees_requiring_contact,
         IFNULL(SAFE_DIVIDE((sup_pop.supervisees_requiring_contact - total_overdue), sup_pop.supervisees_requiring_contact), 1) * 100 AS timely_contact,
@@ -71,7 +71,7 @@ WITH overdue_contacts AS (
     LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names` locations
         ON overdue_contacts.state_code = locations.state_code
         AND {vitals_state_specific_join_with_supervision_location_ids}
-    LEFT JOIN `{project_id}.{vitals_views_dataset}.supervision_population_by_po_by_day_materialized` sup_pop
+    INNER JOIN `{project_id}.{vitals_views_dataset}.supervision_population_by_po_by_day_materialized` sup_pop
         ON sup_pop.state_code = overdue_contacts.state_code
         AND sup_pop.date_of_supervision = overdue_contacts.date_of_supervision
         AND sup_pop.supervising_officer_external_id = overdue_contacts.supervising_officer_external_id
@@ -87,12 +87,6 @@ TIMELY_CONTACT_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     vitals_views_dataset=dataset_config.VITALS_REPORT_DATASET,
-    vitals_state_specific_district_id=state_specific_query_strings.vitals_state_specific_district_id(
-        "overdue_contacts"
-    ),
-    vitals_state_specific_district_name=state_specific_query_strings.vitals_state_specific_district_name(
-        "overdue_contacts"
-    ),
     vitals_state_specific_join_with_supervision_location_ids=state_specific_query_strings.vitals_state_specific_join_with_supervision_location_ids(
         "overdue_contacts"
     ),
