@@ -16,15 +16,18 @@
 // =============================================================================
 
 import {
+  Button,
   DropdownMenuItem,
   DropdownMenuLabel,
   Icon,
   Link,
+  useToasts,
 } from "@recidiviz/design-system";
 import assertNever from "assert-never";
 import { paramCase } from "param-case";
 import React from "react";
 import { observer } from "mobx-react-lite";
+import { flowResult } from "mobx";
 import { useRootStore } from "../../../stores";
 import {
   ACTION_TITLES,
@@ -39,6 +42,7 @@ import FeedbackFormModal from "../../FeedbackFormModal";
 import { ReminderMenuItems } from "../../NeedsActionFlow/ReminderMenuItems";
 import { PolicyLink } from "../../CaseOpportunities/PolicyLink";
 import { Alert } from "./Alert";
+import { UndoContents } from "./Alert.styles";
 
 const AlertText = ({ client, opportunity }: OpportunityReviewProps) => {
   const { policyStore } = useRootStore();
@@ -162,6 +166,9 @@ type OpportunityReviewProps = {
 export const OpportunityAlert = observer(
   ({ client, opportunity }: OpportunityReviewProps): JSX.Element => {
     const { opportunityStore } = useRootStore();
+    const { addToast, removeToast } = useToasts();
+
+    const toastId = `${opportunity.deferralId}-successful`;
 
     return (
       <Alert
@@ -171,10 +178,33 @@ export const OpportunityAlert = observer(
         menuItems={
           <>
             <ReminderMenuItems
-              onDeferred={(deferUntil) => {
-                opportunityStore.createOpportunityDeferral(
-                  opportunity,
-                  deferUntil
+              onDeferred={async (deferUntil) => {
+                await flowResult(
+                  opportunityStore.createOpportunityDeferral(
+                    opportunity,
+                    deferUntil
+                  )
+                );
+
+                const snoozeDuration = deferUntil.fromNow(true);
+                addToast(
+                  <UndoContents>
+                    Snoozed for {snoozeDuration}.{" "}
+                    <Button
+                      kind="secondary"
+                      onClick={() => {
+                        opportunityStore.deleteOpportunityDeferral(opportunity);
+                        removeToast(toastId);
+                      }}
+                      shape="block"
+                    >
+                      Undo
+                    </Button>
+                  </UndoContents>,
+                  {
+                    appearance: "info",
+                    id: toastId,
+                  }
                 );
               }}
             />

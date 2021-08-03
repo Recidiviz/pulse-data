@@ -49,7 +49,7 @@ class OpportunitiesInterface:
         deferral_type: OpportunityDeferralType,
         defer_until: datetime,
         reminder_requested: bool,
-    ) -> None:
+    ) -> OpportunityDeferral:
         """Implements base opportunity deferral and commits back to database."""
         opportunity = CaseTriageQuerier.fetch_opportunity(
             session, user_context, client, opportunity_type
@@ -78,8 +78,10 @@ class OpportunitiesInterface:
                 },
             )
         )
-        session.execute(insert_statement)
+        result = session.execute(insert_statement)
         session.commit()
+
+        return session.query(OpportunityDeferral).get(result.inserted_primary_key)
 
     @staticmethod
     def delete_opportunity_deferral(
