@@ -87,13 +87,6 @@ def get_next_face_to_face_date(client: ETLClient) -> Optional[date]:
     if client.state_code != "US_ID":
         raise CaseTriageInvalidStateException(client.state_code)
 
-    if client.most_recent_face_to_face_date is None:
-        return np.busday_offset(
-            client.supervision_start_date,
-            NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS,
-            roll="forward",
-        ).astype(date)
-
     case_type = StateSupervisionCaseType(client.case_type)
     supervision_level = StateSupervisionLevel(client.supervision_level)
     if (
@@ -107,6 +100,13 @@ def get_next_face_to_face_date(client: ETLClient) -> Optional[date]:
             client.supervision_level,
         )
         return None
+
+    if client.most_recent_face_to_face_date is None:
+        return np.busday_offset(
+            client.supervision_start_date,
+            NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS,
+            roll="forward",
+        ).astype(date)
 
     face_to_face_requirements = SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[case_type][
         supervision_level
