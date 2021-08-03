@@ -36,7 +36,7 @@ const Verify = (props: RouteComponentProps): ReactElement => {
       <p>
         If you have reached this page by mistake, please try to log in again. If
         you are still having trouble, please reach out to{" "}
-        <Link href="mailto:web-support@recidiviz.org?subject=Trouble logging into Case Triage">
+        <Link href="mailto:feedback@recidiviz.org?subject=Trouble logging into Case Triage">
           Recidiviz Support
         </Link>
         .
