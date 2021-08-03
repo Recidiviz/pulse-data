@@ -26,6 +26,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violations_dele
 )
 from recidiviz.calculator.pipeline.utils.violation_utils import (
     filter_violation_responses_for_violation_history,
+    sorted_violation_subtypes_by_severity,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -232,7 +233,7 @@ class TestFilterViolationResponses(unittest.TestCase):
 
 
 class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
-    """Tests the us_mo_get_violation_type_subtype_strings_for_violation function."""
+    """Tests the get_violation_type_subtype_strings_for_violation function when the UsMoViolationDelegate is provided."""
 
     def setUp(self) -> None:
         self.delegate = UsMoViolationDelegate()
@@ -372,3 +373,43 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
             "TECHNICAL",
         }
         self.assertEqual(supported_violation_subtypes, expected_violation_subtypes)
+
+
+class TestUsMoSortedViolationSubtypesBySeverity(unittest.TestCase):
+    """Tests the sorted_violation_subtypes_by_severity function when the UsMoViolationDelegate is provided."""
+
+    def setUp(self) -> None:
+        self.delegate = UsMoViolationDelegate()
+
+    def test_us_mo_sorted_violation_subtypes_by_severity(self) -> None:
+        violation_subtypes = ["TECHNICAL", "FELONY", "ABSCONDED"]
+
+        sorted_subtypes = sorted_violation_subtypes_by_severity(
+            violation_subtypes, self.delegate
+        )
+
+        expected_sorted_subtypes = ["FELONY", "ABSCONDED", "TECHNICAL"]
+
+        self.assertEqual(expected_sorted_subtypes, sorted_subtypes)
+
+    def test_us_mo_sorted_violation_subtypes_by_severity_law_citation(self) -> None:
+        violation_subtypes = ["ABSCONDED", "LAW_CITATION"]
+
+        sorted_subtypes = sorted_violation_subtypes_by_severity(
+            violation_subtypes, self.delegate
+        )
+
+        expected_sorted_subtypes = ["LAW_CITATION", "ABSCONDED"]
+
+        self.assertEqual(expected_sorted_subtypes, sorted_subtypes)
+
+    def test_us_mo_sorted_violation_subtypes_by_severity_substance(self) -> None:
+        violation_subtypes = ["EMP", "SUBSTANCE_ABUSE", "SPC"]
+
+        sorted_subtypes = sorted_violation_subtypes_by_severity(
+            violation_subtypes, self.delegate
+        )
+
+        expected_sorted_subtypes = ["SUBSTANCE_ABUSE", "EMP", "SPC"]
+
+        self.assertEqual(expected_sorted_subtypes, sorted_subtypes)

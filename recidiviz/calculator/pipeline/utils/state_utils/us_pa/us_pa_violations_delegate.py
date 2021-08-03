@@ -16,7 +16,6 @@
 # =============================================================================
 """Utils for state-specific logic related to violations
 in US_PA."""
-
 from typing import Dict, List, Set, Tuple
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
@@ -117,6 +116,15 @@ class UsPaViolationDelegate(StateSpecificViolationDelegate):
             subtype
             for _, subtype, _ in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP
         }
+
+    def get_violation_subtype_severity_order(self) -> List[str]:
+        """Returns the sort order of violation subtypes by severity following PA's
+        _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP"""
+        subtype_sort_order = [
+            subtype
+            for _, subtype, _ in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP
+        ]
+        return subtype_sort_order
 
 
 def _violation_subtype_from_violation_type_entry(

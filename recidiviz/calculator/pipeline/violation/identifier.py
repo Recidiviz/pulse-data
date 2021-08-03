@@ -23,7 +23,6 @@ from recidiviz.calculator.pipeline.base_identifier import (
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_state_specific_violation_delegate,
-    sorted_violation_subtypes_by_severity,
     state_specific_violation_response_pre_processing_function,
     violation_type_from_subtype,
 )
@@ -32,8 +31,8 @@ from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     prepare_violation_responses_for_calculations,
 )
 from recidiviz.calculator.pipeline.utils.violation_utils import (
-    DEFAULT_VIOLATION_SUBTYPE_SEVERITY_ORDER,
     filter_violation_responses_for_violation_history,
+    sorted_violation_subtypes_by_severity,
 )
 from recidiviz.calculator.pipeline.violation.events import (
     ViolationEvent,
@@ -144,7 +143,7 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
             first_violation_response.supervision_violation  # type: ignore
         )
         sorted_violation_subtypes = sorted_violation_subtypes_by_severity(
-            state_code, violation_subtypes, DEFAULT_VIOLATION_SUBTYPE_SEVERITY_ORDER
+            violation_subtypes, violation_delegate
         )
         supported_violation_subtypes = (
             violation_delegate.violation_type_subtypes_with_violation_type_mappings()

@@ -24,7 +24,6 @@ import pytest
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils import (
     _normalize_violations_on_responses,
     us_mo_shorthand_for_violation_subtype,
-    us_mo_sorted_violation_subtypes_by_severity,
     us_mo_violation_type_from_subtype,
 )
 
@@ -48,43 +47,6 @@ from recidiviz.persistence.entity.state.entities import (
 )
 
 _STATE_CODE = "US_MO"
-
-
-class TestUsMoSortedViolationSubtypesBySeverity(unittest.TestCase):
-    """Tests the us_mo_sorted_violation_subtypes_by_severity function."""
-
-    def test_us_mo_sorted_violation_subtypes_by_severity(self) -> None:
-        violation_subtypes = ["TECHNICAL", "FELONY", "ABSCONDED"]
-
-        sorted_subtypes = us_mo_sorted_violation_subtypes_by_severity(
-            violation_subtypes
-        )
-
-        expected_sorted_subtypes = ["FELONY", "ABSCONDED", "TECHNICAL"]
-
-        self.assertEqual(expected_sorted_subtypes, sorted_subtypes)
-
-    def test_us_mo_sorted_violation_subtypes_by_severity_law_citation(self) -> None:
-        violation_subtypes = ["ABSCONDED", "LAW_CITATION"]
-
-        sorted_subtypes = us_mo_sorted_violation_subtypes_by_severity(
-            violation_subtypes
-        )
-
-        expected_sorted_subtypes = ["LAW_CITATION", "ABSCONDED"]
-
-        self.assertEqual(expected_sorted_subtypes, sorted_subtypes)
-
-    def test_us_mo_sorted_violation_subtypes_by_severity_substance(self) -> None:
-        violation_subtypes = ["EMP", "SUBSTANCE_ABUSE", "SPC"]
-
-        sorted_subtypes = us_mo_sorted_violation_subtypes_by_severity(
-            violation_subtypes
-        )
-
-        expected_sorted_subtypes = ["SUBSTANCE_ABUSE", "EMP", "SPC"]
-
-        self.assertEqual(expected_sorted_subtypes, sorted_subtypes)
 
 
 class TestUsMoViolationUtilsSubtypeFunctions(unittest.TestCase):
