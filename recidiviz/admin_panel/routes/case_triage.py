@@ -175,7 +175,12 @@ def add_case_triage_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
             SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE), autocommit=False
         ) as session:
             results = (
-                session.query(CaseUpdate).filter(CaseUpdate.comment.isnot(None)).all()
+                session.query(CaseUpdate)
+                .filter(
+                    CaseUpdate.comment.isnot(None),
+                    CaseUpdate.officer_external_id.notlike("demo::%"),
+                )
+                .all()
             )
             return (
                 jsonify(
