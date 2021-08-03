@@ -21,12 +21,12 @@ from typing import List, Optional
 from apache_beam.options.pipeline_options import PipelineOptions
 
 from recidiviz.calculator.pipeline.utils.execution_utils import (
-    calculation_month_count_arg,
     calculation_end_month_arg,
+    calculation_month_count_arg,
 )
 from recidiviz.calculator.query.state.dataset_config import (
-    REFERENCE_VIEWS_DATASET,
     DATAFLOW_METRICS_DATASET,
+    REFERENCE_VIEWS_DATASET,
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
@@ -117,10 +117,9 @@ def _add_base_apache_beam_args(parser: argparse.ArgumentParser) -> None:
     )
 
     parser.add_argument(
-        "--setup_file",
-        type=str,
-        help="Path to the setup.py file.",
-        default="./setup.py",
+        "--extra_package",
+        action="append",
+        help="Specifies a local path to a source distribution that will be installed on the dataflow workers",
     )
 
     parser.add_argument(
@@ -308,6 +307,9 @@ def _derive_apache_beam_pipeline_args(argv: List[str]) -> List[str]:
             args.append(f"--{key}")
         elif isinstance(value, str):
             args.extend([f"--{key}", value])
+        elif isinstance(value, list):
+            for list_item in value:
+                args.extend([f"--{key}", list_item])
         elif value is None:
             pass
         else:
