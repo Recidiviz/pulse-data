@@ -96,23 +96,25 @@ class StateSupervisionCaseComplianceManager:
         )
         home_visit_count = self._home_visits_on_date(compliance_evaluation_date)
 
-        most_recent_assessment_date = None
+        most_recent_assessment = (
+            find_most_recent_applicable_assessment_of_class_for_state(
+                compliance_evaluation_date,
+                self.assessments,
+                assessment_class=StateAssessmentClass.RISK,
+                state_code=self.supervision_period.state_code,
+            )
+        )
+        most_recent_assessment_date = (
+            most_recent_assessment.assessment_date
+            if most_recent_assessment is not None
+            else None
+        )
+
         next_recommended_assessment_date = None
         face_to_face_frequency_sufficient = None
         home_visit_frequency_sufficient = None
 
         if self._guidelines_applicable_for_case(compliance_evaluation_date):
-            most_recent_assessment = (
-                find_most_recent_applicable_assessment_of_class_for_state(
-                    compliance_evaluation_date,
-                    self.assessments,
-                    assessment_class=StateAssessmentClass.RISK,
-                    state_code=self.supervision_period.state_code,
-                )
-            )
-            if most_recent_assessment is not None:
-                most_recent_assessment_date = most_recent_assessment.assessment_date
-
             next_recommended_assessment_date = self._next_recommended_assessment_date(
                 most_recent_assessment
             )

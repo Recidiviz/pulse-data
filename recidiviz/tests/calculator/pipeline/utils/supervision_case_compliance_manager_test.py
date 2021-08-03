@@ -605,6 +605,7 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_assessment_date=None,
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 3, 31),
+                most_recent_assessment_date=date(2018, 3, 31),
                 face_to_face_frequency_sufficient=None,
                 home_visit_count=0,
             ),
