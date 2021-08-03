@@ -137,15 +137,17 @@ def create_api_blueprint(
 
         if IMPERSONATED_EMAIL_KEY in session:
             try:
-                impersonated_officer = CaseTriageQuerier.officer_for_email(
-                    current_session, session[IMPERSONATED_EMAIL_KEY].lower()
+                impersonated_officer = CaseTriageQuerier.officer_for_hashed_email(
+                    current_session, session[IMPERSONATED_EMAIL_KEY]
                 )
                 if g.user_context.can_impersonate(impersonated_officer):
                     g.user_context.current_user = impersonated_officer
                 else:
                     session.pop(IMPERSONATED_EMAIL_KEY)
             except OfficerDoesNotExistError:
-                logging.warning("Cannot find officer for email %s", impersonated_email)
+                logging.warning(
+                    "Cannot find officer for hashed email %s", impersonated_email
+                )
                 session.pop(IMPERSONATED_EMAIL_KEY)
 
         if not g.user_context.current_user:
