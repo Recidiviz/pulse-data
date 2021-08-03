@@ -25,8 +25,9 @@ import {
   NewItemsWrapper,
   PlainBullet,
 } from "./NewItems.styles";
-import { OpportunityReview } from "../CaseOpportunities/OpportunityReview";
+import { OpportunityAlert } from "./Alert/OpportunityAlert";
 import { AddNote, NoteInput, NoteRow } from "./Notes";
+import { CaseloadRemovalAlert } from "./Alert/CaseloadRemovalAlert";
 
 export const NewItems = observer(({ client }: CaseCardProps): JSX.Element => {
   const [noteInProgress, setNoteInProgress] = useState(false);
@@ -34,11 +35,20 @@ export const NewItems = observer(({ client }: CaseCardProps): JSX.Element => {
   return (
     <NewItemsWrapper>
       <ItemsWrapper>
-        {client.activeOpportunities.map((opp) => (
-          <Item key={opp.opportunityType}>
-            <OpportunityReview client={client} opportunity={opp} />
+        {client.pendingCaseloadRemoval ? (
+          <Item>
+            <CaseloadRemovalAlert
+              client={client}
+              pendingUpdate={client.pendingCaseloadRemoval}
+            />
           </Item>
-        ))}
+        ) : (
+          client.activeOpportunities.map((opp) => (
+            <Item key={opp.opportunityType}>
+              <OpportunityAlert client={client} opportunity={opp} />
+            </Item>
+          ))
+        )}
         {client.activeNotes.map((note) => (
           <Item key={note.noteId}>
             <ActionRow bullet={<PlainBullet />}>
