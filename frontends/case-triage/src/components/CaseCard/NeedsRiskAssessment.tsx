@@ -23,6 +23,7 @@ import { Client } from "../../stores/ClientsStore/Client";
 import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 import { NeedsActionFlow } from "../NeedsActionFlow/NeedsActionFlow";
 import TEST_IDS from "../TestIDs";
+import { LONG_DATE_FORMAT } from "../../utils";
 
 interface NeedsRiskAssessmentProps {
   className: string;
@@ -53,7 +54,7 @@ const NeedsRiskAssessment: React.FC<NeedsRiskAssessmentProps> = ({
             `, ${client.assessmentScoreDetails}`}
         </div>
         <div>
-          Last assessed on {mostRecentAssessmentDate.format("MMMM Do, YYYY")}
+          Last assessed on {mostRecentAssessmentDate.format(LONG_DATE_FORMAT)}
         </div>
       </>
     );

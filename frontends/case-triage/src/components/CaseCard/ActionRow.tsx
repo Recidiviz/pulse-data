@@ -22,10 +22,9 @@ import {
   TabSectionContents,
 } from "./NewItems.styles";
 
-export const ActionRow: React.FC<{ bullet: React.ReactNode }> = ({
-  bullet,
-  children,
-}) => {
+export type ActionRowProps = { bullet: React.ReactNode };
+
+export const ActionRow: React.FC<ActionRowProps> = ({ bullet, children }) => {
   return (
     <TabSection>
       <TabSectionBullet>{bullet}</TabSectionBullet>

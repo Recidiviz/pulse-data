@@ -26,7 +26,7 @@ import { observer } from "mobx-react-lite";
 import moment from "moment";
 import React from "react";
 import { useRootStore } from "../../stores";
-import { remScaledPixels, titleCase } from "../../utils";
+import { LONG_DATE_FORMAT, remScaledPixels, titleCase } from "../../utils";
 import TEST_IDS from "../TestIDs";
 import { Caption, CloseButton } from "./CaseCard.styles";
 import { CaseCardProps } from "./CaseCard.types";
@@ -77,7 +77,7 @@ const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
         {client.supervisionStartDate ? (
           <SummaryItem icon={IconSVG.Journey}>
             Supervision started on{" "}
-            {client.supervisionStartDate.format("MMMM Do, YYYY")} (
+            {client.supervisionStartDate.format(LONG_DATE_FORMAT)} (
             {client.supervisionStartDate.from(moment().startOf("day"))})
           </SummaryItem>
         ) : null}

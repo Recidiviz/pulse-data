@@ -71,3 +71,9 @@ export function useUuid(): string {
 export function remScaledPixels(val: number): string {
   return remToPx(rem(val));
 }
+
+/**
+ * Preferred Moment.js format string for dates in sentence copy.
+ * Produces, e.g., "July 30th, 2021"
+ */
+export const LONG_DATE_FORMAT = "MMMM Do, YYYY";

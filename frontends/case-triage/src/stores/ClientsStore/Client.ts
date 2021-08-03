@@ -355,6 +355,13 @@ export class Client {
       );
   }
 
+  get pendingCaseloadRemoval(): CaseUpdate | undefined {
+    return (
+      this.caseUpdates[CaseUpdateActionType.NOT_ON_CASELOAD] ||
+      this.caseUpdates[CaseUpdateActionType.CURRENTLY_IN_CUSTODY]
+    );
+  }
+
   get isVisible(): boolean {
     return caseInsensitiveIncludes(
       this.name,
