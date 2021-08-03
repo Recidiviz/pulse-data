@@ -21,24 +21,6 @@
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violations_delegate import (
     _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP,
 )
-from recidiviz.common.constants.state.state_supervision_violation import (
-    StateSupervisionViolationType,
-)
-
-
-def us_pa_violation_type_from_subtype(
-    violation_subtype: str,
-) -> StateSupervisionViolationType:
-    """Determines which StateSupervisionViolationType corresponds to the |violation_subtype| value."""
-    for (
-        violation_type,
-        violation_subtype_value,
-        _,
-    ) in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP:
-        if violation_subtype == violation_subtype_value:
-            return violation_type
-
-    raise ValueError(f"Unexpected violation_subtype {violation_subtype} for US_PA.")
 
 
 def us_pa_shorthand_for_violation_subtype(violation_subtype: str) -> str:

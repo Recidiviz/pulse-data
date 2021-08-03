@@ -21,7 +21,12 @@ from typing import List
 
 import pytest
 
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils import (
+    us_mo_shorthand_for_violation_subtype,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violations_delegate import (
+    _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES,
+    _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP,
     UsMoViolationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.violation_utils import (
@@ -413,3 +418,58 @@ class TestUsMoSortedViolationSubtypesBySeverity(unittest.TestCase):
         expected_sorted_subtypes = ["SUBSTANCE_ABUSE", "EMP", "SPC"]
 
         self.assertEqual(expected_sorted_subtypes, sorted_subtypes)
+
+
+class TestUsMoViolationUtilsSubtypeFunctions(unittest.TestCase):
+    """Tests multiple functions in violation_utils related to violation subtypes when the UsMoViolationDelegate is provided."""
+
+    def setUp(self) -> None:
+        self.delegate = UsMoViolationDelegate()
+
+    def test_us_mo_violation_type_from_subtype(self) -> None:
+        # Assert that all of the StateSupervisionViolationType raw values map to their corresponding violation_type
+        for violation_type in StateSupervisionViolationType:
+            if violation_type.value not in _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES:
+                violation_type_from_subtype = self.delegate.violation_type_from_subtype(
+                    violation_type.value
+                )
+
+                self.assertEqual(violation_type, violation_type_from_subtype)
+
+    def test_us_mo_violation_type_from_subtype_law_citation(self) -> None:
+        violation_subtype = "LAW_CITATION"
+
+        violation_type_from_subtype = self.delegate.violation_type_from_subtype(
+            violation_subtype
+        )
+
+        self.assertEqual(
+            StateSupervisionViolationType.TECHNICAL, violation_type_from_subtype
+        )
+
+    def test_us_mo_violation_type_from_subtype_substance_abuse(self) -> None:
+        violation_subtype = "SUBSTANCE_ABUSE"
+
+        violation_type_from_subtype = self.delegate.violation_type_from_subtype(
+            violation_subtype
+        )
+
+        self.assertEqual(
+            StateSupervisionViolationType.TECHNICAL, violation_type_from_subtype
+        )
+
+    def test_us_mo_shorthand_for_violation_subtype(self) -> None:
+        # Assert that all of the StateSupervisionViolationType values are supported
+        for violation_type in StateSupervisionViolationType:
+            if violation_type.value not in _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES:
+                _ = us_mo_shorthand_for_violation_subtype(violation_type.value)
+
+    def test_violationTypeAndSubtypeShorthandMap_isComplete(self) -> None:
+        all_types_subtypes = [
+            violation_type
+            for violation_type, _, _ in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP
+        ]
+
+        for violation_type in StateSupervisionViolationType:
+            if violation_type.value not in _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES:
+                self.assertTrue(violation_type in all_types_subtypes)

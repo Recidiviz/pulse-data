@@ -33,6 +33,7 @@ from recidiviz.persistence.entity.state.entities import (
 )
 
 FOLLOW_UP_RESPONSE_SUBTYPE = "SUP"
+
 _SUBSTANCE_ABUSE_CONDITION_STR = "DRG"
 _LAW_CONDITION_STR = "LAW"
 
@@ -175,6 +176,20 @@ class UsMoViolationDelegate(StateSpecificViolationDelegate):
             for _, subtype, _ in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP
         ]
         return subtype_sort_order
+
+    def violation_type_from_subtype(
+        self, violation_subtype: str
+    ) -> StateSupervisionViolationType:
+        """Determines which StateSupervisionViolationType corresponds to the |violation_subtype| value."""
+        for (
+            violation_type,
+            violation_subtype_value,
+            _,
+        ) in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP:
+            if violation_subtype == violation_subtype_value:
+                return violation_type
+
+        raise ValueError(f"Unexpected violation_subtype {violation_subtype} for US_MO.")
 
 
 def _get_violation_report_subtype_should_be_included_in_calculations(

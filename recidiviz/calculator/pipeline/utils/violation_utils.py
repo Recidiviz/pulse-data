@@ -25,7 +25,6 @@ from dateutil.relativedelta import relativedelta
 from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     shorthand_for_violation_subtype,
-    violation_type_from_subtype,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
@@ -127,7 +126,6 @@ def identify_most_severe_violation_type_and_subtype(
     if not violations:
         return None, None
 
-    state_code = get_single_state_code(violations)
     for violation in violations:
         violation_subtypes.extend(
             violation_delegate.get_violation_type_subtype_strings_for_violation(
@@ -145,7 +143,9 @@ def identify_most_severe_violation_type_and_subtype(
     most_severe_type = None
 
     if most_severe_subtype:
-        most_severe_type = violation_type_from_subtype(state_code, most_severe_subtype)
+        most_severe_type = violation_delegate.violation_type_from_subtype(
+            most_severe_subtype
+        )
 
     return most_severe_type, most_severe_subtype
 
@@ -153,7 +153,7 @@ def identify_most_severe_violation_type_and_subtype(
 def most_severe_violation_subtype(
     violation_subtypes: List[str], violation_delegate: StateSpecificViolationDelegate
 ) -> Optional[str]:
-    """Given the |state_code| and list of |violation_subtypes|, determines the most severe subtype present. Defers to
+    """Given the |violation_delegate| and list of |violation_subtypes|, determines the most severe subtype present. Defers to
     the severity in the |default_severity_order| if no state-specific logic is implemented."""
     if not violation_subtypes:
         return None

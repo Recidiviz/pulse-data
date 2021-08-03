@@ -65,6 +65,12 @@ _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP: List[
     (StateSupervisionViolationType.TECHNICAL, _LOW_TECHNICAL_SUBTYPE_STR, "low_tech"),
 ]
 
+_VIOLATION_TYPE_SEVERITY_ORDER = [
+    StateSupervisionViolationType.LAW,
+    StateSupervisionViolationType.ABSCONDED,
+    StateSupervisionViolationType.TECHNICAL,
+]
+
 _SPECIAL_VIOLATION_TYPE_RAW_STRING_SUBTYPE_MAP: Dict[str, str] = {
     "H03": _SUBSTANCE_ABUSE_SUBTYPE_STR,
     "H12": _SUBSTANCE_ABUSE_SUBTYPE_STR,
@@ -125,6 +131,20 @@ class UsPaViolationDelegate(StateSpecificViolationDelegate):
             for _, subtype, _ in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP
         ]
         return subtype_sort_order
+
+    def violation_type_from_subtype(
+        self, violation_subtype: str
+    ) -> StateSupervisionViolationType:
+        """Determines which StateSupervisionViolationType corresponds to the |violation_subtype| value."""
+        for (
+            violation_type,
+            violation_subtype_value,
+            _,
+        ) in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP:
+            if violation_subtype == violation_subtype_value:
+                return violation_type
+
+        raise ValueError(f"Unexpected violation_subtype {violation_subtype} for US_PA.")
 
 
 def _violation_subtype_from_violation_type_entry(
