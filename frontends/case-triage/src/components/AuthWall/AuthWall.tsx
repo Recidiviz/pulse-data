@@ -85,7 +85,7 @@ const AuthWall: React.FC = ({ children }): ReactElement | null => {
           <p>
             This page is currently unavailable for your account. Please reach
             out to{" "}
-            <TypographyLink href="mailto:web-support@recidiviz.org?subject=Access to Recidiviz app">
+            <TypographyLink href="mailto:feedback@recidiviz.org?subject=Access to Recidiviz app">
               Recidiviz Support
             </TypographyLink>{" "}
             with any questions.
