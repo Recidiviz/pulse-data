@@ -103,7 +103,7 @@ if __name__ == "__main__":
                         "person_external_id": "189472",
                         "last_score": 14,
                         "last_assessment_date": "10/12/20",
-                        "curent_supervision_level": "Medium",
+                        "current_supervision_level": "Medium",
                         "recommended_level": "Low",
                     },
                     {
@@ -111,7 +111,7 @@ if __name__ == "__main__":
                         "person_external_id": "47228",
                         "last_assessment_date": "1/12/21",
                         "last_score": 8,
-                        "curent_supervision_level": "Medium",
+                        "current_supervision_level": "Medium",
                         "recommended_level": "Low",
                     },
                     {
@@ -119,7 +119,7 @@ if __name__ == "__main__":
                         "person_external_id": "132878",
                         "last_assessment_date": "3/14/20",
                         "last_score": 10,
-                        "curent_supervision_level": "High",
+                        "current_supervision_level": "High",
                         "recommended_level": "Medium",
                     },
                     {
@@ -127,7 +127,7 @@ if __name__ == "__main__":
                         "person_external_id": "147872",
                         "last_assessment_date": "3/13/20",
                         "last_score": 4,
-                        "curent_supervision_level": "High",
+                        "current_supervision_level": "High",
                         "recommended_level": "Low",
                     },
                 ],
