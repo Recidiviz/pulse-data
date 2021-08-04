@@ -10,7 +10,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
-  backend:
+  case_triage_backend:
     image: us.gcr.io/recidiviz-staging/appengine/default:latest
     volumes:
       - "./recidiviz:/app/recidiviz/"
@@ -23,6 +23,29 @@ services:
     environment:
       - FLASK_APP=/app/recidiviz/case_triage/server.py
       - FLASK_ENV=development
+      - IS_DEV=true
+      - SEGMENT_WRITE_KEY=dev-key-wont-send-data
+      - SQLALCHEMY_DB_HOST=db
+      - SQLALCHEMY_DB_NAME=postgres
+      - SQLALCHEMY_DB_USER=postgres
+      - SQLALCHEMY_DB_PASSWORD=example
+      - SQLALCHEMY_USE_SSL=0
+
+  admin_panel_backend:
+    image: us.gcr.io/recidiviz-staging/appengine/default:latest
+    volumes:
+      - "./recidiviz:/app/recidiviz/"
+      - "./frontends:/app/frontends/"
+      - "~/.config:/root/.config"
+    depends_on:
+      - migrations
+    ports:
+      - "5050:5000"
+    command: pipenv run flask run -h 0.0.0.0
+    environment:
+      - FLASK_APP=/app/recidiviz/server.py
+      - FLASK_ENV=development
+      - GOOGLE_CLOUD_PROJECT=recidiviz-staging
       - IS_DEV=true
       - SEGMENT_WRITE_KEY=dev-key-wont-send-data
       - SQLALCHEMY_DB_HOST=db
