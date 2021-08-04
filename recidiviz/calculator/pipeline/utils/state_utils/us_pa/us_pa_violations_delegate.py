@@ -146,6 +146,18 @@ class UsPaViolationDelegate(StateSpecificViolationDelegate):
 
         raise ValueError(f"Unexpected violation_subtype {violation_subtype} for US_PA.")
 
+    def shorthand_for_violation_subtype(self, violation_subtype: str) -> str:
+        """Returns the shorthand string corresponding to the |violation_subtype| value."""
+        for (
+            _,
+            violation_subtype_value,
+            subtype_shorthand,
+        ) in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP:
+            if violation_subtype == violation_subtype_value:
+                return subtype_shorthand
+
+        raise ValueError(f"Unexpected violation_subtype {violation_subtype} for US_PA.")
+
 
 def _violation_subtype_from_violation_type_entry(
     violation_type_entry: StateSupervisionViolationTypeEntry,

@@ -23,9 +23,6 @@ from typing import Dict, List, NamedTuple, Optional, Set, Tuple
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
-from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    shorthand_for_violation_subtype,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
 )
@@ -39,7 +36,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
-from recidiviz.persistence.entity.entity_utils import get_single_state_code
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateSupervisionViolation,
@@ -79,7 +75,6 @@ def is_violation_of_type(
 
 
 def shorthand_description_for_ranked_violation_counts(
-    state_code: str,
     subtype_counts: Dict[str, int],
     violation_delegate: StateSpecificViolationDelegate,
 ) -> Optional[str]:
@@ -99,7 +94,7 @@ def shorthand_description_for_ranked_violation_counts(
         if violation_count:
             # Convert to string shorthand
             ranked_shorthand_counts[
-                shorthand_for_violation_subtype(state_code, subtype)
+                violation_delegate.shorthand_for_violation_subtype(subtype)
             ] = violation_count
 
     descriptions = [
@@ -332,10 +327,8 @@ def get_violation_history_description(
         if most_severe_subtype:
             subtype_counts[most_severe_subtype] += 1
 
-    state_code = get_single_state_code(violations)
-
     return shorthand_description_for_ranked_violation_counts(
-        state_code, subtype_counts, violation_delegate
+        subtype_counts, violation_delegate
     )
 
 
