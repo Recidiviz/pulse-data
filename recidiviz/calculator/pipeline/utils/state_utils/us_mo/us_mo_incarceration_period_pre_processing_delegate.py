@@ -34,7 +34,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.str_field_utils import normalize
-from recidiviz.ingest.direct.regions.us_mo import us_mo_enum_helpers
 from recidiviz.ingest.direct.regions.us_mo.us_mo_enum_helpers import (
     SHOCK_SANCTION_STATUS_CODES,
     TREATMENT_SANCTION_STATUS_CODES,
@@ -151,27 +150,6 @@ class UsMoIncarcerationPreProcessingDelegate(
     ) -> bool:
         """The only periods of temporary custody in US_MO are parole board holds."""
         return False
-
-    # TODO(#7965): Use default behavior once we've done an ingest re-run for US_MO in
-    #  production
-    def pre_processing_incarceration_period_admission_reason_mapper(
-        self,
-        incarceration_period: StateIncarcerationPeriod,
-    ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
-        """We have updated our StateIncarcerationPeriodAdmissionReason
-        enum-mappings for US_MO, and the changes require a re-run (are beyond the scope
-        of a database migration). Until that re-run happens, we will be re-ingesting
-        raw admission_reason_raw_text values and using the following logic to provide
-        updated admission reason values."""
-        if not incarceration_period.admission_reason_raw_text:
-            return incarceration_period.admission_reason
-
-        return us_mo_enum_helpers.incarceration_period_admission_reason_mapper(
-            normalize(
-                incarceration_period.admission_reason_raw_text,
-                remove_punctuation=True,
-            )
-        )
 
     def pre_processing_relies_on_supervision_periods(self) -> bool:
         """IP pre-processing for US_MO does not rely on StateSupervisionPeriod

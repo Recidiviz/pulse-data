@@ -92,16 +92,6 @@ class UsPaIncarcerationPreProcessingDelegate(
             violation_responses,
         )
 
-    def pre_processing_incarceration_period_admission_reason_mapper(
-        self,
-        incarceration_period: StateIncarcerationPeriod,
-    ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
-        return (
-            self._default_pre_processing_incarceration_period_admission_reason_mapper(
-                incarceration_period
-            )
-        )
-
     def pre_processing_relies_on_violation_responses(self) -> bool:
         """The normalize_period_if_commitment_from_supervision_and_set_pfi_subtype
         function for US_PA relies on violation response entities."""

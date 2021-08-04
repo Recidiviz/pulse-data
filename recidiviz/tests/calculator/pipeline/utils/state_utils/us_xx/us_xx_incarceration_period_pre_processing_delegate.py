@@ -96,16 +96,6 @@ class UsXxIncarcerationPreProcessingDelegate(
             sorted_incarceration_periods,
         )
 
-    def pre_processing_incarceration_period_admission_reason_mapper(
-        self,
-        incarceration_period: StateIncarcerationPeriod,
-    ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
-        return (
-            self._default_pre_processing_incarceration_period_admission_reason_mapper(
-                incarceration_period
-            )
-        )
-
     def pre_processing_relies_on_supervision_periods(self) -> bool:
         return self._default_pre_processing_relies_on_supervision_periods()
 

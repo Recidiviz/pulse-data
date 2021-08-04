@@ -134,11 +134,21 @@ class TestStateSpecificIncarcerationPreProcessingDelegate(unittest.TestCase):
             and name not in ("__doc__", "__module__")
         )
 
-        if self.methods_to_implement != implemented_methods:
+        missing_from_us_xx = self.methods_to_implement.difference(implemented_methods)
+
+        if missing_from_us_xx:
             self.fail(
                 "UsXxStateSpecificIncarcerationPreProcessingDelegate missing "
                 "implementation of required methods: "
-                f"[{self.methods_to_implement.difference(implemented_methods)}]"
+                f"[{missing_from_us_xx}]"
+            )
+
+        missing_from_base = implemented_methods.difference(self.methods_to_implement)
+        if missing_from_base:
+            self.fail(
+                "UsXxStateSpecificIncarcerationPreProcessingDelegate has "
+                "extra method that is not defined in base: "
+                f"[{missing_from_base}]"
             )
 
 
