@@ -16,7 +16,7 @@
 # =============================================================================
 """Utils for state-specific logic related to violations
 in US_MO."""
-from typing import List, Optional, Set, Tuple
+from typing import List, Optional, Tuple
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
@@ -85,6 +85,11 @@ _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP: List[
 
 class UsMoViolationDelegate(StateSpecificViolationDelegate):
     """US_MO implementation of the StateSpecificViolationDelegate."""
+
+    # US_MO has state-specific violation subtypes
+    violation_type_and_subtype_shorthand_ordered_map = (
+        _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP
+    )
 
     def should_include_response_in_violation_history(
         self,
@@ -160,48 +165,6 @@ class UsMoViolationDelegate(StateSpecificViolationDelegate):
             violation_type_list.append(StateSupervisionViolationType.TECHNICAL.value)
 
         return violation_type_list
-
-    def violation_type_subtypes_with_violation_type_mappings(self) -> Set[str]:
-        """Returns a the set of supported subtypes for US_MO based on the ordered map."""
-        return {
-            subtype
-            for _, subtype, _ in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP
-        }
-
-    def get_violation_subtype_severity_order(self) -> List[str]:
-        """Returns the sort order of violation subtypes by severity following MO's
-        _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP"""
-        subtype_sort_order = [
-            subtype
-            for _, subtype, _ in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP
-        ]
-        return subtype_sort_order
-
-    def violation_type_from_subtype(
-        self, violation_subtype: str
-    ) -> StateSupervisionViolationType:
-        """Determines which StateSupervisionViolationType corresponds to the |violation_subtype| value."""
-        for (
-            violation_type,
-            violation_subtype_value,
-            _,
-        ) in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP:
-            if violation_subtype == violation_subtype_value:
-                return violation_type
-
-        raise ValueError(f"Unexpected violation_subtype {violation_subtype} for US_MO.")
-
-    def shorthand_for_violation_subtype(self, violation_subtype: str) -> str:
-        """Returns the shorthand string corresponding to the |violation_subtype| value."""
-        for (
-            _,
-            violation_subtype_value,
-            subtype_shorthand,
-        ) in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP:
-            if violation_subtype == violation_subtype_value:
-                return subtype_shorthand
-
-        raise ValueError(f"Unexpected violation_subtype {violation_subtype} for US_MO.")
 
     def include_decisions_on_follow_up_responses_for_most_severe_response(self) -> bool:
         """Some StateSupervisionViolationResponses are a 'follow-up' type of response, which is a state-defined response

@@ -27,7 +27,10 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violations_dele
     UsPaViolationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.violation_utils import (
+    shorthand_for_violation_subtype,
     sorted_violation_subtypes_by_severity,
+    violation_type_from_subtype,
+    violation_type_subtypes_with_violation_type_mappings,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -257,7 +260,7 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
 
     def test_violation_type_subtypes_with_violation_type_mappings(self) -> None:
         supported_violation_subtypes = (
-            self.delegate.violation_type_subtypes_with_violation_type_mappings()
+            violation_type_subtypes_with_violation_type_mappings(self.delegate)
         )
         expected_violation_subtypes = {
             "LAW",
@@ -347,66 +350,66 @@ class TestUsPaViolationUtilsSubtypeFunctions(unittest.TestCase):
         # unless the type is in _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES
         for violation_type in StateSupervisionViolationType:
             if violation_type.value not in _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES:
-                violation_type_from_subtype = self.delegate.violation_type_from_subtype(
-                    violation_type.value
+                violation_type_from_subtype_test = violation_type_from_subtype(
+                    self.delegate, violation_type.value
                 )
-                self.assertEqual(violation_type, violation_type_from_subtype)
+                self.assertEqual(violation_type, violation_type_from_subtype_test)
 
     def test_us_mo_violation_type_from_subtype_low_tech(self) -> None:
         violation_subtype = "LOW_TECH"
 
-        violation_type_from_subtype = self.delegate.violation_type_from_subtype(
-            violation_subtype
+        violation_type_from_subtype_test = violation_type_from_subtype(
+            self.delegate, violation_subtype
         )
 
         self.assertEqual(
-            StateSupervisionViolationType.TECHNICAL, violation_type_from_subtype
+            StateSupervisionViolationType.TECHNICAL, violation_type_from_subtype_test
         )
 
     def test_us_mo_violation_type_from_subtype_med_tech(self) -> None:
         violation_subtype = "MED_TECH"
 
-        violation_type_from_subtype = self.delegate.violation_type_from_subtype(
-            violation_subtype
+        violation_type_from_subtype_test = violation_type_from_subtype(
+            self.delegate, violation_subtype
         )
 
         self.assertEqual(
-            StateSupervisionViolationType.TECHNICAL, violation_type_from_subtype
+            StateSupervisionViolationType.TECHNICAL, violation_type_from_subtype_test
         )
 
     def test_us_mo_violation_type_from_subtype_high_tech(self) -> None:
         violation_subtype = "HIGH_TECH"
 
-        violation_type_from_subtype = self.delegate.violation_type_from_subtype(
-            violation_subtype
+        violation_type_from_subtype_test = violation_type_from_subtype(
+            self.delegate, violation_subtype
         )
 
         self.assertEqual(
-            StateSupervisionViolationType.TECHNICAL, violation_type_from_subtype
+            StateSupervisionViolationType.TECHNICAL, violation_type_from_subtype_test
         )
 
     def test_us_mo_violation_type_from_subtype_substance_abuse(self) -> None:
         violation_subtype = "SUBSTANCE_ABUSE"
 
-        violation_type_from_subtype = self.delegate.violation_type_from_subtype(
-            violation_subtype
+        violation_type_from_subtype_test = violation_type_from_subtype(
+            self.delegate, violation_subtype
         )
 
         self.assertEqual(
-            StateSupervisionViolationType.TECHNICAL, violation_type_from_subtype
+            StateSupervisionViolationType.TECHNICAL, violation_type_from_subtype_test
         )
 
     def test_us_pa_violation_type_from_subtype_unsupported_escape(self) -> None:
         violation_subtype = "ESCAPED"
         with pytest.raises(ValueError):
             # We don't expect to see ESCAPED violations in US_PA and need to be notified if these appear
-            _ = self.delegate.violation_type_from_subtype(violation_subtype)
+            _ = violation_type_from_subtype(self.delegate, violation_subtype)
 
     def test_us_pa_shorthand_for_violation_subtype(self) -> None:
         # Assert that all of the StateSupervisionViolationType values are supported
         for violation_type in StateSupervisionViolationType:
             if violation_type.value not in _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES:
-                _ = self.delegate.shorthand_for_violation_subtype(violation_type.value)
+                _ = shorthand_for_violation_subtype(self.delegate, violation_type.value)
 
     # pylint: disable=protected-access
     def test_violationTypeAndSubtypeShorthandMap_isComplete(self) -> None:
