@@ -84,6 +84,7 @@ else:
     app.config["SESSION_COOKIE_SECURE"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Strict"
 
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MiB max body size
 setup_scoped_sessions(app, db_url)
 
 
