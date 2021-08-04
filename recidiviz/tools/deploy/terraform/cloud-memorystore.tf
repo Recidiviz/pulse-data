@@ -14,12 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-resource "google_project_service" "vpc_access_connector" {
-  service = "vpcaccess.googleapis.com"
-
-  disable_dependent_services = true
-  disable_on_destroy         = true
-}
 
 resource "google_redis_instance" "data_discovery_cache" {
   name           = "data-discovery-cache"
@@ -27,6 +21,23 @@ resource "google_redis_instance" "data_discovery_cache" {
   memory_size_gb = 8
   tier           = "BASIC"
   redis_version  = "REDIS_5_0"
+}
+
+
+resource "google_redis_instance" "case_triage_rate_limiter_cache" {
+  name           = "rate-limit-cache"
+  region         = var.app_engine_region
+  memory_size_gb = 1
+  tier           = "BASIC"
+  redis_version  = "REDIS_5_0"
+}
+
+
+resource "google_project_service" "vpc_access_connector" {
+  service = "vpcaccess.googleapis.com"
+
+  disable_dependent_services = true
+  disable_on_destroy         = true
 }
 
 # VPC Connector is required for app engine to connect to Redis
@@ -49,8 +60,17 @@ resource "google_secret_manager_secret_version" "secret_version_redis_host" {
   secret_data = google_redis_instance.data_discovery_cache.host
 }
 
-# Store port in a secret
+resource "google_secret_manager_secret" "case_triage_rate_limiter_redis_host" {
+  secret_id = "case_triage_rate_limiter_redis_host"
+  replication { automatic = true }
+}
 
+resource "google_secret_manager_secret_version" "case_triage_rate_limiter_redis_host" {
+  secret      = google_secret_manager_secret.case_triage_rate_limiter_redis_host.name
+  secret_data = google_redis_instance.case_triage_rate_limiter_cache.host
+}
+
+# Store port in a secret
 resource "google_secret_manager_secret" "data_discovery_redis_port" {
   secret_id = "data_discovery_redis_port"
   replication { automatic = true }
@@ -59,4 +79,14 @@ resource "google_secret_manager_secret" "data_discovery_redis_port" {
 resource "google_secret_manager_secret_version" "data_discovery_redis_port" {
   secret      = google_secret_manager_secret.data_discovery_redis_port.name
   secret_data = google_redis_instance.data_discovery_cache.port
+}
+
+resource "google_secret_manager_secret" "case_triage_rate_limiter_redis_port" {
+  secret_id = "case_triage_rate_limiter_redis_port"
+  replication { automatic = true }
+}
+
+resource "google_secret_manager_secret_version" "case_triage_rate_limiter_redis_port" {
+  secret      = google_secret_manager_secret.case_triage_rate_limiter_redis_port.name
+  secret_data = google_redis_instance.case_triage_rate_limiter_cache.port
 }
