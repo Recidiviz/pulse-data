@@ -191,18 +191,6 @@ class StateSpecificIncarcerationPreProcessingDelegate:
             == StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
         )
 
-    # TODO(#7965): Remove this once we've done a re-run for US_MO
-    @abc.abstractmethod
-    def pre_processing_incarceration_period_admission_reason_mapper(
-        self,
-        incarceration_period: StateIncarcerationPeriod,
-    ) -> Optional[StateIncarcerationPeriodAdmissionReason]:
-        """State-specific implementations of this class should return an updated ingest
-        mapping of the admission_reason_raw_text value of the
-        StateIncarcerationPeriod if there is a need to re-map admission reasons for
-        the state (this happens in the case when the enum mappings have changed for a
-        state, but we have yet to do a re-run with the new mappings)."""
-
     @staticmethod
     def _default_pre_processing_incarceration_period_admission_reason_mapper(
         incarceration_period: StateIncarcerationPeriod,
@@ -349,13 +337,6 @@ class IncarcerationPreProcessingManager:
                     periods_for_pre_processing
                 )
 
-                # TODO(#7965): Remove this once we've done a re-run for US_MO
-                mid_processing_periods = (
-                    self._apply_ingest_mappings_to_admission_reasons(
-                        mid_processing_periods
-                    )
-                )
-
                 # Sort periods, and infer as much missing information as possible
                 mid_processing_periods = (
                     self._sort_and_infer_missing_dates_and_statuses(
@@ -417,27 +398,6 @@ class IncarcerationPreProcessingManager:
                     ip_id_to_pfi_subtype=ip_id_to_pfi_subtype,
                 )
         return self._pre_processed_incarceration_period_index_for_calculations[config]
-
-    def _apply_ingest_mappings_to_admission_reasons(
-        self,
-        incarceration_periods: List[StateIncarcerationPeriod],
-    ) -> List[StateIncarcerationPeriod]:
-        """Re-maps the admission_reason_raw_text value of the |incarceration_period| if
-        there is a need to re-map admission reasons for the state (this happens in
-        the case when the enum mappings have changed for a state, but we have yet to
-        do a re-run with the new mappings)."""
-        updated_periods: List[StateIncarcerationPeriod] = []
-
-        for ip in incarceration_periods:
-            re_mapped_admission_reason = self.delegate.pre_processing_incarceration_period_admission_reason_mapper(
-                ip
-            )
-
-            updated_periods.append(
-                attr.evolve(ip, admission_reason=re_mapped_admission_reason)
-            )
-
-        return updated_periods
 
     @staticmethod
     def _drop_placeholder_periods(
