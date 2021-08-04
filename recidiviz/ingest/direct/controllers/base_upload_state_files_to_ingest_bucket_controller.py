@@ -39,6 +39,9 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
+from recidiviz.ingest.direct.controllers.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
+)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     gcsfs_direct_ingest_bucket_for_region,
@@ -122,6 +125,28 @@ class BaseUploadStateFilesToIngestBucketController:
 
     def do_upload(self) -> MultiRequestResultWithSkipped[str, str, str]:
         """Perform upload to ingest bucket."""
+
+        # SFTP download writes to primary instance bucket
+        ingest_instance = DirectIngestInstance.PRIMARY
+        ingest_status_manager = DirectIngestInstanceStatusManager(
+            region_code=self.region, ingest_instance=ingest_instance
+        )
+        was_paused = ingest_status_manager.is_instance_paused()
+        try:
+            # We pause and unpause ingest to prevent races where ingest views begin
+            # to generate in the middle of a raw file upload.
+            if not was_paused:
+                ingest_status_manager.pause_instance()
+            upload_result = self._do_upload_inner()
+        finally:
+            if not was_paused:
+                ingest_status_manager.unpause_instance()
+        return upload_result
+
+    def _do_upload_inner(self) -> MultiRequestResultWithSkipped[str, str, str]:
+        """Internal helper for uploading to an ingest bucket. Should be called while
+        ingest is paused.
+        """
         logging.info(
             "Uploading raw files to the %s ingest bucket [%s] for project [%s].",
             self.region,

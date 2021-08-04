@@ -103,9 +103,15 @@ class TestDirectIngestControl(unittest.TestCase):
         self.storage_client_patcher.start()
 
         self.controller_factory_patcher: Any = patch(
-            "recidiviz.ingest.direct.direct_ingest_control.DirectIngestControllerFactory"
+            f"{CONTROL_PACKAGE_NAME}.DirectIngestControllerFactory"
         )
         self.mock_controller_factory = self.controller_factory_patcher.start()
+
+        self.task_manager_patcher = patch(
+            f"{CONTROL_PACKAGE_NAME}.DirectIngestCloudTaskManagerImpl"
+        )
+        self.mock_task_manager = create_autospec(DirectIngestCloudTaskManagerImpl)
+        self.task_manager_patcher.start().return_value = self.mock_task_manager
 
         self.region_code = "us_nd"
         self.primary_bucket = gcsfs_direct_ingest_bucket_for_region(
@@ -989,8 +995,10 @@ class TestDirectIngestControl(unittest.TestCase):
             successes=["test_file1.txt", "test_file2.txt"], failures=[], skipped=[]
         ),
     )
+    @patch("recidiviz.utils.regions.get_region")
     def test_upload_from_sftp(
         self,
+        mock_get_region: mock.MagicMock,
         _mock_upload_controller: mock.MagicMock,
         _mock_download_controller: mock.MagicMock,
         mock_fs_factory: mock.MagicMock,
@@ -1000,6 +1008,14 @@ class TestDirectIngestControl(unittest.TestCase):
     ) -> None:
 
         region_code = "us_xx"
+        fake_regions = {
+            "us_xx": fake_region(region_code="us_xx", environment="staging")
+        }
+
+        mock_get_region.side_effect = (
+            lambda region_code, is_direct_ingest: fake_regions.get(region_code)
+        )
+
         mock_environment.return_value = "staging"
         request_args = {"region": region_code, "date": "2021-01-01"}
         headers = {"X-Appengine-Cron": "test-cron"}
@@ -1018,6 +1034,7 @@ class TestDirectIngestControl(unittest.TestCase):
             "/upload_from_sftp", query_string=request_args, headers=headers
         )
         self.assertEqual(HTTPStatus.OK, response.status_code)
+        self.mock_task_manager.create_direct_ingest_handle_new_files_task.assert_called_once()
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch(
@@ -1505,22 +1522,13 @@ class TestDirectIngestControl(unittest.TestCase):
         )
         self.assertEqual(HTTPStatus.OK, response.status_code)
 
-    @patch.object(
-        DirectIngestCloudTaskManagerImpl,
-        "create_direct_ingest_sftp_download_task",
-        lambda _self, _region: None,
-    )
     @patch("google.cloud.tasks_v2.CloudTasksClient")
-    @patch(
-        "recidiviz.ingest.direct.direct_ingest_cloud_task_manager.DirectIngestCloudTaskManagerImpl"
-    )
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_region")
     def test_handle_sftp_files(
         self,
         mock_get_region: mock.MagicMock,
         mock_environment: mock.MagicMock,
-        mock_cloud_task_manager: mock.MagicMock,
         _mock_cloud_tasks_client: mock.MagicMock,
     ) -> None:
         fake_regions = {
@@ -1531,9 +1539,6 @@ class TestDirectIngestControl(unittest.TestCase):
             lambda region_code, is_direct_ingest: fake_regions.get(region_code)
         )
         mock_environment.return_value = "staging"
-        mock_cloud_task_manager.return_value = create_autospec(
-            DirectIngestCloudTaskManagerImpl
-        )
 
         headers = {"X-Appengine-Cron": "test-cron"}
         request_args = {"region": "us_id"}
@@ -1541,3 +1546,4 @@ class TestDirectIngestControl(unittest.TestCase):
             "/handle_sftp_files", query_string=request_args, headers=headers
         )
         self.assertEqual(200, response.status_code)
+        self.mock_task_manager.create_direct_ingest_sftp_download_task.assert_called_once()
