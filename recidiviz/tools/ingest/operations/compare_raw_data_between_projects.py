@@ -33,7 +33,7 @@ import logging
 import sys
 from typing import Dict, List, Tuple
 
-from google.cloud import bigquery
+from google.cloud import bigquery, exceptions
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
@@ -45,10 +45,10 @@ from recidiviz.utils import environment
 COMPARISON_TEMPLATE = """
 WITH compared AS (
   SELECT {columns}, update_datetime
-  FROM `{staging_project_id}.{raw_data_dataset_id}.{raw_data_table_id}`
+  FROM `{source_project_id}.{raw_data_dataset_id}.{raw_data_table_id}`
   EXCEPT DISTINCT
   SELECT {columns}, update_datetime
-  FROM `{production_project_id}.{raw_data_dataset_id}.{raw_data_table_id}`
+  FROM `{comparison_project_id}.{raw_data_dataset_id}.{raw_data_table_id}`
 )
 SELECT update_datetime, COUNT(*) as num_missing_rows
 FROM compared
@@ -64,8 +64,8 @@ def compare_raw_data_between_projects(
 ) -> List[str]:
     """Compares the raw data between staging and production for a given region."""
     logging.info(
-        "Ensuring all raw data for %s in %s also exists in %s",
-        region_code,
+        "**** Ensuring all raw data for [%s] in [%s] also exists in [%s] ****",
+        region_code.upper(),
         source_project_id,
         comparison_project_id,
     )
@@ -91,8 +91,8 @@ def compare_raw_data_between_projects(
 
         query_job = bq_client.run_query_async(
             query_str=COMPARISON_TEMPLATE.format(
-                staging_project_id=source_project_id,
-                production_project_id=comparison_project_id,
+                source_project_id=source_project_id,
+                comparison_project_id=comparison_project_id,
                 raw_data_dataset_id=dataset_id,
                 raw_data_table_id=file_tag,
                 columns=columns,
@@ -113,9 +113,20 @@ def compare_raw_data_between_projects(
             continue
 
         query_job = query_jobs[file_tag]
-        counts: List[Tuple[datetime.datetime, int]] = [
-            row.values() for row in query_job
-        ]
+        try:
+            rows = query_job.result()
+        except exceptions.NotFound:
+            logging.warning(
+                "%s | Missing table %s.%s.%s",
+                justified_name,
+                comparison_project_id,
+                dataset_id,
+                file_tag,
+            )
+            failed_tables.append(file_tag)
+            continue
+
+        counts: List[Tuple[datetime.datetime, int]] = [row.values() for row in rows]
 
         if counts:
             logging.warning(
