@@ -32,6 +32,8 @@ from recidiviz.calculator.pipeline.utils.violation_response_utils import (
 from recidiviz.calculator.pipeline.utils.violation_utils import (
     filter_violation_responses_for_violation_history,
     sorted_violation_subtypes_by_severity,
+    violation_type_from_subtype,
+    violation_type_subtypes_with_violation_type_mappings,
 )
 from recidiviz.calculator.pipeline.violation.events import (
     ViolationEvent,
@@ -145,7 +147,7 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
             violation_subtypes, violation_delegate
         )
         supported_violation_subtypes = (
-            violation_delegate.violation_type_subtypes_with_violation_type_mappings()
+            violation_type_subtypes_with_violation_type_mappings(violation_delegate)
         )
 
         for index, violation_subtype in enumerate(sorted_violation_subtypes):
@@ -155,8 +157,8 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
                 # StateSupervisionViolationType values on a violation, so we avoid creating events for subtypes
                 # without supported mappings to these values.
                 continue
-            violation_type = violation_delegate.violation_type_from_subtype(
-                violation_subtype
+            violation_type = violation_type_from_subtype(
+                violation_delegate, violation_subtype
             )
             is_most_severe_violation_type = index == 0
             violation_with_response_events.append(

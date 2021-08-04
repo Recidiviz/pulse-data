@@ -94,7 +94,7 @@ def shorthand_description_for_ranked_violation_counts(
         if violation_count:
             # Convert to string shorthand
             ranked_shorthand_counts[
-                violation_delegate.shorthand_for_violation_subtype(subtype)
+                shorthand_for_violation_subtype(violation_delegate, subtype)
             ] = violation_count
 
     descriptions = [
@@ -138,8 +138,8 @@ def identify_most_severe_violation_type_and_subtype(
     most_severe_type = None
 
     if most_severe_subtype:
-        most_severe_type = violation_delegate.violation_type_from_subtype(
-            most_severe_subtype
+        most_severe_type = violation_type_from_subtype(
+            violation_delegate, most_severe_subtype
         )
 
     return most_severe_type, most_severe_subtype
@@ -361,10 +361,71 @@ def sorted_violation_subtypes_by_severity(
     sorted_violation_subtypes = sorted(
         violation_subtypes,
         key=lambda subtype: safe_list_index(
-            violation_delegate.get_violation_subtype_severity_order(),
-            subtype,
-            sys.maxsize,
+            get_violation_subtype_sort_order(violation_delegate), subtype, sys.maxsize
         ),
     )
 
     return sorted_violation_subtypes
+
+
+def violation_type_subtypes_with_violation_type_mappings(
+    violation_delegate: StateSpecificViolationDelegate,
+) -> Set[str]:
+    """Returns the set of violation_type_subtype values that have a defined mapping
+    to a violation_type value.
+
+    Default subtypes with mapping to violation_type values are just the raw values of the
+    StateSupervisionViolationType enum.
+
+    Should be overridden by state-specific implementations if necessary.
+    """
+    return {
+        subtype
+        for _, subtype, _ in violation_delegate.violation_type_and_subtype_shorthand_ordered_map
+    }
+
+
+def get_violation_subtype_sort_order(
+    violation_delegate: StateSpecificViolationDelegate,
+) -> List[str]:
+    """Returns the sort order of violation subtypes by severity. Severity order
+    defined by violation_type_and_subtype_shorthand_ordered_map."""
+    return [
+        subtype
+        for _, subtype, _ in violation_delegate.violation_type_and_subtype_shorthand_ordered_map
+    ]
+
+
+def violation_type_from_subtype(
+    violation_delegate: StateSpecificViolationDelegate, violation_subtype: str
+) -> StateSupervisionViolationType:
+    """Determines which StateSupervisionViolationType corresponds to the
+    |violation_subtype| value, as defined by the
+    violation_type_and_subtype_shorthand_ordered_map"""
+
+    for (
+        violation_type,
+        violation_subtype_value,
+        _,
+    ) in violation_delegate.violation_type_and_subtype_shorthand_ordered_map:
+        if violation_subtype == violation_subtype_value:
+            return violation_type
+
+    raise ValueError(f"Unexpected violation_subtype {violation_subtype}.")
+
+
+def shorthand_for_violation_subtype(
+    violation_delegate: StateSpecificViolationDelegate, violation_subtype: str
+) -> str:
+    """Returns the shorthand string representing the given |violation_subtype| in
+    the given |state_code|, as defined by the
+    violation_type_and_subtype_shorthand_ordered_map."""
+    for (
+        _,
+        violation_subtype_value,
+        subtype_shorthand,
+    ) in violation_delegate.violation_type_and_subtype_shorthand_ordered_map:
+        if violation_subtype == violation_subtype_value:
+            return subtype_shorthand
+
+    raise ValueError(f"Unexpected violation_subtype {violation_subtype}.")
