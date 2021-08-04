@@ -40,7 +40,8 @@ def get_local_secret(secret_name: str) -> Optional[str]:
     """
     if in_development():
         try:
-            return Path(os.path.join(local_path, "gsm", secret_name)).read_text()
+            text = Path(os.path.join(local_path, "gsm", secret_name)).read_text()
+            return text.strip()
         except OSError:
             logging.error("Couldn't locate secret %s", secret_name)
             return None
@@ -60,3 +61,14 @@ def get_local_file(file_path: GcsfsFilePath) -> str:
 
     gcs_fs = GcsfsFactory.build()
     return gcs_fs.download_as_string(file_path)
+
+
+def get_rate_limit_storage_uri() -> str:
+    """ Reads the rate limit redis secrets; returns an in-memory store if they do not exist """
+    host = get_local_secret("case_triage_rate_limiter_redis_host")
+    port = get_local_secret("case_triage_rate_limiter_redis_port")
+
+    if host and port:
+        return f"redis://{host}:{port}"
+
+    return "memory://"
