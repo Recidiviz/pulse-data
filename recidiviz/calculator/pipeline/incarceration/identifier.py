@@ -58,7 +58,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     get_state_specific_commitment_from_supervision_delegate,
     get_state_specific_supervising_officer_and_location_info_function,
     get_state_specific_violation_delegate,
-    include_decisions_on_follow_up_responses_for_most_severe_response,
     state_specific_violation_response_pre_processing_function,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
@@ -623,8 +622,8 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
         responses_for_decision_evaluation = violation_responses_for_history
 
-        if include_decisions_on_follow_up_responses_for_most_severe_response(
-            incarceration_period.state_code
+        if (
+            violation_delegate.include_decisions_on_follow_up_responses_for_most_severe_response()
         ):
             # Get a new state-specific list of violation responses that includes follow-up
             # responses
