@@ -21,6 +21,8 @@ from typing import Dict
 
 import sentry_sdk
 from flask import Flask, Response, g, send_from_directory, session
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
 from sentry_sdk.integrations.flask import FlaskIntegration
 
@@ -36,7 +38,7 @@ from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.exceptions import CaseTriageAuthorizationError
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
 from recidiviz.case_triage.user_context import UserContext
-from recidiviz.case_triage.util import get_local_secret
+from recidiviz.case_triage.util import get_local_secret, get_rate_limit_storage_uri
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -73,6 +75,14 @@ app = Flask(__name__, static_folder=static_folder)
 app.secret_key = get_local_secret("case_triage_secret_key")
 CSRFProtect(app).exempt(e2e_blueprint)
 register_error_handlers(app)
+
+
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=["15 per second"],
+    storage_uri=get_rate_limit_storage_uri(),
+)
 
 if in_development():
     db_url = local_postgres_helpers.postgres_db_url_from_env_vars()
