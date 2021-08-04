@@ -159,20 +159,6 @@ def investigation_periods_in_supervision_population(_state_code: str) -> bool:
     return False
 
 
-def include_decisions_on_follow_up_responses_for_most_severe_response(
-    state_code: str,
-) -> bool:
-    """Some StateSupervisionViolationResponses are a 'follow-up' type of response, which is a state-defined response
-    that is related to a previously submitted response. This returns whether or not the decision entries on
-    follow-up responses should be considered in the calculation of the most severe response decision.
-        - US_ID: False
-        - US_MO: True
-        - US_ND: False
-        - US_PA: False
-    """
-    return state_code.upper() == "US_MO"
-
-
 def second_assessment_on_supervision_is_more_reliable(_state_code: str) -> bool:
     """Some states rely on the first-reassessment (the second assessment) instead of the first assessment when comparing
     terminating assessment scores to a score at the beginning of someone's supervision.

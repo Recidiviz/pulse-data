@@ -203,6 +203,13 @@ class UsMoViolationDelegate(StateSpecificViolationDelegate):
 
         raise ValueError(f"Unexpected violation_subtype {violation_subtype} for US_MO.")
 
+    def include_decisions_on_follow_up_responses_for_most_severe_response(self) -> bool:
+        """Some StateSupervisionViolationResponses are a 'follow-up' type of response, which is a state-defined response
+        that is related to a previously submitted response. This returns whether or not the decision entries on
+        follow-up responses should be considered in the calculation of the most severe response decision. For MO, follow-up
+        responses should be considered."""
+        return True
+
 
 def _get_violation_report_subtype_should_be_included_in_calculations(
     response_subtype: Optional[str], include_follow_up_responses: bool
