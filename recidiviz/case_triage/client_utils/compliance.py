@@ -67,8 +67,10 @@ def get_next_assessment_date(client: ETLClient) -> Optional[date]:
             days=NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
         )
     if client.case_type == StateSupervisionCaseType.SEX_OFFENSE.value:
-        if client.assessment_score < SEX_OFFENSE_LSIR_MINIMUM_SCORE.get(
-            Gender(client.gender), 0
+        if (
+            client.gender is not None
+            and client.assessment_score
+            < SEX_OFFENSE_LSIR_MINIMUM_SCORE.get(Gender(client.gender), 0)
         ):
             return None
     if StateSupervisionLevel(client.supervision_level) == StateSupervisionLevel.MINIMUM:
