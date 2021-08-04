@@ -22,6 +22,7 @@ from typing import Dict, List, Optional
 import attr
 import mock
 import pytest
+import sqlalchemy
 from freezegun import freeze_time
 from google.cloud.bigquery import ScalarQueryParameter
 from mock import Mock, patch
@@ -294,6 +295,23 @@ class _ViewCollector(BigQueryViewCollector[_FakeDirectIngestViewBuilder]):
         ]
 
         return builders
+
+
+@attr.s
+class _IngestFileMetadata:
+    file_tag: str = attr.ib()
+    datetimes_contained_lower_bound_exclusive: datetime.datetime = attr.ib()
+    datetimes_contained_upper_bound_inclusive: datetime.datetime = attr.ib()
+    job_creation_time: datetime.datetime = attr.ib()
+    export_time: Optional[datetime.datetime] = attr.ib()
+
+
+@attr.s
+class _RawFileMetadata:
+    file_tag: str = attr.ib()
+    datetimes_contained_upper_bound_inclusive: datetime.datetime = attr.ib()
+    discovery_time: datetime.datetime = attr.ib()
+    processed_time: datetime.datetime = attr.ib()
 
 
 class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
@@ -1307,3 +1325,125 @@ ORDER BY colA, colC;"""
         self.assertEqual(expected_debug_query, debug_query)
 
         self.mock_client.create_dataset_if_necessary.assert_not_called()
+
+    def test_ingest_view_export_job_created_between_raw_file_discoveries_with_same_datetime(
+        self,
+    ) -> None:
+        """Exhibits behavior in a scenario where a set of identically dated raw files
+        are slow to upload and an ingest view task gets generated between two uploads
+        for raw file dependencies of this view. All timestamps are generated from
+        real-world crash.
+
+        It is not the responsibility of the export manager to handle this scenario -
+        instead, users of the export manager must take measures to ensure that we don't
+        attempt to schedule ingest view export jobs while a batch raw data import is
+        in progress.
+        """
+        ingest_view_name = "ingest_view"
+        file_tag_1 = "file_tag_first"
+        file_tag_2 = "tagFullHistoricalExport"
+
+        raw_file_datetimes = [
+            # <Assume there are also raw files from 2021-07-24 (the day before here)>
+            # This raw file was discovered at the same time, but uploaded 10 min earlier
+            _RawFileMetadata(
+                file_tag=file_tag_1,
+                datetimes_contained_upper_bound_inclusive=datetime.datetime.fromisoformat(
+                    "2021-07-25 09:02:24"
+                ),
+                discovery_time=datetime.datetime.fromisoformat(
+                    "2021-07-25 09:29:33.690766"
+                ),
+                processed_time=datetime.datetime.fromisoformat(
+                    "2021-07-25 09:31:17.856534"
+                ),
+            ),
+            # This raw file took 10 extra minutes to upload and is also a dependency of
+            # movement_facility_location_offstat_incarceration_periods
+            _RawFileMetadata(
+                file_tag=file_tag_2,
+                datetimes_contained_upper_bound_inclusive=datetime.datetime.fromisoformat(
+                    "2021-07-25 09:02:24"
+                ),
+                discovery_time=datetime.datetime.fromisoformat(
+                    "2021-07-25 09:29:37.095288"
+                ),
+                processed_time=datetime.datetime.fromisoformat(
+                    "2021-07-25 09:41:15.265905"
+                ),
+            ),
+        ]
+
+        ingest_file_metadata = [
+            # This job was created between discovery of files 1 and 2, task was likely queued immediately.
+            _IngestFileMetadata(
+                file_tag=ingest_view_name,
+                datetimes_contained_lower_bound_exclusive=datetime.datetime.fromisoformat(
+                    "2021-07-24 09:02:44"
+                ),
+                datetimes_contained_upper_bound_inclusive=datetime.datetime.fromisoformat(
+                    "2021-07-25 09:02:24"
+                ),
+                job_creation_time=datetime.datetime.fromisoformat(
+                    "2021-07-25 09:29:35.195456"
+                ),
+                # Also crashes if export time is set
+                export_time=None,
+            ),
+        ]
+
+        with self.assertRaisesRegex(
+            sqlalchemy.exc.IntegrityError,
+            "CHECK constraint failed: datetimes_contained_ordering",
+        ):
+            self.run_get_args_test(
+                ingest_view_name=ingest_view_name,
+                committed_raw_file_metadata=raw_file_datetimes,
+                committed_ingest_file_metadata=ingest_file_metadata,
+            )
+
+    def run_get_args_test(
+        self,
+        ingest_view_name: str,
+        committed_raw_file_metadata: List[_RawFileMetadata],
+        committed_ingest_file_metadata: List[_IngestFileMetadata],
+    ) -> List[GcsfsIngestViewExportArgs]:
+        """Runs test to generate ingest view export args given provided DB state."""
+        region = self.create_fake_region()
+        export_manager = self.create_export_manager(region)
+
+        with SessionFactory.using_database(self.database_key) as session:
+            for i, ingest_file_datetimes in enumerate(committed_ingest_file_metadata):
+                metadata = schema.DirectIngestIngestFileMetadata(
+                    file_id=i,
+                    region_code=region.region_code.upper(),
+                    ingest_database_name=self.ingest_database_name,
+                    file_tag=ingest_view_name,
+                    normalized_file_name=f"{ingest_view_name}_{i}",
+                    is_invalidated=False,
+                    is_file_split=False,
+                    datetimes_contained_lower_bound_exclusive=ingest_file_datetimes.datetimes_contained_lower_bound_exclusive,
+                    datetimes_contained_upper_bound_inclusive=ingest_file_datetimes.datetimes_contained_upper_bound_inclusive,
+                    job_creation_time=ingest_file_datetimes.job_creation_time,
+                    export_time=ingest_file_datetimes.export_time,
+                )
+                session.add(metadata)
+
+        with SessionFactory.using_database(self.database_key) as session:
+            for i, raw_file_datetimes_item in enumerate(committed_raw_file_metadata):
+                raw_file_metadata = schema.DirectIngestRawFileMetadata(
+                    file_id=i,
+                    region_code=region.region_code.upper(),
+                    file_tag=raw_file_datetimes_item.file_tag,
+                    normalized_file_name=f"{raw_file_datetimes_item.file_tag}_{i}_raw",
+                    datetimes_contained_upper_bound_inclusive=raw_file_datetimes_item.datetimes_contained_upper_bound_inclusive,
+                    discovery_time=raw_file_datetimes_item.discovery_time,
+                    processed_time=raw_file_datetimes_item.processed_time,
+                )
+                session.add(raw_file_metadata)
+
+        # Act
+        with freeze_time(_DATE_4.isoformat()):
+            args = export_manager.get_ingest_view_export_task_args()
+
+        return args
