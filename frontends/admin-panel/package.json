@@ -16,7 +16,7 @@
     "react-scripts": "4.0.3"
   },
   "scripts": {
-    "dev": "react-scripts start",
+    "dev": "PORT=3030 react-scripts start",
     "build": "react-scripts build",
     "lint": "tsc && eslint '**/*.{js,ts,tsx}'",
     "test": "react-scripts test",
@@ -29,7 +29,7 @@
     "not op_mini all"
   ],
   "homepage": "/admin",
-  "proxy": "http://localhost:5000",
+  "proxy": "http://localhost:5050",
   "devDependencies": {
     "@recidiviz/eslint-config": "^1.0.0",
     "@recidiviz/tsconfig": "^1.0.0",
