@@ -73,15 +73,18 @@ latest_assessments AS (
     score_end_date IS NULL
 ),
 latest_contacts AS (
+  -- TODO(#8603): Once this table stops having duplicates, we can likely remove these MAXes.
   SELECT
     person_id,
     state_code,
+    MAX(next_recommended_assessment_date) AS next_recommended_assessment_date,
     MAX(most_recent_face_to_face_date) AS most_recent_face_to_face_date,
     MAX(most_recent_home_visit_date) AS most_recent_home_visit_date
   FROM
     `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics_materialized`
   WHERE
     person_external_id IS NOT NULL
+    AND date_of_evaluation = CURRENT_DATE
   GROUP BY person_id, state_code
 ),
 latest_employment AS (
@@ -217,6 +220,7 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "employer",
         "last_known_date_of_employment",
         "most_recent_assessment_date",
+        "next_recommended_assessment_date",
         "assessment_score",
         "most_recent_face_to_face_date",
         "most_recent_home_visit_date",

@@ -92,6 +92,7 @@ class ETLClient(CaseTriageBase, ETLDerivedEntity):
     employer = Column(String(255))
     last_known_date_of_employment = Column(Date)
     most_recent_assessment_date = Column(Date)
+    next_recommended_assessment_date = Column(Date)
     assessment_score = Column(Integer)
     most_recent_face_to_face_date = Column(Date)
     most_recent_home_visit_date = Column(Date)
@@ -184,6 +185,9 @@ class ETLClient(CaseTriageBase, ETLDerivedEntity):
             ),
             "most_recent_assessment_date": _get_json_field_as_date(
                 json_client, "most_recent_assessment_date"
+            ),
+            "next_recommended_assessment_date": _get_json_field_as_date(
+                json_client, "next_recommended_assessment_date"
             ),
             "assessment_score": json_client.get("assessment_score"),
             "most_recent_face_to_face_date": _get_json_field_as_date(
