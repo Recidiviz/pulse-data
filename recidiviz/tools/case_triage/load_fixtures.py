@@ -19,8 +19,8 @@
 """
 Tool for loading fixture data into our Case Triage instance
 
-This script should be run only after `docker-compose -f docker-compose.case-triage.yaml up`
-has been run. This will delete everything from the etl_* tables and then re-add them from the
+This script should be run only after `docker-compose up` has been run.
+This will delete everything from the etl_* tables and then re-add them from the
 fixture files.
 
 Usage against default database:
