@@ -22,7 +22,6 @@ from typing import List
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violations_delegate import (
     _LAW_CITATION_SUBTYPE_STR,
     _LAW_CONDITION_STR,
-    _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -80,16 +79,3 @@ def _normalize_violations_on_responses(
                 condition_entry.condition = _LAW_CITATION_SUBTYPE_STR
 
     return response
-
-
-def us_mo_shorthand_for_violation_subtype(violation_subtype: str) -> str:
-    """Returns the shorthand string corresponding to the |violation_subtype| value."""
-    for (
-        _,
-        violation_subtype_value,
-        subtype_shorthand,
-    ) in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP:
-        if violation_subtype == violation_subtype_value:
-            return subtype_shorthand
-
-    raise ValueError(f"Unexpected violation_subtype {violation_subtype} for US_MO.")
