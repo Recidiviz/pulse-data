@@ -89,7 +89,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_uti
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_violations_delegate import (
     UsNdViolationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_pa import us_pa_violation_utils
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_commitment_from_supervision_delegate import (
     UsPaCommitmentFromSupervisionDelegate,
 )
@@ -533,25 +532,6 @@ def get_state_specific_supervising_officer_and_location_info_function(
         return us_pa_get_supervising_officer_and_location_info_from_supervision_period
 
     return default_get_state_specific_supervising_officer_and_location_info_function
-
-
-def shorthand_for_violation_subtype(state_code: str, violation_subtype: str) -> str:
-    """Returns the shorthand string representing the given |violation_subtype| in the given |state_code|. If no
-    state-specific logic is implemented, returns a lowercase version of the |violation_subtype| string."""
-    if state_code.upper() == "US_MO":
-        return us_mo_violation_utils.us_mo_shorthand_for_violation_subtype(
-            violation_subtype
-        )
-    if state_code.upper() == "US_PA":
-        return us_pa_violation_utils.us_pa_shorthand_for_violation_subtype(
-            violation_subtype
-        )
-
-    logging.warning(
-        "No state-specific violation subtype shorthand implementation for state [%s]",
-        state_code,
-    )
-    return violation_subtype.lower()
 
 
 def state_specific_supervision_admission_reason_override(

@@ -21,9 +21,6 @@ from typing import List
 
 import pytest
 
-from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils import (
-    us_mo_shorthand_for_violation_subtype,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violations_delegate import (
     _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES,
     _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP,
@@ -462,7 +459,7 @@ class TestUsMoViolationUtilsSubtypeFunctions(unittest.TestCase):
         # Assert that all of the StateSupervisionViolationType values are supported
         for violation_type in StateSupervisionViolationType:
             if violation_type.value not in _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES:
-                _ = us_mo_shorthand_for_violation_subtype(violation_type.value)
+                _ = self.delegate.shorthand_for_violation_subtype(violation_type.value)
 
     def test_violationTypeAndSubtypeShorthandMap_isComplete(self) -> None:
         all_types_subtypes = [

@@ -111,3 +111,9 @@ class StateSpecificViolationDelegate(abc.ABC):
                 return violation_type
 
         raise ValueError(f"Unexpected violation_subtype {violation_subtype}.")
+
+    def shorthand_for_violation_subtype(self, violation_subtype: str) -> str:
+        """Returns the shorthand string representing the given |violation_subtype| in the given |state_code|. Default
+        behavior is to return a lowercase version of the |violation_subtype| string."""
+
+        return violation_subtype.lower()
