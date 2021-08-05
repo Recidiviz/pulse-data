@@ -17,7 +17,10 @@
 
 """County-level dataset configuration."""
 
-VIEWS_DATASET: str = "census_views"
+VIEWS_DATASET: str = "census_managed_views"
+
+# Views that are not deployed as part of the normal deploy process
+UNMANAGED_VIEWS_DATASET: str = "census_views_unmanaged"
 
 # Transitional dataset in the same region (e.g. us-east1) as the Jails CloudSQL
 # instance where Jails CloudSQL data is stored before the CloudSQL -> BQ refresh

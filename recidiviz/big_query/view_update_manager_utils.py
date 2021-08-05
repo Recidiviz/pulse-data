@@ -30,7 +30,7 @@ from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 DATASETS_THAT_HAVE_EVER_BEEN_MANAGED = {
     "analyst_data",
     "case_triage",
-    "census_views",
+    "census_managed_views",
     "covid_public_data",
     "dashboard_views",
     "dataflow_metrics_materialized",

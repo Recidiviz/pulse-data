@@ -17,6 +17,7 @@
 """Single count data used for stitch"""
 
 import os
+
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -32,7 +33,7 @@ with open(os.path.splitext(__file__)[0] + ".sql") as fp:
     _QUERY_TEMPLATE = fp.read()
 
 SINGLE_COUNT_STITCH_SUBSET_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.VIEWS_DATASET,
+    dataset_id=dataset_config.UNMANAGED_VIEWS_DATASET,
     view_id="single_count_stitch_subset",
     view_query_template=_QUERY_TEMPLATE,
     base_dataset=dataset_config.COUNTY_BASE_DATASET,
