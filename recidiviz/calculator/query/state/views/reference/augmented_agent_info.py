@@ -14,13 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
 """Table for augmenting agent information that has been ingested into the state_agent table with state-specific info
 in static tables.
 """
-
-# pylint: disable=trailing-whitespace
-
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -37,33 +33,49 @@ AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = """
     /*{description}*/
     WITH
     agents_base AS (
-      SELECT 
-        agent_id, 
-        state_code, 
-        agent_type, 
-        external_id, 
+      SELECT
+        state_code,
+        agent_type,
+        external_id,
         REPLACE(JSON_EXTRACT(full_name, '$.full_name'), '"', '')  AS full_name,
         REPLACE(JSON_EXTRACT(full_name, '$.given_names'), '"', '')  AS given_names,
-        REPLACE(JSON_EXTRACT(full_name, '$.surname'), '"', '') AS surname
+        REPLACE(JSON_EXTRACT(full_name, '$.surname'), '"', '') AS surname,
+        -- TODO(#5445): We are currently shoving in a hack to pick one possible name for the agent.
+        -- We should come up with a smarter way to have a single name for the agent.
+        ROW_NUMBER() OVER (PARTITION BY state_code, agent_type, external_id ORDER BY CHAR_LENGTH(full_name) DESC NULLS LAST) AS rn
       FROM `{project_id}.{base_dataset}.state_agent` agent
     ),
-    agents AS (
-        SELECT 
-          agent_id, 
-          state_code, 
-          agent_type, 
+    agent_names AS (
+        SELECT
+          state_code,
+          agent_type,
           external_id,
-          CASE 
+          CASE
             -- TODO(#4159) Remove this state-specific logic once we have given and surnames set in ingest --
             WHEN state_code IN ('US_ID', 'US_PA') THEN TRIM(SPLIT(full_name, ',')[SAFE_OFFSET(1)])
             ELSE given_names
           END AS given_names,
-          CASE 
+          CASE
             -- TODO(#4159) Remove this state-specific logic once we have given and surnames set in ingest --
             WHEN state_code IN ('US_ID', 'US_PA') THEN TRIM(SPLIT(full_name, ',')[SAFE_OFFSET(0)])
             ELSE surname
-          END AS surname, 
+          END AS surname,
+          full_name
         FROM agents_base
+        WHERE rn = 1
+    ),
+    agents AS (
+      SELECT
+        agent_id,
+        state_code,
+        agent_type,
+        external_id,
+        given_names,
+        surname,
+        agent_names.full_name
+      FROM `{project_id}.{base_dataset}.state_agent`
+      INNER JOIN agent_names
+      USING (state_code, agent_type, external_id)
     )
     SELECT
       *,
@@ -72,8 +84,8 @@ AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = """
            WHEN agents.external_id IS NOT NULL AND COALESCE(agents.given_names, agents.surname) IS NOT NULL
            THEN CONCAT(agents.external_id, ': ', COALESCE(agents.given_names, ''), ' ', COALESCE(agents.surname, ''))
            WHEN agents.external_id IS NOT NULL THEN agents.external_id
-           ELSE ARRAY_TO_STRING((SELECT ARRAY_AGG(col ORDER BY col DESC) 
-                FROM UNNEST([agents.given_names, agents.surname]) AS col 
+           ELSE ARRAY_TO_STRING((SELECT ARRAY_AGG(col ORDER BY col DESC)
+                FROM UNNEST([agents.given_names, agents.surname]) AS col
                 WHERE NOT col IS NULL)
                 , '')
            END
