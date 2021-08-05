@@ -82,6 +82,7 @@ export interface ClientData {
   currentAddress: string;
   fullName: ClientFullName;
   employer?: string;
+  employmentStartDate: APIDate;
   gender: Gender;
   supervisionStartDate: APIDate;
   projectedEndDate: APIDate;
@@ -91,6 +92,7 @@ export interface ClientData {
   mostRecentFaceToFaceDate: APIDate;
   mostRecentHomeVisitDate: APIDate;
   mostRecentAssessmentDate: APIDate;
+  mostRecentViolationDate: APIDate;
   emailAddress?: string;
   phoneNumber: null | string;
   needsMet: NeedsMet;
@@ -120,6 +122,21 @@ const formatCutoffs = ([min, max]: ScoreMinMax) => {
 };
 
 /**
+ * Only returns a value if the elapsed time exceeds the 3-month threshold
+ * to be considered a "milestone". Result will be a string in the form, e.g, "X months"
+ */
+const calculateMilestone = (startDate: moment.Moment | null) => {
+  if (!startDate) return undefined;
+
+  // the threshold is 3 months without rounding
+  const monthsSinceStart = Math.abs(startDate.diff(new Date(), "months") || 0);
+  // but for formatting, defer to moment's "natural" style
+  return monthsSinceStart >= 3
+    ? `${startDate.from(moment().startOf("day"), true)}`
+    : undefined;
+};
+
+/**
  * Data model representing a single client. To instantiate, it is recommended
  * to use the static `build` method.
  */
@@ -140,6 +157,8 @@ export class Client {
 
   employer?: string;
 
+  employmentStartDate: moment.Moment | null;
+
   formalName: string;
 
   fullName: ClientFullName;
@@ -151,6 +170,8 @@ export class Client {
   mostRecentFaceToFaceDate: moment.Moment | null;
 
   mostRecentHomeVisitDate: moment.Moment | null;
+
+  mostRecentViolationDate: moment.Moment | null;
 
   name: string;
 
@@ -255,6 +276,10 @@ export class Client {
     this.nextFaceToFaceDate = parseDate(clientData.nextFaceToFaceDate);
     this.nextHomeVisitDate = parseDate(clientData.nextHomeVisitDate);
     this.nextAssessmentDate = parseDate(clientData.nextAssessmentDate);
+    this.employmentStartDate = parseDate(clientData.employmentStartDate);
+    this.mostRecentViolationDate = parseDate(
+      clientData.mostRecentViolationDate
+    );
   }
 
   static build({
@@ -501,5 +526,18 @@ export class Client {
           "Failed to update SSI/Disability income"
         );
       });
+  }
+
+  get milestones(): {
+    employment?: string;
+    violationFree?: string;
+  } {
+    const employment = calculateMilestone(this.employmentStartDate);
+
+    const violationFree = calculateMilestone(
+      this.mostRecentViolationDate || this.supervisionStartDate
+    );
+
+    return { employment, violationFree };
   }
 }

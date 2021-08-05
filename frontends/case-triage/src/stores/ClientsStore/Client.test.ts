@@ -220,3 +220,45 @@ test("no active opportunities", () => {
   };
   expect(testClient.activeOpportunities.length).toBe(0);
 });
+
+test("employment milestone", () => {
+  MockDate.set("2021-04-15");
+  testClient.employmentStartDate = moment(new Date(2021, 0, 4));
+
+  expect(testClient.milestones.employment).toBe("3 months");
+
+  testClient.employmentStartDate.subtract(6, "months");
+  expect(testClient.milestones.employment).toBe("9 months");
+});
+
+test("no employment milestone", () => {
+  MockDate.set("2021-04-01");
+
+  expect(testClient.milestones.employment).toBeUndefined();
+
+  // less than 3 months
+  testClient.employmentStartDate = moment(new Date(2021, 2, 12));
+  expect(testClient.milestones.employment).toBeUndefined();
+});
+
+test("violation milestone", () => {
+  MockDate.set("2021-04-15");
+
+  // in the absence of a violation, the milestone is relative to supervision start
+  expect(testClient.milestones.violationFree).toBe("a year");
+
+  testClient.mostRecentViolationDate = moment(new Date(2021, 0, 4));
+
+  expect(testClient.milestones.violationFree).toBe("3 months");
+
+  testClient.mostRecentViolationDate.subtract(6, "months");
+  expect(testClient.milestones.violationFree).toBe("9 months");
+});
+
+test("no violation milestone", () => {
+  MockDate.set("2021-04-01");
+
+  // less than 3 months
+  testClient.mostRecentViolationDate = moment(new Date(2021, 2, 12));
+  expect(testClient.milestones.violationFree).toBeUndefined();
+});

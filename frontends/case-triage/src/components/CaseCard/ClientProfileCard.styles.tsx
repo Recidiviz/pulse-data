@@ -16,19 +16,31 @@ export const ClientName = styled(H3)`
   margin-bottom: 0;
 `;
 
+export const DetailsLineItem = styled.div`
+  margin-bottom: ${rem(spacing.xs)};
+`;
+
+export const SummaryLineItem = styled(DetailsLineItem)`
+  display: -ms-grid;
+  display: grid;
+  -ms-grid-columns: ${rem(24)} 1fr;
+  grid-template-columns: ${rem(24)} 1fr;
+`;
+
 export const SummaryIcon = styled(Icon).attrs({
   color: palette.slate30,
   size: 16,
 })`
-  margin-right: ${rem(spacing.sm)};
-  vertical-align: middle;
+  -ms-grid-column: 1;
+  grid-column: 1;
+  /* slight vertical offset to approximate baseline alignment */
+  margin-top: ${rem(2)};
 `;
 
-export const Summary = styled.span`
+export const Summary = styled.div`
   font-size: ${rem(14)};
-`;
-export const DetailsLineItem = styled.div`
-  margin-bottom: ${rem(spacing.xs)};
+  -ms-grid-column: 2;
+  grid-column: 2;
 `;
 
 export const DetailsPanelHeading = styled.div`

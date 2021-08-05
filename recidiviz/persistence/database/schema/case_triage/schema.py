@@ -90,6 +90,7 @@ class ETLClient(CaseTriageBase, ETLDerivedEntity):
     case_type = Column(String(255), nullable=False)
     supervision_level = Column(String(255), nullable=False)
     employer = Column(String(255))
+    employment_start_date = Column(Date)
     last_known_date_of_employment = Column(Date)
     most_recent_assessment_date = Column(Date)
     next_recommended_assessment_date = Column(Date)
@@ -100,6 +101,7 @@ class ETLClient(CaseTriageBase, ETLDerivedEntity):
     days_on_current_supervision_level = Column(Integer)
     email_address = Column(Text)
     phone_number = Column(Text)
+    most_recent_violation_date = Column(Date)
 
     case_updates = relationship(
         "CaseUpdate",
@@ -180,6 +182,9 @@ class ETLClient(CaseTriageBase, ETLDerivedEntity):
             "case_type": json_client["case_type"],
             "supervision_level": json_client["supervision_level"],
             "employer": json_client.get("employer"),
+            "employment_start_date": _get_json_field_as_date(
+                json_client, "employment_start_date"
+            ),
             "last_known_date_of_employment": _get_json_field_as_date(
                 json_client, "last_known_date_of_employment"
             ),
@@ -195,6 +200,9 @@ class ETLClient(CaseTriageBase, ETLDerivedEntity):
             ),
             "most_recent_home_visit_date": _get_json_field_as_date(
                 json_client, "most_recent_home_visit_date"
+            ),
+            "most_recent_violation_date": _get_json_field_as_date(
+                json_client, "most_recent_violation_date"
             ),
             "days_with_current_po": json_client.get("days_with_current_po"),
             "email_address": json_client.get("email_address"),

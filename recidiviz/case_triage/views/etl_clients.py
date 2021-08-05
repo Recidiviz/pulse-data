@@ -93,6 +93,7 @@ latest_employment AS (
             employment_periods.state_code,
             employment_periods.person_external_id,
             employment_periods.employer,
+            recorded_start_date AS employment_start_date,
             ROW_NUMBER() over (PARTITION BY person_external_id ORDER BY recorded_start_date DESC) as row_num
          FROM
             `{project_id}.{case_triage_dataset}.employment_periods_materialized` employment_periods
@@ -111,6 +112,17 @@ latest_periods AS (
   WHERE
     termination_date IS NULL
     AND admission_reason != 'ABSCONSION'
+),
+most_recent_violations AS (
+  SELECT 
+    person_id,
+    state_code,
+    MAX(response_date) as most_recent_violation_date
+  FROM 
+    `{project_id}.{materialized_metrics_dataset}.most_recent_violation_with_response_metrics_materialized`
+  GROUP BY 
+    person_id, 
+    state_code
 ),
 export_time AS (
   SELECT CURRENT_TIMESTAMP AS exported_at
@@ -151,6 +163,9 @@ LEFT JOIN
 USING (person_id, state_code)
 LEFT JOIN
   days_on_supervision_level
+USING (person_id, state_code)
+LEFT JOIN
+  most_recent_violations
 USING (person_id, state_code)
 FULL OUTER JOIN
   export_time
@@ -218,6 +233,7 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "case_type",
         "supervision_level",
         "employer",
+        "employment_start_date",
         "last_known_date_of_employment",
         "most_recent_assessment_date",
         "next_recommended_assessment_date",
@@ -226,6 +242,7 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "most_recent_home_visit_date",
         "days_with_current_po",
         "days_on_current_supervision_level",
+        "most_recent_violation_date",
         "exported_at",
         # TODO(#5943): supervising_officer_external_id must be at the end of
         # this list because of the way that we have to derive this result from
