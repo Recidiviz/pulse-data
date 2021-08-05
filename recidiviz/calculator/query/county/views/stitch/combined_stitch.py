@@ -56,10 +56,10 @@ SELECT * FROM `{project_id}.{views_dataset}.{incarceration_trends_aggregate}`
 """
 
 COMBINED_STITCH_VIEW_BUILDER: SimpleBigQueryViewBuilder = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.VIEWS_DATASET,
+    dataset_id=dataset_config.UNMANAGED_VIEWS_DATASET,
     view_id="combined_stitch",
     view_query_template=_QUERY_TEMPLATE,
-    views_dataset=dataset_config.VIEWS_DATASET,
+    views_dataset=dataset_config.UNMANAGED_VIEWS_DATASET,
     interpolated_state_aggregate=STATE_AGGREGATE_STITCH_SUBSET_VIEW_BUILDER.view_id,
     single_count_aggregate=SINGLE_COUNT_STITCH_SUBSET_VIEW_BUILDER.view_id,
     scraper_data_aggregated=SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW_BUILDER.view_id,

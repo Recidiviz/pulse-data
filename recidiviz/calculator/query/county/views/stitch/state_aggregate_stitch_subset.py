@@ -82,10 +82,10 @@ FROM
 """
 
 STATE_AGGREGATE_STITCH_SUBSET_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.VIEWS_DATASET,
+    dataset_id=dataset_config.UNMANAGED_VIEWS_DATASET,
     view_id="state_aggregate_stitch_subset",
     view_query_template=_QUERY_TEMPLATE,
-    views_dataset=dataset_config.VIEWS_DATASET,
+    views_dataset=dataset_config.UNMANAGED_VIEWS_DATASET,
     combined_state_aggregates=state_aggregate_collapsed_to_fips.STATE_AGGREGATES_COLLAPSED_TO_FIPS_BUILDER.view_id,
     description=_DESCRIPTION,
 )

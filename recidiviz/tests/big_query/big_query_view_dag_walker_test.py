@@ -1152,7 +1152,8 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         known_empty_parent_view_addresss = {
             # These views unnest data from a static list
             BigQueryAddress(
-                dataset_id="census_views", table_id="charge_class_severity_ranks"
+                dataset_id="census_managed_views",
+                table_id="charge_class_severity_ranks",
             ),
             BigQueryAddress(
                 dataset_id="analyst_data",
