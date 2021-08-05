@@ -19,8 +19,8 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.county import dataset_config
 from recidiviz.calculator.query.county.views.vera.vera_view_constants import (
-    VERA_DATASET,
     INCARCERATION_TRENDS_TABLE,
+    VERA_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -81,7 +81,7 @@ FROM
 """
 
 INCARCERATION_TRENDS_STITCH_SUBSET_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.VIEWS_DATASET,
+    dataset_id=dataset_config.UNMANAGED_VIEWS_DATASET,
     view_id="incarceration_trends_stitch_subset",
     view_query_template=_QUERY_TEMPLATE,
     vera_dataset=VERA_DATASET,

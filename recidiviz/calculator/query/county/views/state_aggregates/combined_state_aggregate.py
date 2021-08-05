@@ -62,7 +62,7 @@ to a shared column_name."""
 # the same level (eg. jurisdiction level via jurisdiction_id).
 COMBINED_STATE_AGGREGATE_VIEW_BUILDER: SimpleBigQueryViewBuilder = (
     SimpleBigQueryViewBuilder(
-        dataset_id=dataset_config.VIEWS_DATASET,
+        dataset_id=dataset_config.UNMANAGED_VIEWS_DATASET,
         view_id="combined_state_aggregates",
         description=COMBINED_STATE_AGGREGATE_DESCRIPTION,
         view_query_template=_BQ_UNIONED_STATEMENT_QUERY_TEMPLATE,

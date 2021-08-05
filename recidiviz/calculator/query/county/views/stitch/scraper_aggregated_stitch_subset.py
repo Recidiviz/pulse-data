@@ -74,10 +74,10 @@ GROUP BY fips, RaceGender.day
 """
 
 SCRAPER_AGGREGATED_STITCH_SUBSET_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.VIEWS_DATASET,
+    dataset_id=dataset_config.UNMANAGED_VIEWS_DATASET,
     view_id="scraper_aggregated_stitch_subset",
     view_query_template=_QUERY_TEMPLATE,
-    views_dataset=dataset_config.VIEWS_DATASET,
+    views_dataset=dataset_config.UNMANAGED_VIEWS_DATASET,
     population_admissions_releases_race_gender=population_admissions_releases.POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_VIEW_BUILDER.view_id,
     description=_DESCRIPTION,
 )

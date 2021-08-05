@@ -98,10 +98,10 @@ GROUP BY
 
 STATE_AGGREGATES_COLLAPSED_TO_FIPS_BUILDER: SimpleBigQueryViewBuilder = (
     SimpleBigQueryViewBuilder(
-        dataset_id=dataset_config.VIEWS_DATASET,
+        dataset_id=dataset_config.UNMANAGED_VIEWS_DATASET,
         view_id="state_aggregates_collapsed_to_fips",
         view_query_template=_QUERY_TEMPLATE,
-        views_dataset=dataset_config.VIEWS_DATASET,
+        views_dataset=dataset_config.UNMANAGED_VIEWS_DATASET,
         combined_state_aggregates=COMBINED_STATE_AGGREGATE_VIEW_BUILDER.view_id,
         description=_DESCRIPTION,
     )

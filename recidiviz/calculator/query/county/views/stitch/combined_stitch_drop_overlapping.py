@@ -136,7 +136,7 @@ WHERE
 """
 
 COMBINED_STITCH_DROP_OVERLAPPING_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.VIEWS_DATASET,
+    dataset_id=dataset_config.UNMANAGED_VIEWS_DATASET,
     view_id="combined_stitch_drop_overlapping",
     view_query_template=_QUERY_TEMPLATE,
     views_dataset=dataset_config.VIEWS_DATASET,

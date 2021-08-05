@@ -351,10 +351,10 @@ SELECT * FROM unknown_gender_unknown_race
 # TODO(#1578): Export this query once COMBINED_STITCH_DROP_OVERLAPPING_VIEW_BUILDER
 #  is materialized
 COMBINED_STITCH_DROP_OVERLAPPING_UNPIVOT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.VIEWS_DATASET,
+    dataset_id=dataset_config.UNMANAGED_VIEWS_DATASET,
     view_id="combined_stitch_drop_overlapping_unpivot",
     view_query_template=_QUERY_TEMPLATE,
-    views_dataset=dataset_config.VIEWS_DATASET,
+    views_dataset=dataset_config.UNMANAGED_VIEWS_DATASET,
     combined_stitch_drop_overlapping=COMBINED_STITCH_DROP_OVERLAPPING_VIEW_BUILDER.view_id,
     description=_DESCRIPTION,
 )
