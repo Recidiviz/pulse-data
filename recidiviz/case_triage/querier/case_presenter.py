@@ -71,6 +71,7 @@ class CasePresenter:
             "supervisionLevel": self.etl_client.supervision_level,
             "stateCode": self.etl_client.state_code,
             "employer": self.etl_client.employer,
+            "employmentStartDate": self.etl_client.employment_start_date,
             "mostRecentAssessmentDate": self.etl_client.most_recent_assessment_date,
             "assessmentScore": self.etl_client.assessment_score,
             "mostRecentFaceToFaceDate": self.etl_client.most_recent_face_to_face_date,
@@ -131,5 +132,16 @@ class CasePresenter:
                 base_dict[
                     "preferredContactMethod"
                 ] = client_info.preferred_contact_method
+
+        # ignore any most recent violation if it predates the current supervision period
+        most_recent_violation_date = self.etl_client.most_recent_violation_date
+        supervision_start_date = self.etl_client.supervision_start_date
+        if (
+            most_recent_violation_date is None
+            or supervision_start_date is None
+            or most_recent_violation_date < supervision_start_date
+        ):
+            most_recent_violation_date = None
+        base_dict["mostRecentViolationDate"] = most_recent_violation_date
 
         return _json_map_dates_to_strings(base_dict)

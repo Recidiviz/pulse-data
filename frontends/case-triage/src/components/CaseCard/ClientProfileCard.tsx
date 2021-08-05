@@ -43,6 +43,7 @@ import {
   DetailsPanelSection,
   Summary,
   SummaryIcon,
+  SummaryLineItem,
 } from "./ClientProfileCard.styles";
 import { NewItems } from "./NewItems";
 import { NotInCaseloadDropdown } from "./NotInCaseloadDropdown";
@@ -56,15 +57,18 @@ interface SummaryItemProps {
 }
 const SummaryItem: React.FC<SummaryItemProps> = ({ children, icon }) => {
   return (
-    <DetailsLineItem>
+    <SummaryLineItem>
       {icon ? <SummaryIcon kind={icon} /> : null}
       <Summary>{children}</Summary>
-    </DetailsLineItem>
+    </SummaryLineItem>
   );
 };
 
 const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
-  const { policyStore } = useRootStore();
+  const {
+    policyStore,
+    userStore: { canSeeExtendedProfile },
+  } = useRootStore();
 
   const contactText = getContactFrequencyText(
     policyStore.findContactFrequencyForClient(client)
@@ -81,6 +85,11 @@ const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
             {client.supervisionStartDate.from(moment().startOf("day"))})
           </SummaryItem>
         ) : null}
+        {canSeeExtendedProfile && client.milestones.violationFree && (
+          <SummaryItem>
+            Milestone: {client.milestones.violationFree} without a violation
+          </SummaryItem>
+        )}
 
         <SummaryItem icon={IconSVG.House}>
           {client.currentAddress
@@ -94,6 +103,11 @@ const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
             : "Unemployed"}{" "}
           / <ReceivingSSIOrDisabilityIncomeSelector client={client} />
         </SummaryItem>
+        {canSeeExtendedProfile && client.milestones.employment && (
+          <SummaryItem>
+            Milestone: {client.milestones.employment} employed here
+          </SummaryItem>
+        )}
 
         <SummaryItem icon={IconSVG.Envelope}>
           {client.emailAddress || "No email on file"} /{" "}

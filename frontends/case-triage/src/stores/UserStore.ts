@@ -31,6 +31,7 @@ interface UserStoreProps {
 
 export enum KNOWN_EXPERIMENTS {
   ProfileV2 = "can-see-profile-v2",
+  ExtendedProfile = "can-see-extended-profile",
 }
 
 export interface FeatureVariants {
@@ -204,10 +205,17 @@ export default class UserStore {
     return !!this.featureVariants[experiment];
   }
 
-  /**
-   * Feature flag requires membership in multiple experiments. This checks them all.
-   */
   get canSeeProfileV2(): boolean {
     return this.isInExperiment(KNOWN_EXPERIMENTS.ProfileV2);
+  }
+
+  /**
+   * Feature is an extension of profile v2 so this flag requires that one
+   */
+  get canSeeExtendedProfile(): boolean {
+    return (
+      this.canSeeProfileV2 &&
+      this.isInExperiment(KNOWN_EXPERIMENTS.ExtendedProfile)
+    );
   }
 }

@@ -30,6 +30,7 @@ export const clientData: ClientData = {
   currentAddress: "",
   emailAddress: "demo@recidiviz.org",
   employer: undefined,
+  employmentStartDate: null,
   fullName: {
     given_names: "TONYE",
     middle_name: "BARBY",
@@ -39,6 +40,7 @@ export const clientData: ClientData = {
   mostRecentAssessmentDate: "2019-10-24",
   mostRecentFaceToFaceDate: "2021-06-18",
   mostRecentHomeVisitDate: "2021-06-18",
+  mostRecentViolationDate: null,
   needsMet: {
     assessment: false,
     employment: false,
