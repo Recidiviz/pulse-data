@@ -17,7 +17,7 @@
 """Implements tests for the CasePresenter class."""
 import json
 import uuid
-from datetime import date
+from datetime import date, timedelta
 from unittest.case import TestCase
 
 from freezegun import freeze_time
@@ -75,6 +75,7 @@ class TestCasePresenter(TestCase):
                     "supervisionLevel": self.mock_client.supervision_level,
                     "stateCode": self.mock_client.state_code,
                     "employer": self.mock_client.employer,
+                    "employmentStartDate": self.mock_client.employment_start_date,
                     "mostRecentAssessmentDate": self.mock_client.most_recent_assessment_date,
                     "assessmentScore": self.mock_client.assessment_score,
                     "mostRecentFaceToFaceDate": self.mock_client.most_recent_face_to_face_date,
@@ -90,6 +91,7 @@ class TestCasePresenter(TestCase):
                     },
                     "notes": [],
                     "receivingSSIOrDisabilityIncome": False,
+                    "mostRecentViolationDate": self.mock_client.most_recent_violation_date,
                 },
             ),
         )
@@ -133,6 +135,7 @@ class TestCasePresenter(TestCase):
                     "supervisionLevel": self.mock_client.supervision_level,
                     "stateCode": self.mock_client.state_code,
                     "employer": self.mock_client.employer,
+                    "employmentStartDate": self.mock_client.employment_start_date,
                     "mostRecentAssessmentDate": self.mock_client.most_recent_assessment_date,
                     "assessmentScore": self.mock_client.assessment_score,
                     "mostRecentFaceToFaceDate": self.mock_client.most_recent_face_to_face_date,
@@ -150,6 +153,7 @@ class TestCasePresenter(TestCase):
                     "preferredContactMethod": client_info.preferred_contact_method,
                     "receivingSSIOrDisabilityIncome": client_info.receiving_ssi_or_disability_income,
                     "notes": [officer_note.to_json()],
+                    "mostRecentViolationDate": self.mock_client.most_recent_violation_date,
                 },
             ),
         )
@@ -171,3 +175,28 @@ class TestCasePresenter(TestCase):
         self.assertIn(
             CaseUpdateActionType.SCHEDULED_FACE_TO_FACE.value, case_json["caseUpdates"]
         )
+
+    def test_most_recent_violation(self) -> None:
+        violation_date = self.mock_client.supervision_start_date + timedelta(days=5)
+        self.mock_client.most_recent_violation_date = violation_date
+
+        case_presenter = CasePresenter(
+            self.mock_client,
+            [],
+        )
+
+        self.assertEqual(
+            case_presenter.to_json()["mostRecentViolationDate"], str(violation_date)
+        )
+
+    def test_no_most_recent_violation(self) -> None:
+        # violation predates the supervision period
+        violation_date = self.mock_client.supervision_start_date - timedelta(days=5)
+        self.mock_client.most_recent_violation_date = violation_date
+
+        case_presenter = CasePresenter(
+            self.mock_client,
+            [],
+        )
+
+        self.assertEqual(case_presenter.to_json()["mostRecentViolationDate"], None)
