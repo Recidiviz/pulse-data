@@ -93,7 +93,7 @@ resource "google_cloud_run_service" "case-triage" {
         "autoscaling.knative.dev/maxScale"        = var.max_case_triage_instances
         "run.googleapis.com/cloudsql-instances"   = local.joined_connection_string
         "run.googleapis.com/sandbox"              = "gvisor"
-        "run.googleapis.com/vpc-access-connector" = google_vpc_access_connector.redis_vpc_connector.name
+        "run.googleapis.com/vpc-access-connector" = google_vpc_access_connector.us_central_redis_vpc_connector.name
 
       }
 
