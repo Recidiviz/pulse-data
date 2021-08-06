@@ -24,7 +24,6 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS,
     vitals_state_specific_district_display_name,
-    vitals_state_specific_po_name,
 )
 from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_view_helpers import (
     ENABLED_VITALS,
@@ -167,16 +166,6 @@ VITALS_SUMMARIES_QUERY_TEMPLATE = f"""
     timely_downgrade AS (
      {generate_entity_summary_query('timely_downgrade', 'supervision_downgrade_opportunities_by_po_by_day')}
     ),
-    officer_names AS (
-        SELECT
-            DISTINCT
-            state_code,
-            external_id AS supervising_officer_external_id,
-            CONCAT(IFNULL(MAX(given_names), ''), ' ', IFNULL(MAX(surname), '')) AS full_name,
-        FROM `{{project_id}}.{{reference_views_dataset}}.augmented_agent_info`
-        WHERE given_names IS NOT NULL OR surname IS NOT NULL
-        GROUP BY state_code, supervising_officer_external_id
-    ),
     vitals_metrics AS (
         SELECT
           COALESCE(
@@ -240,18 +229,18 @@ VITALS_SUMMARIES_QUERY_TEMPLATE = f"""
     )
 
     SELECT
-        state_code,
+        vitals_metrics.state_code,
         most_recent_date_of_supervision,
         CASE
             WHEN supervising_officer_external_id != 'ALL' AND district_id != 'ALL' THEN 'po'
             WHEN supervising_officer_external_id = 'ALL' AND district_id != 'ALL'
-            THEN IF(state_code in {VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS}, 'level_1_supervision_location', 'level_2_supervision_location')
+            THEN IF(vitals_metrics.state_code in {VITALS_LEVEL_1_SUPERVISION_LOCATION_OPTIONS}, 'level_1_supervision_location', 'level_2_supervision_location')
         ELSE 'state'
         END as entity_type,
         entity_id,
         CASE
-            WHEN vitals_metrics.supervising_officer_external_id != 'ALL' AND district_id != 'ALL' THEN {vitals_state_specific_po_name('state_code', 'vitals_metrics.supervising_officer_external_id', 'officer_names.full_name')}
-            WHEN vitals_metrics.supervising_officer_external_id = 'ALL' AND district_id != 'ALL' THEN {vitals_state_specific_district_display_name('state_code', 'district_name')}
+            WHEN vitals_metrics.supervising_officer_external_id != 'ALL' AND district_id != 'ALL' THEN IFNULL(agent.full_name, 'UNKNOWN')
+            WHEN vitals_metrics.supervising_officer_external_id = 'ALL' AND district_id != 'ALL' THEN {vitals_state_specific_district_display_name('vitals_metrics.state_code', 'district_name')}
             ELSE 'STATE DOC'
         END as entity_name,
         parent_entity_id,
@@ -263,8 +252,9 @@ VITALS_SUMMARIES_QUERY_TEMPLATE = f"""
         overall_30d,
         overall_90d
     FROM vitals_metrics
-    LEFT JOIN officer_names
-    USING (state_code, supervising_officer_external_id)
+    LEFT JOIN `{{project_id}}.{{reference_views_dataset}}.agent_external_id_to_full_name` agent
+        ON vitals_metrics.state_code = agent.state_code
+        AND vitals_metrics.supervising_officer_external_id = agent.agent_external_id
 """
 
 VITALS_SUMMARIES_VIEW_BUILDER = MetricBigQueryViewBuilder(
