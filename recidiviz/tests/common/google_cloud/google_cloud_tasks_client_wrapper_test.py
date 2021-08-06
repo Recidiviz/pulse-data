@@ -22,7 +22,7 @@ from typing import List, Set
 
 import pytz
 from freezegun import freeze_time
-from google.cloud import tasks_v2, exceptions
+from google.cloud import exceptions, tasks_v2
 from google.cloud.tasks_v2.proto import queue_pb2
 from google.protobuf import timestamp_pb2
 from mock import create_autospec, patch
