@@ -135,17 +135,32 @@ class GCSFileSystem:
         """Returns the file size of the object if it exists in the fs, None otherwise."""
 
     @abc.abstractmethod
-    def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, Any]]:
-        """Returns the metadata for the object at the given path if it exists in the fs, None otherwise."""
+    def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, str]]:
+        """
+        Returns the metadata for the object at the given path if it exists in the fs, None otherwise. Returns
+        Dict[str, str] instead of Dict[str, Any] because all values of the dictionary are coerced to strings.
+        So if you pass in new_metadata to update_metadata() that has values that are not strings they will
+        be turned into strings.
+        """
+
+    def clear_metadata(self, path: GcsfsFilePath) -> None:
+        """
+        Clears all of the custom metadata and sets it to None at the given path if it exists in the fs, returns
+        None even if the path does not exist.
+        """
 
     @abc.abstractmethod
-    def set_metadata(
+    def update_metadata(
         self,
         path: GcsfsFilePath,
         new_metadata: Dict[str, Any],
-        clear_preexisting_metadata: bool,
     ) -> None:
-        """Sets the custom metadata for the object at the given path if it exists in the fs"""
+        """
+        Updates the custom metadata for the object at the given path if it exists in the fs. If there are preexisting keys
+        in the metadata that match the new_metadata keys those keys will be overriden. If custom metadata has keys that new_metadata
+        does not those keys will still exist in the custom metadata. To clear preexisiting keys not in new_metadata
+        call clear_metadata() before updating.
+        """
 
     @abc.abstractmethod
     def download_as_string(self, path: GcsfsFilePath, encoding: str = "utf-8") -> str:
@@ -280,26 +295,29 @@ class GCSFileSystemImpl(GCSFileSystem):
             return None
 
     @retry.Retry(predicate=retry_predicate)
-    def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, Any]]:
+    def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, str]]:
         try:
             blob = self._get_blob(path)
             return blob.metadata
         except GCSBlobDoesNotExistError:
             return None
 
+    def clear_metadata(self, path: GcsfsFilePath) -> None:
+        try:
+            blob = self._get_blob(path)
+            blob.metadata = None
+            blob.patch()
+        except GCSBlobDoesNotExistError:
+            return
+
     @retry.Retry(predicate=retry_predicate)
-    def set_metadata(
+    def update_metadata(
         self,
         path: GcsfsFilePath,
         new_metadata: Dict[str, Any],
-        clear_preexisting_metadata: bool,
     ) -> None:
         try:
             blob = self._get_blob(path)
-            if clear_preexisting_metadata:
-                # clears all preexisting metadata
-                blob.metadata = None
-                blob.patch()
             # keys in new_metadata must match keys in the metadata to overwrite data.
             # if new_metadata keys do not match the existing keys the old keys and values will still exist.
             blob.metadata = new_metadata

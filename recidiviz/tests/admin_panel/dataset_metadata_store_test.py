@@ -24,8 +24,8 @@ from parameterized import parameterized
 
 from recidiviz.admin_panel.dataset_metadata_store import (
     DatasetMetadataCounts,
-    DatasetMetadataResult,
     DatasetMetadataCountsStore,
+    DatasetMetadataResult,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
