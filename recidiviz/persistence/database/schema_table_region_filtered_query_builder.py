@@ -25,6 +25,7 @@ from typing import Dict, List, Optional, Set
 import sqlalchemy
 from more_itertools import one
 from sqlalchemy import ForeignKeyConstraint, Table
+from sqlalchemy.dialects import postgresql
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema_utils import (
@@ -361,6 +362,8 @@ class FederatedSchemaTableRegionFilteredQueryBuilder(
                     self._translate_key_colunm_clause(column.name, qualified_name)
                 )
             elif isinstance(column.type, sqlalchemy.Enum):
+                select_columns.append(f"CAST({qualified_name} as VARCHAR)")
+            elif isinstance(column.type, postgresql.UUID):
                 select_columns.append(f"CAST({qualified_name} as VARCHAR)")
             elif isinstance(column.type, sqlalchemy.ARRAY) and isinstance(
                 column.type.item_type, sqlalchemy.String

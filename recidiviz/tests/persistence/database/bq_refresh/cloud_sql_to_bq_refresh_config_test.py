@@ -48,16 +48,11 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
             if CloudSqlToBQConfig.is_valid_schema_type(schema_type)
         ]
         self.mock_project_id = "fake-recidiviz-project"
-        self.environment_patcher = mock.patch(
-            "recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config.environment"
-        )
         self.metadata_patcher = mock.patch(
             "recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config.metadata"
         )
         self.mock_metadata = self.metadata_patcher.start()
         self.mock_metadata.project_id.return_value = self.mock_project_id
-        self.mock_environment = self.environment_patcher.start()
-        self.mock_environment.GCP_PROJECT_STAGING = self.mock_project_id
 
         self.gcs_factory_patcher = mock.patch(
             "recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config.GcsfsFactory.build"
@@ -79,7 +74,6 @@ county_columns_to_exclude:
 
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
-        self.environment_patcher.stop()
         self.gcs_factory_patcher.stop()
 
     def test_for_schema_type_raises_error(self) -> None:
