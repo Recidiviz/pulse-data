@@ -21,6 +21,9 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.reference.admission_types_per_state_for_matrix import (
     ADMISSION_TYPES_PER_STATE_FOR_MATRIX_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.agent_external_id_to_full_names import (
+    AGENT_EXTERNAL_ID_TO_FULL_NAMES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.augmented_agent_info import (
     AUGMENTED_AGENT_INFO_VIEW_BUILDER,
 )
@@ -108,4 +111,5 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER,
     SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER,
     SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER,
+    AGENT_EXTERNAL_ID_TO_FULL_NAMES_VIEW_BUILDER,
 ]
