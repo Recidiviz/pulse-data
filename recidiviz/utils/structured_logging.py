@@ -27,7 +27,6 @@ from opencensus.trace import execution_context
 
 from recidiviz.utils import environment, metadata, monitoring
 
-
 # TODO(#3043): Once census-instrumentation/opencensus-python#442 is fixed we can
 # use OpenCensus threading intregration which will copy this for us. Until then
 # we can just copy it manually.
@@ -74,6 +73,7 @@ class ContextualLogRecord(logging.LogRecord):
 
         tags = monitoring.context_tags()
         self.region = tags.map.get(monitoring.TagKey.REGION)
+        self.ingest_instance = tags.map.get(monitoring.TagKey.INGEST_INSTANCE)
 
         context = execution_context.get_opencensus_tracer().span_context
         self.traceId = context.trace_id
@@ -106,6 +106,7 @@ def _labels_for_record(record: logging.LogRecord) -> Dict[str, str]:
 
     if isinstance(record, ContextualLogRecord):
         labels["region"] = record.region
+        labels["ingest_instance"] = record.ingest_instance
         # pylint: disable=protected-access
         labels[handlers.app_engine._TRACE_ID_LABEL] = record.traceId
 

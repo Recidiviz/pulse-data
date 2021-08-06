@@ -29,6 +29,7 @@ from mock import Mock, call, create_autospec, patch
 from pysftp import CnOpts
 
 from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
+    build_ingest_bucket_name,
     get_region_code_from_direct_ingest_bucket,
     is_primary_ingest_bucket,
 )
@@ -204,18 +205,22 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_region.return_value = fake_region(
             region_code=self.region_code, environment="staging"
         )
+        bucket_name = build_ingest_bucket_name(
+            project_id="recidiviz-xxx",
+            region_code=self.region_code,
+            system_level_str="state",
+            suffix="",
+        )
+
+        file_path = to_normalized_unprocessed_file_path(
+            f"{bucket_name}/ingest_view_name.csv",
+            file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+        )
         ingest_args = GcsfsIngestArgs(
             datetime.datetime(year=2019, month=7, day=20),
-            file_path=GcsfsFilePath.from_absolute_path(
-                to_normalized_unprocessed_file_path(
-                    "bucket/ingest_view_name.csv",
-                    file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
-                )
-            ),
+            file_path=GcsfsFilePath.from_absolute_path(file_path),
         )
-        request_args = {
-            "region": self.region_code,
-        }
+        request_args = {"region": self.region_code, "file_path": file_path}
         body = {
             "cloud_task_args": ingest_args.to_serializable(),
             "args_type": "GcsfsIngestArgs",
@@ -245,18 +250,24 @@ class TestDirectIngestControl(unittest.TestCase):
             msg="Test bad input error",
             error_type=DirectIngestErrorType.INPUT_ERROR,
         )
+        bucket_name = build_ingest_bucket_name(
+            project_id="recidiviz-xxx",
+            region_code=self.region_code,
+            system_level_str="state",
+            suffix="",
+        )
 
+        file_path = to_normalized_unprocessed_file_path(
+            f"{bucket_name}/ingest_view_name.csv",
+            file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+        )
         ingest_args = GcsfsIngestArgs(
             datetime.datetime(year=2019, month=7, day=20),
-            file_path=GcsfsFilePath.from_absolute_path(
-                to_normalized_unprocessed_file_path(
-                    "bucket/ingest_view_name.csv",
-                    file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
-                )
-            ),
+            file_path=GcsfsFilePath.from_absolute_path(file_path),
         )
         request_args = {
             "region": self.region_code,
+            "file_path": file_path,
         }
         body = {
             "cloud_task_args": ingest_args.to_serializable(),
@@ -690,18 +701,21 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_region.return_value = fake_region(
             region_code=region_code, environment="staging"
         )
-
-        import_args = GcsfsRawDataBQImportArgs(
-            raw_data_file_path=GcsfsFilePath.from_absolute_path(
-                to_normalized_unprocessed_file_path(
-                    "bucket/raw_data_path.csv",
-                    file_type=GcsfsDirectIngestFileType.RAW_DATA,
-                )
-            )
+        bucket_name = build_ingest_bucket_name(
+            project_id="recidiviz-xxx",
+            region_code=self.region_code,
+            system_level_str="state",
+            suffix="",
         )
-        request_args = {
-            "region": region_code,
-        }
+
+        raw_data_path = to_normalized_unprocessed_file_path(
+            f"{bucket_name}/raw_data_path.csv",
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
+        )
+        import_args = GcsfsRawDataBQImportArgs(
+            raw_data_file_path=GcsfsFilePath.from_absolute_path(raw_data_path)
+        )
+        request_args = {"region": region_code, "file_path": raw_data_path}
         body = {
             "cloud_task_args": import_args.to_serializable(),
             "args_type": "GcsfsRawDataBQImportArgs",
@@ -735,16 +749,23 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_region.return_value = fake_region(
             region_code=region_code, environment="staging"
         )
+        bucket_name = build_ingest_bucket_name(
+            project_id="recidiviz-xxx",
+            region_code=region_code,
+            system_level_str="state",
+            suffix="",
+        )
 
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="my_ingest_view",
-            output_bucket_name="my_ingest_bucket",
+            output_bucket_name=bucket_name,
             upper_bound_datetime_prev=datetime.datetime(2020, 4, 29),
             upper_bound_datetime_to_export=datetime.datetime(2020, 4, 30),
         )
 
         request_args = {
             "region": region_code,
+            "output_bucket": bucket_name,
         }
         body = {
             "cloud_task_args": export_args.to_serializable(),

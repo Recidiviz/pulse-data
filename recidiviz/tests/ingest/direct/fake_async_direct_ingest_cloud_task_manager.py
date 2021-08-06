@@ -17,22 +17,22 @@
 """Test implementation of the DirectIngestCloudTaskManager that runs tasks
 asynchronously on background threads."""
 import logging
-from queue import Queue, Empty
-from threading import Thread, Lock, Condition
-from typing import Callable, List, Tuple, Optional, Any
+from queue import Empty, Queue
+from threading import Condition, Lock, Thread
+from typing import Any, Callable, List, Optional, Tuple
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsRawDataBQImportArgs,
-    GcsfsIngestViewExportArgs,
     GcsfsIngestArgs,
+    GcsfsIngestViewExportArgs,
+    GcsfsRawDataBQImportArgs,
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
-    ProcessIngestJobCloudTaskQueueInfo,
     BQImportExportCloudTaskQueueInfo,
+    ProcessIngestJobCloudTaskQueueInfo,
     SchedulerCloudTaskQueueInfo,
     SftpCloudTaskQueueInfo,
 )
@@ -181,9 +181,11 @@ class SingleThreadTaskQueue(Queue):
                 self.all_task_names = []
 
 
-def with_monitoring(region_code: str, fn: Callable) -> Callable:
+def with_monitoring(
+    region_code: str, ingest_instance: DirectIngestInstance, fn: Callable
+) -> Callable:
     def wrapped_fn(*args: Any, **kwargs: Any) -> None:
-        with monitoring.push_region_tag(region_code):
+        with monitoring.push_region_tag(region_code, ingest_instance.value):
             fn(*args, **kwargs)
 
     return wrapped_fn
@@ -213,6 +215,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             f"{region.region_code}-process_job-{ingest_args.task_id_tag()}",
             with_monitoring(
                 region.region_code,
+                ingest_instance,
                 self.controller.run_ingest_job_and_kick_scheduler_on_completion,
             ),
             ingest_args,
@@ -237,6 +240,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             f"{region.region_code}-scheduler",
             with_monitoring(
                 region.region_code,
+                ingest_instance,
                 self.controller.schedule_next_ingest_job,
             ),
             just_finished_job,
@@ -259,7 +263,9 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
 
         self.scheduler_queue.add_task(
             f"{region.region_code}-handle_new_files",
-            with_monitoring(region.region_code, self.controller.handle_new_files),
+            with_monitoring(
+                region.region_code, ingest_instance, self.controller.handle_new_files
+            ),
             can_start_ingest,
         )
 
@@ -274,7 +280,9 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
 
         self.bq_import_export_queue.add_task(
             f"{region.region_code}-raw_data_import-{data_import_args.task_id_tag()}",
-            with_monitoring(region.region_code, self.controller.do_raw_data_import),
+            with_monitoring(
+                region.region_code, ingest_instance, self.controller.do_raw_data_import
+            ),
             data_import_args,
         )
 
@@ -289,7 +297,11 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
 
         self.bq_import_export_queue.add_task(
             f"{region.region_code}-ingest_view_export-{ingest_view_export_args.task_id_tag()}",
-            with_monitoring(region.region_code, self.controller.do_ingest_view_export),
+            with_monitoring(
+                region.region_code,
+                ingest_instance,
+                self.controller.do_ingest_view_export,
+            ),
             ingest_view_export_args,
         )
 

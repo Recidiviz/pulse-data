@@ -20,20 +20,20 @@ synchronously, when prompted."""
 from typing import List, Tuple, Union
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsIngestViewExportArgs,
-    GcsfsRawDataBQImportArgs,
-    GcsfsIngestArgs,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    GcsfsIngestArgs,
+    GcsfsIngestViewExportArgs,
+    GcsfsRawDataBQImportArgs,
+)
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
-    _build_task_id,
-    ProcessIngestJobCloudTaskQueueInfo,
     BQImportExportCloudTaskQueueInfo,
+    ProcessIngestJobCloudTaskQueueInfo,
     SchedulerCloudTaskQueueInfo,
     SftpCloudTaskQueueInfo,
+    _build_task_id,
 )
 from recidiviz.tests.ingest.direct.fake_direct_ingest_cloud_task_manager import (
     FakeDirectIngestCloudTaskManager,
@@ -181,7 +181,9 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
 
         task = self.process_job_tasks[0]
 
-        with monitoring.push_region_tag(self.controller.region.region_code):
+        with monitoring.push_region_tag(
+            self.controller.region.region_code, self.controller.ingest_instance.value
+        ):
             self.controller.run_ingest_job_and_kick_scheduler_on_completion(task[1])
         self.num_finished_process_job_tasks += 1
 
@@ -201,7 +203,9 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         task = self.scheduler_tasks[0]
         task_id = task[0]
 
-        with monitoring.push_region_tag(self.controller.region.region_code):
+        with monitoring.push_region_tag(
+            self.controller.region.region_code, self.controller.ingest_instance.value
+        ):
             ingest_bucket_path = task[1]
             if not self.controller.ingest_bucket_path == ingest_bucket_path:
                 raise ValueError(
@@ -233,7 +237,9 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         task_id = task[0]
         args = task[1]
 
-        with monitoring.push_region_tag(self.controller.region.region_code):
+        with monitoring.push_region_tag(
+            self.controller.region.region_code, self.controller.ingest_instance.value
+        ):
             if task_id.endswith("raw_data_import"):
                 if not isinstance(args, GcsfsRawDataBQImportArgs):
                     raise ValueError(f"Unexpected args type {type(args)}")
