@@ -223,7 +223,12 @@ class BaseDirectIngestController(Ingestor):
             self.region,
             self.ingest_instance,
         )
-        if process_job_queue_info.size() and not just_finished_job:
+        if (
+            process_job_queue_info.tasks_for_instance(
+                region_code=self.region_code(), ingest_instance=self.ingest_instance
+            )
+            and not just_finished_job
+        ):
             logging.info(
                 "Already running job [%s] - will not schedule another job for "
                 "region [%s]",

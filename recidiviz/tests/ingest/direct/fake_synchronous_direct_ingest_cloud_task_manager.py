@@ -97,7 +97,9 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
             raise ValueError("Controller is null - did you call set_controller()?")
 
         task_id = _build_task_id(
-            self.controller.region.region_code, ingest_args.task_id_tag()
+            self.controller.region.region_code,
+            ingest_instance,
+            ingest_args.task_id_tag(),
         )
         self.process_job_tasks.append((f"projects/path/to/{task_id}", ingest_args))
 
@@ -112,7 +114,9 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
 
-        task_id = _build_task_id(self.controller.region.region_code, None)
+        task_id = _build_task_id(
+            self.controller.region.region_code, ingest_instance, None
+        )
         self.scheduler_tasks.append(
             (f"projects/path/to/{task_id}-schedule", ingest_bucket, just_finished_job)
         )
@@ -126,7 +130,9 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
-        task_id = _build_task_id(self.controller.region.region_code, None)
+        task_id = _build_task_id(
+            self.controller.region.region_code, ingest_instance, None
+        )
         self.scheduler_tasks.append(
             (
                 f"projects/path/to/{task_id}-handle_new_files",
@@ -143,7 +149,9 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
-        task_id = _build_task_id(self.controller.region.region_code, None)
+        task_id = _build_task_id(
+            self.controller.region.region_code, ingest_instance, None
+        )
         self.bq_import_export_tasks.append(
             (f"projects/path/to/{task_id}-raw_data_import", data_import_args)
         )
@@ -156,7 +164,9 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
     ) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
-        task_id = _build_task_id(self.controller.region.region_code, None)
+        task_id = _build_task_id(
+            self.controller.region.region_code, ingest_instance, None
+        )
         self.bq_import_export_tasks.append(
             (f"projects/path/to/{task_id}-ingest_view_export", ingest_view_export_args)
         )
@@ -164,7 +174,9 @@ class FakeSynchronousDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManag
     def create_direct_ingest_sftp_download_task(self, region: Region) -> None:
         if not self.controller:
             raise ValueError("Controller is null - did you call set_controller()?")
-        task_id = _build_task_id(self.controller.region.region_code, None)
+        task_id = _build_task_id(
+            self.controller.region.region_code, DirectIngestInstance.PRIMARY, None
+        )
         self.sftp_tasks.append(f"projects/path/to/{task_id}-handle_sftp_download")
 
     def test_run_next_process_job_task(self) -> None:
