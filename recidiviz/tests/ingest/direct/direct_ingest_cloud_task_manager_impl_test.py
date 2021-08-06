@@ -18,19 +18,21 @@
 import datetime
 import json
 from unittest import TestCase
+from urllib.parse import urlencode
 
 import mock
 from freezegun import freeze_time
 from google.cloud import tasks_v2
-from mock import patch, MagicMock
+from mock import MagicMock, patch
 
-from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
-    DIRECT_INGEST_SCHEDULER_QUEUE_V2,
-    DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
-    DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2,
-)
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     QUEUES_REGION,
+)
+from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
+    DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2,
+    DIRECT_INGEST_SCHEDULER_QUEUE_V2,
+    DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_file_path,
@@ -38,17 +40,16 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsBucketPath
+from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
+    GcsfsDirectIngestFileType,
+    GcsfsIngestArgs,
+    GcsfsIngestViewExportArgs,
+    GcsfsRawDataBQImportArgs,
+)
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManagerImpl,
-    _build_task_id,
     ProcessIngestJobCloudTaskQueueInfo,
-)
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    GcsfsIngestArgs,
-    GcsfsDirectIngestFileType,
-    GcsfsRawDataBQImportArgs,
-    GcsfsIngestViewExportArgs,
+    _build_task_id,
 )
 from recidiviz.utils import regions
 
@@ -230,14 +231,13 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
     ) -> None:
         # Arrange
+        file_path = to_normalized_unprocessed_file_path(
+            "bucket/ingest_view_name.csv",
+            file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+        )
         ingest_args = GcsfsIngestArgs(
             datetime.datetime(year=2019, month=7, day=20),
-            file_path=GcsfsFilePath.from_absolute_path(
-                to_normalized_unprocessed_file_path(
-                    "bucket/ingest_view_name.csv",
-                    file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
-                )
-            ),
+            file_path=GcsfsFilePath.from_absolute_path(file_path),
         )
         body = {
             "cloud_task_args": ingest_args.to_serializable(),
@@ -252,11 +252,12 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         task_name = "{}/{}-{}-{}".format(
             DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2, _REGION.region_code, date, uuid
         )
+        url_params = {"region": _REGION.region_code, "file_path": file_path}
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             app_engine_http_request={
                 "http_method": "POST",
-                "relative_uri": f"/direct/process_job?region={_REGION.region_code}",
+                "relative_uri": f"/direct/process_job?{urlencode(url_params)}",
                 "body": body_encoded,
             },
         )
@@ -286,14 +287,13 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
     ) -> None:
         # Arrange
+        file_path = to_normalized_unprocessed_file_path(
+            "bucket/ingest_view_name.csv",
+            file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+        )
         ingest_args = GcsfsIngestArgs(
             datetime.datetime(year=2019, month=7, day=20),
-            file_path=GcsfsFilePath.from_absolute_path(
-                to_normalized_unprocessed_file_path(
-                    "bucket/ingest_view_name.csv",
-                    file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
-                )
-            ),
+            file_path=GcsfsFilePath.from_absolute_path(file_path),
         )
         body = {
             "cloud_task_args": ingest_args.to_serializable(),
@@ -309,11 +309,12 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         task_name = "{}/{}-{}-{}".format(
             DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2, _REGION.region_code, date, uuid
         )
+        url_params = {"region": _REGION.region_code, "file_path": file_path}
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             app_engine_http_request={
                 "http_method": "POST",
-                "relative_uri": f"/direct/process_job?region={_REGION.region_code}",
+                "relative_uri": f"/direct/process_job?{urlencode(url_params)}",
                 "body": body_encoded,
             },
         )
@@ -366,11 +367,12 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         task_name = _REGION.get_queue_name() + "/{}-{}-{}".format(
             _REGION.region_code, date, uuid
         )
+        url_params = {"region": _REGION.region_code, "file_path": file_path}
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             app_engine_http_request={
                 "http_method": "POST",
-                "relative_uri": f"/direct/process_job?region={_REGION.region_code}",
+                "relative_uri": f"/direct/process_job?{urlencode(url_params)}",
                 "body": body_encoded,
             },
         )
@@ -400,14 +402,13 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
     ) -> None:
         # Arrange
-        import_args = GcsfsRawDataBQImportArgs(
-            raw_data_file_path=GcsfsFilePath.from_absolute_path(
-                to_normalized_unprocessed_file_path(
-                    "bucket/raw_data_path.csv",
-                    file_type=GcsfsDirectIngestFileType.RAW_DATA,
-                )
+        raw_data_path = GcsfsFilePath.from_absolute_path(
+            to_normalized_unprocessed_file_path(
+                "bucket/raw_data_path.csv",
+                file_type=GcsfsDirectIngestFileType.RAW_DATA,
             )
         )
+        import_args = GcsfsRawDataBQImportArgs(raw_data_file_path=raw_data_path)
         body = {
             "cloud_task_args": import_args.to_serializable(),
             "args_type": "GcsfsRawDataBQImportArgs",
@@ -421,11 +422,15 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         task_name = DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2 + "/{}-{}-{}".format(
             _REGION.region_code, date, uuid
         )
+        url_params = {
+            "region": _REGION.region_code,
+            "file_path": raw_data_path.abs_path(),
+        }
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             app_engine_http_request={
                 "http_method": "POST",
-                "relative_uri": f"/direct/raw_data_import?region={_REGION.region_code}",
+                "relative_uri": f"/direct/raw_data_import?{urlencode(url_params)}",
                 "body": body_encoded,
             },
         )
@@ -472,11 +477,15 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         task_name = DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2 + "/{}-{}-{}".format(
             _REGION.region_code, date, uuid
         )
+        url_params = {
+            "region": _REGION.region_code,
+            "output_bucket": "my_ingest_bucket",
+        }
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             app_engine_http_request={
                 "http_method": "POST",
-                "relative_uri": f"/direct/ingest_view_export?region={_REGION.region_code}",
+                "relative_uri": f"/direct/ingest_view_export?{urlencode(url_params)}",
                 "body": body_encoded,
             },
         )

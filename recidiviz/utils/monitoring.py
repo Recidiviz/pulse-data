@@ -16,14 +16,14 @@
 # =============================================================================
 
 """Creates monitoring client for measuring and recording stats."""
-from contextvars import ContextVar
 from contextlib import contextmanager
+from contextvars import ContextVar
 from functools import wraps
-from typing import Any, Dict, List, Callable, Optional, List
-
+from typing import Any, Callable, Dict, List, Optional
 
 from opencensus.ext.stackdriver import stats_exporter as stackdriver
-from opencensus.stats import stats as stats_module, view as view_module
+from opencensus.stats import stats as stats_module
+from opencensus.stats import view as view_module
 from opencensus.tags import TagContext, TagMap
 
 
@@ -69,14 +69,24 @@ def push_tags(tags: Dict[str, Any]) -> TagContext.contextvar:
         TagContext.contextvar.reset(token)
 
 
-def push_region_tag(region_code: str) -> TagContext.contextvar:
-    return push_tags({TagKey.REGION: region_code})
+def push_region_tag(
+    region_code: str, ingest_instance: Optional[str]
+) -> TagContext.contextvar:
+    tags = {TagKey.REGION: region_code}
+    if ingest_instance is not None:
+        tags[TagKey.INGEST_INSTANCE] = ingest_instance
+    return push_tags(tags)
 
 
 def with_region_tag(func: Callable) -> Callable:
     @wraps(func)
-    def set_region_tag(region_code: str, *args: Any, **kwargs: Any) -> Any:
-        with push_region_tag(region_code):
+    def set_region_tag(
+        region_code: str,
+        *args: Any,
+        ingest_instance: Optional[str] = None,
+        **kwargs: Any
+    ) -> Any:
+        with push_region_tag(region_code, ingest_instance):
             return func(region_code, *args, **kwargs)
 
     return set_region_tag
@@ -110,16 +120,21 @@ def exponential_buckets(start: float, factor: float, count: int) -> List[float]:
 
 
 class TagKey:
+    """Scope to hold tag key constants"""
+
     ENTITY_TYPE = "entity_type"
     ERROR = "error"
-    RAW_DATA_IMPORT_TAG = "raw_data_import_tag"
-    INGEST_VIEW_EXPORT_TAG = "ingest_view_export_tag"
-    INGEST_TASK_TAG = "ingest_task_tag"
     PERSISTED = "persisted"
     REASON = "reason"
     REGION = "region"
     SHOULD_PERSIST = "should_persist"
     STATUS = "status"
+
+    # Ingest related tags
+    INGEST_INSTANCE = "ingest_instance"
+    INGEST_TASK_TAG = "ingest_task_tag"
+    INGEST_VIEW_EXPORT_TAG = "ingest_view_export_tag"
+    RAW_DATA_IMPORT_TAG = "raw_data_import_tag"
 
     # Bigquery related tags
     VALIDATION_CHECK_TYPE = "validation_check_type"

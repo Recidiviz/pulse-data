@@ -455,6 +455,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         )
         params = {
             "region": region.region_code.lower(),
+            "file_path": ingest_args.file_path.abs_path(),
         }
         relative_uri = f"/direct/process_job?{urlencode(params)}"
         body = self._get_body_from_args(ingest_args)
@@ -528,6 +529,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
         params = {
             "region": region.region_code.lower(),
+            "file_path": data_import_args.raw_data_file_path.abs_path(),
         }
         relative_uri = f"/direct/raw_data_import?{urlencode(params)}"
 
@@ -552,6 +554,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         )
         params = {
             "region": region.region_code.lower(),
+            "output_bucket": ingest_view_export_args.output_bucket_name,
         }
         relative_uri = f"/direct/ingest_view_export?{urlencode(params)}"
 

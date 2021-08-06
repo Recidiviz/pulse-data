@@ -158,10 +158,15 @@ def handle_direct_ingest_file() -> Tuple[str, HTTPStatus]:
         logging.error(response)
         return response, HTTPStatus.BAD_REQUEST
 
-    with monitoring.push_region_tag(region_code):
+    bucket_path = GcsfsBucketPath(bucket_name=bucket)
+
+    with monitoring.push_region_tag(
+        region_code,
+        ingest_instance=DirectIngestInstance.for_ingest_bucket(bucket_path).value,
+    ):
         try:
             controller = DirectIngestControllerFactory.build(
-                ingest_bucket_path=GcsfsBucketPath(bucket_name=bucket),
+                ingest_bucket_path=bucket_path,
                 allow_unlaunched=True,
             )
         except DirectIngestError as e:
@@ -202,10 +207,15 @@ def handle_new_files() -> Tuple[str, HTTPStatus]:
         logging.error(response)
         return response, HTTPStatus.BAD_REQUEST
 
-    with monitoring.push_region_tag(region_code):
+    bucket_path = GcsfsBucketPath(bucket_name=bucket)
+
+    with monitoring.push_region_tag(
+        region_code,
+        ingest_instance=DirectIngestInstance.for_ingest_bucket(bucket_path).value,
+    ):
         try:
             controller = DirectIngestControllerFactory.build(
-                ingest_bucket_path=GcsfsBucketPath(bucket_name=bucket),
+                ingest_bucket_path=bucket_path,
                 allow_unlaunched=True,
             )
         except DirectIngestError as e:
@@ -237,15 +247,18 @@ def ensure_all_raw_file_paths_normalized() -> Tuple[str, HTTPStatus]:
     supported_regions = get_supported_direct_ingest_region_codes()
     for region_code in supported_regions:
         logging.info("Ensuring paths normalized for region [%s]", region_code)
-        with monitoring.push_region_tag(region_code):
+        # The only type of file that wouldn't be normalized is a raw file, which
+        # should only ever be in the PRIMARY bucket.
+        ingest_instance = DirectIngestInstance.PRIMARY
+        with monitoring.push_region_tag(
+            region_code, ingest_instance=ingest_instance.value
+        ):
             ingest_bucket = gcsfs_direct_ingest_bucket_for_region(
                 region_code=region_code,
                 system_level=SystemLevel.for_region(
                     _region_for_region_code(region_code)
                 ),
-                # The only type of file that wouldn't be normalized is a raw file, which
-                # should only ever be in the PRIMARY bucket.
-                ingest_instance=DirectIngestInstance.PRIMARY,
+                ingest_instance=ingest_instance,
             )
             try:
                 controller = DirectIngestControllerFactory.build(
@@ -278,13 +291,21 @@ def raw_data_import() -> Tuple[str, HTTPStatus]:
         "Received request to do direct ingest raw data import: [%s]", request.values
     )
     region_code = get_str_param_value("region", request.values)
+    file_path = get_str_param_value("file_path", request.values, preserve_case=True)
 
-    if not region_code:
+    if not region_code or not file_path:
         response = f"Bad parameters [{request.values}]"
         logging.error(response)
         return response, HTTPStatus.BAD_REQUEST
 
-    with monitoring.push_region_tag(region_code):
+    gcsfs_path = GcsfsFilePath.from_absolute_path(file_path)
+
+    with monitoring.push_region_tag(
+        region_code,
+        ingest_instance=DirectIngestInstance.for_ingest_bucket(
+            gcsfs_path.bucket_path
+        ).value,
+    ):
         json_data = request.get_data(as_text=True)
         data_import_args = _parse_cloud_task_args(json_data)
 
@@ -297,6 +318,14 @@ def raw_data_import() -> Tuple[str, HTTPStatus]:
         if not isinstance(data_import_args, GcsfsRawDataBQImportArgs):
             raise DirectIngestError(
                 msg=f"raw_data_import was called with incorrect args type [{type(data_import_args)}].",
+                error_type=DirectIngestErrorType.INPUT_ERROR,
+            )
+
+        if gcsfs_path != data_import_args.raw_data_file_path:
+            raise DirectIngestError(
+                msg=f"Different paths were passed in the url and request body\n"
+                f"url: {gcsfs_path.uri()}\n"
+                f"body: {data_import_args.raw_data_file_path.uri()}",
                 error_type=DirectIngestErrorType.INPUT_ERROR,
             )
 
@@ -329,7 +358,7 @@ def create_raw_data_latest_view_update_tasks() -> Tuple[str, HTTPStatus]:
     raw_update_ctm = DirectIngestRawUpdateCloudTaskManager()
 
     for region_code in get_existing_region_dir_names():
-        with monitoring.push_region_tag(region_code):
+        with monitoring.push_region_tag(region_code, ingest_instance=None):
             region = _region_for_region_code(region_code)
             if region.is_ingest_launched_in_env():
                 logging.info(
@@ -361,7 +390,7 @@ def update_raw_data_latest_views_for_state() -> Tuple[str, HTTPStatus]:
         logging.error(response)
         return response, HTTPStatus.BAD_REQUEST
 
-    with monitoring.push_region_tag(region_code):
+    with monitoring.push_region_tag(region_code, ingest_instance=None):
         bq_client = BigQueryClientImpl(project_id=metadata.project_id())
         controller = DirectIngestRawDataTableLatestViewUpdater(
             region_code, metadata.project_id(), bq_client
@@ -380,13 +409,21 @@ def ingest_view_export() -> Tuple[str, HTTPStatus]:
         "Received request to do direct ingest view export: [%s]", request.values
     )
     region_code = get_str_param_value("region", request.values)
+    output_bucket_name = get_str_param_value(
+        "output_bucket", request.values, preserve_case=True
+    )
 
-    if not region_code:
+    if not region_code or not output_bucket_name:
         response = f"Bad parameters [{request.values}]"
         logging.error(response)
         return response, HTTPStatus.BAD_REQUEST
 
-    with monitoring.push_region_tag(region_code):
+    with monitoring.push_region_tag(
+        region_code,
+        ingest_instance=DirectIngestInstance.for_ingest_bucket(
+            GcsfsBucketPath(output_bucket_name)
+        ).value,
+    ):
         json_data = request.get_data(as_text=True)
         ingest_view_export_args = _parse_cloud_task_args(json_data)
 
@@ -401,6 +438,15 @@ def ingest_view_export() -> Tuple[str, HTTPStatus]:
                 msg=f"raw_data_import was called with incorrect args type [{type(ingest_view_export_args)}].",
                 error_type=DirectIngestErrorType.INPUT_ERROR,
             )
+
+        if output_bucket_name != ingest_view_export_args.output_bucket_name:
+            raise DirectIngestError(
+                msg=f"Different buckets were passed in the url and request body\n"
+                f"url: {output_bucket_name}\n"
+                f"body: {ingest_view_export_args.output_bucket_name}",
+                error_type=DirectIngestErrorType.INPUT_ERROR,
+            )
+
         with monitoring.push_tags(
             {TagKey.INGEST_VIEW_EXPORT_TAG: ingest_view_export_args.task_id_tag()}
         ):
@@ -429,13 +475,21 @@ def process_job() -> Tuple[str, HTTPStatus]:
     """
     logging.info("Received request to process direct ingest job: [%s]", request.values)
     region_code = get_str_param_value("region", request.values)
+    file_path = get_str_param_value("file_path", request.values, preserve_case=True)
 
-    if not region_code:
+    if not region_code or not file_path:
         response = f"Bad parameters [{request.values}]"
         logging.error(response)
         return response, HTTPStatus.BAD_REQUEST
 
-    with monitoring.push_region_tag(region_code):
+    gcsfs_path = GcsfsFilePath.from_absolute_path(file_path)
+
+    with monitoring.push_region_tag(
+        region_code,
+        ingest_instance=DirectIngestInstance.for_ingest_bucket(
+            gcsfs_path.bucket_path
+        ).value,
+    ):
         json_data = request.get_data(as_text=True)
         ingest_args = _parse_cloud_task_args(json_data)
 
@@ -451,10 +505,14 @@ def process_job() -> Tuple[str, HTTPStatus]:
                 error_type=DirectIngestErrorType.INPUT_ERROR,
             )
 
-        if not ingest_args:
-            response = "Could not parse ingest args"
-            logging.error(response)
-            return response, HTTPStatus.BAD_REQUEST
+        if gcsfs_path != ingest_args.file_path:
+            raise DirectIngestError(
+                msg=f"Different paths were passed in the url and request body\n"
+                f"url: {gcsfs_path.uri()}\n"
+                f"body: {ingest_args.file_path.uri()}",
+                error_type=DirectIngestErrorType.INPUT_ERROR,
+            )
+
         with monitoring.push_tags({TagKey.INGEST_TASK_TAG: ingest_args.task_id_tag()}):
             try:
                 controller = DirectIngestControllerFactory.build(
@@ -478,6 +536,7 @@ def process_job() -> Tuple[str, HTTPStatus]:
 @direct_ingest_control.route("/scheduler", methods=["GET", "POST"])
 @requires_gae_auth
 def scheduler() -> Tuple[str, HTTPStatus]:
+    """Checks the state of the ingest instance and schedules any tasks to be run."""
     logging.info("Received request for direct ingest scheduler: %s", request.values)
     region_code = get_str_param_value("region", request.values)
     just_finished_job = get_bool_param_value(
@@ -492,10 +551,15 @@ def scheduler() -> Tuple[str, HTTPStatus]:
         logging.error(response)
         return response, HTTPStatus.BAD_REQUEST
 
-    with monitoring.push_region_tag(region_code):
+    bucket_path = GcsfsBucketPath(bucket)
+
+    with monitoring.push_region_tag(
+        region_code,
+        ingest_instance=DirectIngestInstance.for_ingest_bucket(bucket_path).value,
+    ):
         try:
             controller = DirectIngestControllerFactory.build(
-                ingest_bucket_path=GcsfsBucketPath(bucket), allow_unlaunched=False
+                ingest_bucket_path=bucket_path, allow_unlaunched=False
             )
         except DirectIngestError as e:
             if e.is_bad_request():
@@ -522,12 +586,14 @@ def kick_all_schedulers() -> None:
     """Kicks all ingest schedulers to restart ingest"""
     supported_regions = get_supported_direct_ingest_region_codes()
     for region_code in supported_regions:
-        with monitoring.push_region_tag(region_code):
-            region = _region_for_region_code(region_code=region_code)
-            if not region.is_ingest_launched_in_env():
-                continue
-            system_level = SystemLevel.for_region(region)
-            for ingest_instance in DirectIngestInstance:
+        region = _region_for_region_code(region_code=region_code)
+        if not region.is_ingest_launched_in_env():
+            continue
+        system_level = SystemLevel.for_region(region)
+        for ingest_instance in DirectIngestInstance:
+            with monitoring.push_region_tag(
+                region_code, ingest_instance=ingest_instance.value
+            ):
                 try:
                     ingest_instance.check_is_valid_system_level(system_level)
                 except DirectIngestInstanceError:
@@ -573,7 +639,7 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
         logging.error(response)
         return response, HTTPStatus.BAD_REQUEST
 
-    with monitoring.push_region_tag(region_code):
+    with monitoring.push_region_tag(region_code, ingest_instance=None):
         lower_bound_update_datetime = (
             datetime.datetime.fromisoformat(date_str)
             if date_str is not None
@@ -707,7 +773,7 @@ def handle_sftp_files() -> Tuple[str, HTTPStatus]:
         logging.error(response)
         return response, HTTPStatus.BAD_REQUEST
 
-    with monitoring.push_region_tag(region_code):
+    with monitoring.push_region_tag(region_code, ingest_instance=None):
         try:
             region = _region_for_region_code(region_code)
             direct_ingest_cloud_task_manager = DirectIngestCloudTaskManagerImpl()
