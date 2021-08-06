@@ -24,11 +24,16 @@ from google.cloud import bigquery
 from mock import call, patch
 
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
-from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryView
+from recidiviz.big_query.big_query_view import (
+    BigQueryAddress,
+    BigQueryView,
+    SimpleBigQueryViewBuilder,
+)
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.view_update_manager_utils import (
+    cleanup_datasets_and_delete_unmanaged_views,
     delete_unmanaged_views_and_tables_from_dataset,
-    get_managed_views_for_dataset_map,
+    get_managed_view_and_materialized_table_addresses_by_dataset,
 )
 from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
 
@@ -222,7 +227,9 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         # Arrange
         walker = BigQueryViewDagWalker(self.empty_view_list)
         # Act
-        result_dict = get_managed_views_for_dataset_map(walker)
+        result_dict = get_managed_view_and_materialized_table_addresses_by_dataset(
+            walker
+        )
         # Assert
         expected_result: Dict[str, Set[BigQueryAddress]] = {}
         self.assertEqual(expected_result, result_dict)
@@ -231,7 +238,9 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         # Arrange
         walker = BigQueryViewDagWalker(self.one_view_list)
         # Act
-        result_dict = get_managed_views_for_dataset_map(walker)
+        result_dict = get_managed_view_and_materialized_table_addresses_by_dataset(
+            walker
+        )
         # Assert
         expected_result: Dict[str, Set[BigQueryAddress]] = {
             "dataset_0": {BigQueryAddress(dataset_id="dataset_0", table_id="table_0")}
@@ -242,7 +251,9 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         # Arrange
         walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
         # Act
-        result_dict = get_managed_views_for_dataset_map(walker)
+        result_dict = get_managed_view_and_materialized_table_addresses_by_dataset(
+            walker
+        )
         # Assert
         expected_result: Dict[str, Set[BigQueryAddress]] = {
             "dataset_1": {BigQueryAddress(dataset_id="dataset_1", table_id="table_1")},
@@ -257,7 +268,9 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         # Arrange
         walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
         # Act
-        result_dict = get_managed_views_for_dataset_map(walker)
+        result_dict = get_managed_view_and_materialized_table_addresses_by_dataset(
+            walker
+        )
         # Assert
         expected_result: Dict[str, Set[BigQueryAddress]] = {
             "dataset_1": {BigQueryAddress(dataset_id="dataset_1", table_id="table_1")},
@@ -273,7 +286,9 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         # Arrange
         walker = BigQueryViewDagWalker(self.all_views_same_dataset)
         # Act
-        result_dict = get_managed_views_for_dataset_map(walker)
+        result_dict = get_managed_view_and_materialized_table_addresses_by_dataset(
+            walker
+        )
         # Assert
         expected_result: Dict[str, Set[BigQueryAddress]] = {
             "dataset_1": {
@@ -288,7 +303,9 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         # Arrange
         walker = BigQueryViewDagWalker(self.multiple_views_one_dataset_list)
         # Act
-        result_dict = get_managed_views_for_dataset_map(walker)
+        result_dict = get_managed_view_and_materialized_table_addresses_by_dataset(
+            walker
+        )
         # Assert
         expected_result: Dict[str, Set[BigQueryAddress]] = {
             "dataset_1": {
@@ -413,4 +430,605 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         self.mock_client.dataset_ref_for_id.assert_called()
         self.mock_client.dataset_exists.assert_called()
         self.mock_client.list_tables.assert_not_called()
+        self.mock_client.delete_table.assert_not_called()
+
+    @patch(
+        "recidiviz.big_query.view_update_manager_utils.get_datasets_that_have_ever_been_managed"
+    )
+    def test_cleanup_datasets_and_delete_unmanaged_views_unmanaged_view_in_ds(
+        self, mock_get_datasets_that_have_ever_been_managed: mock.MagicMock
+    ) -> None:
+        mock_get_datasets_that_have_ever_been_managed.return_value = {
+            "dataset_1",
+        }
+
+        dataset = bigquery.dataset.DatasetReference(self.project_id, "dataset_1")
+
+        sample_views = [
+            {
+                "view_id": "my_fake_view",
+                "view_query": "SELECT NULL LIMIT 0",
+            },
+            {"view_id": "my_other_fake_view", "view_query": "SELECT NULL LIMIT 0"},
+        ]
+        mock_view_builders = [
+            SimpleBigQueryViewBuilder(
+                dataset_id="dataset_1",
+                description=f"{view['view_id']} description",
+                view_query_template="a",
+                should_materialize=False,
+                materialized_address_override=None,
+                should_build_predicate=None,
+                **view,
+            )
+            for view in sample_views
+        ]
+
+        mock_table_resource_ds_1_table_1 = {
+            "tableReference": {
+                "projectId": self.project_id,
+                "datasetId": "dataset_1",
+                "tableId": "my_fake_view",
+            },
+        }
+
+        mock_table_resource_ds_1_table_2 = {
+            "tableReference": {
+                "projectId": self.project_id,
+                "datasetId": "dataset_1",
+                "tableId": "my_other_fake_view",
+            },
+        }
+
+        mock_table_resource_ds_1_table_3 = {
+            "tableReference": {
+                "projectId": self.project_id,
+                "datasetId": "dataset_1",
+                "tableId": "bogus_view",
+            },
+        }
+        self.mock_client.list_tables.return_value = [
+            bigquery.table.TableListItem(mock_table_resource_ds_1_table_1),
+            bigquery.table.TableListItem(mock_table_resource_ds_1_table_2),
+            bigquery.table.TableListItem(mock_table_resource_ds_1_table_3),
+        ]
+        self.mock_client.dataset_ref_for_id.return_value = dataset
+        self.mock_client.dataset_exists.return_value = True
+
+        views_to_update = [view_builder.build() for view_builder in mock_view_builders]
+
+        dag_walker = BigQueryViewDagWalker(views_to_update)
+
+        managed_views_map = (
+            get_managed_view_and_materialized_table_addresses_by_dataset(dag_walker)
+        )
+
+        cleanup_datasets_and_delete_unmanaged_views(
+            self.mock_client, managed_views_map, dry_run=False
+        )
+
+        self.mock_client.delete_dataset.assert_not_called()
+        self.mock_client.list_tables.assert_called()
+        self.mock_client.delete_table.assert_called_once_with("dataset_1", "bogus_view")
+
+    @patch(
+        "recidiviz.big_query.view_update_manager_utils.get_datasets_that_have_ever_been_managed"
+    )
+    def test_cleanup_datasets_and_delete_unmanaged_views_unmanaged_view_in_multiple_ds(
+        self, mock_get_datasets_that_have_ever_been_managed: mock.MagicMock
+    ) -> None:
+        mock_get_datasets_that_have_ever_been_managed.return_value = {
+            "dataset_1",
+            "dataset_2",
+        }
+
+        dataset = bigquery.dataset.DatasetReference(self.project_id, "dataset_1")
+        dataset_2 = bigquery.dataset.DatasetReference(self.project_id, "dataset_2")
+
+        mock_view_builders = [
+            SimpleBigQueryViewBuilder(
+                dataset_id="dataset_1",
+                view_id="my_fake_view",
+                description="my_fake_view description",
+                view_query_template="SELECT NULL LIMIT 0",
+                should_materialize=False,
+            ),
+            SimpleBigQueryViewBuilder(
+                dataset_id="dataset_2",
+                view_id="my_fake_view_2",
+                description="my_fake_view_2 description",
+                view_query_template="SELECT NULL LIMIT 0",
+                should_materialize=False,
+            ),
+        ]
+
+        mock_table_resource_ds_1_table = {
+            "tableReference": {
+                "projectId": self.project_id,
+                "datasetId": "dataset_1",
+                "tableId": "my_fake_view",
+            },
+        }
+
+        mock_table_resource_ds_1_table_bogus = {
+            "tableReference": {
+                "projectId": self.project_id,
+                "datasetId": "dataset_1",
+                "tableId": "bogus_view_1",
+            },
+        }
+
+        mock_table_resource_ds_2_table = {
+            "tableReference": {
+                "projectId": self.project_id,
+                "datasetId": "dataset_2",
+                "tableId": "my_fake_view_2",
+            },
+        }
+
+        mock_table_resource_ds_2_table_bogus = {
+            "tableReference": {
+                "projectId": self.project_id,
+                "datasetId": "dataset_2",
+                "tableId": "bogus_view_2",
+            },
+        }
+
+        def mock_list_tables(dataset_id: str) -> bigquery.table.TableListItem:
+            if dataset_id == dataset.dataset_id:
+                return [
+                    bigquery.table.TableListItem(mock_table_resource_ds_1_table),
+                    bigquery.table.TableListItem(mock_table_resource_ds_1_table_bogus),
+                ]
+            if dataset_id == dataset_2.dataset_id:
+                return [
+                    bigquery.table.TableListItem(mock_table_resource_ds_2_table),
+                    bigquery.table.TableListItem(mock_table_resource_ds_2_table_bogus),
+                ]
+            raise ValueError(f"No tables for id: {dataset_id}")
+
+        self.mock_client.list_tables.side_effect = mock_list_tables
+
+        def get_dataset_ref(dataset_id: str) -> bigquery.dataset.DatasetReference:
+            if dataset_id == dataset.dataset_id:
+                return dataset
+            if dataset_id == dataset_2.dataset_id:
+                return dataset_2
+            raise ValueError(f"No dataset for id: {dataset_id}")
+
+        self.mock_client.dataset_ref_for_id.side_effect = get_dataset_ref
+        self.mock_client.dataset_exists.return_value = True
+
+        views_to_update = [view_builder.build() for view_builder in mock_view_builders]
+
+        dag_walker = BigQueryViewDagWalker(views_to_update)
+
+        managed_views_map = (
+            get_managed_view_and_materialized_table_addresses_by_dataset(dag_walker)
+        )
+
+        cleanup_datasets_and_delete_unmanaged_views(
+            self.mock_client, managed_views_map, dry_run=False
+        )
+
+        self.mock_client.delete_dataset.assert_not_called()
+        self.mock_client.list_tables.assert_called()
+        self.mock_client.delete_table.assert_has_calls(
+            [call("dataset_1", "bogus_view_1"), call("dataset_2", "bogus_view_2")],
+            any_order=True,
+        )
+        self.assertEqual(self.mock_client.delete_table.call_count, 2)
+
+    @patch(
+        "recidiviz.big_query.view_update_manager_utils.get_datasets_that_have_ever_been_managed"
+    )
+    def test_cleanup_datasets_and_delete_unmanaged_views_no_unmanaged_views(
+        self, mock_get_datasets_that_have_ever_been_managed: mock.MagicMock
+    ) -> None:
+        mock_get_datasets_that_have_ever_been_managed.return_value = {
+            "dataset_1",
+        }
+
+        dataset = bigquery.dataset.DatasetReference(self.project_id, "dataset_1")
+
+        sample_views = [
+            {
+                "view_id": "my_fake_view",
+                "view_query": "SELECT NULL LIMIT 0",
+            },
+            {"view_id": "my_other_fake_view", "view_query": "SELECT NULL LIMIT 0"},
+        ]
+        mock_view_builders = [
+            SimpleBigQueryViewBuilder(
+                dataset_id="dataset_1",
+                description=f"{view['view_id']} description",
+                view_query_template="a",
+                should_materialize=False,
+                materialized_address_override=None,
+                should_build_predicate=None,
+                **view,
+            )
+            for view in sample_views
+        ]
+
+        mock_table_resource_ds_1_table_1 = {
+            "tableReference": {
+                "projectId": self.project_id,
+                "datasetId": "dataset_1",
+                "tableId": "my_fake_view",
+            },
+        }
+
+        mock_table_resource_ds_1_table_2 = {
+            "tableReference": {
+                "projectId": self.project_id,
+                "datasetId": "dataset_1",
+                "tableId": "my_other_fake_view",
+            },
+        }
+
+        self.mock_client.list_tables.return_value = [
+            bigquery.table.TableListItem(mock_table_resource_ds_1_table_1),
+            bigquery.table.TableListItem(mock_table_resource_ds_1_table_2),
+        ]
+        self.mock_client.dataset_ref_for_id.return_value = dataset
+        self.mock_client.dataset_exists.return_value = True
+
+        views_to_update = [view_builder.build() for view_builder in mock_view_builders]
+
+        dag_walker = BigQueryViewDagWalker(views_to_update)
+
+        managed_views_map = (
+            get_managed_view_and_materialized_table_addresses_by_dataset(dag_walker)
+        )
+
+        cleanup_datasets_and_delete_unmanaged_views(
+            self.mock_client, managed_views_map, dry_run=False
+        )
+
+        self.mock_client.delete_dataset.assert_not_called()
+        self.mock_client.list_tables.assert_called()
+        self.mock_client.delete_table.assert_not_called()
+
+    @patch(
+        "recidiviz.big_query.view_update_manager_utils.get_datasets_that_have_ever_been_managed"
+    )
+    def test_cleanup_datasets_and_delete_unmanaged_views_unmanaged_dataset(
+        self, mock_get_datasets_that_have_ever_been_managed: mock.MagicMock
+    ) -> None:
+        mock_get_datasets_that_have_ever_been_managed.return_value = {
+            "dataset_1",
+            "bogus_dataset",
+        }
+
+        dataset = bigquery.dataset.DatasetReference(self.project_id, "dataset_1")
+        dataset_2 = bigquery.dataset.DatasetReference(self.project_id, "bogus_dataset")
+
+        sample_views = [
+            {
+                "view_id": "my_fake_view",
+                "view_query": "SELECT NULL LIMIT 0",
+            }
+        ]
+        mock_view_builders = [
+            SimpleBigQueryViewBuilder(
+                dataset_id="dataset_1",
+                description=f"{view['view_id']} description",
+                view_query_template="a",
+                should_materialize=False,
+                materialized_address_override=None,
+                should_build_predicate=None,
+                **view,
+            )
+            for view in sample_views
+        ]
+
+        mock_table_resource_ds_1_table_1 = {
+            "tableReference": {
+                "projectId": self.project_id,
+                "datasetId": "dataset_1",
+                "tableId": "my_fake_view",
+            },
+        }
+
+        self.mock_client.list_tables.return_value = [
+            bigquery.table.TableListItem(mock_table_resource_ds_1_table_1),
+        ]
+
+        def get_dataset_ref(dataset_id: str) -> bigquery.dataset.DatasetReference:
+            if dataset_id == dataset.dataset_id:
+                return dataset
+            if dataset_id == dataset_2.dataset_id:
+                return dataset_2
+            raise ValueError(f"No dataset for id: {dataset_id}")
+
+        self.mock_client.dataset_ref_for_id.side_effect = get_dataset_ref
+        self.mock_client.dataset_exists.return_value = True
+
+        views_to_update = [view_builder.build() for view_builder in mock_view_builders]
+
+        dag_walker = BigQueryViewDagWalker(views_to_update)
+
+        managed_views_map = (
+            get_managed_view_and_materialized_table_addresses_by_dataset(dag_walker)
+        )
+
+        cleanup_datasets_and_delete_unmanaged_views(
+            self.mock_client, managed_views_map, dry_run=False
+        )
+
+        self.mock_client.delete_dataset.assert_called_with(
+            self.mock_client.dataset_ref_for_id("bogus_dataset"), delete_contents=True
+        )
+        self.mock_client.list_tables.assert_called()
+        self.mock_client.delete_table.assert_not_called()
+
+    @patch(
+        "recidiviz.big_query.view_update_manager_utils.get_datasets_that_have_ever_been_managed"
+    )
+    def test_cleanup_datasets_and_delete_unmanaged_views_dataset_not_in_master_list(
+        self, mock_get_datasets_that_have_ever_been_managed: mock.MagicMock
+    ) -> None:
+        mock_get_datasets_that_have_ever_been_managed.return_value = {
+            "dataset_1",
+        }
+
+        dataset = bigquery.dataset.DatasetReference(self.project_id, "dataset_1")
+        dataset_2 = bigquery.dataset.DatasetReference(self.project_id, "bogus_dataset")
+
+        mock_view_builders = [
+            SimpleBigQueryViewBuilder(
+                dataset_id="dataset_1",
+                view_id="my_fake_view",
+                description="my_fake_view description",
+                view_query_template="SELECT NULL LIMIT 0",
+                should_materialize=False,
+            ),
+            SimpleBigQueryViewBuilder(
+                dataset_id="bogus_dataset",
+                view_id="my_fake_view_2",
+                description="my_fake_view_2 description",
+                view_query_template="SELECT NULL LIMIT 0",
+                should_materialize=False,
+            ),
+        ]
+
+        mock_table_resource_ds_1_table_1 = {
+            "tableReference": {
+                "projectId": self.project_id,
+                "datasetId": "dataset_1",
+                "tableId": "my_fake_view",
+            },
+        }
+
+        mock_table_resource_ds_2_table_1 = {
+            "tableReference": {
+                "projectId": self.project_id,
+                "datasetId": "bogus_dataset",
+                "tableId": "my_fake_view_2",
+            },
+        }
+
+        def mock_list_tables(dataset_id: str) -> bigquery.table.TableListItem:
+            if dataset_id == dataset.dataset_id:
+                return [
+                    bigquery.table.TableListItem(mock_table_resource_ds_1_table_1),
+                ]
+            if dataset_id == dataset_2.dataset_id:
+                return [
+                    bigquery.table.TableListItem(mock_table_resource_ds_2_table_1),
+                ]
+            raise ValueError(f"No tables for id: {dataset_id}")
+
+        self.mock_client.list_tables.side_effect = mock_list_tables
+
+        def get_dataset_ref(dataset_id: str) -> bigquery.dataset.DatasetReference:
+            if dataset_id == dataset.dataset_id:
+                return dataset
+            if dataset_id == dataset_2.dataset_id:
+                return dataset_2
+            raise ValueError(f"No dataset for id: {dataset_id}")
+
+        self.mock_client.dataset_ref_for_id.side_effect = get_dataset_ref
+        self.mock_client.dataset_exists.return_value = True
+
+        views_to_update = [view_builder.build() for view_builder in mock_view_builders]
+
+        dag_walker = BigQueryViewDagWalker(views_to_update)
+
+        managed_views_map = (
+            get_managed_view_and_materialized_table_addresses_by_dataset(dag_walker)
+        )
+
+        with self.assertRaises(ValueError):
+            cleanup_datasets_and_delete_unmanaged_views(
+                self.mock_client, managed_views_map, dry_run=False
+            )
+
+        self.mock_client.delete_dataset.assert_not_called()
+        self.mock_client.delete_table.assert_not_called()
+
+    @patch(
+        "recidiviz.big_query.view_update_manager_utils.get_datasets_that_have_ever_been_managed"
+    )
+    def test_cleanup_datasets_and_delete_unmanaged_views_unmanaged_dataset_and_dataset_not_in_BigQuery(
+        self, mock_get_datasets_that_have_ever_been_managed: mock.MagicMock
+    ) -> None:
+        mock_get_datasets_that_have_ever_been_managed.return_value = {
+            "dataset_1",
+            "dataset_unmanaged",
+        }
+
+        dataset = bigquery.dataset.DatasetReference(self.project_id, "dataset_1")
+        dataset_2 = bigquery.dataset.DatasetReference(
+            self.project_id, "dataset_unmanaged"
+        )
+
+        mock_view_builders = [
+            SimpleBigQueryViewBuilder(
+                dataset_id="dataset_1",
+                view_id="my_fake_view",
+                description="my_fake_view description",
+                view_query_template="SELECT NULL LIMIT 0",
+                should_materialize=False,
+            )
+        ]
+
+        mock_table_resource_ds_1_table_1 = {
+            "tableReference": {
+                "projectId": self.project_id,
+                "datasetId": "dataset_1",
+                "tableId": "my_fake_view",
+            },
+        }
+
+        self.mock_client.list_tables.return_value = [
+            bigquery.table.TableListItem(mock_table_resource_ds_1_table_1),
+        ]
+
+        def get_dataset_ref(dataset_id: str) -> bigquery.dataset.DatasetReference:
+            if dataset_id == dataset.dataset_id:
+                return dataset
+            if dataset_id == dataset_2.dataset_id:
+                return dataset_2
+            raise ValueError(f"No dataset for id: {dataset_id}")
+
+        self.mock_client.dataset_ref_for_id.side_effect = get_dataset_ref
+
+        def mock_dataset_exists(dataset_ref: bigquery.dataset.DatasetReference) -> bool:
+            if dataset_ref == dataset:
+                return True
+            return False
+
+        self.mock_client.dataset_exists.side_effect = mock_dataset_exists
+
+        views_to_update = [view_builder.build() for view_builder in mock_view_builders]
+
+        dag_walker = BigQueryViewDagWalker(views_to_update)
+
+        managed_views_map = (
+            get_managed_view_and_materialized_table_addresses_by_dataset(dag_walker)
+        )
+
+        with self.assertLogs() as captured_log:
+            cleanup_datasets_and_delete_unmanaged_views(
+                self.mock_client, managed_views_map, dry_run=False
+            )
+        self.assertEqual(len(captured_log.records), 1)
+        # check that there is only one log message
+        self.assertEqual(
+            captured_log.records[0].getMessage(),
+            "Dataset dataset_unmanaged isn't being managed and no longer exists in BigQuery. It can be safely removed from the list DATASETS_THAT_HAVE_EVER_BEEN_MANAGED.",
+        )
+        self.mock_client.delete_dataset.assert_not_called()
+        self.mock_client.delete_table.assert_not_called()
+
+    @patch(
+        "recidiviz.big_query.view_update_manager_utils.get_datasets_that_have_ever_been_managed"
+    )
+    def test_cleanup_datasets_and_delete_unmanaged_views_dry_run(
+        self, mock_get_datasets_that_have_ever_been_managed: mock.MagicMock
+    ) -> None:
+        mock_get_datasets_that_have_ever_been_managed.return_value = {
+            "dataset_1",
+            "dataset_2",
+            "dataset_unmanaged",
+        }
+
+        dataset = bigquery.dataset.DatasetReference(self.project_id, "dataset_1")
+        dataset_2 = bigquery.dataset.DatasetReference(self.project_id, "dataset_2")
+        dataset_3 = bigquery.dataset.DatasetReference(
+            self.project_id, "dataset_unmanaged"
+        )
+
+        mock_view_builders = [
+            SimpleBigQueryViewBuilder(
+                dataset_id="dataset_1",
+                view_id="my_fake_view",
+                description="my_fake_view description",
+                view_query_template="SELECT NULL LIMIT 0",
+                should_materialize=False,
+            ),
+            SimpleBigQueryViewBuilder(
+                dataset_id="dataset_2",
+                view_id="my_fake_view_2",
+                description="my_fake_view_2 description",
+                view_query_template="SELECT NULL LIMIT 0",
+                should_materialize=False,
+            ),
+        ]
+
+        mock_table_resource_ds_1_table = {
+            "tableReference": {
+                "projectId": self.project_id,
+                "datasetId": "dataset_1",
+                "tableId": "my_fake_view",
+            },
+        }
+
+        mock_table_resource_ds_1_table_bogus = {
+            "tableReference": {
+                "projectId": self.project_id,
+                "datasetId": "dataset_1",
+                "tableId": "bogus_view_1",
+            },
+        }
+
+        mock_table_resource_ds_2_table = {
+            "tableReference": {
+                "projectId": self.project_id,
+                "datasetId": "dataset_2",
+                "tableId": "my_fake_view_2",
+            },
+        }
+
+        mock_table_resource_ds_2_table_bogus = {
+            "tableReference": {
+                "projectId": self.project_id,
+                "datasetId": "dataset_2",
+                "tableId": "bogus_view_2",
+            },
+        }
+
+        def mock_list_tables(dataset_id: str) -> bigquery.table.TableListItem:
+            if dataset_id == dataset.dataset_id:
+                return [
+                    bigquery.table.TableListItem(mock_table_resource_ds_1_table),
+                    bigquery.table.TableListItem(mock_table_resource_ds_1_table_bogus),
+                ]
+            if dataset_id == dataset_2.dataset_id:
+                return [
+                    bigquery.table.TableListItem(mock_table_resource_ds_2_table),
+                    bigquery.table.TableListItem(mock_table_resource_ds_2_table_bogus),
+                ]
+            raise ValueError(f"No tables for id: {dataset_id}")
+
+        self.mock_client.list_tables.side_effect = mock_list_tables
+
+        def get_dataset_ref(dataset_id: str) -> bigquery.dataset.DatasetReference:
+            if dataset_id == dataset.dataset_id:
+                return dataset
+            if dataset_id == dataset_2.dataset_id:
+                return dataset_2
+            if dataset_id == dataset_3.dataset_id:
+                return dataset_3
+            raise ValueError(f"No dataset for id: {dataset_id}")
+
+        self.mock_client.dataset_ref_for_id.side_effect = get_dataset_ref
+        self.mock_client.dataset_exists.return_value = True
+
+        views_to_update = [view_builder.build() for view_builder in mock_view_builders]
+
+        dag_walker = BigQueryViewDagWalker(views_to_update)
+
+        managed_views_map = (
+            get_managed_view_and_materialized_table_addresses_by_dataset(dag_walker)
+        )
+
+        cleanup_datasets_and_delete_unmanaged_views(
+            self.mock_client, managed_views_map, dry_run=True
+        )
+
+        self.mock_client.delete_dataset.assert_not_called()
+        self.mock_client.list_tables.assert_called()
         self.mock_client.delete_table.assert_not_called()
