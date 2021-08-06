@@ -17,9 +17,11 @@
 """Test-only implementation of the GCSFileSystem"""
 
 import abc
+import json
 import os
 import shutil
 import threading
+from collections import defaultdict
 from contextlib import contextmanager
 from typing import Any, Dict, Iterator, List, Optional, Set, TextIO, Union
 
@@ -73,6 +75,8 @@ class FakeGCSFileSystem(GCSFileSystem):
         self.files: Dict[str, FakeGCSFileSystemEntry] = {}
         self.delegate: Optional[FakeGCSFileSystemDelegate] = None
 
+        self.metadata_store: Dict[str, Dict[str, Any]] = defaultdict(dict)
+
         # Only for convenience so that it is kept around after any temporarily uploaded files are deleted
         self.uploaded_paths: Set[Union[GcsfsFilePath, GcsfsDirectoryPath]] = set()
 
@@ -124,15 +128,24 @@ class FakeGCSFileSystem(GCSFileSystem):
         raise ValueError("Must be implemented for use in tests.")
 
     def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, str]]:
-        raise ValueError("Must be implemented for use in tests.")
+        path_key = path.abs_path()
+        return self.metadata_store[path_key]
 
-    def set_metadata(
+    def clear_metadata(self, path: GcsfsFilePath) -> None:
+        path_key = path.abs_path()
+        self.metadata_store[path_key] = {}
+
+    def update_metadata(
         self,
         path: GcsfsFilePath,
         new_metadata: Dict[str, Any],
-        clear_preexisting_metadata: bool,
     ) -> None:
-        raise ValueError("Must be implemented for use in tests.")
+        path_key = path.abs_path()
+        new_values = {
+            k: v if isinstance(v, str) else json.dumps(v)
+            for k, v in new_metadata.items()
+        }
+        self.metadata_store[path_key].update(new_values)
 
     def real_absolute_path_for_path(self, path: GcsfsFilePath) -> str:
         with self.mutex:
