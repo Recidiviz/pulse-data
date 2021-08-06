@@ -38,9 +38,42 @@ from progress.bar import Bar
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucket_controller import (
     BaseUploadStateFilesToIngestBucketController,
+    UploadStateFilesToIngestBucketDelegate,
 )
 from recidiviz.tools.gsutil_shell_helpers import gsutil_cp
+from recidiviz.tools.migrations.migration_helpers import prompt_for_confirmation
 from recidiviz.utils.params import str_to_bool
+
+
+class ManualUploadStateFilesToIngestBucketDelegate(
+    UploadStateFilesToIngestBucketDelegate
+):
+    def __init__(
+        self,
+        region_code: str,
+        dry_run: bool,
+        destination_bucket_override: Optional[GcsfsBucketPath],
+    ) -> None:
+        self.dry_run = dry_run
+        self.region_code = region_code.upper()
+        self.destination_bucket_override = destination_bucket_override
+
+    def should_pause_processing(self) -> bool:
+        return not self.dry_run and not self.destination_bucket_override
+
+    def pause_processing(self) -> None:
+        prompt_for_confirmation(
+            f"Have you paused ingest queues for [{self.region_code}] via the admin "
+            f"panel, if they are not paused already?",
+            "Y",
+        )
+
+    def unpause_processing(self) -> None:
+        prompt_for_confirmation(
+            f"Have you unpaused ingest queues for [{self.region_code}] via the admin "
+            f"panel?",
+            "Y",
+        )
 
 
 class ManualUploadStateFilesToIngestBucketController(
@@ -63,6 +96,11 @@ class ManualUploadStateFilesToIngestBucketController(
             ],
             project_id=project_id,
             region=region,
+            delegate=ManualUploadStateFilesToIngestBucketDelegate(
+                region_code=region,
+                dry_run=dry_run,
+                destination_bucket_override=destination_bucket_override,
+            ),
             destination_bucket_override=destination_bucket_override,
         )
 
