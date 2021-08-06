@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 import unittest
 from typing import Set, Tuple
 from unittest import mock
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from google.cloud import bigquery
 
@@ -53,10 +53,14 @@ class ViewManagerTest(unittest.TestCase):
         self.metadata_patcher = mock.patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = _PROJECT_ID
+        self.mock_dataset_ref_ds_1 = bigquery.dataset.DatasetReference(
+            _PROJECT_ID, "dataset_1"
+        )
 
         self.client_patcher = patch(
             "recidiviz.big_query.view_update_manager.BigQueryClientImpl"
         )
+
         self.mock_client_constructor = self.client_patcher.start()
         self.mock_client = self.mock_client_constructor.return_value
 
@@ -70,9 +74,20 @@ class ViewManagerTest(unittest.TestCase):
         self.client_patcher_2.stop()
         self.metadata_patcher.stop()
 
-    def test_create_managed_dataset_and_deploy_views_for_view_builders(self) -> None:
+    @patch(
+        "recidiviz.big_query.view_update_manager_utils.get_datasets_that_have_ever_been_managed"
+    )
+    def test_create_managed_dataset_and_deploy_views_for_view_builders_simple(
+        self, mock_get_datasets_that_have_ever_been_managed: mock.MagicMock
+    ) -> None:
         """Test that create_managed_dataset_and_deploy_views_for_view_builders creates a dataset if necessary,
-        and updates all views built by the view builders."""
+        and updates all views built by the view builders. No unmanaged views or datasets, so nothing should be
+        cleaned up. The only deleted table calls should be the ones from recreating views so changes can be reflected
+        in schema"""
+        mock_get_datasets_that_have_ever_been_managed.return_value = {
+            _DATASET_NAME,
+        }
+
         dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
 
         sample_views = [
@@ -108,6 +123,15 @@ class ViewManagerTest(unittest.TestCase):
             [mock.call(view_builder.build()) for view_builder in mock_view_builders],
             any_order=True,
         )
+        self.mock_client.delete_table.assert_has_calls(
+            [
+                mock.call(_DATASET_NAME, "my_fake_view"),
+                mock.call(_DATASET_NAME, "my_other_fake_view"),
+            ],
+            any_order=True,
+        )
+        self.mock_client.delete_dataset.assert_not_called()
+        self.assertEqual(self.mock_client.delete_table.call_count, 2)
 
     def test_rematerialize_views(self) -> None:
         """Test that create_managed_dataset_and_deploy_views_for_view_builders only updates
@@ -145,10 +169,16 @@ class ViewManagerTest(unittest.TestCase):
             [mock.call(mock_view_builders[0].build())], any_order=True
         )
 
+    @patch(
+        "recidiviz.big_query.view_update_manager_utils.get_datasets_that_have_ever_been_managed"
+    )
     def test_create_managed_dataset_and_deploy_views_for_view_builders_no_materialize_no_update(
-        self,
+        self, mock_get_datasets_that_have_ever_been_managed: mock.MagicMock
     ) -> None:
         """Tests that we don't materialize any views if they have not been updated"""
+        mock_get_datasets_that_have_ever_been_managed.return_value = {
+            _DATASET_NAME,
+        }
         dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
 
         mock_view_builders = [
@@ -224,10 +254,29 @@ class ViewManagerTest(unittest.TestCase):
         # Materialize is not called!
         self.mock_client.materialize_view_to_table.assert_not_called()
 
+        # Only delete calls should be from recreating views to have changes updating in schema from the dag walker
+        self.mock_client.delete_table.assert_has_calls(
+            [
+                mock.call(_DATASET_NAME, "my_fake_view"),
+                mock.call(_DATASET_NAME, "my_fake_view_2"),
+                mock.call(_DATASET_NAME, "my_fake_view_3"),
+            ],
+            any_order=True,
+        )
+        self.mock_client.delete_dataset.assert_not_called()
+        self.assertEqual(self.mock_client.delete_table.call_count, 3)
+
+    @patch(
+        "recidiviz.big_query.view_update_manager_utils.get_datasets_that_have_ever_been_managed"
+    )
     def test_create_managed_dataset_and_deploy_views_for_view_builders_materialize_children(
-        self,
+        self, mock_get_datasets_that_have_ever_been_managed: mock.MagicMock
     ) -> None:
         """Tests that we don't materialize any views if they have not been updated"""
+        mock_get_datasets_that_have_ever_been_managed.return_value = {
+            _DATASET_NAME,
+            _DATASET_NAME_2,
+        }
         dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
         materialized_dataset = bigquery.dataset.DatasetReference(
             _PROJECT_ID, _DATASET_NAME_2
@@ -335,14 +384,32 @@ class ViewManagerTest(unittest.TestCase):
             ],
             any_order=True,
         )
+        # Only delete calls should be from recreating views to have changes updating in schema from the dag walker
+        self.mock_client.delete_table.assert_has_calls(
+            [
+                mock.call(_DATASET_NAME, "my_fake_view"),
+                mock.call(_DATASET_NAME, "my_fake_view_2"),
+                mock.call(_DATASET_NAME, "my_fake_view_3"),
+            ],
+            any_order=True,
+        )
+        self.mock_client.delete_dataset.assert_not_called()
+        self.assertEqual(self.mock_client.delete_table.call_count, 3)
 
+    @patch(
+        "recidiviz.big_query.view_update_manager_utils.get_datasets_that_have_ever_been_managed"
+    )
     def test_create_managed_dataset_and_deploy_views_for_view_builders_different_datasets(
-        self,
+        self, mock_get_datasets_that_have_ever_been_managed: mock.MagicMock
     ) -> None:
         """Test that create_managed_dataset_and_deploy_views_for_view_builders only updates
         views that have a set materialized_address when the
         materialized_views_only flag is set to True.
         """
+        mock_get_datasets_that_have_ever_been_managed.return_value = {
+            _DATASET_NAME,
+            _DATASET_NAME_2,
+        }
         dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
         dataset_2 = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME_2)
 
@@ -398,11 +465,28 @@ class ViewManagerTest(unittest.TestCase):
             any_order=True,
         )
 
+        # Only delete calls should be from recreating views to have changes updating in schema from the dag walker
+        self.mock_client.delete_table.assert_has_calls(
+            [
+                mock.call(_DATASET_NAME, "my_fake_view"),
+                mock.call(_DATASET_NAME_2, "my_fake_view_2"),
+            ],
+            any_order=True,
+        )
+        self.mock_client.delete_dataset.assert_not_called()
+        self.assertEqual(self.mock_client.delete_table.call_count, 2)
+
+    @patch(
+        "recidiviz.big_query.view_update_manager_utils.get_datasets_that_have_ever_been_managed"
+    )
     def test_create_managed_dataset_and_deploy_views_for_view_builders_dataset_override(
-        self,
+        self, mock_get_datasets_that_have_ever_been_managed: mock.MagicMock
     ) -> None:
         """Test that create_managed_dataset_and_deploy_views_for_view_builders creates new datasets with a set table expiration
         for all datasets specified in dataset_overrides."""
+        mock_get_datasets_that_have_ever_been_managed.return_value = {
+            _DATASET_NAME,
+        }
         materialized_dataset = "other_dataset"
 
         override_dataset_ref = bigquery.dataset.DatasetReference(
@@ -492,9 +576,36 @@ class ViewManagerTest(unittest.TestCase):
             ],
             any_order=True,
         )
+        mock_get_datasets_that_have_ever_been_managed.assert_not_called()
+        # this is the first function call of cleanup_datasets_and_delete_unmanaged_views(), which shouldn't be called
+        # since we're working with override
 
-    def test_create_dataset_and_update_views(self) -> None:
+        self.mock_client.delete_dataset.assert_not_called()
+        # Only delete calls should be from recreating views to have changes updating in schema from the dag walker
+        self.mock_client.delete_table.assert_has_calls(
+            [
+                mock.call("test_prefix_" + _DATASET_NAME, "my_fake_view"),
+                mock.call(
+                    "test_prefix_" + _DATASET_NAME,
+                    "my_other_fake_view",
+                ),
+                mock.call("test_prefix_" + _DATASET_NAME, "materialized_view"),
+            ],
+            any_order=True,
+        )
+        self.mock_client.delete_dataset.assert_not_called()
+        self.assertEqual(self.mock_client.delete_table.call_count, 3)
+
+    @patch(
+        "recidiviz.big_query.view_update_manager_utils.get_datasets_that_have_ever_been_managed"
+    )
+    def test_create_dataset_and_update_views(
+        self, mock_get_datasets_that_have_ever_been_managed: mock.MagicMock
+    ) -> None:
         """Test that create_dataset_and_update_views creates a dataset if necessary, and updates all views."""
+        mock_get_datasets_that_have_ever_been_managed.return_value = {
+            _DATASET_NAME,
+        }
         dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
 
         sample_views = [
@@ -525,6 +636,16 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.create_or_update_view.assert_has_calls(
             [mock.call(view) for view in mock_views], any_order=True
         )
+        # Only delete calls should be from recreating views to have changes updating in schema from the dag walker
+        self.mock_client.delete_table.assert_has_calls(
+            [
+                mock.call(_DATASET_NAME, "my_fake_view"),
+                mock.call(_DATASET_NAME, "my_other_fake_view"),
+            ],
+            any_order=True,
+        )
+        self.mock_client.delete_dataset.assert_not_called()
+        self.assertEqual(self.mock_client.delete_table.call_count, 2)
 
     def test_no_duplicate_views_in_update_list(self) -> None:
         with patch.object(
@@ -578,3 +699,123 @@ class ViewManagerTest(unittest.TestCase):
                         "that queries from both production and staging projects but "
                         "is not listed in CROSS_PROJECT_VIEW_BUILDERS.",
                     )
+
+    @patch(
+        "recidiviz.big_query.view_update_manager_utils.get_datasets_that_have_ever_been_managed"
+    )
+    def test_create_managed_dataset_and_deploy_views_for_view_builders_unmanaged_views_in_multiple_ds(
+        self, mock_get_datasets_that_have_ever_been_managed: mock.MagicMock
+    ) -> None:
+        mock_get_datasets_that_have_ever_been_managed.return_value = {
+            _DATASET_NAME,
+            _DATASET_NAME_2,
+        }
+
+        dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
+        dataset_2 = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME_2)
+
+        mock_view_builders = [
+            SimpleBigQueryViewBuilder(
+                dataset_id=_DATASET_NAME,
+                view_id="my_fake_view",
+                description="my_fake_view description",
+                view_query_template="a",
+                should_materialize=False,
+                materialized_address_override=None,
+                should_build_predicate=None,
+            ),
+            SimpleBigQueryViewBuilder(
+                dataset_id=_DATASET_NAME_2,
+                view_id="my_other_fake_view",
+                description="my_other_fake_view description",
+                view_query_template="a",
+                should_materialize=False,
+                materialized_address_override=None,
+                should_build_predicate=None,
+            ),
+        ]
+
+        mock_table_resource_ds_1_table = {
+            "tableReference": {
+                "projectId": _PROJECT_ID,
+                "datasetId": _DATASET_NAME,
+                "tableId": "my_fake_view",
+            },
+        }
+
+        mock_table_resource_ds_1_table_bogus = {
+            "tableReference": {
+                "projectId": _PROJECT_ID,
+                "datasetId": _DATASET_NAME,
+                "tableId": "bogus_view_1",
+            },
+        }
+
+        mock_table_resource_ds_2_table = {
+            "tableReference": {
+                "projectId": _PROJECT_ID,
+                "datasetId": _DATASET_NAME_2,
+                "tableId": "my_other_fake_view",
+            },
+        }
+
+        mock_table_resource_ds_2_table_bogus = {
+            "tableReference": {
+                "projectId": _PROJECT_ID,
+                "datasetId": _DATASET_NAME_2,
+                "tableId": "bogus_view_2",
+            },
+        }
+
+        def mock_list_tables(dataset_id: str) -> bigquery.table.TableListItem:
+            if dataset_id == dataset.dataset_id:
+                return [
+                    bigquery.table.TableListItem(mock_table_resource_ds_1_table),
+                    bigquery.table.TableListItem(mock_table_resource_ds_1_table_bogus),
+                ]
+            if dataset_id == dataset_2.dataset_id:
+                return [
+                    bigquery.table.TableListItem(mock_table_resource_ds_2_table),
+                    bigquery.table.TableListItem(mock_table_resource_ds_2_table_bogus),
+                ]
+            raise ValueError(f"No tables for id: {dataset_id}")
+
+        self.mock_client.list_tables.side_effect = mock_list_tables
+
+        def get_dataset_ref(dataset_id: str) -> bigquery.dataset.DatasetReference:
+            if dataset_id == dataset.dataset_id:
+                return dataset
+            if dataset_id == dataset_2.dataset_id:
+                return dataset_2
+            raise ValueError(f"No dataset for id: {dataset_id}")
+
+        self.mock_client.dataset_ref_for_id.side_effect = get_dataset_ref
+        self.mock_client.dataset_exists.return_value = True
+
+        view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            view_builders_to_update=mock_view_builders,
+        )
+        self.mock_client.delete_dataset.assert_not_called()
+        self.mock_client.list_tables.assert_called()
+        self.mock_client.delete_table.assert_has_calls(
+            [
+                call(_DATASET_NAME, "my_fake_view"),
+                call(_DATASET_NAME_2, "my_other_fake_view"),
+                # above two calls are from deleting and recreating every view from _create_or_update_view_and_materialize_if_necessary()
+                call(_DATASET_NAME, "bogus_view_1"),
+                call(_DATASET_NAME_2, "bogus_view_2"),
+                # these two calls are from the actual cleaning up of unmanaged views
+            ],
+            any_order=True,
+        )
+        self.assertEqual(self.mock_client.delete_table.call_count, 4)
+
+        self.mock_client.create_dataset_if_necessary.assert_has_calls(
+            [call(dataset, None), call(dataset_2, None)], any_order=True
+        )
+        self.assertEqual(self.mock_client.create_dataset_if_necessary.call_count, 2)
+        self.mock_client.create_or_update_view.assert_has_calls(
+            [mock.call(view_builder.build()) for view_builder in mock_view_builders],
+            any_order=True,
+        )

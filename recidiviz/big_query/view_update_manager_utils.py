@@ -17,7 +17,7 @@
 """Provides utilities for updating views within a live BigQuery instance."""
 
 import logging
-from typing import Dict, Set
+from typing import Dict, List, Set
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_view import BigQueryAddress
@@ -35,11 +35,13 @@ DATASETS_THAT_HAVE_EVER_BEEN_MANAGED = {
     "dashboard_views",
     "dataflow_metrics_materialized",
     "experiments",
+    "externally_shared_views",
     "ingest_metadata",
     "justice_counts",
     "justice_counts_corrections",
     "justice_counts_dashboard",
     "justice_counts_jails",
+    "partner_data_csg",
     "po_report_views",
     "population_projection_data",
     "public_dashboard_views",
@@ -47,7 +49,6 @@ DATASETS_THAT_HAVE_EVER_BEEN_MANAGED = {
     "us_id_raw_data_up_to_date_views",
     "us_mo_raw_data_up_to_date_views",
     "us_nd_raw_data_up_to_date_views",
-    "us_pa_ingest_views",
     "us_pa_raw_data_up_to_date_views",
     "us_tn_raw_data_up_to_date_views",
     "validation_metadata",
@@ -56,7 +57,7 @@ DATASETS_THAT_HAVE_EVER_BEEN_MANAGED = {
 }
 
 
-def get_managed_views_for_dataset_map(
+def get_managed_view_and_materialized_table_addresses_by_dataset(
     managed_views_dag_walker: BigQueryViewDagWalker,
 ) -> Dict[str, Set[BigQueryAddress]]:
     """Creates a dictionary mapping every managed dataset in BigQuery to the set
@@ -68,6 +69,10 @@ def get_managed_views_for_dataset_map(
         managed_views_for_dataset_map.setdefault(view.address.dataset_id, set()).add(
             view.address
         )
+        if view.materialized_address:
+            managed_views_for_dataset_map.setdefault(
+                view.materialized_address.dataset_id, set()
+            ).add(view.materialized_address)
     return managed_views_for_dataset_map
 
 
@@ -106,6 +111,54 @@ def delete_unmanaged_views_and_tables_from_dataset(
 
             bq_client.delete_table(view.dataset_id, view.table_id)
     return unmanaged_views_and_tables
+
+
+def cleanup_datasets_and_delete_unmanaged_views(
+    bq_client: BigQueryClient,
+    managed_views_map: Dict[str, Set[BigQueryAddress]],
+    dry_run: bool = True,
+) -> None:
+    """This function filters through a list of managed dataset ids and a map of managed views to their corresponding
+    datasets (which is obtained through get_managed_views_for_dataset_map()) and checks that the dataset is in the
+    master list DATASETS_THAT_HAVE_EVER_BEEN_MANAGED. It then cleans up the datasets by deleting unmanaged datasets
+    and deleting any unmanaged views within managed datasets."""
+    datasets_that_have_ever_been_managed = get_datasets_that_have_ever_been_managed()
+    managed_dataset_ids: List[str] = list(managed_views_map.keys())
+
+    for dataset_id in managed_dataset_ids:
+        if dataset_id not in datasets_that_have_ever_been_managed:
+            raise ValueError(
+                "Managed dataset %s not found in the list DATASETS_THAT_HAVE_EVER_BEEN_MANAGED."
+                % dataset_id,
+            )
+
+    for dataset_id in datasets_that_have_ever_been_managed:
+        if dataset_id not in managed_views_map:
+            if bq_client.dataset_exists(bq_client.dataset_ref_for_id(dataset_id)):
+                if dry_run:
+                    logging.info(
+                        "[DRY RUN] Regular run would delete unmanaged dataset %s.",
+                        dataset_id,
+                    )
+                else:
+                    logging.info(
+                        "Deleting dataset %s, which is no longer managed.",
+                        dataset_id,
+                    )
+                    bq_client.delete_dataset(
+                        bq_client.dataset_ref_for_id(dataset_id), delete_contents=True
+                    )
+            else:
+                logging.info(
+                    "Dataset %s isn't being managed and no longer exists in BigQuery. It can be safely removed from "
+                    "the list DATASETS_THAT_HAVE_EVER_BEEN_MANAGED.",
+                    dataset_id,
+                )
+
+        else:
+            delete_unmanaged_views_and_tables_from_dataset(
+                bq_client, dataset_id, managed_views_map[dataset_id], dry_run
+            )
 
 
 def get_datasets_that_have_ever_been_managed() -> Set[str]:
