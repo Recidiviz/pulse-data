@@ -50,6 +50,9 @@ def get_next_assessment_date(client: ETLClient) -> Optional[date]:
     if client.state_code != "US_ID":
         raise CaseTriageInvalidStateException(client.state_code)
 
+    if client.supervision_level == StateSupervisionLevel.INTERNAL_UNKNOWN.value:
+        return None
+
     if client.most_recent_assessment_date is None or client.assessment_score is None:
         if client.supervision_start_date is None:
             # We expect that supervision_start_date is filled in, but in instances where
