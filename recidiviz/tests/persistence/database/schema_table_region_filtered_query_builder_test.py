@@ -21,6 +21,7 @@ import unittest
 from typing import List
 
 import sqlalchemy
+from sqlalchemy.dialects import postgresql
 
 from recidiviz.persistence.database.base_schema import JailsBase, StateBase
 from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
@@ -121,6 +122,7 @@ class BaseSchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):
             sqlalchemy.Column(
                 "column3", sqlalchemy.Enum("VAL1", "VAL2", name="my_enum")
             ),
+            sqlalchemy.Column("column4", postgresql.UUID),
         )
 
         self.fake_association_table = sqlalchemy.Table(
@@ -345,7 +347,8 @@ class CloudSqlSchemaTableRegionFilteredQueryBuilderTest(
             f"{self.fake_table_complex_schema.name}.state_code,"
             f"ARRAY_REPLACE({self.fake_table_complex_schema.name}.column2, NULL, '') "
             f"as column2,"
-            f"CAST({self.fake_table_complex_schema.name}.column3 as VARCHAR) "
+            f"CAST({self.fake_table_complex_schema.name}.column3 as VARCHAR),"
+            f"CAST({self.fake_table_complex_schema.name}.column4 as VARCHAR) "
             f"FROM {self.fake_table_complex_schema.name} "
             f"WHERE state_code IN ('US_XX')"
         )

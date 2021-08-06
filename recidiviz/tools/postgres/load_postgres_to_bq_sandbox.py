@@ -29,7 +29,7 @@ Example:
     python -m recidiviz.tools.postgres.load_postgres_to_bq_sandbox \
         --project_id recidiviz-staging \
         --sandbox_dataset_prefix my_prefix \
-        --schema STATE
+        --schema STATE \
         --direct-ingest-instance SECONDARY
 
 """
