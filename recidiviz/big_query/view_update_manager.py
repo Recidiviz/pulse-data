@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,6 +29,11 @@ from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilderShouldNotBuildError,
 )
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+
+from recidiviz.big_query.view_update_manager_utils import (
+    cleanup_datasets_and_delete_unmanaged_views,
+    get_managed_view_and_materialized_table_addresses_by_dataset,
+)
 from recidiviz.utils import monitoring
 
 m_failed_view_update = measure.MeasureInt(
@@ -123,9 +128,6 @@ def rematerialize_views(
 
     try:
         bq_client = BigQueryClientImpl(region_override=bq_region_override)
-        _create_all_datasets_if_necessary(
-            bq_client, views_to_update, set_default_table_expiration_for_new_datasets
-        )
 
         all_views_dag_walker = BigQueryViewDagWalker(
             _build_views_to_update(
@@ -133,6 +135,14 @@ def rematerialize_views(
                 candidate_view_builders=all_view_builders,
                 dataset_overrides=dataset_overrides,
             )
+        )
+        dataset_map = get_managed_view_and_materialized_table_addresses_by_dataset(
+            all_views_dag_walker
+        )
+        _create_all_datasets_if_necessary(
+            bq_client,
+            list(dataset_map.keys()),
+            set_default_table_expiration_for_new_datasets,
         )
 
         # Limit DAG to only ancestor views and the set of views to update
@@ -175,9 +185,10 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
     bq_region_override: Optional[str] = None,
     force_materialize: bool = False,
 ) -> None:
-    """Creates or updates all the views in the provided list with the view query in the provided view builder list. If
-    any materialized view has been updated (or if an ancestor view has been updated) or the force_materialize flag
-    is set, the view will be re-materialized to ensure the schemas remain consistent.
+    """Creates or updates all the views in the provided list with the view query in the provided view builder list.
+    If any materialized view has been updated (or if an ancestor view has been updated) or the force_materialize flag
+    is set, the view will be re-materialized to ensure the schemas remain consistent. Also, cleans up unmanaged views
+    and datasets by deleting them from BigQuery.
 
     Should only be called if we expect the views to have changed (either the view query or schema from querying
     underlying tables), e.g. at deploy time.
@@ -199,7 +210,7 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
             views_to_update,
             bq_region_override,
             force_materialize,
-            set_default_table_expiration_for_new_datasets,
+            set_temp_dataset_table_expiration=set_default_table_expiration_for_new_datasets,
         )
     except Exception as e:
         with monitoring.measurements() as measurements:
@@ -240,31 +251,23 @@ def _build_views_to_update(
 
 def _create_all_datasets_if_necessary(
     bq_client: BigQueryClient,
-    views_to_update: List[BigQueryView],
+    dataset_ids: List[str],
     set_temp_dataset_table_expiration: bool,
 ) -> None:
-    """Creates all required datasets for the list of views, both where the view itself
-    lives and where its materialized data lives, with a table timeout if necessary. Done
-    up front to avoid conflicts during a run of the DagWalker.
+    """Creates all required datasets for the list of dataset ids,
+    with a table timeout if necessary. Done up front to avoid conflicts during a run of the DagWalker.
     """
     new_dataset_table_expiration_ms = (
         TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
         if set_temp_dataset_table_expiration
         else None
     )
-    dataset_ids = set()
-    for view in views_to_update:
-        relevant_datasets = [bq_client.dataset_ref_for_id(view.dataset_id)]
-        if view.materialized_address:
-            relevant_datasets.append(
-                bq_client.dataset_ref_for_id(view.materialized_address.dataset_id)
-            )
-        for dataset_ref in relevant_datasets:
-            if dataset_ref.dataset_id not in dataset_ids:
-                bq_client.create_dataset_if_necessary(
-                    dataset_ref, new_dataset_table_expiration_ms
-                )
-                dataset_ids.add(dataset_ref.dataset_id)
+
+    for dataset_id in dataset_ids:
+        dataset_ref = bq_client.dataset_ref_for_id(dataset_id)
+        bq_client.create_dataset_if_necessary(
+            dataset_ref, new_dataset_table_expiration_ms
+        )
 
 
 def _create_managed_dataset_and_deploy_views(
@@ -273,26 +276,38 @@ def _create_managed_dataset_and_deploy_views(
     force_materialize: bool,
     set_temp_dataset_table_expiration: bool = False,
 ) -> None:
-    """Create and update the given views and their parent datasets.
+    """Create and update the given views and their parent datasets. Cleans up unmanaged views and datasets
 
-    For each dataset key in the given dictionary, creates the dataset if it does not
+    For each dataset key in the given dictionary, creates  the dataset if it does not
     exist, and creates or updates the underlying views mapped to that dataset.
 
     If a view has a set materialized_address field, materializes the view into a
     table.
 
+    Then, cleans up BigQuery by deleting unmanaged datasets and unmanaged views within managed datasets. This is not
+    performed if a temporary dataset table expiration is already set.
+
     Args:
         views_to_update: A list of view objects to be created or updated.
-        set_temp_dataset_table_expiration: If True, new datasets will be created with an
-         expiration of TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS.
+        set_temp_dataset_table_expiration: If True, new datasets will be created with an expiration
+            of TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS.
     """
-
     bq_client = BigQueryClientImpl(region_override=bq_region_override)
+    dag_walker = BigQueryViewDagWalker(views_to_update)
+
+    managed_views_map = get_managed_view_and_materialized_table_addresses_by_dataset(
+        dag_walker
+    )
+    managed_dataset_ids = list(managed_views_map.keys())
     _create_all_datasets_if_necessary(
-        bq_client, views_to_update, set_temp_dataset_table_expiration
+        bq_client, managed_dataset_ids, set_temp_dataset_table_expiration
     )
 
-    dag_walker = BigQueryViewDagWalker(views_to_update)
+    if not set_temp_dataset_table_expiration:
+        # We don't want to be deleting unmanaged views/tables if we're creating sandbox datasets
+        cleanup_datasets_and_delete_unmanaged_views(
+            bq_client, managed_views_map, dry_run=False
+        )
 
     def process_fn(v: BigQueryView, parent_results: Dict[BigQueryView, bool]) -> bool:
         """Returns True if this view or any of its parents were updated."""

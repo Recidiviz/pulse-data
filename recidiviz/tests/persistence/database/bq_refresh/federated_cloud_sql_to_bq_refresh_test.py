@@ -194,8 +194,14 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
     @patch(
         f"{FEDERATED_REFRESH_COLLECTOR_PACKAGE_NAME}.get_existing_direct_ingest_states"
     )
+    @patch(
+        "recidiviz.big_query.view_update_manager_utils.get_datasets_that_have_ever_been_managed"
+    )
     def test_federated_cloud_sql_to_bq_refresh(
-        self, mock_states_fn: mock.MagicMock, mock_states_fn_other: mock.MagicMock
+        self,
+        mock_get_datasets_that_have_ever_been_managed: mock.MagicMock,
+        mock_states_fn: mock.MagicMock,
+        mock_states_fn_other: mock.MagicMock,
     ) -> None:
         # Arrange
         def mock_dataset_ref_for_id(dataset_id: str) -> bigquery.DatasetReference:
@@ -206,6 +212,13 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         state_codes = [StateCode.US_XX, StateCode.US_WW]
         mock_states_fn.return_value = state_codes
         mock_states_fn_other.return_value = state_codes
+        mock_get_datasets_that_have_ever_been_managed.return_value = {
+            "operations_cloudsql_connection",
+            "us_xx_operations_regional",
+            "us_ww_operations_regional",
+            "operations_regional",
+            "operations",
+        }
 
         self.mock_bq_client.dataset_ref_for_id = mock_dataset_ref_for_id
         self.mock_bq_client.dataset_exists.return_value = True
