@@ -51,16 +51,19 @@ AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = """
           agent_type,
           external_id,
           CASE
-            -- TODO(#4159) Remove this state-specific logic once we have given and surnames set in ingest --
-            WHEN state_code IN ('US_ID', 'US_PA') THEN TRIM(SPLIT(full_name, ',')[SAFE_OFFSET(1)])
-            ELSE given_names
+            WHEN given_names IS NOT NULL THEN given_names
+            WHEN full_name IS NOT NULL THEN TRIM(SPLIT(full_name, ',')[SAFE_OFFSET(1)])
+            ELSE NULL
           END AS given_names,
           CASE
-            -- TODO(#4159) Remove this state-specific logic once we have given and surnames set in ingest --
-            WHEN state_code IN ('US_ID', 'US_PA') THEN TRIM(SPLIT(full_name, ',')[SAFE_OFFSET(0)])
-            ELSE surname
+            WHEN surname IS NOT NULL THEN surname
+            WHEN full_name IS NOT NULL THEN TRIM(SPLIT(full_name, ',')[SAFE_OFFSET(0)])
+            ELSE NULL
           END AS surname,
-          full_name
+          CASE
+            WHEN full_name IS NOT NULL THEN full_name 
+            ELSE CONCAT(COALESCE(given_names, ''), ' ', COALESCE(surname, '')) 
+          END AS full_name
         FROM agents_base
         WHERE rn = 1
     ),
