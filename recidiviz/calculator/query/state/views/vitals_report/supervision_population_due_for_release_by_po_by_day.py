@@ -36,7 +36,7 @@ SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_QUERY_TEMPLATE = """
     SELECT 
         state_code,
         date_of_supervision,
-        supervising_officer_external_id,
+        IFNULL(supervising_officer_external_id, 'UNKNOWN') as supervising_officer_external_id,
         district_id,
         district_name,
         due_for_release_count,
