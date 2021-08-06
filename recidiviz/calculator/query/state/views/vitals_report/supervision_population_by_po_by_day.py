@@ -18,6 +18,9 @@
 from typing import Dict, Tuple
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import (
+    hack_us_id_supervising_officer_external_id,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -30,12 +33,28 @@ SUPERVISION_POPULATION_BY_PO_BY_DAY_DESCRIPTION = """
 
 contact_population_by_state = {
     "US_ND": ("MINIMUM", "MEDIUM", "MAXIMUM"),
-    "US_ID": ("MINIMUM", "MEDIUM", "HIGH", "MAXIMUM"),
+    "US_ID": (
+        "MINIMUM",
+        "MEDIUM",
+        "HIGH",
+        "MAXIMUM",
+        "DIVERSION",
+        "INTERSTATE_COMPACT",
+        "INTERNAL_UNKNOWN",
+    ),
 }
 
 risk_assessment_population_by_state = {
     "US_ND": ("MINIMUM", "MEDIUM", "MAXIMUM"),
-    "US_ID": ("MINIMUM", "MEDIUM", "HIGH", "MAXIMUM"),
+    "US_ID": (
+        "MINIMUM",
+        "MEDIUM",
+        "HIGH",
+        "MAXIMUM",
+        "DIVERSION",
+        "INTERSTATE_COMPACT",
+        "INTERNAL_UNKNOWN",
+    ),
 }
 
 enabled_states = tuple(
@@ -62,7 +81,10 @@ def generate_state_specific_population(
 
 SUPERVISION_POPULATION_BY_PO_BY_DAY_QUERY_TEMPLATE = f"""
     /*{{description}}*/
-    WITH supervision_population AS (
+    WITH supervision_population_metrics AS (
+        {hack_us_id_supervising_officer_external_id('most_recent_supervision_population_metrics_materialized')}
+    ),
+    supervision_population AS (
         SELECT
             state_code,
             date_of_supervision,
@@ -75,7 +97,7 @@ SUPERVISION_POPULATION_BY_PO_BY_DAY_QUERY_TEMPLATE = f"""
             -- TODO(#7470): Expand contact population here once we process DIVERSION
             {generate_state_specific_population(contact_population_by_state, 'supervisees_requiring_contact')},
             {generate_state_specific_population(risk_assessment_population_by_state, 'supervisees_requiring_risk_assessment')},
-        FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_metrics_materialized`
+        FROM supervision_population_metrics
         INNER JOIN `{{project_id}}.{{vitals_views_dataset}}.supervision_officers_and_districts_materialized` officers
             USING (state_code, supervising_officer_external_id),
         UNNEST ([officers.supervising_district_external_id, 'ALL']) AS supervising_district_external_id,

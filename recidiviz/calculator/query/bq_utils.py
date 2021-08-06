@@ -101,3 +101,36 @@ def generate_district_id_from_district_name(district_name_field: str) -> str:
     return (
         f"""REPLACE(REGEXP_REPLACE({district_name_field}, r"[',-]", ''), ' ' , '_')"""
     )
+
+
+def hack_us_id_supervising_officer_external_id(dataflow_metric_table: str) -> str:
+    return f"""
+        -- HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT
+        --
+        -- HACK ALERT HACK ALERT HACK ALERT HACK ALERT
+        --
+        -- HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT
+        --
+        -- TODO(#5943): We unfortunately have to pull straight from raw data from Idaho due to internal
+        -- inconsistencies in Idaho's data. Our ingest pipeline assumed that the historical record
+        -- was accurate, but unfortunately that no longer seems to be the case. The long-term solution
+        -- involves fetching an updates one-off historical dump of the casemgr table, re-running ingest,
+        -- and adding validation to ensure this doesn't happen, but the timescale of this is much
+        -- slower than we want to move for Case Triage.
+        --
+        -- Hence, the decision to add this very verbose warning to encourage future readers to decide
+        -- whether they should start trying to pay down this technical debt.
+        --
+        -- HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT
+        --
+        -- HACK ALERT HACK ALERT HACK ALERT HACK ALERT
+        --
+        -- HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT
+        SELECT
+          * EXCEPT (supervising_officer_external_id),
+          IF(state_code != 'US_ID', supervising_officer_external_id, UPPER(ofndr_agnt.agnt_id)) AS supervising_officer_external_id
+        FROM `{{project_id}}.{{materialized_metrics_dataset}}.{dataflow_metric_table}`
+        LEFT OUTER JOIN
+          `{{project_id}}.us_id_raw_data_up_to_date_views.ofndr_agnt_latest` ofndr_agnt
+        ON person_external_id = ofndr_agnt.ofndr_num
+    """
