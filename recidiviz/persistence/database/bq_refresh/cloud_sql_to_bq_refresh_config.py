@@ -95,7 +95,7 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.utils import environment, metadata
+from recidiviz.utils import metadata
 
 
 class CloudSqlToBQConfig:
@@ -300,12 +300,6 @@ class CloudSqlToBQConfig:
                 for table in self.sorted_tables
                 if "history" in table.name
                 and table.name not in self.history_tables_to_include
-            )
-
-        if self.metadata_base == base_schema.CaseTriageBase:
-            etl_tables = [base.__tablename__ for base in case_triage_schema.ETL_TABLES]
-            return list(
-                table for table in self.sorted_tables if table.name not in etl_tables
             )
 
         return []
