@@ -413,6 +413,48 @@ class TestContactFrequencySufficient(unittest.TestCase):
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_XX")
 
+    def generate_supervision_case_compliance(
+        self,
+        start_of_supervision: date,
+        termination_date: date,
+        supervision_level: StateSupervisionLevel,
+        contact_dates: List[date],
+    ) -> UsNdSupervisionCaseCompliance:
+        """Tests face to face contacts for the maximum level case."""
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id="sp1",
+            state_code="US_ND",
+            start_date=start_of_supervision,
+            termination_date=termination_date,
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=supervision_level,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        supervision_contacts = [
+            StateSupervisionContact.new_with_defaults(
+                state_code="US_ND",
+                contact_date=contact_date,
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED,
+            )
+            for contact_date in contact_dates
+        ]
+
+        # note that this is outside 30 days but within the next calendar month
+        # so we should be good
+        return UsNdSupervisionCaseCompliance(
+            self.person,
+            supervision_period=supervision_period,
+            case_type=StateSupervisionCaseType.GENERAL,
+            start_of_supervision=start_of_supervision,
+            assessments=[],
+            supervision_contacts=supervision_contacts,
+        )
+
     def test_face_to_face_frequency_sufficient(self) -> None:
         """Tests for when the face to face contacts is sufficient."""
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
@@ -644,38 +686,17 @@ class TestContactFrequencySufficient(unittest.TestCase):
     ) -> None:
         """Tests face to face contacts for the minimum level case."""
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ND",
-            start_date=start_of_supervision,
-            termination_date=date(2018, 5, 19),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MINIMUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
 
-        supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ND",
-                contact_date=start_of_supervision + relativedelta(days=89),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
-                status=StateSupervisionContactStatus.COMPLETED,
-            )
-        ]
-
-        evaluation_date = start_of_supervision + relativedelta(days=90)
-
-        us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
-            self.person,
-            supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.GENERAL,
+        us_nd_supervision_compliance = self.generate_supervision_case_compliance(
             start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
+            termination_date=date(2018, 5, 19),
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            contact_dates=[
+                start_of_supervision + relativedelta(days=89),
+            ],
         )
+
+        evaluation_date = start_of_supervision + relativedelta(days=170)
 
         face_to_face_frequency_sufficient = (
             us_nd_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
@@ -684,44 +705,48 @@ class TestContactFrequencySufficient(unittest.TestCase):
         )
 
         self.assertTrue(face_to_face_frequency_sufficient)
+
+    def test_face_to_face_frequency_insufficient_contacts_minimum_level(
+        self,
+    ) -> None:
+        """Tests face to face contacts for the minimum level case."""
+        start_of_supervision = date(1618, 3, 5)
+
+        us_nd_supervision_compliance = self.generate_supervision_case_compliance(
+            start_of_supervision=start_of_supervision,
+            termination_date=date(1618, 5, 19),
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            contact_dates=[
+                start_of_supervision + relativedelta(days=89),
+            ],
+        )
+
+        evaluation_date = start_of_supervision + relativedelta(days=290)
+
+        face_to_face_frequency_sufficient = (
+            us_nd_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+                evaluation_date
+            )
+        )
+
+        self.assertFalse(face_to_face_frequency_sufficient)
 
     def test_face_to_face_frequency_sufficient_contacts_medium_level(
         self,
     ) -> None:
         """Tests face to face contacts for the medium level case."""
         start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ND",
-            start_date=start_of_supervision,
-            termination_date=date(2018, 5, 19),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MEDIUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
 
-        supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ND",
-                contact_date=start_of_supervision + relativedelta(days=58),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
-                status=StateSupervisionContactStatus.COMPLETED,
-            )
-        ]
-
-        evaluation_date = start_of_supervision + relativedelta(days=59)
-
-        us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
-            self.person,
-            supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.SEX_OFFENSE,
+        us_nd_supervision_compliance = self.generate_supervision_case_compliance(
             start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
+            termination_date=date(2018, 5, 19),
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            contact_dates=[
+                start_of_supervision + relativedelta(days=58),
+            ],
         )
+
+        evaluation_date = start_of_supervision + relativedelta(days=99)
 
         face_to_face_frequency_sufficient = (
             us_nd_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
@@ -730,50 +755,51 @@ class TestContactFrequencySufficient(unittest.TestCase):
         )
 
         self.assertTrue(face_to_face_frequency_sufficient)
+
+    def test_face_to_face_frequency_insufficient_contacts_medium_level(
+        self,
+    ) -> None:
+        """Tests face to face contacts for the medium level case."""
+        start_of_supervision = date(1734, 3, 5)
+
+        us_nd_supervision_compliance = self.generate_supervision_case_compliance(
+            start_of_supervision=start_of_supervision,
+            termination_date=date(1736, 5, 19),
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            contact_dates=[
+                date(1734, 4, 30),
+            ],
+        )
+
+        # First day of calendar month 3 after the last contact which should
+        # be the first date where contacts are overdue
+        evaluation_date = date(1734, 7, 1)
+
+        face_to_face_frequency_sufficient = (
+            us_nd_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+                evaluation_date
+            )
+        )
+
+        self.assertFalse(face_to_face_frequency_sufficient)
 
     def test_face_to_face_frequency_sufficient_contacts_maximum_level(
         self,
     ) -> None:
         """Tests face to face contacts for the maximum level case."""
-        start_of_supervision = date(2018, 3, 5)
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id="sp1",
-            state_code="US_ND",
-            start_date=start_of_supervision,
-            termination_date=date(2018, 5, 19),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+        us_nd_supervision_compliance = self.generate_supervision_case_compliance(
+            start_of_supervision=date(1818, 3, 5),
+            termination_date=date(1820, 5, 19),
             supervision_level=StateSupervisionLevel.MAXIMUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            contact_dates=[
+                date(1818, 3, 20),
+                date(1818, 4, 2),
+            ],
         )
 
-        supervision_contacts = [
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ND",
-                contact_date=start_of_supervision - relativedelta(days=24),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
-                status=StateSupervisionContactStatus.COMPLETED,
-            ),
-            StateSupervisionContact.new_with_defaults(
-                state_code="US_ND",
-                contact_date=start_of_supervision + relativedelta(days=29),
-                contact_type=StateSupervisionContactType.FACE_TO_FACE,
-                status=StateSupervisionContactStatus.COMPLETED,
-            ),
-        ]
-
-        evaluation_date = start_of_supervision + relativedelta(days=29)
-
-        us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(
-            self.person,
-            supervision_period=supervision_period,
-            case_type=StateSupervisionCaseType.GENERAL,
-            start_of_supervision=start_of_supervision,
-            assessments=[],
-            supervision_contacts=supervision_contacts,
-        )
+        # note that this is outside 30 days but within the next calendar month
+        # so the contact requirement should still be fulfilled
+        evaluation_date = date(1818, 5, 28)
 
         face_to_face_frequency_sufficient = (
             us_nd_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
@@ -782,6 +808,31 @@ class TestContactFrequencySufficient(unittest.TestCase):
         )
 
         self.assertTrue(face_to_face_frequency_sufficient)
+
+    def test_face_to_face_frequency_insufficient_contacts_maximum_level(
+        self,
+    ) -> None:
+        """Tests face to face contacts for the maximum level case."""
+        us_nd_supervision_compliance = self.generate_supervision_case_compliance(
+            start_of_supervision=date(1818, 3, 5),
+            termination_date=date(1820, 5, 19),
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            contact_dates=[
+                date(1818, 4, 2),
+            ],
+        )
+
+        # First day of calendar month 2 after the last contact which should
+        # be the first date where contacts are overdue
+        evaluation_date = date(1818, 6, 1)
+
+        face_to_face_frequency_sufficient = (
+            us_nd_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+                evaluation_date
+            )
+        )
+
+        self.assertFalse(face_to_face_frequency_sufficient)
 
 
 class TestReassessmentRequirementAreMet(unittest.TestCase):

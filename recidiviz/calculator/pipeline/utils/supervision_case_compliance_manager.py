@@ -20,7 +20,7 @@
 """
 import abc
 from datetime import date, timedelta
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
@@ -364,14 +364,6 @@ class StateSupervisionCaseComplianceManager:
         # TODO(#5199): Update to return `bool` once face to face contacts are ingested for US_ND.
         """Returns whether the frequency of face-to-face contacts between the officer and the person on supervision
         is sufficient with respect to the state standards for the level of supervision of the case."""
-
-    @abc.abstractmethod
-    def _get_required_face_to_face_contacts_and_period_days_for_level(
-        self,
-    ) -> Tuple[int, int]:
-        """Returns the number of face-to-face contacts that are required within time period (in days) for a supervision
-        case with the given supervision level.
-        """
 
     @abc.abstractmethod
     def _home_visit_frequency_is_sufficient(
