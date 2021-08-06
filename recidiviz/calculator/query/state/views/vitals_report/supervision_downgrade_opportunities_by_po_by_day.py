@@ -49,11 +49,12 @@ WITH downgrade_opportunities AS (
         IFNULL(level_1_supervision_location_external_id, 'UNKNOWN') as level_1_supervision_location_external_id,
         IFNULL(level_2_supervision_location_external_id, 'UNKNOWN') as level_2_supervision_location_external_id,
         COUNT (DISTINCT(IF(recommended_supervision_downgrade_level IS NOT NULL, person_id, NULL))) as total_downgrade_opportunities,
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics_materialized` compliance,
+    FROM `{project_id}.{vitals_views_dataset}.vitals_supervision_case_compliance_metrics` compliance,
     UNNEST ([compliance.level_1_supervision_location_external_id, 'ALL']) AS level_1_supervision_location_external_id,
     UNNEST ([compliance.level_2_supervision_location_external_id, 'ALL']) AS level_2_supervision_location_external_id,
     UNNEST ([supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
     WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 210 DAY)
+        -- 210 is 6 months (180 days) for the 6 month time series chart + 30 days for monthly average on the first day
         AND level_2_supervision_location_external_id IS NOT NULL
         -- Remove duplicate entries created when unnesting a state that does not have L2 locations
     GROUP BY
@@ -80,7 +81,7 @@ WITH downgrade_opportunities AS (
         AND sup_pop.supervising_officer_external_id = downgrade_opportunities.supervising_officer_external_id
         AND {vitals_state_specific_join_with_supervision_population}
     WHERE downgrade_opportunities.level_1_supervision_location_external_id = 'ALL'
-        OR downgrade_opportunities.state_code IN {vitals_level_1_state_codes} 
+        OR downgrade_opportunities.state_code IN {vitals_level_1_state_codes}
     """
 
 SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
