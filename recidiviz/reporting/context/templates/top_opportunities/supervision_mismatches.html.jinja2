@@ -27,12 +27,23 @@ class="em_wrapper" style="width:600px;" role="presentation"> {# Top Opps section
                             <tr>
                                 <td class="em_heading em_dm_txt_white" valign="top" align="center" colspan="3"
                                     style="font-family: 'Libre Baskerville', 'Times New Roman', Times, serif; font-size: 29px; line-height: 34px; font-weight: 400; letter-spacing: -0.16px; color: #00413E;">
-                                    We found some supervision mismatches.
+                                    We found some supervision level mismatches.
                                 </td>
                             </tr>
                             <tr>
                                 <td class="em_h10" height="24" style="height: 24px;">&nbsp;</td>
                             </tr>
+                            <tr>
+                                <td class="em_row_header em_dm_txt_white" height="24"
+                                style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 14px; line-height: 16px; font-weight: 500; padding: 8px 0px; color: #345261;">
+                                Name
+                                </td>
+                                <td class="em_row_header em_dm_txt_white" height="24" align="right"
+                                style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 14px; line-height: 16px; font-weight: 500; color: #345261;">
+                                Mismatch
+                                </td>
+                            </tr>
+                            {{ components.card_divider(static_image_path) }}
                             {% for mismatch in mismatches -%}
                             <tr>
                                 <td class="em_line em_dm_txt_white" height="24"
