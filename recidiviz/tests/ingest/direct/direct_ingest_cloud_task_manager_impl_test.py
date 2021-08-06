@@ -34,7 +34,9 @@ from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
     DIRECT_INGEST_SCHEDULER_QUEUE_V2,
     DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
 )
+from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
+    to_normalized_processed_file_name,
     to_normalized_unprocessed_file_path,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
@@ -45,6 +47,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestArgs,
     GcsfsIngestViewExportArgs,
     GcsfsRawDataBQImportArgs,
+    gcsfs_direct_ingest_bucket_for_region,
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import (
     DirectIngestCloudTaskManagerImpl,
@@ -65,21 +68,32 @@ _REGION = regions.Region(
 )
 
 
-class TestCloudTaskQueueInfo(TestCase):
+class TestProcessIngestJobCloudTaskQueueInfo(TestCase):
     """Tests for the CloudTaskQueueInfo."""
 
-    def test_is_task_queued_no_tasks(self) -> None:
+    def setUp(self) -> None:
+        bucket = gcsfs_direct_ingest_bucket_for_region(
+            project_id="recidiviz-456",
+            region_code=_REGION.region_code,
+            system_level=SystemLevel.STATE,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
+        self.ingest_view_file_path = GcsfsFilePath.from_directory_and_file_name(
+            bucket,
+            to_normalized_processed_file_name(
+                "file_path.csv", GcsfsDirectIngestFileType.INGEST_VIEW
+            ),
+        )
+
+    def test_info_no_tasks(self) -> None:
         # Arrange
         info = ProcessIngestJobCloudTaskQueueInfo(
             queue_name="queue_name", task_names=[]
         )
 
-        file_path = to_normalized_unprocessed_file_path(
-            "bucket/file_path.csv", GcsfsDirectIngestFileType.INGEST_VIEW
-        )
         gcsfs_args = GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
-            file_path=GcsfsFilePath.from_absolute_path(file_path),
+            file_path=self.ingest_view_file_path,
         )
 
         # Act
@@ -89,18 +103,19 @@ class TestCloudTaskQueueInfo(TestCase):
         self.assertFalse(gcsfs_args_queued)
 
         self.assertFalse(info.is_task_queued(_REGION, gcsfs_args))
+        for instance in DirectIngestInstance:
+            self.assertFalse(info.tasks_for_instance(_REGION.region_code, instance))
 
-    def test_is_task_queued_has_tasks(self) -> None:
+    def test_info_single_task(self) -> None:
         # Arrange
-        file_path = to_normalized_unprocessed_file_path(
-            "bucket/file_path.csv", GcsfsDirectIngestFileType.INGEST_VIEW
-        )
         gcsfs_args = GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
-            file_path=GcsfsFilePath.from_absolute_path(file_path),
+            file_path=self.ingest_view_file_path,
         )
 
-        full_task_name = _build_task_id(_REGION.region_code, gcsfs_args.task_id_tag())
+        full_task_name = _build_task_id(
+            _REGION.region_code, DirectIngestInstance.PRIMARY, gcsfs_args.task_id_tag()
+        )
         info = ProcessIngestJobCloudTaskQueueInfo(
             queue_name="queue_name",
             task_names=[
@@ -108,12 +123,9 @@ class TestCloudTaskQueueInfo(TestCase):
                 f"projects/path/to/{full_task_name}",
             ],
         )
-        file_path = to_normalized_unprocessed_file_path(
-            "bucket/file_path.csv", GcsfsDirectIngestFileType.INGEST_VIEW
-        )
         gcsfs_args = GcsfsIngestArgs(
             ingest_time=datetime.datetime.now(),
-            file_path=GcsfsFilePath.from_absolute_path(file_path),
+            file_path=self.ingest_view_file_path,
         )
 
         # Act
@@ -121,6 +133,53 @@ class TestCloudTaskQueueInfo(TestCase):
 
         # Assert
         self.assertTrue(gcsfs_args_queued)
+        self.assertTrue(
+            info.tasks_for_instance(_REGION.region_code, DirectIngestInstance.PRIMARY)
+        )
+        self.assertFalse(
+            info.tasks_for_instance(_REGION.region_code, DirectIngestInstance.SECONDARY)
+        )
+
+    def test_info_tasks_both_instances(self) -> None:
+        # Arrange
+        gcsfs_args = GcsfsIngestArgs(
+            ingest_time=datetime.datetime.now(),
+            file_path=self.ingest_view_file_path,
+        )
+
+        full_task_names = [
+            _build_task_id(
+                _REGION.region_code,
+                ingest_instance,
+                gcsfs_args.task_id_tag(),
+            )
+            for ingest_instance in DirectIngestInstance
+        ]
+
+        info = ProcessIngestJobCloudTaskQueueInfo(
+            queue_name="queue_name",
+            task_names=[
+                "projects/path/to/random_task",
+            ]
+            + [
+                f"projects/path/to/{full_task_name}"
+                for full_task_name in full_task_names
+            ],
+        )
+        gcsfs_args = GcsfsIngestArgs(
+            ingest_time=datetime.datetime.now(),
+            file_path=self.ingest_view_file_path,
+        )
+
+        # Act
+        gcsfs_args_queued = info.is_task_queued(_REGION, gcsfs_args)
+
+        # Assert
+        self.assertTrue(gcsfs_args_queued)
+        for ingest_instance in DirectIngestInstance:
+            self.assertTrue(
+                info.tasks_for_instance(_REGION.region_code, ingest_instance)
+            )
 
 
 class TestDirectIngestCloudTaskManagerImpl(TestCase):
