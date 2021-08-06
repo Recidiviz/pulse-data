@@ -51,6 +51,24 @@ from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_ma
 )
 
 
+class UploadStateFilesToIngestBucketDelegate:
+    @abc.abstractmethod
+    def should_pause_processing(self) -> bool:
+        """Returns whether we should pause any automatic processing of new files before
+        performing this upload. Will return False if processing is already pause.
+        """
+
+    @abc.abstractmethod
+    def pause_processing(self) -> None:
+        """Pauses (or instructs the user to pause) any automatic processing that might
+        happen to the files we're about to upload.
+        """
+
+    @abc.abstractmethod
+    def unpause_processing(self) -> None:
+        """Unpauses automatic processing of the files we're about to upload."""
+
+
 class BaseUploadStateFilesToIngestBucketController:
     """Base class for uploading files from a filesystem to a region's ingest bucket."""
 
@@ -61,11 +79,13 @@ class BaseUploadStateFilesToIngestBucketController:
         paths_with_timestamps: List[Tuple[str, datetime.datetime]],
         project_id: str,
         region: str,
+        delegate: UploadStateFilesToIngestBucketDelegate,
         destination_bucket_override: Optional[GcsfsBucketPath] = None,
     ):
         self.paths_with_timestamps = paths_with_timestamps
         self.project_id = project_id
         self.region = region.lower()
+        self.delegate = delegate
 
         self.gcsfs = DirectIngestGCSFileSystem(GcsfsFactory.build())
 
@@ -131,15 +151,15 @@ class BaseUploadStateFilesToIngestBucketController:
         ingest_status_manager = DirectIngestInstanceStatusManager(
             region_code=self.region, ingest_instance=ingest_instance
         )
-        was_paused = ingest_status_manager.is_instance_paused()
+        should_pause = self.delegate.should_pause_processing()
         try:
             # We pause and unpause ingest to prevent races where ingest views begin
             # to generate in the middle of a raw file upload.
-            if not was_paused:
+            if should_pause:
                 ingest_status_manager.pause_instance()
             upload_result = self._do_upload_inner()
         finally:
-            if not was_paused:
+            if should_pause:
                 ingest_status_manager.unpause_instance()
         return upload_result
 
@@ -184,10 +204,30 @@ class BaseUploadStateFilesToIngestBucketController:
         )
 
 
+class DeployedUploadStateFilesToIngestBucketDelegate(
+    UploadStateFilesToIngestBucketDelegate
+):
+    def __init__(self, region_code: str, ingest_instance: DirectIngestInstance) -> None:
+        self.ingest_status_manager = DirectIngestInstanceStatusManager(
+            region_code=region_code, ingest_instance=ingest_instance
+        )
+
+    def should_pause_processing(self) -> bool:
+        return not self.ingest_status_manager.is_instance_paused()
+
+    def pause_processing(self) -> None:
+        self.ingest_status_manager.pause_instance()
+
+    def unpause_processing(self) -> None:
+        self.ingest_status_manager.unpause_instance()
+
+
 class UploadStateFilesToIngestBucketController(
     BaseUploadStateFilesToIngestBucketController
 ):
-    """Uploads files that already exist in GCS to a region's ingest bucket."""
+    """Uploads files that already exist in GCS to a region's ingest bucket. Must be used
+    in the context of a deployed app engine instance.
+    """
 
     def __init__(
         self,
@@ -196,16 +236,20 @@ class UploadStateFilesToIngestBucketController(
         region: str,
         gcs_destination_path: Optional[GcsfsBucketPath] = None,
     ):
+        ingest_instance = DirectIngestInstance.PRIMARY
         super().__init__(
             paths_with_timestamps=paths_with_timestamps,
             project_id=project_id,
             region=region,
+            delegate=DeployedUploadStateFilesToIngestBucketDelegate(
+                region_code=region, ingest_instance=ingest_instance
+            ),
             destination_bucket_override=gcs_destination_path,
         )
         self.postgres_direct_ingest_file_metadata_manager = (
             PostgresDirectIngestRawFileMetadataManager(
                 region,
-                DirectIngestInstance.PRIMARY.database_version(
+                ingest_instance.database_version(
                     SystemLevel.STATE, state_code=StateCode(self.region.upper())
                 ).name,
             )
