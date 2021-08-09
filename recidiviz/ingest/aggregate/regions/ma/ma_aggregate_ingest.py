@@ -128,6 +128,10 @@ def _parse_table(filename: str) -> pd.DataFrame:
 
     df = create_level_col(df)
 
+    # label 'facility total' columns as facility-level (as opposed to jail or
+    # HOC level)
+    df.loc[df["COUNTY_SECURITY_LEVEL"] == "FACILITY TOTAL", "LEVEL"] = "FACILITY"
+
     # remove NA rows and non-numeric rows:
     df = df.dropna(subset=["COUNTY_SECURITY_LEVEL", "MALE"])
     df = df[df.MALE.str.isnumeric()]
