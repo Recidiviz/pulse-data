@@ -85,11 +85,26 @@ const UserComponent = ({ user }: UserProps): JSX.Element => {
             <DropdownLinkButton
               kind="link"
               onClick={async () => {
+                // eslint-disable-next-line no-alert
+                const email = window.prompt("Enter the officer's email:") || "";
+                if (!email) {
+                  return;
+                }
+
+                // This code may not work in IE11, but because this is just a development
+                // convenience, we're okay with that.
+                const msgBuffer = new TextEncoder().encode(email);
+                const hashBuffer = await crypto.subtle.digest(
+                  "SHA-256",
+                  msgBuffer
+                );
+                const hashedEmail = btoa(
+                  String.fromCharCode(...new Uint8Array(hashBuffer))
+                );
+
                 const url = new URL(window.location.origin);
                 url.search = new URLSearchParams({
-                  impersonated_email:
-                    // eslint-disable-next-line no-alert
-                    window.prompt("Enter the officer's email:") || "",
+                  impersonated_email: hashedEmail,
                 }).toString();
 
                 window.location.href = url.toString();

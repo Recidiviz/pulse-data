@@ -1,4 +1,7 @@
 {
   "extends": "@recidiviz/tsconfig/react",
-  "include": ["src", "node_modules/case-triage/src/**/*"]
+  "include": ["src", "node_modules/case-triage/src/**/*"],
+  "compilerOptions": {
+    "downlevelIteration": true
+  }
 }
