@@ -72,7 +72,7 @@ class TestComputedOpportunity(TestCase):
             opp.opportunity_metadata, {"status": "OVERDUE", "daysUntilDue": -135}
         )
 
-        client.most_recent_assessment_date = upcoming_date
+        client = generate_fake_client("abc", last_assessment_date=upcoming_date)
         opp = ComputedOpportunity.build_all_for_client(client).get(
             OpportunityType.ASSESSMENT
         )
@@ -83,7 +83,7 @@ class TestComputedOpportunity(TestCase):
             opp.opportunity_metadata, {"status": "UPCOMING", "daysUntilDue": 30}
         )
 
-        client.most_recent_assessment_date = no_opp_date
+        client = generate_fake_client("abc", last_assessment_date=no_opp_date)
         self.assertIsNone(
             ComputedOpportunity.build_all_for_client(client).get(
                 OpportunityType.ASSESSMENT
