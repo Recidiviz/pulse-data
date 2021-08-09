@@ -23,18 +23,13 @@ from typing import Literal, Optional, Tuple
 import numpy as np
 
 # TODO(#5768): Remove some of these imports once we've figured out our preferred contact method.
-# TODO(#5769): Remove the rest of these imports when we've moved nextAssessmentDate to the calc pipeline.
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
-    NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS,
     NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS,
     NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS,
-    REASSESSMENT_DEADLINE_DAYS,
-    SEX_OFFENSE_LSIR_MINIMUM_SCORE,
     SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS,
     US_ID_SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS,
 )
 from recidiviz.case_triage.exceptions import CaseTriageInvalidStateException
-from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
@@ -42,52 +37,11 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
 
 
-def get_next_assessment_date(client: ETLClient) -> Optional[date]:
-    """Calculates the next assessment date for the given case."""
-
-    # TODO(#5769): Eventually move this calculation to our calculate pipeline.
-    # In the meantime, we're hard-coding the relation to US_ID as a quick stop gap
-    if client.state_code != "US_ID":
-        raise CaseTriageInvalidStateException(client.state_code)
-
-    if client.supervision_level == StateSupervisionLevel.INTERNAL_UNKNOWN.value:
-        return None
-
-    if client.most_recent_assessment_date is None or client.assessment_score is None:
-        if client.supervision_start_date is None:
-            # We expect that supervision_start_date is filled in, but in instances where
-            # our default calc pipeline look back period is shorter than the amount of time
-            # someone has been on supervision, it will be empty.
-            #
-            # We log the warning, but still want to fail gracefully.
-            logging.warning(
-                "Supervision start date unexpectedly empty for client with id %s in state %s",
-                client.person_external_id,
-                client.state_code,
-            )
-            return None
-        return client.supervision_start_date + timedelta(
-            days=NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
-        )
-    if client.case_type == StateSupervisionCaseType.SEX_OFFENSE.value:
-        if (
-            client.gender is not None
-            and client.assessment_score
-            < SEX_OFFENSE_LSIR_MINIMUM_SCORE.get(Gender(client.gender), 0)
-        ):
-            return None
-    if StateSupervisionLevel(client.supervision_level) == StateSupervisionLevel.MINIMUM:
-        return None
-    return client.most_recent_assessment_date + timedelta(
-        days=REASSESSMENT_DEADLINE_DAYS
-    )
-
-
 def get_next_face_to_face_date(client: ETLClient) -> Optional[date]:
     """Calculates the next face-to-face contact date. It returns None if no
     future face-to-face contact is required."""
 
-    # TODO(#5769): Eventually move this calculation to our calculate pipeline.
+    # TODO(#5768): Eventually move this calculation to our calculate pipeline.
     # In the meantime, we're hard-coding the relation to US_ID as a quick stop gap
     if client.state_code != "US_ID":
         raise CaseTriageInvalidStateException(client.state_code)
@@ -127,7 +81,7 @@ def get_next_home_visit_date(client: ETLClient) -> Optional[date]:
     """Calculates the next home visit contact date. It returns None if no
     future home visit contact is required."""
 
-    # TODO(#5769): Eventually move this calculation to our calculate pipeline.
+    # TODO(#5768): Eventually move this calculation to our calculate pipeline.
     # In the meantime, we're hard-coding the relation to US_ID as a quick stop gap
     if client.state_code != "US_ID":
         raise CaseTriageInvalidStateException(client.state_code)
@@ -178,7 +132,7 @@ def get_assessment_due_details(
     client: ETLClient,
 ) -> Optional[Tuple[DueDateStatus, int]]:
     """Outputs whether client's assessment is upcoming or overdue relative to the current date."""
-    due_date = get_next_assessment_date(client)
+    due_date = client.next_recommended_assessment_date
     if due_date:
         status = _get_due_date_status(due_date, 30)
         if status:
