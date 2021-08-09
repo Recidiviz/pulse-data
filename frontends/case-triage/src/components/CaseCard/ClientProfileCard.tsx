@@ -123,19 +123,27 @@ const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
       <DetailsPanelSection>
         <DetailsPanelHeading>Upcoming</DetailsPanelHeading>
         <DetailsLineItem>
-          Next Contact:{" "}
-          {client.nextFaceToFaceDate?.format("MM/DD/YYYY") || "Never"}
+          Next Contact
+          {client.nextFaceToFaceDate
+            ? ` recommended on ${client.nextFaceToFaceDate.format(
+                LONG_DATE_FORMAT
+              )}`
+            : ": Never"}
           <Caption style={{ marginLeft: spacing.sm }}>
             Previous:{" "}
-            {client.mostRecentFaceToFaceDate?.format("MM/DD/YYYY") || "Never"}
+            {client.mostRecentFaceToFaceDate?.format(LONG_DATE_FORMAT) ||
+              "Never"}
           </Caption>
         </DetailsLineItem>
         <DetailsLineItem>
-          Next Assessment:{" "}
-          {client.nextAssessmentDate?.format("MM/DD/YYYY") || "Unknown"}
+          Next Assessment
+          {client.nextAssessmentDate
+            ? ` due on ${client.nextAssessmentDate.format(LONG_DATE_FORMAT)}`
+            : ": Unknown"}
           <Caption style={{ marginLeft: spacing.sm }}>
             Previous:{" "}
-            {client.mostRecentAssessmentDate?.format("MM/DD/YYYY") || "Never"}
+            {client.mostRecentAssessmentDate?.format(LONG_DATE_FORMAT) ||
+              "Never"}
           </Caption>
         </DetailsLineItem>
         <DetailsLineItem>
