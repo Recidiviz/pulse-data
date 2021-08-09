@@ -84,7 +84,7 @@ daily_pipelines:
     job_name: us-pa-incarceration-calculations-36
     state_code: US_PA
     calculation_month_count: 36
-    metric_types: INCARCERATION_COMMITMENT_FROM_SUPERVISION
+    metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_POPULATION INCARCERATION_RELEASE
     region: us-east1
   - pipeline: violation
     job_name: us-pa-violation-calculations-36
