@@ -28,7 +28,6 @@ const Tooltip: React.FC<TooltipProps> = ({ children, title }: TooltipProps) => {
   const [shouldRenderTooltip, setShouldRenderTooltip] = React.useState(false);
   const [animationState, setAnimationState] =
     React.useState<TooltipState>(null);
-  const [timeoutID, setTimeoutID] = React.useState<number>(-1);
 
   let frame: number;
   const onMouseMove: React.MouseEventHandler<HTMLDivElement> = (event) => {
@@ -43,26 +42,14 @@ const Tooltip: React.FC<TooltipProps> = ({ children, title }: TooltipProps) => {
     });
   };
 
-  React.useEffect(() => {
-    return () => window.clearTimeout(timeoutID);
-  }, [timeoutID]);
-
   const onMouseEnter = () => {
     setShouldRenderTooltip(true);
-    window.clearTimeout(timeoutID);
-    const timeout = window.setTimeout(() => {
-      setAnimationState("entering");
-    }, 1000);
-    setTimeoutID(timeout);
+    setAnimationState("entering");
   };
 
   const onMouseLeave = () => {
     setAnimationState("exiting");
-    window.clearTimeout(timeoutID);
-    const timeout = window.setTimeout(() => {
-      setShouldRenderTooltip(false);
-    }, 300);
-    setTimeoutID(timeout);
+    setShouldRenderTooltip(false);
   };
 
   let tooltip = null;
