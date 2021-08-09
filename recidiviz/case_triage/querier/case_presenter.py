@@ -22,7 +22,6 @@ from datetime import date
 from typing import Any, Dict, List
 
 from recidiviz.case_triage.client_utils.compliance import (
-    get_next_assessment_date,
     get_next_face_to_face_date,
     get_next_home_visit_date,
 )
@@ -74,6 +73,7 @@ class CasePresenter:
             "employmentStartDate": self.etl_client.employment_start_date,
             "mostRecentAssessmentDate": self.etl_client.most_recent_assessment_date,
             "assessmentScore": self.etl_client.assessment_score,
+            "nextAssessmentDate": self.etl_client.next_recommended_assessment_date,
             "mostRecentFaceToFaceDate": self.etl_client.most_recent_face_to_face_date,
             "mostRecentHomeVisitDate": self.etl_client.most_recent_home_visit_date,
             "emailAddress": self.etl_client.email_address,
@@ -87,11 +87,6 @@ class CasePresenter:
             },
             "notes": [note.to_json() for note in self.etl_client.notes],
         }
-
-        # TODO(#5769): We're doing this quickly here and being intentional about the debt we're taking
-        # on. This will be moved to the calculation pipeline once we've shipped the Case Triage MVP.
-        next_assessment_date = get_next_assessment_date(self.etl_client)
-        base_dict["nextAssessmentDate"] = next_assessment_date
 
         # TODO(#5768): In the long-term, we plan to move away from enforcing the next contact
         # and next assessment so explicitly. This is why we're implementing this in QueriedClient
@@ -121,8 +116,8 @@ class CasePresenter:
             "homeVisitContact": next_home_visit_date is None
             or bool(next_home_visit_date > today),
             # If the next assessment is due after today, the need is met.
-            "assessment": next_assessment_date is None
-            or bool(next_assessment_date > today),
+            "assessment": self.etl_client.next_recommended_assessment_date is None
+            or bool(self.etl_client.next_recommended_assessment_date > today),
         }
 
         if (client_info := self.etl_client.client_info) is not None:
