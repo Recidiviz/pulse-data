@@ -19,7 +19,7 @@ import assertNever from "assert-never";
 import { makeAutoObservable } from "mobx";
 import moment from "moment";
 import { PillKind } from "../../components/Pill";
-import { getTimeDifference } from "../../utils";
+import { getTimeDifference, LONG_DATE_FORMAT } from "../../utils";
 
 // =============================================================================
 export enum OpportunityDeferralType {
@@ -137,10 +137,18 @@ export class Opportunity {
     }
   }
 
-  get dueDaysFormatted(): string {
+  get dueDate(): moment.Moment | null {
     const { daysUntilDue } = this.opportunityMetadata;
     if (typeof daysUntilDue === "number") {
-      return getTimeDifference(moment().add(daysUntilDue, "days"));
+      return moment().add(daysUntilDue, "days");
+    }
+    return null;
+  }
+
+  get dueDaysFormatted(): string {
+    const { dueDate } = this;
+    if (dueDate) {
+      return getTimeDifference(dueDate);
     }
     return "";
   }
@@ -154,10 +162,16 @@ export class Opportunity {
         return titleBase;
       case OpportunityType.CONTACT:
       case OpportunityType.ASSESSMENT: {
+        const modifier =
+          this.opportunityType === OpportunityType.CONTACT
+            ? "recommended"
+            : "due";
         if (this.opportunityMetadata.status === "OVERDUE") {
-          return `${titleBase} overdue`;
+          return `${titleBase} ${modifier} ${this.dueDate?.format(
+            LONG_DATE_FORMAT
+          )}`;
         }
-        return `${titleBase} due ${this.dueDaysFormatted}`;
+        return `${titleBase} ${modifier} ${this.dueDaysFormatted}`;
       }
       default:
         assertNever(this.opportunityType);
@@ -170,9 +184,8 @@ export class Opportunity {
       case OpportunityType.EMPLOYMENT:
         return undefined;
       case OpportunityType.ASSESSMENT:
-        return `Risk Assessment needed ${this.dueDaysFormatted}`;
       case OpportunityType.CONTACT:
-        return `Face to Face Contact recommended ${this.dueDaysFormatted}`;
+        return this.title;
       default:
         assertNever(this.opportunityType);
     }
