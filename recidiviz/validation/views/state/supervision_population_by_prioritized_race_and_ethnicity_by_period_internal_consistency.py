@@ -18,7 +18,6 @@
 supervision_population_by_prioritized_race_and_ethnicity_by_period view.
 """
 
-# pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
@@ -34,7 +33,7 @@ from recidiviz.validation.views.utils.internal_consistency_templates import (
 
 SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_NAME = "supervision_population_by_prioritized_race_and_ethnicity_by_period_internal_consistency"
 
-SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_DESCRIPTION = """ Builds validation table to ensure internal consistency across breakdowns in the 
+SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_DESCRIPTION = """ Builds validation table to ensure internal consistency across breakdowns in the
  supervision_population_by_prioritized_race_and_ethnicity_by_period view."""
 
 

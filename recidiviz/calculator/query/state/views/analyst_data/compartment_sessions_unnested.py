@@ -16,7 +16,6 @@
 # =============================================================================
 """Sessionized view of each individual merged onto an array of dates at daily intervals,
  used to calculate person-based metrics such as population"""
-# pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET

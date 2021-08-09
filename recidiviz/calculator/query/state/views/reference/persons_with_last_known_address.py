@@ -15,11 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Every person with their last known address that is not a prison facility or a P&P office."""
-# pylint: disable=trailing-whitespace
-from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_NAME = "persons_with_last_known_address"
 

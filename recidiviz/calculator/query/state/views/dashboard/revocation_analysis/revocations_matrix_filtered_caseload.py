@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Revocations Matrix Filtered Caseload."""
-# pylint: disable=trailing-whitespace
 from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,

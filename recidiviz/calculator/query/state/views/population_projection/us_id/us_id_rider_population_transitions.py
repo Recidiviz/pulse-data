@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Historical total US_ID Rider population by outflow compartment, and compartment duration (months)"""
-# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -23,7 +22,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 US_ID_RIDER_POPULATION_TRANSITIONS_VIEW_NAME = "us_id_rider_population_transitions"
 
-US_ID_RIDER_POPULATION_TRANSITIONS_VIEW_DESCRIPTION = """"Historical US_ID Rider total population 
+US_ID_RIDER_POPULATION_TRANSITIONS_VIEW_DESCRIPTION = """"Historical US_ID Rider total population
 by outflow compartment, and compartment duration (months)"""
 
 US_ID_RIDER_POPULATION_TRANSITIONS_QUERY_TEMPLATE = """

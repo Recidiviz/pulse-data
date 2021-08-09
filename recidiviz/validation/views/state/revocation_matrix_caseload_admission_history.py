@@ -18,7 +18,6 @@
 """A view which ensures the admission_history_description column of the revocations_matrix_filtered_caseload matches
 the expected number of admissions."""
 
-# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -29,7 +28,7 @@ REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_VIEW_NAME = (
     "revocation_matrix_caseload_admission_history"
 )
 
-REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_DESCRIPTION = """ 
+REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_DESCRIPTION = """
 Validate admission history descriptions for the revocation matrix caseload dashboard view."""
 
 REVOCATION_MATRIX_CASELOAD_ADMISSION_HISTORY_QUERY_TEMPLATE = """

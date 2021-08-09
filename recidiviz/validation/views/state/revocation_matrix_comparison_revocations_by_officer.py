@@ -18,7 +18,6 @@
 """A view which provides a comparison of total revocation counts summed across all dimensional breakdowns
 in all of the views that support breakdowns of revocations by officer."""
 
-# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -29,7 +28,7 @@ REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_VIEW_NAME = (
     "revocation_matrix_comparison_revocations_by_officer"
 )
 
-REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_DESCRIPTION = """ 
+REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_DESCRIPTION = """
 Revocation matrix comparison of summed revocation counts by officer """
 
 REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_QUERY_TEMPLATE = """

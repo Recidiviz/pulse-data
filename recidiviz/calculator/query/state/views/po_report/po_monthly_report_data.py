@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Data to populate the monthly PO report email."""
-# pylint: disable=trailing-whitespace
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import PO_REPORT_DATASET

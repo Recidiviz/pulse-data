@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Combined view of supervision terminations and incarceration releases used to determine the end reason of a session"""
-# pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
@@ -27,7 +26,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 COMPARTMENT_SESSION_END_REASONS_VIEW_NAME = "compartment_session_end_reasons"
 
-COMPARTMENT_SESSION_END_REASONS_VIEW_DESCRIPTION = """Combined view of supervision terminations and incarceration releases used to determine the end reason of a 
+COMPARTMENT_SESSION_END_REASONS_VIEW_DESCRIPTION = """Combined view of supervision terminations and incarceration releases used to determine the end reason of a
     session"""
 
 COMPARTMENT_SESSION_END_REASONS_QUERY_TEMPLATE = """

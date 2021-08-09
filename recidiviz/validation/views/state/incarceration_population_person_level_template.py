@@ -16,7 +16,6 @@
 # =============================================================================
 """A query template for doing person-level incarceration population validation against an external dataset."""
 
-# pylint: disable=trailing-whitespace
 INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
 WITH 
 external_data AS (

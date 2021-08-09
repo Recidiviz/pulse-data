@@ -27,7 +27,6 @@ that had a treatment sanction commitment admission in a given month, we need to
 ensure that the individuals with the commitment admission are counted as on the
 officer's caseload in that month.
 """
-# pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils

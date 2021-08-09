@@ -16,7 +16,6 @@
 # =============================================================================
 """Dedup priority for violation types - replicates state specific logic
 used in calculating dataflow supervision violation type"""
-# pylint: disable=trailing-whitespace
 # pylint: disable=line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET

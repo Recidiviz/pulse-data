@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Revocations Matrix by month."""
-# pylint: disable=trailing-whitespace
 # TODO(#1124) Remove revocations_matrix_by_month view once FE no longer uses it
 
 from recidiviz.calculator.query.state import dataset_config

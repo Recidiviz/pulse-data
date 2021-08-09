@@ -17,7 +17,6 @@
 
 """A view which provides a person / day level comparison of annual sessions supervision population to dataflow"""
 
-# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,

@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Historical total US_ID parole board hold population by outflow compartment, and compartment duration (months)"""
-# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -25,7 +24,7 @@ US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_VIEW_NAME = (
     "us_id_parole_board_hold_population_transitions"
 )
 
-US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_VIEW_DESCRIPTION = """"Historical US_ID Board Hold total population 
+US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_VIEW_DESCRIPTION = """"Historical US_ID Board Hold total population
 by outflow compartment, and compartment duration (months)"""
 
 US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_QUERY_TEMPLATE = """

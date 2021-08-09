@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Daily summaries of vitals metrics, at the state, district, and PO level."""
-# pylint: disable=trailing-whitespace,line-too-long
 from typing import Dict, List, Optional
 
 from recidiviz.calculator.query import bq_utils

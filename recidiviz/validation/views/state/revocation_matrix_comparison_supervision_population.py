@@ -18,7 +18,6 @@
 """A view which provides a comparison of total supervision population counts summed across all dimensional breakdowns
 in all of the views that support the Revocation Analysis Matrix tool."""
 
-# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -29,7 +28,7 @@ REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_NAME = (
     "revocation_matrix_comparison_supervision_population"
 )
 
-REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_DESCRIPTION = """ 
+REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_DESCRIPTION = """
 Revocation matrix comparison of summed supervision population counts """
 
 REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_QUERY_TEMPLATE = """

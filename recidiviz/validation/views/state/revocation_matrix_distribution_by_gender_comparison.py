@@ -17,7 +17,6 @@
 """A view which provides a comparison of counts summed across all genders with the expected total counts for those
 sums for the revocations_matrix_distribution_by_gender view in the Revocation Analysis Matrix tool."""
 
-# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.calculator.query.state.views.dashboard.revocation_analysis.revocations_matrix_distribution_by_gender import (
@@ -34,7 +33,7 @@ REVOCATION_MATRIX_DISTRIBUTION_BY_GENDER_COMPARISON_VIEW_NAME = (
     "revocation_matrix_distribution_by_gender_comparison"
 )
 
-REVOCATION_MATRIX_DISTRIBUTION_BY_GENDER_COMPARISON_DESCRIPTION = """ 
+REVOCATION_MATRIX_DISTRIBUTION_BY_GENDER_COMPARISON_DESCRIPTION = """
 Revocation matrix comparison of summed counts across gender """
 
 

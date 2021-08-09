@@ -18,12 +18,9 @@
 incarceration_population_by_facility_by_demographics view.
 """
 
-# pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
-
-
 from recidiviz.calculator.query.state.views.public_dashboard.incarceration.incarceration_population_by_facility_by_demographics import (
     INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_NAME,
 )

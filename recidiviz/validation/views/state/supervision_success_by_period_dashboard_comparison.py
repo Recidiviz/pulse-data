@@ -17,7 +17,6 @@
 """A view which provides a comparison of supervision success counts by period between views for the dashboard
 and views for the public dashboard."""
 
-# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -28,7 +27,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_NAME = (
     "supervision_success_by_period_dashboard_comparison"
 )
 
-SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_DESCRIPTION = """ 
+SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_DESCRIPTION = """
 Compares counts of supervision success by period between the dashboard and the public dashboard. """
 
 SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_QUERY_TEMPLATE = """

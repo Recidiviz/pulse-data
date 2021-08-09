@@ -21,7 +21,6 @@ any metrics.
 Existence of any rows indicates a bug in IP pre-processing logic.
 """
 
-# pylint: disable=trailing-whitespace
 import attr
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -39,7 +38,7 @@ INVALID_ADMITTED_FROM_SUPERVISION_ADMISSION_REASON_VIEW_NAME = (
     "invalid_admitted_from_supervision_admission_reason"
 )
 
-INVALID_ADMITTED_FROM_SUPERVISION_ADMISSION_REASON_DESCRIPTION = """Metrics with 
+INVALID_ADMITTED_FROM_SUPERVISION_ADMISSION_REASON_DESCRIPTION = """Metrics with
 invalid, ingest-only admission_reason values of ADMITTED_FROM_SUPERVISION."""
 
 
