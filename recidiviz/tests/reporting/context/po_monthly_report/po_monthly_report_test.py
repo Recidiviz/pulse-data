@@ -213,7 +213,6 @@ class PoMonthlyReportContextTests(TestCase):
         self.maxDiff = None
         self.assertEqual(expected, actual["attachment_content"])
 
-    # pylint:disable=trailing-whitespace
     def test_attachment_content_missing_sections(self) -> None:
         """Given client details for just one section, it returns a formatted string to
         be used as the email attachment."""

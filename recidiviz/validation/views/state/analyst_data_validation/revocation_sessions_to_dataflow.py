@@ -17,7 +17,6 @@
 
 """A view which provides an annual comparison between reincarceration sessions and dataflow recidivism counts."""
 
-# pylint: disable=trailing-whitespace, line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override

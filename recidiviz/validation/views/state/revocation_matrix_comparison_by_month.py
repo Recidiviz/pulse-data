@@ -17,7 +17,6 @@
 
 """A view which ensures the month-over-month chart is accurately showing event-based revocation counts."""
 
-# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -28,7 +27,7 @@ REVOCATION_MATRIX_COMPARISON_BY_MONTH_VIEW_NAME = (
     "revocation_matrix_comparison_by_month"
 )
 
-REVOCATION_MATRIX_COMPARISON_BY_MONTH_DESCRIPTION = """ 
+REVOCATION_MATRIX_COMPARISON_BY_MONTH_DESCRIPTION = """
 Revocation matrix comparison of summed revocation counts by month """
 
 REVOCATION_MATRIX_COMPARISON_BY_MONTH_QUERY_TEMPLATE = """

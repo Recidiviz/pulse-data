@@ -16,7 +16,6 @@
 # =============================================================================
 """Sessionized view of violations data - joins violations reports to sessions view
 to allow analysis of violations that are associated with a given compartment"""
-# pylint: disable=trailing-whitespace
 # pylint: disable=line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config

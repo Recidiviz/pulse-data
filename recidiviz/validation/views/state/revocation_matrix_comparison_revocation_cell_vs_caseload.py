@@ -18,7 +18,6 @@
 """A view which provides a comparison of total revocation counts in the initial, unfiltered view of the
 Revocation Analysis Tool: the grid cells and the corresponding caseload chart across all filter combinations."""
 
-# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -29,7 +28,7 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_NAME = (
     "revocation_matrix_comparison_revocation_cell_vs_caseload"
 )
 
-REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_DESCRIPTION = """ 
+REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_DESCRIPTION = """
 Revocation matrix comparison of summed revocation counts between the grid cells and the month chart """
 
 REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY_TEMPLATE = """

@@ -16,7 +16,6 @@
 # =============================================================================
 """Combined view of supervision starts and incarceration admissions used to determine
 the start reason of a session"""
-# pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (

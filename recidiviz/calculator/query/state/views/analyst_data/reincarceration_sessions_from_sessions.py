@@ -16,7 +16,6 @@
 # =============================================================================
 """A table of incarceration sessions that end in release with session identifiers for a subsequent reincarceration
 sessions. Constructed directly from the sessions view."""
-# pylint: disable=trailing-whitespace
 # pylint: disable=line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET

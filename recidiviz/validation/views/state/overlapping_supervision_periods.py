@@ -21,7 +21,6 @@ Note: for some states it may be expected that supervision periods overlap. In th
 to the `exclusions` section of that state's validation config.
 """
 
-# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod

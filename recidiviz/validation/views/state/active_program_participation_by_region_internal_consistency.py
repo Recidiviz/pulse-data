@@ -17,9 +17,6 @@
 """A view that can be used in validation to ensure internal consistency across breakdowns in the
 active_program_participation_by_region view.
 """
-
-# pylint: disable=trailing-whitespace
-
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.calculator.query.state.views.public_dashboard.program_evaluation.us_nd.active_program_participation_by_region import (
@@ -36,7 +33,7 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_NAME = (
     "active_program_participation_by_region_internal_consistency"
 )
 
-ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_DESCRIPTION = """ Builds validation table to ensure internal consistency across breakdowns in the 
+ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_DESCRIPTION = """ Builds validation table to ensure internal consistency across breakdowns in the
  active_program_participation_by_region view."""
 
 

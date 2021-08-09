@@ -21,7 +21,6 @@ TEMPORARY_CUSTODY specialized_purpose_for_incarceration values).
 Existence of any rows indicates a bug in IP pre-processing logic.
 """
 
-# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
