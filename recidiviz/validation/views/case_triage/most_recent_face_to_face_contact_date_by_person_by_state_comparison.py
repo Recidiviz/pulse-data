@@ -72,8 +72,8 @@ SELECT
   region_code,
   person_external_id,
   officer_external_id,
-  most_recent_etl_face_to_face_contact_date,
-  most_recent_state_face_to_face_contact_date,
+  STRING(most_recent_etl_face_to_face_contact_date) AS most_recent_etl_face_to_face_contact_date,
+  STRING(most_recent_state_face_to_face_contact_date) AS most_recent_state_face_to_face_contact_date,
 FROM
   etl_clients
 JOIN (person_to_external_ids

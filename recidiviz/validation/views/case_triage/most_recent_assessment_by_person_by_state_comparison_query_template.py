@@ -101,9 +101,9 @@ WITH
 SELECT
   region_code,
   person_external_id,
-  most_recent_etl_date,
+  STRING(most_recent_etl_date) AS most_recent_etl_date,
   most_recent_etl_score,
-  most_recent_state_date,
+  STRING(most_recent_state_date) AS most_recent_state_date,
   most_recent_state_score
 FROM
   score_on_most_recent_etl_date
