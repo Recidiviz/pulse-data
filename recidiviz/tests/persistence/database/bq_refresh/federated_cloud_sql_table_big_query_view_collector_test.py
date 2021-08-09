@@ -19,6 +19,9 @@
 import unittest
 from unittest import mock
 
+from recidiviz.big_query.view_update_manager_utils import (
+    DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
+)
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
@@ -112,6 +115,36 @@ class FederatedCloudSQLTableBigQueryViewCollectorTest(unittest.TestCase):
                 _ = UnsegmentedSchemaFederatedBigQueryViewCollector(
                     config
                 ).collect_view_builders()
+
+    def test_all_datasets_registered_as_managed(self) -> None:
+        self.fake_fs.upload_from_string(
+            path=self.fake_config_path,
+            contents=NO_PAUSED_REGIONS_CLOUD_SQL_CONFIG_YAML,
+            content_type="text/yaml",
+        )
+        datasets = set()
+        for schema_type in SchemaType:
+            if not CloudSqlToBQConfig.is_valid_schema_type(schema_type):
+                continue
+            config = CloudSqlToBQConfig.for_schema_type(schema_type)
+
+            if config.is_state_segmented_refresh_schema():
+                view_builders = StateSegmentedSchemaFederatedBigQueryViewCollector(
+                    config
+                ).collect_view_builders()
+            else:
+                view_builders = UnsegmentedSchemaFederatedBigQueryViewCollector(
+                    config
+                ).collect_view_builders()
+
+            for view_builder in view_builders:
+                datasets.add(view_builder.dataset_id)
+                if view_builder.materialized_address_override:
+                    datasets.add(view_builder.materialized_address_override.dataset_id)
+
+        self.assertEqual(
+            [], sorted(datasets.difference(DATASETS_THAT_HAVE_EVER_BEEN_MANAGED))
+        )
 
     def test_state_segmented_collector(self) -> None:
         self.fake_fs.upload_from_string(
