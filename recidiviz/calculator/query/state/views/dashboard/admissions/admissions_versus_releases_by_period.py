@@ -17,14 +17,13 @@
 """Admissions minus releases (net change in incarcerated population) by metric
 period months.
 """
-# pylint: disable=trailing-whitespace
 
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.dashboard.admissions.admissions_versus_releases_by_month import (
     ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW_BUILDER,
 )
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 

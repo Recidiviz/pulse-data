@@ -15,7 +15,6 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Time series view of vitals metrics at the state- and district-level."""
-# pylint: disable=trailing-whitespace,line-too-long
 from recidiviz.calculator.query.bq_utils import (
     clean_up_supervising_officer_external_id,
     generate_district_id_from_district_name,

@@ -16,7 +16,6 @@
 # =============================================================================
 """Maps supervision_period_ids to the area of jurisdictional coverage of the court that sentenced the person to the
 supervision."""
-# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config

@@ -16,13 +16,12 @@
 # =============================================================================
 """Metric capturing proportion of supervision periods successfully terminated
 in a month via a granted early discharge"""
-# pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
-    STATE_BASE_DATASET,
     ANALYST_VIEWS_DATASET,
+    STATE_BASE_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -31,7 +30,7 @@ US_ID_PPO_METRICS_EARLY_DISCHARGE_TERMINATIONS_VIEW_NAME = (
     "us_id_ppo_metrics_early_discharge_terminations"
 )
 
-US_ID_PPO_METRICS_EARLY_DISCHARGE_TERMINATIONS_VIEW_DESCRIPTION = """View capturing proportion of successful supervision terminations via granted early discharge in the past 2 years. 
+US_ID_PPO_METRICS_EARLY_DISCHARGE_TERMINATIONS_VIEW_DESCRIPTION = """View capturing proportion of successful supervision terminations via granted early discharge in the past 2 years.
     Successful termination defined as transition from SUPERVISION to RELEASE compartment, and early discharge grants 
     identified from either supervision period termination reasons (probation) or incarceration sentence status (parole)"""
 

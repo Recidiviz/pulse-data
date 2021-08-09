@@ -16,7 +16,6 @@
 # =============================================================================
 """Week dates by state for COVID-19 Report"""
 
-# pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config

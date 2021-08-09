@@ -21,11 +21,10 @@ follow-up period that has completed. For example, in the year 2019, the
 release cohort of 2017 is the most recent calendar year where the next year
 (2018) has completed. The follow-up period is 1 year.
 """
-# pylint: disable=trailing-whitespace
 
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 

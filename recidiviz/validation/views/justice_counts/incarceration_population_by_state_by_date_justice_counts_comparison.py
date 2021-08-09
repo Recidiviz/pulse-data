@@ -18,7 +18,6 @@
 """A view which provides a comparison of justice counts population with
 internal incarceration population counts by month."""
 
-# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.justice_counts.dataset_config import (
     JUSTICE_COUNTS_CORRECTIONS_DATASET,

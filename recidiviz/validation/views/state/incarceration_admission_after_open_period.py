@@ -19,7 +19,6 @@
 incarceration period, i.e. one which has no release date yet, is followed by another incarceration period with an
 admission date."""
 
-# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

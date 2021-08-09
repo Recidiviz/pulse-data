@@ -19,11 +19,10 @@ The average change in LSIR score by month of scheduled supervision termination.
 Per ND-specific request, compares the LSIR score at termination to the second
 LSIR score of the person's supervision.
 """
-# pylint: disable=trailing-whitespace
 
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 

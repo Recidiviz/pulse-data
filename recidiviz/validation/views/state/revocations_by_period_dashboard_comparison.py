@@ -17,7 +17,6 @@
 """A view which provides a comparison of revocation counts by source violation type between views for the dashboard
 and views for the public dashboard."""
 
-# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -28,7 +27,7 @@ REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_NAME = (
     "revocations_by_period_dashboard_comparison"
 )
 
-REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_DESCRIPTION = """ 
+REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_DESCRIPTION = """
 Compares counts of revocations by source violation type between the dashboard and the public dashboard. """
 
 REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_QUERY_TEMPLATE = """

@@ -16,7 +16,6 @@
 # =============================================================================
 """A query template for doing person-level recidivism validation against an external dataset."""
 
-# pylint: disable=trailing-whitespace
 RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
     WITH external_data AS (
       -- NOTE: You can replace this part of the query with your own query to test the SELECT query you will use to generate

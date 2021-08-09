@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Revocations by metric month period."""
-# pylint: disable=trailing-whitespace
 
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config

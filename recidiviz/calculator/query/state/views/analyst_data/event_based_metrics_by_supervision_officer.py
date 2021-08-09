@@ -16,7 +16,6 @@
 # =============================================================================
 """View tracking daily positive and backstop metrics, along with demographic attributes, at the officer/district level
 for use in impact measurement"""
-# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET

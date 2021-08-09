@@ -16,7 +16,6 @@
 # =============================================================================
 """An aggregated view of sessions that shows continuous stays within the system (supervision or incarceration). A
  session in a RELEASE compartment triggers the start of a new system session."""
-# pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
@@ -25,7 +24,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 SYSTEM_SESSIONS_VIEW_NAME = "system_sessions"
 
-SYSTEM_SESSIONS_VIEW_DESCRIPTION = """An aggregated view of sessions that shows continuous stays within the system 
+SYSTEM_SESSIONS_VIEW_DESCRIPTION = """An aggregated view of sessions that shows continuous stays within the system
 (supervision or incarceration). A session in a RELEASE compartment triggers the start of a new system session."""
 
 SYSTEM_SESSIONS_QUERY_TEMPLATE = """

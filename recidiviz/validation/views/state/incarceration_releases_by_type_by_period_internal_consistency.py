@@ -18,12 +18,9 @@
 incarceration_releases_by_type_by_period view.
 """
 
-# pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
-
-
 from recidiviz.calculator.query.state.views.public_dashboard.incarceration.incarceration_releases_by_type_by_period import (
     INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_NAME,
 )

@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Revocations by supervision type by month."""
-# pylint: disable=trailing-whitespace
 
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder

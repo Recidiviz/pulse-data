@@ -16,7 +16,6 @@
 # =============================================================================
 """A query template for doing person-level supervision population validation against an external dataset."""
 
-# pylint: disable=trailing-whitespace
 SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = """
 WITH 
 external_data AS (
