@@ -68,7 +68,7 @@ products:
       - PUBLIC_DASHBOARD
     states:
       - state_code: US_PA
-        environment: staging
+        environment: production
       - state_code: US_ND
         environment: production
   - name: Vitals
