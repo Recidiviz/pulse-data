@@ -204,35 +204,6 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def load_table_from_table_async(
-        self,
-        source_dataset_id: str,
-        source_table_id: str,
-        destination_dataset_id: str,
-        destination_table_id: str,
-        allow_field_additions: bool = False,
-    ) -> bigquery.QueryJob:
-        """Loads data from a source table and writes to a destination table.
-
-        This starts the job, but does not wait until it completes. It will raise an error if the destination table
-        does not exist.
-
-        Because we are using bigquery.WriteDisposition.WRITE_TRUNCATE, the destination table's
-        data will be completely wiped and overwritten with the contents of the source table.
-
-        Args:
-            source_dataset_id: The name of the source dataset.
-            source_table_id: The name of the source table from which to query.
-            destination_dataset_id: The name of the destination dataset.
-            destination_table_id: The name of the table to insert into.
-            allow_field_additions: Whether or not to allow new columns to be created in the destination table if the
-                schema in the source table does not exactly match the destination table. Defaults to False.
-
-        Returns:
-            A QueryJob which will contain the results once the query is complete.
-        """
-
-    @abc.abstractmethod
     def load_table_from_cloud_storage_async(
         self,
         source_uri: str,
@@ -435,7 +406,7 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def insert_into_table_from_cloud_storage_async(
+    def load_into_table_from_cloud_storage_async(
         self,
         source_uri: str,
         destination_dataset_ref: bigquery.DatasetReference,
@@ -462,7 +433,7 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def insert_into_table_from_query(
+    def insert_into_table_from_query_async(
         self,
         *,
         destination_dataset_id: str,
@@ -492,7 +463,7 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def insert_into_table(
+    def stream_into_table(
         self,
         dataset_ref: bigquery.DatasetReference,
         table_id: str,
@@ -506,6 +477,25 @@ class BigQueryClient:
             dataset_ref: The dataset containing the table into which the rows should be inserted.
             table_id: The name of the table into which the rows should be inserted.
             rows: A sequence of dictionaries representing the rows to insert into the table.
+        """
+
+    @abc.abstractmethod
+    def load_into_table_async(
+        self,
+        dataset_ref: bigquery.DatasetReference,
+        table_id: str,
+        rows: Sequence[Dict[str, Any]],
+    ) -> bigquery.job.LoadJob:
+        """Inserts the provided rows into the specified table.
+
+        The table must already exist, and the rows must conform to the existing schema.
+
+        Args:
+            dataset_ref: The dataset containing the table into which the rows should be inserted.
+            table_id: The name of the table into which the rows should be inserted.
+            rows: A sequence of dictionaries representing the rows to insert into the table.
+        Returns:
+            The LoadJob object containing job details.
         """
 
     @abc.abstractmethod
@@ -1037,7 +1027,7 @@ class BigQueryClientImpl(BigQueryClient):
 
         logging.info("Creating table: %s with query: %s", table_id, query)
 
-        return self.insert_into_table_from_query(
+        return self.insert_into_table_from_query_async(
             destination_dataset_id=dataset_id,
             destination_table_id=table_id,
             query=query,
@@ -1045,24 +1035,7 @@ class BigQueryClientImpl(BigQueryClient):
             write_disposition=write_disposition,
         )
 
-    def load_table_from_table_async(
-        self,
-        source_dataset_id: str,
-        source_table_id: str,
-        destination_dataset_id: str,
-        destination_table_id: str,
-        allow_field_additions: bool = False,
-    ) -> bigquery.QueryJob:
-        return self._load_table_from_table_async(
-            source_dataset_id=source_dataset_id,
-            source_table_id=source_table_id,
-            destination_dataset_id=destination_dataset_id,
-            destination_table_id=destination_table_id,
-            allow_field_additions=allow_field_additions,
-            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
-        )
-
-    def _load_table_from_table_async(
+    def _insert_into_table_from_table_async(
         self,
         source_dataset_id: str,
         source_table_id: str,
@@ -1121,7 +1094,7 @@ class BigQueryClientImpl(BigQueryClient):
             destination_table_id,
         )
 
-        return self.insert_into_table_from_query(
+        return self.insert_into_table_from_query_async(
             destination_dataset_id=destination_dataset_id,
             destination_table_id=destination_table_id,
             query=query,
@@ -1136,7 +1109,7 @@ class BigQueryClientImpl(BigQueryClient):
                 f"Found filter clause [{filter_clause}] that does not begin with WHERE"
             )
 
-    def insert_into_table_from_query(
+    def insert_into_table_from_query_async(
         self,
         *,
         destination_dataset_id: str,
@@ -1185,7 +1158,7 @@ class BigQueryClientImpl(BigQueryClient):
         allow_field_additions: bool = False,
     ) -> bigquery.QueryJob:
 
-        return self._load_table_from_table_async(
+        return self._insert_into_table_from_table_async(
             source_dataset_id=source_dataset_id,
             source_table_id=source_table_id,
             destination_dataset_id=destination_dataset_id,
@@ -1196,7 +1169,7 @@ class BigQueryClientImpl(BigQueryClient):
             write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
         )
 
-    def insert_into_table_from_cloud_storage_async(
+    def load_into_table_from_cloud_storage_async(
         self,
         source_uri: str,
         destination_dataset_ref: bigquery.DatasetReference,
@@ -1211,7 +1184,7 @@ class BigQueryClientImpl(BigQueryClient):
             write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
         )
 
-    def insert_into_table(
+    def stream_into_table(
         self,
         dataset_ref: bigquery.DatasetReference,
         table_id: str,
@@ -1234,6 +1207,27 @@ class BigQueryClientImpl(BigQueryClient):
                 f"Failed to insert rows into {dataset_ref.dataset_id}.{table_id}:\n"
                 + "\n".join(str(error) for error in errors)
             )
+
+    def load_into_table_async(
+        self,
+        dataset_ref: bigquery.DatasetReference,
+        table_id: str,
+        rows: Sequence[Dict],
+    ) -> bigquery.job.LoadJob:
+        logging.info(
+            "Inserting %d rows into %s.%s", len(rows), dataset_ref.dataset_id, table_id
+        )
+
+        # Warn on any large rows
+        for row in rows:
+            json_row = json.dumps(row)
+            estimated_size = len(row)
+            if estimated_size > (100 * 2 ** 10):  # 100 KiB
+                logging.warning("Row is larger than 100 KiB: %s", json_row[:1000])
+
+        return self.client.load_table_from_json(
+            rows, self.get_table(dataset_ref, table_id)
+        )
 
     def delete_from_table_async(
         self, dataset_id: str, table_id: str, filter_clause: str
@@ -1435,7 +1429,7 @@ class BigQueryClientImpl(BigQueryClient):
             FROM `{dataset_id}.{table_id}`
         """
 
-        return self.insert_into_table_from_query(
+        return self.insert_into_table_from_query_async(
             destination_table_id=table_id,
             destination_dataset_id=dataset_id,
             query=rebuild_query,

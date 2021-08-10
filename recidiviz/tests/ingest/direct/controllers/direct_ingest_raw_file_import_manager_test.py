@@ -234,7 +234,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.mock_big_query_client = create_autospec(BigQueryClient)
         self.num_lines_uploaded = 0
 
-        self.mock_big_query_client.insert_into_table_from_cloud_storage_async.side_effect = (
+        self.mock_big_query_client.load_into_table_from_cloud_storage_async.side_effect = (
             self.mock_import_raw_file_to_big_query
         )
 
@@ -428,7 +428,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
         path = one(self.fs.gcs_file_system.uploaded_paths)
 
-        self.mock_big_query_client.insert_into_table_from_cloud_storage_async.assert_called_with(
+        self.mock_big_query_client.load_into_table_from_cloud_storage_async.assert_called_with(
             source_uri=path.uri(),
             destination_dataset_ref=bigquery.DatasetReference(
                 self.project_id, "us_xx_raw_data"
@@ -485,7 +485,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
         path = one(self.fs.gcs_file_system.uploaded_paths)
 
-        self.mock_big_query_client.insert_into_table_from_cloud_storage_async.assert_called_with(
+        self.mock_big_query_client.load_into_table_from_cloud_storage_async.assert_called_with(
             source_uri=path.uri(),
             destination_dataset_ref=bigquery.DatasetReference(
                 self.project_id, "us_xx_raw_data"
@@ -524,7 +524,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
         path = one(self.fs.gcs_file_system.uploaded_paths)
 
-        self.mock_big_query_client.insert_into_table_from_cloud_storage_async.assert_called_with(
+        self.mock_big_query_client.load_into_table_from_cloud_storage_async.assert_called_with(
             source_uri=path.uri(),
             destination_dataset_ref=bigquery.DatasetReference(
                 self.project_id, "us_xx_raw_data"
@@ -563,7 +563,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
         path = one(self.fs.gcs_file_system.uploaded_paths)
 
-        self.mock_big_query_client.insert_into_table_from_cloud_storage_async.assert_called_with(
+        self.mock_big_query_client.load_into_table_from_cloud_storage_async.assert_called_with(
             source_uri=path.uri(),
             destination_dataset_ref=bigquery.DatasetReference(
                 self.project_id, "us_xx_raw_data"
@@ -602,7 +602,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
         path = one(self.fs.gcs_file_system.uploaded_paths)
 
-        self.mock_big_query_client.insert_into_table_from_cloud_storage_async.assert_called_with(
+        self.mock_big_query_client.load_into_table_from_cloud_storage_async.assert_called_with(
             source_uri=path.uri(),
             destination_dataset_ref=bigquery.DatasetReference(
                 self.project_id, "us_xx_raw_data"
@@ -660,7 +660,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             for uploaded_path in self.fs.gcs_file_system.uploaded_paths
         ]
 
-        self.mock_big_query_client.insert_into_table_from_cloud_storage_async.assert_has_calls(
+        self.mock_big_query_client.load_into_table_from_cloud_storage_async.assert_has_calls(
             expected_insert_calls, any_order=True
         )
         self.assertEqual(
@@ -709,7 +709,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             for uploaded_path in self.fs.gcs_file_system.uploaded_paths
         ]
 
-        self.mock_big_query_client.insert_into_table_from_cloud_storage_async.assert_has_calls(
+        self.mock_big_query_client.load_into_table_from_cloud_storage_async.assert_has_calls(
             expected_insert_calls, any_order=True
         )
         self.assertEqual(
@@ -737,7 +737,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
         path = one(self.fs.gcs_file_system.uploaded_paths)
 
-        self.mock_big_query_client.insert_into_table_from_cloud_storage_async.assert_called_with(
+        self.mock_big_query_client.load_into_table_from_cloud_storage_async.assert_called_with(
             source_uri=path.uri(),
             destination_dataset_ref=bigquery.DatasetReference(
                 self.project_id, "us_xx_raw_data"
@@ -774,7 +774,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
         path = one(self.fs.gcs_file_system.uploaded_paths)
 
-        self.mock_big_query_client.insert_into_table_from_cloud_storage_async.assert_called_with(
+        self.mock_big_query_client.load_into_table_from_cloud_storage_async.assert_called_with(
             source_uri=path.uri(),
             destination_dataset_ref=bigquery.DatasetReference(
                 self.project_id, "us_xx_raw_data"

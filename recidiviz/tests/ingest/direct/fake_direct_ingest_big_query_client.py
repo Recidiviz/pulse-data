@@ -15,20 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A fake implementation of BigQueryClient for use in direct ingest tests."""
-from typing import Any, Dict, List, Optional, Iterator, Callable, Sequence
+from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence
 
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_client import (
-    BigQueryClient,
     DEFAULT_CROSS_REGION_COPY_TIMEOUT_SEC,
+    BigQueryClient,
 )
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     filename_parts_from_path,
 )
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct import fixture_util
 
@@ -120,16 +120,6 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
     ) -> bigquery.job.LoadJob:
         raise ValueError("Must be implemented for use in tests.")
 
-    def load_table_from_table_async(
-        self,
-        source_dataset_id: str,
-        source_table_id: str,
-        destination_dataset_id: str,
-        destination_table_id: str,
-        allow_field_additions: bool = False,
-    ) -> bigquery.QueryJob:
-        raise ValueError("Must be implemented for use in tests.")
-
     def export_table_to_cloud_storage_async(
         self,
         source_table_dataset_ref: bigquery.dataset.DatasetReference,
@@ -198,7 +188,7 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
     ) -> bigquery.QueryJob:
         raise ValueError("Must be implemented for use in tests.")
 
-    def insert_into_table_from_cloud_storage_async(
+    def load_into_table_from_cloud_storage_async(
         self,
         source_uri: str,
         destination_dataset_ref: bigquery.DatasetReference,
@@ -207,7 +197,7 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
     ) -> bigquery.job.LoadJob:
         raise ValueError("Must be implemented for use in tests.")
 
-    def insert_into_table_from_query(
+    def insert_into_table_from_query_async(
         self,
         *,
         destination_dataset_id: str,
@@ -219,12 +209,20 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
     ) -> bigquery.QueryJob:
         raise ValueError("Must be implemented for use in tests.")
 
-    def insert_into_table(
+    def stream_into_table(
         self,
         dataset_ref: bigquery.DatasetReference,
         table_id: str,
         rows: Sequence[Dict[str, Any]],
     ) -> None:
+        raise ValueError("Must be implemented for use in tests.")
+
+    def load_into_table_async(
+        self,
+        dataset_ref: bigquery.DatasetReference,
+        table_id: str,
+        rows: Sequence[Dict[str, Any]],
+    ) -> bigquery.job.LoadJob:
         raise ValueError("Must be implemented for use in tests.")
 
     def delete_from_table_async(

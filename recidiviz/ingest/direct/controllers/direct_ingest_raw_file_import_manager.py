@@ -567,7 +567,7 @@ class DirectIngestRawFileImportManager:
                     time.sleep(_PER_TABLE_UPDATE_RATE_LIMITING_SEC)
 
                 parts = filename_parts_from_path(path)
-                load_job = self.big_query_client.insert_into_table_from_cloud_storage_async(
+                load_job = self.big_query_client.load_into_table_from_cloud_storage_async(
                     source_uri=temp_output_path.uri(),
                     destination_dataset_ref=self.big_query_client.dataset_ref_for_id(
                         dataset_id

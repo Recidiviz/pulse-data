@@ -377,10 +377,10 @@ class BigQueryClientImplTest(unittest.TestCase):
             job_config=job_config,
         )
 
-    def test_insert_into_table_from_cloud_storage_async(self) -> None:
+    def test_load_into_table_from_cloud_storage_async(self) -> None:
         self.mock_client.get_dataset.side_effect = exceptions.NotFound("!")
 
-        self.bq_client.insert_into_table_from_cloud_storage_async(
+        self.bq_client.load_into_table_from_cloud_storage_async(
             destination_dataset_ref=self.mock_dataset_ref,
             destination_table_id=self.mock_table_id,
             destination_table_schema=[
@@ -395,7 +395,7 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_insert_into_table_streaming(self) -> None:
         self.mock_client.insert_rows.return_value = None
 
-        self.bq_client.insert_into_table(
+        self.bq_client.stream_into_table(
             dataset_ref=self.mock_dataset_ref,
             table_id=self.mock_table_id,
             rows=[{"a": 1, "b": "foo"}, {"a": 2, "b": "bar"}],
@@ -408,7 +408,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.side_effect = ValueError("!")
 
         with pytest.raises(ValueError):
-            self.bq_client.insert_into_table(
+            self.bq_client.stream_into_table(
                 dataset_ref=self.mock_dataset_ref,
                 table_id=self.mock_table_id,
                 rows=[{"a": 1, "b": "foo"}, {"a": 2, "b": "bar"}],
@@ -423,7 +423,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         ]
 
         with pytest.raises(RuntimeError, match="Incorrect columns"):
-            self.bq_client.insert_into_table(
+            self.bq_client.stream_into_table(
                 dataset_ref=self.mock_dataset_ref,
                 table_id=self.mock_table_id,
                 rows=[{"a": 1, "b": "foo"}, {"a": 2, "b": "bar"}],
@@ -431,6 +431,29 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         self.mock_client.get_table.assert_called()
         self.mock_client.insert_rows.assert_called()
+
+    def test_load_into_table_async(self) -> None:
+        self.bq_client.load_into_table_async(
+            dataset_ref=self.mock_dataset_ref,
+            table_id=self.mock_table_id,
+            rows=[{"a": 1, "b": "foo"}, {"a": 2, "b": "bar"}],
+        )
+
+        self.mock_client.get_table.assert_called()
+        self.mock_client.load_table_from_json.assert_called()
+
+    def test_load_into_table_async_invalid_table(self) -> None:
+        self.mock_client.get_table.side_effect = ValueError("!")
+
+        with self.assertRaises(ValueError):
+            self.bq_client.load_into_table_async(
+                dataset_ref=self.mock_dataset_ref,
+                table_id=self.mock_table_id,
+                rows=[{"a": 1, "b": "foo"}, {"a": 2, "b": "bar"}],
+            )
+
+        self.mock_client.get_table.assert_called()
+        self.mock_client.load_table_from_json.assert_not_called()
 
     def test_delete_from_table(self) -> None:
         """Tests that the delete_from_table function runs a query."""

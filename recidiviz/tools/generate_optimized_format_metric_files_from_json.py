@@ -108,7 +108,7 @@ def create_table(
     while True:
         if len(data_points) == offset:
             break
-        bq_client.insert_into_table(
+        bq_client.stream_into_table(
             dataset_ref=dataset_ref,
             table_id=table_id,
             rows=data_points[offset : offset + LIMIT],

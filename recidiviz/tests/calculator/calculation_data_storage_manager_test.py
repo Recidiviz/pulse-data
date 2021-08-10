@@ -21,11 +21,10 @@ import unittest
 from enum import Enum
 from unittest import mock
 
-from freezegun import freeze_time
-from mock import patch
 from flask import Flask
-
+from freezegun import freeze_time
 from google.cloud import bigquery
+from mock import patch
 
 from recidiviz.calculator import calculation_data_storage_manager
 from recidiviz.calculator.calculation_data_storage_manager import (
@@ -148,7 +147,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         calculation_data_storage_manager.move_old_dataflow_metrics_to_cold_storage()
 
         self.mock_client.list_tables.assert_called()
-        self.mock_client.insert_into_table_from_query.assert_called()
+        self.mock_client.insert_into_table_from_query_async.assert_called()
         self.mock_client.create_table_from_query_async.assert_called()
 
     @patch(
@@ -173,7 +172,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         calculation_data_storage_manager.move_old_dataflow_metrics_to_cold_storage()
 
         self.mock_client.list_tables.assert_called()
-        self.mock_client.insert_into_table_from_query.assert_called()
+        self.mock_client.insert_into_table_from_query_async.assert_called()
         self.mock_client.create_table_from_query_async.assert_called()
         self.mock_client.delete_table.assert_called()
 
