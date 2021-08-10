@@ -25,6 +25,7 @@ from urllib.parse import urlparse
 
 import requests
 from flask import Blueprint, request
+from requests.adapters import BaseAdapter
 
 from recidiviz.cloud_storage.gcs_file_system import (
     GCSFileSystem,
@@ -92,10 +93,13 @@ def scrape_aggregate_reports():
     always_download = state == "new_york"
     is_ca = state == "california"
     is_co = state == "colorado"
+    is_wv = state == "west_virginia"
     verify_ssl = state != "kentucky"
     urls = state_to_scraper[state]()
     fs = GcsfsFactory.build()
     logging.info("Scraping all pdfs for %s", state)
+
+    adapter = wv_aggregate_site_scraper.TLSAdapter() if is_wv else None
 
     for url in urls:
         post_data = None
@@ -112,7 +116,14 @@ def scrape_aggregate_reports():
             pdf_name = urlparse(url).path.replace("/", "_").lower()
         historical_path = build_path(HISTORICAL_BUCKET, state, pdf_name)
         file_to_upload = _get_file_to_upload(
-            historical_path, fs, url, pdf_name, always_download, post_data, verify_ssl
+            historical_path,
+            fs,
+            url,
+            pdf_name,
+            always_download,
+            post_data,
+            verify_ssl,
+            adapter=adapter,
         )
         if file_to_upload:
             upload_path = build_path(UPLOAD_BUCKET, state, pdf_name)
@@ -136,6 +147,7 @@ def _get_file_to_upload(
     always_download: bool,
     post_data: Dict,
     verify_ssl: bool,
+    adapter: BaseAdapter = None,
 ) -> Optional[GcsfsFileContentsHandle]:
     """This function checks first whether it needs to download, and then
     returns the locally downloaded pdf"""
@@ -143,10 +155,14 @@ def _get_file_to_upload(
     if fs.exists(path) and not always_download:
         return None
 
+    session = requests.session()
+    if adapter:
+        session.mount(url, adapter)
+
     if post_data:
-        response = requests.post(url, data=post_data, verify=verify_ssl)
+        response = session.post(url, data=post_data, verify=verify_ssl)
     else:
-        response = requests.get(url, verify=verify_ssl)
+        response = session.get(url, verify=verify_ssl)
     if response.status_code == 200:
         # This is a PDF so use content to get the bytes directly.
         return GcsfsFileContentsHandle.from_bytes(response.content)
