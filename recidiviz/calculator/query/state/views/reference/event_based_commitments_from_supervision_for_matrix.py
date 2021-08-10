@@ -33,35 +33,49 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_DESCRIPTION = """
 
 EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_QUERY_TEMPLATE = """
     /*{description}*/
-    SELECT
-        state_code,
-        year,
-        month,
-        {state_specific_admission_type},
-        admission_date,
-        most_severe_violation_type,
-        most_severe_violation_type_subtype,
-        response_count,
-        person_id,
-        secondary_person_external_id AS person_external_id,
-        gender,
-        assessment_score_bucket,
-        age_bucket,
-        prioritized_race_or_ethnicity,
-        supervision_type,
-        supervision_level,
-        supervision_level_raw_text,
-        case_type,
-        IFNULL(level_1_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_1_supervision_location,
-        IFNULL(level_2_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_2_supervision_location,
-        -- TODO(#6115): Stop dropping commas once we are using a different delimiter in the export
-        REPLACE(IFNULL(supervising_officer_external_id, 'EXTERNAL_UNKNOWN'), ',', '') AS officer,
-        {state_specific_most_recent_officer_recommendation},
-        {state_specific_recommended_for_revocation},
-        violation_history_description AS violation_record,
-        violation_type_frequency_counter
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_materialized`
-    WHERE {state_specific_admission_type_inclusion_filter}
+    WITH metrics AS (
+        SELECT
+            state_code,
+            year,
+            month,
+            {state_specific_admission_type},
+            admission_date,
+            most_severe_violation_type,
+            most_severe_violation_type_subtype,
+            response_count,
+            person_id,
+            secondary_person_external_id AS person_external_id,
+            gender,
+            assessment_score_bucket,
+            age_bucket,
+            prioritized_race_or_ethnicity,
+            supervision_type,
+            supervision_level,
+            supervision_level_raw_text,
+            case_type,
+            IFNULL(level_1_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_1_supervision_location,
+            IFNULL(level_2_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_2_supervision_location,
+            supervising_officer_external_id AS agent_external_id,
+            {state_specific_most_recent_officer_recommendation},
+            {state_specific_recommended_for_revocation},
+            violation_history_description AS violation_record,
+            violation_type_frequency_counter
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_materialized`
+        WHERE {state_specific_admission_type_inclusion_filter}
+    )
+    
+    SELECT 
+        *,
+        -- We drop commas in agent names since we use commas as the delimiters in the export
+        -- TODO(#8674): Use agent_external_id instead of agent_external_id_with_full_name
+        -- once the FE is using the officer_full_name field for names
+        REPLACE(IFNULL(agent.agent_external_id_with_full_name, 'EXTERNAL_UNKNOWN'), ',', '') AS officer,
+        COALESCE(agent.full_name, 'UNKNOWN') AS officer_full_name,
+    FROM
+        metrics
+    LEFT JOIN
+        `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` agent
+    USING (state_code, agent_external_id)
     """
 
 EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -71,6 +85,7 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_VIEW_BUILDER = SimpleBigQuer
     view_query_template=EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_QUERY_TEMPLATE,
     description=EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     state_specific_most_recent_officer_recommendation=state_specific_query_strings.state_specific_officer_recommendation(
         input_col="most_recent_response_decision"
     ),
