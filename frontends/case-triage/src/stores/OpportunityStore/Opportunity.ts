@@ -19,7 +19,7 @@ import assertNever from "assert-never";
 import { makeAutoObservable } from "mobx";
 import moment from "moment";
 import { PillKind } from "../../components/Pill";
-import { getTimeDifference, LONG_DATE_FORMAT } from "../../utils";
+import { LONG_DATE_FORMAT } from "../../utils";
 
 // =============================================================================
 export enum OpportunityDeferralType {
@@ -60,6 +60,28 @@ export const opportunityPriorityComparator = (
   }
 
   return 0;
+};
+
+/**
+ * Formats distance from now in terms of days, e.g., "in 5 days", "14 days ago".
+ * Will return "today" rather than "in 0 days".
+ */
+const differenceInDays = (date: moment.Moment): string => {
+  // `date` is generally expected to be a day boundary.
+  const beginningOfDay = moment().startOf("day");
+
+  if (date.isSame(beginningOfDay, "day")) {
+    return "today";
+  }
+
+  const dayDiff = date.diff(beginningOfDay, "days");
+
+  const unitInflected = `day${Math.abs(dayDiff) > 1 ? "s" : ""}`;
+
+  if (dayDiff < 0) {
+    return `${Math.abs(dayDiff)} ${unitInflected} ago`;
+  }
+  return `in ${dayDiff} ${unitInflected}`;
 };
 
 export type OpportunityData = {
@@ -114,9 +136,9 @@ export class Opportunity {
         return OPPORTUNITY_TITLES[this.opportunityType];
       case OpportunityType.ASSESSMENT:
       case OpportunityType.CONTACT:
-        return `${
-          OPPORTUNITY_TITLES[this.opportunityType]
-        } ${`${this.opportunityMetadata.status}`.toLowerCase()}`;
+        return `${OPPORTUNITY_TITLES[this.opportunityType]} ${
+          this.dueDaysFormatted
+        }`;
       default:
         assertNever(this.opportunityType);
     }
@@ -148,7 +170,20 @@ export class Opportunity {
   get dueDaysFormatted(): string {
     const { dueDate } = this;
     if (dueDate) {
-      return getTimeDifference(dueDate);
+      return differenceInDays(dueDate);
+    }
+    return "";
+  }
+
+  /**
+   * Assessments are "due" but contacts are "recommended"
+   */
+  get dueDateModifier(): string {
+    if (this.opportunityType === OpportunityType.CONTACT) {
+      return "recommended";
+    }
+    if (this.opportunityType === OpportunityType.ASSESSMENT) {
+      return "due";
     }
     return "";
   }
@@ -161,31 +196,25 @@ export class Opportunity {
       case OpportunityType.EMPLOYMENT:
         return titleBase;
       case OpportunityType.CONTACT:
-      case OpportunityType.ASSESSMENT: {
-        const modifier =
-          this.opportunityType === OpportunityType.CONTACT
-            ? "recommended"
-            : "due";
-        if (this.opportunityMetadata.status === "OVERDUE") {
-          return `${titleBase} ${modifier} ${this.dueDate?.format(
-            LONG_DATE_FORMAT
-          )}`;
-        }
-        return `${titleBase} ${modifier} ${this.dueDaysFormatted}`;
-      }
+      case OpportunityType.ASSESSMENT:
+        return `${titleBase} ${this.dueDateModifier} ${this.dueDaysFormatted}`;
       default:
         assertNever(this.opportunityType);
     }
   }
 
   get tooltipText(): string | undefined {
+    const titleBase = OPPORTUNITY_TITLES[this.opportunityType];
+
     switch (this.opportunityType) {
       case OpportunityType.OVERDUE_DOWNGRADE:
       case OpportunityType.EMPLOYMENT:
         return undefined;
-      case OpportunityType.ASSESSMENT:
       case OpportunityType.CONTACT:
-        return this.title;
+      case OpportunityType.ASSESSMENT:
+        return `${titleBase} ${this.dueDateModifier} ${this.dueDate?.format(
+          LONG_DATE_FORMAT
+        )}`;
       default:
         assertNever(this.opportunityType);
     }

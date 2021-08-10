@@ -159,7 +159,7 @@ class TestDemoUser(TestCase):
             num_assessment_overdue = 33
             num_assessment_upcoming = 5
             num_contact_overdue = 31
-            num_contact_upcoming = 4
+            num_contact_upcoming = 16
 
             expected_opportunity_count = sum(
                 [

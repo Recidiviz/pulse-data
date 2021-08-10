@@ -61,6 +61,12 @@ export const ClientStatusList: React.FC<ClientProps> = observer(
     const includeNoteCount = userStore.canSeeProfileV2;
     const noteCount = client.activeNotes.length;
 
+    // the "truncator" won't render if the list is empty;
+    // force it to contain something invisible if we need to show a note count
+    if (noteCount && statusPills.length === 0) {
+      statusPills.push(<div key="placeholder" />);
+    }
+
     return (
       <StatusList
         alwaysShowTruncator

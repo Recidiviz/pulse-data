@@ -15,7 +15,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import moment from "moment";
 import { rem, remToPx } from "polished";
 import { useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
@@ -40,24 +39,6 @@ export const caseInsensitiveIncludes = (
 ): boolean => {
   return containingString.toLowerCase().includes(substring.toLowerCase());
 };
-
-/**
- * Formats distance from now in natural language. Any time today will
- * be rendered as "today", with larger distances in days, months, etc
- * per [Moment.js](https://momentjs.com/docs/#/displaying/fromnow/) rules.
- */
-export function getTimeDifference(date: moment.Moment): string {
-  // `date` is generally expected to be a day boundary.
-  // We use the beginning of today when calculating distance,
-  // thus showing a minimum difference of "a day" rather than "X hours"
-  const beginningOfDay = moment().startOf("day");
-
-  if (date.isSame(beginningOfDay, "day")) {
-    return "today";
-  }
-
-  return date.from(beginningOfDay);
-}
 
 export function useUuid(): string {
   return useMemo(() => uuidv4(), []);
