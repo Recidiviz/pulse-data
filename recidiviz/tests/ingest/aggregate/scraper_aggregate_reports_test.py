@@ -90,7 +90,7 @@ class TestScraperAggregateReports(TestCase):
         )
         self.gcs_factory_patcher.start().return_value = self.fs
 
-    @patch.object(requests, "get")
+    @patch.object(requests.Session, "get")
     @patch.object(builtins, "open")
     @patch.object(tx_aggregate_site_scraper, "get_urls_to_download")
     def testExistsNoUpload(
@@ -110,7 +110,7 @@ class TestScraperAggregateReports(TestCase):
         self.assertListEqual(self.fs.all_paths, [historical_path])
         self.assertEqual(mock_open.called, False)
 
-    @patch.object(requests, "get")
+    @patch.object(requests.Session, "get")
     @patch.object(builtins, "open")
     @patch.object(ny_aggregate_site_scraper, "get_urls_to_download")
     def testExistsIsNyUpload(
@@ -131,7 +131,7 @@ class TestScraperAggregateReports(TestCase):
         mock_open.assert_called_with(ANY, "wb")
         mock_get.assert_called_with(EXISTING_TEST_URL, verify=True)
 
-    @patch.object(requests, "get")
+    @patch.object(requests.Session, "get")
     @patch.object(builtins, "open")
     @patch.object(tx_aggregate_site_scraper, "get_urls_to_download")
     def testNoExistsUpload200(
@@ -150,7 +150,7 @@ class TestScraperAggregateReports(TestCase):
         mock_open.assert_called_with(ANY, "wb")
         mock_get.assert_called_with(EXISTING_TEST_URL, verify=True)
 
-    @patch.object(requests, "post")
+    @patch.object(requests.Session, "post")
     @patch.object(builtins, "open")
     @patch.object(ca_aggregate_site_scraper, "get_urls_to_download")
     def testCaNoExistsUpload200(
@@ -171,7 +171,7 @@ class TestScraperAggregateReports(TestCase):
             EXISTING_TEST_URL_CA, data=CA_POST_DATA, verify=True
         )
 
-    @patch.object(requests, "get")
+    @patch.object(requests.Session, "get")
     @patch.object(builtins, "open")
     @patch.object(tx_aggregate_site_scraper, "get_urls_to_download")
     def testMultipleUrlsAll200(
@@ -197,7 +197,7 @@ class TestScraperAggregateReports(TestCase):
             ],
         )
 
-    @patch.object(requests, "get")
+    @patch.object(requests.Session, "get")
     @patch.object(builtins, "open")
     @patch.object(tx_aggregate_site_scraper, "get_urls_to_download")
     def testMultipleUrlsOne200OneNoExists(
