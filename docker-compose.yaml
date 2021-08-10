@@ -31,6 +31,11 @@ services:
       - SQLALCHEMY_DB_PASSWORD=example
       - SQLALCHEMY_USE_SSL=0
 
+  rate_limit_cache:
+    image: redis:5.0
+    ports:
+      - "6379:6379"
+
   admin_panel_backend:
     image: us.gcr.io/recidiviz-staging/appengine/default:latest
     volumes:
@@ -39,6 +44,7 @@ services:
       - "~/.config:/root/.config"
     depends_on:
       - migrations
+      - rate_limit_cache
     ports:
       - "5050:5000"
     command: pipenv run flask run -h 0.0.0.0

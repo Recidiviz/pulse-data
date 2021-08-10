@@ -14,8 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-"""Tests for admin_panel/routes/case_triage.py"""
+"""Tests for admin_panel/routes/line_staff_tools.py"""
 import datetime
 import json
 from http import HTTPStatus
@@ -27,7 +26,7 @@ import flask
 from flask import Blueprint, Flask
 
 from recidiviz.admin_panel.all_routes import admin_stores
-from recidiviz.admin_panel.routes.case_triage import add_case_triage_routes
+from recidiviz.admin_panel.routes.line_staff_tools import add_line_staff_tools_routes
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.results import MultiRequestResult
@@ -51,7 +50,7 @@ class ReportingEndpointTests(TestCase):
             "recidiviz.cloud_storage.gcsfs_factory.GcsfsFactory.build"
         )
         self.requires_gae_auth_patcher = patch(
-            "recidiviz.admin_panel.routes.case_triage.requires_gae_auth",
+            "recidiviz.admin_panel.routes.line_staff_tools.requires_gae_auth",
             side_effect=lambda route: route,
         )
 
@@ -68,7 +67,7 @@ class ReportingEndpointTests(TestCase):
 
         self.client = self.app.test_client()
 
-        add_case_triage_routes(blueprint, admin_stores)
+        add_line_staff_tools_routes(blueprint, admin_stores)
         self.app.register_blueprint(blueprint)
 
         with self.app.test_request_context():

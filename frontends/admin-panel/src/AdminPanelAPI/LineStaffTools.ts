@@ -18,25 +18,25 @@ import { postWithURLAndBody } from "./utils";
 
 // Cloud SQL -> GCS CSV Export
 export const generateNonETLExports = async (): Promise<Response> => {
-  return postWithURLAndBody("/api/case_triage/generate_non_etl_exports");
+  return postWithURLAndBody("/api/line_staff_tools/generate_non_etl_exports");
 };
 
 // GCS CSV -> Cloud SQL Import
 export const fetchETLViewIds = async (): Promise<Response> => {
-  return postWithURLAndBody("/api/case_triage/fetch_etl_view_ids");
+  return postWithURLAndBody("/api/line_staff_tools/fetch_etl_view_ids");
 };
 
 export const runCloudSQLImport = async (
   viewIds: string[]
 ): Promise<Response> => {
-  return postWithURLAndBody("/api/case_triage/run_gcs_import", {
+  return postWithURLAndBody("/api/line_staff_tools/run_gcs_import", {
     viewIds,
   });
 };
 
 // PO Feedback
 export const getPOFeedback = async (): Promise<Response> => {
-  return postWithURLAndBody("/api/case_triage/get_po_feedback");
+  return postWithURLAndBody("/api/line_staff_tools/get_po_feedback");
 };
 
 // Fetch states for po monthly reports
