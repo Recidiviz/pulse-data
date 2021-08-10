@@ -41,8 +41,7 @@ from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
-
-from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
@@ -88,7 +87,7 @@ def main(dry_run: bool) -> None:
             )
         else:
             # Move data from the Dataflow metrics dataset into the cold storage table, creating the table if necessary
-            insert_job = bq_client.insert_into_table_from_query(
+            insert_job = bq_client.insert_into_table_from_query_async(
                 destination_dataset_id=cold_storage_dataset,
                 destination_table_id=table_id,
                 query=insert_query,

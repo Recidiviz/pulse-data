@@ -278,7 +278,7 @@ def move_old_dataflow_metrics_to_cold_storage() -> None:
         )
 
         # Move data from the Dataflow metrics dataset into the cold storage table, creating the table if necessary
-        insert_job = bq_client.insert_into_table_from_query(
+        insert_job = bq_client.insert_into_table_from_query_async(
             destination_dataset_id=cold_storage_dataset,
             destination_table_id=table_id,
             query=insert_query,
@@ -335,7 +335,7 @@ def _decommission_dataflow_metric_table(
         )
     )
 
-    insert_job = bq_client.insert_into_table_from_query(
+    insert_job = bq_client.insert_into_table_from_query_async(
         destination_dataset_id=cold_storage_dataset,
         destination_table_id=table_id,
         query=insert_query,
