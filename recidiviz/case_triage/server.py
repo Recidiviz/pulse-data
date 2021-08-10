@@ -159,6 +159,10 @@ def set_headers(response: Response) -> Response:
     # Recidiviz-specific version header
     response.headers["X-Recidiviz-Current-Version"] = os.getenv("CURRENT_GIT_SHA", "")
 
+    # Set cache control to no-store if it isn't already set
+    if "Cache-Control" not in response.headers:
+        response.headers["Cache-Control"] = "no-store, max-age=0"
+
     return response
 
 
