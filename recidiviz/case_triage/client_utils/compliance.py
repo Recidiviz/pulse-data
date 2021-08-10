@@ -149,7 +149,7 @@ def get_contact_due_details(client: ETLClient) -> Optional[Tuple[DueDateStatus, 
     # of state policy is, we're not showing home visits as the next contact dates.
     due_date = get_next_face_to_face_date(client)
     if due_date:
-        status = _get_due_date_status(due_date, 7)
+        status = _get_due_date_status(due_date, 30)
         if status:
             return (status, _get_days_until_due(due_date))
     return None
