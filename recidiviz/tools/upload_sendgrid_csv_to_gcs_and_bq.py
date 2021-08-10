@@ -53,21 +53,21 @@ python -m recidiviz.tools.upload_sendgrid_csv_to_gcs_and_bq
 import argparse
 import logging
 import sys
-
 from datetime import date
 from typing import List
+
 from google.cloud import bigquery
 from google.cloud.bigquery import WriteDisposition
 
-from recidiviz.cloud_storage.gcs_file_system import (
-    GcsfsFileContentsHandle,
-    GCSFileSystem,
-)
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.cloud_storage.gcs_file_system import (
+    GCSFileSystem,
+    GcsfsFileContentsHandle,
+)
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence.database.bq_refresh.bq_refresh import wait_for_table_load
-from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 BUCKET_SUFFIX = "-sendgrid-data"
 DATASET_ID = "sendgrid_email_data"
@@ -221,7 +221,7 @@ def load_from_temp_to_permanent_table(
         table_id=FINAL_DESTINATION_TABLE,
     ).num_rows
 
-    insert_job = bq_client.insert_into_table_from_query(
+    insert_job = bq_client.insert_into_table_from_query_async(
         destination_dataset_id=DATASET_ID,
         destination_table_id=FINAL_DESTINATION_TABLE,
         query=INSERT_QUERY_TEMPLATE.format(
