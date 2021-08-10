@@ -48,7 +48,10 @@ from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismMetric,
 )
 from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetric
-from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
+from recidiviz.calculator.pipeline.utils.metric_utils import (
+    PersonLevelMetric,
+    RecidivizMetric,
+)
 from recidiviz.calculator.pipeline.violation.metrics import ViolationMetric
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
@@ -113,7 +116,16 @@ This view may not be deployed to all environments yet.<br/>
 METRIC_DOCS_TEMPLATE = """##{metric_name}
 {description}
 
-####Metric attributes in Big Query
+####Metric attributes
+Attributes specific to the `{metric_name}`:
+
+{metric_attributes}
+
+Attributes on all metrics:
+
+{common_attributes}
+
+####Metric tables in BigQuery
 
 * [**Staging**]({staging_link})
 <br/>
@@ -977,12 +989,12 @@ class CalculationDocumentationGenerator:
             self.state_metric_calculations_by_metric[metric_type],
             key=lambda info: (info.name, info.month_count),
         )
-        headers = [
+        state_info_headers = [
             "**State**",
             "**Number of Months Calculated**",
             "**Calculation Frequency**",
         ]
-        table_matrix = [
+        state_info_table_matrix = [
             [
                 f"[{state_info.name}](../../states/{self._normalize_string_for_path(state_info.name)}.md)",
                 state_info.month_count if state_info.month_count else "N/A",
@@ -990,11 +1002,41 @@ class CalculationDocumentationGenerator:
             ]
             for state_info in state_infos_list
         ]
-        writer = MarkdownTableWriter(
-            headers=headers, value_matrix=table_matrix, margin=0
+        state_info_writer = MarkdownTableWriter(
+            headers=state_info_headers, value_matrix=state_info_table_matrix, margin=0
+        )
+
+        attribute_info_headers = [
+            "**Attribute Name**",
+            "**Type**",
+        ]
+        metric_attribute_table_matrix = [
+            [field.name, field.field_type]
+            for field in metric.bq_schema_for_metric_table()
+            if field.name not in attr.fields_dict(RecidivizMetric)
+            and field.name not in attr.fields_dict(PersonLevelMetric)
+        ]
+        metric_attribute_info_writer = MarkdownTableWriter(
+            headers=attribute_info_headers,
+            value_matrix=metric_attribute_table_matrix,
+            margin=0,
+        )
+
+        common_attribute_table_matrix = [
+            [field.name, field.field_type]
+            for field in metric.bq_schema_for_metric_table()
+            if field.name in attr.fields_dict(RecidivizMetric)
+            or field.name in attr.fields_dict(PersonLevelMetric)
+        ]
+        common_attribute_info_writer = MarkdownTableWriter(
+            headers=attribute_info_headers,
+            value_matrix=common_attribute_table_matrix,
+            margin=0,
         )
 
         documentation = METRIC_DOCS_TEMPLATE.format(
+            metric_attributes=metric_attribute_info_writer.dumps(),
+            common_attributes=common_attribute_info_writer.dumps(),
             staging_link=BQ_LINK_TEMPLATE.format(
                 project="recidiviz-staging",
                 dataset_id="dataflow_metrics",
@@ -1007,7 +1049,7 @@ class CalculationDocumentationGenerator:
             ),
             metric_name=metric.__name__,
             description=metric.get_description(),
-            metrics_cadence_table=writer.dumps(),
+            metrics_cadence_table=state_info_writer.dumps(),
             metric_table_id=metric_table_id,
         )
 
