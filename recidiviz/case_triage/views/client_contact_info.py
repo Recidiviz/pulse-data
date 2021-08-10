@@ -49,19 +49,23 @@ WITH phone_numbers AS (
 )
 SELECT
   'US_ID' AS state_code,
-  offenders.offendernumber AS person_external_id,
-  email AS email_address,
+  person_external_id,
+  email_address,
   phone_number
-FROM
-  `{project_id}.us_id_raw_data_up_to_date_views.cis_offender_latest` offenders
-LEFT JOIN
-  `{project_id}.us_id_raw_data_up_to_date_views.cis_personemailaddress_latest` emails
-ON emails.personid = offenders.id
+FROM (
+    SELECT offenders.offendernumber AS person_external_id,
+    email AS email_address,
+    ROW_NUMBER() OVER (PARTITION BY offenders.offendernumber ORDER BY emails.insdate DESC) AS rn
+    FROM `{project_id}.us_id_raw_data_up_to_date_views.cis_offender_latest` offenders
+    LEFT JOIN
+    `{project_id}.us_id_raw_data_up_to_date_views.cis_personemailaddress_latest` emails
+    ON (emails.personid = offenders.id)
+    WHERE emails.iscurrent = 'T'
+    QUALIFY rn = 1
+)
 LEFT JOIN
   phone_numbers
-ON offenders.offendernumber = phone_numbers.docno
-WHERE
-  iscurrent = 'T'
+ON person_external_id = phone_numbers.docno
 """
 
 CLIENT_CONTACT_INFO_DESCRIPTION = """
