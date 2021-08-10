@@ -37,6 +37,7 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = """
       person_external_id,
       person_id AS internal_person_id,
       officer,
+      officer_full_name,
       officer_recommendation,
       violation_record,
       CASE
@@ -74,6 +75,7 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = """
         IFNULL(person_external_id, 'UNKNOWN') AS state_id,
         internal_person_id,
         officer,
+        officer_full_name,
         officer_recommendation,
         violation_record,
         IF(district = 'ALL', 'EXTERNAL_UNKNOWN', district) AS district,

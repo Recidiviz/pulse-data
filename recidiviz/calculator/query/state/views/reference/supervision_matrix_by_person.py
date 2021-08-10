@@ -34,9 +34,22 @@ SUPERVISION_MATRIX_BY_PERSON_DESCRIPTION = """
 
 SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
     /*{description}*/
-    WITH supervision_matrix AS (
+    WITH supervision_with_agent_info AS (
         SELECT
-            state_code, year, month,
+            * EXCEPT(state_code),
+            metric.state_code,
+            -- We drop commas in agent names since we use commas as the delimiters in the export
+            -- TODO(#8674): Use agent_external_id instead of agent_external_id_with_full_name
+            -- once the FE is using the officer_full_name field for names
+            REPLACE(IFNULL(agent.agent_external_id_with_full_name, 'EXTERNAL_UNKNOWN'), ',', '') AS officer,
+            COALESCE(agent.full_name, 'UNKNOWN') AS officer_full_name,    
+            FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized` metric
+        LEFT JOIN `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` agent
+        ON metric.state_code = agent.state_code AND metric.supervising_officer_external_id = agent.agent_external_id 
+    ), supervision_matrix AS (
+        SELECT
+            state_code,
+            year, month,
             most_severe_violation_type,
             most_severe_violation_type_subtype,
             response_count,
@@ -51,12 +64,12 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
             case_type,
             IFNULL(level_1_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_1_supervision_location,
             IFNULL(level_2_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_2_supervision_location,
-            -- TODO(#6115): Stop dropping commas once we are using a different delimiter in the export
-            REPLACE(IFNULL(supervising_officer_external_id, 'EXTERNAL_UNKNOWN'), ',', '') AS officer,
+            officer,
+            officer_full_name,
             {state_specific_recommended_for_revocation},
             date_of_supervision,
             FALSE AS is_revocation
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
+        FROM supervision_with_agent_info
         WHERE {thirty_six_month_filter}
         AND {state_specific_supervision_type_inclusion_filter}
     ), revocations_matrix AS (
@@ -77,6 +90,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
             level_1_supervision_location,
             level_2_supervision_location,
             officer,
+            officer_full_name,
             recommended_for_revocation,
             admission_date AS date_of_supervision,
             TRUE as is_revocation
@@ -107,6 +121,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
         level_1_supervision_location,
         level_2_supervision_location,
         officer,
+        officer_full_name,
         recommended_for_revocation,
         person_id, person_external_id,
         IFNULL(gender, 'EXTERNAL_UNKNOWN') AS gender,
@@ -127,6 +142,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
         level_1_supervision_location,
         level_2_supervision_location,
         officer,
+        officer_full_name,
         recommended_for_revocation,
         person_id,
         person_external_id,
@@ -155,6 +171,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
         level_1_supervision_location,
         level_2_supervision_location,
         officer,
+        officer_full_name,
         recommended_for_revocation,
         person_id,
         person_external_id,
