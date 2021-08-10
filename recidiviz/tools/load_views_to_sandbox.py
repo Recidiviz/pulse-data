@@ -86,6 +86,8 @@ def load_views_to_sandbox(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             view_builders_to_update=builders_to_update,
             dataset_overrides=sandbox_dataset_overrides,
+            # Don't clean up datasets when running a sandbox script
+            historically_managed_datasets_to_clean=None,
         )
 
 

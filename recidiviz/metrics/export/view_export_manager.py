@@ -223,6 +223,9 @@ def rematerialize_views_for_metric_export(
             view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
                 view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
                 view_builders_to_update=view_builders_for_views_to_update,
+                # Don't perform a cleanup when we're just rematerializing views for
+                # the metric export
+                historically_managed_datasets_to_clean=None,
             )
 
     # The view deploy will only have rematerialized views that had been updated since the last deploy, this call

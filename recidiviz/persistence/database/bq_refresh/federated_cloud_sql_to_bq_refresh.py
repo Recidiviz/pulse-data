@@ -16,7 +16,7 @@
 # =============================================================================
 """Export data from Cloud SQL and load it into BigQuery."""
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 from sqlalchemy import Table
 
@@ -54,6 +54,9 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 )
 from recidiviz.view_registry.dataset_overrides import (
     dataset_overrides_for_view_builders,
+)
+from recidiviz.view_registry.deployed_views import (
+    CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA,
 )
 
 
@@ -116,23 +119,34 @@ def _federated_bq_regional_dataset_refresh(
             config.schema_type
         )
 
+    historically_managed_datasets_for_schema = (
+        CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA[
+            config.schema_type
+        ]
+    )
+
     dataset_overrides = None
     if dataset_override_prefix:
         dataset_overrides = dataset_overrides_for_view_builders(
             view_dataset_override_prefix=dataset_override_prefix,
             view_builders=view_builders,
         )
+
     create_managed_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=set(),
         view_builders_to_update=view_builders,
         dataset_overrides=dataset_overrides,
         bq_region_override=bq_region_override,
         force_materialize=True,
+        historically_managed_datasets_to_clean=historically_managed_datasets_for_schema,
     )
 
     if config.is_state_segmented_refresh_schema():
         _hydrate_unioned_regional_dataset_for_schema(
-            config, bq_region_override, dataset_override_prefix
+            config,
+            historically_managed_datasets_for_schema,
+            bq_region_override,
+            dataset_override_prefix,
         )
 
 
@@ -241,6 +255,7 @@ class UnionedStateSegmentsViewBuilder(BigQueryViewBuilder[BigQueryView]):
 
 def _hydrate_unioned_regional_dataset_for_schema(
     config: CloudSqlToBQConfig,
+    historically_managed_datasets_for_schema: Set[str],
     bq_region_override: Optional[str],
     dataset_override_prefix: Optional[str],
 ) -> None:
@@ -319,4 +334,5 @@ def _hydrate_unioned_regional_dataset_for_schema(
         dataset_overrides=dataset_overrides,
         bq_region_override=bq_region_override,
         force_materialize=True,
+        historically_managed_datasets_to_clean=historically_managed_datasets_for_schema,
     )

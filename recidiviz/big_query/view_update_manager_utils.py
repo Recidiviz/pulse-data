@@ -23,63 +23,6 @@ from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_view import BigQueryAddress
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 
-# A list of all datasets that have ever held managed views.
-# This list is used to identify places where we should look for legacy views that we need to clean up.
-# DO NOT DELETE ITEMS FROM THIS LIST UNLESS YOU KNOW THIS DATASET HAS BEEN FULLY DELETED FROM BOTH PROD AND STAGING.
-
-DATASETS_THAT_HAVE_EVER_BEEN_MANAGED = {
-    "analyst_data",
-    "case_triage",
-    "case_triage_cloudsql_connection",
-    "case_triage_federated_regional",
-    "census_managed_views",
-    "census_regional",
-    "covid_public_data",
-    "dashboard_views",
-    "dataflow_metrics_materialized",
-    "experiments",
-    "externally_shared_views",
-    "ingest_metadata",
-    "jails_cloudsql_connection",
-    "justice_counts",
-    "justice_counts_corrections",
-    "justice_counts_dashboard",
-    "justice_counts_jails",
-    "operations_cloudsql_connection",
-    "partner_data_csg",
-    "po_report_views",
-    "population_projection_data",
-    "public_dashboard_views",
-    "reference_views",
-    "state_us_id_primary_cloudsql_connection",
-    "state_us_mi_primary_cloudsql_connection",
-    "state_us_mo_primary_cloudsql_connection",
-    "state_us_nd_primary_cloudsql_connection",
-    "state_us_pa_primary_cloudsql_connection",
-    "state_us_tn_primary_cloudsql_connection",
-    "us_id_operations_regional",
-    "us_id_state_regional",
-    "us_id_raw_data_up_to_date_views",
-    "us_mi_operations_regional",
-    "us_mi_state_regional",
-    "us_mi_raw_data_up_to_date_views",
-    "us_mo_operations_regional",
-    "us_mo_state_regional",
-    "us_mo_raw_data_up_to_date_views",
-    "us_nd_operations_regional",
-    "us_nd_state_regional",
-    "us_nd_raw_data_up_to_date_views",
-    "us_pa_operations_regional",
-    "us_pa_state_regional",
-    "us_pa_raw_data_up_to_date_views",
-    "us_tn_operations_regional",
-    "us_tn_state_regional",
-    "us_tn_raw_data_up_to_date_views",
-    "validation_metadata",
-    "validation_views",
-    "vitals_report_views",
-}
-
 
 def get_managed_view_and_materialized_table_addresses_by_dataset(
     managed_views_dag_walker: BigQueryViewDagWalker,
@@ -140,20 +83,22 @@ def delete_unmanaged_views_and_tables_from_dataset(
 def cleanup_datasets_and_delete_unmanaged_views(
     bq_client: BigQueryClient,
     managed_views_map: Dict[str, Set[BigQueryAddress]],
+    datasets_that_have_ever_been_managed: Set[str],
     dry_run: bool = True,
 ) -> None:
-    """This function filters through a list of managed dataset ids and a map of managed views to their corresponding
-    datasets (which is obtained through get_managed_views_for_dataset_map()) and checks that the dataset is in the
-    master list DATASETS_THAT_HAVE_EVER_BEEN_MANAGED. It then cleans up the datasets by deleting unmanaged datasets
-    and deleting any unmanaged views within managed datasets."""
-    datasets_that_have_ever_been_managed = get_datasets_that_have_ever_been_managed()
+    """This function filters through a list of managed dataset ids and a map of managed
+    views to their corresponding datasets and checks that the dataset is in the provided
+    master list |datasets_that_have_ever_been_managed|. It then cleans up the
+    datasets by deleting unmanaged datasets and deleting any unmanaged views within
+    managed datasets."""
     managed_dataset_ids: List[str] = list(managed_views_map.keys())
 
     for dataset_id in managed_dataset_ids:
         if dataset_id not in datasets_that_have_ever_been_managed:
             raise ValueError(
-                "Managed dataset %s not found in the list DATASETS_THAT_HAVE_EVER_BEEN_MANAGED."
-                % dataset_id,
+                "Managed dataset %s not found in the provided "
+                "|datasets_that_have_ever_been_managed|: "
+                f"[{datasets_that_have_ever_been_managed}]." % dataset_id,
             )
 
     for dataset_id in datasets_that_have_ever_been_managed:
@@ -174,16 +119,13 @@ def cleanup_datasets_and_delete_unmanaged_views(
                     )
             else:
                 logging.info(
-                    "Dataset %s isn't being managed and no longer exists in BigQuery. It can be safely removed from "
-                    "the list DATASETS_THAT_HAVE_EVER_BEEN_MANAGED.",
+                    "Dataset %s isn't being managed and no longer exists in BigQuery. "
+                    "It can be safely removed from the list: [%s].",
                     dataset_id,
+                    datasets_that_have_ever_been_managed,
                 )
 
         else:
             delete_unmanaged_views_and_tables_from_dataset(
                 bq_client, dataset_id, managed_views_map[dataset_id], dry_run
             )
-
-
-def get_datasets_that_have_ever_been_managed() -> Set[str]:
-    return DATASETS_THAT_HAVE_EVER_BEEN_MANAGED
