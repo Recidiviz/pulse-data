@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines subclasses of BigQueryView used in the direct ingest flow."""
+import datetime
 import re
 import string
 from enum import Enum, auto
@@ -506,7 +507,8 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
             ),
         )
 
-        dataset_id = f"{self._region_code.lower()}_ingest_views"
+        date_ts = datetime.datetime.utcnow().strftime("%Y%m%d")
+        dataset_id = f"{self._region_code.lower()}_ingest_views_{date_ts}"
         description = f"{ingest_view_name} ingest view"
         super().__init__(
             dataset_id=dataset_id,

@@ -68,11 +68,12 @@ _ID = 1
 _DATE_1 = datetime.datetime(year=2019, month=7, day=20)
 _DATE_2 = datetime.datetime(year=2020, month=7, day=20)
 _DATE_3 = datetime.datetime(year=2021, month=7, day=20)
-_DATE_4 = datetime.datetime(year=2022, month=7, day=20)
+_DATE_4 = datetime.datetime(year=2022, month=4, day=14)
+_DATE_5 = datetime.datetime(year=2022, month=4, day=15)
 
 
-_DATE_2_UPPER_BOUND_CREATE_TABLE_SCRIPT = """DROP TABLE IF EXISTS `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`;
-CREATE TABLE `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`
+_DATE_2_UPPER_BOUND_CREATE_TABLE_SCRIPT = """DROP TABLE IF EXISTS `recidiviz-456.us_xx_ingest_views_20220414.ingest_view_2020_07_20_00_00_00_upper_bound`;
+CREATE TABLE `recidiviz-456.us_xx_ingest_views_20220414.ingest_view_2020_07_20_00_00_00_upper_bound`
 OPTIONS(
   -- Data in this table will be deleted after 24 hours
   expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY)
@@ -207,8 +208,8 @@ CREATE TEMP TABLE tagFullHistoricalExport_generated_view AS (
     FROM rows_with_recency_rank
     WHERE recency_rank = 1
 );
-DROP TABLE IF EXISTS `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`;
-CREATE TABLE `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`
+DROP TABLE IF EXISTS `recidiviz-456.us_xx_ingest_views_20220414.ingest_view_2020_07_20_00_00_00_upper_bound`;
+CREATE TABLE `recidiviz-456.us_xx_ingest_views_20220414.ingest_view_2020_07_20_00_00_00_upper_bound`
 OPTIONS(
   -- Data in this table will be deleted after 24 hours
   expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY)
@@ -625,7 +626,6 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
     def test_exportViewForArgs_noLowerBound(self) -> None:
         # Arrange
         region = self.create_fake_region()
-        export_manager = self.create_export_manager(region)
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
             output_bucket_name=self.output_bucket_name,
@@ -648,13 +648,15 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
                 ingest_database_name=self.ingest_database_name,
             )
             expected_metadata = attr.evolve(
-                self.to_entity(metadata), export_time=_DATE_4
+                self.to_entity(metadata), export_time=_DATE_5
             )
 
             session.add(metadata)
 
         # Act
         with freeze_time(_DATE_4.isoformat()):
+            export_manager = self.create_export_manager(region)
+        with freeze_time(_DATE_5.isoformat()):
             export_manager.export_view_for_args(export_args)
 
         # Assert
@@ -673,14 +675,14 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             ]
         )
         expected_query = (
-            "SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`"
+            "SELECT * FROM `recidiviz-456.us_xx_ingest_views_20220414.ingest_view_2020_07_20_00_00_00_upper_bound`"
             "ORDER BY colA, colC;"
         )
         self.assert_exported_to_gcs_with_query(expected_query)
         self.mock_client.delete_table.assert_has_calls(
             [
                 mock.call(
-                    dataset_id="us_xx_ingest_views",
+                    dataset_id="us_xx_ingest_views_20220414",
                     table_id="ingest_view_2020_07_20_00_00_00_upper_bound",
                 )
             ]
@@ -696,7 +698,6 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
     def test_exportViewForArgs(self) -> None:
         # Arrange
         region = self.create_fake_region()
-        export_manager = self.create_export_manager(region)
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
             output_bucket_name=self.output_bucket_name,
@@ -719,12 +720,14 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
                 ingest_database_name=self.ingest_database_name,
             )
             expected_metadata = attr.evolve(
-                self.to_entity(metadata), export_time=_DATE_4
+                self.to_entity(metadata), export_time=_DATE_5
             )
             session.add(metadata)
 
         # Act
         with freeze_time(_DATE_4.isoformat()):
+            export_manager = self.create_export_manager(region)
+        with freeze_time(_DATE_5.isoformat()):
             export_manager.export_view_for_args(export_args)
 
         # Assert
@@ -734,7 +737,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         )
 
         self.mock_client.dataset_ref_for_id.assert_has_calls(
-            [mock.call("us_xx_ingest_views")]
+            [mock.call("us_xx_ingest_views_20220414")]
         )
         self.mock_client.create_dataset_if_necessary.assert_has_calls(
             [mock.call(dataset_ref=mock.ANY, default_table_expiration_ms=86400000)]
@@ -752,20 +755,20 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             ]
         )
         expected_query = (
-            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`) "
+            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views_20220414.ingest_view_2020_07_20_00_00_00_upper_bound`) "
             "EXCEPT DISTINCT "
-            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2019_07_20_00_00_00_lower_bound`)"
+            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views_20220414.ingest_view_2019_07_20_00_00_00_lower_bound`)"
             "ORDER BY colA, colC;"
         )
         self.assert_exported_to_gcs_with_query(expected_query)
         self.mock_client.delete_table.assert_has_calls(
             [
                 mock.call(
-                    dataset_id="us_xx_ingest_views",
+                    dataset_id="us_xx_ingest_views_20220414",
                     table_id="ingest_view_2020_07_20_00_00_00_upper_bound",
                 ),
                 mock.call(
-                    dataset_id="us_xx_ingest_views",
+                    dataset_id="us_xx_ingest_views_20220414",
                     table_id="ingest_view_2019_07_20_00_00_00_lower_bound",
                 ),
             ]
@@ -782,10 +785,6 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
     def test_exportViewForArgsMaterializedViews(self) -> None:
         # Arrange
         region = self.create_fake_region()
-
-        export_manager = self.create_export_manager(
-            region, materialize_raw_data_table_views=True
-        )
 
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
@@ -809,12 +808,16 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
                 ingest_database_name=self.ingest_database_name,
             )
             expected_metadata = attr.evolve(
-                self.to_entity(metadata), export_time=_DATE_4
+                self.to_entity(metadata), export_time=_DATE_5
             )
             session.add(metadata)
 
         # Act
         with freeze_time(_DATE_4.isoformat()):
+            export_manager = self.create_export_manager(
+                region, materialize_raw_data_table_views=True
+            )
+        with freeze_time(_DATE_5.isoformat()):
             export_manager.export_view_for_args(export_args)
 
         # Assert
@@ -838,20 +841,20 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             ]
         )
         expected_query = (
-            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`) "
+            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views_20220414.ingest_view_2020_07_20_00_00_00_upper_bound`) "
             "EXCEPT DISTINCT "
-            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2019_07_20_00_00_00_lower_bound`)"
+            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views_20220414.ingest_view_2019_07_20_00_00_00_lower_bound`)"
             "ORDER BY colA, colC;"
         )
         self.assert_exported_to_gcs_with_query(expected_query)
         self.mock_client.delete_table.assert_has_calls(
             [
                 mock.call(
-                    dataset_id="us_xx_ingest_views",
+                    dataset_id="us_xx_ingest_views_20220414",
                     table_id="ingest_view_2020_07_20_00_00_00_upper_bound",
                 ),
                 mock.call(
-                    dataset_id="us_xx_ingest_views",
+                    dataset_id="us_xx_ingest_views_20220414",
                     table_id="ingest_view_2019_07_20_00_00_00_lower_bound",
                 ),
             ]
@@ -868,9 +871,6 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
     def test_exportViewForArgs_detectRowDeletionView_noLowerBound(self) -> None:
         # Arrange
         region = self.create_fake_region()
-        export_manager = self.create_export_manager(
-            region, is_detect_row_deletion_view=True
-        )
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
             output_bucket_name=self.output_bucket_name,
@@ -893,13 +893,17 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
                 ingest_database_name=self.ingest_database_name,
             )
             expected_metadata = attr.evolve(
-                self.to_entity(metadata), export_time=_DATE_4
+                self.to_entity(metadata), export_time=_DATE_5
             )
 
             session.add(metadata)
 
         # Act
         with freeze_time(_DATE_4.isoformat()):
+            export_manager = self.create_export_manager(
+                region, is_detect_row_deletion_view=True
+            )
+        with freeze_time(_DATE_5.isoformat()):
             export_manager.export_view_for_args(export_args)
 
         # Assert
@@ -918,9 +922,6 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
     def test_exportViewForArgs_detectRowDeletionView(self) -> None:
         # Arrange
         region = self.create_fake_region()
-        export_manager = self.create_export_manager(
-            region, is_detect_row_deletion_view=True
-        )
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
             output_bucket_name=self.output_bucket_name,
@@ -943,12 +944,16 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
                 ingest_database_name=self.ingest_database_name,
             )
             expected_metadata = attr.evolve(
-                self.to_entity(metadata), export_time=_DATE_4
+                self.to_entity(metadata), export_time=_DATE_5
             )
             session.add(metadata)
 
         # Act
         with freeze_time(_DATE_4.isoformat()):
+            export_manager = self.create_export_manager(
+                region, is_detect_row_deletion_view=True
+            )
+        with freeze_time(_DATE_5.isoformat()):
             export_manager.export_view_for_args(export_args)
 
         expected_upper_bound_query = _DATE_2_UPPER_BOUND_CREATE_TABLE_SCRIPT
@@ -971,20 +976,20 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         )
         # Lower bound is the first part of the subquery, not upper bound.
         expected_query = (
-            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2019_07_20_00_00_00_lower_bound`) "
+            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views_20220414.ingest_view_2019_07_20_00_00_00_lower_bound`) "
             "EXCEPT DISTINCT "
-            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`)"
+            "(SELECT * FROM `recidiviz-456.us_xx_ingest_views_20220414.ingest_view_2020_07_20_00_00_00_upper_bound`)"
             "ORDER BY colA, colC;"
         )
         self.assert_exported_to_gcs_with_query(expected_query)
         self.mock_client.delete_table.assert_has_calls(
             [
                 mock.call(
-                    dataset_id="us_xx_ingest_views",
+                    dataset_id="us_xx_ingest_views_20220414",
                     table_id="ingest_view_2020_07_20_00_00_00_upper_bound",
                 ),
                 mock.call(
-                    dataset_id="us_xx_ingest_views",
+                    dataset_id="us_xx_ingest_views_20220414",
                     table_id="ingest_view_2019_07_20_00_00_00_lower_bound",
                 ),
             ]
@@ -1001,7 +1006,6 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
     def test_debugQueryForArgs(self) -> None:
         # Arrange
         region = self.create_fake_region()
-        export_manager = self.create_export_manager(region)
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
             output_bucket_name=self.output_bucket_name,
@@ -1011,6 +1015,8 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
 
         # Act
         with freeze_time(_DATE_4.isoformat()):
+            export_manager = self.create_export_manager(region)
+        with freeze_time(_DATE_5.isoformat()):
             debug_query = DirectIngestIngestViewExportManager.debug_query_for_args(
                 export_manager.ingest_views_by_tag, export_args
             )
@@ -1164,9 +1170,6 @@ ORDER BY colA, colC;"""
     def test_debugQueryForArgsMaterializedRawTables(self) -> None:
         # Arrange
         region = self.create_fake_region()
-        export_manager = self.create_export_manager(
-            region, materialize_raw_data_table_views=True
-        )
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="ingest_view",
             output_bucket_name=self.output_bucket_name,
@@ -1176,6 +1179,10 @@ ORDER BY colA, colC;"""
 
         # Act
         with freeze_time(_DATE_4.isoformat()):
+            export_manager = self.create_export_manager(
+                region, materialize_raw_data_table_views=True
+            )
+        with freeze_time(_DATE_5.isoformat()):
             debug_query = DirectIngestIngestViewExportManager.debug_query_for_args(
                 export_manager.ingest_views_by_tag, export_args
             )
@@ -1410,7 +1417,6 @@ ORDER BY colA, colC;"""
     ) -> List[GcsfsIngestViewExportArgs]:
         """Runs test to generate ingest view export args given provided DB state."""
         region = self.create_fake_region()
-        export_manager = self.create_export_manager(region)
 
         with SessionFactory.using_database(self.database_key) as session:
             for i, ingest_file_datetimes in enumerate(committed_ingest_file_metadata):
@@ -1444,6 +1450,8 @@ ORDER BY colA, colC;"""
 
         # Act
         with freeze_time(_DATE_4.isoformat()):
+            export_manager = self.create_export_manager(region)
+        with freeze_time(_DATE_5.isoformat()):
             args = export_manager.get_ingest_view_export_task_args()
 
         return args
