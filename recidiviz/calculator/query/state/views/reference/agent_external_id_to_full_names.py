@@ -26,13 +26,25 @@ AGENT_EXTERNAL_ID_TO_FULL_NAMES_VIEW_DESCRIPTION = """Agent information table th
 
 AGENT_EXTERNAL_ID_TO_FULL_NAMES_QUERY_TEMPLATE = """
     /*{description}*/
-    SELECT DISTINCT
-        state_code,
-        agent_external_id,
-        full_name,
-        given_names,
-        surname
-    FROM `{project_id}.{reference_views_dataset}.augmented_agent_info`
+    WITH unique_agents AS (
+        SELECT DISTINCT
+            state_code,
+            agent_external_id,
+            full_name,
+            given_names,
+            surname
+        FROM `{project_id}.{reference_views_dataset}.augmented_agent_info`
+    )
+    
+    SELECT
+        *,
+        -- TODO(#8674): Remove the agent_external_id_with_full_name once the Lantern FE 
+        -- is no longer relying on this value
+        -- TODO(#4490): Replace the line with the following once agent names have been
+        -- removed from the agent_external_id field
+        -- CONCAT(agent_external_id, IFNULL(CONCAT(': ', NULLIF(TRIM(full_name), '')), '')) as agent_external_id_with_full_name,
+        CONCAT(IF(agent_external_id LIKE '%:%', SPLIT(agent_external_id, ':')[OFFSET(0)], agent_external_id), IFNULL(CONCAT(': ', NULLIF(TRIM(full_name), '')), '')) as agent_external_id_with_full_name
+    FROM unique_agents
 """
 
 AGENT_EXTERNAL_ID_TO_FULL_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(

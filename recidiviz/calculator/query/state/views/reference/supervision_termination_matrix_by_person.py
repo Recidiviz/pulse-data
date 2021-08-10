@@ -40,7 +40,19 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = """
     /*{description}*/
     
     /* Supervision case terminations. */
-    WITH terminations_matrix AS (
+    WITH terminations_with_agent_info AS (
+        SELECT
+            * EXCEPT(state_code),
+            metric.state_code,
+            -- We drop commas in agent names since we use commas as the delimiters in the export
+            -- TODO(#8674): Use agent_external_id instead of agent_external_id_with_full_name
+            -- once the FE is using the officer_full_name field for names
+            REPLACE(IFNULL(agent.agent_external_id_with_full_name, 'EXTERNAL_UNKNOWN'), ',', '') AS officer,
+            COALESCE(agent.full_name, 'UNKNOWN') AS officer_full_name,    
+            FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics_materialized` metric
+        LEFT JOIN `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` agent
+        ON metric.state_code = agent.state_code AND metric.supervising_officer_external_id = agent.agent_external_id 
+    ), terminations_matrix AS (
         SELECT
             state_code,
             year,
@@ -60,11 +72,11 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = """
             case_type,
             IFNULL(level_1_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_1_supervision_location,
             IFNULL(level_2_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_2_supervision_location,
-            -- TODO(#6115): Stop dropping commas once we are using a different delimiter in the export
-            REPLACE(IFNULL(supervising_officer_external_id, 'EXTERNAL_UNKNOWN'), ',', '') AS officer,
+            officer,
+            officer_full_name,
             termination_date,
             FALSE AS is_revocation
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics_materialized`
+        FROM terminations_with_agent_info
         WHERE termination_reason IN ('DISCHARGE', 'EXPIRATION', 'SUSPENSION', 'INTERNAL_UNKNOWN', 'EXTERNAL_UNKNOWN', 'DEATH')
             AND {thirty_six_month_filter}
             AND {state_specific_supervision_type_inclusion_filter}
@@ -86,6 +98,7 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = """
             level_1_supervision_location,
             level_2_supervision_location,
             officer,
+            officer_full_name,
             admission_date AS date_of_supervision,
             TRUE as is_revocation
         FROM `{project_id}.{reference_views_dataset}.event_based_commitments_from_supervision_for_matrix_materialized`
@@ -115,6 +128,7 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = """
         level_1_supervision_location,
         level_2_supervision_location,
         officer,
+        officer_full_name,
         person_id,
         person_external_id,
         gender,
@@ -135,6 +149,7 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = """
             level_1_supervision_location,
             level_2_supervision_location,
             officer,
+            officer_full_name,
             person_id,
             person_external_id,
             gender,
@@ -162,6 +177,7 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = """
         level_1_supervision_location,
         level_2_supervision_location,
         officer,
+        officer_full_name,
         person_id,
         person_external_id,
         gender,

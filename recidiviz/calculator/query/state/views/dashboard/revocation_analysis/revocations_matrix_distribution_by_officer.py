@@ -41,6 +41,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_QUERY_TEMPLATE = """
       reported_violations,
       COUNT(DISTINCT person_id) AS supervision_population_count,
       officer,
+      officer_full_name,
       supervision_type,
       supervision_level,
       charge_category,
@@ -51,7 +52,8 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_QUERY_TEMPLATE = """
     FULL OUTER JOIN
          `{project_id}.{reference_views_dataset}.admission_types_per_state_for_matrix_materialized`
     USING (state_code)
-    GROUP BY state_code, violation_type, reported_violations, officer, supervision_type, supervision_level, charge_category,
+    GROUP BY state_code, violation_type, reported_violations, officer, 
+      officer_full_name, supervision_type, supervision_level, charge_category,
       level_1_supervision_location, level_2_supervision_location, metric_period_months, admission_type
   ), termination_counts AS (
      SELECT
@@ -61,6 +63,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_QUERY_TEMPLATE = """
       reported_violations,
       COUNT(DISTINCT person_id) AS termination_count,
       officer,
+      officer_full_name,
       supervision_type,
       supervision_level,
       charge_category,
@@ -71,7 +74,8 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_QUERY_TEMPLATE = """
     FULL OUTER JOIN
          `{project_id}.{reference_views_dataset}.admission_types_per_state_for_matrix_materialized`
     USING (state_code) 
-    GROUP BY state_code, violation_type, reported_violations, officer, supervision_type, supervision_level, charge_category,
+    GROUP BY state_code, violation_type, reported_violations, officer, 
+      officer_full_name, supervision_type, supervision_level, charge_category,
       level_1_supervision_location, level_2_supervision_location, metric_period_months, admission_type
   ), revocation_counts AS (
     SELECT
@@ -80,7 +84,8 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_QUERY_TEMPLATE = """
       violation_type,
       reported_violations,
       COUNT(DISTINCT person_id) AS revocation_count,
-      IFNULL(officer, 'EXTERNAL_UNKNOWN') as officer,
+      officer,
+      officer_full_name,
       supervision_type,
       supervision_level,
       charge_category,
@@ -88,14 +93,16 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_QUERY_TEMPLATE = """
       level_2_supervision_location,
       metric_period_months
     FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`
-    GROUP BY state_code, violation_type, reported_violations, officer, supervision_type, supervision_level, charge_category,
-      level_1_supervision_location, level_2_supervision_location, metric_period_months, admission_type
+    GROUP BY state_code, violation_type, reported_violations, officer, 
+        officer_full_name, supervision_type, supervision_level, charge_category,
+        level_1_supervision_location, level_2_supervision_location, metric_period_months, admission_type
   ), officers_to_locations AS (
     -- Determine all supervision locations an officer was associated with in each time period --
     SELECT DISTINCT
       state_code,
       metric_period_months,
       officer,
+      officer_full_name,
       IFNULL(CASE WHEN state_code = 'US_MO' THEN level_1_supervision_location
                   WHEN state_code = 'US_PA' THEN level_2_supervision_location
                   END,
@@ -110,12 +117,11 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_QUERY_TEMPLATE = """
         officer,
         metric_period_months,
         -- List all locations an officer has supervised in during the time period, with the officer name
-        -- E.g. If officer "555: JAMES SMITH" has supervised in locations 07 and 09 in the time period, then this
-        -- would produce a label in the format "07, 09 - JAMES SMITH" --
-        CONCAT(STRING_AGG(DISTINCT district, ' & ' ORDER BY district), ' - ',
-               IFNULL(SPLIT(officer, ':')[SAFE_OFFSET(1)], officer)) AS officer_label    
+        -- E.g. If officer "JAMES SMITH" has supervised in locations 07 and 09 in the time period, then this
+        -- would produce a label in the format "07 & 09 - JAMES SMITH" --
+        CONCAT(STRING_AGG(DISTINCT district, ' & ' ORDER BY district), ' - ', officer_full_name) AS officer_label    
       FROM officers_to_locations
-      GROUP BY state_code, officer, metric_period_months 
+      GROUP BY state_code, officer, officer_full_name, metric_period_months 
   )
 
     SELECT
