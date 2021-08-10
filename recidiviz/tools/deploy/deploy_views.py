@@ -15,9 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Script for deploying updated views to BigQuery. Should not be run outside the context of a deploy.
+Script for deploying updated views to BigQuery. Should not be run outside the context
+of a deploy.
+
 Run locally with the following command:
-    python -m recidiviz.big_query.view_update_manager --project_id [PROJECT_ID]
+    python -m recidiviz.tools.deploy.deploy_views --project_id [PROJECT_ID]
 """
 import argparse
 import logging
@@ -30,7 +32,10 @@ from recidiviz.big_query.view_update_manager import (
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
-from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
+from recidiviz.view_registry.deployed_views import (
+    DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
+    DEPLOYED_VIEW_BUILDERS,
+)
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
@@ -56,4 +61,5 @@ if __name__ == "__main__":
         create_managed_dataset_and_deploy_views_for_view_builders(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             view_builders_to_update=DEPLOYED_VIEW_BUILDERS,
+            historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
         )

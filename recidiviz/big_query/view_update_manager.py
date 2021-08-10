@@ -29,7 +29,6 @@ from recidiviz.big_query.big_query_view import (
     BigQueryViewBuilderShouldNotBuildError,
 )
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
-
 from recidiviz.big_query.view_update_manager_utils import (
     cleanup_datasets_and_delete_unmanaged_views,
     get_managed_view_and_materialized_table_addresses_by_dataset,
@@ -181,17 +180,21 @@ def rematerialize_views(
 def create_managed_dataset_and_deploy_views_for_view_builders(
     view_source_table_datasets: Set[str],
     view_builders_to_update: Sequence[BigQueryViewBuilder],
+    historically_managed_datasets_to_clean: Optional[Set[str]],
     dataset_overrides: Optional[Dict[str, str]] = None,
     bq_region_override: Optional[str] = None,
     force_materialize: bool = False,
 ) -> None:
-    """Creates or updates all the views in the provided list with the view query in the provided view builder list.
-    If any materialized view has been updated (or if an ancestor view has been updated) or the force_materialize flag
-    is set, the view will be re-materialized to ensure the schemas remain consistent. Also, cleans up unmanaged views
-    and datasets by deleting them from BigQuery.
+    """Creates or updates all the views in the provided list with the view query in the
+    provided view builder list. If any materialized view has been updated (or if an
+    ancestor view has been updated) or the force_materialize flag is set, the view
+    will be re-materialized to ensure the schemas remain consistent.
 
-    Should only be called if we expect the views to have changed (either the view query or schema from querying
-    underlying tables), e.g. at deploy time.
+    If a |historically_managed_datasets_to_clean| set is provided,
+    then cleans up unmanaged views and datasets by deleting them from BigQuery.
+
+    Should only be called if we expect the views to have changed (either the view query
+    or schema from querying underlying tables), e.g. at deploy time.
     """
     set_default_table_expiration_for_new_datasets = bool(dataset_overrides)
     if set_default_table_expiration_for_new_datasets:
@@ -210,6 +213,7 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
             views_to_update,
             bq_region_override,
             force_materialize,
+            historically_managed_datasets_to_clean=historically_managed_datasets_to_clean,
             set_temp_dataset_table_expiration=set_default_table_expiration_for_new_datasets,
         )
     except Exception as e:
@@ -274,6 +278,7 @@ def _create_managed_dataset_and_deploy_views(
     views_to_update: List[BigQueryView],
     bq_region_override: Optional[str],
     force_materialize: bool,
+    historically_managed_datasets_to_clean: Optional[Set[str]] = None,
     set_temp_dataset_table_expiration: bool = False,
 ) -> None:
     """Create and update the given views and their parent datasets. Cleans up unmanaged views and datasets
@@ -291,6 +296,11 @@ def _create_managed_dataset_and_deploy_views(
         views_to_update: A list of view objects to be created or updated.
         set_temp_dataset_table_expiration: If True, new datasets will be created with an expiration
             of TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS.
+        historically_managed_datasets_to_clean: Set of datasets that have
+            ever been managed if we should cleanup unmanaged views in this deploy
+            process. If null, does not perform the cleanup step. If provided,
+            will error if any dataset required for the |views_to_update| is not
+            included in this set.
     """
     bq_client = BigQueryClientImpl(region_override=bq_region_override)
     dag_walker = BigQueryViewDagWalker(views_to_update)
@@ -303,10 +313,16 @@ def _create_managed_dataset_and_deploy_views(
         bq_client, managed_dataset_ids, set_temp_dataset_table_expiration
     )
 
-    if not set_temp_dataset_table_expiration:
-        # We don't want to be deleting unmanaged views/tables if we're creating sandbox datasets
+    if (
+        historically_managed_datasets_to_clean
+        # We don't want to delete unmanaged views/tables if we're creating sandbox datasets
+        and not set_temp_dataset_table_expiration
+    ):
         cleanup_datasets_and_delete_unmanaged_views(
-            bq_client, managed_views_map, dry_run=False
+            bq_client,
+            managed_views_map,
+            datasets_that_have_ever_been_managed=historically_managed_datasets_to_clean,
+            dry_run=False,
         )
 
     def process_fn(v: BigQueryView, parent_results: Dict[BigQueryView, bool]) -> bool:

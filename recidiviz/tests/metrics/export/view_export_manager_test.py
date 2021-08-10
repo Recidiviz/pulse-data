@@ -528,6 +528,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         mock_view_update_manager_deploy.assert_called_with(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             view_builders_to_update=self.view_builders_for_dataset,
+            historically_managed_datasets_to_clean=None,
         )
         mock_view_update_manager_rematerialize.assert_called_once()
 

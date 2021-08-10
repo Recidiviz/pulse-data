@@ -432,13 +432,10 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         self.mock_client.list_tables.assert_not_called()
         self.mock_client.delete_table.assert_not_called()
 
-    @patch(
-        "recidiviz.big_query.view_update_manager_utils.get_datasets_that_have_ever_been_managed"
-    )
     def test_cleanup_datasets_and_delete_unmanaged_views_unmanaged_view_in_ds(
-        self, mock_get_datasets_that_have_ever_been_managed: mock.MagicMock
+        self,
     ) -> None:
-        mock_get_datasets_that_have_ever_been_managed.return_value = {
+        datasets_that_have_ever_been_managed = {
             "dataset_1",
         }
 
@@ -504,20 +501,19 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         )
 
         cleanup_datasets_and_delete_unmanaged_views(
-            self.mock_client, managed_views_map, dry_run=False
+            self.mock_client,
+            managed_views_map,
+            datasets_that_have_ever_been_managed=datasets_that_have_ever_been_managed,
+            dry_run=False,
         )
-
         self.mock_client.delete_dataset.assert_not_called()
         self.mock_client.list_tables.assert_called()
         self.mock_client.delete_table.assert_called_once_with("dataset_1", "bogus_view")
 
-    @patch(
-        "recidiviz.big_query.view_update_manager_utils.get_datasets_that_have_ever_been_managed"
-    )
     def test_cleanup_datasets_and_delete_unmanaged_views_unmanaged_view_in_multiple_ds(
-        self, mock_get_datasets_that_have_ever_been_managed: mock.MagicMock
+        self,
     ) -> None:
-        mock_get_datasets_that_have_ever_been_managed.return_value = {
+        datasets_that_have_ever_been_managed = {
             "dataset_1",
             "dataset_2",
         }
@@ -608,9 +604,11 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         )
 
         cleanup_datasets_and_delete_unmanaged_views(
-            self.mock_client, managed_views_map, dry_run=False
+            self.mock_client,
+            managed_views_map,
+            datasets_that_have_ever_been_managed=datasets_that_have_ever_been_managed,
+            dry_run=False,
         )
-
         self.mock_client.delete_dataset.assert_not_called()
         self.mock_client.list_tables.assert_called()
         self.mock_client.delete_table.assert_has_calls(
@@ -619,13 +617,10 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         )
         self.assertEqual(self.mock_client.delete_table.call_count, 2)
 
-    @patch(
-        "recidiviz.big_query.view_update_manager_utils.get_datasets_that_have_ever_been_managed"
-    )
     def test_cleanup_datasets_and_delete_unmanaged_views_no_unmanaged_views(
-        self, mock_get_datasets_that_have_ever_been_managed: mock.MagicMock
+        self,
     ) -> None:
-        mock_get_datasets_that_have_ever_been_managed.return_value = {
+        datasets_that_have_ever_been_managed = {
             "dataset_1",
         }
 
@@ -683,20 +678,19 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         )
 
         cleanup_datasets_and_delete_unmanaged_views(
-            self.mock_client, managed_views_map, dry_run=False
+            self.mock_client,
+            managed_views_map,
+            datasets_that_have_ever_been_managed=datasets_that_have_ever_been_managed,
+            dry_run=False,
         )
-
         self.mock_client.delete_dataset.assert_not_called()
         self.mock_client.list_tables.assert_called()
         self.mock_client.delete_table.assert_not_called()
 
-    @patch(
-        "recidiviz.big_query.view_update_manager_utils.get_datasets_that_have_ever_been_managed"
-    )
     def test_cleanup_datasets_and_delete_unmanaged_views_unmanaged_dataset(
-        self, mock_get_datasets_that_have_ever_been_managed: mock.MagicMock
+        self,
     ) -> None:
-        mock_get_datasets_that_have_ever_been_managed.return_value = {
+        datasets_that_have_ever_been_managed = {
             "dataset_1",
             "bogus_dataset",
         }
@@ -754,7 +748,10 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         )
 
         cleanup_datasets_and_delete_unmanaged_views(
-            self.mock_client, managed_views_map, dry_run=False
+            self.mock_client,
+            managed_views_map,
+            datasets_that_have_ever_been_managed=datasets_that_have_ever_been_managed,
+            dry_run=False,
         )
 
         self.mock_client.delete_dataset.assert_called_with(
@@ -763,13 +760,10 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         self.mock_client.list_tables.assert_called()
         self.mock_client.delete_table.assert_not_called()
 
-    @patch(
-        "recidiviz.big_query.view_update_manager_utils.get_datasets_that_have_ever_been_managed"
-    )
     def test_cleanup_datasets_and_delete_unmanaged_views_dataset_not_in_master_list(
-        self, mock_get_datasets_that_have_ever_been_managed: mock.MagicMock
+        self,
     ) -> None:
-        mock_get_datasets_that_have_ever_been_managed.return_value = {
+        datasets_that_have_ever_been_managed = {
             "dataset_1",
         }
 
@@ -842,19 +836,19 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             cleanup_datasets_and_delete_unmanaged_views(
-                self.mock_client, managed_views_map, dry_run=False
+                self.mock_client,
+                managed_views_map,
+                datasets_that_have_ever_been_managed=datasets_that_have_ever_been_managed,
+                dry_run=False,
             )
 
         self.mock_client.delete_dataset.assert_not_called()
         self.mock_client.delete_table.assert_not_called()
 
-    @patch(
-        "recidiviz.big_query.view_update_manager_utils.get_datasets_that_have_ever_been_managed"
-    )
     def test_cleanup_datasets_and_delete_unmanaged_views_unmanaged_dataset_and_dataset_not_in_BigQuery(
-        self, mock_get_datasets_that_have_ever_been_managed: mock.MagicMock
+        self,
     ) -> None:
-        mock_get_datasets_that_have_ever_been_managed.return_value = {
+        datasets_that_have_ever_been_managed = {
             "dataset_1",
             "dataset_unmanaged",
         }
@@ -912,24 +906,20 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
 
         with self.assertLogs() as captured_log:
             cleanup_datasets_and_delete_unmanaged_views(
-                self.mock_client, managed_views_map, dry_run=False
+                self.mock_client,
+                managed_views_map,
+                datasets_that_have_ever_been_managed=datasets_that_have_ever_been_managed,
+                dry_run=False,
             )
-        self.assertEqual(len(captured_log.records), 1)
         # check that there is only one log message
-        self.assertEqual(
-            captured_log.records[0].getMessage(),
-            "Dataset dataset_unmanaged isn't being managed and no longer exists in BigQuery. It can be safely removed from the list DATASETS_THAT_HAVE_EVER_BEEN_MANAGED.",
-        )
+        self.assertEqual(len(captured_log.records), 1)
         self.mock_client.delete_dataset.assert_not_called()
         self.mock_client.delete_table.assert_not_called()
 
-    @patch(
-        "recidiviz.big_query.view_update_manager_utils.get_datasets_that_have_ever_been_managed"
-    )
     def test_cleanup_datasets_and_delete_unmanaged_views_dry_run(
-        self, mock_get_datasets_that_have_ever_been_managed: mock.MagicMock
+        self,
     ) -> None:
-        mock_get_datasets_that_have_ever_been_managed.return_value = {
+        datasets_that_have_ever_been_managed = {
             "dataset_1",
             "dataset_2",
             "dataset_unmanaged",
@@ -1026,7 +1016,10 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
         )
 
         cleanup_datasets_and_delete_unmanaged_views(
-            self.mock_client, managed_views_map, dry_run=True
+            self.mock_client,
+            managed_views_map,
+            datasets_that_have_ever_been_managed=datasets_that_have_ever_been_managed,
+            dry_run=True,
         )
 
         self.mock_client.delete_dataset.assert_not_called()

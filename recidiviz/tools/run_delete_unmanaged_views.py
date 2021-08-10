@@ -16,8 +16,13 @@
 # =============================================================================
 """Script for deleting any unmanaged views and datasets within a BigQuery project.
 
-When run in dry-run mode (the default), will only log the unmanaged tables/datasets to be deleted,
-but will not actually delete them
+Note that this only deletes unmanaged views and datasets from datasets that have ever
+been regularly updated by our deploy process (see
+DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED). This does not delete any views or
+datasets created during the federated CloudSQL to BQ refresh process.
+
+When run in dry-run mode (the default), will only log the unmanaged tables/datasets to
+be deleted, but will not actually delete them
 
 Example terminal execution:
 python -m recidiviz.tools.run_delete_unmanaged_views --project-id recidiviz-staging --dry-run True
@@ -36,7 +41,10 @@ from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAG
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
-from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
+from recidiviz.view_registry.deployed_views import (
+    DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
+    DEPLOYED_VIEW_BUILDERS,
+)
 
 
 def main() -> None:
@@ -87,6 +95,7 @@ def main() -> None:
             bq_client=BigQueryClientImpl(),
             managed_views_map=managed_views_map,
             dry_run=args.dry_run,
+            datasets_that_have_ever_been_managed=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
         )
 
 
