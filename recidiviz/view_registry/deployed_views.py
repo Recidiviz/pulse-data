@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Views that are regularly updated with the deploy and rematerialized with metric exports.."""
-from typing import Dict, List, Sequence
+from typing import Dict, List, Sequence, Set
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.county.view_config import (
@@ -42,6 +42,7 @@ from recidiviz.ingest.direct.views.view_config import (
 from recidiviz.ingest.views.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as INGEST_METADATA_VIEW_BUILDERS,
 )
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.validation.views.view_config import (
     CROSS_PROJECT_VALIDATION_VIEW_BUILDERS,
 )
@@ -79,3 +80,81 @@ DEPLOYED_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
 # Full list of all deployed view builders that query from both production and staging
 # views.
 CROSS_PROJECT_VIEW_BUILDERS = CROSS_PROJECT_VALIDATION_VIEW_BUILDERS
+
+# A list of all datasets that have ever held managed views that were updated by our
+# deploy process. This list is used to identify places where we should look for
+# legacy views that we need to clean up.
+# DO NOT DELETE ITEMS FROM THIS LIST UNLESS YOU KNOW THIS DATASET HAS BEEN FULLY
+# DELETED FROM BOTH PROD AND STAGING.
+DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
+    "analyst_data",
+    "case_triage",
+    "census_managed_views",
+    "covid_public_data",
+    "dashboard_views",
+    "dataflow_metrics_materialized",
+    "experiments",
+    "externally_shared_views",
+    "ingest_metadata",
+    "justice_counts",
+    "justice_counts_corrections",
+    "justice_counts_dashboard",
+    "justice_counts_jails",
+    "partner_data_csg",
+    "po_report_views",
+    "population_projection_data",
+    "public_dashboard_views",
+    "reference_views",
+    "us_id_raw_data_up_to_date_views",
+    "us_mo_raw_data_up_to_date_views",
+    "us_nd_raw_data_up_to_date_views",
+    "us_pa_raw_data_up_to_date_views",
+    "us_tn_raw_data_up_to_date_views",
+    "validation_metadata",
+    "validation_views",
+    "vitals_report_views",
+}
+
+
+# A list of all datasets that have ever held managed views that were updated by our
+# process that refreshes the data from CloudSQL into Bigquery. This list is used to
+# identify places where we should look for legacy views that we need to clean up.
+# DO NOT DELETE ITEMS FROM THIS LIST UNLESS YOU KNOW THIS DATASET HAS BEEN FULLY
+# DELETED FROM BOTH PROD AND STAGING.
+CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA: Dict[
+    SchemaType, Set[str]
+] = {
+    SchemaType.JAILS: {
+        "census_regional",
+        "jails_cloudsql_connection",
+    },
+    SchemaType.CASE_TRIAGE: {
+        "case_triage_cloudsql_connection",
+        "case_triage_federated_regional",
+    },
+    SchemaType.STATE: {
+        "state_regional",
+        "state_us_id_primary_cloudsql_connection",
+        "state_us_mi_primary_cloudsql_connection",
+        "state_us_mo_primary_cloudsql_connection",
+        "state_us_nd_primary_cloudsql_connection",
+        "state_us_pa_primary_cloudsql_connection",
+        "state_us_tn_primary_cloudsql_connection",
+        "us_id_state_regional",
+        "us_mi_state_regional",
+        "us_mo_state_regional",
+        "us_nd_state_regional",
+        "us_pa_state_regional",
+        "us_tn_state_regional",
+    },
+    SchemaType.OPERATIONS: {
+        "operations_cloudsql_connection",
+        "operations_regional",
+        "us_id_operations_regional",
+        "us_mi_operations_regional",
+        "us_mo_operations_regional",
+        "us_nd_operations_regional",
+        "us_pa_operations_regional",
+        "us_tn_operations_regional",
+    },
+}

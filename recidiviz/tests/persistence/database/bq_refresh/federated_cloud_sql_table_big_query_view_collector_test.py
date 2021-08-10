@@ -19,9 +19,6 @@
 import unittest
 from unittest import mock
 
-from recidiviz.big_query.view_update_manager_utils import (
-    DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
-)
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_existing_direct_ingest_states,
@@ -39,6 +36,9 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.view_registry.deployed_views import (
+    CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA,
+)
 
 NO_PAUSED_REGIONS_CLOUD_SQL_CONFIG_YAML = """
 region_codes_to_exclude: []
@@ -122,8 +122,9 @@ class FederatedCloudSQLTableBigQueryViewCollectorTest(unittest.TestCase):
             contents=NO_PAUSED_REGIONS_CLOUD_SQL_CONFIG_YAML,
             content_type="text/yaml",
         )
-        datasets = set()
+
         for schema_type in SchemaType:
+            datasets_for_schema_refresh = set()
             if not CloudSqlToBQConfig.is_valid_schema_type(schema_type):
                 continue
             config = CloudSqlToBQConfig.for_schema_type(schema_type)
@@ -137,14 +138,27 @@ class FederatedCloudSQLTableBigQueryViewCollectorTest(unittest.TestCase):
                     config
                 ).collect_view_builders()
 
-            for view_builder in view_builders:
-                datasets.add(view_builder.dataset_id)
-                if view_builder.materialized_address_override:
-                    datasets.add(view_builder.materialized_address_override.dataset_id)
+            datasets_for_schema_refresh.add(
+                config.unioned_regional_dataset(dataset_override_prefix=None)
+            )
 
-        self.assertEqual(
-            [], sorted(datasets.difference(DATASETS_THAT_HAVE_EVER_BEEN_MANAGED))
-        )
+            for view_builder in view_builders:
+                datasets_for_schema_refresh.add(view_builder.dataset_id)
+                if view_builder.materialized_address_override:
+                    datasets_for_schema_refresh.add(
+                        view_builder.materialized_address_override.dataset_id
+                    )
+
+            self.assertEqual(
+                [],
+                sorted(
+                    datasets_for_schema_refresh.difference(
+                        CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA[
+                            schema_type
+                        ]
+                    )
+                ),
+            )
 
     def test_state_segmented_collector(self) -> None:
         self.fake_fs.upload_from_string(
