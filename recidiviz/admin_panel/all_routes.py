@@ -27,9 +27,9 @@ from recidiviz.admin_panel.dataset_metadata_store import (
     DatasetMetadataCountsStore,
     DatasetMetadataResult,
 )
-from recidiviz.admin_panel.routes.case_triage import add_case_triage_routes
 from recidiviz.admin_panel.routes.data_discovery import add_data_discovery_routes
 from recidiviz.admin_panel.routes.ingest_ops import add_ingest_ops_routes
+from recidiviz.admin_panel.routes.line_staff_tools import add_line_staff_tools_routes
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import (
     in_development,
@@ -75,9 +75,9 @@ def _get_metadata_store(metadata_dataset: str) -> DatasetMetadataCountsStore:
 def setup_admin_panel() -> Blueprint:
     """Setting up the admin panel"""
     admin_panel = Blueprint("admin_panel", __name__, static_folder=static_folder)
-    add_case_triage_routes(admin_panel, admin_stores)
     add_data_discovery_routes(admin_panel)
     add_ingest_ops_routes(admin_panel, admin_stores)
+    add_line_staff_tools_routes(admin_panel, admin_stores)
 
     # Dataset column counts
     @admin_panel.route(

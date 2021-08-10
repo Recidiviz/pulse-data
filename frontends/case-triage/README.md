@@ -29,6 +29,8 @@ mkdir -p local/gcs/case-triage-data/ local/gsm/
 echo $(python -c 'import uuid; print(uuid.uuid4().hex)') > local/gsm/case_triage_secret_key
 echo $(gcloud secrets versions access latest --secret=case_triage_auth0 --project recidiviz-staging) > local/gsm/case_triage_auth0
 echo '[{"email": "youremail@recidiviz.org", "is_admin": true}]' > local/gcs/case-triage-data/allowlist_v2.json
+echo 'rate_limit_cache' > local/gsm/case_triage_rate_limiter_redis_host
+echo '6379' > local/gsm/case_triage_rate_limiter_redis_port
 popd
 ```
 

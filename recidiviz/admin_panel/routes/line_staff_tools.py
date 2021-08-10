@@ -66,11 +66,11 @@ from recidiviz.utils.metadata import local_project_id_override
 EMAIL_STATE_CODES = [StateCode.US_ID, StateCode.US_PA]
 
 
-def add_case_triage_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
+def add_line_staff_tools_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     """Adds the relevant Case Triage API routes to an input Blueprint."""
 
     # Fetch ETL View Ids for GCS -> Cloud SQL Import
-    @bp.route("/api/case_triage/fetch_etl_view_ids", methods=["POST"])
+    @bp.route("/api/line_staff_tools/fetch_etl_view_ids", methods=["POST"])
     @requires_gae_auth
     def _fetch_etl_view_ids() -> Tuple[str, HTTPStatus]:
         override_project_id: Optional[str] = None
@@ -87,7 +87,7 @@ def add_case_triage_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
         )
 
     # Generate Case Updates export from Cloud SQL -> GCS
-    @bp.route("/api/case_triage/generate_non_etl_exports", methods=["POST"])
+    @bp.route("/api/line_staff_tools/generate_non_etl_exports", methods=["POST"])
     @requires_gae_auth
     def _generate_non_etl_exports() -> Tuple[str, HTTPStatus]:
         etl_table_classes = [t.__table__ for t in ETL_TABLES]
@@ -113,7 +113,7 @@ def add_case_triage_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
         return "", HTTPStatus.OK
 
     # Run GCS -> Cloud SQL Import
-    @bp.route("/api/case_triage/run_gcs_import", methods=["POST"])
+    @bp.route("/api/line_staff_tools/run_gcs_import", methods=["POST"])
     @requires_gae_auth
     def _run_gcs_import() -> Tuple[str, HTTPStatus]:
         """Executes an import of data from Google Cloud Storage into Cloud SQL,
@@ -168,7 +168,7 @@ def add_case_triage_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
         return "", HTTPStatus.OK
 
     # fetch PO monthly report states
-    @bp.route("/api/case_triage/get_po_feedback", methods=["POST"])
+    @bp.route("/api/line_staff_tools/get_po_feedback", methods=["POST"])
     @requires_gae_auth
     def _fetch_po_user_feedback() -> Tuple[str, HTTPStatus]:
         with SessionFactory.using_database(
