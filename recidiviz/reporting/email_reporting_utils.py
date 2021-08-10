@@ -191,7 +191,7 @@ def generate_batch_id() -> str:
     return dt.strftime(format_str)
 
 
-def _gcsfs_path_for_batch_metadata(
+def gcsfs_path_for_batch_metadata(
     batch_id: str, state_code: StateCode
 ) -> GcsfsFilePath:
     return GcsfsFilePath.from_absolute_path(
@@ -203,7 +203,7 @@ def read_batch_metadata(*, batch_id: str, state_code: StateCode) -> Dict[str, st
     gcsfs = GcsfsFactory.build()
     return json.loads(
         gcsfs.download_as_string(
-            path=_gcsfs_path_for_batch_metadata(batch_id, state_code)
+            path=gcsfs_path_for_batch_metadata(batch_id, state_code)
         )
     )
 

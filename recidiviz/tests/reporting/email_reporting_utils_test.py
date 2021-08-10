@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Tests for email_reporting_utils.py."""
+"""Tests for email reporting utils."""
 from unittest import TestCase
 from unittest.mock import MagicMock, Mock, patch
 
@@ -167,6 +167,7 @@ class TestGCSEmails(TestCase):
     STATE_CODE_STR = "US_ID"
     STAGE_PROJECT_ID = "recidiviz-staging"
     PROD_PROJECT_ID = "recidiviz-123"
+    BUCKET_NAME = f"{STAGE_PROJECT_ID}-report-html"
 
     def setUp(self) -> None:
         self.project_id_patcher = patch(
@@ -179,7 +180,7 @@ class TestGCSEmails(TestCase):
         fake_gcs = FakeGCSFileSystem()
         self.gcs_factory_patcher.start().return_value = fake_gcs
         self.fs = fake_gcs
-        self.admin_stores = AdminStores()
+        self.admin_store = AdminStores()
 
     def tearDown(self) -> None:
         self.gcs_factory_patcher.stop()
@@ -187,15 +188,15 @@ class TestGCSEmails(TestCase):
 
     def _upload_fake_email_buckets(self) -> None:
         """
-        Creates fake email buckets in the appropriate project ids and state buckets.
+        Creates fake email buckets in the ID bucket.
         """
         # staging, US_ID buckets
-        bucket_name = f"{self.STAGE_PROJECT_ID}-report-html"
         for x in range(3):
             batch_id = f"2021070120202{x}"
             path = GcsfsFilePath.from_absolute_path(
-                f"gs://{bucket_name}/{self.STATE_CODE_STR}/{batch_id}/html/empty.txt"
+                f"gs://{self.BUCKET_NAME}/{self.STATE_CODE_STR}/{batch_id}/metadata.json"
             )
+            self.fs.update_metadata(path=path, new_metadata={"batchId": batch_id})
             self.fs.upload_from_string(
                 path=path,
                 contents="this is an email",
@@ -205,20 +206,22 @@ class TestGCSEmails(TestCase):
         # staging, US_PA bucket
         batch_id = "20210701202027"
         path = GcsfsFilePath.from_absolute_path(
-            f"gs://{bucket_name}/US_PA/{batch_id}/html/empty.txt"
+            f"gs://{self.BUCKET_NAME}/US_PA/{batch_id}/metadata.json"
         )
+        self.fs.update_metadata(path=path, new_metadata={"batchId": batch_id})
         self.fs.upload_from_string(
             path=path,
             contents="this is an email",
             content_type="text/text",
         )
 
-        # production, US_PA bucket
+        # production, US_PA bucket, decoy to make sure they are pulling from proper bucket
         bucket_name = f"{self.PROD_PROJECT_ID}-report-html"
         batch_id = "20210701202028"
         path = GcsfsFilePath.from_absolute_path(
-            f"gs://{bucket_name}/US_PA/{batch_id}/html/empty.txt"
+            f"gs://{bucket_name}/US_PA/{batch_id}/metadata.json"
         )
+        self.fs.update_metadata(path=path, new_metadata={"batchId": batch_id})
         self.fs.upload_from_string(
             path=path,
             contents="this is an email",
@@ -229,27 +232,27 @@ class TestGCSEmails(TestCase):
         """Given all valid arguments, should have a list of batch ids, ordered in descending order,
         since we want the most recent batch to be at the top of the list"""
         self._upload_fake_email_buckets()
-        batch_list = self.admin_stores.get_batch_ids(
+        batch_info = self.admin_store.get_batch_ids(
             state_code=StateCode(self.STATE_CODE_STR), override_fs=self.fs
         )
 
         self.assertEqual(
-            ["20210701202022", "20210701202021", "20210701202020"], batch_list
+            ["20210701202022", "20210701202021", "20210701202020"],
+            batch_info,
         )
 
     def test_get_batch_ids_invalid_state(self) -> None:
         """Given an invalid state code, should have an empty list"""
         self._upload_fake_email_buckets()
-        batch_list = self.admin_stores.get_batch_ids(
+        batch_info = self.admin_store.get_batch_ids(
             state_code=StateCode.US_XX, override_fs=self.fs
         )
-        self.assertEqual(0, len(batch_list))
+        self.assertEqual(0, len(batch_info))
 
     def test_get_batch_ids_state_with_single(self) -> None:
         """Given valid arguments, should pick correct state and given a list of only one batch id"""
         self._upload_fake_email_buckets()
-        batch_list = self.admin_stores.get_batch_ids(
+        batch_info = self.admin_store.get_batch_ids(
             state_code=StateCode.US_PA, override_fs=self.fs
         )
-        self.assertEqual(1, len(batch_list))
-        self.assertEqual("20210701202027", batch_list[0])
+        self.assertEqual(["20210701202027"], batch_info)
