@@ -17,8 +17,8 @@
 
 import { SyncOutlined } from "@ant-design/icons";
 import { Button, Card, Space, Spin, Table } from "antd";
-import * as React from "react";
 import moment from "moment";
+import * as React from "react";
 import { getBatchIds } from "../../AdminPanelAPI/LineStaffTools";
 import { StateCodeInfo } from "../IngestOperationsView/constants";
 
@@ -70,7 +70,6 @@ const ListBatches: React.FC<ListBatchesProps> = ({ stateInfo }) => {
     {
       title: "Date",
       dataIndex: "date",
-      key: "date",
     },
     {
       title: "Batch ID",
@@ -107,6 +106,7 @@ const ListBatches: React.FC<ListBatchesProps> = ({ stateInfo }) => {
           bordered
           columns={columns}
           dataSource={tableData}
+          rowKey="batchId"
           pagination={{ pageSize: 5, size: "small", simple: true }}
         />
       )}
