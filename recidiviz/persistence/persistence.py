@@ -130,7 +130,7 @@ STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE: Dict[str, Dict[str, float]] = 
     GCP_PROJECT_STAGING: {
         "US_ID": 0.05,
         # TODO(#5313): Decrease back to 5% once entity matching issues are resolved for ND.
-        "US_ND": 0.40,
+        "US_ND": 0.20,
         # Remaining PA entity matching errors not high priority for a fix
         "US_PA": 0.01,
     },
@@ -537,6 +537,21 @@ def write(
                     "_should_abort_ was true after database invariant validation"
                 )
                 return False
+
+            if entity_matching_output.error_count:
+                logging.warning(
+                    "Proceeding with persist step even though there are [%s] entity "
+                    "matching errors ([%s] error ratio).",
+                    entity_matching_output.error_count,
+                    entity_matching_output.error_count / total_root_entities,
+                )
+            if database_invariant_errors:
+                logging.warning(
+                    "Proceeding with persist step even though there are [%s] database "
+                    "invariant errors ([%s] error ratio).",
+                    database_invariant_errors,
+                    database_invariant_errors / total_root_entities,
+                )
 
             database.write_people(
                 session,
