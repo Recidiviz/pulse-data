@@ -53,7 +53,7 @@ from recidiviz.reporting.context.po_monthly_report.constants import (
     OFFICER_GIVEN_NAME,
     ReportType,
 )
-from recidiviz.reporting.email_reporting_utils import _gcsfs_path_for_batch_metadata
+from recidiviz.reporting.email_reporting_utils import gcsfs_path_for_batch_metadata
 from recidiviz.reporting.recipient import Recipient
 from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
 
@@ -179,6 +179,7 @@ def start(
         report_type=report_type,
         **metadata,
     )
+
     return MultiRequestResult(
         successes=succeeded_email_addresses, failures=failed_email_addresses
     )
@@ -410,7 +411,7 @@ def _write_batch_metadata(
 ) -> None:
     gcsfs = GcsfsFactory.build()
     gcsfs.upload_from_string(
-        path=_gcsfs_path_for_batch_metadata(batch_id, state_code),
+        path=gcsfs_path_for_batch_metadata(batch_id, state_code),
         contents=json.dumps({**metadata_fields, "report_type": report_type.value}),
         content_type="text/json",
     )
