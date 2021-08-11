@@ -70,7 +70,7 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_QUERY_TEMPLATE = """
         -- TODO(#8674): Use agent_external_id instead of agent_external_id_with_full_name
         -- once the FE is using the officer_full_name field for names
         REPLACE(IFNULL(agent.agent_external_id_with_full_name, 'EXTERNAL_UNKNOWN'), ',', '') AS officer,
-        COALESCE(agent.full_name, 'UNKNOWN') AS officer_full_name,
+        REPLACE(COALESCE(agent.full_name, 'UNKNOWN'), ',', '') AS officer_full_name,
     FROM
         metrics
     LEFT JOIN
