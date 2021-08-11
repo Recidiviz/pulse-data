@@ -486,10 +486,12 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             irregular_board_hold,
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         updated_regular_board_hold_period = attr.evolve(
             regular_board_hold,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
         )
 
@@ -504,7 +506,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
             validated_incarceration_periods = (
                 self._pre_processed_incarceration_periods_for_calculations(
-                    incarceration_periods=ips_for_test,
+                    incarceration_periods=ips_for_test, collapse_transfers=False
                 )
             )
 
@@ -588,16 +590,19 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             irregular_board_hold_1,
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         updated_irregular_board_hold_2_period = attr.evolve(
             irregular_board_hold_2,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         updated_regular_board_hold_period = attr.evolve(
             regular_board_hold,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
         )
 
@@ -613,7 +618,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
             validated_incarceration_periods = (
                 self._pre_processed_incarceration_periods_for_calculations(
-                    incarceration_periods=ips_for_test,
+                    incarceration_periods=ips_for_test, collapse_transfers=False
                 )
             )
 
@@ -686,16 +691,19 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
             irregular_board_hold_1,
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         updated_irregular_board_hold_2_period = attr.evolve(
             irregular_board_hold_2,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
         updated_regular_board_hold_period = attr.evolve(
             regular_board_hold,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
         )
 
@@ -710,7 +718,7 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
 
             validated_incarceration_periods = (
                 self._pre_processed_incarceration_periods_for_calculations(
-                    incarceration_periods=ips_for_test,
+                    incarceration_periods=ips_for_test, collapse_transfers=False
                 )
             )
 
