@@ -106,7 +106,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         assert compliance is not None
         self.assertIsNone(compliance.next_recommended_assessment_date)
-        self.assertIsNone(compliance.face_to_face_frequency_sufficient)
+        self.assertIsNone(compliance.next_recommended_face_to_face_date)
 
     @patch.object(UsIdSupervisionCaseCompliance, "_guidelines_applicable_for_case")
     def test_us_id_guidelines_not_applicable_provided(
@@ -145,7 +145,7 @@ class TestCaseCompliance(unittest.TestCase):
 
         assert compliance is not None
         self.assertIsNone(compliance.next_recommended_assessment_date)
-        self.assertIsNone(compliance.face_to_face_frequency_sufficient)
+        self.assertIsNone(compliance.next_recommended_face_to_face_date)
 
     def test_us_nd_get_case_compliance_on_date_no_assessments_but_within_one_month(
         self,
@@ -185,7 +185,7 @@ class TestCaseCompliance(unittest.TestCase):
                 assessment_count=0,
                 next_recommended_assessment_date=date(2018, 4, 4),
                 face_to_face_count=0,
-                face_to_face_frequency_sufficient=False,
+                next_recommended_face_to_face_date=date(2018, 5, 31),
                 home_visit_count=0,
                 home_visit_frequency_sufficient=True,
             ),
@@ -241,7 +241,7 @@ class TestCaseCompliance(unittest.TestCase):
                 most_recent_assessment_date=date(2020, 3, 6),
                 next_recommended_assessment_date=date(2020, 10, 4),
                 face_to_face_count=0,
-                face_to_face_frequency_sufficient=False,
+                next_recommended_face_to_face_date=date(2018, 5, 31),
                 home_visit_count=0,
                 home_visit_frequency_sufficient=False,
             ),
@@ -297,7 +297,7 @@ class TestCaseCompliance(unittest.TestCase):
                 assessment_count=0,
                 next_recommended_assessment_date=date(2018, 3, 7),
                 face_to_face_count=0,
-                face_to_face_frequency_sufficient=False,
+                next_recommended_face_to_face_date=date(2018, 4, 30),
                 home_visit_frequency_sufficient=False,
                 home_visit_count=0,
             ),
@@ -353,7 +353,7 @@ class TestCaseCompliance(unittest.TestCase):
                 assessment_count=0,
                 next_recommended_assessment_date=date(2019, 2, 7),
                 face_to_face_count=0,
-                face_to_face_frequency_sufficient=False,
+                next_recommended_face_to_face_date=date(2018, 4, 30),
                 home_visit_count=0,
                 home_visit_frequency_sufficient=False,
             ),
@@ -424,7 +424,7 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_assessment_date=date(2019, 3, 10),
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 4, 30),
-                face_to_face_frequency_sufficient=True,
+                next_recommended_face_to_face_date=date(2018, 6, 4),
                 home_visit_count=0,
             ),
             compliance,
@@ -497,7 +497,7 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_assessment_date=date(2019, 3, 10),
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 4, 6),
-                face_to_face_frequency_sufficient=True,
+                next_recommended_face_to_face_date=date(2018, 6, 4),
                 home_visit_count=0,
             ),
             compliance,
@@ -541,7 +541,7 @@ class TestCaseCompliance(unittest.TestCase):
                 assessment_count=0,
                 next_recommended_assessment_date=date(2018, 2, 19),
                 face_to_face_count=0,
-                face_to_face_frequency_sufficient=False,
+                next_recommended_face_to_face_date=date(2018, 1, 10),
                 home_visit_count=0,
             ),
             compliance,
@@ -606,7 +606,7 @@ class TestCaseCompliance(unittest.TestCase):
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 3, 31),
                 most_recent_assessment_date=date(2018, 3, 31),
-                face_to_face_frequency_sufficient=None,
+                next_recommended_face_to_face_date=None,
                 home_visit_count=0,
             ),
             compliance,
@@ -651,7 +651,7 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_assessment_date=date(2018, 4, 19),
                 face_to_face_count=0,
                 most_recent_face_to_face_date=None,
-                face_to_face_frequency_sufficient=False,
+                next_recommended_face_to_face_date=date(2018, 3, 8),
                 most_recent_home_visit_date=None,
                 home_visit_count=0,
             ),
@@ -716,7 +716,7 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_assessment_date=date(2018, 4, 19),
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 4, 30),
-                face_to_face_frequency_sufficient=True,
+                next_recommended_face_to_face_date=date(2018, 6, 4),
                 most_recent_home_visit_date=None,
                 home_visit_count=0,
             ),
@@ -779,7 +779,7 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_assessment_date=date(2018, 4, 19),
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 4, 30),
-                face_to_face_frequency_sufficient=True,
+                next_recommended_face_to_face_date=date(2018, 6, 4),
                 most_recent_home_visit_date=date(2018, 4, 30),
                 home_visit_count=1,
             ),
@@ -842,7 +842,7 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_assessment_date=date(2018, 4, 19),
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 4, 30),
-                face_to_face_frequency_sufficient=True,
+                next_recommended_face_to_face_date=date(2018, 6, 4),
                 most_recent_home_visit_date=date(2018, 3, 6),
                 home_visit_count=0,
             ),
@@ -953,7 +953,7 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_assessment_date=date(2018, 4, 19),
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2018, 4, 30),
-                face_to_face_frequency_sufficient=True,
+                next_recommended_face_to_face_date=date(2018, 6, 4),
                 most_recent_home_visit_date=date(2018, 4, 30),
                 home_visit_count=1,
             ),
@@ -968,7 +968,7 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_assessment_date=date(2019, 4, 19),
                 face_to_face_count=1,
                 most_recent_face_to_face_date=date(2019, 4, 30),
-                face_to_face_frequency_sufficient=True,
+                next_recommended_face_to_face_date=date(2019, 6, 4),
                 most_recent_home_visit_date=date(2019, 4, 30),
                 home_visit_count=1,
             ),
@@ -1080,7 +1080,7 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_assessment_date=date(2018, 4, 19),
                 face_to_face_count=0,
                 most_recent_face_to_face_date=None,
-                face_to_face_frequency_sufficient=False,
+                next_recommended_face_to_face_date=date(2018, 3, 8),
                 most_recent_home_visit_date=None,
                 home_visit_count=0,
             ),
@@ -1095,7 +1095,7 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_assessment_date=date(2019, 4, 19),
                 face_to_face_count=0,
                 most_recent_face_to_face_date=None,
-                face_to_face_frequency_sufficient=False,
+                next_recommended_face_to_face_date=date(2019, 3, 8),
                 most_recent_home_visit_date=None,
                 home_visit_count=0,
             ),

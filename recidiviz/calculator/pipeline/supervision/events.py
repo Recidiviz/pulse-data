@@ -154,10 +154,10 @@ class SupervisionPopulationEvent(
         return self.case_compliance.most_recent_face_to_face_date
 
     @property
-    def face_to_face_frequency_sufficient(self) -> Optional[bool]:
+    def next_recommended_face_to_face_date(self) -> Optional[date]:
         if not self.case_compliance:
             return None
-        return self.case_compliance.face_to_face_frequency_sufficient
+        return self.case_compliance.next_recommended_face_to_face_date
 
     @property
     def most_recent_home_visit_date(self) -> Optional[date]:
