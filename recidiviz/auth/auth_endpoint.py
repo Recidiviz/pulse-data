@@ -181,6 +181,7 @@ def dashboard_user_restrictions_by_email() -> Tuple[
                 DashboardUserRestrictions.allowed_supervision_location_level,
                 DashboardUserRestrictions.can_access_leadership_dashboard,
                 DashboardUserRestrictions.can_access_case_triage,
+                DashboardUserRestrictions.routes,
             )
             .filter(
                 DashboardUserRestrictions.state_code == region_code.upper(),
@@ -259,6 +260,7 @@ def update_auth0_user_metadata() -> Tuple[str, HTTPStatus]:
                     DashboardUserRestrictions.allowed_supervision_location_level,
                     DashboardUserRestrictions.can_access_leadership_dashboard,
                     DashboardUserRestrictions.can_access_case_triage,
+                    DashboardUserRestrictions.routes,
                 )
                 .filter(DashboardUserRestrictions.state_code == region_code.upper())
                 .order_by(DashboardUserRestrictions.restricted_user_email)
@@ -322,6 +324,7 @@ def _format_db_results(
             "can_access_leadership_dashboard"
         ],
         "can_access_case_triage": user_restrictions["can_access_case_triage"],
+        "routes": user_restrictions["routes"],
     }
 
 
@@ -341,6 +344,7 @@ def _normalize_current_restrictions(
         "can_access_case_triage": current_app_metadata.get(
             "can_access_case_triage", False
         ),
+        "routes": current_app_metadata.get("routes", {}),
     }
 
 

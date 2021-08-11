@@ -471,12 +471,6 @@ class DashboardUserRestrictions(CaseTriageBase):
         primary_key=True,
         comment="Dashboard user's email address",
     )
-    # TODO(#7413) Remove allowed_level_1_supervision_location_ids once FE is no longer using it
-    allowed_level_1_supervision_location_ids = Column(
-        String(255),
-        nullable=False,
-        comment="Deprecated column for allowed supervision location ids",
-    )
     allowed_supervision_location_ids = Column(
         String(255),
         nullable=False,
@@ -501,6 +495,11 @@ class DashboardUserRestrictions(CaseTriageBase):
         nullable=False,
         default=False,
         comment="User has permission to access Case Triage",
+    )
+    routes = Column(
+        JSONB,
+        nullable=True,
+        comment="Page level restrictions for the user",
     )
 
 

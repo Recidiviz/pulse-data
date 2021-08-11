@@ -256,6 +256,7 @@ class AuthEndpointTests(TestCase):
                 "allowed_supervision_location_level": "level_1_supervision_location",
                 "can_access_case_triage": False,
                 "can_access_leadership_dashboard": True,
+                "routes": None,
             }
             response = self.client.get(
                 self.dashboard_user_restrictions_by_email_url,
@@ -337,6 +338,7 @@ class AuthEndpointTests(TestCase):
                         "allowed_supervision_location_level": "level_1_supervision_location",
                         "can_access_case_triage": False,
                         "can_access_leadership_dashboard": True,
+                        "routes": None,
                     },
                 },
                 {
@@ -347,6 +349,7 @@ class AuthEndpointTests(TestCase):
                         "allowed_supervision_location_level": "level_2_supervision_location",
                         "can_access_case_triage": False,
                         "can_access_leadership_dashboard": False,
+                        "routes": None,
                     },
                 },
             ]
@@ -365,6 +368,7 @@ class AuthEndpointTests(TestCase):
                             "allowed_supervision_location_level": "level_1_supervision_location",
                             "can_access_case_triage": False,
                             "can_access_leadership_dashboard": True,
+                            "routes": None,
                         },
                     ),
                 ]
@@ -413,6 +417,7 @@ class AuthEndpointTests(TestCase):
                         "allowed_supervision_location_level": None,
                         "can_access_case_triage": False,
                         "can_access_leadership_dashboard": False,
+                        "routes": None,
                     },
                 },
             ]
@@ -431,6 +436,7 @@ class AuthEndpointTests(TestCase):
                             "allowed_supervision_location_level": "level_1_supervision_location",
                             "can_access_leadership_dashboard": True,
                             "can_access_case_triage": False,
+                            "routes": None,
                         },
                     ),
                     call(
@@ -440,6 +446,7 @@ class AuthEndpointTests(TestCase):
                             "allowed_supervision_location_level": "level_1_supervision_location",
                             "can_access_leadership_dashboard": True,
                             "can_access_case_triage": False,
+                            "routes": None,
                         },
                     ),
                 ]
@@ -447,6 +454,69 @@ class AuthEndpointTests(TestCase):
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.assertEqual(
                 b"Finished updating 2 auth0 users with restrictions for region US_MO",
+                response.data,
+            )
+
+    def test_update_auth0_user_metadata_should_update_routes(self) -> None:
+        with self.app.test_request_context():
+            user_1 = generate_fake_user_restrictions(
+                self.region_code,
+                "test-user+1@test.org",
+                routes={"community_practices": True},
+            )
+            user_0 = generate_fake_user_restrictions(
+                self.region_code,
+                "test-user+0@test.org",
+                routes={"facilities_projections": False},
+            )
+            add_users_to_database_session(self.database_key, [user_1, user_0])
+            self.mock_auth0_client.get_all_users_by_email_addresses.return_value = [
+                {
+                    "email": "test-user+0@test.org",
+                    "user_id": "0",
+                    "app_metadata": {
+                        "allowed_supervision_location_ids": [],
+                        "allowed_supervision_location_level": "level_1_supervision_location",
+                        "can_access_case_triage": False,
+                        "can_access_leadership_dashboard": True,
+                        "routes": {"facilities_projections": False},
+                    },
+                },
+                {
+                    "email": "test-user+1@test.org",
+                    "user_id": "1",
+                    "app_metadata": {
+                        "allowed_supervision_location_ids": [],
+                        "allowed_supervision_location_level": "level_2_supervision_location",
+                        "can_access_case_triage": False,
+                        "can_access_leadership_dashboard": False,
+                        "routes": None,
+                    },
+                },
+            ]
+
+            response = self.client.get(
+                self.update_auth0_user_metadata_url,
+                headers=self.headers,
+                query_string={"region_code": self.region_code},
+            )
+            self.mock_auth0_client.update_user_app_metadata.assert_has_calls(
+                [
+                    call(
+                        user_id="1",
+                        app_metadata={
+                            "allowed_supervision_location_ids": [],
+                            "allowed_supervision_location_level": "level_1_supervision_location",
+                            "can_access_case_triage": False,
+                            "can_access_leadership_dashboard": True,
+                            "routes": {"community_practices": True},
+                        },
+                    ),
+                ]
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.assertEqual(
+                b"Finished updating 1 auth0 users with restrictions for region US_MO",
                 response.data,
             )
 
@@ -542,6 +612,7 @@ class AuthEndpointTests(TestCase):
                             "allowed_supervision_location_level": "level_1_supervision_location",
                             "can_access_leadership_dashboard": True,
                             "can_access_case_triage": False,
+                            "routes": None,
                         },
                     ),
                     call(
@@ -551,6 +622,7 @@ class AuthEndpointTests(TestCase):
                             "allowed_supervision_location_level": "level_1_supervision_location",
                             "can_access_leadership_dashboard": True,
                             "can_access_case_triage": False,
+                            "routes": None,
                         },
                     ),
                 ]
