@@ -157,7 +157,8 @@ const FlashDatabaseChecklist = (): JSX.Element => {
       <Alert
         message="Select a state"
         description="Once you pick a state, this form will display the set of instructions required to flash a secondary database to primary."
-        type="warning"
+        type="info"
+        showIcon
       />
     ) : (
       <Steps progressDot current={currentStep} direction="vertical">

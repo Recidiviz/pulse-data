@@ -33,6 +33,7 @@ import IngestOperationsView from "./IngestOperationsView";
 import POEmailsView from "./POEmailsView";
 import POFeedbackView from "./POFeedbackView";
 import TableView from "./TableView";
+import UploadRostersView from "./UploadRostersView";
 import ValidationStatusView from "./ValidationStatusView";
 
 const App = (): JSX.Element => {
@@ -122,6 +123,11 @@ const App = (): JSX.Element => {
                 PO Monthly Reports
               </Link>
             </Menu.Item>
+            <Menu.Item key={LineStaffTools.UPLOAD_ROSTERS_ROUTE}>
+              <Link to={LineStaffTools.UPLOAD_ROSTERS_ROUTE}>
+                Upload Rosters
+              </Link>
+            </Menu.Item>
           </Menu.ItemGroup>
         </Menu>
       </Layout.Sider>
@@ -177,6 +183,10 @@ const App = (): JSX.Element => {
           <Route
             path={LineStaffTools.PO_MONTHLY_REPORTS_ROUTE}
             component={POEmailsView}
+          />
+          <Route
+            path={LineStaffTools.UPLOAD_ROSTERS_ROUTE}
+            component={UploadRostersView}
           />
           <Redirect
             from="/"

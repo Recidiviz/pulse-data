@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines routes for the Case Triage API endpoints in the admin panel."""
+import csv
 import logging
 import os
 from http import HTTPStatus
@@ -28,6 +29,7 @@ from recidiviz.admin_panel.case_triage_helpers import (
     columns_for_case_triage_view,
     get_importable_csvs,
 )
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.case_triage.views.view_config import CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
 from recidiviz.cloud_sql.cloud_sql_export_to_gcs import export_from_cloud_sql_to_gcs_csv
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
@@ -403,3 +405,49 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             jsonify({"batchInfo": batch_info}),
             HTTPStatus.OK,
         )
+
+    @bp.route("/api/line_staff_tools/upload_idaho_roster", methods=["POST"])
+    @requires_gae_auth
+    def _upload_idaho_roster() -> Tuple[str, HTTPStatus]:
+        """This method handles uploading the Idaho roster. It assumes that the
+        caller has manually formatted the CSV appropriately.
+
+        Eventually, we hope that this method will be deleted once we start using
+        Idaho's Azure Active Directory to manage rosters."""
+        dict_reader = csv.DictReader(
+            request.files["file"].read().decode("utf-8-sig").splitlines()
+        )
+        rows = list(dict_reader)
+        if not rows:
+            return "No rows found in CSV file", HTTPStatus.BAD_REQUEST
+
+        IDAHO_ROSTER_KEYS = [
+            "employee_name",
+            "email_address",
+            "job_title",
+            "district",
+            "external_id",
+        ]
+        if len(rows[0]) != len(IDAHO_ROSTER_KEYS):
+            return "Invalid number of columns", HTTPStatus.BAD_REQUEST
+        for key in IDAHO_ROSTER_KEYS:
+            if key not in rows[0]:
+                return f'Missing column "{key}"', HTTPStatus.BAD_REQUEST
+
+        for row in rows:
+            # Enforce casing for columns where we have a preference.
+            row["email_address"] = row["email_address"].lower()
+            row["external_id"] = row["external_id"].upper()
+
+        bq = BigQueryClientImpl()
+
+        delete_job = bq.delete_from_table_async(
+            "static_reference_tables", "us_id_roster", "WHERE TRUE"
+        )
+        delete_job.result()
+
+        dataset_ref = bq.dataset_ref_for_id("static_reference_tables")
+        load_job = bq.load_into_table_async(dataset_ref, "us_id_roster", rows)
+        load_job.result()
+
+        return "", HTTPStatus.OK

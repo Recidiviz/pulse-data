@@ -19,3 +19,4 @@ export const GCS_CSV_TO_CLOUD_SQL_ROUTE = `${LINE_STAFF_TOOLS_BASE}/gcs_csv_to_c
 export const CLOUD_SQL_TO_GCS_CSV_ROUTE = `${LINE_STAFF_TOOLS_BASE}/cloud_sql_to_gcs_csv`;
 export const PO_FEEDBACK_ROUTE = `${LINE_STAFF_TOOLS_BASE}/po_feedback`;
 export const PO_MONTHLY_REPORTS_ROUTE = `${LINE_STAFF_TOOLS_BASE}/po_monthly_report`;
+export const UPLOAD_ROSTERS_ROUTE = `${LINE_STAFF_TOOLS_BASE}/upload_rosters`;

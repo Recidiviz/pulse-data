@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { WarningFilled } from "@ant-design/icons";
 import { Alert, Button, Form, PageHeader, Result, Select, Spin } from "antd";
 import * as React from "react";
 import { fetchETLViewIds, runCloudSQLImport } from "../AdminPanelAPI";
@@ -86,13 +85,10 @@ const CloudSQLImportView = (): JSX.Element => {
     <>
       <PageHeader title="GCS CSV to Cloud SQL Import" />
       <Alert
-        message={
-          <>
-            <WarningFilled /> Caution!
-          </>
-        }
+        message="Caution!"
         description="You should only use this form if you are a member of the Line Staff Tools team, and you absolutely know what you are doing."
         type="warning"
+        showIcon
       />
       <Form {...layout} className="buffer" onFinish={onFinish}>
         <Form.Item
