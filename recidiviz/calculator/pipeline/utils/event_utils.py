@@ -74,9 +74,6 @@ class ViolationHistoryMixin(BuildableAttr):
 class ViolationResponseMixin(BuildableAttr):
     """Set of attributes to store information about a violation and response at a point in time."""
 
-    # Earliest response date associated with the supervision_violation_id
-    response_date: datetime.date = attr.ib(default=None)
-
     # Violation type
     violation_type: StateSupervisionViolationType = attr.ib(default=None)
 
@@ -99,6 +96,16 @@ class ViolationResponseMixin(BuildableAttr):
     most_severe_response_decision: Optional[
         StateSupervisionViolationResponseDecision
     ] = attr.ib(default=None)
+
+    # Whether the violation type is the most severe type of all violations on a given response date
+    is_most_severe_violation_type_of_all_violations: Optional[bool] = attr.ib(
+        default=None
+    )
+
+    # Whether the violation response decision is the most severe of all violations on a given response date
+    is_most_severe_response_decision_of_all_violations: Optional[bool] = attr.ib(
+        default=None
+    )
 
 
 @attr.s

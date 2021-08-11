@@ -335,7 +335,6 @@ class TestClassifyViolationEvents(unittest.TestCase):
                 state_code="US_XX",
                 supervision_violation_id=self.fake_supervision_violation_id,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.FELONY,
                 violation_type_subtype="FELONY",
@@ -343,6 +342,8 @@ class TestClassifyViolationEvents(unittest.TestCase):
                 is_violent=False,
                 is_sex_offense=False,
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+                is_most_severe_response_decision_of_all_violations=True,
+                is_most_severe_violation_type_of_all_violations=True,
             )
         ]
 
@@ -435,7 +436,6 @@ class TestProduceViolationMetrics(unittest.TestCase):
         violation_events = [
             ViolationWithResponseEvent(
                 state_code="US_XX",
-                response_date=date(2011, 4, 3),
                 event_date=date(2011, 4, 3),
                 supervision_violation_id=self.fake_supervision_violation_id,
                 violation_type=StateSupervisionViolationType.ABSCONDED,

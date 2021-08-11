@@ -15,7 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Identifies violations and their responses with appropriate decisions."""
-from typing import List, Optional
+import datetime
+from collections import defaultdict
+from typing import Dict, List, Optional
+
+import attr
 
 from recidiviz.calculator.pipeline.base_identifier import (
     BaseIdentifier,
@@ -25,12 +29,17 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     get_state_specific_violation_delegate,
     state_specific_violation_response_pre_processing_function,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
+    StateSpecificViolationDelegate,
+)
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     get_most_severe_response_decision,
+    identify_most_severe_response_decision,
     prepare_violation_responses_for_calculations,
 )
 from recidiviz.calculator.pipeline.utils.violation_utils import (
     filter_violation_responses_for_violation_history,
+    most_severe_violation_subtype,
     sorted_violation_subtypes_by_severity,
     violation_type_from_subtype,
     violation_type_subtypes_with_violation_type_mappings,
@@ -71,7 +80,6 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
 
         Args:
             - violations: All of the person's StateSupervisionViolations
-            - violation_responses: All of the person's StateSupervisionViolationResponses
 
         Returns:
             A list of ViolationEvents for the person.
@@ -79,13 +87,23 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
 
         violation_events: List[ViolationEvent] = []
 
+        violation_with_response_events: List[ViolationWithResponseEvent] = []
         for violation in violations:
             if is_placeholder(violation):
                 continue
-            violation_with_response_events = self._find_violation_with_response_events(
-                violation
+            violation_with_response_events.extend(
+                self._find_violation_with_response_events(violation)
+            )
+
+        if violation_with_response_events:
+            violation_with_response_events = self._add_aggregate_event_date_fields(
+                violation_with_response_events,
+                get_state_specific_violation_delegate(
+                    violation_with_response_events[0].state_code
+                ),
             )
             violation_events.extend(violation_with_response_events)
+
         return violation_events
 
     def _find_violation_with_response_events(
@@ -93,6 +111,7 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
         violation: StateSupervisionViolation,
     ) -> List[ViolationWithResponseEvent]:
         """Finds instances of a violation with its earliest response."""
+
         violation_with_response_events: List[ViolationWithResponseEvent] = []
 
         supervision_violation_id = violation.supervision_violation_id
@@ -166,7 +185,6 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
                     state_code=state_code,
                     supervision_violation_id=supervision_violation_id,
                     event_date=response_date,
-                    response_date=response_date,
                     violation_date=violation_date,
                     violation_type=violation_type,
                     violation_type_subtype=violation_subtype,
@@ -178,3 +196,69 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
             )
 
         return violation_with_response_events
+
+    def _add_aggregate_event_date_fields(
+        self,
+        violation_with_response_events: List[ViolationWithResponseEvent],
+        state_violation_delegate: StateSpecificViolationDelegate,
+    ) -> List[ViolationWithResponseEvent]:
+        """Augments existing ViolationWithResponseEvents with aggregate statistics
+        over all events of a particular day."""
+
+        processed_events: List[ViolationWithResponseEvent] = []
+        events_by_event_date: Dict[
+            datetime.date, List[ViolationWithResponseEvent]
+        ] = defaultdict(list)
+        for violation_with_response_event in violation_with_response_events:
+            events_by_event_date[violation_with_response_event.event_date].append(
+                violation_with_response_event
+            )
+
+        for events in events_by_event_date.values():
+            most_severe_response_decision_of_all_violations_in_day = (
+                identify_most_severe_response_decision(
+                    [
+                        event.most_severe_response_decision
+                        for event in events
+                        if event.most_severe_response_decision
+                    ]
+                )
+            )
+            most_severe_violation_subtype_of_all_violations_in_day = (
+                most_severe_violation_subtype(
+                    [
+                        event.violation_type_subtype
+                        for event in events
+                        if event.violation_type_subtype
+                        and event.is_most_severe_violation_type
+                    ],
+                    state_violation_delegate,
+                )
+            )
+            most_severe_violation_type_of_all_violations_in_day = (
+                violation_type_from_subtype(
+                    state_violation_delegate,
+                    most_severe_violation_subtype_of_all_violations_in_day,
+                )
+                if most_severe_violation_subtype_of_all_violations_in_day
+                else None
+            )
+            for event in events:
+                if most_severe_response_decision_of_all_violations_in_day:
+                    event = attr.evolve(
+                        event,
+                        is_most_severe_response_decision_of_all_violations=(
+                            event.most_severe_response_decision
+                            == most_severe_response_decision_of_all_violations_in_day
+                        ),
+                    )
+                if most_severe_violation_type_of_all_violations_in_day:
+                    event = attr.evolve(
+                        event,
+                        is_most_severe_violation_type_of_all_violations=(
+                            event.violation_type
+                            == most_severe_violation_type_of_all_violations_in_day
+                        ),
+                    )
+                processed_events.append(event)
+        return processed_events
