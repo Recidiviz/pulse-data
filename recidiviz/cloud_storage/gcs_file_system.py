@@ -138,9 +138,7 @@ class GCSFileSystem:
     def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, str]]:
         """
         Returns the metadata for the object at the given path if it exists in the fs, None otherwise. Returns
-        Dict[str, str] instead of Dict[str, Any] because all values of the dictionary are coerced to strings.
-        So if you pass in new_metadata to update_metadata() that has values that are not strings they will
-        be turned into strings.
+        Dict[str, str] instead of Dict[str, Any] because all values of the dictionary are typed casted to strings.
         """
 
     def clear_metadata(self, path: GcsfsFilePath) -> None:
@@ -153,13 +151,16 @@ class GCSFileSystem:
     def update_metadata(
         self,
         path: GcsfsFilePath,
-        new_metadata: Dict[str, Any],
+        new_metadata: Dict[str, str],
     ) -> None:
         """
         Updates the custom metadata for the object at the given path if it exists in the fs. If there are preexisting keys
         in the metadata that match the new_metadata keys those keys will be overriden. If custom metadata has keys that new_metadata
         does not those keys will still exist in the custom metadata. To clear preexisiting keys not in new_metadata
         call clear_metadata() before updating.
+
+        Required to pass in Dict[str, str] since gcs appears to just type cast non string values of dicts to strings. Recommended
+        to call json.dumps() prior to calling update_metadata.
         """
 
     @abc.abstractmethod
@@ -314,7 +315,7 @@ class GCSFileSystemImpl(GCSFileSystem):
     def update_metadata(
         self,
         path: GcsfsFilePath,
-        new_metadata: Dict[str, Any],
+        new_metadata: Dict[str, str],
     ) -> None:
         try:
             blob = self._get_blob(path)
