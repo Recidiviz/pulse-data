@@ -1,4 +1,4 @@
-file_tag: docstars_lsi_need
+file_tag: docstars_LSI_NEED
 file_description: |-
   Each row is a need that is being addressed by an LSI supervision plan
 primary_key_cols: [NEED_ID]
