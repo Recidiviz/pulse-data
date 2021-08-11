@@ -352,9 +352,7 @@ class MoveFilesFromStorageController:
             )
 
     def _queues_to_pause(self) -> List[str]:
-        return get_direct_ingest_queues_for_state(
-            self.state_code, DirectIngestInstance.PRIMARY
-        )
+        return get_direct_ingest_queues_for_state(self.state_code)
 
 
 def main() -> None:

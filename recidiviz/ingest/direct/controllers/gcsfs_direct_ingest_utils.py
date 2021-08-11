@@ -127,6 +127,9 @@ class GcsfsIngestArgs(CloudTaskArgs):
         parts = filename_parts_from_path(self.file_path)
         return f"ingest_job_{parts.stripped_file_name}_{parts.date_str}"
 
+    def ingest_instance(self) -> DirectIngestInstance:
+        return DirectIngestInstance.for_ingest_bucket(self.file_path.bucket_path)
+
 
 @attr.s(frozen=True)
 class GcsfsRawDataBQImportArgs(CloudTaskArgs):
@@ -135,6 +138,11 @@ class GcsfsRawDataBQImportArgs(CloudTaskArgs):
     def task_id_tag(self) -> str:
         parts = filename_parts_from_path(self.raw_data_file_path)
         return f"raw_data_import_{parts.stripped_file_name}_{parts.date_str}"
+
+    def ingest_instance(self) -> DirectIngestInstance:
+        return DirectIngestInstance.for_ingest_bucket(
+            self.raw_data_file_path.bucket_path
+        )
 
 
 @attr.s(frozen=True)
@@ -162,6 +170,11 @@ class GcsfsIngestViewExportArgs(CloudTaskArgs):
             tag += "-None"
         tag += f"-{snake_case_datetime(self.upper_bound_datetime_to_export)}"
         return tag
+
+    def ingest_instance(self) -> DirectIngestInstance:
+        return DirectIngestInstance.for_ingest_bucket(
+            GcsfsBucketPath(self.output_bucket_name)
+        )
 
 
 def gcsfs_direct_ingest_temporary_output_directory_path(

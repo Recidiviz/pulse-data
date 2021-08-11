@@ -195,7 +195,6 @@ class BaseDirectIngestController(Ingestor):
         logging.info("Creating cloud task to schedule next job.")
         self.cloud_task_manager.create_direct_ingest_scheduler_queue_task(
             region=self.region,
-            ingest_instance=self.ingest_instance,
             ingest_bucket=self.ingest_bucket_path,
             just_finished_job=just_finished_job,
         )
@@ -221,7 +220,6 @@ class BaseDirectIngestController(Ingestor):
 
         process_job_queue_info = self.cloud_task_manager.get_process_job_queue_info(
             self.region,
-            self.ingest_instance,
         )
         if (
             process_job_queue_info.has_any_tasks_for_instance(
@@ -266,7 +264,6 @@ class BaseDirectIngestController(Ingestor):
         )
         self.cloud_task_manager.create_direct_ingest_process_job_task(
             region=self.region,
-            ingest_instance=self.ingest_instance,
             ingest_args=next_job_args,
         )
         self._on_job_scheduled(next_job_args)
@@ -293,7 +290,7 @@ class BaseDirectIngestController(Ingestor):
         returns True. Otherwise, if it's safe to proceed with next steps of ingest,
         returns False."""
         queue_info = self.cloud_task_manager.get_bq_import_export_queue_info(
-            self.region, self.ingest_instance
+            self.region
         )
 
         did_schedule = False
@@ -325,7 +322,7 @@ class BaseDirectIngestController(Ingestor):
                 and not queue_info.is_raw_data_import_task_already_queued(task_args)
             ):
                 self.cloud_task_manager.create_direct_ingest_raw_data_import_task(
-                    self.region, self.ingest_instance, task_args
+                    self.region, task_args
                 )
                 did_schedule = True
 
@@ -338,7 +335,7 @@ class BaseDirectIngestController(Ingestor):
         returns False.
         """
         queue_info = self.cloud_task_manager.get_bq_import_export_queue_info(
-            self.region, self.ingest_instance
+            self.region,
         )
         if queue_info.has_ingest_view_export_jobs_queued(
             self.region_code(), self.ingest_instance
@@ -384,7 +381,7 @@ class BaseDirectIngestController(Ingestor):
                 task_args,
             ):
                 self.cloud_task_manager.create_direct_ingest_ingest_view_export_task(
-                    self.region, self.ingest_instance, task_args
+                    self.region, task_args
                 )
                 did_schedule = True
 
@@ -715,7 +712,6 @@ class BaseDirectIngestController(Ingestor):
         logging.info("Creating cloud task to schedule next job.")
         self.cloud_task_manager.create_direct_ingest_handle_new_files_task(
             region=self.region,
-            ingest_instance=self.ingest_instance,
             ingest_bucket=self.ingest_bucket_path,
             can_start_ingest=start_ingest,
         )
@@ -911,7 +907,6 @@ class BaseDirectIngestController(Ingestor):
             logging.info("Creating cloud task to schedule next job.")
             self.cloud_task_manager.create_direct_ingest_handle_new_files_task(
                 region=self.region,
-                ingest_instance=self.ingest_instance,
                 ingest_bucket=self.ingest_bucket_path,
                 can_start_ingest=True,
             )
