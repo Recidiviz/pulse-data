@@ -72,12 +72,10 @@ class EmailSentMetadata:
     batch_id: str = attr.ib()
     send_results: List[EmailSentResult] = attr.ib()
 
-    def to_json(self) -> Dict[str, str]:
+    def to_json(self) -> Dict[str, Any]:
         return {
             "batchId": self.batch_id,
-            "sendResults": json.dumps(
-                [result.to_json() for result in self.send_results]
-            ),
+            "sendResults": [result.to_json() for result in self.send_results],
         }
 
     @classmethod

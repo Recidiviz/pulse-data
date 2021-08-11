@@ -25,7 +25,6 @@ from unittest.mock import MagicMock, patch
 import flask
 from flask import Blueprint, Flask
 
-from recidiviz.admin_panel.all_routes import admin_stores
 from recidiviz.admin_panel.routes.line_staff_tools import add_line_staff_tools_routes
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
@@ -49,13 +48,12 @@ class ReportingEndpointTests(TestCase):
         self.gcs_file_system_patcher = patch(
             "recidiviz.cloud_storage.gcsfs_factory.GcsfsFactory.build"
         )
+
         self.requires_gae_auth_patcher = patch(
             "recidiviz.admin_panel.routes.line_staff_tools.requires_gae_auth",
             side_effect=lambda route: route,
         )
-
         self.requires_gae_auth_patcher.start()
-
         self.gcs_file_system = FakeGCSFileSystem()
         self.mock_gcs_file_system = self.gcs_file_system_patcher.start()
         self.mock_gcs_file_system.return_value = self.gcs_file_system
@@ -67,7 +65,7 @@ class ReportingEndpointTests(TestCase):
 
         self.client = self.app.test_client()
 
-        add_line_staff_tools_routes(blueprint, admin_stores)
+        add_line_staff_tools_routes(blueprint)
         self.app.register_blueprint(blueprint)
 
         with self.app.test_request_context():
@@ -85,8 +83,8 @@ class ReportingEndpointTests(TestCase):
             self.review_month = 5
 
     def tearDown(self) -> None:
-        self.gcs_file_system_patcher.stop()
         self.requires_gae_auth_patcher.stop()
+        self.gcs_file_system_patcher.stop()
 
     def test_generate_emails_validation(self) -> None:
         with self.app.test_request_context():

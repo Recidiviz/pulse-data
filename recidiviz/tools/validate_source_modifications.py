@@ -43,9 +43,9 @@ from flask import Flask
 from werkzeug.routing import Rule
 
 from recidiviz.ingest.models import ingest_info, ingest_info_pb2
-from recidiviz.server import get_blueprints_for_documentation
 from recidiviz.tools.docs.endpoint_documentation_generator import (
     EndpointDocumentationGenerator,
+    get_blueprints_for_documentation,
 )
 from recidiviz.utils.regions import get_supported_direct_ingest_region_codes
 

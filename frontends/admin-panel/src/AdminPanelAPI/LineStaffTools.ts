@@ -78,8 +78,10 @@ export const sendEmails = async (
   });
 };
 
-export const getBatchIds = async (stateCode: string): Promise<Response> => {
-  return postWithURLAndBody("/api/line_staff_tools/batch_ids", {
+export const getListBatchInfo = async (
+  stateCode: string
+): Promise<Response> => {
+  return postWithURLAndBody("/api/line_staff_tools/list_batch_info", {
     stateCode,
   });
 };

@@ -75,9 +75,9 @@ def _get_metadata_store(metadata_dataset: str) -> DatasetMetadataCountsStore:
 def setup_admin_panel() -> Blueprint:
     """Setting up the admin panel"""
     admin_panel = Blueprint("admin_panel", __name__, static_folder=static_folder)
+    add_line_staff_tools_routes(admin_panel)
     add_data_discovery_routes(admin_panel)
     add_ingest_ops_routes(admin_panel, admin_stores)
-    add_line_staff_tools_routes(admin_panel, admin_stores)
 
     # Dataset column counts
     @admin_panel.route(

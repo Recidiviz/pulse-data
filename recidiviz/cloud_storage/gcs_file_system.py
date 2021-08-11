@@ -295,7 +295,7 @@ class GCSFileSystemImpl(GCSFileSystem):
             return None
 
     @retry.Retry(predicate=retry_predicate)
-    def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, str]]:
+    def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, Any]]:
         try:
             blob = self._get_blob(path)
             return blob.metadata

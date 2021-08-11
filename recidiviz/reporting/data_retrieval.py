@@ -179,7 +179,6 @@ def start(
         report_type=report_type,
         **metadata,
     )
-
     return MultiRequestResult(
         successes=succeeded_email_addresses, failures=failed_email_addresses
     )

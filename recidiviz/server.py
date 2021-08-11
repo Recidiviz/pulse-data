@@ -77,6 +77,7 @@ scraper_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (scrape_aggregate_reports_blueprint, "/scrape_aggregate_reports"),
     (store_single_count_blueprint, "/single_count"),
 ]
+
 default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (setup_admin_panel(), "/admin"),
     (auth_endpoint_blueprint, "/auth"),
@@ -90,12 +91,13 @@ default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (validation_manager_blueprint, "/validation_manager"),
 ]
 
-# TODO(#8217) remove exemption for /admin route in generating documentation
-def get_blueprints_for_documentation() -> List[Tuple[Blueprint, str]]:
-    all_blueprints_with_url_prefixes = scraper_blueprints_with_url_prefixes + list(
-        filter(lambda item: item[1] != "/admin", default_blueprints_with_url_prefixes)
-    )
-    return all_blueprints_with_url_prefixes
+# TODO(#8217) remove exemption for /admin route in generating documentation,
+# def get_blueprints_for_documentation() -> List[Tuple[Blueprint, str]]:
+#     all_blueprints_with_url_prefixes = (
+#         scraper_blueprints_with_url_prefixes + default_blueprints_with_url_prefixes
+#     )
+
+#     return all_blueprints_with_url_prefixes
 
 
 if service_type is environment.ServiceType.SCRAPERS:

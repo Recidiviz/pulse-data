@@ -31,17 +31,17 @@ from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 class TestEmailSentMetadata(TestCase):
     """Class to test the email sent metadata functions"""
 
-    STATE_CODE_STR = StateCode.US_ID
+    STATE_CODE = StateCode.US_ID
     BATCH_ID = "20210701202020"
     SENT_DATE = datetime.datetime.now()
 
     def setUp(self) -> None:
         self.project_id_patcher = patch(
-            "recidiviz.admin_panel.admin_stores.metadata.project_id"
+            "recidiviz.reporting.email_reporting_handler.metadata.project_id"
         )
         self.project_id_patcher.start().return_value = "recidiviz-staging"
         self.gcs_factory_patcher = patch(
-            "recidiviz.admin_panel.admin_stores.GcsfsFactory.build"
+            "recidiviz.reporting.email_reporting_handler.GcsfsFactory.build"
         )
         fake_gcs = FakeGCSFileSystem()
         self.gcs_factory_patcher.start().return_value = fake_gcs
@@ -88,14 +88,14 @@ class TestEmailSentMetadata(TestCase):
         ]
         expected_result = {
             "batchId": "20210701202020",
-            "sendResults": json.dumps(expected_send_results),
+            "sendResults": expected_send_results,
         }
 
         self.assertEqual(expected_result, json_dict)
 
     def test_build_from_gcs(self) -> None:
         email_metadata = EmailSentMetadata.build_from_gcs(
-            batch_id="20210701202021", state_code=self.STATE_CODE_STR, gcs_fs=self.fs
+            batch_id="20210701202021", state_code=self.STATE_CODE, gcs_fs=self.fs
         )
         self.assertEqual(
             EmailSentMetadata(batch_id="20210701202021", send_results=[]),
@@ -105,7 +105,7 @@ class TestEmailSentMetadata(TestCase):
     def test_write_to_gcs(self) -> None:
         batch_id = "20210701202022"
         email_metadata = EmailSentMetadata.build_from_gcs(
-            state_code=self.STATE_CODE_STR, batch_id=batch_id, gcs_fs=self.fs
+            state_code=self.STATE_CODE, batch_id=batch_id, gcs_fs=self.fs
         )
 
         self.assertEqual(
@@ -118,10 +118,10 @@ class TestEmailSentMetadata(TestCase):
             redirect_address="frida@kahlo.gov",
         )
         email_metadata.write_to_gcs(
-            state_code=self.STATE_CODE_STR, batch_id=batch_id, gcs_fs=self.fs
+            state_code=self.STATE_CODE, batch_id=batch_id, gcs_fs=self.fs
         )
 
-        gcs_path = gcsfs_path_for_batch_metadata(batch_id, self.STATE_CODE_STR)
+        gcs_path = gcsfs_path_for_batch_metadata(batch_id, self.STATE_CODE)
         resulting_metadata = self.fs.get_metadata(gcs_path)
 
         expected_send_results = [
@@ -131,6 +131,7 @@ class TestEmailSentMetadata(TestCase):
                 "redirectAddress": "frida@kahlo.gov",
             }
         ]
+        # use json dumps here becuase pulling resulting_metadata directly from gcs
         expected_result = {
             "batchId": batch_id,
             "sendResults": json.dumps(expected_send_results),
@@ -141,7 +142,7 @@ class TestEmailSentMetadata(TestCase):
     def test_how_it_runs_if_list_batches_refreshed(self) -> None:
         batch_id = "20210701202023"
         email_metadata = EmailSentMetadata.build_from_gcs(
-            state_code=self.STATE_CODE_STR, batch_id=batch_id, gcs_fs=self.fs
+            state_code=self.STATE_CODE, batch_id=batch_id, gcs_fs=self.fs
         )
         email_metadata.add_new_email_send_result(
             sent_date=self.SENT_DATE,
@@ -149,7 +150,7 @@ class TestEmailSentMetadata(TestCase):
             redirect_address="frida@kahlo.gov",
         )
         email_metadata.write_to_gcs(
-            state_code=self.STATE_CODE_STR, batch_id=batch_id, gcs_fs=self.fs
+            state_code=self.STATE_CODE, batch_id=batch_id, gcs_fs=self.fs
         )
         self.assertEqual(
             EmailSentMetadata(
@@ -176,7 +177,7 @@ class TestEmailSentMetadata(TestCase):
         ]
         expected_result = {
             "batchId": "20210701202023",
-            "sendResults": json.dumps(expected_send_results),
+            "sendResults": expected_send_results,
         }
 
         self.assertEqual(expected_result, json_dict)
@@ -184,7 +185,7 @@ class TestEmailSentMetadata(TestCase):
     def test_how_add_new_and_refresh_used_x3(self) -> None:
         batch_id = "20210701202024"
         email_metadata = EmailSentMetadata.build_from_gcs(
-            state_code=self.STATE_CODE_STR, batch_id=batch_id, gcs_fs=self.fs
+            state_code=self.STATE_CODE, batch_id=batch_id, gcs_fs=self.fs
         )
         email_metadata.add_new_email_send_result(
             sent_date=self.SENT_DATE,
@@ -192,7 +193,7 @@ class TestEmailSentMetadata(TestCase):
             redirect_address="frida@kahlo.gov",
         )
         email_metadata.write_to_gcs(
-            state_code=self.STATE_CODE_STR, batch_id=batch_id, gcs_fs=self.fs
+            state_code=self.STATE_CODE, batch_id=batch_id, gcs_fs=self.fs
         )
 
         # refreshing list batches in frontend
@@ -203,7 +204,7 @@ class TestEmailSentMetadata(TestCase):
         second_sent_date_time = datetime.datetime.now()
 
         email_metadata = EmailSentMetadata.build_from_gcs(
-            state_code=self.STATE_CODE_STR, batch_id=batch_id, gcs_fs=self.fs
+            state_code=self.STATE_CODE, batch_id=batch_id, gcs_fs=self.fs
         )
         email_metadata.add_new_email_send_result(
             sent_date=second_sent_date_time,
@@ -211,7 +212,7 @@ class TestEmailSentMetadata(TestCase):
             redirect_address="letter@kenny.ca",
         )
         email_metadata.write_to_gcs(
-            state_code=self.STATE_CODE_STR, batch_id=batch_id, gcs_fs=self.fs
+            state_code=self.STATE_CODE, batch_id=batch_id, gcs_fs=self.fs
         )
 
         # refreshing list batches in frontend for the second time
@@ -231,7 +232,7 @@ class TestEmailSentMetadata(TestCase):
         ]
         expected_result = {
             "batchId": "20210701202024",
-            "sendResults": json.dumps(expected_send_results),
+            "sendResults": expected_send_results,
         }
 
         self.assertEqual(expected_result, json_dict)
@@ -240,7 +241,7 @@ class TestEmailSentMetadata(TestCase):
         third_sent_date_time = datetime.datetime.now()
 
         email_metadata = EmailSentMetadata.build_from_gcs(
-            state_code=self.STATE_CODE_STR, batch_id=batch_id, gcs_fs=self.fs
+            state_code=self.STATE_CODE, batch_id=batch_id, gcs_fs=self.fs
         )
         email_metadata.add_new_email_send_result(
             sent_date=third_sent_date_time,
@@ -248,7 +249,7 @@ class TestEmailSentMetadata(TestCase):
             redirect_address=None,
         )
         email_metadata.write_to_gcs(
-            state_code=self.STATE_CODE_STR, batch_id=batch_id, gcs_fs=self.fs
+            state_code=self.STATE_CODE, batch_id=batch_id, gcs_fs=self.fs
         )
 
         # refreshing list batches in frontend
@@ -273,7 +274,7 @@ class TestEmailSentMetadata(TestCase):
         ]
         expected_result = {
             "batchId": "20210701202024",
-            "sendResults": json.dumps(expected_send_results),
+            "sendResults": expected_send_results,
         }
 
         self.assertEqual(expected_result, json_dict)

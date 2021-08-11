@@ -23,6 +23,7 @@ from unittest.mock import MagicMock, Mock, call, patch
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting import email_delivery
+from recidiviz.reporting.email_reporting_handler import EmailReportingHandler
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
@@ -45,7 +46,14 @@ class EmailDeliveryTest(TestCase):
         self.mock_sendgrid_client = self.sendgrid_client_patcher.start().return_value
 
         self.utils_patcher = patch("recidiviz.reporting.email_delivery.utils")
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.gcs_factory_patcher = patch(
+            "recidiviz.reporting.email_reporting_handler.GcsfsFactory.build"
+        )
         self.mock_utils = self.utils_patcher.start()
+        self.project_id_patcher.start().return_value = "recidiviz-test"
+        fake_gcs = FakeGCSFileSystem()
+        self.gcs_factory_patcher.start().return_value = fake_gcs
         self.mock_utils.get_email_content_bucket_name.return_value = self.bucket_name
         self.mock_utils.get_html_folder.return_value = "my-html-folder"
         self.mock_utils.get_attachments_folder.return_value = "my-attachments-folder"
@@ -55,10 +63,13 @@ class EmailDeliveryTest(TestCase):
             "FROM_EMAIL_NAME": "Recidiviz",
         }
         self.mock_utils.get_env_var.side_effect = self.mock_env_vars.get
+        self.email_handler = EmailReportingHandler()
 
     def tearDown(self) -> None:
         self.sendgrid_client_patcher.stop()
         self.utils_patcher.stop()
+        self.project_id_patcher.stop()
+        self.gcs_factory_patcher.stop()
 
     def test_email_from_file_name_html(self) -> None:
         file_name = f"{self.to_address}.html"

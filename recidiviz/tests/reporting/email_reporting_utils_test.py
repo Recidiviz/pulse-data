@@ -16,14 +16,16 @@
 # =============================================================================
 
 """Tests for email reporting utils."""
+import datetime
 from unittest import TestCase
 from unittest.mock import MagicMock, Mock, patch
 
 import recidiviz.reporting.email_reporting_utils as utils
-from recidiviz.admin_panel.admin_stores import AdminStores
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
+from recidiviz.reporting.email_reporting_handler import EmailReportingHandler
+from recidiviz.reporting.email_sent_metadata import EmailSentMetadata
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 _MOCK_PROJECT_ID = "RECIDIVIZ_TEST"
@@ -171,16 +173,16 @@ class TestGCSEmails(TestCase):
 
     def setUp(self) -> None:
         self.project_id_patcher = patch(
-            "recidiviz.admin_panel.admin_stores.metadata.project_id"
+            "recidiviz.reporting.email_reporting_handler.metadata.project_id"
         )
         self.project_id_patcher.start().return_value = "recidiviz-staging"
         self.gcs_factory_patcher = patch(
-            "recidiviz.admin_panel.admin_stores.GcsfsFactory.build"
+            "recidiviz.reporting.email_reporting_handler.GcsfsFactory.build"
         )
         fake_gcs = FakeGCSFileSystem()
         self.gcs_factory_patcher.start().return_value = fake_gcs
         self.fs = fake_gcs
-        self.admin_store = AdminStores()
+        self.email_handler = EmailReportingHandler()
 
     def tearDown(self) -> None:
         self.gcs_factory_patcher.stop()
@@ -232,27 +234,152 @@ class TestGCSEmails(TestCase):
         """Given all valid arguments, should have a list of batch ids, ordered in descending order,
         since we want the most recent batch to be at the top of the list"""
         self._upload_fake_email_buckets()
-        batch_info = self.admin_store.get_batch_ids(
-            state_code=StateCode(self.STATE_CODE_STR), override_fs=self.fs
+        batch_info = self.email_handler.get_batch_info(
+            state_code=StateCode(self.STATE_CODE_STR)
         )
-
+        batch_ids = [batch["batchId"] for batch in batch_info]
         self.assertEqual(
             ["20210701202022", "20210701202021", "20210701202020"],
-            batch_info,
+            batch_ids,
         )
 
     def test_get_batch_ids_invalid_state(self) -> None:
         """Given an invalid state code, should have an empty list"""
         self._upload_fake_email_buckets()
-        batch_info = self.admin_store.get_batch_ids(
-            state_code=StateCode.US_XX, override_fs=self.fs
-        )
+        batch_info = self.email_handler.get_batch_info(state_code=StateCode.US_XX)
         self.assertEqual(0, len(batch_info))
 
     def test_get_batch_ids_state_with_single(self) -> None:
         """Given valid arguments, should pick correct state and given a list of only one batch id"""
         self._upload_fake_email_buckets()
-        batch_info = self.admin_store.get_batch_ids(
-            state_code=StateCode.US_PA, override_fs=self.fs
+        batch_info = self.email_handler.get_batch_info(state_code=StateCode.US_PA)
+        batch_ids = [batch["batchId"] for batch in batch_info]
+        self.assertEqual(["20210701202027"], batch_ids)
+
+    def test_set_custom_email_metadata(self) -> None:
+        """Tests what the start/deliver functions will be calling to set the is_sent custom metadata
+        to False and then to True"""
+        # get batch ids to be able to add custom metadata
+        self._upload_fake_email_buckets()
+        batch_info = self.email_handler.get_batch_info(
+            state_code=StateCode(self.STATE_CODE_STR)
         )
-        self.assertEqual(["20210701202027"], batch_info)
+
+        first_sent_timestamp = datetime.datetime.now()
+        for metadata in batch_info:
+            batch_id = metadata["batchId"]
+            # initializing email_sent_metadata here since it is called like this when calling
+            # add_new_email_send_result()
+            email_sent_metadata = EmailSentMetadata.build_from_gcs(
+                StateCode(self.STATE_CODE_STR), batch_id, self.fs
+            )
+            email_sent_metadata.add_new_email_send_result(
+                total_delivered=4,
+                redirect_address="letter@kenny.ca",
+                sent_date=first_sent_timestamp,
+            )
+            email_sent_metadata.write_to_gcs(
+                StateCode(self.STATE_CODE_STR), batch_id, self.fs
+            )
+
+        # get batch_info again to test
+        batch_info = self.email_handler.get_batch_info(
+            state_code=StateCode(self.STATE_CODE_STR)
+        )
+        self.assertEqual(
+            [
+                {
+                    "batchId": "20210701202022",
+                    "sendResults": [
+                        {
+                            "sentDate": first_sent_timestamp.isoformat(),
+                            "totalDelivered": 4,
+                            "redirectAddress": "letter@kenny.ca",
+                        }
+                    ],
+                },
+                {
+                    "batchId": "20210701202021",
+                    "sendResults": [
+                        {
+                            "sentDate": first_sent_timestamp.isoformat(),
+                            "totalDelivered": 4,
+                            "redirectAddress": "letter@kenny.ca",
+                        }
+                    ],
+                },
+                {
+                    "batchId": "20210701202020",
+                    "sendResults": [
+                        {
+                            "sentDate": first_sent_timestamp.isoformat(),
+                            "totalDelivered": 4,
+                            "redirectAddress": "letter@kenny.ca",
+                        }
+                    ],
+                },
+            ],
+            batch_info,
+        )
+
+        # sending a batch for the second time
+        second_sent_timestamp = datetime.datetime.now()
+        email_sent_metadata = EmailSentMetadata.build_from_gcs(
+            state_code=StateCode(self.STATE_CODE_STR),
+            batch_id="20210701202022",
+            gcs_fs=self.fs,
+        )
+        email_sent_metadata.add_new_email_send_result(
+            total_delivered=1,
+            redirect_address="frida@kahlo.gov",
+            sent_date=second_sent_timestamp,
+        )
+        email_sent_metadata.write_to_gcs(
+            state_code=StateCode(self.STATE_CODE_STR),
+            batch_id="20210701202022",
+            gcs_fs=self.fs,
+        )
+        # get batch_info again to test
+        batch_info = self.email_handler.get_batch_info(
+            state_code=StateCode(self.STATE_CODE_STR)
+        )
+        self.assertEqual(
+            [
+                {
+                    "batchId": "20210701202022",
+                    "sendResults": [
+                        {
+                            "sentDate": first_sent_timestamp.isoformat(),
+                            "totalDelivered": 4,
+                            "redirectAddress": "letter@kenny.ca",
+                        },
+                        {
+                            "sentDate": second_sent_timestamp.isoformat(),
+                            "totalDelivered": 1,
+                            "redirectAddress": "frida@kahlo.gov",
+                        },
+                    ],
+                },
+                {
+                    "batchId": "20210701202021",
+                    "sendResults": [
+                        {
+                            "sentDate": first_sent_timestamp.isoformat(),
+                            "totalDelivered": 4,
+                            "redirectAddress": "letter@kenny.ca",
+                        }
+                    ],
+                },
+                {
+                    "batchId": "20210701202020",
+                    "sendResults": [
+                        {
+                            "sentDate": first_sent_timestamp.isoformat(),
+                            "totalDelivered": 4,
+                            "redirectAddress": "letter@kenny.ca",
+                        }
+                    ],
+                },
+            ],
+            batch_info,
+        )
