@@ -36,12 +36,6 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
         SELECT
             'US_MO' AS state_code,
             EMAIL AS restricted_user_email,
-            # TODO(#7413) Remove allowed_level_1_supervision_location_ids once FE is no longer using it
-            CASE
-                WHEN STRING_AGG(DISTINCT DISTRICT, ',') IS NOT NULL
-                THEN STRING_AGG(DISTINCT DISTRICT, ',')
-                ELSE ''
-            END AS allowed_level_1_supervision_location_ids,
             CASE
                 WHEN STRING_AGG(DISTINCT DISTRICT, ',') IS NOT NULL
                 THEN STRING_AGG(DISTINCT DISTRICT, ',')
@@ -52,7 +46,9 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
             -- All users can access leadership dashboard
             TRUE AS can_access_leadership_dashboard,
             -- US_MO is not currently using Case Triage
-            FALSE AS can_access_case_triage
+            FALSE AS can_access_case_triage,
+            -- US_MO has not yet launched any user restricted pages
+            TO_JSON_STRING(NULL) as routes
         FROM `{project_id}.us_mo_raw_data_up_to_date_views.LANTERN_DA_RA_LIST_latest`
         WHERE EMAIL IS NOT NULL
         GROUP BY EMAIL
@@ -63,7 +59,6 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
             LOWER(IF(leadership.email_address IS NULL,
                     case_triage.email_address,
                     leadership.email_address)) AS restricted_user_email,
-            '' AS allowed_level_1_supervision_location_ids,
             '' AS allowed_supervision_location_ids,
             CAST(NULL AS STRING) as allowed_supervision_location_level,
             IF(internal_role IS NULL,
@@ -75,29 +70,57 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
             END AS can_access_leadership_dashboard,
             IF(received_access IS NULL,
                 FALSE,
-                received_access <= CURRENT_DATE) AS can_access_case_triage
+                received_access <= CURRENT_DATE) AS can_access_case_triage,
+            CASE
+                WHEN internal_role LIKE '%leadership_role%'
+                    THEN TO_JSON_STRING(STRUCT(
+                        community_projections,
+                        facilities_projections,
+                        community_practices
+                    ))
+                ELSE TO_JSON_STRING(NULL)
+            END AS routes,
         FROM
             `{project_id}.{static_reference_dataset_id}.us_id_leadership_users` leadership
         FULL OUTER JOIN
             `{project_id}.{static_reference_dataset_id}.case_triage_users` case_triage
         USING (state_code, email_address)
     ),
+    nd_restricted_access AS (
+        SELECT
+            'US_ND' AS state_code,
+            LOWER(leadership.email_address) AS restricted_user_email,
+            '' AS allowed_supervision_location_ids,
+            CAST(NULL AS STRING) as allowed_supervision_location_level,
+            internal_role,
+            TRUE AS can_access_leadership_dashboard,
+            FALSE AS can_access_case_triage,
+            TO_JSON_STRING(STRUCT(
+                community_projections,
+                facilities_projections,
+                community_practices
+            )) AS routes
+        FROM
+            `{project_id}.{static_reference_dataset_id}.us_nd_leadership_users` leadership
+    ),
     recidiviz_test_users AS (
         SELECT
             state_code,
             email_address AS restricted_user_email,
             allowed_supervision_location_ids,
-            allowed_level_1_supervision_location_ids,
             allowed_supervision_location_level,
             internal_role,
             can_access_leadership_dashboard,
-            can_access_case_triage
+            can_access_case_triage,
+            TO_JSON_STRING(NULL) as routes
         FROM `{project_id}.{static_reference_dataset_id}.recidiviz_unified_product_test_users`
     )
 
     SELECT {columns} FROM mo_restricted_access
     UNION ALL
     SELECT {columns} FROM id_restricted_access
+    UNION ALL
+    SELECT {columns} FROM nd_restricted_access
     UNION ALL
     SELECT {columns} FROM recidiviz_test_users;
     """
@@ -111,13 +134,12 @@ DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     columns=[
         "state_code",
         "restricted_user_email",
-        # TODO(#7413) Remove allowed_level_1_supervision_location_ids once FE is no longer using it
-        "allowed_level_1_supervision_location_ids",
         "allowed_supervision_location_ids",
         "allowed_supervision_location_level",
         "internal_role",
         "can_access_leadership_dashboard",
         "can_access_case_triage",
+        "routes",
     ],
 )
 
