@@ -17,7 +17,6 @@
 """Tests for the DirectIngestInstance."""
 import unittest
 
-from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
@@ -41,9 +40,7 @@ class TestDirectIngestInstance(unittest.TestCase):
         }
 
         versions = {
-            instance: instance.database_version(
-                system_level=SystemLevel.STATE, state_code=StateCode.US_XX
-            )
+            instance: instance.database_version(system_level=SystemLevel.STATE)
             for instance in DirectIngestInstance
         }
 
@@ -53,13 +50,13 @@ class TestDirectIngestInstance(unittest.TestCase):
         self.assertEqual(
             SQLAlchemyStateDatabaseVersion.LEGACY,
             DirectIngestInstance.PRIMARY.database_version(
-                system_level=SystemLevel.COUNTY, state_code=None
+                system_level=SystemLevel.COUNTY
             ),
         )
 
         with self.assertRaises(DirectIngestInstanceError) as e:
             _ = DirectIngestInstance.SECONDARY.database_version(
-                system_level=SystemLevel.COUNTY, state_code=None
+                system_level=SystemLevel.COUNTY
             )
         self.assertEqual(
             str(e.exception),

@@ -285,7 +285,7 @@ class IngestOperationsStore:
         """Returns the database name for the given state and instance"""
         return SQLAlchemyDatabaseKey.for_state_code(
             state_code,
-            instance.database_version(SystemLevel.STATE, state_code=state_code),
+            instance.database_version(SystemLevel.STATE),
         ).db_name
 
     @staticmethod
