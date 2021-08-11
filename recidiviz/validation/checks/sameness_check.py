@@ -17,8 +17,9 @@
 
 """Models a sameness check, which identifies a validation issue by observing that values in a configured set of
 columns are not the same."""
+import datetime
 from enum import Enum
-from typing import Dict, Generic, List, Optional, Set, Tuple, TypeVar
+from typing import Dict, Generic, List, Optional, Set, Tuple, Type, TypeVar
 
 import attr
 from google.cloud.bigquery import QueryJob
@@ -26,16 +27,19 @@ from google.cloud.bigquery.table import Row
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.validation.checks.validation_checker import ValidationChecker
+from recidiviz.validation.validation_config import ValidationRegionConfig
 from recidiviz.validation.validation_models import (
-    DataValidationJobResultDetails,
-    ValidationCheckType,
     DataValidationCheck,
     DataValidationJob,
     DataValidationJobResult,
+    DataValidationJobResultDetails,
+    ValidationCheckType,
 )
-from recidiviz.validation.validation_config import ValidationRegionConfig
 
 EMPTY_STRING_VALUE = "EMPTY_STRING_VALUE"
+EMPTY_DATE_VALUE = datetime.date.min
+
+PerViewRowType = TypeVar("PerViewRowType")
 
 
 class SamenessDataValidationCheckType(Enum):
@@ -46,6 +50,11 @@ class SamenessDataValidationCheckType(Enum):
     # Used for comparing string columns. The validation fails if the percentage of rows
     # for which the string columns are not equal is more than the threshold.
     STRINGS = "STRINGS"
+
+    # Used for comparing date columns. The validation fails if the percentage of rows
+    # for which the date columns are not equal to the YYYY-MM-DD granularity is more than
+    # the threshold
+    DATES = "DATES"
 
 
 @attr.s(frozen=True)
@@ -126,8 +135,9 @@ class ResultRow(Generic[RowValueType]):
 
 
 @attr.s(frozen=True, kw_only=True)
-class SamenessStringsValidationResultDetails(DataValidationJobResultDetails):
-    """Stores result details for a sameness strings validation check."""
+class SamenessPerViewValidationResultDetails(DataValidationJobResultDetails):
+    """Stores result details for a sameness validation check in which the margin
+    of error is calculated at the view level (encompassing all rows)."""
 
     num_error_rows: int = attr.ib()
     total_num_rows: int = attr.ib()
@@ -169,7 +179,10 @@ class SamenessStringsValidationResultDetails(DataValidationJobResultDetails):
 
 
 @attr.s(frozen=True, kw_only=True)
-class SamenessNumbersValidationResultDetails(DataValidationJobResultDetails):
+class SamenessPerRowValidationResultDetails(DataValidationJobResultDetails):
+    """Stores result details for a sameness validation check in which the margin of error
+    is calculated at the row level."""
+
     # List of failed rows, where each entry is a tuple containing the row and the amount
     # of error for that row.
     failed_rows: List[Tuple[ResultRow[float], float]] = attr.ib()
@@ -212,15 +225,32 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
             validation_job.validation.sameness_check_type
             == SamenessDataValidationCheckType.NUMBERS
         ):
-            return SamenessValidationChecker.run_check_for_numbers(
+            return SamenessValidationChecker.run_check_per_row(
                 validation_job, comparison_columns, max_allowed_error, query_job
             )
         if (
             validation_job.validation.sameness_check_type
             == SamenessDataValidationCheckType.STRINGS
         ):
-            return SamenessValidationChecker.run_check_for_strings(
-                validation_job, comparison_columns, max_allowed_error, query_job
+            return SamenessValidationChecker.run_check_per_view(
+                validation_job,
+                comparison_columns,
+                max_allowed_error,
+                query_job,
+                str,
+                EMPTY_STRING_VALUE,
+            )
+        if (
+            validation_job.validation.sameness_check_type
+            == SamenessDataValidationCheckType.DATES
+        ):
+            return SamenessValidationChecker.run_check_per_view(
+                validation_job,
+                comparison_columns,
+                max_allowed_error,
+                query_job,
+                datetime.date,
+                EMPTY_DATE_VALUE,
             )
 
         raise ValueError(
@@ -228,7 +258,7 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
         )
 
     @staticmethod
-    def run_check_for_numbers(
+    def run_check_per_row(
         validation_job: DataValidationJob[SamenessDataValidationCheck],
         comparison_columns: List[str],
         max_allowed_error: float,
@@ -285,17 +315,19 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
 
         return DataValidationJobResult(
             validation_job=validation_job,
-            result_details=SamenessNumbersValidationResultDetails(
+            result_details=SamenessPerRowValidationResultDetails(
                 failed_rows=failed_rows, max_allowed_error=max_allowed_error
             ),
         )
 
     @staticmethod
-    def run_check_for_strings(
+    def run_check_per_view(
         validation_job: DataValidationJob[SamenessDataValidationCheck],
         comparison_columns: List[str],
         max_allowed_error: float,
         query_job: QueryJob,
+        type_to_check: Type[PerViewRowType],
+        empty_value: PerViewRowType,
     ) -> DataValidationJobResult:
         """Performs the validation check for sameness check types, where the values being compared are strings."""
         num_errors = 0
@@ -307,7 +339,7 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
         row: Row
         for row in query_job:
             num_rows += 1
-            unique_string_values: Set[str] = set()
+            unique_values: Set[PerViewRowType] = set()
 
             partition_key = tuple(
                 str(row.get(column))
@@ -324,24 +356,24 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
             for column in comparison_columns:
                 value = row[column]
                 if value is None:
-                    unique_string_values.add(EMPTY_STRING_VALUE)
-                elif isinstance(value, str):
+                    unique_values.add(empty_value)
+                elif isinstance(value, type_to_check):
                     non_null_counts_per_column[column] += 1
-                    unique_string_values.add(value)
+                    unique_values.add(value)
                 else:
                     raise ValueError(
-                        f"Unexpected type [{type(value)}] for value [{value}] in STRING validation "
+                        f"Unexpected type [{type(value)}] for value [{value}] in {validation_job.validation.sameness_check_type.value} validation "
                         f"[{validation_job.validation.validation_name}]."
                     )
 
-            # If there is more than one unique string value in the row, then there's an issue
-            if len(unique_string_values) > 1:
+            # If there is more than one unique value in the row, then there's an issue
+            if len(unique_values) > 1:
                 # Increment the number of errors
                 num_errors += 1
 
         return DataValidationJobResult(
             validation_job=validation_job,
-            result_details=SamenessStringsValidationResultDetails(
+            result_details=SamenessPerViewValidationResultDetails(
                 num_error_rows=num_errors,
                 total_num_rows=num_rows,
                 max_allowed_error=max_allowed_error,
