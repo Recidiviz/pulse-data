@@ -18,19 +18,17 @@
 import unittest
 from datetime import date
 
-import pytest
-
 from recidiviz.calculator.pipeline.utils.person_utils import (
+    PersonMetadata,
+    StateRaceEthnicityPopulationCounts,
     build_person_metadata,
     determine_prioritized_race_or_ethnicity,
-    StateRaceEthnicityPopulationCounts,
-    PersonMetadata,
 )
-from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
+from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
-    StatePersonRace,
     StatePersonEthnicity,
+    StatePersonRace,
 )
 
 
@@ -209,7 +207,7 @@ class TestDeterminePrioritizedRaceOrEthnicity(unittest.TestCase):
 
         person.races = [race_white, race_black]
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             _ = determine_prioritized_race_or_ethnicity(
                 person, self.state_race_ethnicity_population_counts
             )
@@ -229,7 +227,7 @@ class TestDeterminePrioritizedRaceOrEthnicity(unittest.TestCase):
 
         person.races = [race_unsupported]
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             _ = determine_prioritized_race_or_ethnicity(
                 person, self.state_race_ethnicity_population_counts
             )

@@ -18,7 +18,6 @@
 import datetime
 
 import attr
-import pytest
 
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -26,11 +25,11 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state.entities import (
-    StateSupervisionViolation,
+    StatePerson,
+    StateSentenceGroup,
     StateSupervisionPeriod,
     StateSupervisionSentence,
-    StateSentenceGroup,
-    StatePerson,
+    StateSupervisionViolation,
     StateSupervisionViolationResponse,
 )
 from recidiviz.persistence.entity_matching.state.us_mo.us_mo_matching_utils import (
@@ -38,10 +37,10 @@ from recidiviz.persistence.entity_matching.state.us_mo.us_mo_matching_utils impo
     set_current_supervising_officer_from_supervision_periods,
 )
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
-    generate_sentence_group,
     generate_agent,
-    generate_person,
     generate_external_id,
+    generate_person,
+    generate_sentence_group,
     generate_supervision_period,
     generate_supervision_sentence,
 )
@@ -140,7 +139,10 @@ class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
         self.assertEqual(expected_p, self.to_entity(p))
 
     def test_removeSeosFromViolationIds_unexpectedFormat(self) -> None:
-        with pytest.raises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Unexpected id format \[bad_id\] for \[StateSupervisionViolation\(external_id=bad_id\)\]$",
+        ):
             sv = schema.StateSupervisionViolation(external_id="bad_id")
             sp = schema.StateSupervisionPeriod(
                 supervision_violation_entries=[sv],
@@ -150,10 +152,6 @@ class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
             sg = schema.StateSentenceGroup(supervision_sentences=[ss])
             p = schema.StatePerson(sentence_groups=[sg])
             remove_suffix_from_violation_ids([p])
-        self.assertEqual(
-            str(e.value),
-            "Unexpected id format [bad_id] for [StateSupervisionViolation(external_id=bad_id)]",
-        )
 
     def test_setCurrentSupervisingOfficerFromSupervision_periods(self) -> None:
         # Arrange

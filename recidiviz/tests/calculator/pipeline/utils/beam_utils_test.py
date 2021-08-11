@@ -19,7 +19,6 @@
 import unittest
 
 import apache_beam as beam
-import pytest
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import assert_that, equal_to
 
@@ -160,7 +159,7 @@ class TestBeamUtils(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             _ = (
                 test_pipeline
                 | beam.Create(test_input)

@@ -20,7 +20,6 @@ import unittest
 from datetime import date, timedelta
 from typing import Dict, List, Optional
 
-import pytest
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
@@ -481,7 +480,7 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
         )
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             _ = _get_incarceration_period_index([incarceration_period])
 
     def test_multiple_periods(self):
@@ -1609,5 +1608,5 @@ class TestPrecedingIncarcerationPeriod(unittest.TestCase):
         ]
         index = _get_incarceration_period_index(incarceration_periods)
 
-        with pytest.raises(KeyError):
+        with self.assertRaises(KeyError):
             index.preceding_incarceration_period_in_index(incarceration_period_3)

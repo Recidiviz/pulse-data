@@ -19,8 +19,6 @@ import unittest
 from datetime import date
 from typing import Optional
 
-import pytest
-
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
     PreProcessedIncarcerationPeriodIndex,
 )
@@ -149,7 +147,7 @@ class TestUsNdPostIncarcerationSupervisionTypeIdentification(unittest.TestCase):
             release_reason_raw_text="NOT A VALID RAW TEXT VALUE",
         )
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             _ = us_nd_get_post_incarceration_supervision_type(incarceration_period)
 
 

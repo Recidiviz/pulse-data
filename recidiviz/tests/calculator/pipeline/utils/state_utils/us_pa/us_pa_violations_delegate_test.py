@@ -19,8 +19,6 @@ import unittest
 from datetime import date
 from typing import List
 
-import pytest
-
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violations_delegate import (
     _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES,
     _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP,
@@ -215,7 +213,7 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         )
 
         # Act
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             _ = self.delegate.get_violation_type_subtype_strings_for_violation(
                 violation
             )
@@ -238,7 +236,7 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
         )
 
         # Act
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             _ = self.delegate.get_violation_type_subtype_strings_for_violation(
                 violation
             )
@@ -401,7 +399,7 @@ class TestUsPaViolationUtilsSubtypeFunctions(unittest.TestCase):
 
     def test_us_pa_violation_type_from_subtype_unsupported_escape(self) -> None:
         violation_subtype = "ESCAPED"
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             # We don't expect to see ESCAPED violations in US_PA and need to be notified if these appear
             _ = violation_type_from_subtype(self.delegate, violation_subtype)
 

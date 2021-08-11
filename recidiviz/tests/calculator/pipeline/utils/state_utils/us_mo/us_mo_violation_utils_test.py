@@ -17,8 +17,6 @@
 """Tests the us_mo_violation_utils.py file."""
 import unittest
 
-import pytest
-
 # TODO(#8106): Delete these imports before closing this task
 # pylint: disable=protected-access
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils import (
@@ -174,6 +172,6 @@ class TestNormalizeViolationsOnResponsesUsMo(unittest.TestCase):
         )
 
         # Act and Assert
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             # This function should only be called for responses from US_MO
             _ = _normalize_violations_on_responses(supervision_violation_response)

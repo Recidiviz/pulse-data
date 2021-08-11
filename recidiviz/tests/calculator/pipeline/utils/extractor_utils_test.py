@@ -14,22 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-# pylint: disable=wrong-import-order
-# pylint: disable=protected-access
-
-
 """Tests for utils/extractor_utils.py."""
+# pylint: disable=protected-access
+import unittest
+from datetime import date
 from typing import Type
 
-import unittest
-
 import apache_beam as beam
-from apache_beam.testing.util import assert_that, equal_to
 from apache_beam.testing.test_pipeline import TestPipeline
-
-from datetime import date
-import pytest
+from apache_beam.testing.util import assert_that, equal_to
 from mock import patch
 
 from recidiviz.calculator.pipeline.utils import extractor_utils
@@ -40,27 +33,27 @@ from recidiviz.common.constants.state.state_assessment import (
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.entity import entity_utils
-from recidiviz.persistence.entity.state.entities import (
-    Gender,
-    Race,
-    ResidencyStatus,
-    Ethnicity,
-)
-from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_converter import (
     StateSchemaToEntityConverter,
 )
-from recidiviz.tests.calculator.pipeline.fake_bigquery import (
-    FakeReadFromBigQueryFactory,
-    FakeReadFromBigQuery,
+from recidiviz.persistence.entity import entity_utils
+from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.entities import (
+    Ethnicity,
+    Gender,
+    Race,
+    ResidencyStatus,
 )
-from recidiviz.tests.persistence.database import database_test_utils
 from recidiviz.tests.calculator.calculator_test_utils import (
     normalized_database_base_dict,
     normalized_database_base_dict_list,
     remove_relationship_properties,
 )
+from recidiviz.tests.calculator.pipeline.fake_bigquery import (
+    FakeReadFromBigQuery,
+    FakeReadFromBigQueryFactory,
+)
+from recidiviz.tests.persistence.database import database_test_utils
 
 
 class TestBuildRootEntity(unittest.TestCase):
@@ -370,9 +363,9 @@ class TestBuildRootEntity(unittest.TestCase):
     def testBuildRootEntity_NoDataSource(self):
         """Tests the BuildRootEntity PTransform when there is no valid data
         source."""
-
-        with pytest.raises(ValueError) as e:
-
+        with self.assertRaisesRegex(
+            ValueError, "No valid data source passed to the pipeline"
+        ):
             test_pipeline = TestPipeline()
 
             _ = test_pipeline | extractor_utils.BuildRootEntity(
@@ -384,8 +377,6 @@ class TestBuildRootEntity(unittest.TestCase):
             )
 
             test_pipeline.run()
-
-        self.assertRegex(str(e.value), "No valid data source passed to the pipeline")
 
     def testBuildRootEntity_EmptyEntityClass(self):
         """Tests the BuildRootEntity PTransform when the |root_entity_class|
@@ -403,7 +394,9 @@ class TestBuildRootEntity(unittest.TestCase):
 
         data_dict = {supervision_violation.__tablename__: supervision_violation_data}
 
-        with pytest.raises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError, "^BuildRootEntity: Expecting root_entity_class to be not None.$"
+        ):
             dataset = "recidiviz-123.state"
 
             with patch(
@@ -424,10 +417,6 @@ class TestBuildRootEntity(unittest.TestCase):
 
                 test_pipeline.run()
 
-        self.assertEqual(
-            str(e.value), "BuildRootEntity: Expecting root_entity_class to be not None."
-        )
-
     def testBuildRootEntity_InvalidUnifyingIdField(self):
         """Tests the BuildRootEntity PTransform when the |unifying_id_field|
         is not a valid field on the root_schema_class."""
@@ -444,7 +433,10 @@ class TestBuildRootEntity(unittest.TestCase):
 
         data_dict = {supervision_violation.__tablename__: supervision_violation_data}
 
-        with pytest.raises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Root entity class \[StateSupervisionViolation\] does not have unifying id field \[XX\]$",
+        ):
             dataset = "recidiviz-123.state"
 
             with patch(
@@ -465,11 +457,6 @@ class TestBuildRootEntity(unittest.TestCase):
 
                 test_pipeline.run()
 
-        self.assertEqual(
-            str(e.value),
-            "Root entity class [StateSupervisionViolation] does not have unifying id field [XX]",
-        )
-
     def testBuildRootEntity_EmptyUnifyingIdField(self):
         """Tests the BuildRootEntity PTransform when the |unifying_id_field|
         is None."""
@@ -487,7 +474,9 @@ class TestBuildRootEntity(unittest.TestCase):
         data_dict = {supervision_violation.__tablename__: supervision_violation_data}
 
         dataset = "recidiviz-123.state"
-        with pytest.raises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError, "No valid unifying_id_field passed to the pipeline."
+        ):
             with patch(
                 "recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery",
                 self.fake_bq_source_factory.create_fake_bq_source_constructor(
@@ -505,8 +494,6 @@ class TestBuildRootEntity(unittest.TestCase):
                 )
 
                 test_pipeline.run()
-
-        assert "No valid unifying_id_field passed to the pipeline." in str(e.value)
 
     def testBuildRootEntity_HydratedRelationships_InvalidUnifyingIdField(self):
         """Tests the BuildRootEntity PTransform when the the |unifying_id_field|

@@ -372,14 +372,11 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             "US_YY": "NAMESPACE"
         }
 
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError, r"^No export configs matching export name: \[JOBZZZ\]$"
+        ):
             view_export_manager.export_view_data_to_cloud_storage(
                 export_job_name="JOBZZZ", override_view_exporter=mock_view_exporter
-            )
-            self.assertEqual(
-                str(e.exception),
-                "Export filter did not match any export configs:",
-                " JOBZZZ",
             )
 
     @mock.patch("recidiviz.big_query.view_update_manager.rematerialize_views")

@@ -18,16 +18,14 @@
 
 import unittest
 
-import pytest
-
 from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.entity.county.entities import Person, Booking, Hold, Charge
-from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
+from recidiviz.persistence.entity.county.entities import Booking, Charge, Hold, Person
+from recidiviz.persistence.entity.state import entities
 
 _STATE_CODE = "US_ND"
 
@@ -126,10 +124,10 @@ class TestCoreEntity(unittest.TestCase):
         self.assertEqual("us_nc", entity.get_field("state_code"))
         self.assertEqual("us_nc", db_entity.get_field("state_code"))
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             entity.get_field("country_code")
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             db_entity.get_field("country_code")
 
     def test_getFieldAsList(self) -> None:
@@ -207,10 +205,10 @@ class TestCoreEntity(unittest.TestCase):
         self.assertEqual("us_nc", entity.state_code)
         self.assertEqual("us_nc", db_entity.state_code)
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             entity.set_field("country_code", "us")
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             db_entity.set_field("country_code", "us")
 
     def test_setFieldFromList(self) -> None:
@@ -258,10 +256,10 @@ class TestCoreEntity(unittest.TestCase):
         )
         db_entity = converter.convert_entity_to_schema_object(entity)
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             entity.set_field_from_list("state_code", ["us_nc", "us_sc"])
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             db_entity.set_field_from_list("state_code", ["us_nc", "us_sc"])
 
     def test_hasDefaultStatus(self) -> None:

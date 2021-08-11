@@ -17,8 +17,6 @@
 """Tests for converting state aliases."""
 import unittest
 
-import pytest
-
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
@@ -81,8 +79,7 @@ class StateAliasConverterTest(unittest.TestCase):
 
         self.assertEqual(result, expected_result)
 
-    @staticmethod
-    def testParseStateAliasTooManyNames():
+    def testParseStateAliasTooManyNames(self):
         # Arrange
         ingest_alias = ingest_info_pb2.StateAlias(
             state_alias_id="ALIAS_ID",
@@ -95,5 +92,5 @@ class StateAliasConverterTest(unittest.TestCase):
         )
 
         # Act
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             state_alias.convert(ingest_alias, _EMPTY_METADATA)

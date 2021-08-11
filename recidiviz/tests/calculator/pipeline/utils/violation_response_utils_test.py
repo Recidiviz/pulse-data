@@ -19,8 +19,6 @@ import datetime
 import unittest
 from typing import List
 
-import pytest
-
 from recidiviz.calculator.pipeline.utils import violation_response_utils
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     identify_most_severe_response_decision,
@@ -88,7 +86,7 @@ class TestResponsesOnMostRecentResponseDate(unittest.TestCase):
         ]
 
         # No responses without dates should be sent to this function
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             _ = self._test_responses_on_most_recent_response_date(response_dates)
 
     def test_responses_on_most_recent_response_date_multiple_on_most_recent(self):

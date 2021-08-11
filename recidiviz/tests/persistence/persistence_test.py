@@ -245,7 +245,7 @@ class TestPersistence(TestCase):
         mock_commit.side_effect = [error] * 6 + [mock.DEFAULT]
 
         # Act / Assert
-        with pytest.raises(sqlalchemy.exc.DatabaseError):
+        with self.assertRaises(sqlalchemy.exc.DatabaseError):
             persistence.write(ingest_info, DEFAULT_METADATA)
 
         # Assert
@@ -268,7 +268,7 @@ class TestPersistence(TestCase):
         mock_commit.side_effect = [error, mock.DEFAULT]
 
         # Act / Assert
-        with pytest.raises(sqlalchemy.exc.DatabaseError):
+        with self.assertRaises(sqlalchemy.exc.DatabaseError):
             persistence.write(ingest_info, DEFAULT_METADATA)
 
         # Assert
