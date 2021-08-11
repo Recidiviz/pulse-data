@@ -81,14 +81,13 @@ class EmailGenerationTests(TestCase):
         self.email_generation_patcher = patch(
             "recidiviz.reporting.email_generation.generate"
         )
-        self.gcs_file_system_patcher = patch(
-            "recidiviz.cloud_storage.gcsfs_factory.GcsfsFactory.build"
+        self.gcs_factory_patcher = patch(
+            "recidiviz.reporting.email_reporting_handler.GcsfsFactory.build"
         )
         self.project_id_patcher.start().return_value = "recidiviz-test"
         self.mock_email_generation = self.email_generation_patcher.start()
-        self.gcs_file_system = FakeGCSFileSystem()
-        self.mock_gcs_file_system = self.gcs_file_system_patcher.start()
-        self.mock_gcs_file_system.return_value = self.gcs_file_system
+        self.fake_gcs = FakeGCSFileSystem()
+        self.gcs_factory_patcher.start().return_value = self.fake_gcs
 
         self.get_secret_patcher = patch("recidiviz.utils.secrets.get_secret")
         self.get_secret_patcher.start()
@@ -166,7 +165,7 @@ class EmailGenerationTests(TestCase):
         ]
 
     def _write_test_data(self, test_data: str) -> None:
-        self.gcs_file_system.upload_from_string(
+        self.fake_gcs.upload_from_string(
             GcsfsFilePath.from_absolute_path(
                 "gs://recidiviz-test-report-data/po_monthly_report/US_ID/po_monthly_report_data.json"
             ),
@@ -177,7 +176,7 @@ class EmailGenerationTests(TestCase):
     def tearDown(self) -> None:
         self.email_generation_patcher.stop()
         self.project_id_patcher.stop()
-        self.gcs_file_system_patcher.stop()
+        self.gcs_factory_patcher.stop()
         self.get_secret_patcher.stop()
         self.top_opps_email_recipient_patcher.stop()
 
@@ -247,7 +246,7 @@ class EmailGenerationTests(TestCase):
         self.assertEqual(len(result.successes), 1)
 
         # Test that metadata file is created correctly
-        metadata_file = self.gcs_file_system.download_as_string(
+        metadata_file = self.fake_gcs.download_as_string(
             GcsfsFilePath.from_absolute_path(
                 "gs://recidiviz-test-report-html/US_ID/fake-batch-id/metadata.json"
             )
@@ -269,7 +268,7 @@ class EmailGenerationTests(TestCase):
             region_code="US_ID_D3",
         )
 
-        metadata_file = self.gcs_file_system.download_as_string(
+        metadata_file = self.fake_gcs.download_as_string(
             GcsfsFilePath.from_absolute_path(
                 "gs://recidiviz-test-report-html/US_ID/fake-batch-id-2/metadata.json"
             )
@@ -303,7 +302,7 @@ class EmailGenerationTests(TestCase):
 
         # An archive of report JSON is stored
         self.assertEqual(
-            self.gcs_file_system.download_as_string(
+            self.fake_gcs.download_as_string(
                 GcsfsFilePath.from_absolute_path(
                     f"gs://recidiviz-test-report-data-archive/{self.state_code.value}/123.json"
                 )

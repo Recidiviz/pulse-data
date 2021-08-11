@@ -17,9 +17,9 @@
 
 import { SyncOutlined } from "@ant-design/icons";
 import { Button, Card, Space, Spin, Table } from "antd";
-import moment from "moment";
 import * as React from "react";
-import { getBatchIds } from "../../AdminPanelAPI/LineStaffTools";
+import moment from "moment";
+import { getListBatchInfo } from "../../AdminPanelAPI/LineStaffTools";
 import { StateCodeInfo } from "../IngestOperationsView/constants";
 
 interface ListBatchesProps {
@@ -40,7 +40,7 @@ const ListBatches: React.FC<ListBatchesProps> = ({ stateInfo }) => {
 
   const generateBatches = React.useCallback(() => {
     const getBatches = async () => {
-      const r = await getBatchIds(stateInfo.code);
+      const r = await getListBatchInfo(stateInfo.code);
       const json = await r.json();
       formatTableData(json.batchIds);
       setShowSpinner(false);

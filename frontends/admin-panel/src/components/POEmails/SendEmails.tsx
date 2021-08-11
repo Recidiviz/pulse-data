@@ -18,7 +18,7 @@ import { Button, Card, Form, Input, message, Select, Spin } from "antd";
 import * as React from "react";
 import {
   fetchEmailStateCodes,
-  getBatchIds,
+  getListBatchInfo,
   sendEmails,
 } from "../../AdminPanelAPI/LineStaffTools";
 import useFetchedData from "../../hooks";
@@ -86,7 +86,7 @@ const SendEmails = (): JSX.Element => {
 
   const getBatches = async (sCode: string) => {
     setBatchIdList(undefined);
-    const r = await getBatchIds(sCode);
+    const r = await getListBatchInfo(sCode);
     const json = await r.json();
     setBatchIdList(json.batchIds);
   };

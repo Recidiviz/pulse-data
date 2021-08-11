@@ -23,7 +23,7 @@ from typing import Optional, Tuple
 
 from flask import Blueprint, jsonify, request
 
-from recidiviz.admin_panel.admin_stores import AdminStores, fetch_state_codes
+from recidiviz.admin_panel.admin_stores import fetch_state_codes
 from recidiviz.admin_panel.case_triage_helpers import (
     columns_for_case_triage_view,
     get_importable_csvs,
@@ -49,12 +49,13 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.reporting import data_retrieval, email_delivery
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
-from recidiviz.reporting.email_reporting_utils import (
+from recidiviz.reporting.email_reporting_handler import (
     EmailMetadataReportDateError,
+    EmailReportingHandler,
     InvalidReportTypeError,
+)
+from recidiviz.reporting.email_reporting_utils import (
     generate_batch_id,
-    generate_report_date,
-    get_report_type,
     validate_email_address,
 )
 from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
@@ -66,9 +67,9 @@ from recidiviz.utils.metadata import local_project_id_override
 EMAIL_STATE_CODES = [StateCode.US_ID, StateCode.US_PA]
 
 
-def add_line_staff_tools_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
+def add_line_staff_tools_routes(bp: Blueprint) -> None:
     """Adds the relevant Case Triage API routes to an input Blueprint."""
-
+    email_handler = EmailReportingHandler()
     # Fetch ETL View Ids for GCS -> Cloud SQL Import
     @bp.route("/api/line_staff_tools/fetch_etl_view_ids", methods=["POST"])
     @requires_gae_auth
@@ -333,7 +334,7 @@ def add_line_staff_tools_routes(bp: Blueprint, admin_stores: AdminStores) -> Non
 
         # TODO(#7790): Support more email types.
         try:
-            report_type = get_report_type(batch_id, state_code)
+            report_type = email_handler.get_report_type(batch_id, state_code)
             if report_type != ReportType.POMonthlyReport:
                 raise InvalidReportTypeError(
                     f"Invalid report type: Sending emails with {report_type} is not implemented yet."
@@ -343,7 +344,7 @@ def add_line_staff_tools_routes(bp: Blueprint, admin_stores: AdminStores) -> Non
             return str(error), HTTPStatus.NOT_IMPLEMENTED
 
         try:
-            report_date = generate_report_date(batch_id, state_code)
+            report_date = email_handler.generate_report_date(batch_id, state_code)
         except EmailMetadataReportDateError as error:
             logging.error(error)
             return str(error), HTTPStatus.BAD_REQUEST
@@ -384,9 +385,9 @@ def add_line_staff_tools_routes(bp: Blueprint, admin_stores: AdminStores) -> Non
             )
         return (f"{success_text}"), HTTPStatus.OK
 
-    @bp.route("/api/line_staff_tools/batch_ids", methods=["POST"])
+    @bp.route("/api/line_staff_tools/list_batch_info", methods=["POST"])
     @requires_gae_auth
-    def _batch_ids() -> Tuple[str, HTTPStatus]:
+    def _list_batch_info() -> Tuple[str, HTTPStatus]:
         try:
             data = request.json
             state_code = StateCode(data.get("stateCode"))
@@ -396,7 +397,9 @@ def add_line_staff_tools_routes(bp: Blueprint, admin_stores: AdminStores) -> Non
         except ValueError as error:
             logging.error(error)
             return str(error), HTTPStatus.BAD_REQUEST
+        batch_info = email_handler.get_batch_info(state_code)
 
-        gcsfs_batch_ids = admin_stores.get_batch_ids(state_code)
-
-        return (jsonify({"batchIds": gcsfs_batch_ids}), HTTPStatus.OK)
+        return (
+            jsonify({"batchInfo": batch_info}),
+            HTTPStatus.OK,
+        )
