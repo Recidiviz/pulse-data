@@ -1,9 +1,9 @@
 # pylint: skip-file
 """update_dashboard_user_restrictions_table
 
-Revision ID: 88d67a8400f6
-Revises: 9462a38c6110
-Create Date: 2021-08-10 13:11:58.578678
+Revision ID: d0f89f3939c9
+Revises: 9ec4c6ed9019
+Create Date: 2021-08-11 18:43:38.961069
 
 """
 import sqlalchemy as sa
@@ -11,8 +11,8 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "88d67a8400f6"
-down_revision = "9462a38c6110"
+revision = "d0f89f3939c9"
+down_revision = "9ec4c6ed9019"
 branch_labels = None
 depends_on = None
 
