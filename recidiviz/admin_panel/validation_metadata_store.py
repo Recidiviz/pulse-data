@@ -34,6 +34,7 @@ from recidiviz.validation.validation_result_storage import (
 
 # TODO(#7816): These are camel case because they are used in JS in the admin panel, we
 # should probably move to protos.
+# TODO(#8687): Remove the extra case statements with the old result detail class names.
 
 
 @attr.s
@@ -83,7 +84,9 @@ SELECT
     CASE result_details_type
         WHEN "ExistenceValidationResultDetails" THEN cast(JSON_QUERY(result_details, "$.num_invalid_rows") as int64)
         WHEN "SamenessNumbersValidationResultDetails" THEN ifnull(ARRAY_LENGTH(JSON_QUERY_ARRAY(result_details, "$.failed_rows")), 0)
+        WHEN "SamenessPerRowValidationResultDetails" THEN ifnull(ARRAY_LENGTH(JSON_QUERY_ARRAY(result_details, "$.failed_rows")), 0)
         WHEN "SamenessStringsValidationResultDetails" THEN safe_divide(cast(JSON_QUERY(result_details, "$.num_error_rows") as int64), cast(JSON_QUERY(result_details, "$.total_num_rows") as int64))
+        WHEN "SamenessPerViewValidationResultDetails" THEN safe_divide(cast(JSON_QUERY(result_details, "$.num_error_rows") as int64), cast(JSON_QUERY(result_details, "$.total_num_rows") as int64))
     END as error_amount,
 FROM `{project_id}.{validation_result_address.dataset_id}.{validation_result_address.table_id}`
 WHERE run_id = (

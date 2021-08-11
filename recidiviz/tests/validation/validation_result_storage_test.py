@@ -26,8 +26,8 @@ from recidiviz.validation.checks.sameness_check import (
     ResultRow,
     SamenessDataValidationCheck,
     SamenessDataValidationCheckType,
-    SamenessNumbersValidationResultDetails,
-    SamenessStringsValidationResultDetails,
+    SamenessPerRowValidationResultDetails,
+    SamenessPerViewValidationResultDetails,
 )
 from recidiviz.validation.validation_models import (
     DataValidationJob,
@@ -51,7 +51,7 @@ class TestValidationResultStorage(unittest.TestCase):
         # pylint: disable=protected-access
         big_query_client._clients_by_project_id_by_region.clear()
 
-    def test_from_successful_result(self) -> None:
+    def test_from_successful_result_per_row(self) -> None:
         # Arrange
         job_result = DataValidationJobResult(
             validation_job=DataValidationJob(
@@ -69,7 +69,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     ),
                 ),
             ),
-            result_details=SamenessNumbersValidationResultDetails(
+            result_details=SamenessPerRowValidationResultDetails(
                 failed_rows=[], max_allowed_error=0.0
             ),
         )
@@ -94,8 +94,8 @@ class TestValidationResultStorage(unittest.TestCase):
                 did_run=True,
                 was_successful=True,
                 failure_description=None,
-                result_details_type="SamenessNumbersValidationResultDetails",
-                result_details=SamenessNumbersValidationResultDetails(
+                result_details_type="SamenessPerRowValidationResultDetails",
+                result_details=SamenessPerRowValidationResultDetails(
                     failed_rows=[], max_allowed_error=0.0
                 ),
                 validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
@@ -114,16 +114,16 @@ class TestValidationResultStorage(unittest.TestCase):
                 "did_run": True,
                 "was_successful": True,
                 "failure_description": None,
-                "result_details_type": "SamenessNumbersValidationResultDetails",
+                "result_details_type": "SamenessPerRowValidationResultDetails",
                 "result_details": '{"failed_rows": [], "max_allowed_error": 0.0}',
                 "validation_category": "EXTERNAL_AGGREGATE",
             },
             result.to_serializable(),
         )
 
-    def test_from_successful_result_strings(self) -> None:
+    def test_from_successful_result_per_view(self) -> None:
         # Arrange
-        result_details = SamenessStringsValidationResultDetails(
+        result_details = SamenessPerViewValidationResultDetails(
             num_error_rows=0,
             total_num_rows=5,
             max_allowed_error=0.5,
@@ -171,7 +171,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 did_run=True,
                 was_successful=True,
                 failure_description=None,
-                result_details_type="SamenessStringsValidationResultDetails",
+                result_details_type="SamenessPerViewValidationResultDetails",
                 result_details=result_details,
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
             ),
@@ -189,7 +189,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 "did_run": True,
                 "was_successful": True,
                 "failure_description": None,
-                "result_details_type": "SamenessStringsValidationResultDetails",
+                "result_details_type": "SamenessPerViewValidationResultDetails",
                 "result_details": '{"num_error_rows": 0, "total_num_rows": 5, "max_allowed_error": 0.5, "non_null_counts_per_column_per_partition": [[["US_XX", "2020-12-01"], {"internal": 5, "external": 5}]]}',
                 "validation_category": "EXTERNAL_INDIVIDUAL",
             },
@@ -198,7 +198,7 @@ class TestValidationResultStorage(unittest.TestCase):
 
     def test_from_failed_result(self) -> None:
         # Arrange
-        result_details = SamenessNumbersValidationResultDetails(
+        result_details = SamenessPerRowValidationResultDetails(
             failed_rows=[
                 (ResultRow(label_values=("US_XX",), comparison_values=(5, 10)), 0.5)
             ],
@@ -245,7 +245,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 failure_description="1 row(s) had unacceptable margins of error. The "
                 "acceptable margin of error is only 0.0, but the validation returned "
                 "rows with errors as high as 0.5.",
-                result_details_type="SamenessNumbersValidationResultDetails",
+                result_details_type="SamenessPerRowValidationResultDetails",
                 result_details=result_details,
                 validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
             ),
@@ -265,7 +265,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 "failure_description": "1 row(s) had unacceptable margins of error. The "
                 "acceptable margin of error is only 0.0, but the validation returned "
                 "rows with errors as high as 0.5.",
-                "result_details_type": "SamenessNumbersValidationResultDetails",
+                "result_details_type": "SamenessPerRowValidationResultDetails",
                 "result_details": '{"failed_rows": [[{"label_values": ["US_XX"], "comparison_values": [5, 10]}, 0.5]], "max_allowed_error": 0.0}',
                 "validation_category": "EXTERNAL_AGGREGATE",
             },
@@ -359,8 +359,8 @@ class TestValidationResultStorage(unittest.TestCase):
                     did_run=True,
                     was_successful=True,
                     failure_description=None,
-                    result_details_type="SamenessNumbersValidationResultDetails",
-                    result_details=SamenessNumbersValidationResultDetails(
+                    result_details_type="SamenessPerRowValidationResultDetails",
+                    result_details=SamenessPerRowValidationResultDetails(
                         failed_rows=[], max_allowed_error=0.0
                     ),
                     validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
@@ -393,8 +393,8 @@ class TestValidationResultStorage(unittest.TestCase):
                     did_run=True,
                     was_successful=True,
                     failure_description=None,
-                    result_details_type="SamenessNumbersValidationResultDetails",
-                    result_details=SamenessNumbersValidationResultDetails(
+                    result_details_type="SamenessPerRowValidationResultDetails",
+                    result_details=SamenessPerRowValidationResultDetails(
                         failed_rows=[], max_allowed_error=0.0
                     ),
                     validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
@@ -412,8 +412,8 @@ class TestValidationResultStorage(unittest.TestCase):
                     failure_description="1 row(s) had unacceptable margins of error. The "
                     "acceptable margin of error is only 0.0, but the validation returned "
                     "rows with errors as high as 0.5.",
-                    result_details_type="SamenessNumbersValidationResultDetails",
-                    result_details=SamenessNumbersValidationResultDetails(
+                    result_details_type="SamenessPerRowValidationResultDetails",
+                    result_details=SamenessPerRowValidationResultDetails(
                         failed_rows=[
                             (
                                 ResultRow(
@@ -459,7 +459,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     "did_run": True,
                     "was_successful": True,
                     "failure_description": None,
-                    "result_details_type": "SamenessNumbersValidationResultDetails",
+                    "result_details_type": "SamenessPerRowValidationResultDetails",
                     "result_details": '{"failed_rows": [], "max_allowed_error": 0.0}',
                     "validation_category": "EXTERNAL_AGGREGATE",
                 },
@@ -474,7 +474,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     "did_run": True,
                     "was_successful": False,
                     "failure_description": "1 row(s) had unacceptable margins of error. The acceptable margin of error is only 0.0, but the validation returned rows with errors as high as 0.5.",
-                    "result_details_type": "SamenessNumbersValidationResultDetails",
+                    "result_details_type": "SamenessPerRowValidationResultDetails",
                     "result_details": '{"failed_rows": [[{"label_values": ["US_XX"], "comparison_values": [5, 10]}, 0.5]], "max_allowed_error": 0.0}',
                     "validation_category": "EXTERNAL_AGGREGATE",
                 },
