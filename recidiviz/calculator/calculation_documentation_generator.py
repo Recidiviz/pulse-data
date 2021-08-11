@@ -28,6 +28,7 @@ from collections import defaultdict
 from typing import Dict, List, Optional, Set, Type
 
 import attr
+from google.cloud import bigquery
 from pytablewriter import MarkdownTableWriter
 
 from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryView
@@ -51,6 +52,7 @@ from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetric
 from recidiviz.calculator.pipeline.utils.metric_utils import (
     PersonLevelMetric,
     RecidivizMetric,
+    RecidivizMetricType,
 )
 from recidiviz.calculator.pipeline.violation.metrics import ViolationMetric
 from recidiviz.calculator.query.state.dataset_config import (
@@ -58,6 +60,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 from recidiviz.common import attr_validators
+from recidiviz.common.attr_utils import get_enum_cls
 from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.export.export_config import (
     PRODUCTS_CONFIG_PATH,
@@ -1006,15 +1009,37 @@ class CalculationDocumentationGenerator:
             headers=state_info_headers, value_matrix=state_info_table_matrix, margin=0
         )
 
+        def _get_enum_class_name_for_schema_field(
+            schema_field: bigquery.SchemaField,
+        ) -> str:
+            enum_cls = get_enum_cls(attr.fields_dict(metric)[schema_field.name])
+
+            if not enum_cls:
+                return ""
+
+            if schema_field.name == "metric_type":
+                return RecidivizMetricType.__name__
+
+            return enum_cls.__name__
+
         attribute_info_headers = [
             "**Attribute Name**",
             "**Type**",
+            "**Enum Class**",
         ]
+
+        shared_attributes = set(attr.fields_dict(RecidivizMetric).keys()).union(
+            set(attr.fields_dict(PersonLevelMetric).keys())
+        )
+
         metric_attribute_table_matrix = [
-            [field.name, field.field_type]
+            [
+                field.name,
+                field.field_type,
+                _get_enum_class_name_for_schema_field(field),
+            ]
             for field in metric.bq_schema_for_metric_table()
-            if field.name not in attr.fields_dict(RecidivizMetric)
-            and field.name not in attr.fields_dict(PersonLevelMetric)
+            if field.name not in shared_attributes
         ]
         metric_attribute_info_writer = MarkdownTableWriter(
             headers=attribute_info_headers,
@@ -1023,10 +1048,13 @@ class CalculationDocumentationGenerator:
         )
 
         common_attribute_table_matrix = [
-            [field.name, field.field_type]
+            [
+                field.name,
+                field.field_type,
+                _get_enum_class_name_for_schema_field(field),
+            ]
             for field in metric.bq_schema_for_metric_table()
-            if field.name in attr.fields_dict(RecidivizMetric)
-            or field.name in attr.fields_dict(PersonLevelMetric)
+            if field.name in shared_attributes
         ]
         common_attribute_info_writer = MarkdownTableWriter(
             headers=attribute_info_headers,
