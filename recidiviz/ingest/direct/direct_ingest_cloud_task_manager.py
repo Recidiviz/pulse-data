@@ -20,7 +20,7 @@ import logging
 import os
 import uuid
 from enum import Enum
-from typing import Dict, Generator, List, Optional, Union
+from typing import Dict, Generator, List, Optional
 from urllib.parse import urlencode
 
 import attr
@@ -156,46 +156,18 @@ def get_direct_ingest_queues_for_state(
 
 
 @attr.s
-class SchedulerCloudTaskQueueInfo(CloudTaskQueueInfo):
-    pass
-
-
-@attr.s
-class SftpCloudTaskQueueInfo(CloudTaskQueueInfo):
-    pass
-
-
-@attr.s
-class ProcessIngestJobCloudTaskQueueInfo(CloudTaskQueueInfo):
-    """Class containing information about tasks in a given region's ingest view job
-    processing queue.
-    """
-
-    def tasks_for_instance(
+class DirectIngestCloudTaskQueueInfo(CloudTaskQueueInfo):
+    def _tasks_for_instance(
         self, region_code: str, ingest_instance: DirectIngestInstance
-    ) -> List[str]:
+    ) -> Generator[str, None, None]:
         instance_prefix = _build_task_id(
             region_code,
             ingest_instance,
             task_id_tag=None,
             prefix_only=True,
         )
-
-        return list(self._tasks_for_prefix(instance_prefix))
-
-    def is_task_queued(self, region: Region, ingest_args: GcsfsIngestArgs) -> bool:
-        """Returns true if the ingest_args correspond to a task currently in
-        the queue.
-        """
-
-        task_id_prefix = _build_task_id(
-            region.region_code,
-            DirectIngestInstance.for_ingest_bucket(ingest_args.file_path.bucket_path),
-            ingest_args.task_id_tag(),
-            prefix_only=True,
-        )
-
-        return bool(next(self._tasks_for_prefix(task_id_prefix), None))
+        for task in self._tasks_for_prefix(instance_prefix):
+            yield task
 
     def _tasks_for_prefix(self, task_prefix: str) -> Generator[str, None, None]:
         for task_name in self.task_names:
@@ -203,9 +175,51 @@ class ProcessIngestJobCloudTaskQueueInfo(CloudTaskQueueInfo):
             if task_id.startswith(task_prefix):
                 yield task_name
 
+    def has_any_tasks_for_instance(
+        self, region_code: str, ingest_instance: DirectIngestInstance
+    ) -> bool:
+        return any(self._tasks_for_instance(region_code, ingest_instance))
+
 
 @attr.s
-class BQImportExportCloudTaskQueueInfo(CloudTaskQueueInfo):
+class SchedulerCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
+    pass
+
+
+@attr.s
+class SftpCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
+    pass
+
+
+@attr.s
+class ProcessIngestJobCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
+    """Class containing information about tasks in a given region's ingest view job
+    processing queue.
+    """
+
+    def is_task_already_queued(
+        self, region_code: str, ingest_args: GcsfsIngestArgs
+    ) -> bool:
+        """Returns true if the ingest_args correspond to a task currently in
+        the queue.
+        """
+
+        task_id_prefix = _build_task_id(
+            region_code,
+            DirectIngestInstance.for_ingest_bucket(ingest_args.file_path.bucket_path),
+            ingest_args.task_id_tag(),
+            prefix_only=True,
+        )
+
+        return any(self._tasks_for_prefix(task_id_prefix))
+
+
+@attr.s
+class BQImportExportCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
+    """Class containing information about tasks in a given region's raw data import /
+    ingest view export task queue.
+    """
+
     @staticmethod
     def _is_raw_data_export_task(task_name: str) -> bool:
         return "raw_data_import" in task_name
@@ -214,11 +228,29 @@ class BQImportExportCloudTaskQueueInfo(CloudTaskQueueInfo):
     def _is_ingest_view_export_job(task_name: str) -> bool:
         return "ingest_view_export" in task_name
 
-    def has_task_already_scheduled(
-        self, task_args: Union[GcsfsRawDataBQImportArgs, GcsfsIngestViewExportArgs]
+    def is_raw_data_import_task_already_queued(
+        self, task_args: GcsfsRawDataBQImportArgs
     ) -> bool:
         return any(
-            task_args.task_id_tag() in task_name for task_name in self.task_names
+            self._is_raw_data_export_task(task_name)
+            and task_args.task_id_tag() in task_name
+            for task_name in self.task_names
+        )
+
+    def is_ingest_view_export_task_already_queued(
+        self,
+        region_code: str,
+        task_args: GcsfsIngestViewExportArgs,
+    ) -> bool:
+        return any(
+            self._is_ingest_view_export_job(task_name)
+            and task_args.task_id_tag() in task_name
+            for task_name in self._tasks_for_instance(
+                region_code,
+                DirectIngestInstance.for_ingest_bucket(
+                    GcsfsBucketPath(task_args.output_bucket_name)
+                ),
+            )
         )
 
     def has_raw_data_import_jobs_queued(self) -> bool:
@@ -226,9 +258,12 @@ class BQImportExportCloudTaskQueueInfo(CloudTaskQueueInfo):
             self._is_raw_data_export_task(task_name) for task_name in self.task_names
         )
 
-    def has_ingest_view_export_jobs_queued(self) -> bool:
+    def has_ingest_view_export_jobs_queued(
+        self, region_code: str, ingest_instance: DirectIngestInstance
+    ) -> bool:
         return any(
-            self._is_ingest_view_export_job(task_name) for task_name in self.task_names
+            self._is_ingest_view_export_job(task_name)
+            for task_name in self._tasks_for_instance(region_code, ingest_instance)
         )
 
 
