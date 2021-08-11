@@ -65,7 +65,6 @@ import sys
 from datetime import date
 from typing import Dict, Optional, Tuple
 
-import numpy
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
@@ -282,36 +281,21 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         )
         return reassessment_deadline
 
-    def _face_to_face_contact_frequency_is_sufficient(
+    def _next_recommended_face_to_face_date(
         self, compliance_evaluation_date: date
-    ) -> Optional[bool]:
-        """Calculates whether the frequency of face-to-face contacts between the officer and the person on supervision
-        is sufficient with respect to the state standards for the level of supervision of the case.
-        """
-        business_days_since_start = numpy.busday_count(
-            self.start_of_supervision, compliance_evaluation_date
-        )
-
-        if business_days_since_start <= NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS:
-            # This is a recently started supervision period, and the person has not yet hit the number of business days
-            # from the start of their supervision at which the officer is required to have been in contact with the
-            # person. This face-to-face contact is up to date regardless of when the last contact was completed.
-            logging.debug(
-                "Supervision period %d started %d business days before the compliance date %s. Contact is not "
-                "overdue.",
-                self.supervision_period.supervision_period_id,
-                business_days_since_start,
-                compliance_evaluation_date,
-            )
-            return True
-
+    ) -> Optional[date]:
+        """Returns when the next face-to-face contact should be. Returns None if compliance standards are
+        unknown or no subsequent face-to-face contacts are required."""
         (
             required_contacts,
             period_days,
         ) = self._get_required_face_to_face_contacts_and_period_days_for_level()
 
-        return self._face_to_face_contact_frequency_is_in_compliance(
-            compliance_evaluation_date, required_contacts, period_days
+        return self._default_next_recommended_face_to_face_date_given_requirements(
+            compliance_evaluation_date,
+            required_contacts,
+            period_days,
+            NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS,
         )
 
     def _get_required_face_to_face_contacts_and_period_days_for_level(

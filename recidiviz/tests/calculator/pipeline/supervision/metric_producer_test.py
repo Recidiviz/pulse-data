@@ -1638,7 +1638,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 case_compliance=SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 3, 31),
                     next_recommended_assessment_date=None,
-                    face_to_face_frequency_sufficient=False,
+                    next_recommended_face_to_face_date=None,
                 ),
                 projected_end_date=None,
             ),
@@ -1654,7 +1654,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 case_compliance=SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     next_recommended_assessment_date=date(2018, 4, 19),
-                    face_to_face_frequency_sufficient=False,
+                    next_recommended_face_to_face_date=None,
                 ),
                 projected_end_date=None,
             ),
@@ -2010,7 +2010,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
             case_compliance=SupervisionCaseCompliance(
                 date_of_evaluation=date(2018, 3, 31),
                 next_recommended_assessment_date=None,
-                face_to_face_frequency_sufficient=False,
+                next_recommended_face_to_face_date=None,
             ),
             projected_end_date=None,
         )

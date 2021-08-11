@@ -225,6 +225,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            supervision_level=StateSupervisionLevel.MEDIUM,
         )
 
         supervision_contacts = [
@@ -249,13 +250,14 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=supervision_contacts,
         )
 
-        face_to_face_frequency_sufficient = (
-            us_pa_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+        next_face_to_face_date = (
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
 
-        self.assertTrue(face_to_face_frequency_sufficient)
+        assert next_face_to_face_date is not None
+        self.assertTrue(next_face_to_face_date > evaluation_date)
 
     def test_face_to_face_frequency_sufficient_contacts_before_supervision_start(
         self,
@@ -272,6 +274,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            supervision_level=StateSupervisionLevel.MEDIUM,
         )
 
         supervision_contacts = [
@@ -297,13 +300,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=supervision_contacts,
         )
 
-        face_to_face_frequency_sufficient = (
-            us_pa_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+        next_face_to_face = (
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
 
-        self.assertFalse(face_to_face_frequency_sufficient)
+        self.assertEqual(next_face_to_face, date(2018, 3, 7))
 
     def test_face_to_face_frequency_sufficient_contacts_attempted(self) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -318,6 +321,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            supervision_level=StateSupervisionLevel.MEDIUM,
         )
 
         supervision_contacts = [
@@ -343,13 +347,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=supervision_contacts,
         )
 
-        face_to_face_frequency_sufficient = (
-            us_pa_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+        next_face_to_face = (
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
 
-        self.assertFalse(face_to_face_frequency_sufficient)
+        self.assertEqual(next_face_to_face, date(2018, 3, 7))
 
     def test_face_to_face_frequency_sufficient_contacts_invalid_contact_type(
         self,
@@ -366,6 +370,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            supervision_level=StateSupervisionLevel.MEDIUM,
         )
 
         supervision_contacts = [
@@ -391,13 +396,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=supervision_contacts,
         )
 
-        face_to_face_frequency_sufficient = (
-            us_pa_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+        next_face_to_face = (
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
 
-        self.assertFalse(face_to_face_frequency_sufficient)
+        self.assertEqual(next_face_to_face, date(2018, 3, 7))
 
     def test_face_to_face_frequency_sufficient_contacts_monitored_level_with_contact(
         self,
@@ -437,13 +442,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=supervision_contacts,
         )
 
-        face_to_face_frequency_sufficient = (
-            us_pa_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+        next_face_to_face = (
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
 
-        self.assertTrue(face_to_face_frequency_sufficient)
+        self.assertIsNone(next_face_to_face)
 
     def test_face_to_face_frequency_sufficient_contacts_monitored_level_no_contacts(
         self,
@@ -476,13 +481,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        face_to_face_frequency_sufficient = (
-            us_pa_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+        next_face_to_face = (
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
 
-        self.assertTrue(face_to_face_frequency_sufficient)
+        self.assertIsNone(next_face_to_face)
 
     def test_face_to_face_frequency_sufficient_contacts_limited_level(
         self,
@@ -523,7 +528,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
         )
 
         face_to_face_frequency_sufficient = (
-            us_pa_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
@@ -561,13 +566,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        face_to_face_frequency_sufficient = (
-            us_pa_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+        next_face_to_face = (
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
 
-        self.assertFalse(face_to_face_frequency_sufficient)
+        self.assertEqual(next_face_to_face, date(2018, 3, 7))
 
     def test_face_to_face_frequency_not_sufficient_contacts_limited_level_out_of_bounds(
         self,
@@ -607,13 +612,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=supervision_contacts,
         )
 
-        face_to_face_frequency_sufficient = (
-            us_pa_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+        next_face_to_face = (
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
 
-        self.assertFalse(face_to_face_frequency_sufficient)
+        self.assertEqual(next_face_to_face, date(2019, 3, 25))
 
     def test_face_to_face_frequency_sufficient_contacts_minimum_level(
         self,
@@ -654,7 +659,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
         )
 
         face_to_face_frequency_sufficient = (
-            us_pa_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
@@ -692,13 +697,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        face_to_face_frequency_sufficient = (
-            us_pa_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+        next_face_to_face = (
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
 
-        self.assertFalse(face_to_face_frequency_sufficient)
+        self.assertEqual(next_face_to_face, date(2018, 3, 7))
 
     def test_face_to_face_frequency_not_sufficient_contacts_minimum_level_out_of_bounds(
         self,
@@ -738,13 +743,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=supervision_contacts,
         )
 
-        face_to_face_frequency_sufficient = (
-            us_pa_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+        next_face_to_face = (
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
 
-        self.assertFalse(face_to_face_frequency_sufficient)
+        self.assertEqual(next_face_to_face, date(2018, 7, 3))
 
     def test_face_to_face_frequency_sufficient_contacts_medium_level(
         self,
@@ -785,7 +790,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
         )
 
         face_to_face_frequency_sufficient = (
-            us_pa_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
@@ -823,13 +828,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        face_to_face_frequency_sufficient = (
-            us_pa_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+        next_face_to_face = (
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
 
-        self.assertFalse(face_to_face_frequency_sufficient)
+        self.assertEqual(next_face_to_face, date(2018, 3, 7))
 
     def test_face_to_face_frequency_not_sufficient_contacts_medium_level_out_of_bounds(
         self,
@@ -869,13 +874,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=supervision_contacts,
         )
 
-        face_to_face_frequency_sufficient = (
-            us_pa_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+        next_face_to_face = (
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
 
-        self.assertFalse(face_to_face_frequency_sufficient)
+        self.assertEqual(next_face_to_face, date(2018, 4, 24))
 
     def test_face_to_face_frequency_sufficient_contacts_maxiumum_level(
         self,
@@ -922,7 +927,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
         )
 
         face_to_face_frequency_sufficient = (
-            us_pa_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
@@ -960,13 +965,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        face_to_face_frequency_sufficient = (
-            us_pa_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+        next_face_to_face = (
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
 
-        self.assertFalse(face_to_face_frequency_sufficient)
+        self.assertEqual(next_face_to_face, date(2018, 3, 7))
 
     def test_face_to_face_frequency_not_sufficient_contacts_maximum_level_out_of_bounds(
         self,
@@ -1014,13 +1019,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=supervision_contacts,
         )
 
-        face_to_face_frequency_sufficient = (
-            us_pa_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+        next_face_to_face = (
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
 
-        self.assertFalse(face_to_face_frequency_sufficient)
+        self.assertEqual(next_face_to_face, date(2018, 4, 24))
 
     def test_face_to_face_frequency_sufficient_contacts_high_level(
         self,
@@ -1079,7 +1084,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
         )
 
         face_to_face_frequency_sufficient = (
-            us_pa_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
@@ -1117,13 +1122,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=[],
         )
 
-        face_to_face_frequency_sufficient = (
-            us_pa_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+        next_face_to_face = (
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
 
-        self.assertFalse(face_to_face_frequency_sufficient)
+        self.assertEqual(next_face_to_face, date(2018, 3, 7))
 
     def test_face_to_face_frequency_not_sufficient_contacts_high_level_out_of_bounds(
         self,
@@ -1171,13 +1176,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=supervision_contacts,
         )
 
-        face_to_face_frequency_sufficient = (
-            us_pa_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+        next_face_to_face = (
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )
 
-        self.assertFalse(face_to_face_frequency_sufficient)
+        self.assertEqual(next_face_to_face, date(2018, 4, 4))
 
     def test_face_to_face_frequency_sufficient_contacts_new_case_opened_on_friday(
         self,
@@ -1211,7 +1216,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
         )
 
         face_to_face_frequency_sufficient = (
-            us_pa_supervision_compliance._face_to_face_contact_frequency_is_sufficient(
+            us_pa_supervision_compliance._next_recommended_face_to_face_date(
                 evaluation_date
             )
         )

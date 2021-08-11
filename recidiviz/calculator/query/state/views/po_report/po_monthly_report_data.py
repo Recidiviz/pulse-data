@@ -71,9 +71,9 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
           IGNORE NULLS
         ) AS assessments_out_of_date_clients,
         SUM(face_to_face_count) AS facetoface,
-        COUNT(DISTINCT IF(face_to_face_frequency_sufficient, person_id, NULL)) AS facetoface_frequencies_sufficient,
+        COUNT(DISTINCT IF(next_recommended_face_to_face_date > LAST_DAY(DATE(year, month, 1), MONTH), person_id, NULL)) AS facetoface_frequencies_sufficient,
         ARRAY_AGG(
-          IF(face_to_face_frequency_sufficient IS FALSE, STRUCT(person_external_id, full_name), NULL)
+          IF(next_recommended_face_to_face_date <= LAST_DAY(DATE(year, month, 1), MONTH), STRUCT(person_external_id, full_name), NULL)
           IGNORE NULLS
         ) AS facetoface_out_of_date_clients
       FROM `{project_id}.{po_report_dataset}.report_data_by_person_by_month_materialized`
@@ -83,7 +83,7 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       SELECT
         state_code, year, month, officer_external_id,
         COALESCE(COUNT(DISTINCT IF(next_recommended_assessment_date IS NOT NULL, person_id, NULL)), 0) AS assessment_compliance_caseload_count,
-        COALESCE(COUNT(DISTINCT IF(face_to_face_frequency_sufficient IS NOT NULL, person_id, NULL)), 0) AS facetoface_compliance_caseload_count
+        COALESCE(COUNT(DISTINCT IF(next_recommended_face_to_face_date IS NOT NULL, person_id, NULL)), 0) AS facetoface_compliance_caseload_count
       FROM `{project_id}.{po_report_dataset}.supervision_compliance_by_person_by_month_materialized`
       GROUP BY state_code, year, month, officer_external_id
     ),
