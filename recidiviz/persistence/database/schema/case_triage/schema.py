@@ -108,7 +108,7 @@ class ETLClient(CaseTriageBase, ETLDerivedEntity):
         "CaseUpdate",
         uselist=True,
         foreign_keys=[state_code, person_external_id, supervising_officer_external_id],
-        overlaps="client_info,notes",
+        overlaps="client_info,notes,etl_events",
         primaryjoin="and_("
         "   ETLClient.state_code == CaseUpdate.state_code,"
         "   ETLClient.person_external_id == CaseUpdate.person_external_id,"
@@ -120,7 +120,7 @@ class ETLClient(CaseTriageBase, ETLDerivedEntity):
         "ClientInfo",
         uselist=False,
         foreign_keys=[state_code, person_external_id],
-        overlaps="case_updates,notes",
+        overlaps="case_updates,notes,etl_events",
         primaryjoin="and_("
         "   ETLClient.state_code == ClientInfo.state_code,"
         "   ETLClient.person_external_id == ClientInfo.person_external_id,"
@@ -140,12 +140,24 @@ class ETLClient(CaseTriageBase, ETLDerivedEntity):
         "OfficerNote",
         uselist=True,
         foreign_keys=[state_code, person_external_id, supervising_officer_external_id],
-        overlaps="client_info,case_updates",
+        overlaps="client_info,case_updates,etl_events",
         primaryjoin="and_("
         "   ETLClient.state_code == OfficerNote.state_code,"
         "   ETLClient.person_external_id == OfficerNote.person_external_id,"
         "   ETLClient.supervising_officer_external_id == OfficerNote.officer_external_id,"
         ")",
+    )
+
+    etl_events = relationship(
+        "ETLClientEvent",
+        uselist=True,
+        foreign_keys=[state_code, person_external_id],
+        overlaps="client_info,case_updates,notes",
+        primaryjoin="and_("
+        "   ETLClient.state_code == ETLClientEvent.state_code,"
+        "   ETLClient.person_external_id == ETLClientEvent.person_external_id,"
+        ")",
+        order_by="desc(ETLClientEvent.event_date)",
     )
 
     @property
@@ -261,6 +273,37 @@ class ETLOpportunity(CaseTriageBase, ETLDerivedEntity):
             opportunity_metadata=json_opportunity["opportunity_metadata"],
             exported_at=json_opportunity.get("exported_at"),
         )
+
+
+class ETLClientEvent(CaseTriageBase, ETLDerivedEntity):
+    """Represents a supervision-related event derived from our ETL pipeline."""
+
+    __tablename__ = "etl_client_events"
+
+    event_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    person_external_id = Column(String(255), nullable=False, index=True)
+    state_code = Column(String(255), nullable=False, index=True)
+    event_type = Column(String(255), nullable=False)
+    event_date = Column(Date, nullable=False)
+    event_metadata = Column(JSONB, nullable=False)
+
+    @staticmethod
+    def from_json(
+        json_event: Dict[str, Any], timedelta_shift: Optional[timedelta] = None
+    ) -> "ETLClientEvent":
+        """Constructs an ETLClientEvent from a corresponding dict (presumed to be from JSON)"""
+        event_args = {
+            "person_external_id": json_event["person_external_id"],
+            "state_code": json_event["state_code"],
+            "event_type": json_event["event_type"],
+            "event_date": _get_json_field_as_date(json_event, "event_date"),
+            "event_metadata": json_event["event_metadata"],
+        }
+        if timedelta_shift:
+            event_args = _timeshift_date_fields(event_args, timedelta_shift)
+
+        return ETLClientEvent(**event_args)
 
 
 class CaseUpdate(CaseTriageBase):
@@ -466,4 +509,5 @@ ETL_TABLES: List[Type[CaseTriageBase]] = [
     ETLClient,
     ETLOfficer,
     ETLOpportunity,
+    ETLClientEvent,
 ]

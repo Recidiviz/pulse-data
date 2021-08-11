@@ -35,6 +35,7 @@ from recidiviz.case_triage.opportunities.types import (
     OpportunityType,
 )
 from recidiviz.case_triage.querier.case_presenter import CasePresenter
+from recidiviz.case_triage.querier.client_event_presenter import ClientEventPresenter
 from recidiviz.case_triage.querier.opportunity_presenter import OpportunityPresenter
 from recidiviz.case_triage.user_context import UserContext
 from recidiviz.persistence.database.schema.case_triage.schema import (
@@ -410,3 +411,21 @@ class CaseTriageQuerier:
             f"No opportunity exists with type {opportunity_type} and "
             f"for person {user_context.person_id(client)}"
         )
+
+    @staticmethod
+    def events_for_client(
+        session: Session, user_context: UserContext, person_external_id: str
+    ) -> List[ClientEventPresenter]:
+        """Fetches events for the client's timeline."""
+
+        if user_context.should_see_demo:
+            # TODO(#8023): demo data
+            return []
+        if user_context.current_user:
+            client = CaseTriageQuerier.etl_client_for_officer(
+                session, user_context, person_external_id
+            )
+
+            return [ClientEventPresenter(event) for event in client.etl_events]
+
+        raise NoCaseloadException()

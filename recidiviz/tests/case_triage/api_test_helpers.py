@@ -282,6 +282,13 @@ class CaseTriageTestHelpers:
 
         self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
 
+    def get_events_for_client(self, person_external_id: str) -> List[Dict[Any, Any]]:
+        response = self.test_client.get(f"/api/events/{person_external_id}")
+
+        self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+
+        return response.get_json()
+
     @staticmethod
     def from_test(test: TestCase, test_app: Flask) -> "CaseTriageTestHelpers":
         return CaseTriageTestHelpers(test, test_app)
