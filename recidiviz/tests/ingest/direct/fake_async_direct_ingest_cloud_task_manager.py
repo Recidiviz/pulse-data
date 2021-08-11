@@ -205,7 +205,6 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
     def create_direct_ingest_process_job_task(
         self,
         region: Region,
-        ingest_instance: DirectIngestInstance,
         ingest_args: GcsfsIngestArgs,
     ) -> None:
         if not self.controller:
@@ -215,7 +214,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             f"{region.region_code}-process_job-{ingest_args.task_id_tag()}",
             with_monitoring(
                 region.region_code,
-                ingest_instance,
+                ingest_args.ingest_instance(),
                 self.controller.run_ingest_job_and_kick_scheduler_on_completion,
             ),
             ingest_args,
@@ -224,7 +223,6 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
     def create_direct_ingest_scheduler_queue_task(
         self,
         region: Region,
-        ingest_instance: DirectIngestInstance,
         ingest_bucket: GcsfsBucketPath,
         just_finished_job: bool,
     ) -> None:
@@ -240,7 +238,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             f"{region.region_code}-scheduler",
             with_monitoring(
                 region.region_code,
-                ingest_instance,
+                DirectIngestInstance.for_ingest_bucket(ingest_bucket),
                 self.controller.schedule_next_ingest_job,
             ),
             just_finished_job,
@@ -249,7 +247,6 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
     def create_direct_ingest_handle_new_files_task(
         self,
         region: Region,
-        ingest_instance: DirectIngestInstance,
         ingest_bucket: GcsfsBucketPath,
         can_start_ingest: bool,
     ) -> None:
@@ -264,7 +261,9 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         self.scheduler_queue.add_task(
             f"{region.region_code}-handle_new_files",
             with_monitoring(
-                region.region_code, ingest_instance, self.controller.handle_new_files
+                region.region_code,
+                DirectIngestInstance.for_ingest_bucket(ingest_bucket),
+                self.controller.handle_new_files,
             ),
             can_start_ingest,
         )
@@ -272,7 +271,6 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
     def create_direct_ingest_raw_data_import_task(
         self,
         region: Region,
-        ingest_instance: DirectIngestInstance,
         data_import_args: GcsfsRawDataBQImportArgs,
     ) -> None:
         if not self.controller:
@@ -281,7 +279,9 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         self.bq_import_export_queue.add_task(
             f"{region.region_code}-raw_data_import-{data_import_args.task_id_tag()}",
             with_monitoring(
-                region.region_code, ingest_instance, self.controller.do_raw_data_import
+                region.region_code,
+                data_import_args.ingest_instance(),
+                self.controller.do_raw_data_import,
             ),
             data_import_args,
         )
@@ -289,7 +289,6 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
     def create_direct_ingest_ingest_view_export_task(
         self,
         region: Region,
-        ingest_instance: DirectIngestInstance,
         ingest_view_export_args: GcsfsIngestViewExportArgs,
     ) -> None:
         if not self.controller:
@@ -299,7 +298,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             f"{region.region_code}-ingest_view_export-{ingest_view_export_args.task_id_tag()}",
             with_monitoring(
                 region.region_code,
-                ingest_instance,
+                ingest_view_export_args.ingest_instance(),
                 self.controller.do_ingest_view_export,
             ),
             ingest_view_export_args,
@@ -311,7 +310,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         )
 
     def get_process_job_queue_info(
-        self, region: Region, ingest_instance: DirectIngestInstance
+        self, region: Region
     ) -> ProcessIngestJobCloudTaskQueueInfo:
         with self.process_job_queue.all_tasks_mutex:
             task_names = self.process_job_queue.get_unfinished_task_names_unsafe()
@@ -320,9 +319,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             queue_name=self.process_job_queue.name, task_names=task_names
         )
 
-    def get_scheduler_queue_info(
-        self, region: Region, ingest_instance: DirectIngestInstance
-    ) -> SchedulerCloudTaskQueueInfo:
+    def get_scheduler_queue_info(self, region: Region) -> SchedulerCloudTaskQueueInfo:
         with self.scheduler_queue.all_tasks_mutex:
             task_names = self.scheduler_queue.get_unfinished_task_names_unsafe()
 
@@ -331,7 +328,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         )
 
     def get_bq_import_export_queue_info(
-        self, region: Region, ingest_instance: DirectIngestInstance
+        self, region: Region
     ) -> BQImportExportCloudTaskQueueInfo:
         with self.bq_import_export_queue.all_tasks_mutex:
             has_unfinished_tasks = (

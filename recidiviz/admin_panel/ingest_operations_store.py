@@ -81,13 +81,7 @@ class IngestOperationsStore:
     @staticmethod
     def get_queues_for_region(state_code: StateCode) -> List[str]:
         """Returns the list of formatted direct ingest queues for given state"""
-        queues = set()
-        for ingest_instance in DirectIngestInstance:
-            queues.update(
-                get_direct_ingest_queues_for_state(state_code, ingest_instance)
-            )
-
-        return list(queues)
+        return sorted(get_direct_ingest_queues_for_state(state_code))
 
     def start_ingest_run(self, state_code: StateCode, instance_str: str) -> None:
         """This function is called through the Ingest Operations UI in the admin panel.
@@ -124,7 +118,6 @@ class IngestOperationsStore:
         )
         self.cloud_task_manager.create_direct_ingest_handle_new_files_task(
             region=region,
-            ingest_instance=instance,
             ingest_bucket=ingest_bucket_path,
             can_start_ingest=can_start_ingest,
         )

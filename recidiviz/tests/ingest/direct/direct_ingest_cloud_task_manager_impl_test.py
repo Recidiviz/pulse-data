@@ -26,14 +26,13 @@ from freezegun import freeze_time
 from google.cloud import tasks_v2
 from mock import MagicMock, patch
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     QUEUES_REGION,
 )
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
-    to_normalized_processed_file_name,
-    to_normalized_unprocessed_file_path,
+    to_normalized_unprocessed_file_name,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
@@ -64,26 +63,27 @@ _REGION = regions.Region(
     is_direct_ingest=True,
 )
 
+_PRIMARY_INGEST_BUCKET = gcsfs_direct_ingest_bucket_for_region(
+    project_id="recidiviz-456",
+    region_code=_REGION.region_code,
+    system_level=SystemLevel.STATE,
+    ingest_instance=DirectIngestInstance.PRIMARY,
+)
+_SECONDARY_INGEST_BUCKET = gcsfs_direct_ingest_bucket_for_region(
+    project_id="recidiviz-456",
+    region_code=_REGION.region_code,
+    system_level=SystemLevel.STATE,
+    ingest_instance=DirectIngestInstance.SECONDARY,
+)
+
 
 class TestBQImportExportCloudTaskQueueInfo(TestCase):
     """Tests for the BQImportExportCloudTaskQueueInfo."""
 
     def setUp(self) -> None:
-        self.primary_ingest_bucket = gcsfs_direct_ingest_bucket_for_region(
-            project_id="recidiviz-456",
-            region_code=_REGION.region_code,
-            system_level=SystemLevel.STATE,
-            ingest_instance=DirectIngestInstance.PRIMARY,
-        )
-        self.secondary_ingest_bucket = gcsfs_direct_ingest_bucket_for_region(
-            project_id="recidiviz-456",
-            region_code=_REGION.region_code,
-            system_level=SystemLevel.STATE,
-            ingest_instance=DirectIngestInstance.SECONDARY,
-        )
         self.raw_data_file_path = GcsfsFilePath.from_directory_and_file_name(
-            self.primary_ingest_bucket,
-            to_normalized_processed_file_name(
+            _PRIMARY_INGEST_BUCKET,
+            to_normalized_unprocessed_file_name(
                 "file_path.csv", GcsfsDirectIngestFileType.RAW_DATA
             ),
         )
@@ -92,13 +92,13 @@ class TestBQImportExportCloudTaskQueueInfo(TestCase):
         )
         self.primary_ingest_view_export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="my_file_tag",
-            output_bucket_name=self.primary_ingest_bucket.bucket_name,
+            output_bucket_name=_PRIMARY_INGEST_BUCKET.bucket_name,
             upper_bound_datetime_prev=None,
             upper_bound_datetime_to_export=datetime.datetime.now(),
         )
         self.secondary_ingest_view_export_args = attr.evolve(
             self.primary_ingest_view_export_args,
-            output_bucket_name=self.secondary_ingest_bucket.bucket_name,
+            output_bucket_name=_SECONDARY_INGEST_BUCKET.bucket_name,
         )
 
     def test_info_no_tasks(self) -> None:
@@ -131,8 +131,8 @@ class TestBQImportExportCloudTaskQueueInfo(TestCase):
         other_args = attr.evolve(
             self.raw_data_import_args,
             raw_data_file_path=GcsfsFilePath.from_directory_and_file_name(
-                self.primary_ingest_bucket,
-                to_normalized_processed_file_name(
+                _PRIMARY_INGEST_BUCKET,
+                to_normalized_unprocessed_file_name(
                     "other_file.csv", GcsfsDirectIngestFileType.RAW_DATA
                 ),
             ),
@@ -267,7 +267,7 @@ class TestProcessIngestJobCloudTaskQueueInfo(TestCase):
         )
         self.ingest_view_file_path = GcsfsFilePath.from_directory_and_file_name(
             bucket,
-            to_normalized_processed_file_name(
+            to_normalized_unprocessed_file_name(
                 "file_path.csv", GcsfsDirectIngestFileType.INGEST_VIEW
             ),
         )
@@ -408,7 +408,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
             app_engine_http_request={
                 "http_method": "POST",
                 "relative_uri": f"/direct/scheduler?region={_REGION.region_code}&"
-                f"bucket=some-bucket&just_finished_job=False",
+                f"bucket={_PRIMARY_INGEST_BUCKET.bucket_name}&just_finished_job=False",
                 "body": body_encoded,
             },
         )
@@ -419,8 +419,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         # Act
         DirectIngestCloudTaskManagerImpl().create_direct_ingest_scheduler_queue_task(
             region=_REGION,
-            ingest_instance=DirectIngestInstance.PRIMARY,
-            ingest_bucket=GcsfsBucketPath("some-bucket"),
+            ingest_bucket=_PRIMARY_INGEST_BUCKET,
             just_finished_job=False,
         )
 
@@ -453,7 +452,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
             app_engine_http_request={
                 "http_method": "POST",
                 "relative_uri": f"/direct/scheduler?region={_REGION.region_code}&"
-                f"bucket=some-bucket&just_finished_job=False",
+                f"bucket={_SECONDARY_INGEST_BUCKET.bucket_name}&just_finished_job=False",
                 "body": body_encoded,
             },
         )
@@ -464,8 +463,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         # Act
         DirectIngestCloudTaskManagerImpl().create_direct_ingest_scheduler_queue_task(
             region=_REGION,
-            ingest_instance=DirectIngestInstance.SECONDARY,
-            ingest_bucket=GcsfsBucketPath("some-bucket"),
+            ingest_bucket=_SECONDARY_INGEST_BUCKET,
             just_finished_job=False,
         )
 
@@ -484,13 +482,18 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
     ) -> None:
         # Arrange
-        file_path = to_normalized_unprocessed_file_path(
-            "bucket/ingest_view_name.csv",
-            file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+
+        file_path = GcsfsFilePath.from_directory_and_file_name(
+            _PRIMARY_INGEST_BUCKET,
+            to_normalized_unprocessed_file_name(
+                file_name="ingest_view_name.csv",
+                file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+            ),
         )
+
         ingest_args = GcsfsIngestArgs(
             datetime.datetime(year=2019, month=7, day=20),
-            file_path=GcsfsFilePath.from_absolute_path(file_path),
+            file_path=file_path,
         )
         body = {
             "cloud_task_args": ingest_args.to_serializable(),
@@ -504,7 +507,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         queue_path = "process-queue-path"
 
         task_name = "{}/{}-{}-{}".format(queue_name, _REGION.region_code, date, uuid)
-        url_params = {"region": _REGION.region_code, "file_path": file_path}
+        url_params = {"region": _REGION.region_code, "file_path": file_path.abs_path()}
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             app_engine_http_request={
@@ -519,7 +522,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         # Act
         DirectIngestCloudTaskManagerImpl().create_direct_ingest_process_job_task(
-            _REGION, DirectIngestInstance.PRIMARY, ingest_args
+            _REGION, ingest_args
         )
 
         # Assert
@@ -539,13 +542,17 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
     ) -> None:
         # Arrange
-        file_path = to_normalized_unprocessed_file_path(
-            "bucket/ingest_view_name.csv",
-            file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+        file_path = GcsfsFilePath.from_directory_and_file_name(
+            _SECONDARY_INGEST_BUCKET,
+            to_normalized_unprocessed_file_name(
+                file_name="ingest_view_name.csv",
+                file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+            ),
         )
+
         ingest_args = GcsfsIngestArgs(
             datetime.datetime(year=2019, month=7, day=20),
-            file_path=GcsfsFilePath.from_absolute_path(file_path),
+            file_path=file_path,
         )
         body = {
             "cloud_task_args": ingest_args.to_serializable(),
@@ -559,7 +566,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         queue_name = "direct-ingest-state-us-xx-process-job-queue"
 
         task_name = "{}/{}-{}-{}".format(queue_name, _REGION.region_code, date, uuid)
-        url_params = {"region": _REGION.region_code, "file_path": file_path}
+        url_params = {"region": _REGION.region_code, "file_path": file_path.abs_path()}
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             app_engine_http_request={
@@ -574,7 +581,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         # Act
         DirectIngestCloudTaskManagerImpl().create_direct_ingest_process_job_task(
-            _REGION, DirectIngestInstance.SECONDARY, ingest_args
+            _REGION, ingest_args
         )
 
         # Assert
@@ -596,12 +603,17 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         self, mock_client: MagicMock, mock_uuid: MagicMock, mock_datetime: MagicMock
     ) -> None:
         # Arrange
-        file_path = to_normalized_unprocessed_file_path(
-            "bucket/file_path.csv", GcsfsDirectIngestFileType.INGEST_VIEW
+        file_path = GcsfsFilePath.from_directory_and_file_name(
+            _PRIMARY_INGEST_BUCKET,
+            to_normalized_unprocessed_file_name(
+                file_name="file_path.csv",
+                file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+            ),
         )
+
         ingest_args = GcsfsIngestArgs(
             ingest_time=datetime.datetime(year=2019, month=7, day=20),
-            file_path=GcsfsFilePath.from_absolute_path(file_path),
+            file_path=file_path,
         )
         body = {
             "cloud_task_args": ingest_args.to_serializable(),
@@ -618,7 +630,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         task_name = _REGION.get_queue_name() + "/{}-{}-{}".format(
             _REGION.region_code, date, uuid
         )
-        url_params = {"region": _REGION.region_code, "file_path": file_path}
+        url_params = {"region": _REGION.region_code, "file_path": file_path.abs_path()}
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             app_engine_http_request={
@@ -633,7 +645,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         # Act
         DirectIngestCloudTaskManagerImpl().create_direct_ingest_process_job_task(
-            _REGION, DirectIngestInstance.PRIMARY, ingest_args
+            _REGION, ingest_args
         )
 
         # Assert
@@ -653,11 +665,12 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock
     ) -> None:
         # Arrange
-        raw_data_path = GcsfsFilePath.from_absolute_path(
-            to_normalized_unprocessed_file_path(
-                "bucket/raw_data_path.csv",
-                file_type=GcsfsDirectIngestFileType.RAW_DATA,
-            )
+        raw_data_path = GcsfsFilePath.from_directory_and_file_name(
+            _PRIMARY_INGEST_BUCKET,
+            to_normalized_unprocessed_file_name(
+                file_name="raw_data_path.csv",
+                file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
+            ),
         )
         import_args = GcsfsRawDataBQImportArgs(raw_data_file_path=raw_data_path)
         body = {
@@ -690,7 +703,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         # Act
         DirectIngestCloudTaskManagerImpl().create_direct_ingest_raw_data_import_task(
-            _REGION, DirectIngestInstance.PRIMARY, import_args
+            _REGION, import_args
         )
 
         # Assert
@@ -712,7 +725,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         # Arrange
         export_args = GcsfsIngestViewExportArgs(
             ingest_view_name="my_ingest_view",
-            output_bucket_name="my_ingest_bucket",
+            output_bucket_name=_PRIMARY_INGEST_BUCKET.bucket_name,
             upper_bound_datetime_prev=datetime.datetime(2020, 4, 29),
             upper_bound_datetime_to_export=datetime.datetime(2020, 4, 30),
         )
@@ -730,7 +743,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         task_name = queue_name + "/{}-{}-{}".format(_REGION.region_code, date, uuid)
         url_params = {
             "region": _REGION.region_code,
-            "output_bucket": "my_ingest_bucket",
+            "output_bucket": _PRIMARY_INGEST_BUCKET.bucket_name,
         }
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
@@ -746,7 +759,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         # Act
         DirectIngestCloudTaskManagerImpl().create_direct_ingest_ingest_view_export_task(
-            _REGION, DirectIngestInstance.PRIMARY, export_args
+            _REGION, export_args
         )
 
         # Assert

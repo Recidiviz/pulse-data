@@ -751,9 +751,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         # Single process job request should be waiting for the first file
         self.assertEqual(
-            task_manager.get_process_job_queue_info(
-                controller.region, controller.ingest_instance
-            ).size(),
+            task_manager.get_process_job_queue_info(controller.region).size(),
             1,
         )
 
@@ -763,9 +761,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         task_manager.test_pop_finished_process_job_task()
 
         self.assertEqual(
-            task_manager.get_process_job_queue_info(
-                controller.region, controller.ingest_instance
-            ).size(),
+            task_manager.get_process_job_queue_info(controller.region).size(),
             0,
         )
 
@@ -781,15 +777,11 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         self.assertEqual(
             0,
-            task_manager.get_scheduler_queue_info(
-                controller.region, controller.ingest_instance
-            ).size(),
+            task_manager.get_scheduler_queue_info(controller.region).size(),
         )
         self.assertEqual(
             1,
-            task_manager.get_process_job_queue_info(
-                controller.region, controller.ingest_instance
-            ).size(),
+            task_manager.get_process_job_queue_info(controller.region).size(),
         )
 
         self.validate_file_metadata(
@@ -824,9 +816,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         self.assertEqual(
             1,
-            task_manager.get_process_job_queue_info(
-                controller.region, controller.ingest_instance
-            ).size(),
+            task_manager.get_process_job_queue_info(controller.region).size(),
         )
 
         file_path2 = path_for_fixture_file(
@@ -868,15 +858,11 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         self.assertEqual(
             0,
-            task_manager.get_scheduler_queue_info(
-                controller.region, controller.ingest_instance
-            ).size(),
+            task_manager.get_scheduler_queue_info(controller.region).size(),
         )
         self.assertEqual(
             0,
-            task_manager.get_process_job_queue_info(
-                controller.region, controller.ingest_instance
-            ).size(),
+            task_manager.get_process_job_queue_info(controller.region).size(),
         )
         self.validate_file_metadata(
             controller,
@@ -949,9 +935,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         _, args = task_manager.test_pop_finished_process_job_task()
 
-        task_manager.create_direct_ingest_process_job_task(
-            controller.region, controller.ingest_instance, args
-        )
+        task_manager.create_direct_ingest_process_job_task(controller.region, args)
 
         # Now run the repeated task
         task_manager.test_run_next_process_job_task()
@@ -963,15 +947,11 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         self.assertEqual(
             0,
-            task_manager.get_scheduler_queue_info(
-                controller.region, controller.ingest_instance
-            ).size(),
+            task_manager.get_scheduler_queue_info(controller.region).size(),
         )
         self.assertEqual(
             0,
-            task_manager.get_process_job_queue_info(
-                controller.region, controller.ingest_instance
-            ).size(),
+            task_manager.get_process_job_queue_info(controller.region).size(),
         )
         self.validate_file_metadata(
             controller,
@@ -1122,15 +1102,11 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         # just get us in a loop).
         self.assertEqual(
             0,
-            task_manager.get_scheduler_queue_info(
-                controller.region, controller.ingest_instance
-            ).size(),
+            task_manager.get_scheduler_queue_info(controller.region).size(),
         )
         self.assertEqual(
             0,
-            task_manager.get_process_job_queue_info(
-                controller.region, controller.ingest_instance
-            ).size(),
+            task_manager.get_process_job_queue_info(controller.region).size(),
         )
         self.validate_file_metadata(
             controller,
@@ -1413,15 +1389,11 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         self.assertEqual(
             0,
-            task_manager.get_scheduler_queue_info(
-                controller.region, controller.ingest_instance
-            ).size(),
+            task_manager.get_scheduler_queue_info(controller.region).size(),
         )
         self.assertEqual(
             0,
-            task_manager.get_process_job_queue_info(
-                controller.region, controller.ingest_instance
-            ).size(),
+            task_manager.get_process_job_queue_info(controller.region).size(),
         )
 
         # Later file that succeeds will trigger proper upload of all files
@@ -1494,15 +1466,11 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         self.assertEqual(
             0,
-            task_manager.get_scheduler_queue_info(
-                controller.region, controller.ingest_instance
-            ).size(),
+            task_manager.get_scheduler_queue_info(controller.region).size(),
         )
         self.assertEqual(
             0,
-            task_manager.get_process_job_queue_info(
-                controller.region, controller.ingest_instance
-            ).size(),
+            task_manager.get_process_job_queue_info(controller.region).size(),
         )
 
         if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
@@ -1519,7 +1487,6 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         # Cron job to handle unseen files triggers later
         controller.cloud_task_manager.create_direct_ingest_handle_new_files_task(
             controller.region,
-            controller.ingest_instance,
             controller.ingest_bucket_path,
             can_start_ingest=True,
         )
@@ -1796,7 +1763,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         controller.schedule_next_ingest_job(just_finished_job=True)
         for task_name in controller.cloud_task_manager.get_bq_import_export_queue_info(
-            controller.region, controller.ingest_instance
+            controller.region
         ).task_names:
             self.assertNotRegex(task_name, "raw")
         run_task_queues_to_empty(controller)
