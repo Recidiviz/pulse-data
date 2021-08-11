@@ -291,8 +291,9 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         incarceration_period_to_judicial_district: Dict[int, Dict[Any, Any]],
         county_of_residence: Optional[str],
     ) -> List[IncarcerationStayEvent]:
-        """Given the |original_incarceration_periods| generates and returns all IncarcerationStayEvents based on the
-        final day relevant months.
+        """Generates and returns all IncarcerationStayEvents for the
+        pre-processed incarceration periods provided by the
+        |ip_pre_processing_manager|.
         """
         incarceration_stay_events: List[IncarcerationStayEvent] = []
 
