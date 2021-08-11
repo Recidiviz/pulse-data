@@ -18,7 +18,6 @@
 given region.
 """
 from enum import Enum
-from typing import Optional
 
 from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
     is_primary_ingest_bucket,
@@ -58,11 +57,7 @@ class DirectIngestInstance(Enum):
                 )
 
     def database_version(
-        # TODO(#7984): Remove the state_code arg once all states have been migrated to
-        #   multi-DB.
-        self,
-        system_level: SystemLevel,
-        state_code: Optional[StateCode],
+        self, system_level: SystemLevel
     ) -> SQLAlchemyStateDatabaseVersion:
         """Return the database version for this instance."""
         self.check_is_valid_system_level(system_level)
@@ -72,8 +67,6 @@ class DirectIngestInstance(Enum):
             return SQLAlchemyStateDatabaseVersion.LEGACY
 
         if system_level == SystemLevel.STATE:
-            if not state_code:
-                raise ValueError("Found null state_code for STATE schema.")
             if self == self.SECONDARY:
                 return SQLAlchemyStateDatabaseVersion.SECONDARY
             if self == self.PRIMARY:
@@ -106,7 +99,7 @@ class DirectIngestInstance(Enum):
             SQLAlchemyStateDatabaseVersion.LEGACY,
         ):
             expected_primary_db_version = cls.PRIMARY.database_version(
-                SystemLevel.STATE, state_code
+                SystemLevel.STATE
             )
             # TODO(#7984): Remove this check once there are no states running ingest out
             #   of a LEGACY DB.

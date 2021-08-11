@@ -221,7 +221,7 @@ class CloudSqlToBQConfig:
             return SQLAlchemyDatabaseKey.for_state_code(
                 state_code=state_code,
                 db_version=self.direct_ingest_instance.database_version(
-                    SystemLevel.STATE, state_code=state_code
+                    SystemLevel.STATE
                 ),
             )
 

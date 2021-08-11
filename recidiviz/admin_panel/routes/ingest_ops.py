@@ -130,7 +130,7 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
                 request.json["ingestInstance"].upper()
             )
             db_version = ingest_instance.database_version(
-                system_level=SystemLevel.STATE, state_code=state_code
+                system_level=SystemLevel.STATE
             )
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
