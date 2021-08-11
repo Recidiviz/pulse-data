@@ -19,6 +19,7 @@
 import unittest
 
 from werkzeug.datastructures import MultiDict
+
 from recidiviz.ingest.scrape import constants
 from recidiviz.utils import params
 
@@ -62,12 +63,10 @@ class TestParams(unittest.TestCase):
         self.assertEqual(params.get_only_str_param_value("batch_id", PARAMS), "12345")
 
     def test_get_only_str_param_value_error(self) -> None:
-        with self.assertRaises(ValueError) as error:
+        with self.assertRaisesRegex(
+            ValueError, r"^Only one value can be provided for query param region\.$"
+        ):
             params.get_only_str_param_value("region", PARAMS)
-        self.assertEqual(
-            str(error.exception),
-            "Only one value can be provided for query param region.",
-        )
 
     def test_get_bool_param_value(self) -> None:
         self.assertEqual(

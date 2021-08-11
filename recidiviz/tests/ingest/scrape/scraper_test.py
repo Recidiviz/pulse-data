@@ -21,7 +21,6 @@ import datetime
 import unittest
 from typing import Optional
 
-import pytest
 import requests
 from mock import Mock, patch
 from requests.structures import CaseInsensitiveDict
@@ -585,7 +584,7 @@ class TestFetchPage(unittest.TestCase):
             mock_requests.return_value = error_response
 
             scraper = FakeScraper(region, initial_task)
-            with pytest.raises(FetchPageError):
+            with self.assertRaises(FetchPageError):
                 scraper.fetch_page(url)
 
             mock_get_region.assert_called_with(region)

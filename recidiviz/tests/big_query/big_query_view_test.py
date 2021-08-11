@@ -18,7 +18,6 @@
 import copy
 import unittest
 
-import pytest
 from mock import patch
 
 from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryView
@@ -78,7 +77,7 @@ class BigQueryViewTest(unittest.TestCase):
 
     @patch("recidiviz.big_query.big_query_view.GCP_PROJECTS", [PROJECT_ID])
     def test_simple_view_invalid_raw_project_id(self) -> None:
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             _ = BigQueryView(
                 project_id="other-project",
                 dataset_id="view_dataset",
@@ -122,7 +121,12 @@ class BigQueryViewTest(unittest.TestCase):
             )
 
     def test_materialized_address_override_same_as_view_throws(self) -> None:
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            "^Materialized address override "
+            r"\[BigQueryAddress\(dataset_id='view_dataset', table_id='my_view'\)\] cannot be "
+            "same as view itself.$",
+        ):
             _ = BigQueryView(
                 dataset_id="view_dataset",
                 view_id="my_view",
@@ -134,15 +138,14 @@ class BigQueryViewTest(unittest.TestCase):
                 view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
                 some_dataset="a_dataset",
             )
-        self.assertEqual(
-            str(e.exception),
-            "Materialized address override "
-            "[BigQueryAddress(dataset_id='view_dataset', table_id='my_view')] cannot be "
-            "same as view itself.",
-        )
 
     def test_materialized_address_override_no_should_materialize_throws(self) -> None:
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Found nonnull materialized_address_override \["
+            r"BigQueryAddress\(dataset_id='view_dataset_materialized', table_id='my_view_table'\)\] "
+            "when `should_materialize` is not True",
+        ):
             _ = BigQueryView(
                 dataset_id="view_dataset",
                 view_id="my_view",
@@ -154,13 +157,6 @@ class BigQueryViewTest(unittest.TestCase):
                 view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
                 some_dataset="a_dataset",
             )
-        self.assertTrue(
-            str(e.exception).startswith(
-                "Found nonnull materialized_address_override ["
-                "BigQueryAddress(dataset_id='view_dataset_materialized', table_id='my_view_table')] "
-                "when `should_materialize` is not True"
-            )
-        )
 
     def test_materialized_address(self) -> None:
         view_materialized_no_override = BigQueryView(

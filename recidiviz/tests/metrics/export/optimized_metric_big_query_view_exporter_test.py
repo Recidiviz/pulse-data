@@ -18,27 +18,25 @@
 """Tests for optimized_metric_big_query_view_exporter.py."""
 
 import unittest
-from typing import Dict, Set, List, Callable, Any
+from typing import Any, Callable, Dict, List, Set
 
 from google.cloud import bigquery
-
-import pytest
 from mock import call, create_autospec, patch
 
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
+from recidiviz.metrics.export import optimized_metric_big_query_view_exporter
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import (
     OptimizedMetricBigQueryViewExportValidator,
 )
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
-from recidiviz.metrics.export import optimized_metric_big_query_view_exporter
 from recidiviz.metrics.export.optimized_metric_big_query_view_exporter import (
-    OptimizedMetricRepresentation,
     OptimizedMetricBigQueryViewExporter,
+    OptimizedMetricRepresentation,
 )
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
+from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 _DATA_POINTS = [
     {
@@ -223,7 +221,7 @@ class PlaceInCompactMatrixTest(unittest.TestCase):
 
     def test_place_dimensions_not_in_dataset(self) -> None:
         fresh_data_values = self._create_new_data_values()
-        with pytest.raises(KeyError) as e:
+        with self.assertRaisesRegex(KeyError, "month: 5"):
             new_data_point = {
                 "district": "4",
                 "year": 2020,
@@ -237,8 +235,6 @@ class PlaceInCompactMatrixTest(unittest.TestCase):
                 _VALUE_KEYS,
                 _DIMENSION_MANIFEST,
             )
-
-        self.assertIn("month: 5", str(e.value))
 
 
 class AddToManifestTest(unittest.TestCase):
@@ -319,8 +315,7 @@ class AddToManifestTest(unittest.TestCase):
         )
         self.assertEqual(expected, updated_manifest)
 
-    @staticmethod
-    def test_add_empty_data_point() -> None:
+    def test_add_empty_data_point(self) -> None:
         data_point: Dict[str, Any] = {}
         existing_manifest: Dict[str, Set[str]] = {
             "district": {"4"},
@@ -329,7 +324,7 @@ class AddToManifestTest(unittest.TestCase):
             "year": {"2020"},
         }
 
-        with pytest.raises(KeyError):
+        with self.assertRaises(KeyError):
             optimized_metric_big_query_view_exporter.add_to_dimension_manifest(
                 data_point, existing_manifest
             )

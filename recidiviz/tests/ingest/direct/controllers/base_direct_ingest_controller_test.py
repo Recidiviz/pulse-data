@@ -1084,9 +1084,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.add_and_process_through_ingest_view_export(controller, file_path)
 
         while task_manager.scheduler_tasks:
-            with self.assertRaises(ValueError) as e:
+            with self.assertRaisesRegex(ValueError, "^Splitting crashed$"):
                 task_manager.test_run_next_scheduler_task()
-            self.assertEqual(str(e.exception), "Splitting crashed")
             task_manager.scheduler_tasks.pop(0)
 
         controller.kick_scheduler(just_finished_job=False)
@@ -1515,17 +1514,15 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             file_tags = list(reversed(sorted(controller.get_file_tag_rank_list())))
 
             add_paths_with_tags(controller, file_tags)
-            with self.assertRaises(ValueError) as e:
-                run_task_queues_to_empty(controller)
-
-            self.assertEqual(
-                str(e.exception),
-                "The can_start_ingest flag should only be used for regions where ingest is not yet"
+            with self.assertRaisesRegex(
+                ValueError,
+                "^The can_start_ingest flag should only be used for regions where ingest is not yet"
                 " launched in a particular environment. If we want to be able to selectively pause"
                 " ingest processing for a state, we will first have to build a config that is"
                 " respected by both the /ensure_all_raw_file_paths_normalized endpoint and any cloud"
-                " functions that trigger ingest.",
-            )
+                " functions that trigger ingest.$",
+            ):
+                run_task_queues_to_empty(controller)
 
     def test_can_start_ingest_is_false_does_not_start_ingest(
         self,
@@ -1581,12 +1578,11 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             Mock(return_value="production"),
         ):
             add_paths_with_tags(controller, ["tagA"])
-            with self.assertRaises(DirectIngestError) as e:
+            with self.assertRaisesRegex(
+                DirectIngestError,
+                r"^Bad environment \[production\] for region \[us_xx\].$",
+            ):
                 run_task_queues_to_empty(controller)
-
-            self.assertEqual(
-                str(e.exception), "Bad environment [production] for region [us_xx]."
-            )
 
         if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(
@@ -1621,14 +1617,11 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         )
 
         add_paths_with_tags(controller, ["tagA"])
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            "^The can_start_ingest flag should only be used for regions where ingest is not yet launched",
+        ):
             run_task_queues_to_empty(controller)
-
-        self.assertTrue(
-            str(e.exception).startswith(
-                "The can_start_ingest flag should only be used for regions where ingest is not yet launched"
-            )
-        )
 
         if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(

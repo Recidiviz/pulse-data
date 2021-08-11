@@ -19,7 +19,6 @@ import unittest
 from datetime import date, datetime
 
 import mock
-import pytest
 
 from recidiviz.calculator.pipeline.utils import calculator_utils
 from recidiviz.calculator.pipeline.utils.calculator_utils import person_characteristics
@@ -33,7 +32,7 @@ from recidiviz.persistence.entity.state.entities import (
 )
 
 
-def test_age_at_date_earlier_month():
+def test_age_at_date_earlier_month() -> None:
     birthdate = date(1989, 6, 17)
     check_date = date(2014, 4, 15)
     person = StatePerson.new_with_defaults(state_code="US_XX", birthdate=birthdate)
@@ -41,7 +40,7 @@ def test_age_at_date_earlier_month():
     assert calculator_utils.age_at_date(person, check_date) == 24
 
 
-def test_age_at_date_same_month_earlier_date():
+def test_age_at_date_same_month_earlier_date() -> None:
     birthdate = date(1989, 6, 17)
     check_date = date(2014, 6, 16)
     person = StatePerson.new_with_defaults(state_code="US_XX", birthdate=birthdate)
@@ -49,7 +48,7 @@ def test_age_at_date_same_month_earlier_date():
     assert calculator_utils.age_at_date(person, check_date) == 24
 
 
-def test_age_at_date_same_month_same_date():
+def test_age_at_date_same_month_same_date() -> None:
     birthdate = date(1989, 6, 17)
     check_date = date(2014, 6, 17)
     person = StatePerson.new_with_defaults(state_code="US_XX", birthdate=birthdate)
@@ -57,7 +56,7 @@ def test_age_at_date_same_month_same_date():
     assert calculator_utils.age_at_date(person, check_date) == 25
 
 
-def test_age_at_date_same_month_later_date():
+def test_age_at_date_same_month_later_date() -> None:
     birthdate = date(1989, 6, 17)
     check_date = date(2014, 6, 18)
     person = StatePerson.new_with_defaults(state_code="US_XX", birthdate=birthdate)
@@ -65,7 +64,7 @@ def test_age_at_date_same_month_later_date():
     assert calculator_utils.age_at_date(person, check_date) == 25
 
 
-def test_age_at_date_later_month():
+def test_age_at_date_later_month() -> None:
     birthdate = date(1989, 6, 17)
     check_date = date(2014, 7, 11)
     person = StatePerson.new_with_defaults(state_code="US_XX", birthdate=birthdate)
@@ -73,7 +72,7 @@ def test_age_at_date_later_month():
     assert calculator_utils.age_at_date(person, check_date) == 25
 
 
-def test_age_at_date_birthdate_unknown():
+def test_age_at_date_birthdate_unknown() -> None:
     assert (
         calculator_utils.age_at_date(
             StatePerson.new_with_defaults(state_code="US_XX"), datetime.today()
@@ -82,7 +81,7 @@ def test_age_at_date_birthdate_unknown():
     )
 
 
-def test_age_bucket():
+def test_age_bucket() -> None:
     assert calculator_utils.age_bucket(24) == "<25"
     assert calculator_utils.age_bucket(27) == "25-29"
     assert calculator_utils.age_bucket(30) == "30-34"
@@ -96,7 +95,7 @@ INCLUDED_PIPELINES = ["incarceration", "supervision"]
 class TestPersonExternalIdToInclude(unittest.TestCase):
     """Tests the person_external_id_to_include function."""
 
-    def test_person_external_id_to_include(self):
+    def test_person_external_id_to_include(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_MO",
             person_id=12345,
@@ -119,7 +118,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
 
             self.assertEqual(external_id, person_external_id.external_id)
 
-    def test_person_external_id_to_include_no_results(self):
+    def test_person_external_id_to_include_no_results(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -139,7 +138,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             )
             self.assertIsNone(external_id)
 
-    def test_person_has_external_ids_from_multiple_states(self):
+    def test_person_has_external_ids_from_multiple_states(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -162,7 +161,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
                 INCLUDED_PIPELINES[0], person_external_id_2.state_code, person
             )
 
-    def test_person_has_multiple_external_ids_of_the_same_type(self):
+    def test_person_has_multiple_external_ids_of_the_same_type(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -201,7 +200,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
 class TestAddPersonCharacteristics(unittest.TestCase):
     """Tests the add_person_characteristics function used by all pipelines."""
 
-    def test_add_person_characteristics(self):
+    def test_add_person_characteristics(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -226,7 +225,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         self.assertEqual(updated_characteristics, expected_output)
 
-    def test_add_person_characteristics_EmptyRaceEthnicity(self):
+    def test_add_person_characteristics_EmptyRaceEthnicity(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -250,7 +249,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         self.assertEqual(updated_characteristics, expected_output)
 
-    def test_add_person_characteristics_NoAttributes(self):
+    def test_add_person_characteristics_NoAttributes(self) -> None:
         person = StatePerson.new_with_defaults(state_code="US_XX", person_id=12345)
 
         event_date = date(2010, 9, 1)
@@ -279,7 +278,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
             },
         },
     )
-    def test_add_person_characteristics_IncludeExternalId(self):
+    def test_add_person_characteristics_IncludeExternalId(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -350,7 +349,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
             },
         },
     )
-    def test_add_person_characteristics_IncludeSecondaryExternalId(self):
+    def test_add_person_characteristics_IncludeSecondaryExternalId(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -401,7 +400,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 class TestIncludeInMonthlyMetrics(unittest.TestCase):
     """Tests the include_in_monthly_metrics function."""
 
-    def test_include_in_monthly_metrics(self):
+    def test_include_in_monthly_metrics(self) -> None:
         calculation_month_upper_bound = date(2000, 1, 31)
 
         include = calculator_utils.include_in_output(
@@ -413,7 +412,7 @@ class TestIncludeInMonthlyMetrics(unittest.TestCase):
 
         self.assertTrue(include)
 
-    def test_include_in_monthly_metrics_lower_bound(self):
+    def test_include_in_monthly_metrics_lower_bound(self) -> None:
         calculation_month_upper_bound = date(2000, 1, 31)
         calculation_month_lower_bound = date(1999, 10, 1)
 
@@ -426,7 +425,7 @@ class TestIncludeInMonthlyMetrics(unittest.TestCase):
 
         self.assertTrue(include)
 
-    def test_include_in_monthly_metrics_month_of_lower_bound(self):
+    def test_include_in_monthly_metrics_month_of_lower_bound(self) -> None:
         calculation_month_upper_bound = date(2000, 1, 31)
         calculation_month_lower_bound = date(1999, 10, 1)
 
@@ -439,7 +438,7 @@ class TestIncludeInMonthlyMetrics(unittest.TestCase):
 
         self.assertTrue(include)
 
-    def test_include_in_monthly_metrics_month_of_end_date(self):
+    def test_include_in_monthly_metrics_month_of_end_date(self) -> None:
         calculation_month_upper_bound = date(2000, 1, 31)
         calculation_month_lower_bound = date(1999, 10, 1)
 
@@ -452,7 +451,7 @@ class TestIncludeInMonthlyMetrics(unittest.TestCase):
 
         self.assertTrue(include)
 
-    def test_include_in_monthly_metrics_after_end_date(self):
+    def test_include_in_monthly_metrics_after_end_date(self) -> None:
         calculation_month_upper_bound = date(2000, 1, 31)
 
         include = calculator_utils.include_in_output(
@@ -464,7 +463,7 @@ class TestIncludeInMonthlyMetrics(unittest.TestCase):
 
         self.assertFalse(include)
 
-    def test_include_in_monthly_metrics_before_lower_bound(self):
+    def test_include_in_monthly_metrics_before_lower_bound(self) -> None:
         calculation_month_upper_bound = date(2000, 1, 31)
         calculation_month_lower_bound = date(1999, 10, 1)
 
@@ -477,7 +476,7 @@ class TestIncludeInMonthlyMetrics(unittest.TestCase):
 
         self.assertFalse(include)
 
-    def test_include_in_monthly_metrics_one_month_run(self):
+    def test_include_in_monthly_metrics_one_month_run(self) -> None:
         calculation_month_upper_bound = date(1999, 12, 31)
         calculation_month_lower_bound = date(1999, 12, 1)
 
@@ -490,7 +489,7 @@ class TestIncludeInMonthlyMetrics(unittest.TestCase):
 
         self.assertTrue(include)
 
-    def test_include_in_monthly_metrics_one_month_run_exclude(self):
+    def test_include_in_monthly_metrics_one_month_run_exclude(self) -> None:
         calculation_month_upper_bound = date(1999, 12, 31)
         calculation_month_lower_bound = date(1999, 12, 1)
 
@@ -507,7 +506,7 @@ class TestIncludeInMonthlyMetrics(unittest.TestCase):
 class TestGetCalculationMonthUpperBoundDate(unittest.TestCase):
     """Tests the get_calculation_month_upper_bound_date function."""
 
-    def test_get_calculation_month_upper_bound_date(self):
+    def test_get_calculation_month_upper_bound_date(self) -> None:
         value = "2009-01"
 
         calculation_month_upper_bound = (
@@ -516,18 +515,18 @@ class TestGetCalculationMonthUpperBoundDate(unittest.TestCase):
 
         self.assertEqual(date(2009, 1, 31), calculation_month_upper_bound)
 
-    def test_get_calculation_month_upper_bound_date_bad_month(self):
+    def test_get_calculation_month_upper_bound_date_bad_month(self) -> None:
         value = "2009-31"
 
-        with pytest.raises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError, "Invalid value for calculation_end_month"
+        ):
             _ = calculator_utils.get_calculation_month_upper_bound_date(value)
 
-        assert "Invalid value for calculation_end_month" in str(e.value)
-
-    def test_get_calculation_month_upper_bound_date_bad_year(self):
+    def test_get_calculation_month_upper_bound_date_bad_year(self) -> None:
         value = "0001-31"
 
-        with pytest.raises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError, "Invalid value for calculation_end_month"
+        ):
             _ = calculator_utils.get_calculation_month_upper_bound_date(value)
-
-        assert "Invalid value for calculation_end_month" in str(e.value)

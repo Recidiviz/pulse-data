@@ -185,7 +185,9 @@ class TestGCSImportToCloudSQL(TestCase):
             self.mock_cloud_sql_client.import_gcs_csv.side_effect = Exception(
                 "Error while importing CSV to temp table"
             )
-            with self.assertRaises(Exception) as e:
+            with self.assertRaisesRegex(
+                Exception, "^Error while importing CSV to temp table$"
+            ):
                 import_gcs_csv_to_cloud_sql(
                     schema_type=SchemaType.CASE_TRIAGE,
                     destination_table=self.table_name,
@@ -194,9 +196,6 @@ class TestGCSImportToCloudSQL(TestCase):
                 )
             destination_table_rows = session.query(DashboardUserRestrictions).all()
             self.assertEqual(len(destination_table_rows), 1)
-            self.assertEqual(
-                str(e.exception), "Error while importing CSV to temp table"
-            )
 
     def test_import_gcs_csv_to_cloud_sql_session_error(self) -> None:
         """Assert that session errors raise an error and roll back the session."""
@@ -209,7 +208,9 @@ class TestGCSImportToCloudSQL(TestCase):
                 allowed_supervision_location_ids="1,2",
             )
             add_users_to_database_session(self.database_key, [user_1])
-            with self.assertRaises(Exception) as e:
+            with self.assertRaisesRegex(
+                Exception, 'relation "table_does_not_exist" does not exist'
+            ):
                 import_gcs_csv_to_cloud_sql(
                     schema_type=SchemaType.CASE_TRIAGE,
                     destination_table="table_does_not_exist",
@@ -218,4 +219,3 @@ class TestGCSImportToCloudSQL(TestCase):
                 )
             destination_table_rows = session.query(DashboardUserRestrictions).all()
             self.assertEqual(len(destination_table_rows), 1)
-            assert 'relation "table_does_not_exist" does not exist' in str(e.exception)

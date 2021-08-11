@@ -18,13 +18,11 @@
 import datetime
 import unittest
 
-import pytest
-
 from recidiviz.common.date import (
-    munge_date_string,
     DateRange,
     DateRangeDiff,
     NonNegativeDateRange,
+    munge_date_string,
 )
 
 
@@ -168,14 +166,13 @@ class TestNonNegativeDateRange(unittest.TestCase):
     """Tests for NonNegativeDateRange"""
 
     def test_negative_raises_value_error(self) -> None:
-        with pytest.raises(ValueError) as exception_info:
+        with self.assertRaisesRegex(
+            ValueError, "Parsed date has to be in chronological order"
+        ):
             NonNegativeDateRange(
                 lower_bound_inclusive_date=datetime.date(2019, 2, 3),
                 upper_bound_exclusive_date=datetime.date(2019, 2, 2),
             )
-        assert "Parsed date has to be in chronological order" in str(
-            exception_info.value
-        )
 
 
 class TestDateRangeDiff(unittest.TestCase):

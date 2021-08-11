@@ -22,7 +22,6 @@ from typing import Any, Dict, List, Optional
 from unittest import mock
 
 import attr
-import pytest
 from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
@@ -2331,7 +2330,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             _ = self._run_find_incarceration_stays_with_no_sentences(
                 incarceration_period, _COUNTY_OF_RESIDENCE
             )
@@ -3096,7 +3095,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
     def test_cannot_instantiate_IncarcerationAdmissionEvent(self):
         """Test to confirm that an exception will be raised if an
         IncarcerationAdmissionEvent is instantiated directly."""
-        with pytest.raises(Exception):
+        with self.assertRaises(Exception):
             _ = IncarcerationAdmissionEvent(
                 state_code="US_XX",
                 event_date=date(2000, 12, 1),

@@ -213,7 +213,7 @@ class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
         )
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             ip_is_nested_in_previous_period(ip, previous_ip)
 
 

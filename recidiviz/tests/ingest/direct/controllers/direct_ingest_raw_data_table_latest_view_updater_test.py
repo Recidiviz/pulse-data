@@ -17,17 +17,17 @@
 """Tests for DirectIngestRawDataUpdateController."""
 import unittest
 from unittest import mock
-from mock import patch, create_autospec
 
 from google.cloud import bigquery
 from google.cloud.bigquery import DatasetReference
+from mock import create_autospec, patch
 
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestRawDataTableLatestView,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater import (
     DirectIngestRawDataTableLatestViewUpdater,
+)
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestRawDataTableLatestView,
 )
 from recidiviz.tests.ingest.direct.direct_ingest_util import (
     FakeDirectIngestRegionRawFileConfig,
@@ -141,9 +141,7 @@ class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
         self.mock_big_query_client.create_or_update_view.side_effect = Exception
 
         with local_project_id_override(self.project_id):
-            with self.assertRaises(ValueError) as e:
+            with self.assertRaisesRegex(
+                ValueError, r"^Couldn't create/update views for file \[tagA\]$"
+            ):
                 self.update_controller.update_views_for_state()
-
-            self.assertEqual(
-                str(e.exception), "Couldn't create/update views for file [tagA]"
-            )

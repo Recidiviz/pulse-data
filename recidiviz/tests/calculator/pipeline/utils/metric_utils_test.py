@@ -17,7 +17,6 @@
 """Tests the functions in the metric_utils file."""
 import unittest
 
-import pytest
 from google.cloud import bigquery
 from google.cloud.bigquery import SchemaField
 
@@ -106,12 +105,10 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
     def test_json_serializable_metric_key_InvalidList(self):
         metric_key = {"invalid_list_key": ["list", "values"]}
 
-        with pytest.raises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError, "^Unexpected list in metric_key for key: invalid_list_key$"
+        ):
             json_serializable_metric_key(metric_key)
-
-            self.assertEqual(
-                e, "Unexpected list in metric_key for key: invalid_list_key"
-            )
 
 
 class TestBQSchemaForMetricTable(unittest.TestCase):

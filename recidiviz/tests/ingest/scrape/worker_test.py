@@ -21,8 +21,8 @@
 import datetime
 import json
 from typing import Callable
+from unittest.case import TestCase
 
-import pytest
 import pytz
 from flask import Flask
 from mock import Mock, create_autospec, patch
@@ -48,7 +48,7 @@ app.config["TESTING"] = True
 
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="test-project"))
 @patch("recidiviz.utils.metadata.project_number", Mock(return_value="123456789"))
-class TestWorker:
+class TestWorker(TestCase):
     """Tests for requests to the Worker API."""
 
     # noinspection PyAttributeOutsideInit
@@ -116,7 +116,7 @@ class TestWorker:
         }
         form_encoded = json.dumps(form).encode()
         headers = {"X-Appengine-QueueName": "test-queue"}
-        with pytest.raises(worker.RequestProcessingError):
+        with self.assertRaises(worker.RequestProcessingError):
             self.client.post(PATH, data=form_encoded, headers=headers)
 
         region.get_scraper().fake_task.assert_called_with(FAKE_QUEUE_PARAMS)
@@ -141,7 +141,7 @@ class TestWorker:
         }
         form_encoded = json.dumps(form).encode()
         headers = {"X-Appengine-QueueName": "test-queue"}
-        with pytest.raises(worker.RequestProcessingError):
+        with self.assertRaises(worker.RequestProcessingError):
             self.client.post(PATH, data=form_encoded, headers=headers)
 
         region.get_scraper().fake_task.assert_called_with(FAKE_QUEUE_PARAMS)
@@ -163,6 +163,5 @@ class TestWorker:
         }
         form_encoded = json.dumps(form).encode()
         headers = {"X-Appengine-QueueName": "test-queue"}
-        with pytest.raises(ValueError) as exception:
+        with self.assertRaisesRegex(ValueError, "^Region specified"):
             self.client.post(PATH, data=form_encoded, headers=headers)
-            assert str(exception.value).startswith("Region specified")

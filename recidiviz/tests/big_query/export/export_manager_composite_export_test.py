@@ -14,16 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
 """Tests for the export_views_with_exporters function in view_export_manager."""
-
 import unittest
-
-import pytest
 
 from mock import call, create_autospec, patch
 
-from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 from recidiviz.big_query.export.big_query_view_exporter import (
     BigQueryViewExporter,
     ViewExportValidationError,
@@ -33,9 +28,10 @@ from recidiviz.big_query.export.export_query_config import (
     ExportOutputFormatType,
 )
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.metrics.export.view_export_manager import export_views_with_exporters
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 
 class ExportManagerCompositeExportTest(unittest.TestCase):
@@ -281,7 +277,7 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
         delegate_two.export_and_validate.side_effect = ValueError("Validation failed")
 
         # Make the actual call
-        with pytest.raises(ValueError) as e:
+        with self.assertRaisesRegex(ValueError, "Validation failed"):
             export_views_with_exporters(
                 mock_fs,
                 [export_config_one, export_config_two],
@@ -290,8 +286,6 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
                     ExportOutputFormatType.METRIC: delegate_two,
                 },
             )
-
-        self.assertIn("Validation failed", str(e.value))
 
     def test_export_staging_delegate_validation_failed(self) -> None:
         metric_view_one = MetricBigQueryViewBuilder(
@@ -375,7 +369,7 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
         )
 
         # Make the actual call
-        with pytest.raises(ViewExportValidationError) as e:
+        with self.assertRaisesRegex(ViewExportValidationError, "Validation failed"):
             export_views_with_exporters(
                 mock_fs,
                 [export_config_one, export_config_two],
@@ -384,5 +378,3 @@ class ExportManagerCompositeExportTest(unittest.TestCase):
                     ExportOutputFormatType.METRIC: delegate_two,
                 },
             )
-
-        self.assertIn("Validation failed", str(e.value))

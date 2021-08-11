@@ -18,7 +18,6 @@
 import unittest
 from datetime import date
 
-import pytest
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.common.constants.state.state_assessment import StateAssessmentLevel
@@ -291,7 +290,7 @@ class TestSetDateSpecificAssessmentLevel(unittest.TestCase):
             assessment_score="X9K", assessment_date="12042014"  # This should throw
         )
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             _ = us_pa_assessment_level_reference.set_date_specific_lsir_fields(
                 assessment
             )

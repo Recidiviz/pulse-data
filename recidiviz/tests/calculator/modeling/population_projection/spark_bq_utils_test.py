@@ -17,9 +17,10 @@
 """Tests for Spark BigQuery Utils."""
 import os
 import unittest
-from unittest.mock import patch
-from typing import Any
 from math import nan
+from typing import Any
+from unittest.mock import patch
+
 import pandas as pd
 
 from recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils import (
@@ -151,7 +152,7 @@ class TestSparkBQUtils(unittest.TestCase):
         )
 
     def test_upload_spark_model_inputs_with_missing_yaml_inputs(self) -> None:
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(ValueError, "^Missing yaml inputs"):
             upload_spark_model_inputs(
                 "recidiviz-staging",
                 "test",
@@ -160,10 +161,9 @@ class TestSparkBQUtils(unittest.TestCase):
                 self.total_population_data,
                 get_inputs_path("super_simulation_missing_inputs.yaml"),
             )
-        self.assertTrue(str(e.exception).startswith("Missing yaml inputs"))
 
     def test_upload_spark_model_inputs_with_unexpected_yaml_inputs(self) -> None:
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(ValueError, "^Unexpected yaml inputs"):
             upload_spark_model_inputs(
                 "recidiviz-staging",
                 "test",
@@ -172,12 +172,15 @@ class TestSparkBQUtils(unittest.TestCase):
                 self.total_population_data,
                 get_inputs_path("super_simulation_unexpected_inputs.yaml"),
             )
-        self.assertTrue(str(e.exception).startswith("Unexpected yaml inputs"))
 
     def test_upload_spark_model_inputs_with_wrong_disaggregation_axis_in_yaml(
         self,
     ) -> None:
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            "^All disagregation axes must be included in the input dataframe columns\n"
+            r"Expected: \['crime_type'\], Actual: Index\(\['compartment', 'outflow_to', 'time_step', 'age', 'total_population'\], dtype='object'\)$",
+        ):
             upload_spark_model_inputs(
                 "recidiviz-staging",
                 "test",
@@ -186,14 +189,11 @@ class TestSparkBQUtils(unittest.TestCase):
                 self.total_population_data_wrong_disaggregation_axis,
                 get_inputs_path("super_simulation_data_ingest.yaml"),
             )
-        self.assertEqual(
-            str(e.exception),
-            "All disagregation axes must be included in the input dataframe columns\n"
-            "Expected: ['crime_type'], Actual: Index(['compartment', 'outflow_to', 'time_step', 'age', 'total_population'], dtype='object')",
-        )
 
     def test_upload_spark_model_inputs_with_invalid_project_id(self) -> None:
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError, "^bad_project_id is not a supported gcloud BigQuery project$"
+        ):
             upload_spark_model_inputs(
                 "bad_project_id",
                 "test",
@@ -202,15 +202,12 @@ class TestSparkBQUtils(unittest.TestCase):
                 self.total_population_data,
                 get_inputs_path("super_simulation_data_ingest.yaml"),
             )
-        self.assertEqual(
-            str(e.exception),
-            "bad_project_id is not a supported gcloud BigQuery project",
-        )
 
     def test_upload_spark_model_inputs_with_missing_disaggregation_axis(self) -> None:
-        with self.assertRaises(ValueError) as e:
-            # import pdb
-            # pdb.set_trace()
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Tables \['outflows_data'\] must have dissaggregation axis of 'crime', 'crime_type', 'age', or 'race'$",
+        ):
             upload_spark_model_inputs(
                 "recidiviz-staging",
                 "test",
@@ -219,13 +216,11 @@ class TestSparkBQUtils(unittest.TestCase):
                 self.total_population_data,
                 get_inputs_path("super_simulation_data_ingest.yaml"),
             )
-        self.assertEqual(
-            str(e.exception),
-            "Tables ['outflows_data'] must have dissaggregation axis of 'crime', 'crime_type', 'age', or 'race'",
-        )
 
     def test_upload_spark_model_inputs_with_null_values(self) -> None:
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError, "^Table 'transitions_data' must not contain null values$"
+        ):
             upload_spark_model_inputs(
                 "recidiviz-staging",
                 "test",
@@ -234,12 +229,12 @@ class TestSparkBQUtils(unittest.TestCase):
                 self.total_population_data,
                 get_inputs_path("super_simulation_data_ingest.yaml"),
             )
-        self.assertEqual(
-            str(e.exception), "Table 'transitions_data' must not contain null values"
-        )
 
     def test_upload_spark_model_inputs_with_missing_column(self) -> None:
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Table 'total_population_data' missing required columns \{'time_step'\}$",
+        ):
             upload_spark_model_inputs(
                 "recidiviz-staging",
                 "test",
@@ -248,13 +243,12 @@ class TestSparkBQUtils(unittest.TestCase):
                 self.total_population_data_missing_column,
                 get_inputs_path("super_simulation_data_ingest.yaml"),
             )
-        self.assertEqual(
-            str(e.exception),
-            "Table 'total_population_data' missing required columns {'time_step'}",
-        )
 
     def test_upload_spark_model_inputs_with_extra_column(self) -> None:
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Table 'total_population_data' contains unexpected columns \{'random_extra_column'\}$",
+        ):
             upload_spark_model_inputs(
                 "recidiviz-staging",
                 "test",
@@ -263,13 +257,12 @@ class TestSparkBQUtils(unittest.TestCase):
                 self.total_population_data_extra_column,
                 get_inputs_path("super_simulation_data_ingest.yaml"),
             )
-        self.assertEqual(
-            str(e.exception),
-            "Table 'total_population_data' contains unexpected columns {'random_extra_column'}",
-        )
 
     def test_upload_spark_model_inputs_with_column_wrong_type(self) -> None:
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            "^Table 'total_population_data' has wrong type for column 'total_population'. Type 'int64' should be 'float64'$",
+        ):
             upload_spark_model_inputs(
                 "recidiviz-staging",
                 "test",
@@ -278,10 +271,6 @@ class TestSparkBQUtils(unittest.TestCase):
                 self.total_population_data_wrong_type,
                 get_inputs_path("super_simulation_data_ingest.yaml"),
             )
-        self.assertEqual(
-            str(e.exception),
-            "Table 'total_population_data' has wrong type for column 'total_population'. Type 'int64' should be 'float64'",
-        )
 
     @patch(
         "recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils.store_simulation_results"

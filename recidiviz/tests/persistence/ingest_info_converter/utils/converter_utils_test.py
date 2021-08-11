@@ -19,7 +19,6 @@
 import datetime
 from unittest import TestCase
 
-import pytest
 from mock import patch
 
 from recidiviz.persistence.ingest_info_converter.utils import converter_utils
@@ -43,5 +42,5 @@ class TestConverterUtils(TestCase):
         )
 
     def test_parseBadAge(self):
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             converter_utils.calculate_birthdate_from_age("ABC")

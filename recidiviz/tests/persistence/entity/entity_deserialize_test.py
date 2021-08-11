@@ -26,8 +26,8 @@ from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.person_characteristics import Race
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_deserialize import (
-    entity_deserialize,
     EntityFieldConverter,
+    entity_deserialize,
 )
 
 
@@ -60,7 +60,10 @@ class TestEntityDeserialize(TestCase):
     """Tests for entity_deserialize.py."""
 
     def test_entity_deserialize_not_entity(self) -> None:
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Can only deserialize Entity classes with entity_deserialize\(\)",
+        ):
 
             @attr.s
             class _NotAnEntity:
@@ -70,14 +73,11 @@ class TestEntityDeserialize(TestCase):
                 _NotAnEntity, converter_overrides={}, an_int_field="1"
             )
 
-        self.assertTrue(
-            str(e.exception).startswith(
-                "Can only deserialize Entity classes with entity_deserialize()"
-            )
-        )
-
     def test_entity_deserialize_not_attr(self) -> None:
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Can only deserialize attrs classes with entity_deserialize\(\)",
+        ):
 
             class _NotAnAttr:
                 def __init__(self) -> None:
@@ -86,12 +86,6 @@ class TestEntityDeserialize(TestCase):
             _ = entity_deserialize(  # type: ignore[type-var]
                 _NotAnAttr, converter_overrides={}, an_int_field="1"
             )
-
-        self.assertTrue(
-            str(e.exception).startswith(
-                "Can only deserialize attrs classes with entity_deserialize()"
-            )
-        )
 
     def test_entity_deserialize_use_normal_constructor(self) -> None:
         with self.assertRaises(TypeError):

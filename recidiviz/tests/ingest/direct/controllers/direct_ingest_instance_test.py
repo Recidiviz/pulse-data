@@ -54,15 +54,14 @@ class TestDirectIngestInstance(unittest.TestCase):
             ),
         )
 
-        with self.assertRaises(DirectIngestInstanceError) as e:
+        with self.assertRaisesRegex(
+            DirectIngestInstanceError,
+            r"^Direct ingest for \[SystemLevel.COUNTY\] only has single, primary ingest "
+            r"instance. Ingest instance \[DirectIngestInstance.SECONDARY\] not valid.$",
+        ):
             _ = DirectIngestInstance.SECONDARY.database_version(
                 system_level=SystemLevel.COUNTY
             )
-        self.assertEqual(
-            str(e.exception),
-            "Direct ingest for [SystemLevel.COUNTY] only has single, primary ingest "
-            "instance. Ingest instance [DirectIngestInstance.SECONDARY] not valid.",
-        )
 
     def test_from_state_ingest_bucket(self) -> None:
         ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(
@@ -108,12 +107,11 @@ class TestDirectIngestInstance(unittest.TestCase):
             DirectIngestInstance.PRIMARY.check_is_valid_system_level(system_level)
 
         DirectIngestInstance.SECONDARY.check_is_valid_system_level(SystemLevel.STATE)
-        with self.assertRaises(DirectIngestInstanceError) as e:
+        with self.assertRaisesRegex(
+            DirectIngestInstanceError,
+            r"^Direct ingest for \[SystemLevel.COUNTY\] only has single, primary ingest "
+            r"instance. Ingest instance \[DirectIngestInstance.SECONDARY\] not valid.$",
+        ):
             DirectIngestInstance.SECONDARY.check_is_valid_system_level(
                 system_level=SystemLevel.COUNTY
             )
-        self.assertEqual(
-            str(e.exception),
-            "Direct ingest for [SystemLevel.COUNTY] only has single, primary ingest "
-            "instance. Ingest instance [DirectIngestInstance.SECONDARY] not valid.",
-        )

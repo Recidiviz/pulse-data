@@ -47,13 +47,11 @@ class SQLAlchemyDatabaseKeyTest(TestCase):
         self.assertEqual(db_key_1, db_key_legacy)
 
     def test_for_schema_throws_state(self) -> None:
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            "^Must provide db name information to create a STATE database key.$",
+        ):
             _ = SQLAlchemyDatabaseKey.for_schema(SchemaType.STATE)
-
-        self.assertEqual(
-            "Must provide db name information to create a STATE database key.",
-            str(e.exception),
-        )
 
     def test_for_state_code(self) -> None:
         primary = SQLAlchemyDatabaseKey.for_state_code(

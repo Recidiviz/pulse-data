@@ -121,13 +121,12 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
 
     def test_unioned_segments_view_unsegmented_config_crashes(self) -> None:
         config = CloudSqlToBQConfig.for_schema_type(SchemaType.JAILS)
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(ValueError, r"^Unexpected schema type \[JAILS\]$"):
             _ = UnionedStateSegmentsViewBuilder(
                 config=config,
                 table=JailsBase.metadata.sorted_tables[0],
                 state_codes=[StateCode.US_XX],
             )
-        self.assertEqual(str(e.exception), "Unexpected schema type [JAILS]")
 
     def test_build_unioned_segments_view(self) -> None:
         config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)

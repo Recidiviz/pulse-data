@@ -17,16 +17,16 @@
 """Tests for the DirectIngestControllerFactory."""
 import unittest
 
-from mock import patch, Mock
+from mock import Mock, patch
 
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct import templates
 from recidiviz.ingest.direct.controllers import direct_ingest_controller_factory
-from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
-    DirectIngestControllerFactory,
-)
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
+    DirectIngestControllerFactory,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
@@ -128,14 +128,13 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
                 system_level=SystemLevel.for_region(mock_region),
                 ingest_instance=DirectIngestInstance.PRIMARY,
             )
-            with self.assertRaises(DirectIngestError) as e:
+            with self.assertRaisesRegex(
+                DirectIngestError,
+                r"^Bad environment \[production\] for region \[us_xx\].$",
+            ):
                 _ = DirectIngestControllerFactory.build(
                     ingest_bucket_path=ingest_bucket_path, allow_unlaunched=False
                 )
-            self.assertEqual(
-                str(e.exception),
-                "Bad environment [production] for region [us_xx].",
-            )
 
     @patch(
         "recidiviz.utils.environment.get_gcp_environment",
@@ -174,11 +173,10 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
             system_level=SystemLevel.STATE,
             ingest_instance=DirectIngestInstance.PRIMARY,
         )
-        with self.assertRaises(DirectIngestError) as e:
+        with self.assertRaisesRegex(
+            DirectIngestError,
+            r"^Unsupported direct ingest region \[us_xx\] in project \[recidiviz-456\]$",
+        ):
             _ = DirectIngestControllerFactory.build(
                 ingest_bucket_path=ingest_bucket_path, allow_unlaunched=False
             )
-        self.assertEqual(
-            str(e.exception),
-            "Unsupported direct ingest region [us_xx] in project [recidiviz-456]",
-        )

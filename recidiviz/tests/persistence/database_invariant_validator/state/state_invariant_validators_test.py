@@ -99,16 +99,13 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
             output_people = [db_person]
 
             # Act
-            with self.assertRaises(SessionIsDirtyError) as e:
+            with self.assertRaisesRegex(
+                SessionIsDirtyError,
+                r"^Session unexpectedly dirty - flush before querying the database\.$",
+            ):
                 _ = validate_invariants(
                     session, self.system_level, self.state_code, output_people
                 )
-
-            # Assert
-            self.assertEqual(
-                str(e.exception),
-                "Session unexpectedly dirty - flush before querying the database.",
-            )
 
     def test_add_person_simple(self) -> None:
         # Arrange

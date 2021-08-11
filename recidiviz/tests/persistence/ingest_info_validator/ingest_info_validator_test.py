@@ -17,15 +17,14 @@
 """Tests for validating ingest_info protos."""
 
 import unittest
-import pytest
 
 from recidiviz.ingest.models.ingest_info_pb2 import (
+    Arrest,
+    Bond,
+    Booking,
+    Charge,
     IngestInfo,
     Person,
-    Booking,
-    Arrest,
-    Charge,
-    Bond,
     Sentence,
 )
 from recidiviz.persistence.ingest_info_validator import ingest_info_validator
@@ -63,10 +62,10 @@ EXTRA_BOND = "EXTRA_BOND_ID"
 class TestValidator(unittest.TestCase):
     """Test ingest_info validation."""
 
-    def test_empty_ingest_info(self):
+    def test_empty_ingest_info(self) -> None:
         ingest_info_validator.validate(IngestInfo())
 
-    def test_duplicate_ids(self):
+    def test_duplicate_ids(self) -> None:
         # Arrange
         ingest_info = IngestInfo()
         ingest_info.people.extend(
@@ -96,9 +95,9 @@ class TestValidator(unittest.TestCase):
         )
 
         # Act
-        with pytest.raises(ValidationError) as e:
+        with self.assertRaises(ValidationError) as e:
             ingest_info_validator.validate(ingest_info)
-        result = e.value.errors
+        result = e.exception.errors
 
         # Assert
         expected_result = {
@@ -111,15 +110,15 @@ class TestValidator(unittest.TestCase):
 
         self.assertEqual(result, expected_result)
 
-    def test_non_existing_id(self):
+    def test_non_existing_id(self) -> None:
         # Arrange
         ingest_info = IngestInfo()
         ingest_info.people.add(person_id="1", booking_ids=["2"])
 
         # Act
-        with pytest.raises(ValidationError) as e:
+        with self.assertRaises(ValidationError) as e:
             ingest_info_validator.validate(ingest_info)
-        result = e.value.errors
+        result = e.exception.errors
 
         # Assert
         expected_result = {
@@ -130,15 +129,15 @@ class TestValidator(unittest.TestCase):
 
         self.assertEqual(result, expected_result)
 
-    def test_extra_id(self):
+    def test_extra_id(self) -> None:
         # Arrange
         ingest_info = IngestInfo()
         ingest_info.bookings.add(booking_id="1")
 
         # Act
-        with pytest.raises(ValidationError) as e:
+        with self.assertRaises(ValidationError) as e:
             ingest_info_validator.validate(ingest_info)
-        result = e.value.errors
+        result = e.exception.errors
 
         # Assert
         expected_result = {
@@ -149,7 +148,7 @@ class TestValidator(unittest.TestCase):
 
         self.assertEqual(result, expected_result)
 
-    def test_reports_all_errors_together(self):
+    def test_reports_all_errors_together(self) -> None:
         # Arrange
         ingest_info = IngestInfo()
         ingest_info.people.extend(
@@ -203,9 +202,9 @@ class TestValidator(unittest.TestCase):
         )
 
         # Act
-        with pytest.raises(ValidationError) as e:
+        with self.assertRaises(ValidationError) as e:
             ingest_info_validator.validate(ingest_info)
-        result = e.value.errors
+        result = e.exception.errors
 
         # Assert
         expected_result = {
