@@ -119,6 +119,9 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
 # A list of all datasets that have ever held managed views that were updated by our
 # process that refreshes the data from CloudSQL into Bigquery. This list is used to
 # identify places where we should look for legacy views that we need to clean up.
+# NOTE: This list DOES NOT contain the unioned regional datasets for federated
+# refreshes of state-segmented databases. Those datasets are stored in
+# CLOUDSQL_UNIONED_REGIONAL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA.
 # DO NOT DELETE ITEMS FROM THIS LIST UNLESS YOU KNOW THIS DATASET HAS BEEN FULLY
 # DELETED FROM BOTH PROD AND STAGING.
 CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA: Dict[
@@ -133,7 +136,6 @@ CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA: Dict[
         "case_triage_federated_regional",
     },
     SchemaType.STATE: {
-        "state_regional",
         "state_us_id_primary_cloudsql_connection",
         "state_us_mi_primary_cloudsql_connection",
         "state_us_mo_primary_cloudsql_connection",
@@ -149,12 +151,33 @@ CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA: Dict[
     },
     SchemaType.OPERATIONS: {
         "operations_cloudsql_connection",
-        "operations_regional",
         "us_id_operations_regional",
         "us_mi_operations_regional",
         "us_mo_operations_regional",
         "us_nd_operations_regional",
         "us_pa_operations_regional",
         "us_tn_operations_regional",
+    },
+}
+
+
+# A list of all datasets that have ever held managed views that were updated by the
+# step in our CloudSQL into Bigquery refresh process that unions the contents of
+# state-segmented datasets and copies the results to a dataset that lives in the same
+# region as the CloudSQL instance. This list is used to identify places where we
+# should look for legacy views that we need to clean up.
+# NOTE: This list DOES NOT contain all datasets used in the CloudSQL to BigQuery
+# refresh process. The rest of the datasets are stored in
+# CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA.
+# DO NOT DELETE ITEMS FROM THIS LIST UNLESS YOU KNOW THIS DATASET HAS BEEN FULLY
+# DELETED FROM BOTH PROD AND STAGING.
+CLOUDSQL_UNIONED_REGIONAL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA: Dict[
+    SchemaType, Set[str]
+] = {
+    SchemaType.STATE: {
+        "state_regional",
+    },
+    SchemaType.OPERATIONS: {
+        "operations_regional",
     },
 }

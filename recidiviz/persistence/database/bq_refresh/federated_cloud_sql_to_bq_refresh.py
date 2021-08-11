@@ -16,7 +16,7 @@
 # =============================================================================
 """Export data from Cloud SQL and load it into BigQuery."""
 import logging
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional
 
 from sqlalchemy import Table
 
@@ -57,6 +57,7 @@ from recidiviz.view_registry.dataset_overrides import (
 )
 from recidiviz.view_registry.deployed_views import (
     CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA,
+    CLOUDSQL_UNIONED_REGIONAL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA,
 )
 
 
@@ -144,7 +145,6 @@ def _federated_bq_regional_dataset_refresh(
     if config.is_state_segmented_refresh_schema():
         _hydrate_unioned_regional_dataset_for_schema(
             config,
-            historically_managed_datasets_for_schema,
             bq_region_override,
             dataset_override_prefix,
         )
@@ -255,7 +255,6 @@ class UnionedStateSegmentsViewBuilder(BigQueryViewBuilder[BigQueryView]):
 
 def _hydrate_unioned_regional_dataset_for_schema(
     config: CloudSqlToBQConfig,
-    historically_managed_datasets_for_schema: Set[str],
     bq_region_override: Optional[str],
     dataset_override_prefix: Optional[str],
 ) -> None:
@@ -328,11 +327,15 @@ def _hydrate_unioned_regional_dataset_for_schema(
         for dataset in source_table_datasets:
             dataset_overrides[dataset] = f"{dataset_override_prefix}_{dataset}"
 
+    historically_managed_unioned_regional_datasets_for_schema = CLOUDSQL_UNIONED_REGIONAL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA[
+        config.schema_type
+    ]
+
     create_managed_dataset_and_deploy_views_for_view_builders(
         view_source_table_datasets=source_table_datasets,
         view_builders_to_update=view_builders,
         dataset_overrides=dataset_overrides,
         bq_region_override=bq_region_override,
         force_materialize=True,
-        historically_managed_datasets_to_clean=historically_managed_datasets_for_schema,
+        historically_managed_datasets_to_clean=historically_managed_unioned_regional_datasets_for_schema,
     )
