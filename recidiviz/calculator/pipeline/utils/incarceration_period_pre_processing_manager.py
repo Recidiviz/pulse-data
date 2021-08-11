@@ -27,6 +27,7 @@ import attr
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     ip_is_nested_in_previous_period,
     period_edges_are_valid_transfer,
+    periods_are_temporally_adjacent,
     standard_date_sort_for_incarceration_periods,
 )
 from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
@@ -769,6 +770,13 @@ class IncarcerationPreProcessingManager:
                     "custody period. Invalid logic in the delegate."
                 )
 
+            previous_ip: Optional[StateIncarcerationPeriod] = None
+            if index > 0:
+                previous_ip = updated_periods[-1]
+            updated_previous_ip_release_reason: Optional[
+                StateIncarcerationPeriodReleaseReason
+            ] = None
+
             updated_pfi: Optional[StateSpecializedPurposeForIncarceration] = None
             updated_admission_reason: Optional[
                 StateIncarcerationPeriodAdmissionReason
@@ -776,6 +784,7 @@ class IncarcerationPreProcessingManager:
             updated_release_reason: Optional[
                 StateIncarcerationPeriodReleaseReason
             ] = None
+
             if period_is_board_hold:
                 # Standard values for parole board hold periods
                 updated_admission_reason = (
@@ -847,6 +856,31 @@ class IncarcerationPreProcessingManager:
                     updated_release_reason = (
                         StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY
                     )
+
+                # TEMPORARY_CUSTODY admissions should have a TRANSFER admission reason
+                # if the previous period has a RELEASED_FROM_TEMPORARY_CUSTODY release,
+                # they take place right after each other, and they share the same purpose_for_incarceration value.
+                if (
+                    previous_ip
+                    and previous_ip.release_reason
+                    == (
+                        StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY
+                    )
+                    and previous_ip.specialized_purpose_for_incarceration == updated_pfi
+                    and periods_are_temporally_adjacent(previous_ip, ip)
+                ):
+                    updated_admission_reason = (
+                        StateIncarcerationPeriodAdmissionReason.TRANSFER
+                    )
+                    updated_previous_ip_release_reason = (
+                        StateIncarcerationPeriodReleaseReason.TRANSFER
+                    )
+
+            if updated_previous_ip_release_reason and previous_ip:
+                # Update previous period
+                updated_periods[-1] = attr.evolve(
+                    previous_ip, release_reason=updated_previous_ip_release_reason
+                )
 
             # Update the period with expected values
             updated_ip = attr.evolve(
