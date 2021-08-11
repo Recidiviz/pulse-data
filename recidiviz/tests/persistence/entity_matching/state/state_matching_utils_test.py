@@ -15,8 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for state_matching_utils.py"""
-
-import pytest
 from more_itertools import one
 
 from recidiviz.common.constants.charge import ChargeStatus
@@ -324,7 +322,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         self.assertEqual(schema.StateIncarcerationIncident, root_entity_cls)
 
     def test_getRootEntity_emptyList_raises(self) -> None:
-        with pytest.raises(EntityMatchingError):
+        with self.assertRaises(EntityMatchingError):
             get_root_entity_cls([])
 
     def test_getRootEntity_allPlaceholders_raises(self) -> None:
@@ -338,7 +336,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         placeholder_person = schema.StatePerson(
             sentence_groups=[placeholder_sentence_group]
         )
-        with pytest.raises(EntityMatchingError):
+        with self.assertRaises(EntityMatchingError):
             get_root_entity_cls([placeholder_person])
 
     def test_getAllEntityTreesOfCls(self) -> None:
@@ -423,12 +421,12 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             sentence_groups=[sentence_group, sentence_group_2],
         )
 
-        with pytest.raises(EntityMatchingError):
+        with self.assertRaises(EntityMatchingError):
             get_external_ids_of_cls([person], schema.StateSentenceGroup)
 
     def test_getExternalIdsOfCls_emptyPersonExternalId_raises(self) -> None:
         person = schema.StatePerson()
-        with pytest.raises(EntityMatchingError):
+        with self.assertRaises(EntityMatchingError):
             get_external_ids_of_cls([person], schema.StatePerson)
 
     def test_completeEnumSet_admittedForCommitmentFromSupervision(self) -> None:
@@ -643,7 +641,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         )
         ingested_person = schema.StatePerson(sentence_groups=[ingested_sentence_group])
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             with SessionFactory.using_database(
                 self.database_key, autocommit=False
             ) as session:

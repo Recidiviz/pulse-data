@@ -321,12 +321,10 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             view_query_template="SELECT * FROM `{project_id}.dataset_1.table_1`",
         )
 
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError, "^No roots detected. Input views contain a cycle.$"
+        ):
             _ = BigQueryViewDagWalker([view_1, view_2])
-
-        self.assertEqual(
-            str(e.exception), "No roots detected. Input views contain a cycle."
-        )
 
     def test_dag_with_cycle_at_root_with_other_valid_dag(self) -> None:
         view_1 = BigQueryView(
@@ -349,14 +347,12 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
         )
 
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Detected cycle in graph reachable from \('dataset_1', 'table_1'\): "
+            r"\[\('dataset_2', 'table_2'\), \('dataset_1', 'table_1'\)\]$",
+        ):
             _ = BigQueryViewDagWalker([view_1, view_2, view_3])
-
-        self.assertEqual(
-            str(e.exception),
-            "Detected cycle in graph reachable from ('dataset_1', 'table_1'): "
-            "[('dataset_2', 'table_2'), ('dataset_1', 'table_1')]",
-        )
 
     def test_dag_with_cycle_after_root(self) -> None:
         view_1 = BigQueryView(
@@ -380,13 +376,12 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             description="table_3 description",
             view_query_template="SELECT * FROM `{project_id}.dataset_2.table_2`",
         )
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Detected cycle in graph reachable from \('dataset_1', 'table_1'\): "
+            r"\[\('dataset_2', 'table_2'\), \('dataset_3', 'table_3'\)\]$",
+        ):
             _ = BigQueryViewDagWalker([view_1, view_2, view_3])
-        self.assertEqual(
-            str(e.exception),
-            "Detected cycle in graph reachable from ('dataset_1', 'table_1'): "
-            "[('dataset_2', 'table_2'), ('dataset_3', 'table_3')]",
-        )
 
     def test_dag_no_cycle(self) -> None:
         view_1 = BigQueryView(
@@ -691,15 +686,13 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
     def test_get_sub_dag_input_views_not_all_in_input_dag(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list[0:2])
 
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError, "^Found input views not in source DAG:"
+        ):
             # Add different input views to build source dag
             _ = all_views_dag_walker.get_descendants_sub_dag(
                 self.x_shaped_dag_views_list[1:5],
             )
-
-        self.assertTrue(
-            str(e.exception).startswith("Found input views not in source DAG:")
-        )
 
     def test_sub_dag_with_cycle(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
@@ -960,14 +953,12 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             ),
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
         )
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Found materialized view address for view \[\('dataset_2', 'table_2'\)\] that "
+            r"matches the view address of another view \[\('dataset_1', 'table_1'\)\].",
+        ):
             _ = BigQueryViewDagWalker([view_1, view_2])
-        self.assertTrue(
-            str(e.exception).startswith(
-                "Found materialized view address for view [('dataset_2', 'table_2')] that "
-                "matches the view address of another view [('dataset_1', 'table_1')]."
-            )
-        )
 
     def test_dag_two_views_same_materialized_address(self) -> None:
         view_1 = BigQueryView(
@@ -990,15 +981,12 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             ),
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
         )
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found materialized view address for view \[\('dataset_2', 'table_2'\)\] "
+            r"that matches materialized_address of another view: \[\('dataset_1', 'table_1'\)\].",
+        ):
             _ = BigQueryViewDagWalker([view_1, view_2])
-        self.assertTrue(
-            str(e.exception).startswith(
-                "Found materialized view address for view [('dataset_2', 'table_2')] "
-                "that matches materialized_address of another view: "
-                "[('dataset_1', 'table_1')]."
-            )
-        )
 
     def test_dag_parents_materialized(self) -> None:
         view_1 = BigQueryView(

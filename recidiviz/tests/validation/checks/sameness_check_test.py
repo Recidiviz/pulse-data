@@ -87,7 +87,9 @@ class TestSamenessValidationChecker(TestCase):
         return return_values
 
     def test_samneness_check_no_comparison_columns(self) -> None:
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError, r"^Found only \[0\] comparison columns, expected at least 2\.$"
+        ):
             _ = SamenessDataValidationCheck(
                 validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 validation_type=ValidationCheckType.SAMENESS,
@@ -99,12 +101,12 @@ class TestSamenessValidationChecker(TestCase):
                     view_query_template="select * from literally_anything",
                 ),
             )
-        self.assertEqual(
-            str(e.exception), "Found only [0] comparison columns, expected at least 2."
-        )
 
     def test_samneness_check_bad_max_error(self) -> None:
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Allowed error value must be between 0\.0 and 1\.0\. Found instead: \[1\.5\]$",
+        ):
             _ = SamenessDataValidationCheck(
                 validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 validation_type=ValidationCheckType.SAMENESS,
@@ -118,10 +120,6 @@ class TestSamenessValidationChecker(TestCase):
                 ),
                 max_allowed_error=1.5,
             )
-        self.assertEqual(
-            str(e.exception),
-            "Allowed error value must be between 0.0 and 1.0. Found instead: [1.5]",
-        )
 
     def test_sameness_check_validation_name(self) -> None:
         check = SamenessDataValidationCheck(
@@ -508,13 +506,11 @@ class TestSamenessValidationChecker(TestCase):
             ),
         )
 
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Unexpected None value for column \[a\] in validation \[test_view\]\.$",
+        ):
             _ = SamenessValidationChecker.run_check(job)
-
-        self.assertEqual(
-            str(e.exception),
-            "Unexpected None value for column [a] in validation [test_view].",
-        )
 
     def test_sameness_check_numbers_one_none(self) -> None:
         self.mock_client.run_query_async.return_value = [{"a": 3, "b": 3, "c": None}]
@@ -535,13 +531,11 @@ class TestSamenessValidationChecker(TestCase):
             ),
         )
 
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Unexpected None value for column \[c\] in validation \[test_view\]\.$",
+        ):
             _ = SamenessValidationChecker.run_check(job)
-
-        self.assertEqual(
-            str(e.exception),
-            "Unexpected None value for column [c] in validation [test_view].",
-        )
 
     def test_sameness_check_strings_different_values_no_allowed_error(self) -> None:
         self.mock_client.run_query_async.return_value = [{"a": "a", "b": "b", "c": "c"}]
@@ -716,13 +710,11 @@ class TestSamenessValidationChecker(TestCase):
                 ),
             ),
         )
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Unexpected type \[<class 'int'>\] for value \[1245\] in STRINGS validation \[test_view\]\.$",
+        ):
             _ = SamenessValidationChecker.run_check(job)
-
-        self.assertEqual(
-            str(e.exception),
-            "Unexpected type [<class 'int'>] for value [1245] in STRINGS validation [test_view].",
-        )
 
     def test_sameness_check_dates_different_values_handle_non_date_type(
         self,
@@ -747,13 +739,11 @@ class TestSamenessValidationChecker(TestCase):
                 ),
             ),
         )
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Unexpected type \[<class 'int'>\] for value \[1245\] in DATES validation \[test_view\]\.$",
+        ):
             _ = SamenessValidationChecker.run_check(job)
-
-        self.assertEqual(
-            str(e.exception),
-            "Unexpected type [<class 'int'>] for value [1245] in DATES validation [test_view].",
-        )
 
     def test_sameness_check_strings_different_values_within_margin(self) -> None:
         num_bad_rows = 2

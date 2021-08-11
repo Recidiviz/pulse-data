@@ -1128,7 +1128,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
 
         # The release on incarceration_period_1 overlaps with incarceration_period_2, and should be excluded from the
         # release cohort
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             _ = self.identifier._find_valid_reincarceration_period(
                 incarceration_periods,
                 index=0,

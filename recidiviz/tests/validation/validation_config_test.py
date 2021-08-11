@@ -99,14 +99,11 @@ class ValidationConfigTest(unittest.TestCase):
         )
 
         # Act
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Found multiple exclusions defined for the same validation: \[my_view\]$",
+        ):
             _ = ValidationRegionConfig.from_yaml(yaml_path)
-
-        # Assert
-        self.assertEqual(
-            "Found multiple exclusions defined for the same validation: [my_view]",
-            str(e.exception),
-        )
 
     def test_parse_view_name_reused_overrides(self) -> None:
         # Arrange
@@ -115,14 +112,11 @@ class ValidationConfigTest(unittest.TestCase):
         )
 
         # Act
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Found multiple error overrides defined for the same validation: \[my_view\]$",
+        ):
             _ = ValidationRegionConfig.from_yaml(yaml_path)
-
-        # Assert
-        self.assertEqual(
-            "Found multiple error overrides defined for the same validation: [my_view]",
-            str(e.exception),
-        )
 
     def test_parse_bad_exclusion_type(self) -> None:
         # Arrange
@@ -131,14 +125,10 @@ class ValidationConfigTest(unittest.TestCase):
         )
 
         # Act
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError, r"^'NOT_A_VALID_TYPE' is not a valid ValidationExclusionType$"
+        ):
             _ = ValidationRegionConfig.from_yaml(yaml_path)
-
-        # Assert
-        self.assertEqual(
-            "'NOT_A_VALID_TYPE' is not a valid ValidationExclusionType",
-            str(e.exception),
-        )
 
     def test_parse_override_is_not_float(self) -> None:
         # Arrange
@@ -147,11 +137,10 @@ class ValidationConfigTest(unittest.TestCase):
         )
 
         # Act
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError, r"^could not convert string to float: '0.3.0'$"
+        ):
             _ = ValidationRegionConfig.from_yaml(yaml_path)
-
-        # Assert
-        self.assertEqual("could not convert string to float: '0.3.0'", str(e.exception))
 
     def test_parse_global_config_parses(self) -> None:
         # Test passes if this parses

@@ -19,19 +19,17 @@ import datetime
 from json.decoder import JSONDecodeError
 from unittest import TestCase
 
-import pytest
-
 from recidiviz.common.str_field_utils import (
-    parse_days,
-    parse_dollars,
+    normalize_flat_json,
     parse_bool,
     parse_date,
-    parse_datetime,
-    parse_days_from_duration_pieces,
-    parse_int,
     parse_date_from_date_pieces,
+    parse_datetime,
+    parse_days,
+    parse_days_from_duration_pieces,
+    parse_dollars,
+    parse_int,
     safe_parse_date_from_date_pieces,
-    normalize_flat_json,
     safe_parse_days_from_duration_str,
 )
 
@@ -46,7 +44,7 @@ class TestStrFieldUtils(TestCase):
         assert parse_int("123.6") == 123
 
     def test_parseInt_invalidStr(self) -> None:
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             parse_int("hello")
 
     def test_parseTimeDurationDays(self) -> None:
@@ -119,7 +117,7 @@ class TestStrFieldUtils(TestCase):
         assert parsed is None
 
     def test_parseDateFromDatePieces_invalidValues(self) -> None:
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             parse_date_from_date_pieces("abc", "def", "LIFE")
 
     def test_safeParseDateFromDatePieces_invalidValues(self) -> None:
@@ -127,7 +125,7 @@ class TestStrFieldUtils(TestCase):
         assert parsed is None
 
     def test_parseBadTimeDuration(self) -> None:
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             parse_days("ABC")
 
     def test_parseDollarAmount(self) -> None:
@@ -135,14 +133,14 @@ class TestStrFieldUtils(TestCase):
         assert parse_dollars("$") == 0
 
     def test_parseBadDollarAmount(self) -> None:
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             parse_dollars("ABC")
 
     def test_parseBool(self) -> None:
         assert parse_bool("True") is True
 
     def test_parseBadBoolField(self) -> None:
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             parse_bool("ABC")
 
     def test_parseDateTime(self) -> None:
@@ -222,7 +220,7 @@ class TestStrFieldUtils(TestCase):
         assert parse_date("None set") is None
 
     def test_parseBadDate(self) -> None:
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             parse_datetime("ABC")
 
     def test_parseJSON(self) -> None:
@@ -241,19 +239,19 @@ class TestStrFieldUtils(TestCase):
         )
 
     def test_parseJSON_NotFlatStringJSON(self) -> None:
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             normalize_flat_json('{"foo": "hello", "bar": 123}')
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             normalize_flat_json('{"foo": "hello", "bar": []]}')
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             normalize_flat_json('[{"foo": "hello"}]')
 
     def test_parseJSON_Malformed(self) -> None:
-        with pytest.raises(TypeError):
+        with self.assertRaises(TypeError):
             normalize_flat_json(None)  # type: ignore[arg-type]
-        with pytest.raises(TypeError):
+        with self.assertRaises(TypeError):
             normalize_flat_json({"foo": "bar"})  # type: ignore[arg-type]
-        with pytest.raises(JSONDecodeError):
+        with self.assertRaises(JSONDecodeError):
             normalize_flat_json("")
-        with pytest.raises(JSONDecodeError):
+        with self.assertRaises(JSONDecodeError):
             normalize_flat_json("{")

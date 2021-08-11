@@ -3853,14 +3853,12 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Arrange 1 - Match
         session = self._session()
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            "^Failed to identify one of the non-placeholder ingest types: "
+            r"\[StateSentenceGroup\]\.",
+        ):
             _ = entity_matching.match(session, _STATE_CODE, input_people)
-        self.assertTrue(
-            str(e.exception).startswith(
-                "Failed to identify one of the non-placeholder ingest types: "
-                "[StateSentenceGroup]."
-            )
-        )
 
     @patch(
         f"{state_entity_matcher.__name__}.MAX_NUM_TREES_TO_SEARCH_FOR_NON_PLACEHOLDER_TYPES",

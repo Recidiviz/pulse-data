@@ -64,28 +64,24 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
     """Tests for DirectIngestRegionRawFileConfig."""
 
     def test_parse_no_defaults_throws(self) -> None:
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError, "^Missing default raw data configs for region: us_yy"
+        ):
             _ = DirectIngestRegionRawFileConfig(
                 region_code="us_yy",
                 region_module=fake_regions_module,
             )
-        self.assertTrue(
-            str(e.exception).startswith(
-                "Missing default raw data configs for region: us_yy"
-            )
-        )
 
     def test_missing_primary_key_columns(self) -> None:
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Column\(s\) marked as primary keys not listed in columns list"
+            r" for file \[us_zz_tagPrimaryKeysMissing.yaml\]: \{'PRIMARY_COL2'\}$",
+        ):
             _ = DirectIngestRegionRawFileConfig(
                 region_code="us_zz",
                 region_module=fake_regions_module,
             )
-        self.assertEqual(
-            str(e.exception),
-            "Column(s) marked as primary keys not listed in columns list"
-            " for file [us_zz_tagPrimaryKeysMissing.yaml]: {'PRIMARY_COL2'}",
-        )
 
     def test_parse_yaml(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
@@ -201,15 +197,14 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
         self.assertEqual("@", config.custom_line_terminator)
 
     def test_missing_configs_for_region(self) -> None:
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError, "^Missing raw data configs for region: us_xy"
+        ):
             region_config = DirectIngestRegionRawFileConfig(
                 region_code="us_xy",
                 region_module=fake_regions_module,
             )
             _configs = region_config.raw_file_configs
-        self.assertTrue(
-            str(e.exception).startswith("Missing raw data configs for region: us_xy")
-        )
 
 
 class DirectIngestRawFileImportManagerTest(unittest.TestCase):
@@ -350,15 +345,14 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             file_type=GcsfsDirectIngestFileType.RAW_DATA,
         )
 
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Attempting to import raw file with tag \[this_path_tag_not_in_yaml\] "
+            r"unspecified by \[us_xx\] config.$",
+        ):
             self.import_manager.import_raw_file_to_big_query(
                 file_path, create_autospec(DirectIngestRawFileMetadata)
             )
-        self.assertEqual(
-            str(e.exception),
-            "Attempting to import raw file with tag [this_path_tag_not_in_yaml] "
-            "unspecified by [us_xx] config.",
-        )
 
     def test_import_wrong_separator_cols_do_not_parse(self) -> None:
         file_config = self.import_manager.region_raw_file_config.raw_file_configs[
@@ -380,16 +374,14 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             self.fs.gcs_file_system, file_path, region_code=self.test_region.region_code
         )
 
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Found only one column: \[COL1__COL2_COL3\]. "
+            r"Columns likely did not parse properly.",
+        ):
             self.import_manager.import_raw_file_to_big_query(
                 file_path, create_autospec(DirectIngestRawFileMetadata)
             )
-        self.assertTrue(
-            str(e.exception).startswith(
-                "Found only one column: [COL1__COL2_COL3]. "
-                "Columns likely did not parse properly."
-            )
-        )
 
     def test_import_bq_file_with_ingest_view_file(self) -> None:
         file_path = path_for_fixture_file_in_test_gcs_directory(
@@ -399,15 +391,14 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
         )
 
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Unexpected file type \[GcsfsDirectIngestFileType.INGEST_VIEW\] for "
+            r"path \[file_tag_first\].$",
+        ):
             self.import_manager.import_raw_file_to_big_query(
                 file_path, create_autospec(DirectIngestRawFileMetadata)
             )
-        self.assertEqual(
-            str(e.exception),
-            "Unexpected file type [GcsfsDirectIngestFileType.INGEST_VIEW] for "
-            "path [file_tag_first].",
-        )
 
     def test_import_bq_file_with_raw_file(self) -> None:
         file_path = path_for_fixture_file_in_test_gcs_directory(
@@ -792,7 +783,9 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self._check_no_temp_files_remain()
 
     def test_import_bq_file_with_raw_file_normalization_conflict(self) -> None:
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError, r"^Multiple columns with name \[_4COL\] after normalization.$"
+        ):
             file_path = path_for_fixture_file_in_test_gcs_directory(
                 bucket_path=self.ingest_bucket_path,
                 filename="tagNormalizationConflict.csv",
@@ -809,10 +802,6 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             self.import_manager.import_raw_file_to_big_query(
                 file_path, self._metadata_for_unprocessed_file_path(file_path)
             )
-
-        self.assertEqual(
-            str(e.exception), "Multiple columns with name [_4COL] after normalization."
-        )
 
     def test_import_bq_file_with_migrations(self) -> None:
         file_datetime = migrations_tagC.DATE_1

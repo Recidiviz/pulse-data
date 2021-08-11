@@ -16,11 +16,10 @@
 # =============================================================================
 """Tests for utils/regions.py."""
 from contextlib import contextmanager
-from typing import Any, Callable, IO, Iterator, List
+from typing import IO, Any, Callable, Iterator, List
 from unittest import TestCase
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-import pytest
 import pytz
 from mock import Mock, PropertyMock, mock_open
 
@@ -152,7 +151,7 @@ class TestRegions(TestCase):
         assert not region.should_proxy
 
     def test_get_region_manifest_not_found(self) -> None:
-        with pytest.raises(FileNotFoundError):
+        with self.assertRaises(FileNotFoundError):
             with_manifest(
                 regions.get_region_manifest, "us_az", direct_ingest_regions_module
             )
@@ -251,19 +250,16 @@ class TestRegions(TestCase):
         assert region.get_queue_name() == "some-vendor-queue"
 
     def test_set_both_queues_error(self) -> None:
-        with pytest.raises(ValueError) as e:
+        with self.assertRaisesRegex(ValueError, "queue"):
             with_manifest(regions.get_region, "bad_queue")
-            assert "queue" in str(e)
 
     def test_invalid_region_error_bool(self) -> None:
-        with pytest.raises(ValueError) as e:
+        with self.assertRaisesRegex(ValueError, "environment"):
             with_manifest(regions.get_region, "bad_env_bool")
-            assert "environment" in str(e)
 
     def test_invalid_region_error_str(self) -> None:
-        with pytest.raises(ValueError) as e:
+        with self.assertRaisesRegex(ValueError, "environment"):
             with_manifest(regions.get_region, "bad_env_str")
-            assert "environment" in str(e)
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     def test_is_ingest_launched_in_env_production(

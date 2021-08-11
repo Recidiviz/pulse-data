@@ -21,7 +21,6 @@ from typing import Dict, List, Optional
 
 import attr
 import mock
-import pytest
 import sqlalchemy
 from freezegun import freeze_time
 from google.cloud.bigquery import ScalarQueryParameter
@@ -484,8 +483,8 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         )
 
         # Act
-        with pytest.raises(
-            ValueError, match=r"upper bound date.*before the last valid export"
+        with self.assertRaisesRegex(
+            ValueError, r"upper bound date.*before the last valid export"
         ):
             export_manager.get_ingest_view_export_task_args()
 
@@ -551,7 +550,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         )
 
         # Act
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             export_manager.export_view_for_args(export_args)
 
         # Assert
@@ -572,7 +571,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         )
 
         # Act
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             export_manager.export_view_for_args(export_args)
 
         # Assert

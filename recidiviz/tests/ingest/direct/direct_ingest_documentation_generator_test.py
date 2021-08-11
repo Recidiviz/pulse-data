@@ -17,8 +17,7 @@
 """Tests for DirectIngestDocumentationGenerator."""
 import unittest
 
-import pytest
-from mock import patch, MagicMock
+from mock import MagicMock, patch
 
 from recidiviz.common.constants import states
 from recidiviz.common.constants.states import TEST_STATE_CODE_DOCS
@@ -152,11 +151,10 @@ tagPrimaryKeyColsMissing file description
     def test_generate_raw_file_docs_for_region_region_not_found(self) -> None:
         documentation_generator = DirectIngestDocumentationGenerator()
 
-        with pytest.raises(ValueError) as error:
+        with self.assertRaisesRegex(
+            ValueError, "^Missing raw data configs for region: US_NOT_REAL"
+        ):
             documentation_generator.generate_raw_file_docs_for_region("US_NOT_REAL")
-            self.assertEqual(
-                error.value, "Missing raw data configs for region: US_NOT_REAL"
-            )
 
     @patch(
         "recidiviz.ingest.direct.views.direct_ingest_big_query_view_types"

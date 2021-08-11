@@ -396,7 +396,12 @@ ORDER BY col1, col2;"""
 LEFT OUTER JOIN {file_tag_second}
 USING (col1);"""
 
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            "^Ingest view ingest_view_tag is marked as `is_detect_row_deletion_view` and has table file_tag_second "
+            "specified in `primary_key_tables_for_entity_deletion`; however the raw data file is not marked as always "
+            "being exported as historically.",
+        ):
             DirectIngestPreProcessedIngestView(
                 ingest_view_name="ingest_view_tag",
                 view_query_template=view_query_template,
@@ -405,13 +410,6 @@ USING (col1);"""
                 is_detect_row_deletion_view=True,
                 primary_key_tables_for_entity_deletion=["file_tag_second"],
             )
-        self.assertTrue(
-            str(e.exception).startswith(
-                "Ingest view ingest_view_tag is marked as `is_detect_row_deletion_view` and has table file_tag_second "
-                "specified in `primary_key_tables_for_entity_deletion`; however the raw data file is not marked as always "
-                "being exported as historically."
-            )
-        )
 
     def test_direct_ingest_preprocessed_view_no_raw_file_config_columns_defined(
         self,
@@ -423,7 +421,11 @@ USING (col1);"""
 
         view_query_template = """SELECT * FROM {tagColumnsMissing};"""
 
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Found empty set of columns in raw table config \[tagColumnsMissing\]"
+            r" in region \[us_ww\].$",
+        ):
             DirectIngestPreProcessedIngestView(
                 ingest_view_name="ingest_view_tag",
                 view_query_template=view_query_template,
@@ -432,11 +434,6 @@ USING (col1);"""
                 is_detect_row_deletion_view=False,
                 primary_key_tables_for_entity_deletion=[],
             )
-        self.assertEqual(
-            str(e.exception),
-            "Found empty set of columns in raw table config [tagColumnsMissing]"
-            " in region [us_ww].",
-        )
 
     def test_direct_ingest_preprocessed_view_detect_row_deletion_no_pk_tables_specified(
         self,
@@ -450,7 +447,11 @@ USING (col1);"""
         LEFT OUTER JOIN {tagFullHistoricalExport}
         USING (col1);"""
 
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            "^Ingest view ingest_view_tag was marked as `is_detect_row_deletion_view`; however no "
+            "`primary_key_tables_for_entity_deletion` were defined.",
+        ):
             DirectIngestPreProcessedIngestView(
                 ingest_view_name="ingest_view_tag",
                 view_query_template=view_query_template,
@@ -459,13 +460,6 @@ USING (col1);"""
                 is_detect_row_deletion_view=True,
                 primary_key_tables_for_entity_deletion=[],
             )
-
-        self.assertTrue(
-            str(e.exception).startswith(
-                "Ingest view ingest_view_tag was marked as `is_detect_row_deletion_view`; however no "
-                "`primary_key_tables_for_entity_deletion` were defined."
-            )
-        )
 
     def test_direct_ingest_preprocessed_view_detect_row_deletion_unknown_pk_table_specified(
         self,
@@ -479,7 +473,12 @@ USING (col1);"""
         LEFT OUTER JOIN {tagFullHistoricalExport}
         USING (col1);"""
 
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            "^Ingest view ingest_view_tag has specified unknown in "
+            "`primary_key_tables_for_entity_deletion`, but that "
+            "raw file tag was not found as a dependency.",
+        ):
             DirectIngestPreProcessedIngestView(
                 ingest_view_name="ingest_view_tag",
                 view_query_template=view_query_template,
@@ -491,14 +490,6 @@ USING (col1);"""
                     "unknown",
                 ],
             )
-
-        self.assertTrue(
-            str(e.exception).startswith(
-                "Ingest view ingest_view_tag has specified unknown in "
-                "`primary_key_tables_for_entity_deletion`, but that "
-                "raw file tag was not found as a dependency."
-            )
-        )
 
     def test_direct_ingest_preprocessed_view_detect_row_deletion(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
@@ -999,7 +990,10 @@ ORDER BY col1, col2;"""
 CREATE TEMP TABLE my_subquery AS (SELECT * FROM {file_tag_first});
 SELECT * FROM my_subquery;"""
 
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError,
+            "^Found CREATE TEMP TABLE clause in this query - ingest views cannot contain CREATE clauses.$",
+        ):
             _ = DirectIngestPreProcessedIngestView(
                 ingest_view_name="ingest_view_tag",
                 view_query_template=view_query_template,
@@ -1008,11 +1002,6 @@ SELECT * FROM my_subquery;"""
                 is_detect_row_deletion_view=False,
                 primary_key_tables_for_entity_deletion=[],
             )
-
-        self.assertEqual(
-            str(e.exception),
-            "Found CREATE TEMP TABLE clause in this query - ingest views cannot contain CREATE clauses.",
-        )
 
     def test_direct_ingest_preprocessed_view_materialized_raw_table_views(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
@@ -1407,18 +1396,15 @@ ORDER BY col1, col2
         # Must have dataset id
         for _ in RawTableViewType:
             for destination_table_type in has_destination_dataset_types:
-                with self.assertRaises(ValueError) as e:
-
+                with self.assertRaisesRegex(
+                    ValueError,
+                    r"^Found null destination_dataset_id \[None\] with destination_table_type "
+                    rf"\[{destination_table_type.name}\]$",
+                ):
                     _ = DirectIngestPreProcessedIngestView.QueryStructureConfig(
                         raw_table_view_type=RawTableViewType.LATEST,
                         destination_table_type=destination_table_type,
                     )
-
-                self.assertEqual(
-                    str(e.exception),
-                    f"Found null destination_dataset_id [None] with destination_table_type "
-                    f"[{destination_table_type.name}]",
-                )
 
         has_no_destination_dataset_types = set(DestinationTableType).difference(
             has_destination_dataset_types
@@ -1426,58 +1412,49 @@ ORDER BY col1, col2
         # Should not have dataset id
         for _ in RawTableViewType:
             for destination_table_type in has_no_destination_dataset_types:
-                with self.assertRaises(ValueError) as e:
+                with self.assertRaisesRegex(
+                    ValueError,
+                    r"^Found nonnull destination_dataset_id \[some_dataset\] with destination_table_type "
+                    rf"\[{destination_table_type.name}\]$",
+                ):
                     _ = DirectIngestPreProcessedIngestView.QueryStructureConfig(
                         raw_table_view_type=RawTableViewType.LATEST,
                         destination_dataset_id="some_dataset",
                         destination_table_type=destination_table_type,
                     )
 
-                self.assertEqual(
-                    str(e.exception),
-                    f"Found nonnull destination_dataset_id [some_dataset] with destination_table_type "
-                    f"[{destination_table_type.name}]",
-                )
-
     def test_query_structure_config_destination_table_type_table_id_validations(
         self,
     ) -> None:
         # Must have table id
         for _ in RawTableViewType:
-            with self.assertRaises(ValueError) as e:
-
+            with self.assertRaisesRegex(
+                ValueError,
+                r"^Found null destination_table_id \[None\] with destination_table_type \[PERMANENT_EXPIRING\]$",
+            ):
                 _ = DirectIngestPreProcessedIngestView.QueryStructureConfig(
                     raw_table_view_type=RawTableViewType.LATEST,
                     destination_table_type=DestinationTableType.PERMANENT_EXPIRING,
                     destination_dataset_id="some_dataset",
                 )
 
-            self.assertEqual(
-                str(e.exception),
-                "Found null destination_table_id [None] with destination_table_type [PERMANENT_EXPIRING]",
-            )
-
-            with self.assertRaises(ValueError) as e:
+            with self.assertRaisesRegex(
+                ValueError,
+                r"^Found null destination_table_id \[None\] with destination_table_type \[TEMPORARY\]$",
+            ):
                 _ = DirectIngestPreProcessedIngestView.QueryStructureConfig(
                     raw_table_view_type=RawTableViewType.LATEST,
                     destination_table_type=DestinationTableType.TEMPORARY,
                 )
 
-            self.assertEqual(
-                str(e.exception),
-                "Found null destination_table_id [None] with destination_table_type [TEMPORARY]",
-            )
-
         # Should not have table id
         for _ in RawTableViewType:
-            with self.assertRaises(ValueError) as e:
+            with self.assertRaisesRegex(
+                ValueError,
+                r"^Found nonnull destination_table_id \[some_table\] with destination_table_type \[NONE\]$",
+            ):
                 _ = DirectIngestPreProcessedIngestView.QueryStructureConfig(
                     raw_table_view_type=RawTableViewType.LATEST,
                     destination_table_id="some_table",
                     destination_table_type=DestinationTableType.NONE,
                 )
-
-            self.assertEqual(
-                str(e.exception),
-                "Found nonnull destination_table_id [some_table] with destination_table_type [NONE]",
-            )

@@ -19,8 +19,6 @@
 import datetime
 from unittest import TestCase
 
-import pytest
-
 from recidiviz.common.constants.entity_enum import EnumParsingError
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.person_characteristics import Gender
@@ -35,5 +33,5 @@ class TestCommonConstantsPersonCharacteristics(TestCase):
         assert Gender.parse("Male", EnumOverrides.empty()) == Gender.MALE
 
     def test_parseBadGenderEnum(self) -> None:
-        with pytest.raises(EnumParsingError):
+        with self.assertRaises(EnumParsingError):
             Gender.parse("ABD", EnumOverrides.empty())

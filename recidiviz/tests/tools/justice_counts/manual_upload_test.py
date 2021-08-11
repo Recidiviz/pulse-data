@@ -1033,8 +1033,9 @@ class ManualUploadTest(unittest.TestCase):
             self.assertEqual(decimal.Decimal(5592), cell.value)
 
     def test_raiseError_noPopulationTypeDimensionOrMetric(self) -> None:
-        # Act
-        with pytest.raises(AttributeError) as exception_info:
+        with self.assertRaisesRegex(
+            AttributeError, "metric and dimension column not specified"
+        ):
             manual_upload.ingest(
                 self.fs,
                 test_utils.prepare_files(
@@ -1042,21 +1043,16 @@ class ManualUploadTest(unittest.TestCase):
                 ),
             )
 
-        # Assert
-        assert "metric and dimension column not specified" in str(exception_info.value)
-
     def test_raiseError_hasBothPopulationTypeDimensionAndMetric(self) -> None:
-        # Act
-        with pytest.raises(AttributeError) as exception_info:
+        with self.assertRaisesRegex(
+            AttributeError, "metric and dimension column specified"
+        ):
             manual_upload.ingest(
                 self.fs,
                 test_utils.prepare_files(
                     self.fs, manifest_filepath("report9_both_population_types_fail")
                 ),
             )
-
-        # Assert
-        assert "metric and dimension column specified" in str(exception_info.value)
 
     def test_admissionMetric_isPersisted(self) -> None:
         # Act
@@ -1352,17 +1348,13 @@ class ManualUploadTest(unittest.TestCase):
             )
 
     def test_raiseError_race_not_properly_mapped(self) -> None:
-        # Act
-        with pytest.raises(EnumParsingError) as exception_info:
+        with self.assertRaisesRegex(EnumParsingError, "Could not parse RANDOM"):
             manual_upload.ingest(
                 self.fs,
                 test_utils.prepare_files(
                     self.fs, manifest_filepath("report6_wrong_race_map")
                 ),
             )
-
-        # Assert
-        assert "Could not parse RANDOM" in str(exception_info.value)
 
     def test_ingestReport_synthetic_column(self) -> None:
         # Act
@@ -1435,16 +1427,12 @@ class ManualUploadTest(unittest.TestCase):
     def test_parse_date_range_raiseChronologicalError(self) -> None:
         range_input = YAMLDict({"type": "RANGE", "input": ["2020-11-01", "2020-10-01"]})
 
-        # Act
-        with pytest.raises(ValueError) as exception_info:
+        with self.assertRaisesRegex(
+            ValueError, "Parsed date has to be in chronological order"
+        ):
             manual_upload._parse_date_range(  # pylint: disable=protected-access
                 range_input
             )
-
-        # Assert
-        assert "Parsed date has to be in chronological order" in str(
-            exception_info.value
-        )
 
     def test_parse_date_range_input_raiseMaximumDatesError(self) -> None:
         range_input = YAMLDict(
@@ -1458,14 +1446,10 @@ class ManualUploadTest(unittest.TestCase):
             }
         )
 
-        # Act
-        with pytest.raises(ValueError) as exception_info:
+        with self.assertRaisesRegex(ValueError, "Have a maximum of 2 dates for input"):
             manual_upload._parse_date_range(  # pylint: disable=protected-access
                 range_input
             )
-
-        # Assert
-        assert "Have a maximum of 2 dates for input" in str(exception_info.value)
 
     def test_DynamicDateRangeProducer_convert_chronolicalError(self) -> None:
         converter = manual_upload.RANGE_CONVERTERS[manual_upload.RangeType.CUSTOM]
@@ -1482,16 +1466,12 @@ class ManualUploadTest(unittest.TestCase):
             columns=columns, converter=converter
         )
 
-        # Act
-        with pytest.raises(ValueError) as exception_info:
+        with self.assertRaisesRegex(
+            ValueError, "Parsed date has to be in chronological order"
+        ):
             dynamic_range_producer._convert(  # pylint: disable=protected-access
                 list(args)
             )
-
-        # Assert
-        assert "Parsed date has to be in chronological order" in str(
-            exception_info.value
-        )
 
     def test_raiseAggregatedDimensionsShouldBeFilteredDimension(self) -> None:
         date_range = manual_upload.NonNegativeDateRange(
@@ -1500,7 +1480,9 @@ class ManualUploadTest(unittest.TestCase):
         metric = manual_upload.Population(schema.MeasurementType.INSTANT)
 
         # Act
-        with pytest.raises(AttributeError) as exception_info:
+        with self.assertRaisesRegex(
+            AttributeError, "change it to a filtered dimension"
+        ):
             manual_upload.Table(
                 date_range,
                 metric,
@@ -1513,9 +1495,6 @@ class ManualUploadTest(unittest.TestCase):
                 dimensions=[manual_upload.Race, manual_upload.PopulationType],
                 data_points=[((manual_upload.Race("Black"),), decimal.Decimal(0))],
             )
-
-        # Assert
-        assert "change it to a filtered dimension" in str(exception_info.value)
 
     def test_jailPopulationAndFIPS_arePersisted(self) -> None:
         # Act

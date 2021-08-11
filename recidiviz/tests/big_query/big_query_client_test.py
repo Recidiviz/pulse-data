@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for BigQueryClientImpl"""
-
 # pylint: disable=protected-access
 import datetime
 import random
@@ -24,7 +23,6 @@ from concurrent import futures
 from typing import Iterator, List
 from unittest import mock
 
-import pytest
 from freezegun import freeze_time
 from google.api_core.future.polling import DEFAULT_RETRY, PollingFuture
 from google.api_core.retry import Retry
@@ -330,7 +328,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         table does not exist."""
         self.mock_client.get_table.side_effect = exceptions.NotFound("!")
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             self.bq_client.insert_into_table_from_table_async(
                 self.mock_dataset_id,
                 self.mock_table_id,
@@ -343,7 +341,7 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_insert_into_table_from_table_invalid_filter_clause(self) -> None:
         """Tests that the insert_into_table_from_table_async function does not run the query if the filter clause
         does not start with a WHERE."""
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             self.bq_client.insert_into_table_from_table_async(
                 self.mock_dataset_id,
                 self.mock_table_id,
@@ -392,7 +390,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.create_dataset.assert_called()
         self.mock_client.load_table_from_uri.assert_called()
 
-    def test_insert_into_table_streaming(self) -> None:
+    def test_stream_into_table(self) -> None:
         self.mock_client.insert_rows.return_value = None
 
         self.bq_client.stream_into_table(
@@ -404,10 +402,10 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.assert_called()
         self.mock_client.insert_rows.assert_called()
 
-    def test_insert_into_table_streaming_invalid_table(self) -> None:
+    def test_stream_into_table_invalid_table(self) -> None:
         self.mock_client.get_table.side_effect = ValueError("!")
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             self.bq_client.stream_into_table(
                 dataset_ref=self.mock_dataset_ref,
                 table_id=self.mock_table_id,
@@ -417,12 +415,12 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.assert_called()
         self.mock_client.insert_rows.assert_not_called()
 
-    def test_insert_into_table_streaming_failed_insert(self) -> None:
+    def test_stream_into_table_failed_insert(self) -> None:
         self.mock_client.insert_rows.return_value = [
             {"index": 1, "errors": "Incorrect columns"}
         ]
 
-        with pytest.raises(RuntimeError, match="Incorrect columns"):
+        with self.assertRaisesRegex(RuntimeError, "Incorrect columns"):
             self.bq_client.stream_into_table(
                 dataset_ref=self.mock_dataset_ref,
                 table_id=self.mock_table_id,
@@ -464,7 +462,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
     def test_delete_from_table_invalid_filter_clause(self) -> None:
         """Tests that the delete_from_table function does not run a query when the filter clause is invalid."""
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             self.bq_client.delete_from_table_async(
                 self.mock_dataset_id, self.mock_table_id, filter_clause="x > y"
             )
@@ -546,7 +544,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             should_materialize=False,
         )
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             self.bq_client.materialize_view_to_table(invalid_view)
         self.mock_client.query.assert_not_called()
 
@@ -591,7 +589,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.side_effect = None
         schema_fields = [bigquery.SchemaField("new_schema_field", "STRING")]
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             self.bq_client.create_table_with_schema(
                 self.mock_dataset_id, self.mock_table_id, schema_fields
             )
@@ -634,7 +632,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.side_effect = exceptions.NotFound("!")
         new_schema_fields = [bigquery.SchemaField("fake_schema_field", "STRING")]
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             self.bq_client.add_missing_fields_to_schema(
                 self.mock_dataset_id, self.mock_table_id, new_schema_fields
             )
@@ -653,7 +651,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         new_schema_fields = [bigquery.SchemaField("fake_schema_field", "INTEGER")]
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             self.bq_client.add_missing_fields_to_schema(
                 self.mock_dataset_id, self.mock_table_id, new_schema_fields
             )
@@ -676,7 +674,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             bigquery.SchemaField("fake_schema_field", "STRING", mode="REQUIRED")
         ]
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             self.bq_client.add_missing_fields_to_schema(
                 self.mock_dataset_id, self.mock_table_id, new_schema_fields
             )
@@ -792,7 +790,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             bigquery.SchemaField("field_2", "INT"),
         ]
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             self.bq_client.update_schema(
                 self.mock_dataset_id, self.mock_table_id, new_schema_fields
             )
@@ -823,7 +821,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             bigquery.SchemaField("field_2", "INT"),
         ]
 
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             self.bq_client.update_schema(
                 self.mock_dataset_id, self.mock_table_id, new_schema_fields
             )
@@ -1113,13 +1111,12 @@ class BigQueryClientImplTest(unittest.TestCase):
             run_info_failure,
         ]
 
-        with self.assertRaises(ValueError) as e:
+        with self.assertRaisesRegex(
+            ValueError, rf"^Transfer run \[{run_name}\] FAILED with status"
+        ):
             self.bq_client.copy_dataset_tables_across_regions(
                 "my_src_dataset", "my_dst_dataset"
             )
-        self.assertTrue(
-            str(e.exception).startswith(f"Transfer run [{run_name}] FAILED with status")
-        )
 
         mock_transfer_client.create_transfer_config.assert_called_once()
         mock_transfer_client.get_transfer_run.assert_has_calls(
@@ -1175,13 +1172,12 @@ class BigQueryClientImplTest(unittest.TestCase):
             run_info_pending,
         ]
 
-        with self.assertRaises(TimeoutError) as e:
+        with self.assertRaisesRegex(
+            TimeoutError, "^Did not complete dataset copy before timeout"
+        ):
             self.bq_client.copy_dataset_tables_across_regions(
                 "my_src_dataset", "my_dst_dataset", timeout_sec=0.15
             )
-        self.assertTrue(
-            str(e.exception).startswith("Did not complete dataset copy before timeout")
-        )
 
         mock_transfer_client.create_transfer_config.assert_called_once()
         mock_transfer_client.get_transfer_run.assert_has_calls(
