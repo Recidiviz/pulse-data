@@ -129,7 +129,7 @@ def main(state_code: StateCode, ingest_instance: DirectIngestInstance) -> None:
     print(
         "********************************************************************************"
     )
-    db_version = ingest_instance.database_version(SystemLevel.STATE, state_code)
+    db_version = ingest_instance.database_version(SystemLevel.STATE)
     db_key = SQLAlchemyDatabaseKey.for_state_code(
         state_code=state_code, db_version=db_version
     )
