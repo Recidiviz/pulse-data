@@ -1,9 +1,9 @@
 # pylint: skip-file
-"""add-etl-client-event
+"""add_etl_client_event
 
-Revision ID: fa231d61cd5f
-Revises: 9462a38c6110
-Create Date: 2021-08-09 14:54:11.044215
+Revision ID: 9ec4c6ed9019
+Revises: 647ed11c1873
+Create Date: 2021-08-11 12:19:50.531935
 
 """
 import sqlalchemy as sa
@@ -11,8 +11,8 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "fa231d61cd5f"
-down_revision = "9462a38c6110"
+revision = "9ec4c6ed9019"
+down_revision = "647ed11c1873"
 branch_labels = None
 depends_on = None
 
