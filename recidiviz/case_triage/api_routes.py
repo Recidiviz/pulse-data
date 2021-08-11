@@ -441,4 +441,20 @@ def create_api_blueprint(
 
         return jsonify(officer_note.to_json())
 
+    @route_with_permissions(
+        api, "/events/<client_id>", [Permission.READ_WRITE, Permission.READ_ONLY]
+    )
+    def _get_client_events(client_id: str) -> Response:
+        try:
+            return jsonify(
+                [
+                    event_presenter.to_json()
+                    for event_presenter in CaseTriageQuerier.events_for_client(
+                        current_session, g.user_context, client_id
+                    )
+                ]
+            )
+        except PersonDoesNotExistError as e:
+            raise CaseTriagePersonNotOnCaseloadException from e
+
     return api

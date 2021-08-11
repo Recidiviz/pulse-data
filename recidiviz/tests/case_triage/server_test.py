@@ -30,6 +30,7 @@ from recidiviz.case_triage.api_routes import IMPERSONATED_EMAIL_KEY
 from recidiviz.case_triage.authorization import AccessPermissions, AuthorizationStore
 from recidiviz.case_triage.case_updates.serializers import serialize_client_case_version
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
+from recidiviz.case_triage.client_event.types import ClientEventType
 from recidiviz.case_triage.client_info.types import PreferredContactMethod
 from recidiviz.case_triage.opportunities.types import (
     OpportunityDeferralType,
@@ -39,7 +40,10 @@ from recidiviz.case_triage.querier.case_update_presenter import CaseUpdateStatus
 from recidiviz.case_triage.querier.querier import OfficerDoesNotExistError
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
 from recidiviz.case_triage.user_context import UserContext
-from recidiviz.persistence.database.schema.case_triage.schema import ETLOfficer
+from recidiviz.persistence.database.schema.case_triage.schema import (
+    ETLClientEvent,
+    ETLOfficer,
+)
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.case_triage.api_test_helpers import CaseTriageTestHelpers
@@ -146,6 +150,40 @@ class TestCaseTriageAPIRoutes(TestCase):
         # all generated fake clients have no employer
         self.num_unemployed_opportunities = 3
 
+        self.client_events = [
+            ETLClientEvent(
+                state_code=self.client_1.state_code,
+                person_external_id=self.client_1.person_external_id,
+                # note that these are not in proper descending date order
+                event_date=date.today() - timedelta(days=2),
+                event_type=ClientEventType.ASSESSMENT.value,
+                event_metadata={
+                    "assessment_score": 10,
+                    "previous_assessment_score": 9,
+                },
+            ),
+            ETLClientEvent(
+                state_code=self.client_1.state_code,
+                person_external_id=self.client_1.person_external_id,
+                event_date=date.today() - timedelta(days=1),
+                event_type=ClientEventType.ASSESSMENT.value,
+                event_metadata={
+                    "assessment_score": 5,
+                    "previous_assessment_score": 10,
+                },
+            ),
+            ETLClientEvent(
+                state_code=self.client_2.state_code,
+                person_external_id=self.client_2.person_external_id,
+                event_date=date.today() - timedelta(days=1),
+                event_type=ClientEventType.ASSESSMENT.value,
+                event_metadata={
+                    "assessment_score": 5,
+                    "previous_assessment_score": 10,
+                },
+            ),
+        ]
+
         self.session.add_all(
             [
                 self.officer,
@@ -160,6 +198,7 @@ class TestCaseTriageAPIRoutes(TestCase):
                 self.opportunity_1,
                 self.deferral_1,
                 self.opportunity_2,
+                *self.client_events,
             ]
         )
         self.session.commit()
@@ -653,6 +692,27 @@ class TestCaseTriageAPIRoutes(TestCase):
             )
             self.assertEqual(
                 response.status_code, HTTPStatus.BAD_REQUEST, response.get_json()
+            )
+
+    def test_get_client_events(self) -> None:
+        with self.helpers.using_officer(self.officer):
+            self.assertEqual(
+                len(
+                    self.helpers.get_events_for_client(self.client_1.person_external_id)
+                ),
+                2,
+            )
+            self.assertEqual(
+                len(
+                    self.helpers.get_events_for_client(self.client_2.person_external_id)
+                ),
+                1,
+            )
+            self.assertEqual(
+                len(
+                    self.helpers.get_events_for_client(self.client_3.person_external_id)
+                ),
+                0,
             )
 
     def test_notes_sql_injection_gut_check(self) -> None:

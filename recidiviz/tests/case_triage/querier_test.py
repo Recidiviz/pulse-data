@@ -15,12 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """This class implements tests for the CaseTriageQuerier."""
+from datetime import date, timedelta
 from typing import Optional
 from unittest.case import TestCase
 
 import pytest
 
 from recidiviz.case_triage.authorization import AuthorizationStore
+from recidiviz.case_triage.client_event.types import ClientEventType
 from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.case_triage.querier.querier import (
     CaseTriageQuerier,
@@ -28,6 +30,7 @@ from recidiviz.case_triage.querier.querier import (
     PersonDoesNotExistError,
 )
 from recidiviz.case_triage.user_context import UserContext
+from recidiviz.persistence.database.schema.case_triage.schema import ETLClientEvent
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -254,3 +257,79 @@ class TestCaseTriageQuerier(TestCase):
                 OpportunityType.EMPLOYMENT.value,
             )
             self.assertTrue(employment_opp.is_deferred())
+
+    def test_events_for_client(self) -> None:
+        officer = generate_fake_officer("officer_1")
+        user_context = UserContext(
+            current_user=officer,
+            authorization_store=AuthorizationStore(),
+            email=officer.email_address,
+        )
+        client = generate_fake_client(
+            "client_1", supervising_officer_id=officer.external_id
+        )
+
+        officer_2 = generate_fake_officer("officer_2")
+        client_2 = generate_fake_client("client_2", supervising_officer_id="officer_2")
+
+        events = [
+            ETLClientEvent(
+                state_code=client.state_code,
+                person_external_id=client.person_external_id,
+                # note that these are not in proper descending date order
+                event_date=date.today() - timedelta(days=2),
+                event_type=ClientEventType.ASSESSMENT.value,
+                event_metadata={
+                    "assessment_score": 10,
+                    "previous_assessment_score": 9,
+                },
+            ),
+            ETLClientEvent(
+                state_code=client.state_code,
+                person_external_id=client.person_external_id,
+                event_date=date.today() - timedelta(days=1),
+                event_type=ClientEventType.ASSESSMENT.value,
+                event_metadata={
+                    "assessment_score": 5,
+                    "previous_assessment_score": 10,
+                },
+            ),
+            ETLClientEvent(
+                state_code=client_2.state_code,
+                person_external_id=client_2.person_external_id,
+                event_date=date.today() - timedelta(days=1),
+                event_type=ClientEventType.ASSESSMENT.value,
+                event_metadata={
+                    "assessment_score": 5,
+                    "previous_assessment_score": 10,
+                },
+            ),
+        ]
+
+        with SessionFactory.using_database(self.database_key) as session:
+            session.expire_on_commit = False
+            session.add(officer)
+            session.add(client)
+            session.add(officer_2)
+            session.add(client_2)
+            for event in events:
+                session.add(event)
+
+        with SessionFactory.using_database(self.database_key) as read_session:
+            # Client does not exist for the officer
+            with self.assertRaises(PersonDoesNotExistError):
+                CaseTriageQuerier.events_for_client(
+                    read_session, user_context, client_2.person_external_id
+                )
+
+            queried_events = CaseTriageQuerier.events_for_client(
+                read_session, user_context, client.person_external_id
+            )
+
+            self.assertEqual(len(queried_events), 2)
+
+            # reverse chronological
+            self.assertGreater(
+                queried_events[0].etl_client_event.event_date,
+                queried_events[1].etl_client_event.event_date,
+            )
