@@ -20,6 +20,8 @@ import unittest
 from datetime import date
 from unittest import mock
 
+import attr
+
 from recidiviz.calculator.pipeline.violation import identifier
 from recidiviz.calculator.pipeline.violation.events import ViolationWithResponseEvent
 from recidiviz.common.constants.state.state_supervision_violation import (
@@ -93,7 +95,6 @@ class TestFindViolationEvents(unittest.TestCase):
                 state_code="US_XX",
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.FELONY,
                 violation_type_subtype="FELONY",
@@ -101,6 +102,8 @@ class TestFindViolationEvents(unittest.TestCase):
                 is_violent=False,
                 is_sex_offense=False,
                 most_severe_response_decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+                is_most_severe_violation_type_of_all_violations=True,
+                is_most_severe_response_decision_of_all_violations=True,
             )
         ]
         self.assertEqual(expected, violation_events)
@@ -164,7 +167,6 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 state_code="US_XX",
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.TECHNICAL,
                 violation_type_subtype="TECHNICAL",
@@ -238,7 +240,6 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 state_code="US_XX",
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.ABSCONDED,
                 violation_type_subtype="ABSCONDED",
@@ -251,7 +252,6 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 state_code="US_XX",
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.TECHNICAL,
                 violation_type_subtype="TECHNICAL",
@@ -330,7 +330,6 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 state_code="US_XX",
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.TECHNICAL,
                 violation_type_subtype="TECHNICAL",
@@ -411,7 +410,6 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 state_code="US_XX",
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.TECHNICAL,
                 violation_type_subtype="TECHNICAL",
@@ -486,7 +484,6 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 state_code="US_XX",
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.TECHNICAL,
                 violation_type_subtype="TECHNICAL",
@@ -554,7 +551,6 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
                 state_code="US_XX",
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.FELONY,
                 violation_type_subtype="FELONY",
@@ -570,6 +566,199 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         )
 
         self.assertEqual(expected, violation_with_response_events)
+
+
+class TestAddAggregateEventDateFields(unittest.TestCase):
+    """Tests the _add_aggregate_event_date_fields function."""
+
+    def setUp(self) -> None:
+        self.identifier = identifier.ViolationIdentifier()
+
+    def test_add_aggregate_event_date_fields(self) -> None:
+        first_violation_on_first_day = ViolationWithResponseEvent(
+            state_code="US_XX",
+            supervision_violation_id=1,
+            event_date=date(2021, 1, 1),
+            violation_date=None,
+            violation_type=StateSupervisionViolationType.MISDEMEANOR,
+            violation_type_subtype="MISDEMEANOR",
+            is_most_severe_violation_type=True,
+            is_violent=False,
+            is_sex_offense=False,
+            most_severe_response_decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
+        )
+        second_violation_on_first_day = ViolationWithResponseEvent(
+            state_code="US_XX",
+            supervision_violation_id=2,
+            event_date=date(2021, 1, 1),
+            violation_date=None,
+            violation_type=StateSupervisionViolationType.FELONY,
+            violation_type_subtype="FELONY",
+            is_most_severe_violation_type=True,
+            is_violent=False,
+            is_sex_offense=False,
+            most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
+        )
+        violation_with_response_events = [
+            first_violation_on_first_day,
+            second_violation_on_first_day,
+        ]
+
+        expected = [
+            attr.evolve(
+                first_violation_on_first_day,
+                is_most_severe_response_decision_of_all_violations=False,
+                is_most_severe_violation_type_of_all_violations=False,
+            ),
+            attr.evolve(
+                second_violation_on_first_day,
+                is_most_severe_response_decision_of_all_violations=True,
+                is_most_severe_violation_type_of_all_violations=True,
+            ),
+        ]
+
+        self.assertEqual(
+            self.identifier._add_aggregate_event_date_fields(
+                violation_with_response_events, UsXxViolationDelegate()
+            ),
+            expected,
+        )
+
+    def test_add_aggregate_event_date_fields_aggregates_per_day(self) -> None:
+        first_violation_on_first_day = ViolationWithResponseEvent(
+            state_code="US_XX",
+            supervision_violation_id=1,
+            event_date=date(2021, 1, 1),
+            violation_date=None,
+            violation_type=StateSupervisionViolationType.MISDEMEANOR,
+            violation_type_subtype="MISDEMEANOR",
+            is_most_severe_violation_type=True,
+            is_violent=False,
+            is_sex_offense=False,
+            most_severe_response_decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
+        )
+        second_violation_on_first_day = ViolationWithResponseEvent(
+            state_code="US_XX",
+            supervision_violation_id=2,
+            event_date=date(2021, 1, 1),
+            violation_date=None,
+            violation_type=StateSupervisionViolationType.FELONY,
+            violation_type_subtype="FELONY",
+            is_most_severe_violation_type=True,
+            is_violent=False,
+            is_sex_offense=False,
+            most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
+        )
+        first_violation_on_second_day = ViolationWithResponseEvent(
+            state_code="US_XX",
+            supervision_violation_id=3,
+            event_date=date(2021, 1, 2),
+            violation_date=None,
+            violation_type=StateSupervisionViolationType.FELONY,
+            violation_type_subtype="FELONY",
+            is_most_severe_violation_type=True,
+            is_violent=False,
+            is_sex_offense=False,
+            most_severe_response_decision=StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON,
+        )
+        second_violation_on_second_day = ViolationWithResponseEvent(
+            state_code="US_XX",
+            supervision_violation_id=3,
+            event_date=date(2021, 1, 2),
+            violation_date=None,
+            violation_type=StateSupervisionViolationType.ABSCONDED,
+            violation_type_subtype="ABSCONDED",
+            is_most_severe_violation_type=True,
+            is_violent=False,
+            is_sex_offense=False,
+            most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
+        )
+        violation_with_response_events = [
+            first_violation_on_first_day,
+            second_violation_on_first_day,
+            first_violation_on_second_day,
+            second_violation_on_second_day,
+        ]
+
+        expected = [
+            attr.evolve(
+                first_violation_on_first_day,
+                is_most_severe_response_decision_of_all_violations=False,
+                is_most_severe_violation_type_of_all_violations=False,
+            ),
+            attr.evolve(
+                second_violation_on_first_day,
+                is_most_severe_response_decision_of_all_violations=True,
+                is_most_severe_violation_type_of_all_violations=True,
+            ),
+            attr.evolve(
+                first_violation_on_second_day,
+                is_most_severe_response_decision_of_all_violations=False,
+                is_most_severe_violation_type_of_all_violations=True,
+            ),
+            attr.evolve(
+                second_violation_on_second_day,
+                is_most_severe_response_decision_of_all_violations=True,
+                is_most_severe_violation_type_of_all_violations=False,
+            ),
+        ]
+
+        self.assertEqual(
+            self.identifier._add_aggregate_event_date_fields(
+                violation_with_response_events, UsXxViolationDelegate()
+            ),
+            expected,
+        )
+
+    def test_add_aggregate_event_date_fields_none_if_no_decisions(self) -> None:
+        first_violation_on_first_day = ViolationWithResponseEvent(
+            state_code="US_XX",
+            supervision_violation_id=1,
+            event_date=date(2021, 1, 1),
+            violation_date=None,
+            violation_type=StateSupervisionViolationType.MISDEMEANOR,
+            violation_type_subtype="MISDEMEANOR",
+            is_most_severe_violation_type=True,
+            is_violent=False,
+            is_sex_offense=False,
+            most_severe_response_decision=None,
+        )
+        second_violation_on_first_day = ViolationWithResponseEvent(
+            state_code="US_XX",
+            supervision_violation_id=2,
+            event_date=date(2021, 1, 1),
+            violation_date=None,
+            violation_type=StateSupervisionViolationType.FELONY,
+            violation_type_subtype="FELONY",
+            is_most_severe_violation_type=True,
+            is_violent=False,
+            is_sex_offense=False,
+            most_severe_response_decision=None,
+        )
+        violation_with_response_events = [
+            first_violation_on_first_day,
+            second_violation_on_first_day,
+        ]
+
+        expected = [
+            attr.evolve(
+                first_violation_on_first_day,
+                is_most_severe_response_decision_of_all_violations=None,
+                is_most_severe_violation_type_of_all_violations=False,
+            ),
+            attr.evolve(
+                second_violation_on_first_day,
+                is_most_severe_response_decision_of_all_violations=None,
+                is_most_severe_violation_type_of_all_violations=True,
+            ),
+        ]
+
+        self.assertEqual(
+            self.identifier._add_aggregate_event_date_fields(
+                violation_with_response_events, UsXxViolationDelegate()
+            ),
+            expected,
+        )
 
 
 class TestUsMoFindViolationWithResponseEvents(unittest.TestCase):
@@ -630,7 +819,6 @@ class TestUsMoFindViolationWithResponseEvents(unittest.TestCase):
                 state_code=self.state_code,
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.ABSCONDED,
                 violation_type_subtype="ABSCONDED",
@@ -643,7 +831,6 @@ class TestUsMoFindViolationWithResponseEvents(unittest.TestCase):
                 state_code=self.state_code,
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.TECHNICAL,
                 violation_type_subtype="TECHNICAL",
@@ -722,7 +909,6 @@ class TestUsMoFindViolationWithResponseEvents(unittest.TestCase):
                 state_code=self.state_code,
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.TECHNICAL,
                 violation_type_subtype="LAW_CITATION",
@@ -735,7 +921,6 @@ class TestUsMoFindViolationWithResponseEvents(unittest.TestCase):
                 state_code=self.state_code,
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.ABSCONDED,
                 violation_type_subtype="ABSCONDED",
@@ -748,7 +933,6 @@ class TestUsMoFindViolationWithResponseEvents(unittest.TestCase):
                 state_code=self.state_code,
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.TECHNICAL,
                 violation_type_subtype="SUBSTANCE_ABUSE",
@@ -832,7 +1016,6 @@ class TestUsMoFindViolationWithResponseEvents(unittest.TestCase):
                 state_code=self.state_code,
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.TECHNICAL,
                 violation_type_subtype="LAW_CITATION",
@@ -917,7 +1100,6 @@ class TestUsMoFindViolationWithResponseEvents(unittest.TestCase):
                 state_code=self.state_code,
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.ABSCONDED,
                 violation_type_subtype="ABSCONDED",
@@ -930,7 +1112,6 @@ class TestUsMoFindViolationWithResponseEvents(unittest.TestCase):
                 state_code=self.state_code,
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.TECHNICAL,
                 violation_type_subtype="SUBSTANCE_ABUSE",
@@ -943,7 +1124,6 @@ class TestUsMoFindViolationWithResponseEvents(unittest.TestCase):
                 state_code=self.state_code,
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.TECHNICAL,
                 violation_type_subtype="TECHNICAL",
@@ -1033,7 +1213,6 @@ class TestUsPaFindViolationWithResponseEvents(unittest.TestCase):
                 state_code=self.state_code,
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.TECHNICAL,
                 violation_type_subtype="HIGH_TECH",
@@ -1046,7 +1225,6 @@ class TestUsPaFindViolationWithResponseEvents(unittest.TestCase):
                 state_code=self.state_code,
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.TECHNICAL,
                 violation_type_subtype="SUBSTANCE_ABUSE",
@@ -1059,7 +1237,6 @@ class TestUsPaFindViolationWithResponseEvents(unittest.TestCase):
                 state_code=self.state_code,
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.TECHNICAL,
                 violation_type_subtype="ELEC_MONITORING",
@@ -1072,7 +1249,6 @@ class TestUsPaFindViolationWithResponseEvents(unittest.TestCase):
                 state_code=self.state_code,
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.TECHNICAL,
                 violation_type_subtype="MED_TECH",
@@ -1085,7 +1261,6 @@ class TestUsPaFindViolationWithResponseEvents(unittest.TestCase):
                 state_code=self.state_code,
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 4),
-                response_date=date(2021, 1, 4),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.TECHNICAL,
                 violation_type_subtype="LOW_TECH",
@@ -1169,7 +1344,6 @@ class TestUsNdFindViolationWithResponseEvents(unittest.TestCase):
                 state_code=self.state_code,
                 supervision_violation_id=1,
                 event_date=date(2021, 1, 5),
-                response_date=date(2021, 1, 5),
                 violation_date=date(2021, 1, 1),
                 violation_type=StateSupervisionViolationType.TECHNICAL,
                 violation_type_subtype="TECHNICAL",
