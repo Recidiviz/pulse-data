@@ -38,6 +38,7 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.view_registry.deployed_views import (
     CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA,
+    CLOUDSQL_UNIONED_REGIONAL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA,
 )
 
 NO_PAUSED_REGIONS_CLOUD_SQL_CONFIG_YAML = """
@@ -138,10 +139,6 @@ class FederatedCloudSQLTableBigQueryViewCollectorTest(unittest.TestCase):
                     config
                 ).collect_view_builders()
 
-            datasets_for_schema_refresh.add(
-                config.unioned_regional_dataset(dataset_override_prefix=None)
-            )
-
             for view_builder in view_builders:
                 datasets_for_schema_refresh.add(view_builder.dataset_id)
                 if view_builder.materialized_address_override:
@@ -154,6 +151,39 @@ class FederatedCloudSQLTableBigQueryViewCollectorTest(unittest.TestCase):
                 sorted(
                     datasets_for_schema_refresh.difference(
                         CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA[
+                            schema_type
+                        ]
+                    )
+                ),
+            )
+
+    def test_all_unioned_regional_datasets_registered_as_managed(self) -> None:
+        self.fake_fs.upload_from_string(
+            path=self.fake_config_path,
+            contents=NO_PAUSED_REGIONS_CLOUD_SQL_CONFIG_YAML,
+            content_type="text/yaml",
+        )
+
+        for schema_type in SchemaType:
+            datasets_for_schema_refresh = set()
+            if not CloudSqlToBQConfig.is_valid_schema_type(schema_type):
+                continue
+            config = CloudSqlToBQConfig.for_schema_type(schema_type)
+
+            if not config.is_state_segmented_refresh_schema():
+                # Only state segmented schemas require unioned regional datasets
+                # for the refresh
+                continue
+
+            datasets_for_schema_refresh.add(
+                config.unioned_regional_dataset(dataset_override_prefix=None)
+            )
+
+            self.assertEqual(
+                [],
+                sorted(
+                    datasets_for_schema_refresh.difference(
+                        CLOUDSQL_UNIONED_REGIONAL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA[
                             schema_type
                         ]
                     )
