@@ -29,7 +29,7 @@
 """
 import logging
 import sys
-from datetime import date
+from datetime import date, timedelta
 from typing import Dict, Optional, Tuple
 
 from dateutil.relativedelta import relativedelta
@@ -115,9 +115,8 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         )
         return reassessment_deadline
 
-    def _get_required_face_to_face_contacts_and_period_days_for_level(
+    def _get_required_face_to_face_contacts_and_period_months_for_level(
         self,
-        compliance_evaluation_date: date,
     ) -> Tuple[int, int]:
         """Returns the number of face-to-face contacts that are required within time period (in days) for a supervision
         case with the given supervision level.
@@ -140,20 +139,7 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
                 "Supervision level not provided and so cannot calculate required face to face contact frequency."
             )
 
-        required_contacts, num_months = SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[
-            supervision_level
-        ]
-
-        # North Dakota has contact rquirements by month. For example, Medium-level supervisees need f2f
-        # contact once every 2 calendar months. So if the last contact was Feb 12, the contact requirement
-        # wouldn't be in violation until May 1. Inversely, as long as we had a contact by the beginning
-        # of the calendar month 2 months previous, we are in compliance.
-        contact_date_limit = (
-            compliance_evaluation_date - relativedelta(months=num_months)
-        ).replace(day=1)
-
-        # return number of days back the limit is
-        return required_contacts, (compliance_evaluation_date - contact_date_limit).days
+        return SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[supervision_level]
 
     def _home_visit_frequency_is_sufficient(
         self, compliance_evaluation_date: date
@@ -227,20 +213,51 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
 
         return HOME_VISIT_CONTACT_FREQUENCY_REQUIREMENTS[supervision_level]
 
-    def _face_to_face_contact_frequency_is_sufficient(
+    def _next_recommended_face_to_face_date(
         self, compliance_evaluation_date: date
-    ) -> Optional[bool]:
-        """Returns whether the frequency of face-to-face contacts between the officer and the person on supervision
-        is sufficient with respect to the state standards for the level of supervision of the case."""
+    ) -> Optional[date]:
+        """Returns when the next face-to-face contact should be. Returns None if compliance standards are
+        unknown or no subsequent face-to-face contacts are required."""
+
+        # North Dakota has contact rquirements by month. For example, Medium-level supervisees need f2f
+        # contact once every 2 calendar months. So if the last contact was Feb 12, the contact requirement
+        # wouldn't be in violation until May 1. Inversely, as long as we had a contact by the beginning
+        # of the calendar month 2 months previous, we are in compliance.
+
         (
             required_contacts,
-            period_days,
-        ) = self._get_required_face_to_face_contacts_and_period_days_for_level(
-            compliance_evaluation_date
+            period_months,
+        ) = self._get_required_face_to_face_contacts_and_period_months_for_level()
+
+        contacts_since_supervision_start = (
+            self._get_applicable_face_to_face_contacts_between_dates(
+                self.start_of_supervision, compliance_evaluation_date
+            )
+        )
+        contact_dates = sorted(
+            [
+                contact.contact_date
+                for contact in contacts_since_supervision_start
+                if contact.contact_date is not None
+            ]
         )
 
-        return self._face_to_face_contact_frequency_is_in_compliance(
-            compliance_evaluation_date, required_contacts, period_days
+        if len(contact_dates) < required_contacts:
+            # Not enough contacts. Give the PO until the full period window has elapsed
+            # to meet with their client.
+            candidate_day = self.start_of_supervision + relativedelta(
+                months=period_months
+            )
+        else:
+            # If n contacts are required every k month, this looks at the nth-to-last contact
+            # and returns the date k months after that.
+            candidate_day = contact_dates[-required_contacts] + relativedelta(
+                months=period_months
+            )
+
+        # Need to project candidate_day to last day of the month.
+        return (candidate_day + relativedelta(months=1)).replace(day=1) - timedelta(
+            days=1
         )
 
     def _get_supervision_level_policy(

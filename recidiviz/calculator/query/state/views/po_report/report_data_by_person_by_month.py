@@ -57,7 +57,7 @@ REPORT_DATA_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
       IFNULL(assessment_count, 0) AS assessment_count,
       next_recommended_assessment_date,
       IFNULL(face_to_face_count, 0) AS face_to_face_count,
-      face_to_face_frequency_sufficient
+      next_recommended_face_to_face_date
 
     FROM `{project_id}.{po_report_dataset}.successful_supervision_completions_by_person_by_month_materialized` completions
 
