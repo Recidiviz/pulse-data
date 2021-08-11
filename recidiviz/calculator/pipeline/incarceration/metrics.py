@@ -102,7 +102,19 @@ class IncarcerationPopulationMetric(IncarcerationMetric):
 
     @classmethod
     def get_description(cls) -> str:
-        return "TODO(#7563): Add IncarcerationPopulationMetric description"
+        return """
+The `IncarcerationPopulationMetric` stores information about a single day that an individual spent incarcerated. This metric tracks each day on which an individual was counted in the state’s incarcerated population, and includes information related to the stay in a facility.
+
+With this metric, we can answer questions like:
+
+- How has the population of a DOC facility changed over time?
+- How many people are being held in a state prison for a parole board hold today?
+- What proportion of individuals incarcerated in a state in 2010 were women?
+
+This metric is derived from the `StateIncarcerationPeriod` entities, which store information about periods of time that an individual was in an incarceration facility. All population metrics are end date exclusive, meaning a person is not counted in a facility’s population on the day that they are released from that facility. The population metrics are start date inclusive, meaning that a person is counted in a facility’s population on the date that they are admitted to the facility.
+
+When pre-processing the `StateIncarcerationPeriod` entities to create this metric, transfers between facilities are not collapsed. This means that if a person was held in Facility X on 2001-01-01, and was transferred to Facility Z on 2001-01-02, there will be an `IncarcerationPopulationMetric` for 2001-01-01 in Facility X, and another metric for 2001-01-02 in Facility Z. 
+"""
 
     # Required characteristics
 
@@ -148,7 +160,19 @@ class IncarcerationAdmissionMetric(IncarcerationMetric):
 
     @classmethod
     def get_description(cls) -> str:
-        return "TODO(#7563): Add IncarcerationAdmissionMetric description"
+        return """
+The `IncarcerationAdmissionMetric` stores information about an admission to incarceration. This metric tracks each time that an individual was admitted to an incarceration facility, and includes information related to the admission.
+
+With this metric, we can answer questions like:
+
+- How many people were admitted to Facility X in January 2020?
+- What percent of admissions to prison in 2017 were due to parole revocations?
+- Of all admissions to prison due to a new court sentence in August 2014, what percent were by people who are Black?
+
+This metric is derived from the `StateIncarcerationPeriod` entities, which store information about periods of time that an individual was in an incarceration facility. When pre-processing the `StateIncarcerationPeriod` entities to create this metric, transfers between facilities are collapsed. This means that if a person has two chronologically consecutive `StateIncarcerationPeriod` entities, where the `release_reason` from the first period is `TRANSFER`, and the `admission_reason` on the second period is also `TRANSFER`, then the two periods are collapsed into one continuous period of time spent incarcerated. The consequence of collapsing transfers in the making of this metric is that `TRANSFER` admissions are (for the most part) not included in the `IncarcerationAdmissionMetric` output. However, there are a few exceptions to this: if the `admission_reason` on a `StateIncarcerationPeriod` is `TRANSFER` but the `release_reason` on the previous period is not `TRANSFER`, then the two periods are not collapsed in IP pre-processing, and the `TRANSFER` admission will be included in the metrics.
+
+If a person was admitted to Facility X on 2021-01-01, was transferred out of Facility X and into Facility Z on 2021-03-31, and is still being held in Facility Z, then there will be a single `IncarcerationAdmissionMetric` for this person on 2021-01-01 into Facility X.
+"""
 
     # Required characteristics
 
@@ -190,9 +214,27 @@ class IncarcerationCommitmentFromSupervisionMetric(
 
     @classmethod
     def get_description(cls) -> str:
-        return (
-            "TODO(#7563): Add IncarcerationCommitmentFromSupervisionMetric description"
-        )
+        return """
+The `IncarcerationCommitmentFromSupervisionMetric` stores information about all admissions to incarceration that qualify as a commitment from supervision. A commitment from supervision is when an individual that is on supervision is admitted to prison in response to a mandate from either the court or the parole board. This includes an admission to prison from supervision for any of the following reasons:
+
+- Revocation of probation by the court to serve a full sentence in prison (`PROBATION_REVOCATION`)
+- Revocation of parole by the parole board to serve the remainder of one’s sentence in prison (`PAROLE_REVOCATION`)
+- Revocation of both probation and parole to serve a full sentence (or, sentences) in prison (`DUAL_REVOCATION`)
+- Treatment mandated by either the court or the parole board (`SANCTION_ADMISSION`)
+- Shock incarceration mandated by either the court or the parole board (`SANCTION_ADMISSION`)
+
+Admissions to temporary parole board holds are not considered commitments from supervision admissions. If a person enters a parole board hold and then has their parole revoked by the parole board, then there will be a `IncarcerationCommitmentFromSupervisionMetric` for a `PAROLE_REVOCATION` on the date of the revocation.
+
+With this metric, we can answer questions like:
+
+- For all probation revocation admissions in 2013, what percent were from individuals supervised by District X?
+- How have the admissions for treatment mandated by the parole board changed over time for individuals with an `ALCOHOL_DRUG` supervision case type?
+- What was the distribution of supervision levels for all of the people admitted to prison due to a probation revocation in 2020?
+
+This metric is a subset of the `IncarcerationAdmissionMetric`. This means that every admission in the `IncarcerationAdmissionMetric` output that qualifies as a commitment from supervision admission has a corresponding entry in the `IncarcerationCommitmentFromSupervisionMetrics`. This metric is used to track information about the supervision that preceded the admission to incarceration, as well as other information related to the type of commitment from supervision the admission represents. 
+
+If a person was admitted to Facility X on 2021-01-01 for a `PROBATION_REVOCATION`, then there will be an `IncarcerationAdmissionMetric` for this person on 2021-01-01 into Facility X and an associated `IncarcerationCommitmentFromSupervisionMetric` for this person on 2021-01-01 that stores all of the supervision information related to this commitment from supervision admission. If a person enters a parole board hold in Facility X on 2021-01-01, and then has their parole revoked by the parole board on 2021-02-13, then there will be an `IncarcerationAdmissionMetric` for the admission to the `PAROLE_BOARD_HOLD` in Facility X on 2021-01-01, another `IncarcerationAdmissionMetric` for the `PAROLE_REVOCATION` admission to Facility X on 2021-02-13, and an associated `IncarcerationCommitmentFromSupervisionMetric` for the `PAROLE_REVOCATION` on 2021-02-13 that stores all of the supervision information related to this commitment from supervision admission.
+"""
 
     # The type of IncarcerationMetric
     metric_type: IncarcerationMetricType = attr.ib(
@@ -250,7 +292,19 @@ class IncarcerationReleaseMetric(IncarcerationMetric):
 
     @classmethod
     def get_description(cls) -> str:
-        return "TODO(#7563): Add IncarcerationReleaseMetric description"
+        return """
+The `IncarcerationReleaseMetric` stores information about a release from incarceration. This metric tracks each time that an individual was released from an incarceration facility, and includes information related to the release.
+
+With this metric, we can answer questions like:
+
+- What was the most common release reason for all individuals released from prison in 2019?
+- For all individuals released from Facility X in 2015, what was the average number of days each person spent incarcerated prior to their release?
+- How did the number of releases per month change after the state implemented a new release policy?
+
+This metric is derived from the `StateIncarcerationPeriod` entities, which store information about periods of time that an individual was in an incarceration facility. When pre-processing the `StateIncarcerationPeriod` entities to create this metric, transfers between facilities are collapsed. This means that if a person has two chronologically consecutive `StateIncarcerationPeriod` entities, where the `release_reason` from the first period is `TRANSFER`, and the `admission_reason` on the second period is also `TRANSFER`, then the two periods are collapsed into one continuous period of time spent incarcerated. The consequence of collapsing transfers in the making of this metric is that `TRANSFER` releases are (for the most part) not included in the `IncarcerationReleaseMetric` output. However, there are a few exceptions to this: if the `release_reason` on a `StateIncarcerationPeriod` is `TRANSFER` but the `admission_reason` on the subsequent period is not `TRANSFER`, then the two periods are not collapsed in IP pre-processing, and the `TRANSFER` release will be included in the metrics. 
+
+If a person was admitted to Facility X on 2021-01-01, was transferred out of Facility X and into Facility Z on 2021-03-31, and then was released from Facility Z on 2021-06-09, then there will be a single `IncarcerationReleaseMetric` for this person on 2021-06-09 from Facility Z.
+"""
 
     # Required characteristics
 
