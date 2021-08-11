@@ -30,11 +30,6 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     QUEUES_REGION,
 )
-from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
-    DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2,
-    DIRECT_INGEST_SCHEDULER_QUEUE_V2,
-    DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
-)
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     to_normalized_processed_file_name,
@@ -402,9 +397,10 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         body_encoded = json.dumps({}).encode()
         uuid = "random-uuid"
         mock_uuid.uuid4.return_value = uuid
-        queue_path = f"{DIRECT_INGEST_SCHEDULER_QUEUE_V2}-path"
+        queue_name = "direct-ingest-state-us-xx-scheduler"
+        queue_path = f"{queue_name}-path"
 
-        task_name = DIRECT_INGEST_SCHEDULER_QUEUE_V2 + "/{}-{}-{}".format(
+        task_name = queue_name + "/{}-{}-{}".format(
             _REGION.region_code, "2019-07-20", uuid
         )
         task = tasks_v2.types.task_pb2.Task(
@@ -430,7 +426,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
-            self.mock_project_id, QUEUES_REGION, DIRECT_INGEST_SCHEDULER_QUEUE_V2
+            self.mock_project_id, QUEUES_REGION, queue_name
         )
         mock_client.return_value.create_task.assert_called_with(
             parent=queue_path, task=task
@@ -504,11 +500,10 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         uuid = "random-uuid"
         mock_uuid.uuid4.return_value = uuid
         date = "2019-07-20"
+        queue_name = "direct-ingest-state-us-xx-process-job-queue"
         queue_path = "process-queue-path"
 
-        task_name = "{}/{}-{}-{}".format(
-            DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2, _REGION.region_code, date, uuid
-        )
+        task_name = "{}/{}-{}-{}".format(queue_name, _REGION.region_code, date, uuid)
         url_params = {"region": _REGION.region_code, "file_path": file_path}
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
@@ -531,7 +526,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.queue_path.assert_called_with(
             self.mock_project_id,
             QUEUES_REGION,
-            DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
+            queue_name,
         )
         mock_client.return_value.create_task.assert_called_with(
             parent=queue_path, task=task
@@ -563,9 +558,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         queue_path = "us-xx-process-queue-path"
         queue_name = "direct-ingest-state-us-xx-process-job-queue"
 
-        task_name = "{}/{}-{}-{}".format(
-            DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2, _REGION.region_code, date, uuid
-        )
+        task_name = "{}/{}-{}-{}".format(queue_name, _REGION.region_code, date, uuid)
         url_params = {"region": _REGION.region_code, "file_path": file_path}
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,
@@ -619,7 +612,8 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_uuid.uuid4.return_value = uuid
         date = "2019-07-20"
         mock_datetime.date.today.return_value = date
-        queue_path = f"{DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2}-path"
+        queue_name = "direct-ingest-state-us-xx-process-job-queue"
+        queue_path = f"{queue_name}-path"
 
         task_name = _REGION.get_queue_name() + "/{}-{}-{}".format(
             _REGION.region_code, date, uuid
@@ -646,7 +640,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.queue_path.assert_called_with(
             self.mock_project_id,
             QUEUES_REGION,
-            DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
+            queue_name,
         )
         mock_client.return_value.create_task.assert_called_with(
             parent=queue_path, task=task
@@ -674,11 +668,10 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         uuid = "random-uuid"
         mock_uuid.uuid4.return_value = uuid
         date = "2019-07-20"
-        queue_path = f"{DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2}-path"
+        queue_name = "direct-ingest-state-us-xx-bq-import-export"
+        queue_path = f"{queue_name}-path"
 
-        task_name = DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2 + "/{}-{}-{}".format(
-            _REGION.region_code, date, uuid
-        )
+        task_name = queue_name + "/{}-{}-{}".format(_REGION.region_code, date, uuid)
         url_params = {
             "region": _REGION.region_code,
             "file_path": raw_data_path.abs_path(),
@@ -702,7 +695,9 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
-            self.mock_project_id, QUEUES_REGION, DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2
+            self.mock_project_id,
+            QUEUES_REGION,
+            queue_name,
         )
         mock_client.return_value.create_task.assert_called_with(
             parent=queue_path, task=task
@@ -729,11 +724,10 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         uuid = "random-uuid"
         mock_uuid.uuid4.return_value = uuid
         date = "2019-07-20"
-        queue_path = f"{DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2}-path"
+        queue_name = "direct-ingest-state-us-xx-bq-import-export"
+        queue_path = f"{queue_name}-path"
 
-        task_name = DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2 + "/{}-{}-{}".format(
-            _REGION.region_code, date, uuid
-        )
+        task_name = queue_name + "/{}-{}-{}".format(_REGION.region_code, date, uuid)
         url_params = {
             "region": _REGION.region_code,
             "output_bucket": "my_ingest_bucket",
@@ -757,7 +751,9 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
-            self.mock_project_id, QUEUES_REGION, DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2
+            self.mock_project_id,
+            QUEUES_REGION,
+            queue_name,
         )
         mock_client.return_value.create_task.assert_called_with(
             parent=queue_path, task=task

@@ -16,7 +16,6 @@
 # =============================================================================
 """Tests for the DirectIngestInstance."""
 import unittest
-from unittest.mock import patch
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import SystemLevel
@@ -35,35 +34,9 @@ from recidiviz.persistence.database.sqlalchemy_database_key import (
 class TestDirectIngestInstance(unittest.TestCase):
     """Tests for the DirectIngestInstance."""
 
-    def setUp(self) -> None:
-        # TODO(#7984): Delete this patcher once this code does not look at project_id
-        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
-        self.project_id_patcher.start().return_value = "recidiviz-staging"
-
-    def tearDown(self) -> None:
-        self.project_id_patcher.stop()
-
     def test_state_get_database_version_state(self) -> None:
         expected_versions = {
             DirectIngestInstance.PRIMARY: SQLAlchemyStateDatabaseVersion.PRIMARY,
-            DirectIngestInstance.SECONDARY: SQLAlchemyStateDatabaseVersion.SECONDARY,
-        }
-
-        versions = {
-            instance: instance.database_version(
-                system_level=SystemLevel.STATE, state_code=StateCode.US_XX
-            )
-            for instance in DirectIngestInstance
-        }
-
-        self.assertEqual(expected_versions, versions)
-
-    # TODO(#7984): Delete this test once this code does not look at project_id.
-    def test_state_get_database_version_state_prod(self) -> None:
-        self.project_id_patcher.stop()
-        self.project_id_patcher.start().return_value = "recidiviz-123"
-        expected_versions = {
-            DirectIngestInstance.PRIMARY: SQLAlchemyStateDatabaseVersion.LEGACY,
             DirectIngestInstance.SECONDARY: SQLAlchemyStateDatabaseVersion.SECONDARY,
         }
 
