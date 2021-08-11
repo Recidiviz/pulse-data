@@ -83,9 +83,6 @@ from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller impo
     IngestPrimaryKeyOverrideCallable,
     IngestRowPosthookCallable,
 )
-from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
-    DirectIngestInstance,
-)
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     create_if_not_exists,
     update_overrides_from_maps,
@@ -185,12 +182,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
             self._specify_incident_details,
             self._specify_incident_outcome,
         ]
-        legacy_supervision_period_postprocessors: List[IngestRowPosthookCallable] = [
-            self._unpack_supervision_period_conditions,
-            self._legacy_set_supervising_officer,
-            self._set_supervision_site,
-            self._set_supervision_period_custodial_authority,
-        ]
         supervision_period_postprocessors: List[IngestRowPosthookCallable] = [
             self._unpack_supervision_period_conditions,
             self._set_supervising_officer,
@@ -232,8 +223,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._generate_pbpp_assessment_external_id,
                 self._enrich_pbpp_assessments,
             ],
-            # TODO(#8337): Cleanup reference to `supervision_period`
-            "supervision_period": legacy_supervision_period_postprocessors,
             "supervision_period_v3": supervision_period_postprocessors,
             "supervision_violation": [
                 self._append_supervision_violation_entries,
@@ -273,10 +262,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
             "dbo_Offender": [],
             "dbo_LSIR": [],
             "dbo_LSIHistory": [],
-            # TODO(#8337): Cleanup reference to `supervision_period`
-            "supervision_period": [
-                gen_convert_person_ids_to_external_id_objects(self._get_id_type),
-            ],
             "supervision_period_v3": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
@@ -298,8 +283,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
             str, IngestPrimaryKeyOverrideCallable
         ] = {
             "sci_incarceration_period": _generate_sci_incarceration_period_primary_key,
-            # TODO(#8337): Cleanup reference to `supervision_period`
-            "supervision_period": _generate_supervision_period_primary_key,
             "supervision_period_v3": _generate_supervision_period_primary_key,
             "supervision_violation": _generate_supervision_violation_primary_key,
             "supervision_violation_response": _generate_supervision_violation_response_primary_key,
@@ -721,17 +704,8 @@ class UsPaController(CsvGcsfsDirectIngestController):
             "supervision_violation_response",
             "board_action",
             "supervision_contacts",
+            "supervision_period_v3",
         ]
-
-        # TODO(#8337): Cleanup reference to `supervision_period` and delete view file
-        if (
-            # Gate to staging or prod secondary
-            not environment.in_gcp_production()
-            or self.ingest_instance is DirectIngestInstance.SECONDARY
-        ):
-            launched_file_tags.append("supervision_period_v3")
-        else:
-            launched_file_tags.append("supervision_period")
 
         unlaunched_file_tags: List[str] = [
             # Empty for now
@@ -830,8 +804,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
             return US_PA_INMATE
 
         if file_tag in [
-            # TODO(#8337): Cleanup reference to `supervision_period`
-            "supervision_period",
             "supervision_period_v3",
             "supervision_violation",
             "supervision_violation_response",
@@ -1303,41 +1275,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 )
                 if conditions:
                     obj.conditions = conditions
-
-    # TODO(#8337): Cleanup this old version used for `supervision_period`
-    @staticmethod
-    def _legacy_set_supervising_officer(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Sets the supervision officer (as an Agent entity) on the supervision period."""
-        officer_full_name_and_id = row.get("supervising_officer_name", None)
-
-        if officer_full_name_and_id and (
-            "Vacant, Position" in officer_full_name_and_id
-            or "Position, Vacant" in officer_full_name_and_id
-        ):
-            # This is a placeholder name for when a person does not actually have a PO
-            return
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateSupervisionPeriod):
-                if officer_full_name_and_id:
-                    # TODO(#4159): Update this regex to extract and set the given_names and surname from the full_name
-                    match = re.match(AGENT_NAME_AND_ID_REGEX, officer_full_name_and_id)
-                    if match:
-                        full_name = f"{match.group(1)}, {match.group(2)}"
-                        external_id: Optional[str] = match.group(3)
-                    else:
-                        full_name = officer_full_name_and_id
-                        external_id = None
-                    obj.create_state_agent(
-                        state_agent_id=external_id,
-                        full_name=full_name,
-                        agent_type=StateAgentType.SUPERVISION_OFFICER.value,
-                    )
 
     @staticmethod
     def _set_supervising_officer(
