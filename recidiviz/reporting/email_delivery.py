@@ -27,7 +27,7 @@ and conform to the following:
 """
 import logging
 import re
-from datetime import date
+from datetime import date, datetime
 from typing import Dict, List, Optional
 
 import recidiviz.reporting.email_reporting_utils as utils
@@ -38,6 +38,7 @@ from recidiviz.common.results import MultiRequestResult
 from recidiviz.reporting.context.po_monthly_report.constants import (
     DEFAULT_EMAIL_SUBJECT,
 )
+from recidiviz.reporting.email_sent_metadata import EmailSentMetadata
 from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
 
 
@@ -145,6 +146,22 @@ def deliver(
             succeeded_email_sends.append(recipient_email_address)
         else:
             failed_email_sends.append(recipient_email_address)
+
+    if len(succeeded_email_sends) != 0:
+        # modifying custom metadata only in metadata and not metadata.json
+        # first need to get the data from gcs, then add that to the EmailSentMetadata
+        # object, and then finally write that object back to gcs
+        sent_date = datetime.now()
+        gcsfs = GcsfsFactory.build()
+        email_sent_metadata = EmailSentMetadata.build_from_gcs(
+            state_code, batch_id, gcsfs
+        )
+        email_sent_metadata.add_new_email_send_result(
+            sent_date=sent_date,
+            total_delivered=len(succeeded_email_sends),
+            redirect_address=redirect_address,
+        )
+        email_sent_metadata.write_to_gcs(state_code, batch_id, gcsfs)
 
     logging.info(
         "Sent %s emails. %s emails failed to send",
