@@ -16,6 +16,7 @@
 # =============================================================================
 """Metrics related to violations and their responses and decisions."""
 import abc
+import datetime
 
 import attr
 
@@ -76,3 +77,6 @@ class ViolationWithResponseMetric(ViolationMetric, ViolationResponseMixin):
     metric_type: ViolationMetricType = attr.ib(
         init=False, default=ViolationMetricType.VIOLATION
     )
+
+    # Earliest response date associated with the supervision_violation_id
+    response_date: datetime.date = attr.ib(default=None)

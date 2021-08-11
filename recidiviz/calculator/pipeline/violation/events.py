@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Events modeling violations and their responses."""
+import datetime
+
 import attr
 
 from recidiviz.calculator.pipeline.utils.event_utils import (
@@ -38,3 +40,8 @@ class ViolationWithResponseEvent(ViolationEvent, ViolationResponseMixin):
     Describes a date in which a person incurred the first action related to a violation.
     This will be the first response date for a given violation.
     """
+
+    # Earliest response date associated with the supervision_violation_id
+    @property
+    def response_date(self) -> datetime.date:
+        return self.event_date
