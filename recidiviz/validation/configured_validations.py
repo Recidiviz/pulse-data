@@ -612,7 +612,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         SamenessDataValidationCheck(
             view_builder=MOST_RECENT_ASSESSMENT_DATE_BY_PERSON_BY_STATE_COMPARISON_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            sameness_check_type=SamenessDataValidationCheckType.DATES,
             comparison_columns=[
                 "most_recent_etl_date",
                 "most_recent_state_date",
@@ -631,7 +631,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         SamenessDataValidationCheck(
             view_builder=MOST_RECENT_FACE_TO_FACE_CONTACT_DATE_BY_PERSON_BY_STATE_COMPARISON_VIEW_BUILDER,
-            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            sameness_check_type=SamenessDataValidationCheckType.DATES,
             comparison_columns=[
                 "most_recent_etl_face_to_face_contact_date",
                 "most_recent_state_face_to_face_contact_date",
