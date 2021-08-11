@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { WarningFilled } from "@ant-design/icons";
 import { Alert, Button, Form, PageHeader, Result } from "antd";
 import * as React from "react";
 import { generateNonETLExports } from "../AdminPanelAPI";
@@ -67,11 +66,7 @@ const CloudSQLExportView = (): JSX.Element => {
     <>
       <PageHeader title="GCS CSV to Cloud SQL Export" />
       <Alert
-        message={
-          <>
-            <WarningFilled /> Caution!
-          </>
-        }
+        message="Caution!"
         description={
           <>
             <p>
@@ -86,6 +81,7 @@ const CloudSQLExportView = (): JSX.Element => {
           </>
         }
         type="warning"
+        showIcon
       />
 
       <Form className="buffer" onFinish={startExport}>
