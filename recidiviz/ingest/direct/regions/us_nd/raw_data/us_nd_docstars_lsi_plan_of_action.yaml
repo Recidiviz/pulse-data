@@ -9,7 +9,7 @@ columns:
      ID of a given plan of action
  - name : NEED_ID
    description : |-
-     ID of a specific need, maps to docstars_lsi_need.NEED_ID
+     ID of a specific need, maps to docstars_LSI_NEED.NEED_ID
  - name : PROGRAM_ID
    description : |-
      ID of a specific program that an individual is referred to, maps to docstars_ref_lsi_program.PROGRAM_ID
