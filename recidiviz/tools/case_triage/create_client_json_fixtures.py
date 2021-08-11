@@ -29,7 +29,9 @@ from typing import Any, Callable, Dict, List, Literal, Optional, Union
 
 import dateutil.parser
 
-FixtureType = Union[Literal["clients"], Literal["opportunities"]]
+FixtureType = Union[
+    Literal["clients"], Literal["opportunities"], Literal["client_events"]
+]
 
 
 def parse_nullable_date(date_str: str) -> Optional[date]:
@@ -88,6 +90,18 @@ def csv_row_to_etl_opportunity_json(row: List[str]) -> Dict[str, Any]:
     }
 
 
+def csv_row_to_etl_client_event_json(row: List[str]) -> Dict[str, Any]:
+    return {
+        "exported_at": parse_nullable_date(row[0]),
+        "event_id": row[1],
+        "person_external_id": row[2],
+        "state_code": row[3],
+        "event_type": row[4],
+        "event_date": row[5],
+        "event_metadata": row[6],
+    }
+
+
 def generate_json_fixtures_from_csv(
     fixture_type: FixtureType, converter_fn: Callable[[List[str]], Dict[str, Any]]
 ) -> None:
@@ -97,7 +111,8 @@ def generate_json_fixtures_from_csv(
     ) as csvfile:
         csv_reader = csv.reader(csvfile)
         for row in csv_reader:
-            if "SIN" not in row:  # Only take entries belonging to the agent SIN
+            # Only take entries belonging to the agent SIN, where applicable
+            if fixture_type != "client_events" and "SIN" not in row:
                 continue
             converted_fixtures.append(converter_fn(row))
 
@@ -110,3 +125,4 @@ def generate_json_fixtures_from_csv(
 if __name__ == "__main__":
     generate_json_fixtures_from_csv("clients", csv_row_to_etl_client_json)
     generate_json_fixtures_from_csv("opportunities", csv_row_to_etl_opportunity_json)
+    generate_json_fixtures_from_csv("client_events", csv_row_to_etl_client_event_json)
