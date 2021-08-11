@@ -17,7 +17,6 @@
 """Test-only implementation of the GCSFileSystem"""
 
 import abc
-import json
 import os
 import shutil
 import threading
@@ -138,13 +137,10 @@ class FakeGCSFileSystem(GCSFileSystem):
     def update_metadata(
         self,
         path: GcsfsFilePath,
-        new_metadata: Dict[str, Any],
+        new_metadata: Dict[str, str],
     ) -> None:
         path_key = path.abs_path()
-        new_values = {
-            k: v if isinstance(v, str) else json.dumps(v)
-            for k, v in new_metadata.items()
-        }
+        new_values = {k: str(v) for k, v in new_metadata.items()}
         self.metadata_store[path_key].update(new_values)
 
     def real_absolute_path_for_path(self, path: GcsfsFilePath) -> str:

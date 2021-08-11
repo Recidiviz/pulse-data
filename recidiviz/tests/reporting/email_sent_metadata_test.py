@@ -133,7 +133,7 @@ class TestEmailSentMetadata(TestCase):
         ]
         # use json dumps here becuase pulling resulting_metadata directly from gcs
         expected_result = {
-            "batchId": batch_id,
+            "batchId": json.dumps(batch_id),
             "sendResults": json.dumps(expected_send_results),
         }
 

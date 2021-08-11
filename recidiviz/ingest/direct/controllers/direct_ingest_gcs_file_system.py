@@ -25,7 +25,6 @@ import tempfile
 import uuid
 from contextlib import contextmanager
 from typing import (
-    Any,
     Callable,
     Dict,
     Generic,
@@ -247,7 +246,7 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
     def update_metadata(
         self,
         path: GcsfsFilePath,
-        new_metadata: Dict[str, Any],
+        new_metadata: Dict[str, str],
     ) -> None:
         self.gcs_file_system.update_metadata(
             path,

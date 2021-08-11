@@ -80,7 +80,7 @@ class EmailSentMetadata:
 
     @classmethod
     def from_json(cls, email_metadata: Dict[str, str]) -> "EmailSentMetadata":
-        batch_id = email_metadata["batchId"]
+        batch_id = json.loads(email_metadata["batchId"])
         previous_send_results = json.loads(email_metadata["sendResults"])
         converted_results = [
             EmailSentResult.from_json(result) for result in previous_send_results
@@ -116,6 +116,7 @@ class EmailSentMetadata:
         self, state_code: StateCode, batch_id: str, gcs_fs: GCSFileSystem
     ) -> None:
         payload = self.to_json()
+        dumped_payload = {k: json.dumps(v) for k, v in payload.items()}
         gcs_path = gcsfs_path_for_batch_metadata(batch_id, state_code)
         gcs_fs.clear_metadata(gcs_path)
-        gcs_fs.update_metadata(gcs_path, payload)
+        gcs_fs.update_metadata(gcs_path, dumped_payload)
