@@ -36,7 +36,17 @@ const POEmailsView = (): JSX.Element => {
             <WarningFilled /> Caution!
           </>
         }
-        description="You should only use this form if you are a member of the Line Staff Tools team, and you absolutely know what you are doing."
+        description={
+          <div>
+            You should only use this form if you are a member of the Line Staff
+            Tools team, and you absolutely know what you are doing. Link to
+            <a href="https://paper.dropbox.com/doc/PO-Monthly-Report-Admin-Panel-Edition--BQN7eVWzcMfonW2WEsL5H7GdAg-54kVLhYwGCDulQDx9hyNI">
+              {" "}
+              documentation
+            </a>
+            .
+          </div>
+        }
         type="warning"
       />
       <Row gutter={[16, 16]}>
