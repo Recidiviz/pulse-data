@@ -224,7 +224,7 @@ class BaseDirectIngestController(Ingestor):
             self.ingest_instance,
         )
         if (
-            process_job_queue_info.tasks_for_instance(
+            process_job_queue_info.has_any_tasks_for_instance(
                 region_code=self.region_code(), ingest_instance=self.ingest_instance
             )
             and not just_finished_job
@@ -246,7 +246,9 @@ class BaseDirectIngestController(Ingestor):
             )
             return
 
-        if process_job_queue_info.is_task_queued(self.region, next_job_args):
+        if process_job_queue_info.is_task_already_queued(
+            self.region_code(), next_job_args
+        ):
             logging.info(
                 "Already have task queued for next job [%s] - returning.",
                 self._job_tag(next_job_args),
@@ -320,7 +322,7 @@ class BaseDirectIngestController(Ingestor):
             if (
                 discovered
                 and not processed
-                and not queue_info.has_task_already_scheduled(task_args)
+                and not queue_info.is_raw_data_import_task_already_queued(task_args)
             ):
                 self.cloud_task_manager.create_direct_ingest_raw_data_import_task(
                     self.region, self.ingest_instance, task_args
@@ -338,7 +340,9 @@ class BaseDirectIngestController(Ingestor):
         queue_info = self.cloud_task_manager.get_bq_import_export_queue_info(
             self.region, self.ingest_instance
         )
-        if queue_info.has_ingest_view_export_jobs_queued():
+        if queue_info.has_ingest_view_export_jobs_queued(
+            self.region_code(), self.ingest_instance
+        ):
             # Since we schedule all export jobs at once, after all raw files have been processed, we wait for all of the
             # export jobs to be done before checking if we need to schedule more.
             return True
@@ -375,7 +379,10 @@ class BaseDirectIngestController(Ingestor):
         )
 
         for task_args in tasks_to_schedule:
-            if not queue_info.has_task_already_scheduled(task_args):
+            if not queue_info.is_ingest_view_export_task_already_queued(
+                self.region_code(),
+                task_args,
+            ):
                 self.cloud_task_manager.create_direct_ingest_ingest_view_export_task(
                     self.region, self.ingest_instance, task_args
                 )
