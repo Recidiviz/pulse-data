@@ -411,33 +411,33 @@ This view may not be deployed to all environments yet.<br/>
 ####Metric attributes
 Attributes specific to the `IncarcerationAdmissionMetric`:
 
-|         **Attribute Name**          |**Type**|
-|-------------------------------------|--------|
-|secondary_person_external_id         |STRING  |
-|year                                 |INTEGER |
-|month                                |INTEGER |
-|facility                             |STRING  |
-|county_of_residence                  |STRING  |
-|admission_reason                     |STRING  |
-|admission_reason_raw_text            |STRING  |
-|specialized_purpose_for_incarceration|STRING  |
-|admission_date                       |DATE    |
+|         **Attribute Name**          |**Type**|            **Enum Class**             |
+|-------------------------------------|--------|---------------------------------------|
+|secondary_person_external_id         |STRING  |                                       |
+|year                                 |INTEGER |                                       |
+|month                                |INTEGER |                                       |
+|facility                             |STRING  |                                       |
+|county_of_residence                  |STRING  |                                       |
+|admission_reason                     |STRING  |StateIncarcerationPeriodAdmissionReason|
+|admission_reason_raw_text            |STRING  |                                       |
+|specialized_purpose_for_incarceration|STRING  |StateSpecializedPurposeForIncarceration|
+|admission_date                       |DATE    |                                       |
 
 
 Attributes on all metrics:
 
-|     **Attribute Name**      |**Type**|
-|-----------------------------|--------|
-|job_id                       |STRING  |
-|state_code                   |STRING  |
-|age_bucket                   |STRING  |
-|prioritized_race_or_ethnicity|STRING  |
-|gender                       |STRING  |
-|created_on                   |DATE    |
-|updated_on                   |DATE    |
-|person_id                    |INTEGER |
-|person_external_id           |STRING  |
-|metric_type                  |STRING  |
+|     **Attribute Name**      |**Type**|  **Enum Class**   |
+|-----------------------------|--------|-------------------|
+|job_id                       |STRING  |                   |
+|state_code                   |STRING  |                   |
+|age_bucket                   |STRING  |                   |
+|prioritized_race_or_ethnicity|STRING  |                   |
+|gender                       |STRING  |Gender             |
+|created_on                   |DATE    |                   |
+|updated_on                   |DATE    |                   |
+|person_id                    |INTEGER |                   |
+|person_external_id           |STRING  |                   |
+|metric_type                  |STRING  |RecidivizMetricType|
 
 
 ####Metric tables in BigQuery
