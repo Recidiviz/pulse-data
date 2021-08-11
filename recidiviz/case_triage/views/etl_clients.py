@@ -79,6 +79,7 @@ latest_contacts AS (
     state_code,
     MAX(next_recommended_assessment_date) AS next_recommended_assessment_date,
     MAX(most_recent_face_to_face_date) AS most_recent_face_to_face_date,
+    MAX(next_recommended_face_to_face_date) AS next_recommended_face_to_face_date,
     MAX(most_recent_home_visit_date) AS most_recent_home_visit_date
   FROM
     `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics_materialized`
@@ -239,6 +240,7 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "next_recommended_assessment_date",
         "assessment_score",
         "most_recent_face_to_face_date",
+        "next_recommended_face_to_face_date",
         "most_recent_home_visit_date",
         "days_with_current_po",
         "days_on_current_supervision_level",
