@@ -18,7 +18,7 @@
 given region.
 """
 from enum import Enum
-from typing import List, Optional
+from typing import Optional
 
 from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
     is_primary_ingest_bucket,
@@ -31,31 +31,6 @@ from recidiviz.ingest.direct.errors import DirectIngestInstanceError
 from recidiviz.persistence.database.sqlalchemy_database_key import (
     SQLAlchemyStateDatabaseVersion,
 )
-from recidiviz.utils import environment, metadata
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
-
-# TODO(#6226): Add each state to these lists when we're ready to migrate that state to
-#  multi-DB in a given project.
-PROD_MULTI_DB_STATES: List[StateCode] = [
-    StateCode.US_ID,
-    StateCode.US_MI,
-    StateCode.US_MO,
-    StateCode.US_PA,
-    StateCode.US_TN,
-]
-
-STATE_TO_PRIMARY_DATABASE_VERSION = {
-    GCP_PROJECT_STAGING: {
-        **{state: SQLAlchemyStateDatabaseVersion.PRIMARY for state in StateCode},
-    },
-    GCP_PROJECT_PRODUCTION: {
-        **{state: SQLAlchemyStateDatabaseVersion.LEGACY for state in StateCode},
-        **{
-            state: SQLAlchemyStateDatabaseVersion.PRIMARY
-            for state in PROD_MULTI_DB_STATES
-        },
-    },
-}
 
 
 class DirectIngestInstance(Enum):
@@ -102,18 +77,7 @@ class DirectIngestInstance(Enum):
             if self == self.SECONDARY:
                 return SQLAlchemyStateDatabaseVersion.SECONDARY
             if self == self.PRIMARY:
-                # TODO(#7984): Switch this to SQLAlchemyStateDatabaseVersion.PRIMARY
-                #  once all states have been migrated to multi-DB.
-                if metadata.project_id() not in STATE_TO_PRIMARY_DATABASE_VERSION:
-                    if not environment.in_test():
-                        raise ValueError(
-                            f"Unexpected project id {metadata.project_id()}"
-                        )
-                    return SQLAlchemyStateDatabaseVersion.LEGACY
-
-                return STATE_TO_PRIMARY_DATABASE_VERSION[metadata.project_id()][
-                    state_code
-                ]
+                return SQLAlchemyStateDatabaseVersion.PRIMARY
 
         raise ValueError(
             f"Unexpected combination of [{system_level}] and instance type [{self}]"
