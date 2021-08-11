@@ -529,7 +529,7 @@ def run_task_queues_to_empty(controller: BaseDirectIngestController) -> None:
         controller.cloud_task_manager, FakeSynchronousDirectIngestCloudTaskManager
     ):
         tm = controller.cloud_task_manager
-        queue_args = (controller.region, controller.ingest_instance)
+        queue_args = [controller.region]
         while (
             tm.get_scheduler_queue_info(*queue_args).size()
             or tm.get_process_job_queue_info(*queue_args).size()

@@ -274,7 +274,6 @@ def ensure_all_raw_file_paths_normalized() -> Tuple[str, HTTPStatus]:
             can_start_ingest = controller.region.is_ingest_launched_in_env()
             controller.cloud_task_manager.create_direct_ingest_handle_new_files_task(
                 controller.region,
-                ingest_instance=controller.ingest_instance,
                 ingest_bucket=controller.ingest_bucket_path,
                 can_start_ingest=can_start_ingest,
             )
@@ -753,7 +752,6 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
         direct_ingest_cloud_task_manager = DirectIngestCloudTaskManagerImpl()
         direct_ingest_cloud_task_manager.create_direct_ingest_handle_new_files_task(
             region=_region_for_region_code(region_code),
-            ingest_instance=DirectIngestInstance.PRIMARY,
             ingest_bucket=upload_controller.destination_ingest_bucket,
             can_start_ingest=True,
         )

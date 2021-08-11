@@ -36,7 +36,6 @@ from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
     DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2,
     DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2,
     DIRECT_INGEST_SCHEDULER_QUEUE_V2,
-    DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2,
 )
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
@@ -50,9 +49,6 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
 )
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_direct_ingest_states_with_sftp_queue,
-)
-from recidiviz.persistence.database.sqlalchemy_database_key import (
-    SQLAlchemyStateDatabaseVersion,
 )
 from recidiviz.utils.regions import Region
 
@@ -110,38 +106,26 @@ def _build_direct_ingest_queue_name(
 def _queue_name_for_queue_type(
     queue_type: DirectIngestQueueType,
     region_code: str,
-    # TODO(#7984): Delete these args once we have deleted legacy instance ingest
-    system_level: SystemLevel,
-    ingest_instance: DirectIngestInstance,
 ) -> str:
-    # TODO(#7984): Remove this block and the shared queues when removing LEGACY
-    if _is_legacy_instance(system_level, region_code, ingest_instance):
-        if queue_type == DirectIngestQueueType.SFTP_QUEUE:
-            return _build_direct_ingest_queue_name(region_code, queue_type)
+    system_level = SystemLevel.for_region_code(region_code, is_direct_ingest=True)
+    if system_level is SystemLevel.STATE:
+        return _build_direct_ingest_queue_name(region_code, queue_type)
 
+    if system_level is SystemLevel.COUNTY:
+        if queue_type == DirectIngestQueueType.SFTP_QUEUE:
+            raise ValueError("No SFTP queue yet configured for county direct ingest")
         if queue_type == DirectIngestQueueType.SCHEDULER:
             return DIRECT_INGEST_SCHEDULER_QUEUE_V2
-
         if queue_type == DirectIngestQueueType.PROCESS_JOB_QUEUE:
-            if system_level is SystemLevel.COUNTY:
-                return DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2
-            if system_level is SystemLevel.STATE:
-                return DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2
-            raise ValueError(f"Unexpected system level: {system_level}")
-
+            return DIRECT_INGEST_JAILS_PROCESS_JOB_QUEUE_V2
         if queue_type == DirectIngestQueueType.BQ_IMPORT_EXPORT:
             return DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2
-
         raise ValueError(f"Unexpected queue_type: [{queue_type}]")
 
-    return _build_direct_ingest_queue_name(region_code, queue_type)
+    raise ValueError(f"Unexpected system_level: [{system_level}]")
 
 
-def get_direct_ingest_queues_for_state(
-    state_code: StateCode,
-    # TODO(#7984): Delete this arg once we have deleted legacy instance ingest
-    ingest_instance: DirectIngestInstance,
-) -> List[str]:
+def get_direct_ingest_queues_for_state(state_code: StateCode) -> List[str]:
     queue_names = []
     for queue_type in DirectIngestQueueType:
         if queue_type == DirectIngestQueueType.SFTP_QUEUE:
@@ -149,7 +133,8 @@ def get_direct_ingest_queues_for_state(
                 continue
         queue_names.append(
             _queue_name_for_queue_type(
-                queue_type, state_code.value, SystemLevel.STATE, ingest_instance
+                queue_type,
+                state_code.value,
             )
         )
     return queue_names
@@ -206,7 +191,7 @@ class ProcessIngestJobCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
 
         task_id_prefix = _build_task_id(
             region_code,
-            DirectIngestInstance.for_ingest_bucket(ingest_args.file_path.bucket_path),
+            ingest_args.ingest_instance(),
             ingest_args.task_id_tag(),
             prefix_only=True,
         )
@@ -247,9 +232,7 @@ class BQImportExportCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
             and task_args.task_id_tag() in task_name
             for task_name in self._tasks_for_instance(
                 region_code,
-                DirectIngestInstance.for_ingest_bucket(
-                    GcsfsBucketPath(task_args.output_bucket_name)
-                ),
+                task_args.ingest_instance(),
             )
         )
 
@@ -272,21 +255,19 @@ class DirectIngestCloudTaskManager:
 
     @abc.abstractmethod
     def get_process_job_queue_info(
-        self, region: Region, ingest_instance: DirectIngestInstance
+        self, region: Region
     ) -> ProcessIngestJobCloudTaskQueueInfo:
         """Returns information about tasks in the job processing queue for the
         given region."""
 
     @abc.abstractmethod
-    def get_scheduler_queue_info(
-        self, region: Region, ingest_instance: DirectIngestInstance
-    ) -> SchedulerCloudTaskQueueInfo:
+    def get_scheduler_queue_info(self, region: Region) -> SchedulerCloudTaskQueueInfo:
         """Returns information about the tasks in the job scheduler queue for
         the given region."""
 
     @abc.abstractmethod
     def get_bq_import_export_queue_info(
-        self, region: Region, ingest_instance: DirectIngestInstance
+        self, region: Region
     ) -> BQImportExportCloudTaskQueueInfo:
         """Returns information about the tasks in the BQ import export queue for
         the given region."""
@@ -299,7 +280,6 @@ class DirectIngestCloudTaskManager:
     def create_direct_ingest_process_job_task(
         self,
         region: Region,
-        ingest_instance: DirectIngestInstance,
         ingest_args: GcsfsIngestArgs,
     ) -> None:
         """Queues a direct ingest process job task. All direct ingest data
@@ -313,7 +293,6 @@ class DirectIngestCloudTaskManager:
     def create_direct_ingest_scheduler_queue_task(
         self,
         region: Region,
-        ingest_instance: DirectIngestInstance,
         ingest_bucket: GcsfsBucketPath,
         just_finished_job: bool,
     ) -> None:
@@ -334,7 +313,6 @@ class DirectIngestCloudTaskManager:
     def create_direct_ingest_handle_new_files_task(
         self,
         region: Region,
-        ingest_instance: DirectIngestInstance,
         ingest_bucket: GcsfsBucketPath,
         can_start_ingest: bool,
     ) -> None:
@@ -354,7 +332,6 @@ class DirectIngestCloudTaskManager:
     def create_direct_ingest_raw_data_import_task(
         self,
         region: Region,
-        ingest_instance: DirectIngestInstance,
         data_import_args: GcsfsRawDataBQImportArgs,
     ) -> None:
         pass
@@ -363,7 +340,6 @@ class DirectIngestCloudTaskManager:
     def create_direct_ingest_ingest_view_export_task(
         self,
         region: Region,
-        ingest_instance: DirectIngestInstance,
         ingest_view_export_args: GcsfsIngestViewExportArgs,
     ) -> None:
         pass
@@ -399,16 +375,6 @@ class DirectIngestCloudTaskManager:
         return body
 
 
-# TODO(#7984): Remove this and the shared queues when removing LEGACY
-def _is_legacy_instance(
-    system_level: SystemLevel, region_code: str, ingest_instance: DirectIngestInstance
-) -> bool:
-    return (
-        ingest_instance.database_version(system_level, StateCode.get(region_code))
-        is SQLAlchemyStateDatabaseVersion.LEGACY
-    )
-
-
 class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     """Real implementation of the DirectIngestCloudTaskManager that interacts
     with actual GCP Cloud Task queues."""
@@ -417,13 +383,11 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         self.cloud_tasks_client = tasks_v2.CloudTasksClient()
 
     def _get_scheduler_queue_manager(
-        self, region: Region, ingest_instance: DirectIngestInstance
+        self, region: Region
     ) -> CloudTaskQueueManager[SchedulerCloudTaskQueueInfo]:
         queue_name = _queue_name_for_queue_type(
             DirectIngestQueueType.SCHEDULER,
             region.region_code,
-            SystemLevel.for_region(region),
-            ingest_instance,
         )
 
         return CloudTaskQueueManager(
@@ -433,13 +397,11 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         )
 
     def _get_bq_import_export_queue_manager(
-        self, region: Region, ingest_instance: DirectIngestInstance
+        self, region: Region
     ) -> CloudTaskQueueManager[BQImportExportCloudTaskQueueInfo]:
         queue_name = _queue_name_for_queue_type(
             DirectIngestQueueType.BQ_IMPORT_EXPORT,
             region.region_code,
-            SystemLevel.for_region(region),
-            ingest_instance,
         )
 
         return CloudTaskQueueManager(
@@ -449,13 +411,11 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         )
 
     def _get_process_job_queue_manager(
-        self, region: Region, ingest_instance: DirectIngestInstance
+        self, region: Region
     ) -> CloudTaskQueueManager[ProcessIngestJobCloudTaskQueueInfo]:
         queue_name = _queue_name_for_queue_type(
             DirectIngestQueueType.PROCESS_JOB_QUEUE,
             region.region_code,
-            SystemLevel.for_region(region),
-            ingest_instance,
         )
 
         return CloudTaskQueueManager(
@@ -478,25 +438,23 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         )
 
     def get_process_job_queue_info(
-        self, region: Region, ingest_instance: DirectIngestInstance
+        self, region: Region
     ) -> ProcessIngestJobCloudTaskQueueInfo:
-        return self._get_process_job_queue_manager(
-            region, ingest_instance
-        ).get_queue_info(task_id_prefix=region.region_code)
+        return self._get_process_job_queue_manager(region).get_queue_info(
+            task_id_prefix=region.region_code
+        )
 
-    def get_scheduler_queue_info(
-        self, region: Region, ingest_instance: DirectIngestInstance
-    ) -> SchedulerCloudTaskQueueInfo:
-        return self._get_scheduler_queue_manager(
-            region, ingest_instance
-        ).get_queue_info(task_id_prefix=region.region_code)
+    def get_scheduler_queue_info(self, region: Region) -> SchedulerCloudTaskQueueInfo:
+        return self._get_scheduler_queue_manager(region).get_queue_info(
+            task_id_prefix=region.region_code
+        )
 
     def get_bq_import_export_queue_info(
-        self, region: Region, ingest_instance: DirectIngestInstance
+        self, region: Region
     ) -> BQImportExportCloudTaskQueueInfo:
-        return self._get_bq_import_export_queue_manager(
-            region, ingest_instance
-        ).get_queue_info(task_id_prefix=region.region_code)
+        return self._get_bq_import_export_queue_manager(region).get_queue_info(
+            task_id_prefix=region.region_code
+        )
 
     def get_sftp_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
         return self._get_sftp_queue_manager(region).get_queue_info(
@@ -506,12 +464,11 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     def create_direct_ingest_process_job_task(
         self,
         region: Region,
-        ingest_instance: DirectIngestInstance,
         ingest_args: GcsfsIngestArgs,
     ) -> None:
         task_id = _build_task_id(
             region.region_code,
-            ingest_instance,
+            ingest_args.ingest_instance(),
             ingest_args.task_id_tag(),
             prefix_only=False,
         )
@@ -522,7 +479,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         relative_uri = f"/direct/process_job?{urlencode(params)}"
         body = self._get_body_from_args(ingest_args)
 
-        self._get_process_job_queue_manager(region, ingest_instance).create_task(
+        self._get_process_job_queue_manager(region).create_task(
             task_id=task_id,
             relative_uri=relative_uri,
             body=body,
@@ -531,13 +488,12 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     def create_direct_ingest_scheduler_queue_task(
         self,
         region: Region,
-        ingest_instance: DirectIngestInstance,
         ingest_bucket: GcsfsBucketPath,
         just_finished_job: bool,
     ) -> None:
         task_id = _build_task_id(
             region.region_code,
-            ingest_instance,
+            DirectIngestInstance.for_ingest_bucket(ingest_bucket),
             task_id_tag="scheduler",
             prefix_only=False,
         )
@@ -550,7 +506,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
         relative_uri = f"/direct/scheduler?{urlencode(params)}"
 
-        self._get_scheduler_queue_manager(region, ingest_instance).create_task(
+        self._get_scheduler_queue_manager(region).create_task(
             task_id=task_id,
             relative_uri=relative_uri,
             body={},
@@ -559,13 +515,12 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     def create_direct_ingest_handle_new_files_task(
         self,
         region: Region,
-        ingest_instance: DirectIngestInstance,
         ingest_bucket: GcsfsBucketPath,
         can_start_ingest: bool,
     ) -> None:
         task_id = _build_task_id(
             region.region_code,
-            ingest_instance,
+            DirectIngestInstance.for_ingest_bucket(ingest_bucket),
             task_id_tag="handle_new_files",
             prefix_only=False,
         )
@@ -577,7 +532,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         }
         relative_uri = f"/direct/handle_new_files?{urlencode(params)}"
 
-        self._get_scheduler_queue_manager(region, ingest_instance).create_task(
+        self._get_scheduler_queue_manager(region).create_task(
             task_id=task_id,
             relative_uri=relative_uri,
             body={},
@@ -586,12 +541,11 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     def create_direct_ingest_raw_data_import_task(
         self,
         region: Region,
-        ingest_instance: DirectIngestInstance,
         data_import_args: GcsfsRawDataBQImportArgs,
     ) -> None:
         task_id = _build_task_id(
             region.region_code,
-            ingest_instance,
+            data_import_args.ingest_instance(),
             task_id_tag=data_import_args.task_id_tag(),
             prefix_only=False,
         )
@@ -604,7 +558,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
         body = self._get_body_from_args(data_import_args)
 
-        self._get_bq_import_export_queue_manager(region, ingest_instance).create_task(
+        self._get_bq_import_export_queue_manager(region).create_task(
             task_id=task_id,
             relative_uri=relative_uri,
             body=body,
@@ -613,12 +567,11 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     def create_direct_ingest_ingest_view_export_task(
         self,
         region: Region,
-        ingest_instance: DirectIngestInstance,
         ingest_view_export_args: GcsfsIngestViewExportArgs,
     ) -> None:
         task_id = _build_task_id(
             region.region_code,
-            ingest_instance,
+            ingest_view_export_args.ingest_instance(),
             task_id_tag=ingest_view_export_args.task_id_tag(),
             prefix_only=False,
         )
@@ -630,7 +583,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
         body = self._get_body_from_args(ingest_view_export_args)
 
-        self._get_bq_import_export_queue_manager(region, ingest_instance).create_task(
+        self._get_bq_import_export_queue_manager(region).create_task(
             task_id=task_id,
             relative_uri=relative_uri,
             body=body,
