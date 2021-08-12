@@ -30,7 +30,10 @@ from recidiviz.admin_panel.case_triage_helpers import (
     get_importable_csvs,
 )
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.case_triage.views.view_config import CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
+from recidiviz.case_triage.views.view_config import (
+    CASE_TRIAGE_EXPORTED_VIEW_BUILDERS,
+    ETL_TABLES,
+)
 from recidiviz.cloud_sql.cloud_sql_export_to_gcs import export_from_cloud_sql_to_gcs_csv
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -39,10 +42,7 @@ from recidiviz.common.results import MultiRequestResult
 from recidiviz.metrics.export.export_config import (
     CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
 )
-from recidiviz.persistence.database.schema.case_triage.schema import (
-    ETL_TABLES,
-    CaseUpdate,
-)
+from recidiviz.persistence.database.schema.case_triage.schema import CaseUpdate
 from recidiviz.persistence.database.schema_utils import (
     SchemaType,
     get_case_triage_table_classes,

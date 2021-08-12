@@ -15,11 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Case Triage view configuration."""
-from typing import Sequence
+from typing import Dict, Sequence, Type
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
+)
+from recidiviz.calculator.query.state.views.reference.dashboard_user_restrictions import (
+    DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
 )
 from recidiviz.case_triage.views.client_contact_info import (
     CLIENT_CONTACT_INFO_VIEW_BUILDER,
@@ -36,6 +39,14 @@ from recidiviz.case_triage.views.etl_officers import OFFICER_LIST_VIEW_BUILDER
 from recidiviz.case_triage.views.etl_opportunities import TOP_OPPORTUNITIES_VIEW_BUILDER
 from recidiviz.case_triage.views.last_known_date_of_employment import (
     LAST_KNOWN_DATE_OF_EMPLOYMENT_VIEW_BUILDER,
+)
+from recidiviz.persistence.database.base_schema import CaseTriageBase
+from recidiviz.persistence.database.schema.case_triage.schema import (
+    DashboardUserRestrictions,
+    ETLClient,
+    ETLClientEvent,
+    ETLOfficer,
+    ETLOpportunity,
 )
 
 CASE_TRIAGE_EXPORTED_VIEW_BUILDERS: Sequence[SelectedColumnsBigQueryViewBuilder] = [
@@ -55,3 +66,13 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
     TOP_OPPORTUNITIES_VIEW_BUILDER,
     CLIENT_EVENTS_VIEW_BUILDER,
 ]
+
+
+# Map from ETL Schema to associated view builder
+ETL_TABLES: Dict[Type[CaseTriageBase], SelectedColumnsBigQueryViewBuilder] = {
+    DashboardUserRestrictions: DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
+    ETLClient: CLIENT_LIST_VIEW_BUILDER,
+    ETLOfficer: OFFICER_LIST_VIEW_BUILDER,
+    ETLOpportunity: TOP_OPPORTUNITIES_VIEW_BUILDER,
+    ETLClientEvent: CLIENT_EVENTS_VIEW_BUILDER,
+}
