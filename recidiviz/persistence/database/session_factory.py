@@ -43,6 +43,7 @@ class SessionFactory:
     def using_database(
         cls, database_key: SQLAlchemyDatabaseKey, *, autocommit: bool = True
     ) -> Iterator[Session]:
+        session = None
         try:
             session = cls._for_database(database_key)
             yield session
@@ -53,7 +54,8 @@ class SessionFactory:
                     session.rollback()
                     raise e
         finally:
-            session.close()
+            if session:
+                session.close()
 
     # TODO(#8046): Eventually delete this method
     @classmethod
@@ -94,6 +96,7 @@ class SessionFactory:
         if engine is None:
             raise ValueError(f"No engine set for key [{database_key}]")
 
+        session = None
         try:
             session = Session(bind=engine)
             cls._alter_session_variables(session)
@@ -108,7 +111,8 @@ class SessionFactory:
                     session.rollback()
                     raise e
         finally:
-            session.close()
+            if session:
+                session.close()
 
     @classmethod
     def _apply_session_listener_for_schema_base(

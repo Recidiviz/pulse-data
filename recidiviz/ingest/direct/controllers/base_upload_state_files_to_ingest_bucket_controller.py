@@ -147,20 +147,16 @@ class BaseUploadStateFilesToIngestBucketController:
         """Perform upload to ingest bucket."""
 
         # SFTP download writes to primary instance bucket
-        ingest_instance = DirectIngestInstance.PRIMARY
-        ingest_status_manager = DirectIngestInstanceStatusManager(
-            region_code=self.region, ingest_instance=ingest_instance
-        )
         should_pause = self.delegate.should_pause_processing()
         try:
             # We pause and unpause ingest to prevent races where ingest views begin
             # to generate in the middle of a raw file upload.
             if should_pause:
-                ingest_status_manager.pause_instance()
+                self.delegate.pause_processing()
             upload_result = self._do_upload_inner()
         finally:
             if should_pause:
-                ingest_status_manager.unpause_instance()
+                self.delegate.unpause_processing()
         return upload_result
 
     def _do_upload_inner(self) -> MultiRequestResultWithSkipped[str, str, str]:
