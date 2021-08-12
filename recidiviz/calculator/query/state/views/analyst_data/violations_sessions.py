@@ -49,35 +49,9 @@ VIOLATIONS_SESSIONS_QUERY_TEMPLATE = """
         violations.is_sex_offense,
         priority,  
         COUNT(DISTINCT  supervision_violation_id) OVER(PARTITION BY person_id, state_code, response_date) AS distinct_violations_per_day,
-        /* Ordering logic:
-            - Deduplicates to person-day by keeping most severe violation type across violations on the same day using 
-            state-specific violation type prioritization
-            - When we have the same person_id, response_date, and most serious violation type / sub-type, 
-            we might have different response_decisions. The ordering used below is the same as the one used in 
-            the calc pipeline to choose the most severe response decision. See DECISION_SEVERITY_ORDER in 
-            recidiviz/calculator/pipeline/utils/violation_response_utils.py 
-        */
-        ROW_NUMBER() OVER(PARTITION BY person_id, state_code, response_date ORDER BY COALESCE(priority,9999), 
-        # TODO(#8187): pull logic into separate dedup view
-        CASE
-            WHEN most_severe_response_decision IN ('REVOCATION') THEN 1
-            WHEN most_severe_response_decision IN ('SHOCK_INCARCERATION') THEN 2 
-            WHEN most_severe_response_decision IN ('TREATMENT_IN_PRISON') THEN 3
-            WHEN most_severe_response_decision IN ('WARRANT_ISSUED') THEN 4
-            WHEN most_severe_response_decision IN ('PRIVILEGES_REVOKED') THEN 5
-            WHEN most_severe_response_decision IN ('NEW_CONDITIONS') THEN 6
-            WHEN most_severe_response_decision IN ('EXTENSION') THEN 7
-            WHEN most_severe_response_decision IN ('SPECIALIZED_COURT') THEN 8
-            WHEN most_severe_response_decision IN ('SUSPENSION') THEN 9
-            WHEN most_severe_response_decision IN ('SERVICE_TERMINATION') THEN 10
-            WHEN most_severe_response_decision IN ('TREATMENT_IN_FIELD') THEN 11
-            WHEN most_severe_response_decision IN ('COMMUNITY_SERVICE') THEN 12
-            WHEN most_severe_response_decision IN ('DELAYED_ACTION') THEN 13
-            WHEN most_severe_response_decision IN ('OTHER') THEN 14
-            WHEN most_severe_response_decision IN ('INTERNAL_UNKNOWN') THEN 15
-            WHEN most_severe_response_decision IN ('WARNING') THEN 16
-            WHEN most_severe_response_decision IN ('CONTINUANCE') THEN 17
-            ELSE 18 END ) as violation_priority,
+        ROW_NUMBER() OVER(PARTITION BY person_id, state_code, response_date ORDER BY 
+        CASE WHEN is_most_severe_violation_type_of_all_violations = TRUE THEN 0 ELSE 1 END,
+        CASE WHEN is_most_severe_response_decision_of_all_violations = TRUE THEN 0 ELSE 1 END) AS rn
         FROM `{project_id}.{dataflow_dataset}.most_recent_violation_with_response_metrics_materialized` violations
         LEFT JOIN `{project_id}.{analyst_dataset}.violation_type_dedup_priority`
                 USING(state_code, violation_type, violation_type_subtype)
@@ -85,11 +59,7 @@ VIOLATIONS_SESSIONS_QUERY_TEMPLATE = """
         multiple supervision_violation_id's on the same response_date, so there are duplicates on person_id, 
         response_date after this step which are dealt with above in the ordering logic */ 
         WHERE is_most_severe_violation_type
-    ), 
-    violations_dedup_cte AS (
-        SELECT * EXCEPT(violation_priority)
-        FROM violations_cte 
-        WHERE violation_priority = 1
+        QUALIFY rn = 1
     ),
     us_nd_contacts_violations as (
         SELECT
@@ -115,7 +85,7 @@ VIOLATIONS_SESSIONS_QUERY_TEMPLATE = """
     violations_combine AS (
         SELECT * EXCEPT(response_date, response_date_ND), 
         COALESCE(response_date_ND,response_date) AS response_date
-        FROM violations_dedup_cte 
+        FROM violations_cte 
         FULL OUTER JOIN us_nd_contacts_violations USING(person_id,state_code)
     ),
     violations_sessions_info AS (
