@@ -24,6 +24,8 @@ from recidiviz.validation.views.utils.freshness_validation import (
     FreshnessValidationAssertion,
 )
 
+# TODO(#8758): Import the actual ETL_TABLES constant once dashboard_user_restrictions has
+# an `exported_at` column.
 ETL_TABLES = ["etl_clients", "etl_officers", "etl_opportunities"]
 
 ETL_EXPORTED_ASSERTIONS = [
