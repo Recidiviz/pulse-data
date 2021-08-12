@@ -66,8 +66,8 @@ def generate_time_series_query(
 VITALS_TIME_SERIES_VIEW_NAME = "vitals_time_series"
 
 VITALS_TIME_SERIES_DESCRIPTION = """
-    Historical record of vitals metrics over the last 365 days
- """
+Historical record of vitals metrics over the last 365 days
+"""
 
 
 def make_overall_score_queries_by_state(field: str) -> str:

@@ -27,8 +27,8 @@ SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_VIEW_NAME = (
 )
 
 SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_DESCRIPTION = """
-    A view which provides a comparison of annual incarceration population counts in sessions vs dataflow
-    """
+A view which provides a comparison of annual incarceration population counts in sessions vs dataflow
+"""
 
 SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_QUERY_TEMPLATE = """
     /*{description}*/

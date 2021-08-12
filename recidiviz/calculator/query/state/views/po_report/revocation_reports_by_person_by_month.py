@@ -30,8 +30,8 @@ REVOCATION_REPORTS_BY_PERSON_BY_MONTH_VIEW_NAME = (
 )
 
 REVOCATION_REPORTS_BY_PERSON_BY_MONTH_DESCRIPTION = """
-    Revocation report recommendations by person by month. If multiple violation reports recommend revocation in the 
-    month, we filter for the most severe violation type (i.e. "new crime" violation types over "technical") 
+Revocation report recommendations by person by month. If multiple violation reports recommend revocation in the 
+month, we filter for the most severe violation type (i.e. "new crime" violation types over "technical") 
 """
 
 REVOCATION_REPORTS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """

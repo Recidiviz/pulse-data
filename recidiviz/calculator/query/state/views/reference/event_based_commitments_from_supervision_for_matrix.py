@@ -28,8 +28,8 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_VIEW_NAME = (
 )
 
 EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_DESCRIPTION = """
-    Event based commitment from supervision admissions to support various matrix views
- """
+Event based commitment from supervision admissions to support various matrix views
+"""
 
 EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_QUERY_TEMPLATE = """
     /*{description}*/

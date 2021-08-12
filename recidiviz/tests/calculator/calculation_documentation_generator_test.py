@@ -364,7 +364,7 @@ The presence of all required metrics for a state does not guarantee that this pr
             dag_key
         )
         expected_documentation_string = """##dataset_1.table_1
-_table_1 description_
+table_1 description
 
 ####View schema in Big Query
 This view may not be deployed to all environments yet.<br/>

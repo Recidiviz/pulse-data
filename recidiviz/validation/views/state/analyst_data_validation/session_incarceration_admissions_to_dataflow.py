@@ -27,12 +27,12 @@ SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_VIEW_NAME = (
 )
 
 SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DESCRIPTION = """
-    A view which provides an annual comparison between incarceration session starts and dataflow admissions. One 
-    comparison is session starts vs sessions_with_start_reason (the latter being a subset of the former), which can 
-    be used to identify the % of sessions with start reasons. Another comparison is dataflow_admissions vs 
-    session_admissions (the latter being a subset of the former), which can be used to identify the % of dataflow 
-    admission events represented in sessions
-    """
+A view which provides an annual comparison between incarceration session starts and dataflow admissions. One 
+comparison is session starts vs sessions_with_start_reason (the latter being a subset of the former), which can 
+be used to identify the % of sessions with start reasons. Another comparison is dataflow_admissions vs 
+session_admissions (the latter being a subset of the former), which can be used to identify the % of dataflow 
+admission events represented in sessions
+"""
 
 SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_QUERY_TEMPLATE = """
     /*{description}*/

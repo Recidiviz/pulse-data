@@ -28,13 +28,13 @@ SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME = (
 )
 
 SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION = """
-    A view which provides a person / day level comparison between incarceration session ends and dataflow releases. For 
-    each person / day there are a set of binary variables that indicate whether that record meets a criteria. The first 
-    two (session_end, session_with_end_reason) are used to identify sessions that do not have any dataflow end reason 
-    associated with them. The second two (dataflow_release, session_release) are used to identify dataflow releases that 
-    are not represented in the sessions view. Note that a subset of release reasons is used in this comparison because 
-    of the fact that we would not expect every dataflow metric event to be associated with a compartment transition
-    """
+A view which provides a person / day level comparison between incarceration session ends and dataflow releases. For 
+each person / day there are a set of binary variables that indicate whether that record meets a criteria. The first 
+two (session_end, session_with_end_reason) are used to identify sessions that do not have any dataflow end reason 
+associated with them. The second two (dataflow_release, session_release) are used to identify dataflow releases that 
+are not represented in the sessions view. Note that a subset of release reasons is used in this comparison because 
+of the fact that we would not expect every dataflow metric event to be associated with a compartment transition
+"""
 
 
 SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """

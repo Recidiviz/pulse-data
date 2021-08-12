@@ -27,12 +27,12 @@ SESSION_SUPERVISION_STARTS_TO_DATAFLOW_VIEW_NAME = (
 )
 
 SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DESCRIPTION = """
-    A view which provides an annual comparison between supervision session starts and dataflow supervision starts. One
-    comparison is session starts vs sessions_with_start_reason (the latter being a subset of the former), which can be 
-    used to identify the % of sessions with start reasons. Another comparison is dataflow_supervision_starts vs 
-    session_supervision_starts (the latter being a subset of the former), which can be used to identify the % of 
-    dataflow supervision start events represented in sessions
-    """
+A view which provides an annual comparison between supervision session starts and dataflow supervision starts. One
+comparison is session starts vs sessions_with_start_reason (the latter being a subset of the former), which can be 
+used to identify the % of sessions with start reasons. Another comparison is dataflow_supervision_starts vs 
+session_supervision_starts (the latter being a subset of the former), which can be used to identify the % of 
+dataflow supervision start events represented in sessions
+"""
 
 SESSION_SUPERVISION_STARTS_TO_DATAFLOW_QUERY_TEMPLATE = """
     /*{description}*/

@@ -29,8 +29,8 @@ VITALS_SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_NAME = (
 )
 
 VITALS_SUPERVISION_CASE_COMPLIANCE_METRICS_DESCRIPTION = """
-    Case compliance metrics with supervising_officer_external_id pulled directly from raw data table for US_ID.
- """
+Case compliance metrics with supervising_officer_external_id pulled directly from raw data table for US_ID.
+"""
 
 VITALS_SUPERVISION_CASE_COMPLIANCE_METRICS_TEMPLATE = f"""
 /*{{description}}*/

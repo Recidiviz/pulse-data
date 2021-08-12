@@ -28,8 +28,8 @@ SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_VIEW_NAME = (
 )
 
 SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_DESCRIPTION = """
-    Supervision population due for release by PO by day
- """
+Supervision population due for release by PO by day
+"""
 
 SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_QUERY_TEMPLATE = """
     /*{description}*/

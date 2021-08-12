@@ -25,9 +25,9 @@ from recidiviz.validation.views import dataset_config
 REVOCATION_SESSIONS_TO_DATAFLOW_VIEW_NAME = "revocation_sessions_to_dataflow"
 
 REVOCATION_SESSIONS_TO_DATAFLOW_DESCRIPTION = """
-    A view which provides an annual comparison between revocation sessions and dataflow revocation counts. The 
-    view shows the annual counts of each individually and the counts of person/days in both.
-    """
+A view which provides an annual comparison between revocation sessions and dataflow revocation counts. The 
+view shows the annual counts of each individually and the counts of person/days in both.
+"""
 
 REVOCATION_SESSIONS_TO_DATAFLOW_QUERY_TEMPLATE = """
     /*{description}*/

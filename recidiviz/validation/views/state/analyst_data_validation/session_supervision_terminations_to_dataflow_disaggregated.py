@@ -28,14 +28,14 @@ SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME = (
 )
 
 SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION = """
-    A view which provides a person / day level comparison between supervision session ends and dataflow terminations. 
-    For each person / day there are a set of binary variables that indicate whether that record meets a criteria. The 
-    first two (session_end, session_with_end_reason) are used to identify sessions that do not have any dataflow end 
-    reason associated with them. The second three (dataflow_termination, session_termination) are used to identify 
-    dataflow terminations that re not represented in the sessions view. Note that a subset of termination reasons is 
-    used in this comparison because of the fact that we would not expect every dataflow metric event to be associated
-    with a compartment transition.
-    """
+A view which provides a person / day level comparison between supervision session ends and dataflow terminations. 
+For each person / day there are a set of binary variables that indicate whether that record meets a criteria. The 
+first two (session_end, session_with_end_reason) are used to identify sessions that do not have any dataflow end 
+reason associated with them. The second three (dataflow_termination, session_termination) are used to identify 
+dataflow terminations that re not represented in the sessions view. Note that a subset of termination reasons is 
+used in this comparison because of the fact that we would not expect every dataflow metric event to be associated
+with a compartment transition.
+"""
 
 SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
     /*{description}*/
