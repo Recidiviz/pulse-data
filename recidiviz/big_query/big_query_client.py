@@ -485,6 +485,8 @@ class BigQueryClient:
         dataset_ref: bigquery.DatasetReference,
         table_id: str,
         rows: Sequence[Dict[str, Any]],
+        *,
+        write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.job.LoadJob:
         """Inserts the provided rows into the specified table.
 
@@ -494,6 +496,8 @@ class BigQueryClient:
             dataset_ref: The dataset containing the table into which the rows should be inserted.
             table_id: The name of the table into which the rows should be inserted.
             rows: A sequence of dictionaries representing the rows to insert into the table.
+            write_disposition: What to do if the destination table already exists. Defaults to WRITE_APPEND, which will
+                append rows to an existing table.
         Returns:
             The LoadJob object containing job details.
         """
@@ -1213,6 +1217,8 @@ class BigQueryClientImpl(BigQueryClient):
         dataset_ref: bigquery.DatasetReference,
         table_id: str,
         rows: Sequence[Dict],
+        *,
+        write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.job.LoadJob:
         logging.info(
             "Inserting %d rows into %s.%s", len(rows), dataset_ref.dataset_id, table_id
@@ -1225,8 +1231,11 @@ class BigQueryClientImpl(BigQueryClient):
             if estimated_size > (100 * 2 ** 10):  # 100 KiB
                 logging.warning("Row is larger than 100 KiB: %s", json_row[:1000])
 
+        job_config = bigquery.LoadJobConfig()
+        job_config.write_disposition = write_disposition
+
         return self.client.load_table_from_json(
-            rows, self.get_table(dataset_ref, table_id)
+            rows, self.get_table(dataset_ref, table_id), job_config=job_config
         )
 
     def delete_from_table_async(
