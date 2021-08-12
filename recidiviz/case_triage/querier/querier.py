@@ -24,6 +24,7 @@ import sqlalchemy.orm.exc
 from sqlalchemy.orm import Session, joinedload
 
 from recidiviz.case_triage.demo_helpers import (
+    get_fixture_client_events,
     get_fixture_clients,
     get_fixture_opportunities,
     unconvert_fake_person_id_for_demo_user,
@@ -419,8 +420,11 @@ class CaseTriageQuerier:
         """Fetches events for the client's timeline."""
 
         if user_context.should_see_demo:
-            # TODO(#8023): demo data
-            return []
+            return [
+                ClientEventPresenter(event)
+                for event in get_fixture_client_events()
+                if event.person_external_id == person_external_id
+            ]
         if user_context.current_user:
             client = CaseTriageQuerier.etl_client_for_officer(
                 session, user_context, person_external_id

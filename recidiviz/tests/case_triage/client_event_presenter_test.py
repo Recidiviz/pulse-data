@@ -34,7 +34,7 @@ class TestClientEventPresenter(TestCase):
         self.event_date = date(2020, 3, 15)
 
     def test_assessment_score(self) -> None:
-        """Score and diff is included if it decreased"""
+        """Score and calculated difference from previous"""
 
         event = ETLClientEvent(
             state_code="US_XX",
@@ -79,6 +79,16 @@ class TestClientEventPresenter(TestCase):
                 "eventType": ClientEventType.ASSESSMENT.value,
                 "eventDate": "2020-03-15",
                 "eventMetadata": {"score": 10, "scoreChange": 6},
+            },
+        )
+
+        event.event_metadata["previous_assessment_score"] = None
+        self.assertEqual(
+            presenter.to_json(),
+            {
+                "eventType": ClientEventType.ASSESSMENT.value,
+                "eventDate": "2020-03-15",
+                "eventMetadata": {"score": 10, "scoreChange": None},
             },
         )
 

@@ -24,59 +24,16 @@ python -m recidiviz.tools.case_triage.create_client_json_fixtures
 """
 import csv
 import json
-from datetime import date
-from typing import Any, Callable, Dict, List, Literal, Optional, Union
+from typing import Any, Callable, Dict, List, Literal, Union
 
-import dateutil.parser
+from recidiviz.tools.case_triage.common import (
+    csv_row_to_etl_client_json,
+    parse_nullable_date,
+)
 
 FixtureType = Union[
     Literal["clients"], Literal["opportunities"], Literal["client_events"]
 ]
-
-
-def parse_nullable_date(date_str: str) -> Optional[date]:
-    if not date_str:
-        return None
-    return dateutil.parser.parse(date_str).date()
-
-
-def treat_empty_as_null(input_str: str) -> Optional[str]:
-    if not input_str:
-        return None
-    return input_str
-
-
-def csv_row_to_etl_client_json(row: List[str]) -> Dict[str, Any]:
-    return {
-        "person_external_id": row[1],
-        "state_code": row[9],
-        "supervising_officer_external_id": row[0],
-        "full_name": treat_empty_as_null(row[2]),
-        "gender": treat_empty_as_null(row[13]),
-        "current_address": treat_empty_as_null(row[3]),
-        "birthdate": parse_nullable_date(row[4]),
-        "birthdate_inferred_from_age": bool(row[5]),
-        "supervision_start_date": parse_nullable_date(row[14]),
-        "projected_end_date": parse_nullable_date(row[16]),
-        "supervision_type": row[6],
-        "case_type": row[7],
-        "supervision_level": row[8],
-        "employer": treat_empty_as_null(row[10]),
-        "last_known_date_of_employment": parse_nullable_date(row[17]),
-        "most_recent_assessment_date": parse_nullable_date(row[11]),
-        "assessment_score": int(row[15]),
-        "most_recent_face_to_face_date": parse_nullable_date(row[12]),
-        "most_recent_home_visit_date": parse_nullable_date(row[18]),
-        "days_with_current_po": int(row[19]),
-        "email_address": treat_empty_as_null(row[20]),
-        "days_on_current_supervision_level": int(row[21]),
-        "phone_number": treat_empty_as_null(row[22]),
-        "exported_at": parse_nullable_date(row[23]),
-        "next_recommended_assessment_date": parse_nullable_date(row[24]),
-        "employment_start_date": parse_nullable_date(row[25]),
-        "most_recent_violation_date": parse_nullable_date(row[26]),
-        "next_recommneded_face_to_face_date": parse_nullable_date(row[27]),
-    }
 
 
 def csv_row_to_etl_opportunity_json(row: List[str]) -> Dict[str, Any]:
@@ -98,7 +55,7 @@ def csv_row_to_etl_client_event_json(row: List[str]) -> Dict[str, Any]:
         "state_code": row[3],
         "event_type": row[4],
         "event_date": row[5],
-        "event_metadata": row[6],
+        "event_metadata": json.loads(row[6]),
     }
 
 
