@@ -28,9 +28,9 @@ from recidiviz.utils.metadata import local_project_id_override
 AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_NAME = "average_change_lsir_score_by_period"
 
 AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_DESCRIPTION = """
-    The average change in LSIR score by metric period months of scheduled 
-    supervision termination. Per ND-request, compares the LSIR score at 
-    termination to the second LSIR score of the person's supervision.
+The average change in LSIR score by metric period months of scheduled 
+supervision termination. Per ND-request, compares the LSIR score at 
+termination to the second LSIR score of the person's supervision.
 """
 
 AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY_TEMPLATE = """

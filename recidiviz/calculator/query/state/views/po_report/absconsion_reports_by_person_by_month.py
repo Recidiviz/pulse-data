@@ -29,7 +29,7 @@ ABSCONSION_REPORTS_BY_PERSON_BY_MONTH_VIEW_NAME = (
 )
 
 ABSCONSION_REPORTS_BY_PERSON_BY_MONTH_DESCRIPTION = """
-    Absconsion report recommendations by person by month. 
+Absconsion report recommendations by person by month. 
 """
 
 ABSCONSION_REPORTS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """

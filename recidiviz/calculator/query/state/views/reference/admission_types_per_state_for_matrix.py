@@ -23,8 +23,8 @@ from recidiviz.utils.metadata import local_project_id_override
 ADMISSION_TYPES_PER_STATE_FOR_MATRIX_VIEW_NAME = "admission_types_per_state_for_matrix"
 
 ADMISSION_TYPES_PER_STATE_FOR_MATRIX_DESCRIPTION = """
-    Types of admissions for each state in the matrix views
- """
+Types of admissions for each state in the matrix views
+"""
 
 ADMISSION_TYPES_PER_STATE_FOR_MATRIX_QUERY_TEMPLATE = """
     /*{description}*/

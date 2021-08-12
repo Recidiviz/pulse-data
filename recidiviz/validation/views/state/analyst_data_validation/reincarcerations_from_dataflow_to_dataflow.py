@@ -27,10 +27,10 @@ REINCARCERATIONS_FROM_DATAFLOW_TO_DATAFLOW_VIEW_NAME = (
 )
 
 REINCARCERATIONS_FROM_DATAFLOW_TO_DATAFLOW_DESCRIPTION = """
-    A view which provides an annual comparison between reincarceration sessions and dataflow recidivism counts. The 
-    view shows the annual counts of each individually and the counts of person/days in both. The view also shows the 
-    count of events where the days between release and reincarceration match exactly. 
-    """
+A view which provides an annual comparison between reincarceration sessions and dataflow recidivism counts. The 
+view shows the annual counts of each individually and the counts of person/days in both. The view also shows the 
+count of events where the days between release and reincarceration match exactly. 
+"""
 
 REINCARCERATIONS_FROM_DATAFLOW_TO_DATAFLOW_QUERY_TEMPLATE = """
     /*{description}*/

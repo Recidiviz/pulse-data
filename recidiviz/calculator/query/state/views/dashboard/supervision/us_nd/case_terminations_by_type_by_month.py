@@ -25,7 +25,7 @@ from recidiviz.utils.metadata import local_project_id_override
 CASE_TERMINATIONS_BY_TYPE_BY_MONTH_VIEW_NAME = "case_terminations_by_type_by_month"
 
 CASE_TERMINATIONS_BY_TYPE_BY_MONTH_DESCRIPTION = """
-    Supervision period termination count split by termination reason, month, district, and supervision type.
+Supervision period termination count split by termination reason, month, district, and supervision type.
 """
 
 

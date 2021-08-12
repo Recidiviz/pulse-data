@@ -28,8 +28,8 @@ from recidiviz.utils.metadata import local_project_id_override
 SUPERVISION_POPULATION_BY_PO_BY_DAY_VIEW_NAME = "supervision_population_by_po_by_day"
 
 SUPERVISION_POPULATION_BY_PO_BY_DAY_DESCRIPTION = """
-    Supervision population by PO by day
- """
+Supervision population by PO by day
+"""
 
 contact_population_by_state = {
     "US_ND": ("MINIMUM", "MEDIUM", "MAXIMUM"),

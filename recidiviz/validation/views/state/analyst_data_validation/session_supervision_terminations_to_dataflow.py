@@ -27,12 +27,12 @@ SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_VIEW_NAME = (
 )
 
 SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_DESCRIPTION = """
-    A view which provides an annual comparison between supervision session ends and dataflow terminations. One
-    comparison is session ends vs sessions_with_end_reason (the latter being a subset of the former), which can be used 
-    to identify the % of sessions with end reasons. Another comparison is dataflow_terminations vs 
-    session_terminations (the latter being a subset of the former), which can be used to identify the % of dataflow 
-    terminations events represented in sessions
-    """
+A view which provides an annual comparison between supervision session ends and dataflow terminations. One
+comparison is session ends vs sessions_with_end_reason (the latter being a subset of the former), which can be used 
+to identify the % of sessions with end reasons. Another comparison is dataflow_terminations vs 
+session_terminations (the latter being a subset of the former), which can be used to identify the % of dataflow 
+terminations events represented in sessions
+"""
 
 SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_QUERY_TEMPLATE = """
     /*{description}*/

@@ -29,14 +29,14 @@ SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME = (
 )
 
 SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION = """
-    A view which provides a person / day level comparison between supervision session starts and dataflow supervision
-    starts. For each person / day there are a set of binary variables that indicate whether that record meets a 
-    criteria. The first two (session_start, session_with_start_reason) are used to identify sessions or sub sessions 
-    that do not have any dataflow start reason associated with them. The second two (dataflow_supervision_start,
-    session_supervision_start) are used to identify dataflow admissions that are not represented in the sessions view.
-    Note that a subset of admission reasons is used in this comparison because of the fact that we would not expect 
-    every dataflow metric event to be associated with a compartment transition
-    """
+A view which provides a person / day level comparison between supervision session starts and dataflow supervision
+starts. For each person / day there are a set of binary variables that indicate whether that record meets a 
+criteria. The first two (session_start, session_with_start_reason) are used to identify sessions or sub sessions 
+that do not have any dataflow start reason associated with them. The second two (dataflow_supervision_start,
+session_supervision_start) are used to identify dataflow admissions that are not represented in the sessions view.
+Note that a subset of admission reasons is used in this comparison because of the fact that we would not expect 
+every dataflow metric event to be associated with a compartment transition
+"""
 
 SESSION_SUPERVISION_STARTS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
     /*{description}*/
