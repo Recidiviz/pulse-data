@@ -62,3 +62,52 @@ resource "google_bigquery_connection" "state_secondary_bq_connection" {
     }
   }
 }
+
+# Postgres Version 13 Upgrade Databases
+resource "google_sql_database" "state_v2_primary" {
+  name     = "${lower(var.state_code)}_primary"
+  instance = var.v2_cloudsql_instance_name
+}
+
+resource "google_sql_database" "state_v2_secondary" {
+  name     = "${lower(var.state_code)}_secondary"
+  instance = var.v2_cloudsql_instance_name
+}
+
+resource "google_bigquery_connection" "state_v2_primary_bq_connection" {
+  provider = google-beta
+
+  connection_id = "state_v2_${lower(var.state_code)}_primary_cloudsql"
+  friendly_name = "${var.state_code} State Cloud SQL Postgres (Primary)"
+  location      = var.v2_cloudsql_instance_region
+  description   = "Connection to the ${var.state_code} State Cloud SQL database (primary)"
+
+  cloud_sql {
+    instance_id = var.v2_cloudsql_instance_id
+    database    = google_sql_database.state_primary.name
+    type        = "POSTGRES"
+    credential {
+      username = var.v2_cloudsql_instance_user_name
+      password = var.v2_cloudsql_instance_user_password
+    }
+  }
+}
+
+resource "google_bigquery_connection" "state_v2_secondary_bq_connection" {
+  provider = google-beta
+
+  connection_id = "state_v2_${lower(var.state_code)}_secondary_cloudsql"
+  friendly_name = "${var.state_code} State Cloud SQL Postgres (Secondary)"
+  location      = var.v2_cloudsql_instance_region
+  description   = "Connection to the ${var.state_code} State Cloud SQL database (secondary)"
+
+  cloud_sql {
+    instance_id = var.v2_cloudsql_instance_id
+    database    = google_sql_database.state_secondary.name
+    type        = "POSTGRES"
+    credential {
+      username = var.v2_cloudsql_instance_user_name
+      password = var.v2_cloudsql_instance_user_password
+    }
+  }
+}
