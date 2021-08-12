@@ -75,19 +75,27 @@ class SamenessDataValidationCheck(DataValidationCheck):
             )
 
     # Columns included in the join but not compared
-    partition_columns: Optional[List[str]] = attr.ib(default=None)
+    partition_columns: List[str] = attr.ib(factory=list)
 
-    def get_partition_columns(self) -> List[str]:
-        if self.partition_columns is None:
+    @partition_columns.validator
+    def _check_partition_columns(
+        self, _attribute: attr.Attribute, value: List[str]
+    ) -> None:
+        if self.is_run_per_view() and len(value) == 0:
             raise ValueError(
                 f"Partition columns must be set for check [{self.validation_name}]"
             )
-        return self.partition_columns
 
     # The type of sameness check this is
     sameness_check_type: SamenessDataValidationCheckType = attr.ib(
         default=SamenessDataValidationCheckType.NUMBERS
     )
+
+    def is_run_per_view(self) -> bool:
+        return self.sameness_check_type in {
+            SamenessDataValidationCheckType.STRINGS,
+            SamenessDataValidationCheckType.DATES,
+        }
 
     # The acceptable margin of error across the range of compared values. Defaults to 0.0 (no difference allowed)
     max_allowed_error: float = attr.ib(default=0.0)
@@ -228,30 +236,31 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
             return SamenessValidationChecker.run_check_per_row(
                 validation_job, comparison_columns, max_allowed_error, query_job
             )
-        if (
-            validation_job.validation.sameness_check_type
-            == SamenessDataValidationCheckType.STRINGS
-        ):
-            return SamenessValidationChecker.run_check_per_view(
-                validation_job,
-                comparison_columns,
-                max_allowed_error,
-                query_job,
-                str,
-                EMPTY_STRING_VALUE,
-            )
-        if (
-            validation_job.validation.sameness_check_type
-            == SamenessDataValidationCheckType.DATES
-        ):
-            return SamenessValidationChecker.run_check_per_view(
-                validation_job,
-                comparison_columns,
-                max_allowed_error,
-                query_job,
-                datetime.date,
-                EMPTY_DATE_VALUE,
-            )
+        if validation_job.validation.is_run_per_view():
+            if (
+                validation_job.validation.sameness_check_type
+                == SamenessDataValidationCheckType.STRINGS
+            ):
+                return SamenessValidationChecker.run_check_per_view(
+                    validation_job,
+                    comparison_columns,
+                    max_allowed_error,
+                    query_job,
+                    str,
+                    EMPTY_STRING_VALUE,
+                )
+            if (
+                validation_job.validation.sameness_check_type
+                == SamenessDataValidationCheckType.DATES
+            ):
+                return SamenessValidationChecker.run_check_per_view(
+                    validation_job,
+                    comparison_columns,
+                    max_allowed_error,
+                    query_job,
+                    datetime.date,
+                    EMPTY_DATE_VALUE,
+                )
 
         raise ValueError(
             f"Unexpected sameness_check_type of {validation_job.validation.sameness_check_type}."
@@ -343,7 +352,7 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
 
             partition_key = tuple(
                 str(row.get(column))
-                for column in validation_job.validation.get_partition_columns()
+                for column in validation_job.validation.partition_columns
             )
             if partition_key not in non_null_counts_per_column_per_partition:
                 non_null_counts_per_column_per_partition[partition_key] = {
