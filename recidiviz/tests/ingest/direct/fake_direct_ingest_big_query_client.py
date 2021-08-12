@@ -222,6 +222,8 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
         dataset_ref: bigquery.DatasetReference,
         table_id: str,
         rows: Sequence[Dict[str, Any]],
+        *,
+        write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND,
     ) -> bigquery.job.LoadJob:
         raise ValueError("Must be implemented for use in tests.")
 
