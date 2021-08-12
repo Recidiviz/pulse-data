@@ -27,9 +27,8 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.errors import DirectIngestInstanceError
-from recidiviz.persistence.database.sqlalchemy_database_key import (
-    SQLAlchemyStateDatabaseVersion,
-)
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
 
 class DirectIngestInstance(Enum):
@@ -56,25 +55,13 @@ class DirectIngestInstance(Enum):
                     f"primary ingest instance. Ingest instance [{self}] not valid."
                 )
 
-    def database_version(
-        self, system_level: SystemLevel
-    ) -> SQLAlchemyStateDatabaseVersion:
-        """Return the database version for this instance."""
-        self.check_is_valid_system_level(system_level)
+    def database_key_for_state(self, state_code: StateCode) -> SQLAlchemyDatabaseKey:
+        """Returns the key to the database corresponding to the provided state code and
+        database version.
+        """
+        db_name = f"{state_code.value.lower()}_{self.value.lower()}"
 
-        if system_level == SystemLevel.COUNTY:
-            # County direct ingest writes to single, multi-tenant database
-            return SQLAlchemyStateDatabaseVersion.LEGACY
-
-        if system_level == SystemLevel.STATE:
-            if self == self.SECONDARY:
-                return SQLAlchemyStateDatabaseVersion.SECONDARY
-            if self == self.PRIMARY:
-                return SQLAlchemyStateDatabaseVersion.PRIMARY
-
-        raise ValueError(
-            f"Unexpected combination of [{system_level}] and instance type [{self}]"
-        )
+        return SQLAlchemyDatabaseKey(schema_type=SchemaType.STATE, db_name=db_name)
 
     @classmethod
     def for_ingest_bucket(
@@ -85,27 +72,3 @@ class DirectIngestInstance(Enum):
         if is_secondary_ingest_bucket(ingest_bucket.bucket_name):
             return cls.SECONDARY
         raise ValueError(f"Unexpected ingest bucket [{ingest_bucket.bucket_name}]")
-
-    @classmethod
-    def for_state_database_version(
-        cls,
-        database_version: SQLAlchemyStateDatabaseVersion,
-        state_code: StateCode,
-    ) -> "DirectIngestInstance":
-        if database_version == SQLAlchemyStateDatabaseVersion.SECONDARY:
-            return cls.SECONDARY
-        if database_version in (
-            SQLAlchemyStateDatabaseVersion.PRIMARY,
-            SQLAlchemyStateDatabaseVersion.LEGACY,
-        ):
-            expected_primary_db_version = cls.PRIMARY.database_version(
-                SystemLevel.STATE
-            )
-            # TODO(#7984): Remove this check once there are no states running ingest out
-            #   of a LEGACY DB.
-            if expected_primary_db_version != database_version:
-                raise ValueError(
-                    f"Requested database version [{database_version}] is not valid for state [{state_code}]."
-                )
-            return cls.PRIMARY
-        raise ValueError(f"Unexpected database version [{database_version}]")

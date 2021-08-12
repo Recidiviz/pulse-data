@@ -19,25 +19,21 @@
 import re
 from typing import Optional
 
+from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.str_field_utils import normalize
-from recidiviz.common.constants.person_characteristics import (
-    Ethnicity,
-    Gender,
-    Race,
-)
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn,
+    parse_birthdate,
     parse_external_id,
     parse_residency_status,
-    parse_birthdate,
 )
 from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
-from recidiviz.persistence.ingest_info_converter.utils.zipcodes import (
-    ZipcodeDatabaseManager,
-)
 
 # Suffixes used in county names in uszipcode library
 from recidiviz.persistence.ingest_info_converter.utils.names import parse_name
+from recidiviz.persistence.ingest_info_converter.utils.zipcodes import (
+    ZipcodeDatabaseManager,
+)
 
 USZIPCODE_COUNTY_SUFFIXES = [
     "BOROUGH",

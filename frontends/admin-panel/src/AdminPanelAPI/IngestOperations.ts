@@ -89,13 +89,13 @@ export const exportDatabaseToGCS = async (
 // Start CloudSQL import from GCS
 export const importDatabaseFromGCS = async (
   stateCode: string,
-  importToDatabaseVersion: DirectIngestInstance,
-  exportedDatabaseVersion: DirectIngestInstance
+  importToDatabaseInstance: DirectIngestInstance,
+  exportedDatabaseInstance: DirectIngestInstance
 ): Promise<Response> => {
   return postWithURLAndBody(`/api/ingest_operations/import_database_from_gcs`, {
     stateCode,
-    importToDatabaseVersion,
-    exportedDatabaseVersion,
+    importToDatabaseInstance,
+    exportedDatabaseInstance,
   });
 };
 

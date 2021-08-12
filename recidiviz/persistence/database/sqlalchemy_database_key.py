@@ -19,18 +19,13 @@ is managed by SQLAlchemy.
 """
 
 import os
-from enum import Enum
-from typing import List, Optional, Type
+from typing import Optional, Type
 
 import attr
 import sqlalchemy
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common import attr_validators
-from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.direct_ingest_region_utils import (
-    get_existing_direct_ingest_states,
-)
 from recidiviz.persistence.database import migrations
 from recidiviz.persistence.database.schema_utils import (
     SchemaType,
@@ -39,24 +34,6 @@ from recidiviz.persistence.database.schema_utils import (
 from recidiviz.utils import environment
 
 DEFAULT_DB_NAME = "postgres"
-
-
-class SQLAlchemyStateDatabaseVersion(Enum):
-    """Denotes a particular database for a given state."""
-
-    # TODO(#7984): Once we have cut all traffic over to single-database traffic,
-    #   delete the LEGACY type entirely.
-    # The single, multi-region 'postgres' DB within the state CloudSQL instance for a
-    # given project.
-    LEGACY = "postgres"
-
-    # For state US_XX, references the us_xx_primary DB within the state CloudSQL
-    # instance for a given project.
-    PRIMARY = "primary"
-
-    # For state US_XX, references the us_xx_secondary DB within the state CloudSQL
-    # instance for a given project.
-    SECONDARY = "secondary"
 
 
 @attr.s
@@ -89,7 +66,7 @@ class SQLAlchemyDatabaseKey:
     schema_type: SchemaType = attr.ib(validator=attr.validators.instance_of(SchemaType))
 
     # Identifies which individual database to connect to inside the instance
-    db_name: str = attr.ib(default=DEFAULT_DB_NAME, validator=attr_validators.is_str)
+    db_name: str = attr.ib(validator=attr_validators.is_str)
 
     @property
     def alembic_file(self) -> str:
@@ -158,22 +135,6 @@ class SQLAlchemyDatabaseKey:
         return None
 
     @classmethod
-    def for_state_code(
-        cls, state_code: StateCode, db_version: SQLAlchemyStateDatabaseVersion
-    ) -> "SQLAlchemyDatabaseKey":
-        """Returns they key to the database corresponding to the provided state code and
-        database version.
-        """
-        # TODO(#7984): Once we have cut all traffic over to single-database traffic,
-        # delete the LEGACY type entirely.
-        if db_version == SQLAlchemyStateDatabaseVersion.LEGACY:
-            db_name = DEFAULT_DB_NAME
-        else:
-            db_name = f"{state_code.value.lower()}_{db_version.value.lower()}"
-
-        return cls(schema_type=SchemaType.STATE, db_name=db_name)
-
-    @classmethod
     @environment.local_only
     def canonical_for_schema(
         cls,
@@ -186,7 +147,7 @@ class SQLAlchemyDatabaseKey:
         This function may be used in tests where we don't care which DB we're using,
         or when generating migrations for a schema.
         """
-        return cls(schema_type)
+        return cls(schema_type, db_name=DEFAULT_DB_NAME)
 
     @classmethod
     def for_schema(cls, schema_type: SchemaType) -> "SQLAlchemyDatabaseKey":
@@ -198,25 +159,4 @@ class SQLAlchemyDatabaseKey:
                 f"Must provide db name information to create a {schema_type.name} "
                 f"database key."
             )
-        return cls(schema_type)
-
-    @classmethod
-    def all(cls) -> List["SQLAlchemyDatabaseKey"]:
-        """Returns a list of keys for **all** databases across all instances that the
-        application should connect to for a given project.
-        """
-        return [
-            # This list includes database key that points at the default 'postgres'
-            # database in the STATE CloudSQL instance. It can be used for operations
-            # that are state agnostic.
-            cls(schema_type)
-            for schema_type in SchemaType
-        ] + [
-            # Keys for all state-specific databases
-            cls.for_state_code(state_code, version)
-            for version in SQLAlchemyStateDatabaseVersion
-            for state_code in get_existing_direct_ingest_states()
-            # The single "legacy" 'postgres' DB for the state schema instance is created
-            # in the loop above.
-            if version != SQLAlchemyStateDatabaseVersion.LEGACY
-        ]
+        return cls(schema_type, db_name=DEFAULT_DB_NAME)

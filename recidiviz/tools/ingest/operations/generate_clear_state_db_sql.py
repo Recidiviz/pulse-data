@@ -28,16 +28,11 @@ from typing import List
 import sqlalchemy
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema_utils import get_foreign_key_constraints
-from recidiviz.persistence.database.sqlalchemy_database_key import (
-    SQLAlchemyDatabaseKey,
-    SQLAlchemyStateDatabaseVersion,
-)
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -61,34 +56,17 @@ def _format_deletion_command(state_code: StateCode, command: str) -> str:
 def _commands_for_table(
     state_code: StateCode,
     table: sqlalchemy.Table,
-    db_version: SQLAlchemyStateDatabaseVersion,
 ) -> List[str]:
     """Returns a list of commands that should be run to fully delete data out of the
     given table.
     """
-    if (
-        hasattr(table.c, "state_code")
-        or db_version != SQLAlchemyStateDatabaseVersion.LEGACY
-    ):
-        if db_version == SQLAlchemyStateDatabaseVersion.LEGACY:
-            query = table.delete().where(table.c.state_code == state_code.value)
-        elif db_version in {
-            SQLAlchemyStateDatabaseVersion.PRIMARY,
-            SQLAlchemyStateDatabaseVersion.SECONDARY,
-        }:
-            query = table.delete()
-        else:
-            raise ValueError(f"Unexpected db_version: {db_version}")
-
-        return [_format_deletion_command(state_code, query)]
+    if hasattr(table.c, "state_code"):
+        return [_format_deletion_command(state_code, table.delete())]
 
     if not table.name.endswith(ASSOCIATION_TABLE_NAME_SUFFIX):
         raise ValueError(
             f"Unexpected non-association table is missing a state_code field: [{table.name}]"
         )
-
-    if db_version != SQLAlchemyStateDatabaseVersion.LEGACY:
-        raise ValueError("Only expected db_version LEGACY at this point")
 
     foreign_key_constraints = get_foreign_key_constraints(table)
 
@@ -109,14 +87,11 @@ def _commands_for_table(
     return table_commands
 
 
-def generate_region_deletion_commands(
-    state_code: StateCode,
-    db_version: SQLAlchemyStateDatabaseVersion,
-) -> List[str]:
+def generate_region_deletion_commands(state_code: StateCode) -> List[str]:
     commands = []
 
     for table in reversed(StateBase.metadata.sorted_tables):
-        commands.extend(_commands_for_table(state_code, table, db_version))
+        commands.extend(_commands_for_table(state_code, table))
 
     return commands
 
@@ -129,16 +104,13 @@ def main(state_code: StateCode, ingest_instance: DirectIngestInstance) -> None:
     print(
         "********************************************************************************"
     )
-    db_version = ingest_instance.database_version(SystemLevel.STATE)
-    db_key = SQLAlchemyDatabaseKey.for_state_code(
-        state_code=state_code, db_version=db_version
-    )
+    db_key = ingest_instance.database_key_for_state(state_code=state_code)
 
     # Connect to correct database for instance first
     print(f"\\c {db_key.db_name}")
 
     # Then run deletion commands
-    for cmd in generate_region_deletion_commands(state_code, db_version):
+    for cmd in generate_region_deletion_commands(state_code):
         print(cmd)
 
     print(

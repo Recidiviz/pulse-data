@@ -20,31 +20,16 @@ from unittest import TestCase
 from unittest.mock import Mock, patch
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database import sqlalchemy_database_key
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.persistence.database.base_schema import CaseTriageBase, StateBase
 from recidiviz.persistence.database.schema_utils import SchemaType
-from recidiviz.persistence.database.sqlalchemy_database_key import (
-    SQLAlchemyDatabaseKey,
-    SQLAlchemyStateDatabaseVersion,
-)
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
 
 class SQLAlchemyDatabaseKeyTest(TestCase):
     """Tests for SQLAlchemyDatabaseKey."""
-
-    def test_state_legacy_db(self) -> None:
-        db_key_1 = SQLAlchemyDatabaseKey(schema_type=SchemaType.STATE)
-        db_key_1_dup = SQLAlchemyDatabaseKey.canonical_for_schema(
-            schema_type=SchemaType.STATE
-        )
-        self.assertEqual(db_key_1, db_key_1_dup)
-
-        # TODO(#7984): Once we have cut over all traffic to non-legacy state DBs and
-        #  removed the LEGACY database version, remove this part of the test.
-        db_key_legacy = SQLAlchemyDatabaseKey.for_state_code(
-            StateCode.US_AK, SQLAlchemyStateDatabaseVersion.LEGACY
-        )
-        self.assertEqual(db_key_1, db_key_legacy)
 
     def test_for_schema_throws_state(self) -> None:
         with self.assertRaisesRegex(
@@ -54,11 +39,9 @@ class SQLAlchemyDatabaseKeyTest(TestCase):
             _ = SQLAlchemyDatabaseKey.for_schema(SchemaType.STATE)
 
     def test_for_state_code(self) -> None:
-        primary = SQLAlchemyDatabaseKey.for_state_code(
-            StateCode.US_MN, db_version=SQLAlchemyStateDatabaseVersion.PRIMARY
-        )
-        secondary = SQLAlchemyDatabaseKey.for_state_code(
-            StateCode.US_MN, db_version=SQLAlchemyStateDatabaseVersion.SECONDARY
+        primary = DirectIngestInstance.PRIMARY.database_key_for_state(StateCode.US_MN)
+        secondary = DirectIngestInstance.SECONDARY.database_key_for_state(
+            StateCode.US_MN
         )
 
         self.assertEqual(
@@ -76,9 +59,7 @@ class SQLAlchemyDatabaseKeyTest(TestCase):
         )
 
     def test_key_attributes_state(self) -> None:
-        key = SQLAlchemyDatabaseKey.for_state_code(
-            StateCode.US_MN, db_version=SQLAlchemyStateDatabaseVersion.PRIMARY
-        )
+        key = DirectIngestInstance.PRIMARY.database_key_for_state(StateCode.US_MN)
 
         self.assertEqual(key.declarative_meta, StateBase)
 
@@ -102,29 +83,6 @@ class SQLAlchemyDatabaseKeyTest(TestCase):
         self.assertTrue(key.migrations_location.endswith("/migrations/case_triage"))
 
         self.assertEqual(key.isolation_level, None)
-
-    @patch(
-        f"{sqlalchemy_database_key.__name__}.get_existing_direct_ingest_states",
-        return_value=[StateCode.US_XX, StateCode.US_WW],
-    )
-    def test_get_all(self, state_codes_fn) -> None:
-        all_keys = SQLAlchemyDatabaseKey.all()
-
-        expected_all_keys = [
-            SQLAlchemyDatabaseKey(SchemaType.JAILS, db_name="postgres"),
-            SQLAlchemyDatabaseKey(SchemaType.STATE, db_name="postgres"),
-            SQLAlchemyDatabaseKey(SchemaType.OPERATIONS, db_name="postgres"),
-            SQLAlchemyDatabaseKey(SchemaType.JUSTICE_COUNTS, db_name="postgres"),
-            SQLAlchemyDatabaseKey(SchemaType.CASE_TRIAGE, db_name="postgres"),
-            SQLAlchemyDatabaseKey(SchemaType.STATE, db_name="us_xx_primary"),
-            SQLAlchemyDatabaseKey(SchemaType.STATE, db_name="us_ww_primary"),
-            SQLAlchemyDatabaseKey(SchemaType.STATE, db_name="us_xx_secondary"),
-            SQLAlchemyDatabaseKey(SchemaType.STATE, db_name="us_ww_secondary"),
-        ]
-
-        self.assertCountEqual(expected_all_keys, all_keys)
-
-        state_codes_fn.assert_called()
 
     def test_canonical_for_schema_local_only(self) -> None:
         _ = SQLAlchemyDatabaseKey.canonical_for_schema(schema_type=SchemaType.STATE)

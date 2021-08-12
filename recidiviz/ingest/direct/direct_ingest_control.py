@@ -646,7 +646,7 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
         )
         sftp_controller = DownloadFilesFromSftpController(
             project_id=metadata.project_id(),
-            region=region_code,
+            region_code=region_code,
             lower_bound_update_datetime=lower_bound_update_datetime,
             gcs_destination_path=gcs_destination_path,
         )
@@ -692,7 +692,7 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
         upload_controller = UploadStateFilesToIngestBucketController(
             paths_with_timestamps=download_result.successes,
             project_id=metadata.project_id(),
-            region=region_code,
+            region_code=region_code,
             gcs_destination_path=gcs_destination_path,
         )
         upload_result = upload_controller.do_upload()
