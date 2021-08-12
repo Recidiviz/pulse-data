@@ -21,7 +21,7 @@ from unittest import TestCase
 import pytest
 from pytest_alembic import runner
 
-from recidiviz.persistence.database.schema.case_triage.schema import ETL_TABLES
+from recidiviz.case_triage.views.view_config import ETL_TABLES
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey

@@ -34,13 +34,13 @@ import os
 
 import psycopg2
 
+from recidiviz.case_triage.views.view_config import ETL_TABLES
 from recidiviz.persistence.database.constants import (
     SQLALCHEMY_DB_HOST,
     SQLALCHEMY_DB_NAME,
     SQLALCHEMY_DB_PASSWORD,
     SQLALCHEMY_DB_USER,
 )
-from recidiviz.persistence.database.schema.case_triage.schema import ETL_TABLES
 
 
 def reset_case_triage_fixtures() -> None:

@@ -14,7 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Retrieves a history of supervision-related events for clients currently on caseloads."""
+"""Retrieves a history of supervision-related events for clients currently on caseloads.
+
+To generate the view, run:
+    python -m recidiviz.case_triage.views.etl_client_events
+"""
 
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
@@ -48,8 +52,8 @@ risk_assessments AS (
     SELECT state_code,
         person_id,
         person_external_id,
-        '{ClientEventType.ASSESSMENT.value}' AS event,
-        assessment_sessions.assessment_date AS event_dt,
+        '{ClientEventType.ASSESSMENT.value}' AS event_type,
+        assessment_sessions.assessment_date AS event_date,
         TO_JSON_STRING(
             STRUCT (
                 LAG(assessment_sessions.assessment_score)
@@ -59,7 +63,7 @@ risk_assessments AS (
                     ) AS previous_assessment_score,
                 assessment_sessions.assessment_score
             )
-        ) AS metadata
+        ) AS event_metadata
     FROM clients
     JOIN `{{project_id}}.{{analyst_views_dataset}}.assessment_score_sessions_materialized` assessment_sessions 
         USING (state_code, person_id)
@@ -69,14 +73,14 @@ contacts AS (
     SELECT state_code,
         person_id,
         person_external_id,
-        '{ClientEventType.CONTACT.value}' AS event,
-        contact_date AS event_dt,
+        '{ClientEventType.CONTACT.value}' AS event_type,
+        contact_date AS event_date,
         TO_JSON_STRING(
             STRUCT (
                 state_supervision_contact.contact_type, 
                 state_supervision_contact.location
             )
-        ) AS metadata
+        ) AS event_metadata
     FROM clients
     JOIN `{{project_id}}.state.state_supervision_contact` state_supervision_contact
         USING (state_code, person_id)
@@ -94,7 +98,6 @@ export_time AS (
  
 SELECT {{columns}} FROM events
 FULL OUTER JOIN export_time ON TRUE
-ORDER BY event_dt DESC; 
 """
 
 CLIENT_EVENTS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -106,9 +109,9 @@ CLIENT_EVENTS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     columns=[
         "state_code",
         "person_external_id",
-        "event",
-        "event_dt",
-        "metadata",
+        "event_type",
+        "event_date",
+        "event_metadata",
         "exported_at",
     ],
     analyst_views_dataset=ANALYST_VIEWS_DATASET,

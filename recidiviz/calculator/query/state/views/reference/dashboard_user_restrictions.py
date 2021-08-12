@@ -29,6 +29,7 @@ DASHBOARD_USER_RESTRICTIONS_DESCRIPTION = (
     """Reference table for UP Dashboard user restrictions."""
 )
 
+# TODO(#8758): Add an `exported_at` column.
 DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
     /*{description}*/
     WITH
