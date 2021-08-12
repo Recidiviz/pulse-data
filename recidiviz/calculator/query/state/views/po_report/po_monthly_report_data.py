@@ -14,7 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Data to populate the monthly PO report email."""
+"""Data to populate the monthly PO report email.
+
+To generate the BQ view, run:
+    python -m recidiviz.calculator.query.state.views.po_report.po_monthly_report_data
+"""
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import PO_REPORT_DATASET
@@ -65,13 +69,17 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
           IGNORE NULLS
         ) AS absconsions_clients,
         SUM(assessment_count) AS assessments,
-        COUNT(DISTINCT IF(next_recommended_assessment_date > LAST_DAY(DATE(year, month, 1), MONTH), person_id, NULL)) AS assessments_up_to_date,
+        COUNT(DISTINCT IF(next_recommended_assessment_date IS NULL OR next_recommended_assessment_date > LAST_DAY(DATE(year, month, 1), MONTH),
+          person_id,
+          NULL)) AS assessments_up_to_date,
         ARRAY_AGG(
           IF(next_recommended_assessment_date <= LAST_DAY(DATE(year, month, 1), MONTH), STRUCT(person_external_id, full_name), NULL)
           IGNORE NULLS
         ) AS assessments_out_of_date_clients,
         SUM(face_to_face_count) AS facetoface,
-        COUNT(DISTINCT IF(next_recommended_face_to_face_date > LAST_DAY(DATE(year, month, 1), MONTH), person_id, NULL)) AS facetoface_frequencies_sufficient,
+        COUNT(DISTINCT IF(next_recommended_face_to_face_date IS NULL OR next_recommended_face_to_face_date > LAST_DAY(DATE(year, month, 1), MONTH),
+          person_id,
+          NULL)) AS facetoface_frequencies_sufficient,
         ARRAY_AGG(
           IF(next_recommended_face_to_face_date <= LAST_DAY(DATE(year, month, 1), MONTH), STRUCT(person_external_id, full_name), NULL)
           IGNORE NULLS
@@ -82,8 +90,7 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
     compliance_caseloads AS (
       SELECT
         state_code, year, month, officer_external_id,
-        COALESCE(COUNT(DISTINCT IF(next_recommended_assessment_date IS NOT NULL, person_id, NULL)), 0) AS assessment_compliance_caseload_count,
-        COALESCE(COUNT(DISTINCT IF(next_recommended_face_to_face_date IS NOT NULL, person_id, NULL)), 0) AS facetoface_compliance_caseload_count
+        COUNT(DISTINCT person_id) AS caseload_count
       FROM `{project_id}.{po_report_dataset}.supervision_compliance_by_person_by_month_materialized`
       GROUP BY state_code, year, month, officer_external_id
     ),
@@ -148,14 +155,14 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       state_avg.avg_absconsions AS absconsions_state_average,
       report_month.assessments_out_of_date_clients,
       report_month.assessments,
-      IF(assessment_compliance_caseload_count = 0,
+      IF(caseload_count = 0,
         1,
-        IEEE_DIVIDE(report_month.assessments_up_to_date, assessment_compliance_caseload_count)) * 100 AS assessments_percent,
+        IEEE_DIVIDE(report_month.assessments_up_to_date, caseload_count)) * 100 AS assessments_percent,
       report_month.facetoface_out_of_date_clients,
       report_month.facetoface,
-      IF(facetoface_compliance_caseload_count = 0,
+      IF(caseload_count = 0,
         1,
-        IEEE_DIVIDE(report_month.facetoface_frequencies_sufficient, facetoface_compliance_caseload_count)) * 100 as facetoface_percent
+        IEEE_DIVIDE(report_month.facetoface_frequencies_sufficient, caseload_count)) * 100 as facetoface_percent
     FROM `{project_id}.{static_reference_dataset}.po_report_recipients`
     LEFT JOIN report_data_per_officer report_month
       USING (state_code, officer_external_id)
@@ -184,7 +191,6 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       USING (state_code, officer_external_id)
     -- Only include output for the month before the current month
     WHERE DATE(year, month, 1) = DATE_SUB(DATE(EXTRACT(YEAR FROM CURRENT_DATE()), EXTRACT(MONTH FROM CURRENT_DATE()), 1), INTERVAL 1 MONTH)
-    ORDER BY review_month, email_address
     """
 
 PO_MONTHLY_REPORT_DATA_VIEW_BUILDER = MetricBigQueryViewBuilder(
