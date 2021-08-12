@@ -30,15 +30,15 @@ REINCARCERATION_SESSIONS_FROM_DATAFLOW_VIEW_NAME = (
 )
 
 REINCARCERATION_SESSIONS_FROM_DATAFLOW_VIEW_DESCRIPTION = """
-    A table of incarceration sessions that end in release with session identifiers for a subsequent reincarceration 
-    sessions.
-    
-    This query leverages the recidivism count dataflow metric to identify reincarcerations. This metric has a field
-    "days_at_liberty" that is used to identify the prior session from which the person was released.
-    
-    The dataflow metric is used to identify release and re-incarceration sessions for those cases where someone was 
-    reincarcerated, and this is left joined to compartment_sessions so that we have a record for every release.
-    """
+A table of incarceration sessions that end in release with session identifiers for a subsequent reincarceration 
+sessions.
+
+This query leverages the recidivism count dataflow metric to identify reincarcerations. This metric has a field
+"days_at_liberty" that is used to identify the prior session from which the person was released.
+
+The dataflow metric is used to identify release and re-incarceration sessions for those cases where someone was 
+reincarcerated, and this is left joined to compartment_sessions so that we have a record for every release.
+"""
 
 REINCARCERATION_SESSIONS_FROM_DATAFLOW_QUERY_TEMPLATE = """
     /*{description}*/

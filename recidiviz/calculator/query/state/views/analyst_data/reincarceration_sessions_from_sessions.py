@@ -27,28 +27,28 @@ REINCARCERATION_SESSIONS_FROM_SESSIONS_VIEW_NAME = (
 )
 
 REINCARCERATION_SESSIONS_FROM_SESSIONS_VIEW_DESCRIPTION = """
-    A table of incarceration sessions that end in release with session identifiers for a subsequent reincarceration 
-    sessions.
-    
-    This view is constructed directly from sessions. The query does a self join where reincarceration 
-    sessions are left joined to incarceration sessions that end in release. The alias "release_session" 
-    refers to the session from which a person is released, and the alias "reincarceration_session" refers to the
-    incarceration sessions that follow this release.
-    
-    The table is deduped so that each person's release session is associated with their first reincarceration, if there 
-    are more than one. For example, if a person was incarcerated three distinct times, the third reincarceration gets 
-    associated with only the second release, not the first. 
-    
-    At this point, reincarcerations and releases are identified mainly based on inflows and outflows rather than 
-    start reasons and end reasons. TODO(#5920) - use start and end reasons instead as to be more internally consistent.
-    
-    Releases are identified as those incarceration sessions that (1) outflow to SUPERVISION or RELEASE, (2) are not 
-    parole board hold sessions, (3) do not have an end reason of ESCAPE.
-    
-    Reincarcerations are then joined to these releases based on (1) being an incarceration session that is not a parole
-    board hold (2) starting after the end date of the last supervision, (3) not inflowing from another incarceration
-    term, unless that incarceration term is a parole board hold, (4) not a start reason of RETURN_FROM_ESCAPE.
-    """
+A table of incarceration sessions that end in release with session identifiers for a subsequent reincarceration 
+sessions.
+
+This view is constructed directly from sessions. The query does a self join where reincarceration 
+sessions are left joined to incarceration sessions that end in release. The alias "release_session" 
+refers to the session from which a person is released, and the alias "reincarceration_session" refers to the
+incarceration sessions that follow this release.
+
+The table is deduped so that each person's release session is associated with their first reincarceration, if there 
+are more than one. For example, if a person was incarcerated three distinct times, the third reincarceration gets 
+associated with only the second release, not the first. 
+
+At this point, reincarcerations and releases are identified mainly based on inflows and outflows rather than 
+start reasons and end reasons. TODO(#5920) - use start and end reasons instead as to be more internally consistent.
+
+Releases are identified as those incarceration sessions that (1) outflow to SUPERVISION or RELEASE, (2) are not 
+parole board hold sessions, (3) do not have an end reason of ESCAPE.
+
+Reincarcerations are then joined to these releases based on (1) being an incarceration session that is not a parole
+board hold (2) starting after the end date of the last supervision, (3) not inflowing from another incarceration
+term, unless that incarceration term is a parole board hold, (4) not a start reason of RETURN_FROM_ESCAPE.
+"""
 
 REINCARCERATION_SESSIONS_FROM_SESSIONS_QUERY_TEMPLATE = """
     /*{description}*/

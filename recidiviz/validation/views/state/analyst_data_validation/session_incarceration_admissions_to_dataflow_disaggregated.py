@@ -28,14 +28,14 @@ SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME = (
 )
 
 SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION = """
-    A view which provides a person / day level comparison between incarceration session starts and dataflow admissions. 
-    For each person / day there are a set of binary variables that indicate whether that record meets a criteria. The 
-    first two (session_start, session_with_start_reason) are used to identify sessions that do not have any dataflow 
-    start reason associated with them. The second two (dataflow_admission, session_admission) are used to identify 
-    dataflow admissions that are not represented in the sessions view. Note that a subset of admission reasons is used in 
-    this comparison because of the fact that we would not expect every dataflow metric event to be associated with a
-    compartment transition
-    """
+A view which provides a person / day level comparison between incarceration session starts and dataflow admissions. 
+For each person / day there are a set of binary variables that indicate whether that record meets a criteria. The 
+first two (session_start, session_with_start_reason) are used to identify sessions that do not have any dataflow 
+start reason associated with them. The second two (dataflow_admission, session_admission) are used to identify 
+dataflow admissions that are not represented in the sessions view. Note that a subset of admission reasons is used in 
+this comparison because of the fact that we would not expect every dataflow metric event to be associated with a
+compartment transition
+"""
 
 SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
     /*{description}*/

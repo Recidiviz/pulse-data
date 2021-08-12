@@ -26,8 +26,8 @@ from recidiviz.utils.metadata import local_project_id_override
 SUPERVISION_OFFICERS_AND_DISTRICTS_VIEW_NAME = "supervision_officers_and_districts"
 
 SUPERVISION_OFFICERS_AND_DISTRICTS_DESCRIPTION = """
-    Mapping of supervision officers and their districts
- """
+Mapping of supervision officers and their districts
+"""
 
 enabled_states = ("US_ND", "US_ID")
 

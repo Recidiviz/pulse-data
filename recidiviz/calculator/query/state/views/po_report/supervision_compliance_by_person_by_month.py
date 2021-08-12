@@ -26,8 +26,8 @@ SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_VIEW_NAME = (
 )
 
 SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_DESCRIPTION = """
-    Supervision case compliance to state standards by person by month
- """
+Supervision case compliance to state standards by person by month
+"""
 
 SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
     /*{description}*/

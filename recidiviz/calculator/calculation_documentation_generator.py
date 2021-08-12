@@ -97,7 +97,7 @@ DEPENDENCY_TREE_SCRIPT_TEMPLATE = """This dependency tree is too large to displa
 BQ_LINK_TEMPLATE = """https://console.cloud.google.com/bigquery?pli=1&p={project}&page=table&project={project}&d={dataset_id}&t={table_id}"""
 
 VIEW_DOCS_TEMPLATE = """##{view_dataset_id}.{view_table_id}
-_{description}_
+{description}
 
 ####View schema in Big Query
 This view may not be deployed to all environments yet.<br/>
@@ -915,15 +915,6 @@ class CalculationDocumentationGenerator:
         """Returns string contents for a view markdown."""
         view_node = self.dag_walker.nodes_by_key[view_key]
 
-        # Gitbook only supports italicizing single lines so we need to ensure multi-line
-        # descriptions format correctly
-        formatted_description = "_<br/>\n_".join(
-            [
-                line.strip()
-                for line in view_node.view.description.splitlines()
-                if line.strip()
-            ]
-        )
         staging_link = BQ_LINK_TEMPLATE.format(
             project="recidiviz-staging",
             dataset_id=view_key.dataset_id,
@@ -937,7 +928,7 @@ class CalculationDocumentationGenerator:
         documentation = VIEW_DOCS_TEMPLATE.format(
             view_dataset_id=view_key.dataset_id,
             view_table_id=view_key.table_id,
-            description=formatted_description,
+            description=view_node.view.description,
             staging_link=staging_link,
             prod_link=prod_link,
             parent_tree=self._get_view_tree_string(view_node.node_family, view_key),

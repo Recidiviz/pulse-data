@@ -31,9 +31,9 @@ SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME = (
 )
 
 SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION = """
-    A view which provides a person / day level comparison of incarceration population on the first day of each year
-    in dataflow vs sessions.
-    """
+A view which provides a person / day level comparison of incarceration population on the first day of each year
+in dataflow vs sessions.
+"""
 
 SESSION_INCARCERATION_POPULATION_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
     /*{description}*/

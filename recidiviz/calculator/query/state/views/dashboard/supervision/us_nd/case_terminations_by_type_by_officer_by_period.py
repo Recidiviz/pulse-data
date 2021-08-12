@@ -30,8 +30,8 @@ CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_VIEW_NAME = (
 )
 
 CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_DESCRIPTION = """
-    Supervision period termination count split by termination reason, terminating officer, district, supervision type,
-    and metric period months (1, 3, 6, 12, 36).
+Supervision period termination count split by termination reason, terminating officer, district, supervision type,
+and metric period months (1, 3, 6, 12, 36).
 """
 
 CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE = f"""

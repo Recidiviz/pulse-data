@@ -34,8 +34,8 @@ from recidiviz.utils.metadata import local_project_id_override
 OVERDUE_LSIR_BY_PO_BY_DAY_VIEW_NAME = "overdue_lsir_by_po_by_day"
 
 OVERDUE_LSIR_BY_PO_BY_DAY_DESCRIPTION = """
-    Number of supervisees with overdue LSIR by PO by day
- """
+Number of supervisees with overdue LSIR by PO by day
+"""
 
 OVERDUE_LSIR_BY_PO_BY_DAY_QUERY_TEMPLATE = """
     /*{description}*/

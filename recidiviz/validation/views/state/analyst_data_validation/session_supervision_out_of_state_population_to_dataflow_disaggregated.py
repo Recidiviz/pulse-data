@@ -31,11 +31,11 @@ SESSION_SUPERVISION_OUT_OF_STATE_POPULATION_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME 
 )
 
 SESSION_SUPERVISION_OUT_OF_STATE_POPULATION_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION = """
-    A view which provides a person / day level comparison of supervision out of state population on the first day of 
-    each year in dataflow vs sessions. For each person / day there are a two binary variables that indicate whether that 
-    record meets a criteria. These are (1) in_dataflow (indicates a person / day in the population dataflow metric), 
-    in_sessions (indicates a person / day in sessions, including inferred populations)
-    """
+A view which provides a person / day level comparison of supervision out of state population on the first day of 
+each year in dataflow vs sessions. For each person / day there are a two binary variables that indicate whether that 
+record meets a criteria. These are (1) in_dataflow (indicates a person / day in the population dataflow metric), 
+in_sessions (indicates a person / day in sessions, including inferred populations)
+"""
 
 SESSION_SUPERVISION_OUT_OF_STATE_POPULATION_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
     /*{description}*/

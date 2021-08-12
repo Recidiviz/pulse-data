@@ -36,8 +36,8 @@ SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_VIEW_NAME = (
 )
 
 SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_DESCRIPTION = """
-    Number of supervisees who can have their supervision level downgraded by PO by day
- """
+Number of supervisees who can have their supervision level downgraded by PO by day
+"""
 
 SUPERVISION_DOWNGRADE_OPPORTUNITIES_BY_PO_BY_DAY_QUERY_TEMPLATE = """
     /*{description}*/

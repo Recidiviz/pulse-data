@@ -31,11 +31,11 @@ REVOCATION_SESSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_NAME = (
 )
 
 REVOCATION_SESSIONS_TO_DATAFLOW_DISAGGREGATED_DESCRIPTION = """
-    A view which provides a person / day level comparison between session identified revocations and the 
-    revocation admissions in the incarceration commitment from supervision dataflow 
-    metric. For each person / revocation date there are a set of binary variables that 
-    indicate whether the revocation appears in dataflow, sessions, or both.
-    """
+A view which provides a person / day level comparison between session identified revocations and the 
+revocation admissions in the incarceration commitment from supervision dataflow 
+metric. For each person / revocation date there are a set of binary variables that 
+indicate whether the revocation appears in dataflow, sessions, or both.
+"""
 
 REVOCATION_SESSIONS_TO_DATAFLOW_DISAGGREGATED_QUERY_TEMPLATE = """
     /*{description}*/

@@ -24,9 +24,41 @@ from recidiviz.utils.metadata import local_project_id_override
 REVOCATION_SESSIONS_VIEW_NAME = "revocation_sessions"
 
 REVOCATION_SESSIONS_VIEW_DESCRIPTION = """
-    A table of supervision start sessions with revocation session identifiers in cases where the person was revoked from 
-    that supervision term.
-    """
+The view `revocation_sessions_materialized` joins back to `compartment_sessions` and identifies supervision starts and subsequent revocations when / if they occur. The table has a record for every supervision start and if there is a subsequent revocation the session_id, sub_session_id, and revocation date associated with the revocation session will be populated. 
+
+This table can be used to calculate revocation rates based on the time between a supervision start and revocation as well as cumulative revocation curves by time since supervision start. Additionally, since the supervision session id and revocation session id are both included in this view, this table can be joined back to `compartment_sessions` or sub-sessions in characteristics associated with the supervision cohort (age, gender, etc) as well as the revocation by joining to sessions/sub-sessions. 
+
+The logic is slightly more complex than just looking at supervision sessions that transition to an incarceration session because of the fact that states can have temporary parole board holds which don’t necessarily lead to a revocation. 
+
+As an example, let’s say a person had the following set of sessions:
+1. Incarceration - General Term
+2. Parole
+3. Incarceration - Parole Board Hold
+4. Parole
+5. Incarceration - Parole Board Hold
+6. Incarceration - General Term
+
+In this example, the supervision session ID would be session 2 and the revocation session ID would be 6. This person spent time incarcerated while on two parole board holds, one of which led to a revocation. In this example we would compare the start date of session 6 to the start date of session 2 if looking to understand the timing of when the revocation occurred relative to their release from prison.
+
+**Field Definitions**
+
+|Column     		                    |Column Description         |
+|---------------------------------------|---------------------------|
+|person_id	                            |Unique person identifier   |
+|state_code			                    |State|
+|supervision_super_session_id	        |An ID that groups together continuous stays on supervision, in cases where an individual may go on PAROLE_BOARD_HOLD and back to Parole several times before being revoked|
+|supervision_session_id	                |Session ID associated with the supervision session that a person was either released or sentenced to|
+|supervision_start_date			        |Start date of the supervision session. This is the date to which revocation dates are compared to in determining the amount of time spent on supervision prior to a revocation|
+|days_since_start			            |Days between the person's supervision start date and the last day of data|
+|months_since_start			            |Months between a person's supervision start date and the last day of data. Note that months are rounded down to represent the full number of months a person has been on supervision for. As an example, if a person started their supervision session 75 days ago they would have a value of 2 because they started their supervision session 2 full months ago. This field is generally used to identify the cohort to be used for a particular calculation (for example 12 month revocation rate requires a cohort that has started supervision at least 12 months prior). We can select that cohort using this field - months_since_start >=12 because a value of 12 is people that started their supervision period more than 12 months ago|   
+|years_since_start			            |Years between a person’s supervision start date and the last day of data. As described above with `months_since_start` this value is rounded down to represent full years since start|  
+|revocation_date			            |If the supervision super session outflows to incarceration, this is the date that their incarceration session started|  
+|revocation			                    |Binary revocation indicator to count revocations (1 if the supervision supersession ended in a revocation, otherwise 0)|  
+|revocation_session_id			        |The session id associated with the incarceration session that starts because of a revocation|  
+|supervision_start_to_revocation_days	|Days between the supervision session start and the start of incarceration session that starts because of a revocation|  
+|supervision_start_to_revocation_months	|Months between the supervision session start and the start of the incarceration session that starts because of a revocation. These fields are generally used to determine whether the event occurred within that time period. As such, the value gets rounded up - a person that revoked 11 months and 5 days after their supervision start will get a value of 12 because they should count towards a 12 month revocation rate but not an 11 month revocation rate|  
+|supervision_start_to_revocation_years	|Years between the supervision session start and the start of incarceration session that starts because of a revocation. This value is rounded up as months are, as described above|  
+"""
 
 REVOCATION_SESSIONS_QUERY_TEMPLATE = """
     /*{description}*/
