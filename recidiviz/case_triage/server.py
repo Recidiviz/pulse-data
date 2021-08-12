@@ -112,6 +112,16 @@ def on_successful_authorization(payload: Dict[str, str], token: str) -> None:
         if IMPERSONATED_EMAIL_KEY in session:
             session.pop(IMPERSONATED_EMAIL_KEY)
 
+    auth_error = CaseTriageAuthorizationError(
+        code="no_case_triage_access",
+        description="You are not authorized to access this application",
+    )
+
+    if "email" not in session["user_info"]:
+        # This happens when API routes are hit with well-formed but
+        # invalid authorization tokens.
+        raise auth_error
+
     email = session["user_info"]["email"].lower()
     g.user_context = UserContext(email, authorization_store)
 
@@ -119,10 +129,7 @@ def on_successful_authorization(payload: Dict[str, str], token: str) -> None:
         not g.user_context.access_permissions.can_access_case_triage
         and not g.user_context.access_permissions.can_access_leadership_dashboard
     ):
-        raise CaseTriageAuthorizationError(
-            code="no_case_triage_access",
-            description="You are not authorized to access this application",
-        )
+        raise auth_error
 
 
 auth0_configuration = get_local_secret("case_triage_auth0")
