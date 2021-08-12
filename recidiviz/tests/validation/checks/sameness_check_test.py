@@ -17,7 +17,7 @@
 
 """Tests for validation/checks/sameness_check.py."""
 from datetime import date
-from typing import Dict, List
+from typing import Any, Dict, List
 from unittest import TestCase
 
 from mock import patch
@@ -52,15 +52,22 @@ class TestSamenessValidationChecker(TestCase):
         )
         self.mock_client = self.client_patcher.start().return_value
 
-        self.good_string_row = {"a": "same", "b": "same", "c": "same"}
-        self.bad_string_row = {"a": "a_value", "b": "b_value", "c": "c_value"}
+        self.good_string_row = {"p": "test", "a": "same", "b": "same", "c": "same"}
+        self.bad_string_row = {
+            "p": "test",
+            "a": "a_value",
+            "b": "b_value",
+            "c": "c_value",
+        }
 
         self.good_date_row = {
+            "p": "test",
             "a": date(2020, 1, 1),
             "b": date(2020, 1, 1),
             "c": date(2020, 1, 1),
         }
         self.bad_date_row = {
+            "p": "test",
             "a": date(2020, 1, 1),
             "b": date(2020, 1, 2),
             "c": date(2020, 1, 3),
@@ -80,7 +87,7 @@ class TestSamenessValidationChecker(TestCase):
 
     def return_date_values_with_num_bad_rows(
         self, num_bad_rows: int
-    ) -> List[Dict[str, date]]:
+    ) -> List[Dict[str, Any]]:
         return_values = [self.good_date_row] * (100 - num_bad_rows)
         return_values.extend([self.bad_date_row] * num_bad_rows)
 
@@ -335,7 +342,7 @@ class TestSamenessValidationChecker(TestCase):
 
     def test_sameness_check_strings_same_values(self) -> None:
         self.mock_client.run_query_async.return_value = [
-            {"a": "10", "b": "10", "c": "10"}
+            {"p": "test", "a": "10", "b": "10", "c": "10"}
         ]
 
         job = DataValidationJob(
@@ -344,7 +351,7 @@ class TestSamenessValidationChecker(TestCase):
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
-                partition_columns=[],
+                partition_columns=["p"],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
@@ -365,7 +372,7 @@ class TestSamenessValidationChecker(TestCase):
                     total_num_rows=1,
                     max_allowed_error=0.0,
                     non_null_counts_per_column_per_partition=[
-                        (tuple(), {"a": 1, "b": 1, "c": 1}),
+                        (("test",), {"a": 1, "b": 1, "c": 1}),
                     ],
                 ),
             ),
@@ -373,7 +380,7 @@ class TestSamenessValidationChecker(TestCase):
 
     def test_sameness_check_strings_values_all_none(self) -> None:
         self.mock_client.run_query_async.return_value = [
-            {"a": None, "b": None, "c": None}
+            {"p": "test", "a": None, "b": None, "c": None}
         ]
 
         job = DataValidationJob(
@@ -382,7 +389,7 @@ class TestSamenessValidationChecker(TestCase):
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
-                partition_columns=[],
+                partition_columns=["p"],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
@@ -403,7 +410,7 @@ class TestSamenessValidationChecker(TestCase):
                     total_num_rows=1,
                     max_allowed_error=0.0,
                     non_null_counts_per_column_per_partition=[
-                        (tuple(), {"a": 0, "b": 0, "c": 0})
+                        (("test",), {"a": 0, "b": 0, "c": 0})
                     ],
                 ),
             ),
@@ -411,7 +418,12 @@ class TestSamenessValidationChecker(TestCase):
 
     def test_sameness_check_dates_same_values(self) -> None:
         self.mock_client.run_query_async.return_value = [
-            {"a": date(2020, 1, 1), "b": date(2020, 1, 1), "c": date(2020, 1, 1)}
+            {
+                "p": "test",
+                "a": date(2020, 1, 1),
+                "b": date(2020, 1, 1),
+                "c": date(2020, 1, 1),
+            }
         ]
 
         job = DataValidationJob(
@@ -420,7 +432,7 @@ class TestSamenessValidationChecker(TestCase):
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
-                partition_columns=[],
+                partition_columns=["p"],
                 sameness_check_type=SamenessDataValidationCheckType.DATES,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
@@ -441,7 +453,7 @@ class TestSamenessValidationChecker(TestCase):
                     total_num_rows=1,
                     max_allowed_error=0.0,
                     non_null_counts_per_column_per_partition=[
-                        (tuple(), {"a": 1, "b": 1, "c": 1}),
+                        (("test",), {"a": 1, "b": 1, "c": 1}),
                     ],
                 ),
             ),
@@ -449,7 +461,7 @@ class TestSamenessValidationChecker(TestCase):
 
     def test_sameness_check_dates_values_all_none(self) -> None:
         self.mock_client.run_query_async.return_value = [
-            {"a": None, "b": None, "c": None}
+            {"p": "test", "a": None, "b": None, "c": None}
         ]
 
         job = DataValidationJob(
@@ -458,7 +470,7 @@ class TestSamenessValidationChecker(TestCase):
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
-                partition_columns=[],
+                partition_columns=["p"],
                 sameness_check_type=SamenessDataValidationCheckType.DATES,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
@@ -479,7 +491,7 @@ class TestSamenessValidationChecker(TestCase):
                     total_num_rows=1,
                     max_allowed_error=0.0,
                     non_null_counts_per_column_per_partition=[
-                        (tuple(), {"a": 0, "b": 0, "c": 0})
+                        (("test",), {"a": 0, "b": 0, "c": 0})
                     ],
                 ),
             ),
@@ -538,7 +550,9 @@ class TestSamenessValidationChecker(TestCase):
             _ = SamenessValidationChecker.run_check(job)
 
     def test_sameness_check_strings_different_values_no_allowed_error(self) -> None:
-        self.mock_client.run_query_async.return_value = [{"a": "a", "b": "b", "c": "c"}]
+        self.mock_client.run_query_async.return_value = [
+            {"p": "test", "a": "a", "b": "b", "c": "c"}
+        ]
 
         job = DataValidationJob(
             region_code="US_XX",
@@ -546,7 +560,7 @@ class TestSamenessValidationChecker(TestCase):
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
-                partition_columns=[],
+                partition_columns=["p"],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
@@ -567,7 +581,7 @@ class TestSamenessValidationChecker(TestCase):
                     total_num_rows=1,
                     max_allowed_error=0.0,
                     non_null_counts_per_column_per_partition=[
-                        (tuple(), {"a": 1, "b": 1, "c": 1}),
+                        (("test",), {"a": 1, "b": 1, "c": 1}),
                     ],
                 ),
             ),
@@ -575,7 +589,12 @@ class TestSamenessValidationChecker(TestCase):
 
     def test_sameness_check_dates_different_values_no_allowed_error(self) -> None:
         self.mock_client.run_query_async.return_value = [
-            {"a": date(2020, 1, 2), "b": date(2020, 1, 3), "c": date(2020, 1, 4)}
+            {
+                "p": "test",
+                "a": date(2020, 1, 2),
+                "b": date(2020, 1, 3),
+                "c": date(2020, 1, 4),
+            }
         ]
 
         job = DataValidationJob(
@@ -584,7 +603,7 @@ class TestSamenessValidationChecker(TestCase):
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
-                partition_columns=[],
+                partition_columns=["p"],
                 sameness_check_type=SamenessDataValidationCheckType.DATES,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
@@ -605,7 +624,7 @@ class TestSamenessValidationChecker(TestCase):
                     total_num_rows=1,
                     max_allowed_error=0.0,
                     non_null_counts_per_column_per_partition=[
-                        (tuple(), {"a": 1, "b": 1, "c": 1}),
+                        (("test",), {"a": 1, "b": 1, "c": 1}),
                     ],
                 ),
             ),
@@ -613,7 +632,7 @@ class TestSamenessValidationChecker(TestCase):
 
     def test_sameness_check_strings_different_values_handle_empty_string(self) -> None:
         self.mock_client.run_query_async.return_value = [
-            {"a": "same", "b": "same", "c": None}
+            {"p": "test", "a": "same", "b": "same", "c": None}
         ]
 
         job = DataValidationJob(
@@ -622,7 +641,7 @@ class TestSamenessValidationChecker(TestCase):
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
-                partition_columns=[],
+                partition_columns=["p"],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
@@ -643,7 +662,7 @@ class TestSamenessValidationChecker(TestCase):
                     total_num_rows=1,
                     max_allowed_error=0.0,
                     non_null_counts_per_column_per_partition=[
-                        (tuple(), {"a": 1, "b": 1, "c": 0}),
+                        (("test",), {"a": 1, "b": 1, "c": 0}),
                     ],
                 ),
             ),
@@ -651,7 +670,7 @@ class TestSamenessValidationChecker(TestCase):
 
     def test_sameness_check_date_different_values_handle_empty_date(self) -> None:
         self.mock_client.run_query_async.return_value = [
-            {"a": date(2020, 1, 1), "b": date(2020, 1, 1), "c": None}
+            {"p": "test", "a": date(2020, 1, 1), "b": date(2020, 1, 1), "c": None}
         ]
 
         job = DataValidationJob(
@@ -660,7 +679,7 @@ class TestSamenessValidationChecker(TestCase):
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
-                partition_columns=[],
+                partition_columns=["p"],
                 sameness_check_type=SamenessDataValidationCheckType.DATES,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
@@ -671,7 +690,6 @@ class TestSamenessValidationChecker(TestCase):
             ),
         )
         result = SamenessValidationChecker.run_check(job)
-
         self.assertEqual(
             result,
             DataValidationJobResult(
@@ -681,7 +699,7 @@ class TestSamenessValidationChecker(TestCase):
                     total_num_rows=1,
                     max_allowed_error=0.0,
                     non_null_counts_per_column_per_partition=[
-                        (tuple(), {"a": 1, "b": 1, "c": 0}),
+                        (("test",), {"a": 1, "b": 1, "c": 0}),
                     ],
                 ),
             ),
@@ -691,7 +709,7 @@ class TestSamenessValidationChecker(TestCase):
         self,
     ) -> None:
         self.mock_client.run_query_async.return_value = [
-            {"a": "same", "b": "same", "c": 1245}
+            {"p": "test", "a": "same", "b": "same", "c": 1245}
         ]
 
         job = DataValidationJob(
@@ -700,7 +718,7 @@ class TestSamenessValidationChecker(TestCase):
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
-                partition_columns=[],
+                partition_columns=["p"],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
@@ -720,7 +738,7 @@ class TestSamenessValidationChecker(TestCase):
         self,
     ) -> None:
         self.mock_client.run_query_async.return_value = [
-            {"a": date(2020, 1, 1), "b": date(2020, 1, 1), "c": 1245}
+            {"p": "test", "a": date(2020, 1, 1), "b": date(2020, 1, 1), "c": 1245}
         ]
 
         job = DataValidationJob(
@@ -729,7 +747,7 @@ class TestSamenessValidationChecker(TestCase):
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
-                partition_columns=[],
+                partition_columns=["p"],
                 sameness_check_type=SamenessDataValidationCheckType.DATES,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
@@ -759,7 +777,7 @@ class TestSamenessValidationChecker(TestCase):
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
-                partition_columns=[],
+                partition_columns=["p"],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
                 max_allowed_error=max_allowed_error,
                 view_builder=SimpleBigQueryViewBuilder(
@@ -781,7 +799,7 @@ class TestSamenessValidationChecker(TestCase):
                     total_num_rows=100,
                     max_allowed_error=0.02,
                     non_null_counts_per_column_per_partition=[
-                        (tuple(), {"a": 100, "b": 100, "c": 100}),
+                        (("test",), {"a": 100, "b": 100, "c": 100}),
                     ],
                 ),
             ),
@@ -801,7 +819,7 @@ class TestSamenessValidationChecker(TestCase):
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
-                partition_columns=[],
+                partition_columns=["p"],
                 sameness_check_type=SamenessDataValidationCheckType.DATES,
                 max_allowed_error=max_allowed_error,
                 view_builder=SimpleBigQueryViewBuilder(
@@ -823,7 +841,7 @@ class TestSamenessValidationChecker(TestCase):
                     total_num_rows=100,
                     max_allowed_error=0.02,
                     non_null_counts_per_column_per_partition=[
-                        (tuple(), {"a": 100, "b": 100, "c": 100}),
+                        (("test",), {"a": 100, "b": 100, "c": 100}),
                     ],
                 ),
             ),
@@ -842,7 +860,7 @@ class TestSamenessValidationChecker(TestCase):
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
-                partition_columns=[],
+                partition_columns=["p"],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
                 max_allowed_error=max_allowed_error,
                 view_builder=SimpleBigQueryViewBuilder(
@@ -864,7 +882,7 @@ class TestSamenessValidationChecker(TestCase):
                     total_num_rows=100,
                     max_allowed_error=0.04,
                     non_null_counts_per_column_per_partition=[
-                        (tuple(), {"a": 100, "b": 100, "c": 100}),
+                        (("test",), {"a": 100, "b": 100, "c": 100}),
                     ],
                 ),
             ),
@@ -883,7 +901,7 @@ class TestSamenessValidationChecker(TestCase):
                 validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
-                partition_columns=[],
+                partition_columns=["p"],
                 sameness_check_type=SamenessDataValidationCheckType.DATES,
                 max_allowed_error=max_allowed_error,
                 view_builder=SimpleBigQueryViewBuilder(
@@ -905,7 +923,7 @@ class TestSamenessValidationChecker(TestCase):
                     total_num_rows=100,
                     max_allowed_error=0.04,
                     non_null_counts_per_column_per_partition=[
-                        (tuple(), {"a": 100, "b": 100, "c": 100}),
+                        (("test",), {"a": 100, "b": 100, "c": 100}),
                     ],
                 ),
             ),
