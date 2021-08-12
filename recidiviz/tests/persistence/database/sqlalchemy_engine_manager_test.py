@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for sqlalchemy_engine_manager.py"""
+import itertools
+from typing import List
 from unittest import mock
 from unittest.case import TestCase
 
@@ -22,9 +24,11 @@ import sqlalchemy
 from mock import call, patch
 from sqlalchemy.engine import URL
 
+from recidiviz import server_config
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database import schema_utils, sqlalchemy_database_key
+from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
@@ -36,8 +40,16 @@ class SQLAlchemyEngineManagerTest(TestCase):
     def tearDown(self) -> None:
         SQLAlchemyEngineManager.teardown_engines()
 
+    def _all_db_keys(self) -> List[SQLAlchemyDatabaseKey]:
+        return list(
+            itertools.chain.from_iterable(
+                server_config.database_keys_for_schema_type(schema_type)
+                for schema_type in schema_utils.SchemaType
+            )
+        )
+
     @patch(
-        f"{sqlalchemy_database_key.__name__}.get_existing_direct_ingest_states",
+        f"{server_config.__name__}.get_existing_direct_ingest_states",
         return_value=[StateCode.US_XX, StateCode.US_WW],
     )
     @patch("sqlalchemy.create_engine")
@@ -59,12 +71,10 @@ class SQLAlchemyEngineManagerTest(TestCase):
         mock_get_secret.side_effect = lambda key: f"{key}_value"
 
         # Act
-        SQLAlchemyEngineManager.attempt_init_engines_for_server(
-            set(schema_utils.SchemaType)
-        )
+        SQLAlchemyEngineManager.attempt_init_engines_for_databases(self._all_db_keys())
 
         # Assert
-        self.assertEqual(
+        self.assertCountEqual(
             mock_create_engine.call_args_list,
             [
                 call(
@@ -79,19 +89,6 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     ),
                     isolation_level=None,
                     poolclass=None,
-                    echo_pool=True,
-                    pool_recycle=600,
-                ),
-                call(
-                    URL.create(
-                        drivername="postgresql",
-                        username="state_db_user_value",
-                        password="state_db_password_value",
-                        database="postgres",
-                        query={"host": "/cloudsql/state_cloudsql_instance_id_value"},
-                    ),
-                    isolation_level="SERIALIZABLE",
-                    poolclass=sqlalchemy.pool.NullPool,
                     echo_pool=True,
                     pool_recycle=600,
                 ),
@@ -200,7 +197,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
         mock_get_states.assert_called()
 
     @patch(
-        f"{sqlalchemy_database_key.__name__}.get_existing_direct_ingest_states",
+        f"{server_config.__name__}.get_existing_direct_ingest_states",
         return_value=[StateCode.US_XX, StateCode.US_WW],
     )
     @patch("sqlalchemy.create_engine")
@@ -222,12 +219,10 @@ class SQLAlchemyEngineManagerTest(TestCase):
         mock_get_secret.side_effect = lambda key: f"{key}_value"
 
         # Act
-        SQLAlchemyEngineManager.attempt_init_engines_for_server(
-            set(schema_utils.SchemaType)
-        )
+        SQLAlchemyEngineManager.attempt_init_engines_for_databases(self._all_db_keys())
 
         # Assert
-        self.assertEqual(
+        self.assertCountEqual(
             mock_create_engine.call_args_list,
             [
                 call(
@@ -242,19 +237,6 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     ),
                     isolation_level=None,
                     poolclass=None,
-                    echo_pool=True,
-                    pool_recycle=600,
-                ),
-                call(
-                    URL.create(
-                        drivername="postgresql",
-                        username="state_db_user_value",
-                        password="state_db_password_value",
-                        database="postgres",
-                        query={"host": "/cloudsql/state_cloudsql_instance_id_value"},
-                    ),
-                    isolation_level="SERIALIZABLE",
-                    poolclass=sqlalchemy.pool.NullPool,
                     echo_pool=True,
                     pool_recycle=600,
                 ),

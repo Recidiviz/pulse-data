@@ -17,7 +17,7 @@
 """A class to manage all SQLAlchemy Engines for our database instances."""
 import logging
 import os.path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
 import sqlalchemy
 from opencensus.stats import aggregation, measure, view
@@ -145,17 +145,18 @@ class SQLAlchemyEngineManager:
         )
 
     @classmethod
-    def attempt_init_engines_for_server(cls, schema_types: Set[SchemaType]) -> None:
-        """Attempts to initialize engines for the server for the given schema types.
+    def attempt_init_engines_for_databases(
+        cls, database_keys: List[SQLAlchemyDatabaseKey]
+    ) -> None:
+        """Attempts to initialize engines for the provided databases.
 
         Ignores any connections that fail, so that a single down database does not cause
         our server to crash."""
-        for database_key in SQLAlchemyDatabaseKey.all():
-            if database_key.schema_type in schema_types:
-                try:
-                    cls.init_engine(database_key)
-                except BaseException:
-                    pass
+        for database_key in database_keys:
+            try:
+                cls.init_engine(database_key)
+            except BaseException:
+                pass
 
     @classmethod
     def get_engine_for_database(

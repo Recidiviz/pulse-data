@@ -179,9 +179,8 @@ class BaseDirectIngestController(Ingestor):
         schema_type = self.system_level.schema_type()
         if schema_type == SchemaType.STATE:
             state_code = StateCode(self.region_code().upper())
-            return SQLAlchemyDatabaseKey.for_state_code(
+            return self.ingest_instance.database_key_for_state(
                 state_code,
-                self.ingest_instance.database_version(self.system_level),
             )
 
         return SQLAlchemyDatabaseKey.for_schema(schema_type)

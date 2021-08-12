@@ -47,7 +47,6 @@ from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
 )
 from recidiviz.ingest.direct.errors import DirectIngestInstanceError
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import in_development
 from recidiviz.utils.regions import get_region
@@ -283,10 +282,7 @@ class IngestOperationsStore:
         state_code: StateCode, instance: DirectIngestInstance
     ) -> str:
         """Returns the database name for the given state and instance"""
-        return SQLAlchemyDatabaseKey.for_state_code(
-            state_code,
-            instance.database_version(SystemLevel.STATE),
-        ).db_name
+        return instance.database_key_for_state(state_code).db_name
 
     @staticmethod
     def _get_operations_db_metadata(

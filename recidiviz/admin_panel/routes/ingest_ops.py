@@ -29,7 +29,6 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
@@ -38,10 +37,6 @@ from recidiviz.ingest.direct.controllers.direct_ingest_instance_status_manager i
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
-)
-from recidiviz.persistence.database.sqlalchemy_database_key import (
-    SQLAlchemyDatabaseKey,
-    SQLAlchemyStateDatabaseVersion,
 )
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
@@ -129,9 +124,6 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
             ingest_instance = DirectIngestInstance(
                 request.json["ingestInstance"].upper()
             )
-            db_version = ingest_instance.database_version(
-                system_level=SystemLevel.STATE
-            )
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
 
@@ -144,13 +136,13 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
                 HTTPStatus.CONFLICT,
             )
 
-        db_key = SQLAlchemyDatabaseKey.for_state_code(state_code, db_version)
+        db_key = ingest_instance.database_key_for_state(state_code)
         cloud_sql_client = CloudSQLClientImpl(project_id=project_id)
 
         operation_id = cloud_sql_client.export_to_gcs_sql(
             db_key,
             GcsfsFilePath.from_absolute_path(
-                f"{STATE_INGEST_EXPORT_URI}/{db_version.value}/{state_code.value}"
+                f"{STATE_INGEST_EXPORT_URI}/{ingest_instance.value.lower()}/{state_code.value}"
             ),
         )
         if operation_id is None:
@@ -175,23 +167,17 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     def _import_database_from_gcs() -> Tuple[str, HTTPStatus]:
         try:
             state_code = StateCode(request.json["stateCode"])
-            db_version = SQLAlchemyStateDatabaseVersion(
-                request.json["importToDatabaseVersion"].lower()
+            import_to_ingest_instance = DirectIngestInstance(
+                request.json["importToDatabaseInstance"].upper()
             )
-            ingest_instance = DirectIngestInstance.for_state_database_version(
-                database_version=db_version, state_code=state_code
-            )
-            exported_db_version = SQLAlchemyStateDatabaseVersion(
-                request.json["exportedDatabaseVersion"].lower()
+            exported_ingest_instance = DirectIngestInstance(
+                request.json["exportedDatabaseInstance"].upper()
             )
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
 
-        if db_version == SQLAlchemyStateDatabaseVersion.LEGACY:
-            return "ingestInstance cannot be LEGACY", HTTPStatus.BAD_REQUEST
-
         lock_manager = DirectIngestRegionLockManager.for_state_ingest(
-            state_code, ingest_instance=ingest_instance
+            state_code, ingest_instance=import_to_ingest_instance
         )
         if not lock_manager.can_proceed():
             return (
@@ -199,13 +185,13 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
                 HTTPStatus.CONFLICT,
             )
 
-        db_key = SQLAlchemyDatabaseKey.for_state_code(state_code, db_version)
+        db_key = import_to_ingest_instance.database_key_for_state(state_code)
         cloud_sql_client = CloudSQLClientImpl(project_id=project_id)
 
         operation_id = cloud_sql_client.import_gcs_sql(
             db_key,
             GcsfsFilePath.from_absolute_path(
-                f"{STATE_INGEST_EXPORT_URI}/{exported_db_version.value}/{state_code.value}"
+                f"{STATE_INGEST_EXPORT_URI}/{exported_ingest_instance.value.lower()}/{state_code.value}"
             ),
         )
         if operation_id is None:

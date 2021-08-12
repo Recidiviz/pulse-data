@@ -61,7 +61,6 @@ from recidiviz.case_triage.views.dataset_config import (
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
@@ -218,11 +217,8 @@ class CloudSqlToBQConfig:
                 raise ValueError(
                     "Expected DirectIngestInstance to be non-None for STATE schema."
                 )
-            return SQLAlchemyDatabaseKey.for_state_code(
-                state_code=state_code,
-                db_version=self.direct_ingest_instance.database_version(
-                    SystemLevel.STATE
-                ),
+            return self.direct_ingest_instance.database_key_for_state(
+                state_code=state_code
             )
 
         return SQLAlchemyDatabaseKey.for_schema(self.schema_type)

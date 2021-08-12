@@ -57,6 +57,7 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
+from recidiviz.server_config import database_keys_for_schema_type
 from recidiviz.utils import environment, metadata, monitoring, structured_logging, trace
 from recidiviz.validation.validation_manager import validation_manager_blueprint
 
@@ -148,7 +149,6 @@ config_integration.trace_integrations(
     ]
 )
 
-
 if environment.in_gcp():
     # This attempts to connect to all of our databases. Any connections that fail will
     # be logged and not raise an error, so that a single database outage doesn't take
@@ -161,7 +161,10 @@ if environment.in_gcp():
     else:
         raise ValueError(f"Unsupported service type: {service_type}")
 
-    SQLAlchemyEngineManager.attempt_init_engines_for_server(schemas)
+    for schema_type in schemas:
+        SQLAlchemyEngineManager.attempt_init_engines_for_databases(
+            database_keys_for_schema_type(schema_type)
+        )
 
 
 @zope.event.classhandler.handler(events.MemoryUsageThresholdExceeded)
