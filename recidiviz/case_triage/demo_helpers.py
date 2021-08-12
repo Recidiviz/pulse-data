@@ -24,6 +24,7 @@ import pytz
 
 from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLClient,
+    ETLClientEvent,
     ETLOpportunity,
 )
 
@@ -57,6 +58,13 @@ def get_fixture_opportunities() -> List[ETLOpportunity]:
     with open(os.path.join(_FIXTURE_PATH, "demo_opportunities.json")) as f:
         clients = json.load(f)
     return [ETLOpportunity.from_json(client) for client in clients]
+
+
+def get_fixture_client_events() -> List[ETLClientEvent]:
+    with open(os.path.join(_FIXTURE_PATH, "demo_client_events.json")) as f:
+        events = json.load(f)
+    shift = date.today() - DEMO_FROZEN_DATE
+    return [ETLClientEvent.from_json(event, shift) for event in events]
 
 
 def fake_officer_id_for_demo_user(user_email_address: str) -> str:

@@ -35,13 +35,15 @@ class ClientEventPresenter:
                 self.etl_client_event.event_metadata["assessment_score"]
                 - self.etl_client_event.event_metadata["previous_assessment_score"]
             )
-        except (KeyError, ValueError):
+        except KeyError:
             return None
-        else:
-            return {
-                "score": self.etl_client_event.event_metadata["assessment_score"],
-                "scoreChange": diff,
-            }
+        except TypeError:
+            diff = None
+
+        return {
+            "score": self.etl_client_event.event_metadata["assessment_score"],
+            "scoreChange": diff,
+        }
 
     @property
     def contact_type(

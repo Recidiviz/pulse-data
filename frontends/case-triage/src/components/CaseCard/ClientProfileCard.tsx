@@ -27,6 +27,7 @@ import moment from "moment";
 import React from "react";
 import { useRootStore } from "../../stores";
 import { LONG_DATE_FORMAT, remScaledPixels, titleCase } from "../../utils";
+import { ClientTimeline } from "../ClientTimeline";
 import TEST_IDS from "../TestIDs";
 import { Caption, CloseButton } from "./CaseCard.styles";
 import { CaseCardProps } from "./CaseCard.types";
@@ -160,6 +161,12 @@ const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
           </Caption>
         </DetailsLineItem>
       </DetailsPanelSection>
+      {canSeeExtendedProfile && (
+        <DetailsPanelSection>
+          <DetailsPanelHeading>Events</DetailsPanelHeading>
+          <ClientTimeline />
+        </DetailsPanelSection>
+      )}
     </>
   );
 };

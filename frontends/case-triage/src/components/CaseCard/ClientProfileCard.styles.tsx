@@ -109,6 +109,7 @@ export const ClientProfileTabs = styled(Tabs)`
     grid-column: 1;
     -ms-grid-row: 2;
     grid-row: 2;
+    overflow: auto;
     width: 100%;
   }
 `;

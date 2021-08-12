@@ -191,7 +191,7 @@ MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
                 {f"recidiviz/case_triage/fixtures/demo_{data_type}.json"}
             ),
         )
-        for data_type in ["clients", "opportunities"]
+        for data_type in ["clients", "opportunities", "client_events"]
     ],
     ENDPOINTS_DOCS_KEY: _get_modified_endpoints(),
 }

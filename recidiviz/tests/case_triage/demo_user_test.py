@@ -24,6 +24,7 @@ import pytest
 from flask import Flask
 
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
+from recidiviz.case_triage.client_event.types import ClientEventType
 from recidiviz.case_triage.client_info.types import PreferredContactMethod
 from recidiviz.case_triage.demo_helpers import (
     get_fixture_clients,
@@ -32,6 +33,9 @@ from recidiviz.case_triage.demo_helpers import (
 )
 from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
+from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactType,
+)
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.case_triage.api_test_helpers import CaseTriageTestHelpers
@@ -361,3 +365,32 @@ class TestDemoUser(TestCase):
             self.helpers.resolve_note(note_id, False)
             note = self.helpers.find_note_for_person(client.person_external_id, note_id)
             self.assertFalse(note["resolved"])
+
+    def test_client_events(self) -> None:
+        client = self.demo_clients[0]
+
+        with self.helpers.using_demo_user():
+            client_events = self.helpers.get_events_for_client(
+                client.person_external_id
+            )
+
+        # fixture events should match the most recent dates in this client fixture
+        self.assertEqual(
+            client_events[0],
+            {
+                "eventType": ClientEventType.CONTACT.value,
+                "eventDate": client.most_recent_face_to_face_date.isoformat(),
+                "eventMetadata": {
+                    "contactType": StateSupervisionContactType.FACE_TO_FACE.value
+                },
+            },
+        )
+
+        self.assertEqual(
+            client_events[1],
+            {
+                "eventType": ClientEventType.ASSESSMENT.value,
+                "eventDate": client.most_recent_assessment_date.isoformat(),
+                "eventMetadata": {"score": client.assessment_score, "scoreChange": 1},
+            },
+        )
