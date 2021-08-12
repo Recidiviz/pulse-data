@@ -23,6 +23,7 @@ from json import JSONDecodeError
 from typing import Optional, Tuple
 
 from flask import Blueprint, jsonify, request
+from google.cloud import bigquery
 
 from recidiviz.admin_panel.admin_stores import fetch_state_codes
 from recidiviz.admin_panel.case_triage_helpers import (
@@ -441,13 +442,13 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
 
         bq = BigQueryClientImpl()
 
-        delete_job = bq.delete_from_table_async(
-            "static_reference_tables", "us_id_roster", "WHERE TRUE"
-        )
-        delete_job.result()
-
         dataset_ref = bq.dataset_ref_for_id("static_reference_tables")
-        load_job = bq.load_into_table_async(dataset_ref, "us_id_roster", rows)
+        load_job = bq.load_into_table_async(
+            dataset_ref,
+            "us_id_roster",
+            rows,
+            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+        )
         load_job.result()
 
         return "", HTTPStatus.OK
