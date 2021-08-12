@@ -31,4 +31,9 @@ module "state_direct_ingest_buckets_and_accounts" {
   cloudsql_instance_region        = module.state_database.region
   cloudsql_instance_user_name     = module.state_database.database_user_name
   cloudsql_instance_user_password = module.state_database.database_user_password
+  v2_cloudsql_instance_name           = module.state_database_v2.instance_name
+  v2_cloudsql_instance_id             = module.state_database_v2.cloudsql_instance_id
+  v2_cloudsql_instance_region         = module.state_database_v2.region
+  v2_cloudsql_instance_user_name      = module.state_database_v2.database_user_name
+  v2_cloudsql_instance_user_password  = module.state_database_v2.database_user_password
 }
