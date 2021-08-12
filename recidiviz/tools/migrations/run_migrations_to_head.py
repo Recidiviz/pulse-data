@@ -44,11 +44,12 @@ from typing import Optional
 
 import alembic.config
 
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.server_config import database_keys_for_schema_type
 from recidiviz.tools.migrations.migration_helpers import (
     confirm_correct_db_instance,
     confirm_correct_git_branch,
@@ -149,9 +150,7 @@ def main(
     if dry_run:
         db_keys = [SQLAlchemyDatabaseKey.canonical_for_schema(schema_type)]
     else:
-        db_keys = [
-            key for key in SQLAlchemyDatabaseKey.all() if key.schema_type == schema_type
-        ]
+        db_keys = database_keys_for_schema_type(schema_type)
 
     # Run migrations
     for key in db_keys:

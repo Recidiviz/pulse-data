@@ -223,6 +223,7 @@ def main() -> int:
                 "recidiviz.metrics",
                 "recidiviz.persistence",
                 "recidiviz.reporting",
+                "recidiviz.server_config",
                 # TODO(#6795): Get rid of this dependency
                 "recidiviz.tests.ingest.fixtures",
                 # TODO(#4472): Refactor justice counts code out of the tools directory
@@ -238,12 +239,10 @@ def main() -> int:
         "recidiviz/case_triage/server.py",
         valid_module_prefixes=make_module_matcher(
             {
-                # TODO(##6859): Get rid of this dependency
+                # TODO(#6859): Get rid of this dependency
                 "recidiviz.calculator.pipeline",
                 "recidiviz.case_triage",
                 "recidiviz.cloud_storage",
-                # TODO(##6859): Get rid of this dependency
-                "recidiviz.ingest.direct.direct_ingest_region_utils",
                 "recidiviz.common",
                 "recidiviz.persistence",
                 "recidiviz.utils",

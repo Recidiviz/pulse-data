@@ -25,43 +25,10 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     gcsfs_direct_ingest_bucket_for_region,
 )
 from recidiviz.ingest.direct.errors import DirectIngestInstanceError
-from recidiviz.persistence.database.sqlalchemy_database_key import (
-    SQLAlchemyStateDatabaseVersion,
-)
 
 
 class TestDirectIngestInstance(unittest.TestCase):
     """Tests for the DirectIngestInstance."""
-
-    def test_state_get_database_version_state(self) -> None:
-        expected_versions = {
-            DirectIngestInstance.PRIMARY: SQLAlchemyStateDatabaseVersion.PRIMARY,
-            DirectIngestInstance.SECONDARY: SQLAlchemyStateDatabaseVersion.SECONDARY,
-        }
-
-        versions = {
-            instance: instance.database_version(system_level=SystemLevel.STATE)
-            for instance in DirectIngestInstance
-        }
-
-        self.assertEqual(expected_versions, versions)
-
-    def test_state_get_database_version_county(self) -> None:
-        self.assertEqual(
-            SQLAlchemyStateDatabaseVersion.LEGACY,
-            DirectIngestInstance.PRIMARY.database_version(
-                system_level=SystemLevel.COUNTY
-            ),
-        )
-
-        with self.assertRaisesRegex(
-            DirectIngestInstanceError,
-            r"^Direct ingest for \[SystemLevel.COUNTY\] only has single, primary ingest "
-            r"instance. Ingest instance \[DirectIngestInstance.SECONDARY\] not valid.$",
-        ):
-            _ = DirectIngestInstance.SECONDARY.database_version(
-                system_level=SystemLevel.COUNTY
-            )
 
     def test_from_state_ingest_bucket(self) -> None:
         ingest_bucket_path = gcsfs_direct_ingest_bucket_for_region(

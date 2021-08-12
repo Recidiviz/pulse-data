@@ -30,6 +30,7 @@ from pysftp import CnOpts
 from recidiviz.cloud_storage.gcs_file_system import GcsfsSftpFileContentsHandle
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.results import MultiRequestResultWithSkipped
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
@@ -114,15 +115,15 @@ class DownloadFilesFromSftpController:
     def __init__(
         self,
         project_id: str,
-        region: str,
+        region_code: str,
         lower_bound_update_datetime: Optional[datetime.datetime],
         gcs_destination_path: Optional[GcsfsDirectoryPath] = None,
     ):
         self.project_id = project_id
-        self.region = region.lower()
+        self.region_code = region_code.lower()
 
-        self.auth = SftpAuth.for_region(region)
-        self.delegate = SftpDownloadDelegateFactory.build(region_code=region)
+        self.auth = SftpAuth.for_region(region_code)
+        self.delegate = SftpDownloadDelegateFactory.build(region_code=region_code)
         self.gcsfs = DirectIngestGCSFileSystem(GcsfsFactory.build())
 
         self.unable_to_download_items: List[str] = []
@@ -132,7 +133,7 @@ class DownloadFilesFromSftpController:
         self.lower_bound_update_datetime = lower_bound_update_datetime
         self.bucket = (
             gcsfs_sftp_download_bucket_path_for_region(
-                region, SystemLevel.STATE, project_id=self.project_id
+                region_code, SystemLevel.STATE, project_id=self.project_id
             )
             if gcs_destination_path is None
             else gcs_destination_path
@@ -143,8 +144,10 @@ class DownloadFilesFromSftpController:
 
         self.postgres_direct_ingest_file_metadata_manager = (
             PostgresDirectIngestRawFileMetadataManager(
-                region,
-                DirectIngestInstance.PRIMARY.database_version(SystemLevel.STATE).name,
+                region_code,
+                DirectIngestInstance.PRIMARY.database_key_for_state(
+                    StateCode(region_code.upper())
+                ).db_name,
             )
         )
 

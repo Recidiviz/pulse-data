@@ -91,7 +91,7 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
                 )
             ],
             project_id="recidiviz-456",
-            region="us_xx",
+            region_code="us_xx",
         )
         expected_result = [
             "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt"
@@ -126,7 +126,7 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
                 ),
             ],
             project_id="recidiviz-456",
-            region="us_xx",
+            region_code="us_xx",
         )
         result: MultiRequestResultWithSkipped[str, str, str] = controller.do_upload()
         self.assertEqual(
@@ -170,7 +170,7 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
                 ),
             ],
             project_id="recidiviz-456",
-            region="us_xx",
+            region_code="us_xx",
         )
         result: MultiRequestResultWithSkipped[str, str, str] = controller.do_upload()
         self.assertListEqual(
@@ -214,7 +214,7 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
                 ("recidiviz-456-direct-ingest-state-us-xx/raw_data/", TODAY),
             ],
             project_id="recidiviz-456",
-            region="us_xx",
+            region_code="us_xx",
         )
         result = [
             ("recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt", TODAY),
@@ -279,7 +279,7 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
                 ),
             ],
             project_id="recidiviz-456",
-            region="us_xx",
+            region_code="us_xx",
         )
         result: MultiRequestResultWithSkipped[str, str, str] = controller.do_upload()
         self.assertListEqual(
@@ -317,7 +317,7 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
                 )
             ],
             project_id="recidiviz-456",
-            region="us_xx",
+            region_code="us_xx",
         )
         expected_result = [
             "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt"

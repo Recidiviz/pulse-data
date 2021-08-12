@@ -124,9 +124,8 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
     def _main_database_key(cls) -> "SQLAlchemyDatabaseKey":
         if cls.schema_type() == SchemaType.STATE:
             state_code = StateCode(cls.region_code().upper())
-            return SQLAlchemyDatabaseKey.for_state_code(
+            return cls._main_ingest_instance().database_key_for_state(
                 state_code,
-                cls._main_ingest_instance().database_version(SystemLevel.STATE),
             )
         return SQLAlchemyDatabaseKey.for_schema(cls.schema_type())
 

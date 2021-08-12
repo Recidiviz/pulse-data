@@ -23,6 +23,9 @@ from more_itertools import one
 
 from recidiviz.big_query.big_query_view import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
+)
 from recidiviz.persistence.database.base_schema import StateBase, JailsBase
 from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_table_big_query_view import (
     FederatedCloudSQLTableBigQueryViewBuilder,
@@ -31,7 +34,6 @@ from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_table_big_que
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import (
     SQLAlchemyDatabaseKey,
-    SQLAlchemyStateDatabaseVersion,
 )
 from recidiviz.view_registry.dataset_overrides import (
     dataset_overrides_for_view_builders,
@@ -58,8 +60,8 @@ class FederatedCloudSQLTableBigQueryViewTest(unittest.TestCase):
             table=table,
             view_id=table.name,
             cloud_sql_query="SELECT * FROM state_person;",
-            database_key=SQLAlchemyDatabaseKey.for_state_code(
-                StateCode.US_XX, db_version=SQLAlchemyStateDatabaseVersion.PRIMARY
+            database_key=DirectIngestInstance.PRIMARY.database_key_for_state(
+                StateCode.US_XX,
             ),
             materialized_address_override=BigQueryAddress(
                 dataset_id="materialized_dataset", table_id="materialized_table"
@@ -122,7 +124,7 @@ FROM EXTERNAL_QUERY(
             view_with_overrides.materialized_address,
         )
 
-    def test_build_view_state_legacy(self) -> None:
+    def test_build_view_state_secondary(self) -> None:
         table = one(
             t for t in StateBase.metadata.sorted_tables if t.name == "state_person"
         )
@@ -131,15 +133,15 @@ FROM EXTERNAL_QUERY(
             table=table,
             view_id=table.name,
             cloud_sql_query="SELECT * FROM state_person;",
-            database_key=SQLAlchemyDatabaseKey.for_state_code(
-                StateCode.US_XX, db_version=SQLAlchemyStateDatabaseVersion.LEGACY
+            database_key=DirectIngestInstance.SECONDARY.database_key_for_state(
+                StateCode.US_XX,
             ),
             materialized_address_override=BigQueryAddress(
                 dataset_id="materialized_dataset", table_id="materialized_table"
             ),
         )
         expected_description = """View providing a connection to the [state_person]
-table in the [postgres] database in the [STATE] schema. This view is 
+table in the [us_xx_secondary] database in the [STATE] schema. This view is 
 managed outside of regular view update operations and the results can be found in the 
 schema-specific datasets (`state`, `jails`, `justice_counts`, etc)."""
 
@@ -147,7 +149,7 @@ schema-specific datasets (`state`, `jails`, `justice_counts`, etc)."""
 SELECT
     *
 FROM EXTERNAL_QUERY(
-    "test-project.us-east2.state_cloudsql",
+    "test-project.us-east2.state_us_xx_secondary_cloudsql",
     "SELECT * FROM state_person;"
 )"""
 
@@ -159,7 +161,7 @@ FROM EXTERNAL_QUERY(
         self.assertEqual(expected_description, view.description)
         self.assertEqual(
             BigQueryAddress(
-                dataset_id="state_cloudsql_connection",
+                dataset_id="state_us_xx_secondary_cloudsql_connection",
                 table_id="state_person",
             ),
             view.address,

@@ -43,7 +43,7 @@ def write_df(table: DeclarativeMeta, df: pd.DataFrame) -> None:
         df.to_sql(
             table.__tablename__,
             SQLAlchemyEngineManager.get_engine_for_database(
-                SQLAlchemyDatabaseKey(schema_type=SchemaType.JAILS)
+                SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.JAILS)
             ),
             if_exists="append",
             index=False,
@@ -61,7 +61,7 @@ def _write_df_only_successful_rows(table: DeclarativeMeta, df: pd.DataFrame) -> 
             row.to_sql(
                 table.__tablename__,
                 SQLAlchemyEngineManager.get_engine_for_database(
-                    SQLAlchemyDatabaseKey(schema_type=SchemaType.JAILS)
+                    SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.JAILS)
                 ),
                 if_exists="append",
                 index=False,

@@ -26,23 +26,21 @@ Example usage (run from `pipenv shell`):
 
 python -m recidiviz.tools.migrations.purge_state_db \
     --state-code US_MI \
-    --database-version secondary \
+    --ingest-instance secondary \
     --project-id recidiviz-staging \
     --ssl-cert-path ~/dev_state_data_certs
     [--purge-schema]
 """
 import argparse
 import logging
-import sys
 
 import alembic.config
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import (
-    SQLAlchemyDatabaseKey,
-    SQLAlchemyStateDatabaseVersion,
+from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
+    DirectIngestInstance,
 )
+from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
@@ -66,9 +64,9 @@ def create_parser() -> argparse.ArgumentParser:
         required=True,
     )
     parser.add_argument(
-        "--database-version",
-        type=SQLAlchemyStateDatabaseVersion,
-        choices=list(SQLAlchemyStateDatabaseVersion),
+        "--ingest-instance",
+        type=DirectIngestInstance,
+        choices=list(DirectIngestInstance),
         help="Specifies the database version where all downgrades will be run.",
         required=True,
     )
@@ -95,7 +93,7 @@ def create_parser() -> argparse.ArgumentParser:
 
 def main(
     state_code: StateCode,
-    database_version: SQLAlchemyStateDatabaseVersion,
+    ingest_instance: DirectIngestInstance,
     ssl_cert_path: str,
     purge_schema: bool,
 ) -> None:
@@ -105,14 +103,6 @@ def main(
     This checks for user validations that the database and branches are correct and then runs the downgrade
     migration.
     """
-    # TODO(#7984): Once we have cut all traffic over to single-database traffic,
-    #   delete this branch.
-    if database_version == SQLAlchemyStateDatabaseVersion.LEGACY:
-        logging.error(
-            "Should not invoke purge_state_db script with legacy database version."
-        )
-        sys.exit(1)
-
     is_prod = metadata.project_id() == GCP_PROJECT_PRODUCTION
     if is_prod:
         logging.info("RUNNING AGAINST PRODUCTION\n")
@@ -122,8 +112,10 @@ def main(
         if metadata.project_id() == GCP_PROJECT_STAGING
         else "PURGE DATABASE STATE IN PROD"
     )
+    db_key = ingest_instance.database_key_for_state(state_code)
+
     prompt_for_confirmation(
-        f"This script will PURGE all data for for [{state_code.value}] in DB [{database_version.value}].",
+        f"This script will PURGE all data for for [{state_code.value}] in DB [{db_key.db_name}].",
         purge_str,
     )
     if purge_schema:
@@ -134,11 +126,9 @@ def main(
         )
         prompt_for_confirmation(
             f"This script will run all DOWNGRADE migrations for "
-            f"[{state_code.value}] in DB [{database_version.value}].",
+            f"[{state_code.value}] in DB [{db_key.db_name}].",
             purge_schema_str,
         )
-
-    db_key = SQLAlchemyDatabaseKey.for_state_code(state_code, database_version)
 
     with SessionFactory.for_prod_data_client(db_key, ssl_cert_path) as session:
         truncate_commands = [
@@ -183,7 +173,7 @@ if __name__ == "__main__":
     with local_project_id_override(args.project_id):
         main(
             args.state_code,
-            args.database_version,
+            args.ingest_instance,
             args.ssl_cert_path,
             args.purge_schema,
         )
