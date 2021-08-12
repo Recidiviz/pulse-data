@@ -129,6 +129,15 @@ class ClientsStore {
     autorun(checkAuthAndFetchClients);
     // Re-fetch for long-lived sessions.
     setInterval(checkAuthAndFetchClients, rootStore.refetchInterval);
+
+    // fetch events for the active client (including after a refetch)
+    autorun(() => {
+      const { canSeeExtendedProfile } = this.userStore;
+      const { activeClient } = this;
+      if (canSeeExtendedProfile && activeClient?.needsTimelineHydration) {
+        activeClient.hydrateTimeline();
+      }
+    });
   }
 
   async fetchClientsList(): Promise<void> {

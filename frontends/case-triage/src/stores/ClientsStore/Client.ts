@@ -16,6 +16,7 @@
 // =============================================================================
 import parsePhoneNumber from "libphonenumber-js";
 import { makeAutoObservable, runInAction, set } from "mobx";
+import { fromPromise, IPromiseBasedObservable } from "mobx-utils";
 import moment from "moment";
 import { caseInsensitiveIncludes, titleCase } from "../../utils";
 import type API from "../API";
@@ -31,7 +32,8 @@ import { Opportunity } from "../OpportunityStore/Opportunity";
 import type PolicyStore from "../PolicyStore";
 import { ScoreMinMax } from "../PolicyStore";
 import type ClientsStore from "./ClientsStore";
-import { Note, NoteData } from "./Note";
+import { buildClientEvent, ClientEvent, ClientEventData } from "./Event";
+import { NoteData, Note } from "./Note";
 
 /* eslint-disable camelcase */
 interface ClientFullName {
@@ -202,6 +204,8 @@ export class Client {
   supervisionStartDate: moment.Moment | null;
 
   supervisionType: string;
+
+  private timelineFetch?: IPromiseBasedObservable<ClientEventData[]>;
 
   constructor(
     clientData: ClientData,
@@ -539,5 +543,38 @@ export class Client {
     );
 
     return { employment, violationFree };
+  }
+
+  hydrateTimeline(): void {
+    this.timelineFetch = fromPromise(
+      this.api.get(`/api/events/${this.personExternalId}`),
+      this.timelineFetch
+    );
+  }
+
+  get needsTimelineHydration(): boolean {
+    return !this.timelineFetch || this.timelineFetch.state === "rejected";
+  }
+
+  /**
+   * Indicates whether the timeline UI requires a loading state.
+   * NOT a reliable indicator of whether data needs to be fetched;
+   * for that see `Client.needsTimelineHydration`
+   */
+  get isTimelineLoaded(): boolean {
+    if (!this.timelineFetch) return false;
+
+    if (this.timelineFetch.state === "pending") return false;
+
+    return true;
+  }
+
+  get timeline(): ClientEvent[] {
+    const events: ClientEvent[] = [];
+    if (this.timelineFetch?.state === "fulfilled") {
+      events.push(...this.timelineFetch.value.map((d) => buildClientEvent(d)));
+    }
+
+    return events;
   }
 }

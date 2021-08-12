@@ -20,6 +20,7 @@
     "libphonenumber-js": "^1.9.21",
     "mobx": "^6.1.4",
     "mobx-react-lite": "^3.2.0",
+    "mobx-utils": "^6.0.4",
     "moment": "^2.29.1",
     "param-case": "^3.0.4",
     "polished": "^4.1.0",

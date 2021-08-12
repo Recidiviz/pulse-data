@@ -16,6 +16,7 @@
 // =============================================================================
 
 import { cloneDeep } from "lodash";
+import { when } from "mobx";
 import MockDate from "mockdate";
 import moment from "moment";
 import API from "../API";
@@ -261,4 +262,47 @@ test("no violation milestone", () => {
   // less than 3 months
   testClient.mostRecentViolationDate = moment(new Date(2021, 2, 12));
   expect(testClient.milestones.violationFree).toBeUndefined();
+});
+
+describe("timeline", () => {
+  test("initial state", () => {
+    expect(testClient.needsTimelineHydration).toBe(true);
+    expect(testClient.isTimelineLoaded).toBe(false);
+    expect(testClient.timeline).toEqual([]);
+  });
+
+  test("hydration", async () => {
+    // NOTE: we expect reverse chronological order from the API
+    APIMock.prototype.get.mockResolvedValueOnce([
+      {
+        eventType: "CONTACT",
+        eventDate: "2021-06-01",
+        eventMetadata: { contactType: "FACE_TO_FACE", location: null },
+      },
+      {
+        eventType: "CONTACT",
+        eventDate: "2021-01-01",
+        eventMetadata: { contactType: "FACE_TO_FACE", location: null },
+      },
+      {
+        eventType: "CONTACT",
+        eventDate: "2020-07-01",
+        eventMetadata: { contactType: "FACE_TO_FACE", location: null },
+      },
+    ]);
+
+    testClient.hydrateTimeline();
+    await when(() => testClient.isTimelineLoaded);
+    expect(APIMock.prototype.get).toHaveBeenCalledWith(
+      `/api/events/${clientData.personExternalId}`
+    );
+
+    expect(testClient.needsTimelineHydration).toBe(false);
+    // verify order was retained; don't need to deeply inspect objects, tested elsewhere
+    expect(testClient.timeline.map((e) => e.eventDate)).toEqual([
+      moment("2021-06-01"),
+      moment("2021-01-01"),
+      moment("2020-07-01"),
+    ]);
+  });
 });
