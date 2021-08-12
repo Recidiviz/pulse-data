@@ -73,6 +73,9 @@ class RecidivizMetric(Generic[RecidivizMetricTypeT], BuildableAttr):
     # '35-39'
     age_bucket: Optional[str] = attr.ib(default=None)
 
+    # The age of the person the metric describes
+    age: Optional[int] = attr.ib(default=None)
+
     # The race or ethnicity value of the persons the metric describes that is least represented in the state’s
     # population
     prioritized_race_or_ethnicity: Optional[str] = attr.ib(default=None)
