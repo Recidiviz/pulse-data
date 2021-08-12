@@ -88,6 +88,8 @@ def person_characteristics(
 
     event_age = age_at_date(person, event_date)
     event_age_bucket = age_bucket(event_age)
+    if event_age is not None:
+        characteristics["age"] = event_age
     if event_age_bucket is not None:
         characteristics["age_bucket"] = event_age_bucket
     if person.gender is not None:

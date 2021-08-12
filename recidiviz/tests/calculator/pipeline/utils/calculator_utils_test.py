@@ -218,6 +218,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         expected_output = {
             "person_id": person.person_id,
+            "age": 26,
             "age_bucket": "25-29",
             "prioritized_race_or_ethnicity": "ASIAN",
             "gender": Gender.FEMALE,
@@ -242,6 +243,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
         )
 
         expected_output = {
+            "age": 26,
             "age_bucket": "25-29",
             "gender": Gender.FEMALE,
             "person_id": person.person_id,
@@ -313,6 +315,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
         )
 
         expected_output = {
+            "age": 26,
             "age_bucket": "25-29",
             "gender": Gender.FEMALE,
             "person_id": person.person_id,
@@ -387,6 +390,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
         )
 
         expected_output = {
+            "age": 26,
             "age_bucket": "25-29",
             "gender": Gender.FEMALE,
             "person_id": person.person_id,
