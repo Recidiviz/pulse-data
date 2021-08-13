@@ -16,11 +16,12 @@
 // =============================================================================
 
 import { SyncOutlined } from "@ant-design/icons";
-import { Button, Card, Space, Spin, Table } from "antd";
-import * as React from "react";
+import { Button, Card, Space, Spin, Table, Typography } from "antd";
 import moment from "moment";
+import * as React from "react";
 import { getListBatchInfo } from "../../AdminPanelAPI/LineStaffTools";
 import { StateCodeInfo } from "../IngestOperationsView/constants";
+import { BatchInfoType } from "./constants";
 
 interface ListBatchesProps {
   stateInfo: StateCodeInfo;
@@ -28,9 +29,15 @@ interface ListBatchesProps {
 
 const ListBatches: React.FC<ListBatchesProps> = ({ stateInfo }) => {
   interface TableData {
-    batchId: string;
-    date: string;
+    batchId: string | undefined;
+    dateGenerated: string | undefined;
+    sentDate?: string | undefined;
+    totalDelivered?: string | undefined;
+    redirectAddress?: string | undefined;
+    numTimesSent?: number | undefined;
   }
+
+  const { Title } = Typography;
 
   const isProduction = window.RUNTIME_GCP_ENVIRONMENT === "production";
   const projectId = isProduction ? "recidiviz-123" : "recidiviz-staging";
@@ -38,38 +45,47 @@ const ListBatches: React.FC<ListBatchesProps> = ({ stateInfo }) => {
   const [tableData, setTableData] =
     React.useState<TableData[] | undefined>(undefined);
 
-  const generateBatches = React.useCallback(() => {
+  const formatTableData = React.useCallback((batchInfo: BatchInfoType[]) => {
+    const data: TableData[] = batchInfo.map((x) => {
+      const dateGenerated = moment(x.batchId.substring(0, 8)).format("l");
+      if (x.sendResults.length > 0) {
+        x.sendResults.reverse();
+        return {
+          batchId: x.batchId,
+          dateGenerated,
+          sentDate: moment(x.sendResults[0].sentDate.substring(0, 10)).format(
+            "l"
+          ),
+          totalDelivered: x.sendResults[0].totalDelivered,
+          redirectAddress: x.sendResults[0].redirectAddress,
+          numTimesSent: x.sendResults.length,
+        };
+      }
+      return { batchId: x.batchId, dateGenerated };
+    });
+    setTableData(data);
+  }, []);
+
+  const refreshBatches = React.useCallback(() => {
+    setShowSpinner(true);
     const getBatches = async () => {
       const r = await getListBatchInfo(stateInfo.code);
       const json = await r.json();
-      formatTableData(json.batchIds);
+      formatTableData(json.batchInfo);
       setShowSpinner(false);
     };
     getBatches();
-  }, [stateInfo.code]);
+  }, [stateInfo.code, formatTableData]);
 
   React.useEffect(() => {
-    generateBatches();
-  }, [generateBatches]);
-
-  const onStateRefresh = async () => {
-    setShowSpinner(true);
-    await generateBatches();
-  };
-
-  const formatTableData = (batches: string[]) => {
-    const data = [];
-    for (let i = 0; i < batches.length; i += 1) {
-      const date = moment(batches[i].substring(0, 8)).format("l");
-      data.push({ batchId: batches[i], date });
-    }
-    setTableData(data);
-  };
+    refreshBatches();
+  }, [refreshBatches]);
 
   const columns = [
     {
-      title: "Date",
-      dataIndex: "date",
+      title: "Date Generated",
+      dataIndex: "dateGenerated",
+      key: "dateGenerated",
     },
     {
       title: "Batch ID",
@@ -84,18 +100,42 @@ const ListBatches: React.FC<ListBatchesProps> = ({ stateInfo }) => {
         </Space>
       ),
     },
+    {
+      title: "Sent Date",
+      dataIndex: "sentDate",
+      key: "sentDate",
+    },
+    {
+      title: "Total Delivered",
+      dataIndex: "totalDelivered",
+      key: "totalDelivered",
+    },
+    {
+      title: "Redirect Address",
+      dataIndex: "redirectAddress",
+      key: "redirectAddress",
+    },
+    {
+      title: "# Times Sent",
+      dataIndex: "numTimesSent",
+      key: "numTimesSent",
+    },
   ];
 
   return (
     <Card
-      title={`${stateInfo?.name} Previously Generated Batches`}
+      title={
+        <Title style={{ fontSize: "1vw" }}>
+          {stateInfo?.name} Previously Generated Batches
+        </Title>
+      }
       extra={
         <Button
           type="primary"
           size="small"
           shape="circle"
           icon={<SyncOutlined />}
-          onClick={onStateRefresh}
+          onClick={refreshBatches}
         />
       }
     >
@@ -103,7 +143,6 @@ const ListBatches: React.FC<ListBatchesProps> = ({ stateInfo }) => {
         <Spin />
       ) : (
         <Table
-          bordered
           columns={columns}
           dataSource={tableData}
           rowKey="batchId"

@@ -24,7 +24,7 @@ import {
 import useFetchedData from "../../hooks";
 import { StateCodeInfo } from "../IngestOperationsView/constants";
 import ActionRegionConfirmationForm from "../Utilities/ActionRegionConfirmationForm";
-import { layout, tailLayout } from "./constants";
+import { layout, tailLayout, BatchInfoType } from "./constants";
 import StateSelector from "../Utilities/StateSelector";
 
 interface SendFormData {
@@ -37,13 +37,14 @@ interface SendFormData {
 }
 
 const SendEmails = (): JSX.Element => {
+  const [form] = Form.useForm();
   const [formData, setFormData] =
     React.useState<SendFormData | undefined>(undefined);
   const [showSpinner, setShowSpinner] = React.useState(false);
-  const [batchIdList, setBatchIdList] =
-    React.useState<string[] | undefined>(undefined);
   const [isConfirmationModalVisible, setIsConfirmationModalVisible] =
     React.useState(false);
+  const [labeledBatchList, setLabeledBatchList] =
+    React.useState<string[] | undefined>(undefined);
 
   const { loading, data } =
     useFetchedData<StateCodeInfo[]>(fetchEmailStateCodes);
@@ -85,16 +86,26 @@ const SendEmails = (): JSX.Element => {
   };
 
   const getBatches = async (sCode: string) => {
-    setBatchIdList(undefined);
     const r = await getListBatchInfo(sCode);
     const json = await r.json();
-    setBatchIdList(json.batchIds);
+    labelBatchesInSelect(json.batchInfo);
+  };
+
+  const labelBatchesInSelect = (batchInfo: BatchInfoType[]) => {
+    const labeledList: string[] = batchInfo.map((x) => {
+      if (x.sendResults.length > 0) {
+        return `${x.batchId} (Sent)`;
+      }
+      return `${x.batchId}`;
+    });
+    setLabeledBatchList(labeledList);
   };
 
   return (
     <>
       <Card title="Send Emails" style={{ margin: 10, height: "95%" }}>
         <Form
+          form={form}
           {...layout}
           className="buffer"
           onFinish={(values) => {
@@ -106,29 +117,37 @@ const SendEmails = (): JSX.Element => {
               loading={loading}
               data={data}
               onChange={(sCode) => {
+                form.setFieldsValue({
+                  batchId: undefined,
+                });
                 getBatches(sCode);
               }}
             />
           </Form.Item>
-          {batchIdList ? (
+          {labeledBatchList ? (
             <Form.Item
               label="Batch ID"
               name="batchId"
               rules={[{ required: true }]}
-              initialValue={batchIdList[0]}
+              initialValue={labeledBatchList[0]}
             >
               <Select
-                placeholder="20210701130005"
-                defaultValue={batchIdList[0]}
+                placeholder={labeledBatchList[0]}
+                defaultValue={labeledBatchList[0]}
               >
-                {batchIdList?.map((item) => (
-                  <Select.Option key={item} label={item} value={item}>
+                {labeledBatchList?.map((item) => (
+                  <Select.Option
+                    key={item}
+                    label={item}
+                    value={item.substring(0, 14)}
+                  >
                     {item}
                   </Select.Option>
                 ))}
               </Select>
             </Form.Item>
           ) : null}
+
           <Form.Item
             label="Redirect Address"
             name="redirectAddress"
