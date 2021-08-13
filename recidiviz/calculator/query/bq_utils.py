@@ -126,11 +126,25 @@ def hack_us_id_supervising_officer_external_id(dataflow_metric_table: str) -> st
         -- HACK ALERT HACK ALERT HACK ALERT HACK ALERT
         --
         -- HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT
+        WITH latest_periods AS (
+          SELECT
+            person_id,
+            state_code
+          FROM
+            `{{project_id}}.state.state_supervision_period`
+          WHERE
+            termination_date IS NULL
+            AND admission_reason != 'ABSCONSION'
+        )
         SELECT
           * EXCEPT (supervising_officer_external_id),
           IF(state_code != 'US_ID', supervising_officer_external_id, UPPER(ofndr_agnt.agnt_id)) AS supervising_officer_external_id
-        FROM `{{project_id}}.{{materialized_metrics_dataset}}.{dataflow_metric_table}`
+        FROM `{{project_id}}.{{materialized_metrics_dataset}}.{dataflow_metric_table}` metric
+        INNER JOIN latest_periods lp
+        USING (person_id, state_code)
         LEFT OUTER JOIN
           `{{project_id}}.us_id_raw_data_up_to_date_views.ofndr_agnt_latest` ofndr_agnt
         ON person_external_id = ofndr_agnt.ofndr_num
+        WHERE IF(state_code != 'US_ID', supervising_officer_external_id, UPPER(ofndr_agnt.agnt_id)) IS NOT NULL
+            AND supervision_level IS NOT NULL
     """
