@@ -29,10 +29,6 @@ export const CaseCardSection = styled(CardSection)`
   padding: ${rem(spacing.xl)};
 `;
 
-export const CaseCardHeading = styled(CaseCardSection)`
-  padding-bottom: ${rem(spacing.lg)};
-`;
-
 export const CaseCardIconContainer = styled.div`
   display: flex;
   align-items: center;
@@ -55,10 +51,6 @@ export const Caption = styled.span`
   font-size: ${rem("14px")};
 `;
 
-export const CaseCardFeedback = styled.div`
-  font-size: ${rem("14px")};
-`;
-
 export const ButtonContainer = styled.div`
   display: flex;
   margin-top: ${rem(spacing.md)};
@@ -70,11 +62,6 @@ export const ButtonContainer = styled.div`
   :last-child {
     margin-right: 0;
   }
-`;
-
-export const ClientNameRow = styled.div`
-  display: flex;
-  justify-content: space-between;
 `;
 
 export const CloseButton = styled(Button).attrs({

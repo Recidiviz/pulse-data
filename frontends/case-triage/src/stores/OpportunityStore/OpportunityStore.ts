@@ -18,7 +18,7 @@ import { autorun, makeAutoObservable, runInAction } from "mobx";
 import moment from "moment";
 import API from "../API";
 import RootStore from "../RootStore";
-import UserStore, { KNOWN_EXPERIMENTS } from "../UserStore";
+import UserStore from "../UserStore";
 import {
   Opportunity,
   OpportunityData,
@@ -181,13 +181,9 @@ class OpportunityStore {
       return;
     }
 
-    let baseOpportunities =
+    const baseOpportunities =
       this.opportunitiesByPerson[personExternalId]?.slice();
-    if (!this.userStore.isInExperiment(KNOWN_EXPERIMENTS.ProfileV2)) {
-      baseOpportunities = baseOpportunities?.filter(
-        (opp) => opp.opportunityType === OpportunityType.OVERDUE_DOWNGRADE
-      );
-    }
+
     return baseOpportunities?.sort(opportunityPriorityComparator)[0];
   }
 
