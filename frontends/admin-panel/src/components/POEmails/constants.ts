@@ -23,3 +23,14 @@ export const layout = {
 export const tailLayout = {
   wrapperCol: { offset: 8, span: 14 },
 };
+
+export interface BatchInfoDict {
+  sentDate: string;
+  totalDelivered: string;
+  redirectAddress: string;
+}
+
+export type BatchInfoType = {
+  batchId: string;
+  sendResults: BatchInfoDict[];
+};

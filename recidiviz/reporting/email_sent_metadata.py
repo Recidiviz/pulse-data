@@ -82,10 +82,10 @@ class EmailSentMetadata:
     def from_json(cls, email_metadata: Dict[str, str]) -> "EmailSentMetadata":
         batch_id = json.loads(email_metadata["batchId"])
         previous_send_results = json.loads(email_metadata["sendResults"])
-        converted_results = [
+        send_results = [
             EmailSentResult.from_json(result) for result in previous_send_results
         ]
-        return EmailSentMetadata(batch_id=batch_id, send_results=converted_results)
+        return EmailSentMetadata(batch_id=batch_id, send_results=send_results)
 
     def add_new_email_send_result(
         self,
