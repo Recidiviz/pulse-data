@@ -220,6 +220,12 @@ from recidiviz.validation.views.state.prod_staging_comparison.supervision_start_
 from recidiviz.validation.views.state.prod_staging_comparison.supervision_termination_external_prod_staging_comparison import (
     SUPERVISION_TERMINATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.prod_staging_comparison.sessions_justice_counts_comparison import (
+    SESSIONS_JUSTICE_COUNTS_COMPARISON_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.prod_staging_comparison.sessions_justice_counts_prod_staging_comparison import (
+    SESSIONS_JUSTICE_COUNTS_PROD_STAGING_COMPARISON_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.recidivism_person_level_external_comparison_matching_people import (
     RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
 )
@@ -301,6 +307,7 @@ CROSS_PROJECT_VALIDATION_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SUPERVISION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
     SUPERVISION_START_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
     SUPERVISION_TERMINATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
+    SESSIONS_JUSTICE_COUNTS_PROD_STAGING_COMPARISON_VIEW_BUILDER,
 ]
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = (
@@ -388,6 +395,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = (
         MOST_RECENT_ASSESSMENT_DATE_BY_PERSON_BY_STATE_COMPARISON_VIEW_BUILDER,
         MOST_RECENT_ASSESSMENT_SCORE_BY_PERSON_BY_STATE_COMPARISON_VIEW_BUILDER,
         MOST_RECENT_FACE_TO_FACE_CONTACT_DATE_BY_PERSON_BY_STATE_COMPARISON_VIEW_BUILDER,
+        SESSIONS_JUSTICE_COUNTS_COMPARISON_VIEW_BUILDER,
     ]
     + CROSS_PROJECT_VALIDATION_VIEW_BUILDERS
     + POPULATION_PROJECTION_DATA_VALIDATION_VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE
