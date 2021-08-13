@@ -57,6 +57,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     filename_parts_from_path,
 )
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
+from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.regions import get_region
@@ -111,15 +112,11 @@ def do_upload(
     """Imports a set of raw data files in the given source bucket into a sandbox
     dataset.
     """
-
-    input_str = input(
+    prompt_for_confirmation(
         f"Have you already uploaded raw files to [{source_bucket.uri()}] using script "
         f"`recidiviz.tools.ingest.operations.upload_raw_state_files_to_ingest_bucket_with_date` "
-        f"with arg `--destination-bucket {source_bucket.bucket_name}`?. [y/n] "
+        f"with arg `--destination-bucket {source_bucket.bucket_name}`?"
     )
-
-    if input_str.upper() != "Y":
-        return
 
     import_manager = SandboxDirectIngestRawFileImportManager(
         state_code=state_code,

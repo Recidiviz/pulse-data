@@ -395,7 +395,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               <p>
                 <CodeBlock enabled={currentStep === 9}>
                   python -m
-                  recidiviz.tools.ingest.operations.copy_ingest_views_from_secondary_to_primary
+                  recidiviz.tools.ingest.operations.move_ingest_views_from_secondary_to_primary
                   \<br />
                   {"    "}--region {stateCode.toLowerCase()} \<br />
                   {"    "}--project-id {projectId} \<br />

@@ -23,19 +23,11 @@ from typing import Optional
 
 from pygit2.repository import Repository
 
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
-
-
-def prompt_for_confirmation(input_text: str, accepted_response: str) -> None:
-    check = input(
-        f'{input_text}\nPlease type "{accepted_response}" to confirm. (Anything else exits):\n'
-    )
-    if check != accepted_response:
-        logging.warning("\nConfirmation aborted.")
-        sys.exit(1)
+from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 
 
 def confirm_correct_db_instance(database: SchemaType) -> None:

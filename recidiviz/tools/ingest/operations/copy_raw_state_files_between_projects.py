@@ -38,8 +38,9 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     gcsfs_direct_ingest_storage_directory_path_for_region,
 )
-from recidiviz.tools.ingest.operations.copy_storage_ingest_files_controller import (
-    CopyStorageIngestFilesController,
+from recidiviz.tools.ingest.operations.operate_on_storage_ingest_files_controller import (
+    IngestFilesOperationType,
+    OperateOnStorageIngestFilesController,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.params import str_to_bool
@@ -104,11 +105,12 @@ def main() -> None:
         ingest_instance=DirectIngestInstance.PRIMARY,
         project_id=args.destination_project_id,
     )
-    CopyStorageIngestFilesController(
+    OperateOnStorageIngestFilesController(
         region_code=args.region,
+        operation_type=IngestFilesOperationType.COPY,
         source_region_storage_dir_path=source_region_storage_dir_path,
         destination_region_storage_dir_path=destination_region_storage_dir_path,
-        file_type_to_copy=GcsfsDirectIngestFileType.RAW_DATA,
+        file_type_to_operate_on=GcsfsDirectIngestFileType.RAW_DATA,
         start_date_bound=args.start_date_bound,
         end_date_bound=args.end_date_bound,
         dry_run=args.dry_run,

@@ -15,16 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Script for copying all files in production storage for a region to state storage for a region.
-Should be used when a rerun in the SECONDARY instance has completed and we are moving the data
+Script for moving all files in production storage for a region to state storage for a region.
+Should be used when a rerun in the SECONDARY instance has completed and we are copying the data
 to the PRIMARY instance.
 
-When run in dry-run mode (the default), will only log copies, but will not execute them.
+When run in dry-run mode (the default), will only log moves, but will not execute them.
 
 Example usage (run from `pipenv shell`):
 
-python -m recidiviz.tools.ingest.operations.copy_ingest_views_from_secondary_to_primary \
-    --region us_nd --project-id recidiviz-123 --dry-run True
+python -m recidiviz.tools.ingest.operations.move_ingest_views_from_secondary_to_primary \
+    --region us_nd --project-id recidiviz-staging --dry-run True
 """
 import argparse
 import logging
@@ -37,8 +37,9 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     gcsfs_direct_ingest_storage_directory_path_for_region,
 )
-from recidiviz.tools.ingest.operations.copy_storage_ingest_files_controller import (
-    CopyStorageIngestFilesController,
+from recidiviz.tools.ingest.operations.operate_on_storage_ingest_files_controller import (
+    IngestFilesOperationType,
+    OperateOnStorageIngestFilesController,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.params import str_to_bool
@@ -86,11 +87,12 @@ def main() -> None:
             project_id=args.project_id,
         )
     )
-    CopyStorageIngestFilesController(
+    OperateOnStorageIngestFilesController(
         region_code=args.region,
+        operation_type=IngestFilesOperationType.MOVE,
         source_region_storage_dir_path=source_region_storage_dir_path,
         destination_region_storage_dir_path=destination_region_storage_dir_path,
-        file_type_to_copy=GcsfsDirectIngestFileType.INGEST_VIEW,
+        file_type_to_operate_on=GcsfsDirectIngestFileType.INGEST_VIEW,
         start_date_bound=None,
         end_date_bound=None,
         dry_run=args.dry_run,
