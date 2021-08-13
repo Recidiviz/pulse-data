@@ -68,6 +68,7 @@ from recidiviz.tools.gsutil_shell_helpers import (
     gsutil_ls,
     gsutil_mv,
 )
+from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
@@ -138,45 +139,30 @@ class MoveFilesFromStorageController:
         """Main method of script - executes move, or runs a dry run of a move."""
         if self.dry_run:
             logging.info("Running in DRY RUN mode for region [%s]", self.region)
-        else:
-            i = input(
-                f"This will move [{self.region}] files in [{self.project_id}] that were uploaded starting on date"
-                f"[{self.start_date_bound}] and ending on date [{self.end_date_bound}]. Type {self.project_id} "
-                f"to continue: "
-            )
 
-            if i != self.project_id:
-                return
+        prompt_for_confirmation(
+            f"This will move [{self.region}] files in [{self.project_id}] that were uploaded starting on date"
+            f"[{self.start_date_bound}] and ending on date [{self.end_date_bound}].",
+            accepted_response_override=self.project_id,
+            dry_run=self.dry_run,
+        )
 
-        if self.dry_run:
-            logging.info(
-                "DRY RUN: Would pause [%s] in project [%s]",
-                self._queues_to_pause(),
-                self.project_id,
-            )
-        else:
-            i = input(
-                f"Pausing queues {self._queues_to_pause()} in project "
-                f"[{self.project_id}] - continue? [y/n]: "
-            )
+        prompt_for_confirmation(
+            f"Pausing queues {self._queues_to_pause()} in project [{self.project_id}] "
+            f"- continue?",
+            dry_run=self.dry_run,
+        )
 
-            if i.upper() != "Y":
-                return
-
+        if not self.dry_run:
             self.pause_and_purge_queues()
 
+        logging.info("Finding files to move...")
         date_subdir_paths = self.get_date_subdir_paths()
 
-        if self.dry_run:
-            logging.info("DRY RUN: Found [%s] dates to move", len(date_subdir_paths))
-        else:
-            i = input(
-                f"Found [{len(date_subdir_paths)}] dates to move - "
-                f"continue? [y/n]: "
-            )
-
-            if i.upper() != "Y":
-                return
+        prompt_for_confirmation(
+            f"Found [{len(date_subdir_paths)}] dates to move - continue?",
+            dry_run=self.dry_run,
+        )
 
         thread_pool = ThreadPool(processes=12)
         files_to_move = self.collect_files_to_move(date_subdir_paths, thread_pool)
@@ -190,7 +176,7 @@ class MoveFilesFromStorageController:
 
         if self.dry_run:
             logging.info(
-                "DRY RUN: See results in [%s].\n"
+                "[DRY RUN] See results in [%s].\n"
                 "Rerun with [--dry-run False] to execute move.",
                 self.log_output_path,
             )
@@ -221,7 +207,7 @@ class MoveFilesFromStorageController:
         """Searches the given list of directory paths for files directly in those directories that should be moved to
         the ingest directory and returns a list of string paths to those files.
         """
-        msg_prefix = "DRY_RUN: " if self.dry_run else ""
+        msg_prefix = "[DRY RUN] " if self.dry_run else ""
         self.collect_progress = Bar(
             f"{msg_prefix}Gathering paths to move...", max=len(date_subdir_paths)
         )
@@ -251,7 +237,7 @@ class MoveFilesFromStorageController:
 
         Note: Move order is not guaranteed - file moves are parallelized.
         """
-        msg_prefix = "DRY_RUN: " if self.dry_run else ""
+        msg_prefix = "[DRY RUN] " if self.dry_run else ""
         self.move_progress = Bar(f"{msg_prefix}Moving files...", max=len(files_to_move))
         thread_pool.map(self.move_file, files_to_move)
 
@@ -342,7 +328,7 @@ class MoveFilesFromStorageController:
         self.moves_list.sort()
         with open(self.log_output_path, "w") as f:
             if self.dry_run:
-                template = "DRY RUN: Would move {} -> {}\n"
+                template = "[DRY RUN] Would move {} -> {}\n"
             else:
                 template = "Moved {} -> {}\n"
 

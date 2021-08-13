@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for calling gsutil commands inside of Python scripts."""
+import os
 import subprocess
 from typing import List, Optional
 
@@ -33,8 +34,12 @@ def gsutil_ls(gs_path: str, directories_only: bool = False) -> List[str]:
     See more documentation here:
     https://cloud.google.com/storage/docs/gsutil/commands/ls
     """
+    flags = ""
+    if directories_only:
+        flags = "-d"
+
     res = subprocess.run(
-        f'gsutil ls "{gs_path}"',
+        f'gsutil ls {flags} "{gs_path}"',
         shell=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -44,12 +49,7 @@ def gsutil_ls(gs_path: str, directories_only: bool = False) -> List[str]:
     if res.stderr:
         raise ValueError(res.stderr.decode("utf-8"))
 
-    result_paths = [p for p in res.stdout.decode("utf-8").splitlines() if p != gs_path]
-
-    if not directories_only:
-        return result_paths
-
-    return [p for p in result_paths if p.endswith("/")]
+    return [p for p in res.stdout.decode("utf-8").splitlines() if p != gs_path]
 
 
 # See https://github.com/GoogleCloudPlatform/gsutil/issues/464#issuecomment-633334888
@@ -110,9 +110,18 @@ def gsutil_get_storage_subdirs_containing_file_types(
 ) -> List[str]:
     """Returns all subdirs containing files of type |file_type| in the provided |storage_bucket_path| for a given
     region."""
-    subdirs = gsutil_ls(
-        f"gs://{storage_bucket_path}/{file_type.value}/*/*/", directories_only=True
-    )
+    single_date_dir_wildcard = f"gs://{storage_bucket_path}/{file_type.value}/*/*/*/"
+
+    subdirs = gsutil_ls(single_date_dir_wildcard, directories_only=True)
+
+    split_file_subdirs = set()
+    if file_type == GcsfsDirectIngestFileType.INGEST_VIEW:
+        split_file_subdirs = set(
+            gsutil_ls(
+                os.path.join(single_date_dir_wildcard, "split_files/"),
+                directories_only=True,
+            )
+        )
 
     subdirs_containing_files = []
     for subdir in subdirs:
@@ -122,6 +131,9 @@ def gsutil_get_storage_subdirs_containing_file_types(
             lower_bound_date=lower_bound_date,
             date_of_interest=subdir_date,
         ):
+            split_file_subdir = os.path.join(subdir, "split_files/")
+            if split_file_subdir in split_file_subdirs:
+                subdirs_containing_files.append(split_file_subdir)
             subdirs_containing_files.append(subdir)
 
     return subdirs_containing_files

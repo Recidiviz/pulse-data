@@ -41,7 +41,7 @@ from recidiviz.ingest.direct.controllers.base_upload_state_files_to_ingest_bucke
     UploadStateFilesToIngestBucketDelegate,
 )
 from recidiviz.tools.gsutil_shell_helpers import gsutil_cp
-from recidiviz.tools.migrations.migration_helpers import prompt_for_confirmation
+from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.params import str_to_bool
 
 
@@ -164,7 +164,7 @@ class ManualUploadStateFilesToIngestBucketController(
         self.copies_list.sort()
         with open(self.log_output_path, "w") as f:
             if self.dry_run:
-                template = "DRY RUN: Would copy {} -> {}\n"
+                template = "[DRY RUN] Would copy {} -> {}\n"
             else:
                 template = "Copied {} -> {}\n"
 
@@ -257,9 +257,9 @@ def main() -> None:
             if i != controller.destination_ingest_bucket.bucket_name:
                 return
 
-    msg_prefix = "DRY_RUN: " if controller.dry_run else ""
+    msg_prefix = "[DRY RUN] " if controller.dry_run else ""
     controller.move_progress = Bar(
-        f"{msg_prefix}Moving files...", max=len(controller.get_paths_to_upload())
+        f"{msg_prefix}Uploading files...", max=len(controller.get_paths_to_upload())
     )
 
     controller.do_upload()
@@ -272,7 +272,7 @@ def main() -> None:
 
     if controller.dry_run:
         logging.info(
-            "DRY RUN: See results in [%s].\nRerun with [--dry-run False] to execute move.",
+            "[DRY RUN] See results in [%s].\nRerun with [--dry-run False] to execute move.",
             controller.log_output_path,
         )
     else:

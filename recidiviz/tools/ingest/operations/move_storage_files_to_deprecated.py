@@ -57,11 +57,16 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     filename_parts_from_path,
     gcsfs_direct_ingest_storage_directory_path_for_region,
 )
+from recidiviz.persistence.database.schema.operations.schema import (
+    DirectIngestIngestFileMetadata,
+    DirectIngestRawFileMetadata,
+)
 from recidiviz.tools.gsutil_shell_helpers import (
     gsutil_get_storage_subdirs_containing_file_types,
     gsutil_ls,
     gsutil_mv,
 )
+from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.params import str_to_bool
 
 # pylint: disable=not-callable
@@ -121,66 +126,36 @@ class MoveFilesToDeprecatedController:
         """Main function that will execute the move to deprecated."""
 
         if self.file_type == GcsfsDirectIngestFileType.RAW_DATA:
-            i = input(
+            prompt_for_confirmation(
                 "You have chosen to deprecate RAW_DATA type files. It is relatively "
                 "rare that this should happen - generally only if we have received bad "
-                "data from the state. \n Are you sure you want to proceed? [y/n]: "
+                "data from the state. \nAre you sure you want to proceed?",
+                dry_run=self.dry_run,
             )
 
-            if i.upper() != "Y":
-                logging.info("Responded with [%s]. Exiting.", i)
-                return
-
-            i = input(
-                f"Have you already deleted data for these files out of the relevant "
-                f"BigQuery raw data tables in the "
-                f"`{self.project_id}.{self.region_code.lower()}_raw_data` "
-                f"dataset? [y/n]: "
+            prompt_for_confirmation(
+                f"All associated rows in the BigQuery dataset "
+                f"`{self.region_code.lower()}_raw_data` must be deleted before moving "
+                f"these files to a deprecated location.\nHave you already done so?",
+                dry_run=self.dry_run,
             )
-            if i.upper() != "Y":
-                logging.info("Responded with [%s]. Exiting.", i)
-                return
 
-        # TODO(#3666): Update this script to make updates to our Operations db and BigQuery (if necessary).
-        #  For now we print these messages to check if appropriate data has been deleted from operations db.
-        if self.dry_run:
-            if self.file_type == GcsfsDirectIngestFileType.RAW_DATA:
-                logging.info(
-                    "[DRY RUN] All associated rows from our postgres table `direct_ingest_raw_file_metadata` "
-                    "and BigQuery dataset `%s_raw_data` must be deleted before moving these "
-                    "files to a deprecated location. Make sure you have done this before moving these files.",
-                    self.region_code,
-                )
-
-            elif self.file_type == GcsfsDirectIngestFileType.INGEST_VIEW:
-                logging.info(
-                    "[DRY RUN] All associated rows from our postgres table `direct_ingest_ingest_file_"
-                    "metadata` must be deleted or marked as invalidated before moving these files to a "
-                    "deprecated location. Make sure you have done this before moving these files."
-                )
-
+        # TODO(#3666): Update this script to make updates to our Operations db and
+        #  BigQuery (if necessary). For now we print these messages to check if
+        #  appropriate data has been deleted from operations db.
+        if self.file_type == GcsfsDirectIngestFileType.RAW_DATA:
+            operations_table = DirectIngestRawFileMetadata.__tablename__
+        elif self.file_type == GcsfsDirectIngestFileType.INGEST_VIEW:
+            operations_table = DirectIngestIngestFileMetadata.__tablename__
         else:
-            if self.file_type == GcsfsDirectIngestFileType.RAW_DATA:
-                i = input(
-                    "All associated rows from our postgres table `direct_ingest_raw_file_metadata` "
-                    f"and BigQuery dataset `{self.region_code}_raw_data` must be deleted before moving these "
-                    "files to a deprecated location.\n Have you already done so? [y/n]: "
-                )
+            raise ValueError(f"Unexpected file type [{self.file_type}].")
 
-                if i.upper() != "Y":
-                    logging.info("Responded with [%s]. Exiting.", i)
-                    return
-
-            elif self.file_type == GcsfsDirectIngestFileType.INGEST_VIEW:
-                i = input(
-                    "All associated rows from our postgres table `direct_ingest_ingest_file_metadata` "
-                    "must be deleted or marked as invalidated before moving these files to a deprecated "
-                    "location.\nHave you already done so? [y/n]: "
-                )
-
-                if i.upper() != "Y":
-                    logging.info("Responded with [%s]. Exiting.", i)
-                    return
+        prompt_for_confirmation(
+            f"All associated rows from our postgres table `{operations_table}` "
+            "must be deleted or marked as invalidated before moving these files to a deprecated "
+            "location.\nHave you already done so?",
+            dry_run=self.dry_run,
+        )
 
         destination_dir_path = os.path.join(
             self.region_storage_dir_path_for_file_type.abs_path(),
@@ -189,44 +164,26 @@ class MoveFilesToDeprecatedController:
             f"{str(self.file_type.value)}/",
         )
 
-        if self.dry_run:
-            logging.info(
-                "[DRY RUN] Moving files from [%s] to [%s]",
-                self.region_storage_dir_path_for_file_type.abs_path(),
-                destination_dir_path,
-            )
+        prompt_for_confirmation(
+            f"Moving files from [{self.region_storage_dir_path_for_file_type.abs_path()}] to "
+            f"[{destination_dir_path}] - continue?",
+            dry_run=self.dry_run,
+        )
 
-        else:
-
-            i = input(
-                f"Moving files from [{self.region_storage_dir_path_for_file_type.abs_path()}] to "
-                f"[{destination_dir_path}] - continue? [y/n]: "
-            )
-
-            if i.upper() != "Y":
-                logging.info("Responded with [%s]. Exiting.", i)
-                return
-
+        logging.info("Finding files to move...")
         files_to_move = self._get_files_to_move()
 
-        if self.dry_run:
-            logging.info("[DRY RUN] Found [%d] files to move", len(files_to_move))
-
-        else:
-            i = input(
-                f"Found [{len(files_to_move)}] files to move - " f"continue? [y/n]: "
-            )
-
-            if i.upper() != "Y":
-                logging.info("Responded with [%s]. Exiting.", i)
-                return
+        prompt_for_confirmation(
+            f"Found [{len(files_to_move)}] files to move - continue?",
+            dry_run=self.dry_run,
+        )
 
         self._execute_move(files_to_move)
         self._write_move_to_log_file()
 
         if self.dry_run:
             logging.info(
-                "DRY RUN: See results in [%s].\n"
+                "[DRY RUN] See results in [%s].\n"
                 "Rerun with [--dry-run False] to execute move.",
                 self.log_output_path,
             )
@@ -257,7 +214,7 @@ class MoveFilesToDeprecatedController:
         self.move_list.sort()
         with open(self.log_output_path, "w") as f:
             if self.dry_run:
-                template = "DRY RUN: Would move {} -> {}\n"
+                template = "[DRY RUN] Would move {} -> {}\n"
             else:
                 template = "Moved {} -> {}\n"
 
