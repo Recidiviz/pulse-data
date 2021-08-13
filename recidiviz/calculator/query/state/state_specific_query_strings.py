@@ -301,6 +301,24 @@ def vitals_state_specific_district_display_name(
     """
 
 
+def agent_state_specific_full_name(state_code: str) -> str:
+    """State-specific logic to normalize agent names into displayable versions."""
+
+    def build_full_name_from_given_and_surname() -> str:
+        return "TRIM(CONCAT(COALESCE(given_names, ''), ' ', COALESCE(surname, '')))"
+
+    def format_first_and_last_name() -> str:
+        return "TRIM(CONCAT(SPLIT(full_name, ',')[SAFE_OFFSET(1)], ' ', SPLIT(full_name, ',')[SAFE_OFFSET(0)]))"
+
+    return f"""
+            CASE {state_code}
+              WHEN 'US_ID'
+                THEN IFNULL({format_first_and_last_name()}, {build_full_name_from_given_and_surname()})
+              ELSE IFNULL(full_name, {build_full_name_from_given_and_surname()})
+            END AS full_name
+        """
+
+
 class SpotlightFacilityType(Enum):
     PRISON = "prison"
     COMMUNITY = "community"
