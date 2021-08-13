@@ -19,6 +19,9 @@ in static tables.
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.state_specific_query_strings import (
+    agent_state_specific_full_name,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -29,8 +32,8 @@ AUGMENTED_AGENT_INFO_DESCRIPTION = """Agent information table that adds agent in
     """
 
 # TODO(#4159) Remove the US_PA state-specific logic once we have given and surnames set in ingest
-AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = """
-    /*{description}*/
+AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = f"""
+    /*{{description}}*/
     WITH
     agents_base AS (
       SELECT
@@ -43,7 +46,7 @@ AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = """
         -- TODO(#5445): We are currently shoving in a hack to pick one possible name for the agent.
         -- We should come up with a smarter way to have a single name for the agent.
         ROW_NUMBER() OVER (PARTITION BY state_code, agent_type, external_id ORDER BY CHAR_LENGTH(full_name) DESC NULLS LAST) AS rn
-      FROM `{project_id}.{base_dataset}.state_agent` agent
+      FROM `{{project_id}}.{{base_dataset}}.state_agent` agent
     ),
     agent_names AS (
         SELECT
@@ -60,10 +63,7 @@ AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = """
             WHEN full_name IS NOT NULL THEN TRIM(SPLIT(full_name, ',')[SAFE_OFFSET(0)])
             ELSE NULL
           END AS surname,
-          CASE
-            WHEN full_name IS NOT NULL THEN full_name 
-            ELSE CONCAT(COALESCE(given_names, ''), ' ', COALESCE(surname, '')) 
-          END AS full_name
+          {agent_state_specific_full_name('state_code')}
         FROM agents_base
         WHERE rn = 1
     ),
@@ -76,7 +76,7 @@ AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = """
         given_names,
         surname,
         agent_names.full_name
-      FROM `{project_id}.{base_dataset}.state_agent`
+      FROM `{{project_id}}.{{base_dataset}}.state_agent`
       INNER JOIN agent_names
       USING (state_code, agent_type, external_id)
     )
