@@ -44,7 +44,7 @@ const POEmailsView = (): JSX.Element => {
         type="warning"
         showIcon
       />
-      <Row gutter={[16, 16]}>
+      <Row gutter={[8, 8]}>
         <Col span={12}>
           <GenerateEmails />
         </Col>
@@ -52,12 +52,12 @@ const POEmailsView = (): JSX.Element => {
           <SendEmails />
         </Col>
       </Row>
-      <Row gutter={[16, 16]} justify="center">
+      <Row justify="center">
         {data
           ?.sort((a, b) => a.name.localeCompare(b.name))
           .map((state: StateCodeInfo) => {
             return (
-              <Col key={state.code} span={7}>
+              <Col key={state.code}>
                 <ListBatches stateInfo={state} />
               </Col>
             );

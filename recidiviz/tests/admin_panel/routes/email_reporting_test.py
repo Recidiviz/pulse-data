@@ -48,7 +48,6 @@ class ReportingEndpointTests(TestCase):
         self.gcs_file_system_patcher = patch(
             "recidiviz.cloud_storage.gcsfs_factory.GcsfsFactory.build"
         )
-
         self.requires_gae_auth_patcher = patch(
             "recidiviz.admin_panel.routes.line_staff_tools.requires_gae_auth",
             side_effect=lambda route: route,

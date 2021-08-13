@@ -72,7 +72,9 @@ EMAIL_STATE_CODES = [StateCode.US_ID, StateCode.US_PA]
 
 def add_line_staff_tools_routes(bp: Blueprint) -> None:
     """Adds the relevant Case Triage API routes to an input Blueprint."""
+
     email_handler = EmailReportingHandler()
+
     # Fetch ETL View Ids for GCS -> Cloud SQL Import
     @bp.route("/api/line_staff_tools/fetch_etl_view_ids", methods=["POST"])
     @requires_gae_auth

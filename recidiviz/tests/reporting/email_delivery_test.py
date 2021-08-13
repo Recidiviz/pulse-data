@@ -23,7 +23,6 @@ from unittest.mock import MagicMock, Mock, call, patch
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting import email_delivery
-from recidiviz.reporting.email_reporting_handler import EmailReportingHandler
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
@@ -63,7 +62,6 @@ class EmailDeliveryTest(TestCase):
             "FROM_EMAIL_NAME": "Recidiviz",
         }
         self.mock_utils.get_env_var.side_effect = self.mock_env_vars.get
-        self.email_handler = EmailReportingHandler()
 
     def tearDown(self) -> None:
         self.sendgrid_client_patcher.stop()
