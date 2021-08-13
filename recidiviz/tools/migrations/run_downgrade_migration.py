@@ -44,9 +44,9 @@ from recidiviz.server_config import database_keys_for_schema_type
 from recidiviz.tools.migrations.migration_helpers import (
     confirm_correct_db_instance,
     confirm_correct_git_branch,
-    prompt_for_confirmation,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
