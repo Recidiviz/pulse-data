@@ -33,7 +33,7 @@ import { ClientProps } from "./ClientList.types";
 
 const ClientComponent: React.FC<ClientProps> = observer(
   ({ client }: ClientProps) => {
-    const { clientsStore, policyStore, userStore } = useRootStore();
+    const { clientsStore } = useRootStore();
     const cardRef = React.useRef<HTMLDivElement>(null);
 
     const viewClient = React.useCallback(() => {
@@ -55,27 +55,13 @@ const ClientComponent: React.FC<ClientProps> = observer(
       });
     }, [client, clientsStore, viewClient]);
 
-    const { omsName } = policyStore;
-
     const active =
       clientsStore.activeClient?.personExternalId === client.personExternalId;
 
-    let tooltipTitle: React.ReactNode;
-
-    if (userStore.canSeeProfileV2) {
-      tooltipTitle = client.inProgressUpdates
-        .filter(isErrorReport)
-        .map((actionType) => `${ACTION_TITLES[actionType]} report pending.`)
-        .join(" ");
-    } else {
-      tooltipTitle = client.inProgressUpdates.length ? (
-        <>
-          <strong>{client.inProgressUpdates.length}</strong> action
-          {client.inProgressUpdates.length !== 1 ? "s" : ""} being confirmed
-          with {omsName}
-        </>
-      ) : null;
-    }
+    const tooltipTitle: React.ReactNode = client.inProgressUpdates
+      .filter(isErrorReport)
+      .map((actionType) => `${ACTION_TITLES[actionType]} report pending.`)
+      .join(" ");
 
     return (
       <ClientListCardElement

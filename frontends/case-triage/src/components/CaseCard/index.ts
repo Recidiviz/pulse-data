@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import CaseCard from "./ExperimentWrapper";
+import CaseCard from "./ClientProfileCard";
 
 export * from "./CaseCardContainers";
 

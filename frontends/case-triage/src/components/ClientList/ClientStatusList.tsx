@@ -23,7 +23,6 @@ import { ClientProps } from "./ClientList.types";
 import { StatusList } from "./ClientList.styles";
 import AlertPreview from "../AlertPreview";
 import { LONG_DATE_FORMAT } from "../../utils";
-import { useRootStore } from "../../stores";
 
 export const ClientStatusList: React.FC<ClientProps> = observer(
   ({ client }: ClientProps): JSX.Element => {
@@ -57,8 +56,6 @@ export const ClientStatusList: React.FC<ClientProps> = observer(
       });
     }
 
-    const { userStore } = useRootStore();
-    const includeNoteCount = userStore.canSeeProfileV2;
     const noteCount = client.activeNotes.length;
 
     // the "truncator" won't render if the list is empty;
@@ -71,10 +68,7 @@ export const ClientStatusList: React.FC<ClientProps> = observer(
       <StatusList
         alwaysShowTruncator
         renderTruncator={({ hiddenItemsCount }) => {
-          let additionalItemsCount = hiddenItemsCount;
-          if (includeNoteCount) {
-            additionalItemsCount += noteCount;
-          }
+          const additionalItemsCount = hiddenItemsCount + noteCount;
 
           if (additionalItemsCount) {
             return (
