@@ -32,6 +32,15 @@ export const NewItemsWrapper = styled.div`
   width: 100%;
 `;
 
+export const EmptyState = styled.div`
+  -ms-grid-column: 1;
+  grid-column: 1;
+  -ms-grid-row: 1;
+  grid-row: 1;
+  min-height: 0;
+  padding: ${rem(24)} ${rem(32)};
+`;
+
 export const ItemsWrapper = styled.ul`
   -ms-grid-column: 1;
   grid-column: 1;
