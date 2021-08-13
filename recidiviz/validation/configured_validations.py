@@ -617,7 +617,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "most_recent_etl_date",
                 "most_recent_state_date",
             ],
-            partition_columns=["region_code", "person_external_id"],
+            partition_columns=["region_code"],
             validation_category=ValidationCategory.CONSISTENCY,
         ),
         SamenessDataValidationCheck(
@@ -626,7 +626,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "most_recent_etl_score",
                 "most_recent_state_score",
             ],
-            partition_columns=["region_code", "person_external_id"],
+            partition_columns=["region_code"],
             validation_category=ValidationCategory.CONSISTENCY,
         ),
         SamenessDataValidationCheck(
@@ -636,11 +636,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "most_recent_etl_face_to_face_contact_date",
                 "most_recent_state_face_to_face_contact_date",
             ],
-            partition_columns=[
-                "region_code",
-                "person_external_id",
-                "officer_external_id",
-            ],
+            partition_columns=["region_code"],
             validation_category=ValidationCategory.CONSISTENCY,
         ),
         # External comparison validations
