@@ -15,6 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { StateCodeInfo } from "../IngestOperationsView/constants";
+
 export const layout = {
   labelCol: { span: 8 },
   wrapperCol: { span: 14 },
@@ -34,3 +36,7 @@ export type BatchInfoType = {
   batchId: string;
   sendResults: BatchInfoDict[];
 };
+
+export interface POEmailsFormProps {
+  stateInfo: StateCodeInfo;
+}

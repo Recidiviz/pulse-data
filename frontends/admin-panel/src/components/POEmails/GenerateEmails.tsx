@@ -16,15 +16,9 @@
 // =============================================================================
 import { Button, Card, Form, Input, message, Select, Spin } from "antd";
 import * as React from "react";
-import {
-  fetchEmailStateCodes,
-  generateEmails,
-} from "../../AdminPanelAPI/LineStaffTools";
-import useFetchedData from "../../hooks";
-import { StateCodeInfo } from "../IngestOperationsView/constants";
+import { generateEmails } from "../../AdminPanelAPI/LineStaffTools";
 import ActionRegionConfirmationForm from "../Utilities/ActionRegionConfirmationForm";
-import { layout, tailLayout } from "./constants";
-import StateSelector from "../Utilities/StateSelector";
+import { layout, tailLayout, POEmailsFormProps } from "./constants";
 import DataFreshnessInfo from "../Utilities/DataFreshnessInfo";
 
 interface GenerateFormData {
@@ -35,7 +29,7 @@ interface GenerateFormData {
   emailAllowlist: string[];
 }
 
-const GenerateEmails = (): JSX.Element => {
+const GenerateEmails: React.FC<POEmailsFormProps> = ({ stateInfo }) => {
   const isProduction = window.RUNTIME_GCP_ENVIRONMENT === "production";
   const projectId = isProduction ? "recidiviz-123" : "recidiviz-staging";
 
@@ -45,11 +39,6 @@ const GenerateEmails = (): JSX.Element => {
   const [showSpinner, setShowSpinner] = React.useState(false);
   const [isConfirmationModalVisible, setIsConfirmationModalVisible] =
     React.useState(false);
-  const [stateCode, setStateCode] =
-    React.useState<string | undefined>(undefined);
-
-  const { loading, data } =
-    useFetchedData<StateCodeInfo[]>(fetchEmailStateCodes);
 
   const onFinish = (values?: GenerateFormData | undefined) => {
     setFormData(values);
@@ -60,22 +49,20 @@ const GenerateEmails = (): JSX.Element => {
     setIsConfirmationModalVisible(false);
     setShowSpinner(true);
     message.info("Generating emails...");
-    if (formData?.state) {
-      const r = await generateEmails(
-        formData.state,
-        formData.testAddress,
-        formData.regionCode,
-        formData.messageBodyOverride
-      );
-      if (r.status >= 400) {
-        const text = await r.text();
-        message.error(`Generate emails... failed: ${text}`);
-        setBatchId(null);
-      } else {
-        const json = await r.json();
-        message.success(`Generate emails... succeeded! ${json.statusText}`);
-        setBatchId(json.batchId);
-      }
+    const r = await generateEmails(
+      stateInfo.code,
+      formData?.testAddress,
+      formData?.regionCode,
+      formData?.messageBodyOverride
+    );
+    if (r.status >= 400) {
+      const text = await r.text();
+      message.error(`Generate emails... failed: ${text}`);
+      setBatchId(null);
+    } else {
+      const json = await r.json();
+      message.success(`Generate emails... succeeded! ${json.statusText}`);
+      setBatchId(json.batchId);
     }
     setShowSpinner(false);
   };
@@ -91,7 +78,10 @@ const GenerateEmails = (): JSX.Element => {
 
   return (
     <>
-      <Card title="Generate Emails" style={{ margin: 10, height: "95%" }}>
+      <Card
+        title={`Generate ${stateInfo.name} Emails`}
+        style={{ margin: 10, height: "95%" }}
+      >
         <Form
           {...layout}
           className="buffer"
@@ -99,14 +89,7 @@ const GenerateEmails = (): JSX.Element => {
             onFinish(values);
           }}
         >
-          <Form.Item label="State" name="state" rules={[{ required: true }]}>
-            <StateSelector
-              loading={loading}
-              data={data}
-              onChange={(state) => setStateCode(state)}
-            />
-          </Form.Item>
-          {stateCode && <DataFreshnessInfo state={stateCode} />}
+          {stateInfo && <DataFreshnessInfo state={stateInfo.code} />}
           <Form.Item
             label="Test Address"
             name="testAddress"
@@ -142,10 +125,10 @@ const GenerateEmails = (): JSX.Element => {
         {showSpinner ? <Spin /> : null}
         {batchId ? (
           <p>
-            Bucket link to {projectId}-report-html for {formData?.state}, batch
+            Bucket link to {projectId}-report-html for {stateInfo.name}, batch
             <a
               style={{ margin: 10 }}
-              href={`https://console.cloud.google.com/storage/browser/${projectId}-report-html/${formData?.state}/${batchId}`}
+              href={`https://console.cloud.google.com/storage/browser/${projectId}-report-html/${stateInfo.code}/${batchId}`}
             >
               {batchId}
             </a>
@@ -153,14 +136,14 @@ const GenerateEmails = (): JSX.Element => {
         ) : null}
       </Card>
 
-      {formData?.state ? (
+      {stateInfo ? (
         <ActionRegionConfirmationForm
           visible={isConfirmationModalVisible}
           onConfirm={onEmailActionConfirmation}
           onCancel={onConfirmationCancel}
           action="generate"
           actionName="Generate Emails"
-          regionCode={formData.state}
+          regionCode={stateInfo.code}
         />
       ) : null}
     </>

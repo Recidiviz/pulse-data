@@ -82,6 +82,11 @@ const FlashDatabaseChecklist = (): JSX.Element => {
   const history = useHistory();
 
   const incrementCurrentStep = async () => setCurrentStep(currentStep + 1);
+
+  const convertStateInfo = (stateInfo: StateCodeInfo) => {
+    setStateCode(stateInfo.code);
+  };
+
   const runAndCheckStatus = async (
     fn: () => Promise<Response>
   ): Promise<boolean> => {
@@ -504,7 +509,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
         title="Flash Primary Database"
         extra={
           <StateSelector
-            onChange={setStateCode}
+            onChange={convertStateInfo}
             initialValue={null}
             loading={loading}
             data={data}

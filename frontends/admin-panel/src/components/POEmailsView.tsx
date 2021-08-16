@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Alert, Col, PageHeader, Row } from "antd";
+import { Alert, Card, Col, Empty, PageHeader, Row } from "antd";
 import * as React from "react";
 import { fetchEmailStateCodes } from "../AdminPanelAPI/LineStaffTools";
 import useFetchedData from "../hooks";
@@ -22,9 +22,13 @@ import { StateCodeInfo } from "./IngestOperationsView/constants";
 import GenerateEmails from "./POEmails/GenerateEmails";
 import ListBatches from "./POEmails/ListBatches";
 import SendEmails from "./POEmails/SendEmails";
+import StateSelector from "./Utilities/StateSelector";
 
 const POEmailsView = (): JSX.Element => {
-  const { data } = useFetchedData<StateCodeInfo[]>(fetchEmailStateCodes);
+  const { loading, data } =
+    useFetchedData<StateCodeInfo[]>(fetchEmailStateCodes);
+  const [stateCode, setStateCode] =
+    React.useState<StateCodeInfo | undefined>(undefined);
 
   return (
     <>
@@ -44,24 +48,43 @@ const POEmailsView = (): JSX.Element => {
         type="warning"
         showIcon
       />
+      <br />
+      <StateSelector
+        loading={loading}
+        data={data}
+        onChange={(state) => setStateCode(state)}
+      />
       <Row gutter={[8, 8]}>
         <Col span={12}>
-          <GenerateEmails />
+          {stateCode ? (
+            <GenerateEmails stateInfo={stateCode} />
+          ) : (
+            <Card title="Generate Emails" style={{ margin: 10, height: "95%" }}>
+              <Empty />
+            </Card>
+          )}
         </Col>
         <Col span={12}>
-          <SendEmails />
+          {stateCode ? (
+            <SendEmails stateInfo={stateCode} />
+          ) : (
+            <Card title="Send Emails" style={{ margin: 10, height: "95%" }}>
+              <Empty />
+            </Card>
+          )}
         </Col>
       </Row>
       <Row justify="center">
-        {data
-          ?.sort((a, b) => a.name.localeCompare(b.name))
-          .map((state: StateCodeInfo) => {
-            return (
-              <Col key={state.code}>
-                <ListBatches stateInfo={state} />
-              </Col>
-            );
-          })}
+        {stateCode ? (
+          <ListBatches stateInfo={stateCode} />
+        ) : (
+          <Card
+            title="Previously Generated Batches"
+            style={{ margin: 10, height: "95%" }}
+          >
+            <Empty />
+          </Card>
+        )}
       </Row>
     </>
   );
