@@ -22,10 +22,10 @@ import {
 } from "../../AdminPanelAPI/LineStaffTools";
 import ActionRegionConfirmationForm from "../Utilities/ActionRegionConfirmationForm";
 import {
-  layout,
-  tailLayout,
   BatchInfoType,
+  layout,
   POEmailsFormProps,
+  tailLayout,
 } from "./constants";
 
 interface SendFormData {
@@ -62,7 +62,8 @@ const SendEmails: React.FC<POEmailsFormProps> = ({ stateInfo }) => {
         formData.batchId,
         formData.redirectAddress,
         formData.ccAddresses,
-        formData.subjectOverride
+        formData.subjectOverride,
+        formData.emailAllowlist
       );
       const text = await r.text();
       if (r.status >= 400) {

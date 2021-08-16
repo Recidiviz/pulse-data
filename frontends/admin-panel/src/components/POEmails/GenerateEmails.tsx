@@ -18,8 +18,8 @@ import { Button, Card, Form, Input, message, Select, Spin } from "antd";
 import * as React from "react";
 import { generateEmails } from "../../AdminPanelAPI/LineStaffTools";
 import ActionRegionConfirmationForm from "../Utilities/ActionRegionConfirmationForm";
-import { layout, tailLayout, POEmailsFormProps } from "./constants";
 import DataFreshnessInfo from "../Utilities/DataFreshnessInfo";
+import { layout, POEmailsFormProps, tailLayout } from "./constants";
 
 interface GenerateFormData {
   state: string;
@@ -53,7 +53,8 @@ const GenerateEmails: React.FC<POEmailsFormProps> = ({ stateInfo }) => {
       stateInfo.code,
       formData?.testAddress,
       formData?.regionCode,
-      formData?.messageBodyOverride
+      formData?.messageBodyOverride,
+      formData?.emailAllowlist
     );
     if (r.status >= 400) {
       const text = await r.text();

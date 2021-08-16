@@ -231,7 +231,15 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             message_body_override = data.get("messageBodyOverride")
             email_allowlist = data.get("emailAllowlist")
 
+            if not test_address:
+                test_address = None
             validate_email_address(test_address)
+
+            if not region_code:
+                region_code = None
+
+            if not message_body_override:
+                message_body_override = None
 
             if email_allowlist is not None:
                 for recipient_email in email_allowlist:
@@ -241,8 +249,6 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             logging.error(error)
             return str(error), HTTPStatus.BAD_REQUEST
 
-        if test_address == "":
-            test_address = None
         if region_code not in REGION_CODES:
             region_code = None
 
@@ -314,7 +320,13 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             subject_override = data.get("subjectOverride")
             email_allowlist = data.get("emailAllowlist")
 
+            if not subject_override:
+                subject_override = None
+
+            if not redirect_address:
+                redirect_address = None
             validate_email_address(redirect_address)
+
             if cc_addresses is not None:
                 for cc_address in cc_addresses:
                     validate_email_address(cc_address)
