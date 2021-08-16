@@ -80,6 +80,7 @@ SELECT
     -- TODO(#7810): Remove this logic and pull straight from BQ.
     case result_details_type
         WHEN "SamenessStringsValidationResultDetails" THEN if(cast(JSON_QUERY(result_details, "$.total_num_rows") as int64) > 0, true, false)
+        WHEN "SamenessPerViewValidationResultDetails" THEN if(cast(JSON_QUERY(result_details, "$.total_num_rows") as int64) > 0, true, false)
     END as has_data,
     CASE result_details_type
         WHEN "ExistenceValidationResultDetails" THEN cast(JSON_QUERY(result_details, "$.num_invalid_rows") as int64)
