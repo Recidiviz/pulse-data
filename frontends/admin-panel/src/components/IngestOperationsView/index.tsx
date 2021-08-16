@@ -100,9 +100,9 @@ const IngestOperationsView = (): JSX.Element => {
     getData();
   }, [getData]);
 
-  const stateCodeChange = (value: string) => {
-    setStateCode(value);
-    updateQueryParams(value);
+  const stateCodeChange = (value: StateCodeInfo) => {
+    setStateCode(value.code);
+    updateQueryParams(value.code);
   };
 
   const updateQueryParams = (stateCodeInput: string) => {
