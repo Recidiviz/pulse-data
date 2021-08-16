@@ -81,7 +81,22 @@ class ProgramReferralMetric(
 
     @classmethod
     def get_description(cls) -> str:
-        return "TODO(#7563): Add ProgramReferralMetric description"
+        return """
+The `ProgramReferralMetric` stores information about a person getting referred to rehabilitative programming. This metric tracks the day that a person was referred by someone (usually a correctional or supervision officer) to a given program, and stores information related to that referral.
+
+With this metric, we can answer questions like:
+
+- Of all of the people referred to Program X last month, how many are now actively participating in the program?
+- How many people have been referred to Program Y since it was introduced in January 2017?
+- Which supervision district referred the most people to Program Z in 2020?
+
+ 
+This metric is derived from the `StateProgramAssignment` entities, which store information about the assignment of a person to some form of rehabilitative programming -- and their participation in the program -- intended to address specific needs of the person. The calculations for this metric look for `StateProgramAssignment` instances with a `referral_date` to determine that a program referral occurred. 
+
+If a person was referred to Program X on April 1, 2020, then there will be a `ProgramReferralMetric` for April 1, 2020.
+
+If a person was referred to a program while they were on supervision, then this metric records information about the supervision the person was on on the date of the referral. If a person is serving multiple supervisions simultaneously (and has multiple `StateSupervisionPeriod` entities that overlap a referral date) then there will be one `ProgramReferralMetric` produced for each overlapping supervision period. So, if a person was referred to Program Z on December 3, 2014, and on that day the person was serving both probation and parole simultaneously (represented by two overlapping `StateSupervisionPeriod` entities), then there will be two `ProgramReferralMetrics` produced: one with a `supervision_type` of `PAROLE` and one with a `supervision_type` of `PROBATION`.
+"""
 
     # Required characteristics
 
@@ -114,7 +129,22 @@ class ProgramParticipationMetric(ProgramMetric):
 
     @classmethod
     def get_description(cls) -> str:
-        return "TODO(#7563): Add ProgramParticipationMetric description"
+        return """
+The `ProgramParticipationMetric` stores information about a person participating in rehabilitative programming. This metric tracks each day that a person was actively participating in a given program, and stores information related to that participation.
+
+With this metric, we can answer questions like:
+
+- How many people participated in Program X in the month of April 2020?
+- How has the participation in Program Y grown since it was introduced in January 2017?
+- Of all of the people currently participating in Program Z in the state, what percent are under the age of 30?
+
+ 
+This metric is derived from the `StateProgramAssignment` entities, which store information about the assignment of a person to some form of rehabilitative programming -- and their participation in the program -- intended to address specific needs of the person. The calculations for this metric look for `StateProgramAssignment` instances with a `participation_status` of either `IN_PROGRESS` or `DISCHARGED`, and use the `start_date` and `discharge_date` fields to produce a single `ProgramParticipationMetric` for each day that a person was actively participating in the program.
+
+If a person started participating in Program X on April 1, 2020 and were discharged on May 1, 2020, then there will be a `ProgramParticipationMetric` for each day of participation in Program X (30 `ProgramParticipationMetric` outputs in total).
+
+If a person is participating in a program while they are on supervision, then this metric records the supervision type the person was on on the date of the participation. If a person is serving multiple supervisions simultaneously (and has multiple `StateSupervisionPeriod` entities that overlap a participation date) then there will be one `ProgramParticipationMetric` produced for each overlapping supervision period. So, if a person participated in Program Z for a single day, on October 26, 2014, and on that day the person was serving both probation and parole simultaneously (represented by two overlapping `StateSupervisionPeriod` entities), then there will be two `ProgramParticipationMetrics` produced: one with a `supervision_type` of `PAROLE` and one with a `supervision_type` of `PROBATION`.     
+"""
 
     # Required characteristics
 
