@@ -162,7 +162,7 @@ export class Opportunity {
   get dueDate(): moment.Moment | null {
     const { daysUntilDue } = this.opportunityMetadata;
     if (typeof daysUntilDue === "number") {
-      return moment().add(daysUntilDue, "days");
+      return moment().startOf("day").add(daysUntilDue, "days");
     }
     return null;
   }

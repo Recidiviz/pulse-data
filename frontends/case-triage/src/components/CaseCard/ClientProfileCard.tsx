@@ -140,7 +140,7 @@ const DetailsPanelContents: React.FC<CaseCardProps> = ({ client }) => {
           Next Assessment
           {client.nextAssessmentDate
             ? ` due on ${client.nextAssessmentDate.format(LONG_DATE_FORMAT)}`
-            : ": Unknown"}
+            : ": Not needed unless prompted by an event"}
           <Caption style={{ marginLeft: spacing.sm }}>
             Previous:{" "}
             {client.mostRecentAssessmentDate?.format(LONG_DATE_FORMAT) ||
