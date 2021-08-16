@@ -47,9 +47,10 @@ export const fetchEmailStateCodes = async (): Promise<Response> => {
 // Generate PO Monthly Report Emails
 export const generateEmails = async (
   stateCode: string,
-  testAddress?: string | null,
-  regionCode?: string | null,
-  messageBodyOverride?: string | null
+  testAddress: string | undefined,
+  regionCode: string | undefined,
+  messageBodyOverride: string | undefined,
+  emailAllowlist: string[] | undefined
 ): Promise<Response> => {
   return postWithURLAndBody(
     `/api/line_staff_tools/${stateCode}/generate_emails`,
@@ -58,6 +59,7 @@ export const generateEmails = async (
       regionCode,
       messageBodyOverride,
       reportType: "po_monthly_report",
+      emailAllowlist,
     }
   );
 };
@@ -66,15 +68,17 @@ export const generateEmails = async (
 export const sendEmails = async (
   stateCode: string,
   batchId: string,
-  redirectAddress?: string | null,
-  ccAddresses?: string[] | null,
-  subjectOverride?: string | null
+  redirectAddress: string | undefined,
+  ccAddresses: string[] | undefined,
+  subjectOverride: string | undefined,
+  emailAllowlist: string[] | undefined
 ): Promise<Response> => {
   return postWithURLAndBody(`/api/line_staff_tools/${stateCode}/send_emails`, {
     batchId,
     redirectAddress,
     ccAddresses,
     subjectOverride,
+    emailAllowlist,
   });
 };
 
