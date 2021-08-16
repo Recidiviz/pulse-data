@@ -71,95 +71,94 @@ def _get_metadata_store(metadata_dataset: str) -> DatasetMetadataCountsStore:
     )
 
 
-# TODO(#8217) may need to refactor again to return admin panel so it can be used as an import
-def setup_admin_panel() -> Blueprint:
-    """Setting up the admin panel"""
-    admin_panel = Blueprint("admin_panel", __name__, static_folder=static_folder)
-    add_line_staff_tools_routes(admin_panel)
-    add_data_discovery_routes(admin_panel)
-    add_ingest_ops_routes(admin_panel, admin_stores)
+admin_panel = Blueprint("admin_panel", __name__, static_folder=static_folder)
+add_line_staff_tools_routes(admin_panel)
+add_data_discovery_routes(admin_panel)
+add_ingest_ops_routes(admin_panel, admin_stores)
 
-    # Dataset column counts
-    @admin_panel.route(
-        "/api/<metadata_dataset>/fetch_column_object_counts_by_value", methods=["POST"]
+# Dataset column counts
+@admin_panel.route(
+    "/api/<metadata_dataset>/fetch_column_object_counts_by_value", methods=["POST"]
+)
+@requires_gae_auth
+def fetch_column_object_counts_by_value(
+    metadata_dataset: str,
+) -> Tuple[str, HTTPStatus]:
+    table = request.json["table"]
+    column = request.json["column"]
+    metadata_store = _get_metadata_store(metadata_dataset)
+
+    return jsonify_dataset_metadata_result(
+        metadata_store.fetch_column_object_counts_by_value(table, column)
     )
-    @requires_gae_auth
-    def fetch_column_object_counts_by_value(
-        metadata_dataset: str,
-    ) -> Tuple[str, HTTPStatus]:
-        table = request.json["table"]
-        column = request.json["column"]
-        metadata_store = _get_metadata_store(metadata_dataset)
 
-        return jsonify_dataset_metadata_result(
-            metadata_store.fetch_column_object_counts_by_value(table, column)
-        )
 
-    @admin_panel.route(
-        "/api/<metadata_dataset>/fetch_table_nonnull_counts_by_column", methods=["POST"]
+@admin_panel.route(
+    "/api/<metadata_dataset>/fetch_table_nonnull_counts_by_column", methods=["POST"]
+)
+@requires_gae_auth
+def fetch_table_nonnull_counts_by_column(
+    metadata_dataset: str,
+) -> Tuple[str, HTTPStatus]:
+    table = request.json["table"]
+    metadata_store = _get_metadata_store(metadata_dataset)
+
+    return jsonify_dataset_metadata_result(
+        metadata_store.fetch_table_nonnull_counts_by_column(table)
     )
-    @requires_gae_auth
-    def fetch_table_nonnull_counts_by_column(
-        metadata_dataset: str,
-    ) -> Tuple[str, HTTPStatus]:
-        table = request.json["table"]
-        metadata_store = _get_metadata_store(metadata_dataset)
 
-        return jsonify_dataset_metadata_result(
-            metadata_store.fetch_table_nonnull_counts_by_column(table)
-        )
 
-    @admin_panel.route(
-        "/api/<metadata_dataset>/fetch_object_counts_by_table", methods=["POST"]
+@admin_panel.route(
+    "/api/<metadata_dataset>/fetch_object_counts_by_table", methods=["POST"]
+)
+@requires_gae_auth
+def fetch_object_counts_by_table(metadata_dataset: str) -> Tuple[str, int]:
+    metadata_store = _get_metadata_store(metadata_dataset)
+    return jsonify_dataset_metadata_result(
+        metadata_store.fetch_object_counts_by_table()
     )
-    @requires_gae_auth
-    def fetch_object_counts_by_table(metadata_dataset: str) -> Tuple[str, int]:
-        metadata_store = _get_metadata_store(metadata_dataset)
-        return jsonify_dataset_metadata_result(
-            metadata_store.fetch_object_counts_by_table()
-        )
 
-    # Data freshness
-    @admin_panel.route("/api/ingest_metadata/data_freshness", methods=["POST"])
-    @requires_gae_auth
-    def fetch_ingest_data_freshness() -> Tuple[str, HTTPStatus]:
-        return (
-            jsonify(admin_stores.ingest_data_freshness_store.data_freshness_results),
-            HTTPStatus.OK,
-        )
 
-    # Validation status
-    @admin_panel.route("api/validation_metadata/status", methods=["POST"])
-    @requires_gae_auth
-    def fetch_validation_metadata_status() -> Tuple[str, HTTPStatus]:
-        results = (
-            admin_stores.validation_status_store.get_most_recent_validation_results()
-        )
-        return (
-            jsonify(results.to_serializable()),
-            HTTPStatus.OK,
-        )
+# Data freshness
+@admin_panel.route("/api/ingest_metadata/data_freshness", methods=["POST"])
+@requires_gae_auth
+def fetch_ingest_data_freshness() -> Tuple[str, HTTPStatus]:
+    return (
+        jsonify(admin_stores.ingest_data_freshness_store.data_freshness_results),
+        HTTPStatus.OK,
+    )
 
-    # Frontend configuration
-    @admin_panel.route("/runtime_env_vars.js")
-    @requires_gae_auth
-    def runtime_env_vars() -> Tuple[str, HTTPStatus]:
-        if in_development():
-            env_string = "development"
-        elif in_gcp_staging():
-            env_string = "staging"
-        elif in_gcp_production():
-            env_string = "production"
-        else:
-            env_string = "unknown"
-        return f'window.RUNTIME_GCP_ENVIRONMENT="{env_string}";', HTTPStatus.OK
 
-    @admin_panel.route("/")
-    @admin_panel.route("/<path:path>")
-    def fallback(path: Optional[str] = None) -> Response:
-        if path is None or not os.path.exists(os.path.join(static_folder, path)):
-            logging.info("Rewriting path")
-            path = "index.html"
-        return send_from_directory(static_folder, path)
+# Validation status
+@admin_panel.route("api/validation_metadata/status", methods=["POST"])
+@requires_gae_auth
+def fetch_validation_metadata_status() -> Tuple[str, HTTPStatus]:
+    results = admin_stores.validation_status_store.get_most_recent_validation_results()
+    return (
+        jsonify(results.to_serializable()),
+        HTTPStatus.OK,
+    )
 
-    return admin_panel
+
+# Frontend configuration
+@admin_panel.route("/runtime_env_vars.js")
+@requires_gae_auth
+def runtime_env_vars() -> Tuple[str, HTTPStatus]:
+    if in_development():
+        env_string = "development"
+    elif in_gcp_staging():
+        env_string = "staging"
+    elif in_gcp_production():
+        env_string = "production"
+    else:
+        env_string = "unknown"
+    return f'window.RUNTIME_GCP_ENVIRONMENT="{env_string}";', HTTPStatus.OK
+
+
+@admin_panel.route("/")
+@admin_panel.route("/<path:path>")
+def fallback(path: Optional[str] = None) -> Response:
+    if path is None or not os.path.exists(os.path.join(static_folder, path)):
+        logging.info("Rewriting path")
+        path = "index.html"
+    return send_from_directory(static_folder, path)

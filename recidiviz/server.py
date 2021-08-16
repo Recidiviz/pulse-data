@@ -30,7 +30,7 @@ from opencensus.ext.stackdriver import trace_exporter as stackdriver_trace
 from opencensus.trace import base_exporter, config_integration, file_exporter, samplers
 from opencensus.trace.propagation import google_cloud_format
 
-from recidiviz.admin_panel.all_routes import setup_admin_panel
+from recidiviz.admin_panel.all_routes import admin_panel
 from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
 from recidiviz.backup.backup_manager import backup_manager_blueprint
 from recidiviz.calculator.calculation_data_storage_manager import (
@@ -80,7 +80,7 @@ scraper_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
 ]
 
 default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
-    (setup_admin_panel(), "/admin"),
+    (admin_panel, "/admin"),
     (auth_endpoint_blueprint, "/auth"),
     (backup_manager_blueprint, "/backup_manager"),
     (calculation_data_storage_manager_blueprint, "/calculation_data_storage_manager"),
@@ -92,13 +92,13 @@ default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (validation_manager_blueprint, "/validation_manager"),
 ]
 
-# TODO(#8217) remove exemption for /admin route in generating documentation,
-# def get_blueprints_for_documentation() -> List[Tuple[Blueprint, str]]:
-#     all_blueprints_with_url_prefixes = (
-#         scraper_blueprints_with_url_prefixes + default_blueprints_with_url_prefixes
-#     )
 
-#     return all_blueprints_with_url_prefixes
+def get_blueprints_for_documentation() -> List[Tuple[Blueprint, str]]:
+    all_blueprints_with_url_prefixes = (
+        scraper_blueprints_with_url_prefixes + default_blueprints_with_url_prefixes
+    )
+
+    return all_blueprints_with_url_prefixes
 
 
 if service_type is environment.ServiceType.SCRAPERS:
