@@ -14,13 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for the us_nd_violation_utils.py file."""
+"""Tests the US_ND-specific aspects of the when the state-specific delegate is used in
+the ViolationResponsePreProcessingManager."""
 import datetime
 import unittest
+from typing import List
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.state_utils.us_nd import us_nd_violation_utils
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_violation_response_preprocessing_delegate import (
+    UsNdViolationResponsePreprocessingDelegate,
+)
+from recidiviz.calculator.pipeline.utils.supervision_violation_responses_pre_processing_manager import (
+    ViolationResponsePreProcessingManager,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -33,26 +40,44 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationTypeEntry,
 )
 
-STATE_CODE = "US_ND"
-
 
 class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
-    """Tests the us_nd_prepare_violation_responses_for_calculations function."""
+    """Tests the US_ND-specific aspects of the
+    pre_processed_violation_responses_for_calculations function on the
+    ViolationResponsePreProcessingManager when a
+    UsNdViolationResponsePreprocessingDelegate is provided."""
 
-    def test_us_nd_prepare_violation_responses_for_calculations(self) -> None:
+    def setUp(self) -> None:
+        self.state_code = "US_MO"
+        self.delegate = UsNdViolationResponsePreprocessingDelegate()
+
+    def _pre_processed_violation_responses_for_calculations(
+        self,
+        violation_responses: List[StateSupervisionViolationResponse],
+    ) -> List[StateSupervisionViolationResponse]:
+        pre_processing_manager = ViolationResponsePreProcessingManager(
+            violation_responses=violation_responses,
+            delegate=self.delegate,
+        )
+
+        return (
+            pre_processing_manager.pre_processed_violation_responses_for_calculations()
+        )
+
+    def test_prepare_violation_responses_for_calculations_us_nd(self) -> None:
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123,
-            state_code=STATE_CODE,
+            state_code=self.state_code,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
-                    state_code=STATE_CODE,
+                    state_code=self.state_code,
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
             ],
         )
 
         ssvr = StateSupervisionViolationResponse.new_with_defaults(
-            state_code=STATE_CODE,
+            state_code=self.state_code,
             supervision_violation_response_id=123,
             supervision_violation=supervision_violation,
             response_date=datetime.date(2008, 12, 25),
@@ -61,47 +86,51 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
 
         other_supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123,
-            state_code=STATE_CODE,
+            state_code=self.state_code,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
-                    state_code=STATE_CODE,
+                    state_code=self.state_code,
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
             ],
         )
 
         duplicate_ssvr = StateSupervisionViolationResponse.new_with_defaults(
-            state_code=STATE_CODE,
-            supervision_violation_response_id=123,
+            state_code=self.state_code,
+            supervision_violation_response_id=456,
             supervision_violation=other_supervision_violation,
             response_date=datetime.date(2008, 12, 25),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
         )
 
-        prepared_responses = (
-            us_nd_violation_utils.us_nd_prepare_violation_responses_for_calculations(
-                violation_responses=[ssvr, duplicate_ssvr]
-            )
+        expected_response = attr.evolve(
+            ssvr,
         )
 
-        self.assertEqual([duplicate_ssvr], prepared_responses)
+        # Act
+        updated_responses = self._pre_processed_violation_responses_for_calculations(
+            violation_responses=[ssvr, duplicate_ssvr]
+        )
 
-    def test_us_nd_prepare_violation_responses_for_calculations_multiple_types(
+        # Assert
+        self.assertEqual([expected_response], updated_responses)
+
+    def test_prepare_violation_responses_for_calculations_multiple_types_us_nd(
         self,
     ) -> None:
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123,
-            state_code=STATE_CODE,
+            state_code=self.state_code,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
-                    state_code=STATE_CODE,
+                    state_code=self.state_code,
                     violation_type=StateSupervisionViolationType.ABSCONDED,
                 ),
             ],
         )
 
         ssvr = StateSupervisionViolationResponse.new_with_defaults(
-            state_code=STATE_CODE,
+            state_code=self.state_code,
             supervision_violation_response_id=123,
             supervision_violation=supervision_violation,
             response_date=datetime.date(2008, 12, 25),
@@ -110,64 +139,64 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
 
         duplicate_supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123,
-            state_code=STATE_CODE,
+            state_code=self.state_code,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
-                    state_code=STATE_CODE,
+                    state_code=self.state_code,
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
             ],
         )
 
         duplicate_ssvr = StateSupervisionViolationResponse.new_with_defaults(
-            state_code=STATE_CODE,
+            state_code=self.state_code,
             supervision_violation_response_id=123,
             supervision_violation=duplicate_supervision_violation,
             response_date=datetime.date(2008, 12, 25),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
         )
 
-        prepared_responses = (
-            us_nd_violation_utils.us_nd_prepare_violation_responses_for_calculations(
-                violation_responses=[ssvr, duplicate_ssvr]
-            )
+        expected_response = attr.evolve(
+            ssvr,
+            supervision_violation=attr.evolve(
+                supervision_violation,
+                supervision_violation_types=[
+                    StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code=self.state_code,
+                        violation_type=StateSupervisionViolationType.ABSCONDED,
+                    ),
+                    StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code=self.state_code,
+                        violation_type=StateSupervisionViolationType.FELONY,
+                    ),
+                ],
+            ),
         )
 
-        expected_violation = StateSupervisionViolation.new_with_defaults(
-            supervision_violation_id=123,
-            state_code=STATE_CODE,
-            supervision_violation_types=[
-                StateSupervisionViolationTypeEntry.new_with_defaults(
-                    state_code=STATE_CODE,
-                    violation_type=StateSupervisionViolationType.FELONY,
-                ),
-                StateSupervisionViolationTypeEntry.new_with_defaults(
-                    state_code=STATE_CODE,
-                    violation_type=StateSupervisionViolationType.ABSCONDED,
-                ),
-            ],
+        # Act
+        updated_responses = self._pre_processed_violation_responses_for_calculations(
+            violation_responses=[ssvr, duplicate_ssvr]
         )
 
-        expected_response = attr.evolve(ssvr, supervision_violation=expected_violation)
+        # Assert
+        self.assertEqual([expected_response], updated_responses)
 
-        self.assertEqual([expected_response], prepared_responses)
-
-    def test_us_nd_prepare_violation_responses_for_calculations_different_days(
+    def test_prepare_violation_responses_for_calculations_different_days_us_nd(
         self,
     ) -> None:
         supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123,
-            state_code=STATE_CODE,
+            state_code=self.state_code,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
-                    state_code=STATE_CODE,
+                    state_code=self.state_code,
                     violation_type=StateSupervisionViolationType.ABSCONDED,
                 ),
             ],
         )
 
         ssvr = StateSupervisionViolationResponse.new_with_defaults(
-            state_code=STATE_CODE,
+            state_code=self.state_code,
             supervision_violation_response_id=123,
             supervision_violation=supervision_violation,
             response_date=datetime.date(2008, 12, 1),
@@ -176,30 +205,29 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
 
         other_supervision_violation = StateSupervisionViolation.new_with_defaults(
             supervision_violation_id=123,
-            state_code=STATE_CODE,
+            state_code=self.state_code,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
-                    state_code=STATE_CODE,
+                    state_code=self.state_code,
                     violation_type=StateSupervisionViolationType.FELONY,
                 ),
             ],
         )
 
         other_ssvr = StateSupervisionViolationResponse.new_with_defaults(
-            state_code=STATE_CODE,
+            state_code=self.state_code,
             supervision_violation_response_id=123,
             supervision_violation=other_supervision_violation,
             response_date=datetime.date(2008, 12, 25),
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
         )
 
-        prepared_responses = (
-            us_nd_violation_utils.us_nd_prepare_violation_responses_for_calculations(
-                violation_responses=[ssvr, other_ssvr]
-            )
+        ssvr_copies = [attr.evolve(ssvr), attr.evolve(other_ssvr)]
+
+        # Act
+        updated_responses = self._pre_processed_violation_responses_for_calculations(
+            violation_responses=[ssvr, other_ssvr]
         )
 
-        self.assertCountEqual(
-            [ssvr, other_ssvr],
-            prepared_responses,
-        )
+        # Assert
+        self.assertEqual(ssvr_copies, updated_responses)

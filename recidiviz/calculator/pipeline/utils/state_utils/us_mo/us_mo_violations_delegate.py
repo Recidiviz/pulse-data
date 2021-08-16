@@ -32,12 +32,11 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
 )
 
-FOLLOW_UP_RESPONSE_SUBTYPE = "SUP"
+_FOLLOW_UP_RESPONSE_SUBTYPE = "SUP"
 
 _SUBSTANCE_ABUSE_CONDITION_STR = "DRG"
-_LAW_CONDITION_STR = "LAW"
 
-_LAW_CITATION_SUBTYPE_STR: str = "LAW_CITATION"
+LAW_CITATION_SUBTYPE_STR: str = "LAW_CITATION"
 _SUBSTANCE_ABUSE_SUBTYPE_STR: str = "SUBSTANCE_ABUSE"
 
 _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES = [
@@ -58,7 +57,7 @@ _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP: List[
         StateSupervisionViolationType.MISDEMEANOR.value,
         "misd",
     ),
-    (StateSupervisionViolationType.TECHNICAL, _LAW_CITATION_SUBTYPE_STR, "law_cit"),
+    (StateSupervisionViolationType.TECHNICAL, LAW_CITATION_SUBTYPE_STR, "law_cit"),
     (
         StateSupervisionViolationType.ABSCONDED,
         StateSupervisionViolationType.ABSCONDED.value,
@@ -153,7 +152,7 @@ class UsMoViolationDelegate(StateSpecificViolationDelegate):
                     violation_type_list.append(_SUBSTANCE_ABUSE_SUBTYPE_STR)
                     includes_special_case_violation_subtype = True
                 else:
-                    if condition.upper() == _LAW_CITATION_SUBTYPE_STR:
+                    if condition.upper() == LAW_CITATION_SUBTYPE_STR:
                         includes_special_case_violation_subtype = True
 
                     # Condition values are free text so we standardize all to be upper case
@@ -180,7 +179,7 @@ def _get_violation_report_subtype_should_be_included_in_calculations(
     """Returns whether a VIOLATION_REPORT with the given response_subtype should be included in calculations."""
     if response_subtype in ["INI", "ITR"]:
         return True
-    if response_subtype == FOLLOW_UP_RESPONSE_SUBTYPE:
+    if response_subtype == _FOLLOW_UP_RESPONSE_SUBTYPE:
         return include_follow_up_responses
     if response_subtype is None or response_subtype in ["HOF", "MOS", "ORI"]:
         return False

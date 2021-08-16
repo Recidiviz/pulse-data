@@ -41,6 +41,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_case_compliance impor
 )
 from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.calculator.pipeline.utils.entity_pre_processing_utils import (
+    pre_processed_violation_responses_for_calculations,
     pre_processing_managers_for_calculations,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
@@ -60,7 +61,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     second_assessment_on_supervision_is_more_reliable,
     should_produce_supervision_event_for_period,
     state_specific_supervision_admission_reason_override,
-    state_specific_violation_response_pre_processing_function,
     supervision_period_counts_towards_supervision_population_in_date_range_state_specific,
     supervision_types_mutually_exclusive_for_state,
     terminating_supervision_period_supervision_type,
@@ -70,9 +70,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_d
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     identify_most_severe_case_type,
-)
-from recidiviz.calculator.pipeline.utils.violation_response_utils import (
-    prepare_violation_responses_for_calculations,
 )
 from recidiviz.calculator.pipeline.utils.violation_utils import (
     filter_violation_responses_for_violation_history,
@@ -166,11 +163,10 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             StateSupervisionPeriod.get_class_id_name(),
         )
 
-        sorted_violation_responses = prepare_violation_responses_for_calculations(
-            violation_responses=violation_responses,
-            pre_processing_function=state_specific_violation_response_pre_processing_function(
-                state_code=state_code
-            ),
+        pre_processed_violation_responses = (
+            pre_processed_violation_responses_for_calculations(
+                violation_responses=violation_responses, state_code=state_code
+            )
         )
 
         (
@@ -180,7 +176,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             state_code=state_code,
             incarceration_periods=incarceration_periods,
             supervision_periods=supervision_periods,
-            violation_responses=sorted_violation_responses,
+            pre_processed_violation_responses=pre_processed_violation_responses,
         )
 
         if not ip_pre_processing_manager or not sp_pre_processing_manager:
@@ -201,7 +197,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         violation_responses_for_history = (
             filter_violation_responses_for_violation_history(
                 violation_delegate,
-                violation_responses=sorted_violation_responses,
+                violation_responses=pre_processed_violation_responses,
                 include_follow_up_responses=False,
             )
         )

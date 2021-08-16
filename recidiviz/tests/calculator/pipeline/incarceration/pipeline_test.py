@@ -97,6 +97,9 @@ from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_commitmen
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violation_response_preprocessing_delegate import (
+    UsXxViolationResponsePreprocessingDelegate,
+)
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violations_delegate import (
     UsXxViolationDelegate,
 )
@@ -129,11 +132,13 @@ class TestIncarcerationPipeline(unittest.TestCase):
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
         self.fake_bq_sink_factory = FakeWriteToBigQueryFactory(FakeWriteToBigQuery)
 
-        self.pre_processing_delegate_patcher = mock.patch(
+        self.incarceration_pre_processing_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_incarceration_period_pre_processing_delegate"
         )
-        self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
-        self.mock_pre_processing_delegate.return_value = (
+        self.mock_incarceration_pre_processing_delegate = (
+            self.incarceration_pre_processing_delegate_patcher.start()
+        )
+        self.mock_incarceration_pre_processing_delegate.return_value = (
             UsXxIncarcerationPreProcessingDelegate()
         )
 
@@ -151,11 +156,21 @@ class TestIncarcerationPipeline(unittest.TestCase):
         )
         self.mock_violation_delegate = self.violation_delegate_patcher.start()
         self.mock_violation_delegate.return_value = UsXxViolationDelegate()
+        self.violation_pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_violation_response_preprocessing_delegate"
+        )
+        self.mock_violation_pre_processing_delegate = (
+            self.violation_pre_processing_delegate_patcher.start()
+        )
+        self.mock_violation_pre_processing_delegate.return_value = (
+            UsXxViolationResponsePreprocessingDelegate()
+        )
 
     def tearDown(self) -> None:
-        self.pre_processing_delegate_patcher.stop()
+        self.incarceration_pre_processing_delegate_patcher.stop()
         self.commitment_from_supervision_delegate_patcher.stop()
         self.violation_delegate_patcher.stop()
+        self.violation_pre_processing_delegate_patcher.stop()
 
     @staticmethod
     def _default_data_dict():
@@ -723,11 +738,13 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
     """Tests the ClassifyEvents DoFn in the pipeline."""
 
     def setUp(self) -> None:
-        self.pre_processing_delegate_patcher = mock.patch(
+        self.incarceration_pre_processing_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_incarceration_period_pre_processing_delegate"
         )
-        self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
-        self.mock_pre_processing_delegate.return_value = (
+        self.mock_incarceration_pre_processing_delegate = (
+            self.incarceration_pre_processing_delegate_patcher.start()
+        )
+        self.mock_incarceration_pre_processing_delegate.return_value = (
             UsXxIncarcerationPreProcessingDelegate()
         )
         self.identifier = identifier.IncarcerationIdentifier()
@@ -746,11 +763,21 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         )
         self.mock_violation_delegate = self.violation_delegate_patcher.start()
         self.mock_violation_delegate.return_value = UsXxViolationDelegate()
+        self.violation_pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_violation_response_preprocessing_delegate"
+        )
+        self.mock_violation_pre_processing_delegate = (
+            self.violation_pre_processing_delegate_patcher.start()
+        )
+        self.mock_violation_pre_processing_delegate.return_value = (
+            UsXxViolationResponsePreprocessingDelegate()
+        )
 
     def tearDown(self) -> None:
-        self.pre_processing_delegate_patcher.stop()
+        self.incarceration_pre_processing_delegate_patcher.stop()
         self.commitment_from_supervision_delegate_patcher.stop()
         self.violation_delegate_patcher.stop()
+        self.violation_pre_processing_delegate_patcher.stop()
 
     @staticmethod
     def load_person_entities_dict(
