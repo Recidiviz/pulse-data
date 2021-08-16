@@ -25,7 +25,7 @@ import locale
 import re
 import string
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
-from typing import Optional, Dict, Any, List
+from typing import List, Optional
 
 import dateparser
 from dateutil.relativedelta import relativedelta
@@ -234,8 +234,12 @@ def parse_datetime(
         return datetime.datetime(
             year=as_date.year, month=as_date.month, day=as_date.day
         )
+    if (parsed_datetime := parse_mmddyyyy_datetime(date_string)) is not None:
+        # Due to a change in dateparser, values like `03122008` are no longer
+        # correctly parsed. We add this in to preserve backwards-compatibility.
+        return parsed_datetime
 
-    settings: Dict[str, Any] = {"PREFER_DAY_OF_MONTH": "first"}
+    settings: "dateparser._Settings" = {"PREFER_DAY_OF_MONTH": "first"}
     if from_dt:
         settings["RELATIVE_BASE"] = from_dt
 
@@ -259,7 +263,7 @@ def _has_non_punctuation(date_string: str) -> bool:
 
 
 def parse_datetime_with_negative_component(
-    date_string: str, settings: Dict[str, Any]
+    date_string: str, settings: "dateparser._Settings"
 ) -> Optional[datetime.datetime]:
     """Handles relative date strings that have negative values in them, like
     '2 year -5month'.
@@ -286,7 +290,8 @@ def parse_datetime_with_negative_component(
             updated_component, languages=["en"], settings=settings
         )
 
-        latest_relative = parsed_date
+        if parsed_date is not None:
+            latest_relative = parsed_date
 
     return parsed_date
 
@@ -305,6 +310,13 @@ def parse_yyyymmdd_date(date_str: str) -> Optional[datetime.date]:
         return None
 
     return datetime.datetime.strptime(date_str, "%Y%m%d").date()
+
+
+def parse_mmddyyyy_datetime(date_str: str) -> Optional[datetime.datetime]:
+    try:
+        return datetime.datetime.strptime(date_str, "%m%d%Y")
+    except ValueError:
+        return None
 
 
 def parse_date(
