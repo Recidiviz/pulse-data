@@ -247,17 +247,14 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               <p>
                 Drop all data from the{" "}
                 <code>{stateCode.toLowerCase()}_primary</code> database. To do
-                so, ssh into <code>prod-data-client</code> and run inside a
-                pipenv shell:
+                so, run this script locally run inside a pipenv shell:
               </p>
               <p>
                 <CodeBlock enabled={currentStep === 4}>
                   python -m recidiviz.tools.migrations.purge_state_db \<br />
                   {"    "}--state-code {stateCode} \<br />
-                  {"    "}--database-version primary \<br />
+                  {"    "}--ingest-instance PRIMARY \<br />
                   {"    "}--project-id {projectId} \<br />
-                  {"    "}--ssl-cert-path ~/{isProduction ? "prod" : "dev"}
-                  _state_data_certs \<br />
                   {"    "}--purge-schema
                 </CodeBlock>
               </p>
@@ -464,17 +461,14 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               <p>
                 Drop all data from the{" "}
                 <code>{stateCode.toLowerCase()}_secondary</code> database. To do
-                so, ssh into <code>prod-data-client</code> and run inside a
-                pipenv shell:
+                so, run this script locally inside a pipenv shell:
               </p>
               <p>
                 <CodeBlock enabled={currentStep === 13}>
                   python -m recidiviz.tools.migrations.purge_state_db \<br />
                   {"    "}--state-code {stateCode} \<br />
-                  {"    "}--database-version secondary \<br />
+                  {"    "}--ingest-instance SECONDARY \<br />
                   {"    "}--project-id {projectId} \<br />
-                  {"    "}--ssl-cert-path ~/{isProduction ? "prod" : "dev"}
-                  _state_data_certs
                 </CodeBlock>
               </p>
             </>
