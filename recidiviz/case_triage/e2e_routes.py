@@ -49,7 +49,7 @@ TABLES_TO_TRUNCATE = [
 
 def get_non_transactional_connection(
     user: str, password: str, host: str
-) -> psycopg2.cursor:
+) -> "psycopg2.cursor":
     connection = psycopg2.connect(
         dbname="postgres", host=host, user=user, password=password
     )
