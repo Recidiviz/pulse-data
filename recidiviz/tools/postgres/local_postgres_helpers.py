@@ -18,9 +18,8 @@
 import os
 import pwd
 import shutil
-import subprocess
 import tempfile
-from typing import Callable, Dict, Optional
+from typing import Dict, Optional
 
 from sqlalchemy.engine import URL
 from sqlalchemy.orm.session import close_all_sessions
@@ -47,6 +46,7 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 from recidiviz.tests.persistence.database.schema_entity_converter.test_base_schema import (
     TestBase,
 )
+from recidiviz.tools.utils.script_helpers import run_command
 from recidiviz.utils import environment
 
 DECLARATIVE_BASES = [
@@ -94,59 +94,15 @@ def restore_local_env_vars(overridden_env_vars: Dict[str, Optional[str]]) -> Non
             os.environ[var] = value
 
 
-def _get_run_as_user_fn(password_record: pwd.struct_passwd) -> Callable[[], None]:
-    """Returns a function that modifes the current OS user and group to those given.
-
-    To be used in preexec_fn when creating new subprocesses."""
-
-    def set_ids() -> None:
-        # Must set group id first. If user id is set first, then that user won't have permission to modify the group.
-        os.setgid(password_record.pw_gid)
-        os.setuid(password_record.pw_uid)
-
-    return set_ids
-
-
 def _is_root_user() -> bool:
     """Returns True if we are currently running as root, otherwise False."""
     return os.getuid() == 0
 
 
-def _run_command(
-    command: str,
-    assert_success: bool = True,
-    as_user: Optional[pwd.struct_passwd] = None,
-) -> str:
-    """Runs the given command.
-
-    Runs the command as a different OS user if `as_user` is not None. If the command succeeds, returns any output from
-    stdout. If the command fails and `assert_success` is set, raises an error.
-    """
-    # pylint: disable=subprocess-popen-preexec-fn
-    with subprocess.Popen(
-        command,
-        shell=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        preexec_fn=_get_run_as_user_fn(as_user) if as_user else None,
-    ) as proc:
-        try:
-            out, err = proc.communicate(timeout=15)
-        except subprocess.TimeoutExpired as e:
-            proc.kill()
-            out, err = proc.communicate()
-            raise RuntimeError(f"Command timed out: `{command}`\n{err}\n{out}") from e
-
-        if assert_success and proc.returncode != 0:
-            raise RuntimeError(f"Command failed: `{command}`\n{err}\n{out}")
-        return out
-
-
 @environment.local_only
 def can_start_on_disk_postgresql_database() -> bool:
     try:
-        _run_command("which pg_ctl")
+        run_command("which pg_ctl")
     except RuntimeError:
         return False
     return True
@@ -172,7 +128,7 @@ def start_on_disk_postgresql_database() -> str:
     if _is_root_user():
         # `useradd` is a Linux command so this raises an error on MacOS. We expect tests running on MacOs will never be
         # run as root anyway so this is okay. This will also fail if the user already exists, so we ignore failure.
-        _run_command(f"useradd {LINUX_TEST_DB_OWNER_NAME}", assert_success=False)
+        run_command(f"useradd {LINUX_TEST_DB_OWNER_NAME}", assert_success=False)
         # Get the password record for the new user, fails if the user does not exist.
         password_record = pwd.getpwnam(LINUX_TEST_DB_OWNER_NAME)
 
@@ -189,18 +145,18 @@ def start_on_disk_postgresql_database() -> str:
     # Start the local postgres server.
     # Write logs to file so that pg_ctl closes its stdout file descriptor when it moves to the background, otherwise
     # the subprocess will hang.
-    _run_command(
+    run_command(
         f"pg_ctl -D {temp_db_data_dir} -l /tmp/postgres initdb", as_user=password_record
     )
 
     if os.environ.get("CI") == "true":
         # We need to set the host to 0.0.0.0 as CircleCI/GitHub Actions don't let us bind to 127.0.0.1 as the default.
-        _run_command(
+        run_command(
             f'pg_ctl -D {temp_db_data_dir} -l /tmp/postgres start -o "-h 0.0.0.0"',
             as_user=password_record,
         )
     else:
-        _run_command(
+        run_command(
             f"pg_ctl -D {temp_db_data_dir} -l /tmp/postgres start",
             as_user=password_record,
         )
@@ -210,12 +166,12 @@ def start_on_disk_postgresql_database() -> str:
     # TODO(#7018): Right now we just enforce that this is a superuser in test, but we
     # should actually make sure that the set of permissions line up with what we have
     # in production.
-    _run_command(
+    run_command(
         f"createuser --superuser {TEST_POSTGRES_USER_NAME}",
         as_user=password_record,
         assert_success=False,
     )
-    _run_command(
+    run_command(
         f"createdb -O {TEST_POSTGRES_USER_NAME} {TEST_POSTGRES_DB_NAME}",
         as_user=password_record,
         assert_success=False,
@@ -259,7 +215,7 @@ def _stop_on_disk_postgresql_database(
     password_record = (
         pwd.getpwnam(LINUX_TEST_DB_OWNER_NAME) if _is_root_user() else None
     )
-    _run_command(
+    run_command(
         f"pg_ctl -D {temp_db_data_dir} -l /tmp/postgres stop",
         as_user=password_record,
         assert_success=assert_success,

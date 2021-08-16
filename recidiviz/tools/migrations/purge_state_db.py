@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Important note: This script should be run from `prod-data-client`. It will not work
+Important note: This script should be run on your local machine. It will not work
 when run anywhere else.
 
 This script runs all downgrade migrations for a given state database, so that when
@@ -26,26 +26,22 @@ Example usage (run from `pipenv shell`):
 
 python -m recidiviz.tools.migrations.purge_state_db \
     --state-code US_MI \
-    --ingest-instance secondary \
+    --ingest-instance SECONDARY \
     --project-id recidiviz-staging \
-    --ssl-cert-path ~/dev_state_data_certs
     [--purge-schema]
 """
 import argparse
 import logging
 
-import alembic.config
-
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
-from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_engine_manager import (
-    SQLAlchemyEngineManager,
+from recidiviz.tools.utils.script_helpers import (
+    prompt_for_confirmation,
+    run_command,
+    run_command_streaming,
 )
-from recidiviz.tools.postgres import local_postgres_helpers
-from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -54,7 +50,7 @@ from recidiviz.utils.metadata import local_project_id_override
 def create_parser() -> argparse.ArgumentParser:
     """Returns an argument parser for the script."""
     parser = argparse.ArgumentParser(
-        description="Run a single downgrade migration against the specified PostgresQL database."
+        description="Purges all data from a remote PostgresQL database."
     )
     parser.add_argument(
         "--state-code",
@@ -77,12 +73,6 @@ def create_parser() -> argparse.ArgumentParser:
         required=True,
     )
     parser.add_argument(
-        "--ssl-cert-path",
-        type=str,
-        help="The path to the folder where the certs live.",
-        required=True,
-    )
-    parser.add_argument(
         "--purge-schema",
         action="store_true",
         help="When set, runs the downgrade migrations.",
@@ -91,26 +81,41 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def get_hash_of_deployed_commit(project_id: str) -> str:
+    """Returns the commit hash of the currently deployed version in the provided
+    project.
+    """
+
+    # First make sure all tags are current locally
+    run_command("git fetch --all --tags --prune --prune-tags", timeout_sec=30)
+
+    get_tag_cmd = (
+        f"gcloud app versions list --project={project_id} --hide-no-traffic "
+        f"--service=default --format=yaml | yq .id | tr -d \\\" | tr '-' '.'"
+    )
+
+    get_commit_cmd = f"git show-ref -s $({get_tag_cmd})"
+    return run_command(get_commit_cmd, timeout_sec=30)
+
+
 def main(
     state_code: StateCode,
     ingest_instance: DirectIngestInstance,
-    ssl_cert_path: str,
     purge_schema: bool,
 ) -> None:
     """
     Invokes the main code path for running a downgrade.
 
-    This checks for user validations that the database and branches are correct and then runs the downgrade
-    migration.
+    This checks for user validations that the database and branches are correct and then
+    sshs into `prod-data-client` to run the downgrade migration.
     """
     is_prod = metadata.project_id() == GCP_PROJECT_PRODUCTION
     if is_prod:
         logging.info("RUNNING AGAINST PRODUCTION\n")
 
     purge_str = (
-        "PURGE DATABASE STATE IN STAGING"
-        if metadata.project_id() == GCP_PROJECT_STAGING
-        else "PURGE DATABASE STATE IN PROD"
+        f"PURGE {state_code.value} DATABASE STATE IN "
+        f"{'PROD' if is_prod else 'STAGING'} {ingest_instance.value}"
     )
     db_key = ingest_instance.database_key_for_state(state_code)
 
@@ -120,9 +125,8 @@ def main(
     )
     if purge_schema:
         purge_schema_str = (
-            "RUN DOWNGRADE MIGRATIONS IN STAGING"
-            if metadata.project_id() == GCP_PROJECT_STAGING
-            else "RUN DOWNGRADE MIGRATIONS IN PROD"
+            f"RUN {state_code.value} DOWNGRADE MIGRATIONS IN "
+            f"{'PROD' if is_prod else 'STAGING'} {ingest_instance.value}"
         )
         prompt_for_confirmation(
             f"This script will run all DOWNGRADE migrations for "
@@ -130,40 +134,35 @@ def main(
             purge_schema_str,
         )
 
-    with SessionFactory.for_prod_data_client(db_key, ssl_cert_path) as session:
-        truncate_commands = [
-            "TRUNCATE TABLE state_person CASCADE;",
-            "TRUNCATE TABLE state_agent CASCADE;",
-        ]
-        for command in truncate_commands:
-            logging.info('Running query ["%s"]. This may take a while...', command)
-            session.execute(command)
+    commit_hash = get_hash_of_deployed_commit(project_id=metadata.project_id())
+    remote_commands = [
+        "cd ~/pulse-data",
+        # Git routes a lot to stderr that isn't really an error - redirect to stdout.
+        "git fetch --all --tags --prune --prune-tags 2>&1",
+        f"git checkout {commit_hash} 2>&1",
+        (
+            "pipenv run python -m recidiviz.tools.migrations.purge_state_db_remote_helper "
+            f"--state-code {state_code.value} "
+            f"--ingest-instance {ingest_instance.value} "
+            f"--project-id {metadata.project_id()} "
+            f"--commit-hash {commit_hash} "
+            f"{'--purge-schema' if purge_schema else ''} "
+        ),
+    ]
+    remote_command = " && ".join(remote_commands)
+    local_command = (
+        f"gcloud compute ssh prod-data-client --zone=us-east4-c "
+        f'--command "{remote_command}"'
+    )
 
-        logging.info("Done running truncate commands.")
+    logging.info(
+        "Running purge command on remote `prod-data-client`. "
+        "You will be prompted for your `prod-data-client` password."
+    )
+    for stdout_line in run_command_streaming(local_command):
+        print(stdout_line.rstrip())
 
-    if purge_schema:
-        with SessionFactory.for_prod_data_client(
-            db_key, ssl_cert_path
-        ) as purge_session:
-            overriden_env_vars = None
-            try:
-                logging.info("Purging schema...")
-                overriden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
-                    database_key=db_key,
-                    ssl_cert_path=ssl_cert_path,
-                    migration_user=True,
-                )
-                config = alembic.config.Config(db_key.alembic_file)
-                alembic.command.downgrade(config, "base")
-
-                # We need to manually delete alembic_version because it's leftover after
-                # the downgrade migrations
-                purge_session.execute("DROP TABLE alembic_version;")
-            finally:
-                if overriden_env_vars:
-                    local_postgres_helpers.restore_local_env_vars(overriden_env_vars)
-
-        logging.info("Purge complete.")
+    logging.info("Script complete.")
 
 
 if __name__ == "__main__":
@@ -174,6 +173,5 @@ if __name__ == "__main__":
         main(
             args.state_code,
             args.ingest_instance,
-            args.ssl_cert_path,
             args.purge_schema,
         )
