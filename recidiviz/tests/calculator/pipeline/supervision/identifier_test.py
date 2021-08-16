@@ -111,6 +111,9 @@ from recidiviz.persistence.entity.state.entities import (
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violation_response_preprocessing_delegate import (
+    UsXxViolationResponsePreprocessingDelegate,
+)
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violations_delegate import (
     UsXxViolationDelegate,
 )
@@ -159,12 +162,14 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             StateAssessmentType.LSIR,
         ]
 
-        self.pre_processing_delegate_patcher = mock.patch(
+        self.incarceration_pre_processing_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
             ".get_state_specific_incarceration_period_pre_processing_delegate"
         )
-        self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
-        self.mock_pre_processing_delegate.return_value = (
+        self.mock_incarceration_pre_processing_delegate = (
+            self.incarceration_pre_processing_delegate_patcher.start()
+        )
+        self.mock_incarceration_pre_processing_delegate.return_value = (
             UsXxIncarcerationPreProcessingDelegate()
         )
         self.violation_delegate_patcher = mock.patch(
@@ -176,13 +181,24 @@ class TestClassifySupervisionEvents(unittest.TestCase):
 
         self.person = StatePerson.new_with_defaults(state_code="US_XX")
 
+        self.violation_pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_violation_response_preprocessing_delegate"
+        )
+        self.mock_violation_pre_processing_delegate = (
+            self.violation_pre_processing_delegate_patcher.start()
+        )
+        self.mock_violation_pre_processing_delegate.return_value = (
+            UsXxViolationResponsePreprocessingDelegate()
+        )
+
     def tearDown(self) -> None:
         self.assessment_types_patcher.stop()
         self._stop_state_specific_delegate_patchers()
 
     def _stop_state_specific_delegate_patchers(self) -> None:
-        self.pre_processing_delegate_patcher.stop()
+        self.incarceration_pre_processing_delegate_patcher.stop()
         self.violation_delegate_patcher.stop()
+        self.violation_pre_processing_delegate_patcher.stop()
 
     def test_find_supervision_events(self) -> None:
         """Tests the find_supervision_population_events function for a single

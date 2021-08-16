@@ -119,7 +119,7 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
             supervision_periods=supervision_periods,
             # Note: This pipeline cannot be run for any state that relies on
             # StateSupervisionViolationResponse entities in IP pre-processing
-            violation_responses=None,
+            pre_processed_violation_responses=None,
         )
 
         if not ip_pre_processing_manager:

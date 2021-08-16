@@ -38,6 +38,7 @@ from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils impor
     get_commitment_from_supervision_details,
 )
 from recidiviz.calculator.pipeline.utils.entity_pre_processing_utils import (
+    pre_processed_violation_responses_for_calculations,
     pre_processing_managers_for_calculations,
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
@@ -58,7 +59,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     get_state_specific_commitment_from_supervision_delegate,
     get_state_specific_supervising_officer_and_location_info_function,
     get_state_specific_violation_delegate,
-    state_specific_violation_response_pre_processing_function,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
@@ -71,7 +71,6 @@ from recidiviz.calculator.pipeline.utils.supervision_period_pre_processing_manag
 )
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     get_most_severe_response_decision,
-    prepare_violation_responses_for_calculations,
     responses_on_most_recent_response_date,
     violation_responses_in_window,
 )
@@ -174,11 +173,10 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             StateSupervisionPeriod.get_class_id_name(),
         )
 
-        sorted_violation_responses = prepare_violation_responses_for_calculations(
-            violation_responses=violation_responses,
-            pre_processing_function=state_specific_violation_response_pre_processing_function(
-                state_code=state_code
-            ),
+        pre_processed_violation_responses = (
+            pre_processed_violation_responses_for_calculations(
+                violation_responses=violation_responses, state_code=state_code
+            )
         )
 
         (
@@ -188,7 +186,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             state_code=state_code,
             incarceration_periods=incarceration_periods,
             supervision_periods=supervision_periods,
-            violation_responses=sorted_violation_responses,
+            pre_processed_violation_responses=pre_processed_violation_responses,
         )
 
         if not ip_pre_processing_manager or not sp_pre_processing_manager:
@@ -211,7 +209,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                 ip_pre_processing_manager=ip_pre_processing_manager,
                 sp_pre_processing_manager=sp_pre_processing_manager,
                 assessments=assessments,
-                sorted_violation_responses=sorted_violation_responses,
+                sorted_violation_responses=pre_processed_violation_responses,
                 supervision_period_to_agent_associations=supervision_period_to_agent_associations,
                 county_of_residence=county_of_residence,
             )

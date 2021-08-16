@@ -53,10 +53,12 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_uti
     us_id_get_supervision_period_admission_override,
     us_id_supervision_period_is_out_of_state,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_violation_response_preprocessing_delegate import (
+    UsIdViolationResponsePreprocessingDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_violations_delegate import (
     UsIdViolationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_mo import us_mo_violation_utils
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_commitment_from_supervision_delegate import (
     UsMoCommitmentFromSupervisionDelegate,
 )
@@ -69,10 +71,12 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_uti
     us_mo_get_post_incarceration_supervision_type,
     us_mo_get_pre_incarceration_supervision_type,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_response_preprocessing_delegate import (
+    UsMoViolationResponsePreprocessingDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violations_delegate import (
     UsMoViolationDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_nd import us_nd_violation_utils
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_delegate import (
     UsNdCommitmentFromSupervisionDelegate,
 )
@@ -85,6 +89,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_com
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_utils import (
     us_nd_get_post_incarceration_supervision_type,
     us_nd_infer_supervision_period_admission,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_violation_response_preprocessing_delegate import (
+    UsNdViolationResponsePreprocessingDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_violations_delegate import (
     UsNdViolationDelegate,
@@ -101,6 +108,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_com
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_utils import (
     us_pa_get_supervising_officer_and_location_info_from_supervision_period,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violation_response_preprocessing_delegate import (
+    UsPaViolationResponsePreprocessingDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violations_delegate import (
     UsPaViolationDelegate,
 )
@@ -113,6 +123,9 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
     get_month_supervision_type_default,
     get_pre_incarceration_supervision_type_from_ip_admission_reason,
+)
+from recidiviz.calculator.pipeline.utils.supervision_violation_responses_pre_processing_manager import (
+    StateSpecificViolationResponsePreProcessingDelegate,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
@@ -130,7 +143,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionContact,
     StateSupervisionPeriod,
     StateSupervisionSentence,
-    StateSupervisionViolationResponse,
 )
 
 
@@ -500,6 +512,23 @@ def get_state_specific_violation_delegate(
     raise ValueError(f"Unexpected state code [{state_code}]")
 
 
+def get_state_specific_violation_response_preprocessing_delegate(
+    state_code: str,
+) -> StateSpecificViolationResponsePreProcessingDelegate:
+    """Returns the type of StateSpecificViolationResponsePreProcessingDelegate that should be used for
+    violation calculations in a given |state_code|."""
+    if state_code == StateCode.US_ID.value:
+        return UsIdViolationResponsePreprocessingDelegate()
+    if state_code == StateCode.US_ND.value:
+        return UsNdViolationResponsePreprocessingDelegate()
+    if state_code == StateCode.US_MO.value:
+        return UsMoViolationResponsePreprocessingDelegate()
+    if state_code == StateCode.US_PA.value:
+        return UsPaViolationResponsePreprocessingDelegate()
+
+    raise ValueError(f"Unexpected state code [{state_code}]")
+
+
 # TODO(#3829): Remove this helper once we've built level 1/level 2 supervision
 #  location distinction directly into our schema (info currently packed into
 #  supervision_site for states that have both).
@@ -538,26 +567,6 @@ def state_specific_supervision_admission_reason_override(
             incarceration_period_index=incarceration_period_index,
         )
     return supervision_period.admission_reason
-
-
-# TODO(#8002): Implement a ViolationResponsePreProcessingManager
-def state_specific_violation_response_pre_processing_function(
-    state_code: str,
-) -> Optional[
-    Callable[
-        [List[StateSupervisionViolationResponse]],
-        List[StateSupervisionViolationResponse],
-    ]
-]:
-    """Returns a callable to be used to prepare StateSupervisionViolationResponses for calculations, if applicable for
-    the given state. If the state doesn't have a state-specific violation response pre-processing function,
-    returns None."""
-    if state_code.upper() == "US_MO":
-        return us_mo_violation_utils.us_mo_prepare_violation_responses_for_calculations
-    if state_code.upper() == "US_ND":
-        return us_nd_violation_utils.us_nd_prepare_violation_responses_for_calculations
-
-    return None
 
 
 def supervision_period_is_out_of_state(

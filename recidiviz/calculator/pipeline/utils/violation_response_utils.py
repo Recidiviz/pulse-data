@@ -18,7 +18,7 @@
 import datetime
 from collections import defaultdict
 from datetime import date
-from typing import Callable, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
@@ -46,24 +46,6 @@ DECISION_SEVERITY_ORDER = [
     StateSupervisionViolationResponseDecision.WARNING,
     StateSupervisionViolationResponseDecision.CONTINUANCE,
 ]
-
-
-def prepare_violation_responses_for_calculations(
-    violation_responses: List[StateSupervisionViolationResponse],
-    pre_processing_function: Optional[
-        Callable[
-            [List[StateSupervisionViolationResponse]],
-            List[StateSupervisionViolationResponse],
-        ]
-    ],
-) -> List[StateSupervisionViolationResponse]:
-    """Performs the provided pre-processing step on the list of StateSupervisionViolationResponses, if applicable.
-    Else, returns the original |violation_responses| list."""
-    prepared_violation_responses = violation_responses
-    if pre_processing_function:
-        prepared_violation_responses = pre_processing_function(violation_responses)
-
-    return sorted_violation_responses_with_set_dates(prepared_violation_responses)
 
 
 def responses_on_most_recent_response_date(
@@ -109,23 +91,6 @@ def get_most_severe_response_decision(
 
     # Find the most severe decision responses
     return identify_most_severe_response_decision(response_decisions)
-
-
-def sorted_violation_responses_with_set_dates(
-    violation_responses: List[StateSupervisionViolationResponse],
-) -> List[StateSupervisionViolationResponse]:
-    """Sorts the list of |violation_responses|. Filters out any responses that don't
-    have a set response_date."""
-    filtered_responses = [
-        response
-        for response in violation_responses
-        if response.response_date is not None
-    ]
-
-    # All responses will have a response_date at this point, but date.min helps to satisfy mypy
-    filtered_responses.sort(key=lambda b: b.response_date or date.min)
-
-    return filtered_responses
 
 
 def violation_responses_in_window(

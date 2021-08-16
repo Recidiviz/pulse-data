@@ -108,6 +108,9 @@ from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violation_response_preprocessing_delegate import (
+    UsXxViolationResponsePreprocessingDelegate,
+)
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violations_delegate import (
     UsXxViolationDelegate,
 )
@@ -153,10 +156,21 @@ class TestSupervisionPipeline(unittest.TestCase):
         self.mock_violation_delegate = self.violation_delegate_patcher.start()
         self.mock_violation_delegate.return_value = UsXxViolationDelegate()
 
+        self.violation_pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_violation_response_preprocessing_delegate"
+        )
+        self.mock_violation_pre_processing_delegate = (
+            self.violation_pre_processing_delegate_patcher.start()
+        )
+        self.mock_violation_pre_processing_delegate.return_value = (
+            UsXxViolationResponsePreprocessingDelegate()
+        )
+
     def tearDown(self) -> None:
         self.assessment_types_patcher.stop()
         self.pre_processing_delegate_patcher.stop()
         self.violation_delegate_patcher.stop()
+        self.violation_pre_processing_delegate_patcher.stop()
 
     @staticmethod
     def _default_data_dict() -> Dict[str, List]:
@@ -1086,6 +1100,16 @@ class TestClassifyEvents(unittest.TestCase):
         self.mock_violation_delegate.return_value = UsXxViolationDelegate()
         self.identifier = identifier.SupervisionIdentifier()
 
+        self.violation_pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_violation_response_preprocessing_delegate"
+        )
+        self.mock_violation_pre_processing_delegate = (
+            self.violation_pre_processing_delegate_patcher.start()
+        )
+        self.mock_violation_pre_processing_delegate.return_value = (
+            UsXxViolationResponsePreprocessingDelegate()
+        )
+
     def tearDown(self) -> None:
         self.assessment_types_patcher.stop()
         self._stop_state_specific_delegate_patchers()
@@ -1093,6 +1117,7 @@ class TestClassifyEvents(unittest.TestCase):
 
     def _stop_state_specific_delegate_patchers(self) -> None:
         self.pre_processing_delegate_patcher.stop()
+        self.violation_pre_processing_delegate_patcher.stop()
 
     @staticmethod
     def load_person_entities_dict(
