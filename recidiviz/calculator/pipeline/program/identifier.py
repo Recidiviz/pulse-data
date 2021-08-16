@@ -81,20 +81,23 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
     ) -> List[ProgramEvent]:
         """Finds instances of interaction with a program.
 
-        Identifies instances of being referred to a program and actively participating in a program.
+        Identifies instances of being referred to a program and actively participating
+        in a program.
 
         Args:
             - program_assignments: All of the person's StateProgramAssignments
             - assessments: All of the person's recorded StateAssessments
             - supervision_periods: All of the person's supervision_periods
-            - supervision_period_to_agent_associations: dictionary associating StateSupervisionPeriod ids to information
-                about the corresponding StateAgent
+            - supervision_period_to_agent_associations: dictionary associating
+                StateSupervisionPeriod ids to information about the corresponding
+                StateAgent
 
         Returns:
             A list of ProgramEvents for the person.
         """
-        # TODO(#2855): Bring in supervision and incarceration sentences to infer the supervision type on supervision
-        #  periods that don't have a set supervision type
+        # TODO(#2855): Bring in supervision and incarceration sentences to infer the
+        #  supervision type on supervision periods that don't have a set supervision
+        #  type
         program_events: List[ProgramEvent] = []
 
         if not program_assignments:
@@ -152,11 +155,13 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
     ) -> List[ProgramReferralEvent]:
         """Finds instances of being referred to a program.
 
-        If the program assignment has a referral date, then using date-based logic, connects that referral to assessment
-        and supervision data where possible to build ProgramReferralEvents. For assessments, identifies the most recent
-        assessment at the time of the referral. For supervision, identifies any supervision periods that were active at the
-        time of the referral. If there are multiple overlapping supervision periods, returns one ProgramReferralEvent for
-        each unique supervision type for each supervision period that overlapped.
+        If the program assignment has a referral date, then using date-based logic,
+        connects that referral to assessment and supervision data where possible to
+        build ProgramReferralEvents. For assessments, identifies the most recent
+        assessment at the time of the referral. For supervision, identifies any
+        supervision periods that were active at the time of the referral. If there
+        are multiple overlapping supervision periods, returns one ProgramReferralEvent
+        for each unique supervision type for each supervision period that overlapped.
 
         Returns a list of ProgramReferralEvents.
         """
@@ -206,16 +211,21 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         program_assignment: StateProgramAssignment,
         supervision_periods: List[StateSupervisionPeriod],
     ) -> List[ProgramParticipationEvent]:
-        """Finds instances of actively participating in a program. Produces a ProgramParticipationEvent for each day that
-        the person was actively participating in the program. If the program_assignment has a participation_status of
-        IN_PROGRESS and has a set start_date, produces a ProgramParticipationEvent for every day between the start_date and
-        today. If the program_assignment has a participation_status of DISCHARGED, produces a ProgramParticipationEvent for
-        every day between the start_date and discharge_date, end date exclusive.
+        """Finds instances of actively participating in a program. Produces a
+        ProgramParticipationEvent for each day that the person was actively
+        participating in the program. If the program_assignment has a
+        participation_status of IN_PROGRESS and has a set start_date, produces a
+        ProgramParticipationEvent for every day between the start_date and today. If
+        the program_assignment has a participation_status of DISCHARGED, produces a
+        ProgramParticipationEvent for every day between the start_date and
+        discharge_date, end date exclusive.
 
-        Where possible, identifies what types of supervision the person is on on the date of the participation.
+        Where possible, identifies what types of supervision the person is on on the
+        date of the participation.
 
-        If there are multiple overlapping supervision periods, returns one ProgramParticipationEvent for each supervision
-        period that overlaps.
+        TODO(#8818): Consider producing only one ProgramParticipationEvent per referral
+        If there are multiple overlapping supervision periods, returns one
+        ProgramParticipationEvent for each supervision period that overlaps.
 
         Returns a list of ProgramReferralEvents.
         """
@@ -243,12 +253,14 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
                 != StateProgramAssignmentParticipationStatus.IN_PROGRESS
             ):
                 logging.warning(
-                    "StateProgramAssignment with a DISCHARGED status but no discharge_date: %s",
+                    "StateProgramAssignment with a DISCHARGED status but no "
+                    "discharge_date: %s",
                     program_assignment,
                 )
                 return program_participation_events
 
-            # This person is actively participating in this program. Set the discharge_date for tomorrow.
+            # This person is actively participating in this program. Set the
+            # discharge_date for tomorrow.
             discharge_date = date.today() + relativedelta(days=1)
 
         program_id = (
@@ -273,6 +285,8 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
             is_first_day_in_program = participation_date == start_date
 
             if overlapping_supervision_periods:
+                # TODO(#8818): Consider producing only one ProgramParticipationEvent per
+                #  referral
                 for supervision_period in supervision_periods:
                     program_participation_events.append(
                         ProgramParticipationEvent(
@@ -311,8 +325,12 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         supervision_periods: Optional[List[StateSupervisionPeriod]],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
     ) -> List[ProgramReferralEvent]:
-        """Builds ProgramReferralEvents with data from the relevant supervision periods at the time of the referral.
-        Returns one ProgramReferralEvent for each of the supervision periods that overlap with the referral."""
+        """Builds ProgramReferralEvents with data from the relevant supervision periods
+        at the time of the referral.
+
+        # TODO(#8818): Consider producing only one ProgramReferralEvent per referral
+        Returns one ProgramReferralEvent for each of the supervision periods that
+        overlap with the referral."""
         program_referrals: List[ProgramReferralEvent] = []
 
         if supervision_periods:
@@ -368,8 +386,9 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         event_date: date,
         supervision_periods: List[StateSupervisionPeriod],
     ) -> List[StateSupervisionPeriod]:
-        """Identifies supervision_periods where the event_date falls between the start and end of the supervision period,
-        inclusive of the start date and exclusive of the end date."""
+        """Identifies supervision_periods where the event_date falls between the start
+        and end of the supervision period, inclusive of the start date and exclusive
+        of the end date."""
         return [
             sp
             for sp in supervision_periods
