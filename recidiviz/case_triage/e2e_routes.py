@@ -26,10 +26,10 @@ from flask_sqlalchemy_session import current_session
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
 from recidiviz.persistence.database.constants import (
-    SQLALCHEMY_DB_USER,
-    SQLALCHEMY_DB_PASSWORD,
     SQLALCHEMY_DB_HOST,
     SQLALCHEMY_DB_NAME,
+    SQLALCHEMY_DB_PASSWORD,
+    SQLALCHEMY_DB_USER,
 )
 from recidiviz.utils.environment import local_only
 
@@ -49,7 +49,7 @@ TABLES_TO_TRUNCATE = [
 
 def get_non_transactional_connection(
     user: str, password: str, host: str
-) -> "psycopg2.Cursor":
+) -> psycopg2.cursor:
     connection = psycopg2.connect(
         dbname="postgres", host=host, user=user, password=password
     )

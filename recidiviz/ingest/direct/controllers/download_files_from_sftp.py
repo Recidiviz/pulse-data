@@ -154,6 +154,11 @@ class DownloadFilesFromSftpController:
     def _is_after_update_bound(self, sftp_attr: SFTPAttributes) -> bool:
         if self.lower_bound_update_datetime is None:
             return True
+        if sftp_attr.st_mtime is None:
+            # We want to error out noisily here because this is an unexpected
+            # behavior. If it ends up happening, we need a more robust strategy
+            # for determining timestamp bounds.
+            raise ValueError("mtime for SFTP file was unexepctedly None")
         update_time = datetime.datetime.fromtimestamp(sftp_attr.st_mtime)
         if self.lower_bound_update_datetime.tzinfo:
             update_time = update_time.astimezone(pytz.UTC)
@@ -231,13 +236,22 @@ class DownloadFilesFromSftpController:
             remote_dirs = connection.listdir()
             root = self.delegate.root_directory(remote_dirs)
             dirs_with_attributes = connection.listdir_attr(root)
-            paths_post_timestamp = {
-                sftp_attr.filename: datetime.datetime.fromtimestamp(
-                    sftp_attr.st_mtime
-                ).astimezone(pytz.UTC)
-                for sftp_attr in dirs_with_attributes
-                if self._is_after_update_bound(sftp_attr)
-            }
+            paths_post_timestamp = {}
+            for sftp_attr in dirs_with_attributes:
+                if not self._is_after_update_bound(sftp_attr):
+                    continue
+
+                if sftp_attr.st_mtime is None:
+                    # We should never reach this point because we should have filtered out
+                    # None mtimes already.
+                    raise ValueError("mtime for SFTP file was unexepctedly None")
+
+                paths_post_timestamp[
+                    sftp_attr.filename
+                ] = datetime.datetime.fromtimestamp(sftp_attr.st_mtime).astimezone(
+                    pytz.UTC
+                )
+
             paths_to_download = self.delegate.filter_paths(
                 list(paths_post_timestamp.keys())
             )
