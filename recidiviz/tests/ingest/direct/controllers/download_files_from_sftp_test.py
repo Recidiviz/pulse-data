@@ -50,9 +50,9 @@ from recidiviz.ingest.direct.sftp_download_delegate_factory import (
 )
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
-TODAY = datetime.datetime.today()
-YESTERDAY = datetime.datetime.today() - datetime.timedelta(1)
-TWO_DAYS_AGO = datetime.datetime.today() - datetime.timedelta(2)
+TODAY = datetime.datetime.fromtimestamp(int(datetime.datetime.today().timestamp()))
+YESTERDAY = TODAY - datetime.timedelta(1)
+TWO_DAYS_AGO = TODAY - datetime.timedelta(2)
 TEST_SSH_RSA_KEY = (
     "AAAAB3NzaC1yc2EAAAADAQABAAABAQCaqqwHqIxyLJwk5ppScpxjGIr9YeGNtWL/Ci0cYKMtUBWrIcosPMnNkyR/"
     "SgtKXMmVDkL1FSFztu1qPY6bO4STWnhQgJCjLwimryOmey9u5V6Rx6E4R0rfT4851oknqRZANNRzMG4Eqh5OgFl4"
@@ -93,16 +93,16 @@ def create_files(
 
 def create_sftp_attrs() -> List[SFTPAttributes]:
     test_today_attr = SFTPAttributes()
-    test_today_attr.st_mtime = TODAY.timestamp()
+    test_today_attr.st_mtime = int(TODAY.timestamp())
     test_today_attr.filename = "testToday"
 
     test_two_days_ago_attr = SFTPAttributes()
-    test_two_days_ago_attr.st_mtime = TWO_DAYS_AGO.timestamp()
+    test_two_days_ago_attr.st_mtime = int(TWO_DAYS_AGO.timestamp())
     test_two_days_ago_attr.filename = "testTwoDaysAgo"
 
     not_test_attr = SFTPAttributes()
     not_test_attr.filename = "nottest.txt"
-    not_test_attr.st_mtime = YESTERDAY.timestamp()
+    not_test_attr.st_mtime = int(YESTERDAY.timestamp())
 
     return [test_today_attr, test_two_days_ago_attr, not_test_attr]
 
