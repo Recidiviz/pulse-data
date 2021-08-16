@@ -501,3 +501,14 @@ class DashboardUserRestrictions(CaseTriageBase):
         nullable=True,
         comment="Page level restrictions for the user",
     )
+
+
+class OfficerMetadata(CaseTriageBase):
+    """This model is used when data is captured as the officer engages with the application."""
+
+    __tablename__ = "officer_metadata"
+    state_code = Column(String(255), nullable=False, index=True, primary_key=True)
+    officer_external_id = Column(
+        String(255), nullable=False, index=True, primary_key=True
+    )
+    has_seen_onboarding = Column(Boolean, nullable=False, default=False)
