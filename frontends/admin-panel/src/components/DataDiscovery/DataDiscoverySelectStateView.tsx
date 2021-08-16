@@ -29,8 +29,8 @@ interface DataDiscoverySelectStateViewProps {
 
 const DataDiscoverySelectStateView: React.FC<DataDiscoverySelectStateViewProps> =
   ({ form }) => {
-    const onChange = (value: string) => {
-      form.setFieldsValue({ region_code: value });
+    const onChange = (value: StateCodeInfo) => {
+      form.setFieldsValue({ region_code: value.code });
     };
 
     const { loading, data } = useFetchedData<StateCodeInfo[]>(

@@ -17,15 +17,16 @@
 import { Button, Card, Form, Input, message, Select, Spin } from "antd";
 import * as React from "react";
 import {
-  fetchEmailStateCodes,
   getListBatchInfo,
   sendEmails,
 } from "../../AdminPanelAPI/LineStaffTools";
-import useFetchedData from "../../hooks";
-import { StateCodeInfo } from "../IngestOperationsView/constants";
 import ActionRegionConfirmationForm from "../Utilities/ActionRegionConfirmationForm";
-import { layout, tailLayout, BatchInfoType } from "./constants";
-import StateSelector from "../Utilities/StateSelector";
+import {
+  layout,
+  tailLayout,
+  BatchInfoType,
+  POEmailsFormProps,
+} from "./constants";
 
 interface SendFormData {
   state: string;
@@ -36,7 +37,7 @@ interface SendFormData {
   emailAllowlist: string[];
 }
 
-const SendEmails = (): JSX.Element => {
+const SendEmails: React.FC<POEmailsFormProps> = ({ stateInfo }) => {
   const [form] = Form.useForm();
   const [formData, setFormData] =
     React.useState<SendFormData | undefined>(undefined);
@@ -45,9 +46,6 @@ const SendEmails = (): JSX.Element => {
     React.useState(false);
   const [labeledBatchList, setLabeledBatchList] =
     React.useState<string[] | undefined>(undefined);
-
-  const { loading, data } =
-    useFetchedData<StateCodeInfo[]>(fetchEmailStateCodes);
 
   const onFinish = (values?: SendFormData | undefined) => {
     setFormData(values);
@@ -58,9 +56,9 @@ const SendEmails = (): JSX.Element => {
     setIsConfirmationModalVisible(false);
     setShowSpinner(true);
     message.info("Sending emails...");
-    if (formData?.state) {
+    if (formData?.batchId) {
       const r = await sendEmails(
-        formData.state,
+        stateInfo.code,
         formData.batchId,
         formData.redirectAddress,
         formData.ccAddresses,
@@ -85,11 +83,18 @@ const SendEmails = (): JSX.Element => {
     setIsConfirmationModalVisible(true);
   };
 
-  const getBatches = async (sCode: string) => {
-    const r = await getListBatchInfo(sCode);
-    const json = await r.json();
-    labelBatchesInSelect(json.batchInfo);
-  };
+  const getBatches = React.useCallback(() => {
+    setLabeledBatchList(undefined);
+    const getBatchInfo = async () => {
+      form.setFieldsValue({
+        batchId: undefined,
+      });
+      const r = await getListBatchInfo(stateInfo.code);
+      const json = await r.json();
+      labelBatchesInSelect(json.batchInfo);
+    };
+    getBatchInfo();
+  }, [stateInfo.code, form]);
 
   const labelBatchesInSelect = (batchInfo: BatchInfoType[]) => {
     const labeledList: string[] = batchInfo.map((x) => {
@@ -101,9 +106,21 @@ const SendEmails = (): JSX.Element => {
     setLabeledBatchList(labeledList);
   };
 
+  React.useEffect(() => {
+    getBatches();
+  }, [getBatches]);
+
   return (
     <>
-      <Card title="Send Emails" style={{ margin: 10, height: "95%" }}>
+      <Card
+        title={`Send ${stateInfo.name} Emails`}
+        style={{ margin: 10, height: "95%" }}
+        extra={
+          <Button type="primary" size="small" onClick={getBatches}>
+            Update Batch IDs{" "}
+          </Button>
+        }
+      >
         <Form
           form={form}
           {...layout}
@@ -112,18 +129,6 @@ const SendEmails = (): JSX.Element => {
             onFinish(values);
           }}
         >
-          <Form.Item label="State" name="state" rules={[{ required: true }]}>
-            <StateSelector
-              loading={loading}
-              data={data}
-              onChange={(sCode) => {
-                form.setFieldsValue({
-                  batchId: undefined,
-                });
-                getBatches(sCode);
-              }}
-            />
-          </Form.Item>
           {labeledBatchList ? (
             <Form.Item
               label="Batch ID"
@@ -188,14 +193,14 @@ const SendEmails = (): JSX.Element => {
           {showSpinner ? <Spin /> : null}
         </Form>
       </Card>
-      {formData?.state && formData?.batchId ? (
+      {stateInfo && formData?.batchId ? (
         <ActionRegionConfirmationForm
           visible={isConfirmationModalVisible}
           onConfirm={onEmailActionConfirmation}
           onCancel={onConfirmationCancel}
           action="send"
           actionName="Send Emails"
-          regionCode={formData.state}
+          regionCode={stateInfo.code}
         />
       ) : null}
     </>

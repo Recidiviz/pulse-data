@@ -19,8 +19,8 @@ import * as React from "react";
 import { StateCodeInfo } from "../IngestOperationsView/constants";
 
 interface StateSelectorProps {
-  /* form component onChange that changes the stateCode */
-  onChange?: (stateCode: string) => void;
+  /* form component onChange that changes the stateInfo */
+  onChange: (stateInfo: StateCodeInfo) => void;
   /* initial state code */
   initialValue?: string | null;
   value?: string;
@@ -37,9 +37,11 @@ const StateSelector: React.FC<StateSelectorProps> = ({
   value,
 }) => {
   const handleOnChange = (selectedValue: string) => {
-    if (onChange) {
-      onChange(selectedValue);
-    }
+    data?.forEach((state: StateCodeInfo) => {
+      if (selectedValue === state.code) {
+        onChange(state);
+      }
+    });
   };
 
   const defaultValue = initialValue == null ? undefined : initialValue;

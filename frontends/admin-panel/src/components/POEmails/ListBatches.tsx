@@ -16,18 +16,13 @@
 // =============================================================================
 
 import { SyncOutlined } from "@ant-design/icons";
-import { Button, Card, Space, Spin, Table, Typography } from "antd";
+import { Button, Card, Space, Spin, Table } from "antd";
 import moment from "moment";
 import * as React from "react";
 import { getListBatchInfo } from "../../AdminPanelAPI/LineStaffTools";
-import { StateCodeInfo } from "../IngestOperationsView/constants";
-import { BatchInfoType } from "./constants";
+import { BatchInfoType, POEmailsFormProps } from "./constants";
 
-interface ListBatchesProps {
-  stateInfo: StateCodeInfo;
-}
-
-const ListBatches: React.FC<ListBatchesProps> = ({ stateInfo }) => {
+const ListBatches: React.FC<POEmailsFormProps> = ({ stateInfo }) => {
   interface TableData {
     batchId: string | undefined;
     dateGenerated: string | undefined;
@@ -36,8 +31,6 @@ const ListBatches: React.FC<ListBatchesProps> = ({ stateInfo }) => {
     redirectAddress?: string | undefined;
     numTimesSent?: number | undefined;
   }
-
-  const { Title } = Typography;
 
   const isProduction = window.RUNTIME_GCP_ENVIRONMENT === "production";
   const projectId = isProduction ? "recidiviz-123" : "recidiviz-staging";
@@ -124,11 +117,7 @@ const ListBatches: React.FC<ListBatchesProps> = ({ stateInfo }) => {
 
   return (
     <Card
-      title={
-        <Title style={{ fontSize: "1vw" }}>
-          {stateInfo?.name} Previously Generated Batches
-        </Title>
-      }
+      title={`${stateInfo?.name} Previously Generated Batches`}
       extra={
         <Button
           type="primary"
