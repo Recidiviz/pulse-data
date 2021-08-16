@@ -39,13 +39,12 @@ from inspect import getmembers, isfunction
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
 import attr
-from flask import Flask
 from werkzeug.routing import Rule
 
 from recidiviz.ingest.models import ingest_info, ingest_info_pb2
 from recidiviz.tools.docs.endpoint_documentation_generator import (
     EndpointDocumentationGenerator,
-    get_blueprints_for_documentation,
+    app_rules,
 )
 from recidiviz.utils.regions import get_supported_direct_ingest_region_codes
 
@@ -90,14 +89,10 @@ def _get_file_for_endpoint_rule(rule: Rule) -> Optional[str]:
 def _get_modified_endpoints() -> List[RequiredModificationSets]:
     """Returns the dynamic set of documentation for the App Engine endpoints and the corresponding
     source code modifications."""
-    temp_app = Flask(__name__)
-    all_blueprints_with_url_prefixes = get_blueprints_for_documentation()
-    for blueprint, url_prefix in all_blueprints_with_url_prefixes:
-        temp_app.register_blueprint(blueprint, url_prefix=url_prefix)
 
     doc_generator = EndpointDocumentationGenerator()
     endpoint_files_to_markdown_paths: Dict[str, List[str]] = defaultdict(list)
-    for rule in temp_app.url_map.iter_rules():
+    for rule in app_rules():
         file_for_endpoint = _get_file_for_endpoint_rule(rule)
         if file_for_endpoint:
             endpoint_files_to_markdown_paths[file_for_endpoint].append(

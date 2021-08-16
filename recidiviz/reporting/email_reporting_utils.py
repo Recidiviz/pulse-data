@@ -25,7 +25,7 @@ from typing import Optional
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting.context.po_monthly_report.constants import ReportType
-from recidiviz.utils import metadata, secrets
+from recidiviz.utils import environment, metadata, secrets
 
 _PO_REPORT_CDN_STATIC_IP_KEY = "po_report_cdn_static_IP"
 
@@ -77,6 +77,8 @@ def validate_email_address(email_address: Optional[str] = None) -> None:
 
 
 def get_project_id() -> str:
+    if environment.in_development():
+        return environment.GCP_PROJECT_STAGING
     return metadata.project_id()
 
 

@@ -25,39 +25,15 @@ import re
 import sys
 from collections import defaultdict
 from functools import lru_cache
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List
 from unittest import mock
 
-from flask import Blueprint, Flask
+from flask import Flask
 from werkzeug.routing import Rule
 
-from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
-from recidiviz.backup.backup_manager import backup_manager_blueprint
-from recidiviz.calculator.calculation_data_storage_manager import (
-    calculation_data_storage_manager_blueprint,
-)
-from recidiviz.case_triage.ops_routes import case_triage_ops_blueprint
-from recidiviz.ingest.aggregate.parse import aggregate_parse_blueprint
-from recidiviz.ingest.aggregate.scrape_aggregate_reports import (
-    scrape_aggregate_reports_blueprint,
-)
-from recidiviz.ingest.aggregate.single_count import store_single_count_blueprint
-from recidiviz.ingest.direct.direct_ingest_control import direct_ingest_control
-from recidiviz.ingest.justice_counts.control import justice_counts_control
-from recidiviz.ingest.scrape.infer_release import infer_release_blueprint
-from recidiviz.ingest.scrape.scraper_control import scraper_control
-from recidiviz.ingest.scrape.scraper_status import scraper_status
-from recidiviz.ingest.scrape.worker import worker
-from recidiviz.metrics.export.view_export_manager import export_blueprint
-from recidiviz.persistence.batch_persistence import batch_blueprint
-from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_control import (
-    cloud_sql_to_bq_blueprint,
-)
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.validation.validation_manager import validation_manager_blueprint
 
 ENDPOINT_DOCS_DIRECTORY = "docs/endpoints"
 ENDPOINT_CATALOG_SPECIFICATION = "docs/endpoints/endpoint_specification_template.md"
@@ -192,54 +168,23 @@ class EndpointDocumentationGenerator:
             markdown_doc_file.write(documentation)
 
 
-# TODO(#8217) this list should only exist in servery.py
-scraper_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
-    (batch_blueprint, "/batch"),
-    (aggregate_parse_blueprint, "/aggregate"),
-    (infer_release_blueprint, "/infer_release"),
-    (scraper_control, "/scraper"),
-    (scraper_status, "/scraper"),
-    (worker, "/scraper"),
-    (scrape_aggregate_reports_blueprint, "/scrape_aggregate_reports"),
-    (store_single_count_blueprint, "/single_count"),
-]
-
-# TODO(#8217) this list should not exist, only exists because of PR #8252
-exclude_admin_blueprint_with_url_prefixes: List[Tuple[Blueprint, str]] = [
-    (auth_endpoint_blueprint, "/auth"),
-    (backup_manager_blueprint, "/backup_manager"),
-    (
-        calculation_data_storage_manager_blueprint,
-        "/calculation_data_storage_manager",
-    ),
-    (case_triage_ops_blueprint, "/case_triage_ops"),
-    (cloud_sql_to_bq_blueprint, "/cloud_sql_to_bq"),
-    (direct_ingest_control, "/direct"),
-    (export_blueprint, "/export"),
-    (justice_counts_control, "/justice_counts"),
-    (validation_manager_blueprint, "/validation_manager"),
-]
-
-# TODO(#8217) remove exemption for /admin route in generating documentation, move back to server.py
-def get_blueprints_for_documentation() -> List[Tuple[Blueprint, str]]:
-    all_blueprints_with_url_prefixes = (
-        scraper_blueprints_with_url_prefixes + exclude_admin_blueprint_with_url_prefixes
-    )
-
-    return all_blueprints_with_url_prefixes
-
-
 @lru_cache(maxsize=None)
 def app_rules() -> List[Rule]:
     with mock.patch(
         "recidiviz.cloud_storage.gcsfs_factory.GcsfsFactory.build",
         return_value=FakeGCSFileSystem(),
     ):
-        temp_app = Flask(__name__)
-        all_blueprints_with_url_prefixes = get_blueprints_for_documentation()
-        for blueprint, url_prefix in all_blueprints_with_url_prefixes:
-            temp_app.register_blueprint(blueprint, url_prefix=url_prefix)
-        return list(temp_app.url_map.iter_rules())
+        with mock.patch(
+            "recidiviz.utils.metadata.project_id", return_value=GCP_PROJECT_STAGING
+        ):
+            # pylint: disable=import-outside-toplevel
+            from recidiviz.server import get_blueprints_for_documentation
+
+            temp_app = Flask(__name__)
+            all_blueprints_with_url_prefixes = get_blueprints_for_documentation()
+            for blueprint, url_prefix in all_blueprints_with_url_prefixes:
+                temp_app.register_blueprint(blueprint, url_prefix=url_prefix)
+            return list(temp_app.url_map.iter_rules())
 
 
 def generate_documentation_for_new_endpoints(
@@ -291,26 +236,15 @@ def _create_ingest_catalog_summary_for_endpoints(
 
 
 def main() -> int:
-    # Forcing a local environment for script execution so that in_development() returns True
-    previous_dev_environment: Optional[str] = os.environ.get("IS_DEV", None)
-    os.environ["IS_DEV"] = "true"
+    docs_generator = EndpointDocumentationGenerator()
+    added = generate_documentation_for_new_endpoints(docs_generator)
+    if added:
+        update_summary_file(
+            _create_ingest_catalog_summary_for_endpoints(docs_generator),
+            "## Endpoint Catalog",
+        )
 
-    with local_project_id_override(GCP_PROJECT_STAGING):
-        docs_generator = EndpointDocumentationGenerator()
-        added = generate_documentation_for_new_endpoints(docs_generator)
-        if added:
-            update_summary_file(
-                _create_ingest_catalog_summary_for_endpoints(docs_generator),
-                "## Endpoint Catalog",
-            )
-
-        # Return to previous environment - if IS_DEV is not set prior, pops it
-        if previous_dev_environment:
-            os.environ["IS_DEV"] = previous_dev_environment
-        else:
-            os.environ.pop("IS_DEV")
-
-        return 1 if added else 0
+    return 1 if added else 0
 
 
 if __name__ == "__main__":
