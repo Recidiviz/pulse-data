@@ -47,7 +47,8 @@ from recidiviz.persistence.entity.state.entities import (
 class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
     """Tests the US_MO-specific aspects of the
     pre_processed_incarceration_periods_for_calculations function on the
-    UsNdIncarcerationPreProcessingManager."""
+    IncarcerationPreProcessingManager when a UsMoIncarcerationPreProcessingDelegate
+    is provided."""
 
     @staticmethod
     def _pre_processed_incarceration_periods_for_calculations(

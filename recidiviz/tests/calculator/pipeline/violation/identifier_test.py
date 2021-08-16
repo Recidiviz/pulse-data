@@ -38,6 +38,9 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponseDecisionEntry,
     StateSupervisionViolationTypeEntry,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violation_response_preprocessing_delegate import (
+    UsXxViolationResponsePreprocessingDelegate,
+)
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violations_delegate import (
     UsXxViolationDelegate,
 )
@@ -53,9 +56,22 @@ class TestFindViolationEvents(unittest.TestCase):
         )
         self.mock_violation_delegate = self.violation_delegate_patcher.start()
         self.mock_violation_delegate.return_value = UsXxViolationDelegate()
+        self.violation_pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_violation_response_preprocessing_delegate"
+        )
+        self.mock_violation_pre_processing_delegate = (
+            self.violation_pre_processing_delegate_patcher.start()
+        )
+        self.mock_violation_pre_processing_delegate.return_value = (
+            UsXxViolationResponsePreprocessingDelegate()
+        )
 
     def tearDown(self) -> None:
+        self._stop_state_specific_delegate_patchers()
+
+    def _stop_state_specific_delegate_patchers(self) -> None:
         self.violation_delegate_patcher.stop()
+        self.violation_pre_processing_delegate_patcher.stop()
 
     def test_find_violation_events(self) -> None:
         violation_type = StateSupervisionViolationTypeEntry.new_with_defaults(
@@ -153,9 +169,22 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         )
         self.mock_violation_delegate = self.violation_delegate_patcher.start()
         self.mock_violation_delegate.return_value = UsXxViolationDelegate()
+        self.violation_pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_violation_response_preprocessing_delegate"
+        )
+        self.mock_violation_pre_processing_delegate = (
+            self.violation_pre_processing_delegate_patcher.start()
+        )
+        self.mock_violation_pre_processing_delegate.return_value = (
+            UsXxViolationResponsePreprocessingDelegate()
+        )
 
     def tearDown(self) -> None:
+        self._stop_state_specific_delegate_patchers()
+
+    def _stop_state_specific_delegate_patchers(self) -> None:
         self.violation_delegate_patcher.stop()
+        self.violation_pre_processing_delegate_patcher.stop()
 
     def test_find_violation_with_response_events(self) -> None:
         violation_with_response_events = (

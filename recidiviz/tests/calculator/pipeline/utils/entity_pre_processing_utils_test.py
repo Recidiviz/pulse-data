@@ -101,7 +101,7 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
             state_code=state_code,
             incarceration_periods=[incarceration_period],
             supervision_periods=[supervision_period],
-            violation_responses=None,
+            pre_processed_violation_responses=None,
         )
 
         self.assertEqual(
@@ -138,7 +138,7 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
             state_code=state_code,
             incarceration_periods=[incarceration_period],
             supervision_periods=None,
-            violation_responses=None,
+            pre_processed_violation_responses=None,
         )
 
         self.assertEqual(
@@ -174,7 +174,7 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
                 state_code=state_code,
                 incarceration_periods=[incarceration_period],
                 supervision_periods=None,
-                violation_responses=[],
+                pre_processed_violation_responses=[],
             )
 
     def test_pre_processing_managers_for_calculations_no_violation_responses_state_requires(
@@ -203,7 +203,7 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
                 state_code=state_code,
                 incarceration_periods=[incarceration_period],
                 supervision_periods=[],
-                violation_responses=None,
+                pre_processed_violation_responses=None,
             )
 
     def test_pre_processing_managers_for_calculations_no_ips(self):
@@ -226,7 +226,7 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
             state_code=state_code,
             incarceration_periods=None,
             supervision_periods=[supervision_period],
-            violation_responses=None,
+            pre_processed_violation_responses=None,
         )
 
         self.assertIsNone(ip_pre_processing_manager)
@@ -245,7 +245,7 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
             state_code=state_code,
             incarceration_periods=[],
             supervision_periods=[],
-            violation_responses=[],
+            pre_processed_violation_responses=[],
         )
 
         self.assertEqual([], ip_pre_processing_manager._incarceration_periods)

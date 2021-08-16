@@ -25,9 +25,11 @@ from recidiviz.calculator.pipeline.base_identifier import (
     BaseIdentifier,
     IdentifierContextT,
 )
+from recidiviz.calculator.pipeline.utils.entity_pre_processing_utils import (
+    pre_processed_violation_responses_for_calculations,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_state_specific_violation_delegate,
-    state_specific_violation_response_pre_processing_function,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
@@ -35,7 +37,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_d
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     get_most_severe_response_decision,
     identify_most_severe_response_decision,
-    prepare_violation_responses_for_calculations,
 )
 from recidiviz.calculator.pipeline.utils.violation_utils import (
     filter_violation_responses_for_violation_history,
@@ -126,11 +127,9 @@ class ViolationIdentifier(BaseIdentifier[List[ViolationEvent]]):
         is_violent = violation.is_violent
         is_sex_offense = violation.is_sex_offense
 
-        sorted_violation_responses = prepare_violation_responses_for_calculations(
+        sorted_violation_responses = pre_processed_violation_responses_for_calculations(
             violation_responses=violation.supervision_violation_responses,
-            pre_processing_function=state_specific_violation_response_pre_processing_function(
-                state_code=state_code
-            ),
+            state_code=state_code,
         )
 
         violation_delegate = get_state_specific_violation_delegate(state_code)

@@ -29,9 +29,13 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_state_specific_incarceration_period_pre_processing_delegate,
+    get_state_specific_violation_response_preprocessing_delegate,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_pre_processing_manager import (
     SupervisionPreProcessingManager,
+)
+from recidiviz.calculator.pipeline.utils.supervision_violation_responses_pre_processing_manager import (
+    ViolationResponsePreProcessingManager,
 )
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
@@ -44,7 +48,9 @@ def pre_processing_managers_for_calculations(
     state_code: str,
     incarceration_periods: Optional[List[StateIncarcerationPeriod]],
     supervision_periods: Optional[List[StateSupervisionPeriod]],
-    violation_responses: Optional[List[StateSupervisionViolationResponse]],
+    pre_processed_violation_responses: Optional[
+        List[StateSupervisionViolationResponse]
+    ],
 ) -> Tuple[
     Optional[IncarcerationPreProcessingManager],
     Optional[SupervisionPreProcessingManager],
@@ -71,7 +77,7 @@ def pre_processing_managers_for_calculations(
                 "supervision_periods to be run on this state."
             )
 
-    if violation_responses is None:
+    if pre_processed_violation_responses is None:
         if (
             state_ip_pre_processing_manager_delegate.pre_processing_relies_on_violation_responses()
         ):
@@ -110,7 +116,7 @@ def pre_processing_managers_for_calculations(
             incarceration_periods=incarceration_periods,
             delegate=state_ip_pre_processing_manager_delegate,
             pre_processed_supervision_period_index=supervision_period_index,
-            violation_responses=violation_responses,
+            violation_responses=pre_processed_violation_responses,
             earliest_death_date=earliest_death_date,
         )
         if incarceration_periods is not None
@@ -118,3 +124,19 @@ def pre_processing_managers_for_calculations(
     )
 
     return ip_pre_processing_manager, sp_pre_processing_manager
+
+
+def pre_processed_violation_responses_for_calculations(
+    state_code: str,
+    violation_responses: List[StateSupervisionViolationResponse],
+) -> List[StateSupervisionViolationResponse]:
+    """Instantiates the violation response manager and its appropriate delegate. Then
+    returns pre-processed violation responses."""
+
+    delegate = get_state_specific_violation_response_preprocessing_delegate(state_code)
+    violation_response_manager = ViolationResponsePreProcessingManager(
+        violation_responses, delegate
+    )
+    return (
+        violation_response_manager.pre_processed_violation_responses_for_calculations()
+    )

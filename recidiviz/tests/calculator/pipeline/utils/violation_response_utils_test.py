@@ -19,10 +19,14 @@ import datetime
 import unittest
 from typing import List
 
+import mock
+
 from recidiviz.calculator.pipeline.utils import violation_response_utils
+from recidiviz.calculator.pipeline.utils.entity_pre_processing_utils import (
+    pre_processed_violation_responses_for_calculations,
+)
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     identify_most_severe_response_decision,
-    prepare_violation_responses_for_calculations,
     violation_responses_in_window,
 )
 from recidiviz.calculator.pipeline.utils.violation_utils import (
@@ -34,6 +38,9 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
+)
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violation_response_preprocessing_delegate import (
+    UsXxViolationResponsePreprocessingDelegate,
 )
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violations_delegate import (
     UsXxViolationDelegate,
@@ -118,88 +125,6 @@ class TestDefaultFilteredViolationResponsesForViolationHistory(unittest.TestCase
                 state_code="US_XX",
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
                 response_date=datetime.date(2000, 1, 1),
-            ),
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=datetime.date(1998, 2, 1),
-            ),
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=datetime.date(1997, 3, 1),
-            ),
-        ]
-
-        filtered_responses = filter_violation_responses_for_violation_history(
-            violation_delegate=self.delegate,
-            violation_responses=violation_responses,
-            include_follow_up_responses=False,
-        )
-
-        self.assertCountEqual(
-            [
-                StateSupervisionViolationResponse.new_with_defaults(
-                    state_code="US_XX",
-                    response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                    response_date=datetime.date(1998, 2, 1),
-                ),
-                StateSupervisionViolationResponse.new_with_defaults(
-                    state_code="US_XX",
-                    response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                    response_date=datetime.date(1997, 3, 1),
-                ),
-            ],
-            filtered_responses,
-        )
-
-    def test_default_filtered_violation_responses_for_violation_history_draft(self):
-        violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                is_draft=True,
-                response_date=datetime.date(2000, 1, 1),
-            ),
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=datetime.date(1998, 2, 1),
-            ),
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=datetime.date(1997, 3, 1),
-            ),
-        ]
-
-        filtered_responses = filter_violation_responses_for_violation_history(
-            violation_delegate=self.delegate,
-            violation_responses=violation_responses,
-            include_follow_up_responses=False,
-        )
-
-        self.assertCountEqual(
-            [
-                StateSupervisionViolationResponse.new_with_defaults(
-                    state_code="US_XX",
-                    response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                    response_date=datetime.date(1998, 2, 1),
-                ),
-                StateSupervisionViolationResponse.new_with_defaults(
-                    state_code="US_XX",
-                    response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                    response_date=datetime.date(1997, 3, 1),
-                ),
-            ],
-            filtered_responses,
-        )
-
-    def test_default_filtered_violation_responses_for_violation_history_null_date(self):
-        violation_responses = [
-            StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX",
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             ),
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
@@ -425,6 +350,18 @@ class TestPrepareViolationResponsesForCalculation(unittest.TestCase):
 
     def setUp(self) -> None:
         self.delegate = UsXxViolationDelegate()
+        self.violation_pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_violation_response_preprocessing_delegate"
+        )
+        self.mock_violation_pre_processing_delegate = (
+            self.violation_pre_processing_delegate_patcher.start()
+        )
+        self.mock_violation_pre_processing_delegate.return_value = (
+            UsXxViolationResponsePreprocessingDelegate()
+        )
+
+    def tearDown(self) -> None:
+        self.violation_pre_processing_delegate_patcher.stop()
 
     def test_prepare_violation_responses_for_calculation_preserves_order_post_filtering(
         self,
@@ -464,9 +401,8 @@ class TestPrepareViolationResponsesForCalculation(unittest.TestCase):
 
         sorted_filtered_violations = filter_violation_responses_for_violation_history(
             violation_delegate=self.delegate,
-            violation_responses=prepare_violation_responses_for_calculations(
-                violation_responses=violation_responses,
-                pre_processing_function=None,
+            violation_responses=pre_processed_violation_responses_for_calculations(
+                violation_responses=violation_responses, state_code=state_code
             ),
             include_follow_up_responses=False,
         )
