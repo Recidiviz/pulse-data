@@ -1045,6 +1045,47 @@ class TestSamenessValidationChecker(TestCase):
             ),
         )
 
+    def test_sameness_checks_no_partition_columns(self) -> None:
+        num_bad_rows = 2
+        max_allowed_error = num_bad_rows / 100
+
+        self.mock_client.run_query_async.return_value = (
+            self.return_string_values_with_num_bad_rows(num_bad_rows)
+        )
+
+        job = DataValidationJob(
+            region_code="US_XX",
+            validation=SamenessDataValidationCheck(
+                validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
+                validation_type=ValidationCheckType.SAMENESS,
+                comparison_columns=["a", "b", "c"],
+                sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+                max_allowed_error=max_allowed_error,
+                view_builder=SimpleBigQueryViewBuilder(
+                    dataset_id="my_dataset",
+                    view_id="test_view",
+                    description="test_view description",
+                    view_query_template="select * from literally_anything",
+                ),
+            ),
+        )
+        result = SamenessValidationChecker.run_check(job)
+
+        self.assertEqual(
+            result,
+            DataValidationJobResult(
+                validation_job=job,
+                result_details=SamenessPerViewValidationResultDetails(
+                    num_error_rows=2,
+                    total_num_rows=100,
+                    max_allowed_error=0.02,
+                    non_null_counts_per_column_per_partition=[
+                        (tuple(), {"a": 100, "b": 100, "c": 100}),
+                    ],
+                ),
+            ),
+        )
+
 
 class TestSamenessPerRowValidationResultDetails(TestCase):
     """Tests for the SamenessPerRowValidationResultDetails."""
