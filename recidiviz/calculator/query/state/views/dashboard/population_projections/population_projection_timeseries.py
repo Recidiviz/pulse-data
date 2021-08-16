@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Admissions by metric period months"""
+from datetime import date
+
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -32,7 +34,7 @@ POPULATION_PROJECTION_TIMESERIES_QUERY_TEMPLATE = """
       SELECT
         * EXCEPT (simulation_group),
         simulation_group as gender,
-        ABS((year - 2021) * 12 + (month - 1)) as offset,
+        ABS((year - {cur_year}) * 12 + (month - {cur_month})) as offset,
       FROM `{project_id}.{population_projection_dataset}.microsim_projection`
     )
     
@@ -62,6 +64,8 @@ POPULATION_PROJECTION_TIMESERIES_VIEW_BUILDER = MetricBigQueryViewBuilder(
     description=POPULATION_PROJECTION_TIMESERIES_DESCRIPTION,
     dimensions=("state_code", "gender", "legal_status", "compartment"),
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
+    cur_year=str(date.today().year),
+    cur_month=str(date.today().month),
 )
 
 if __name__ == "__main__":
