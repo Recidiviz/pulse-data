@@ -57,12 +57,12 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     get_month_supervision_type,
     get_state_specific_case_compliance_manager,
     get_state_specific_supervising_officer_and_location_info_function,
+    get_state_specific_supervision_delegate,
     get_state_specific_violation_delegate,
     second_assessment_on_supervision_is_more_reliable,
     should_produce_supervision_event_for_period,
     state_specific_supervision_admission_reason_override,
     supervision_period_counts_towards_supervision_population_in_date_range_state_specific,
-    supervision_types_mutually_exclusive_for_state,
     terminating_supervision_period_supervision_type,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
@@ -269,7 +269,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 if supervision_start_event:
                     supervision_events.append(supervision_start_event)
 
-        if supervision_types_mutually_exclusive_for_state(state_code):
+        supervision_delegate = get_state_specific_supervision_delegate(state_code)
+
+        if supervision_delegate.supervision_types_mutually_exclusive():
             supervision_events = self._convert_events_to_dual(supervision_events)
         else:
             supervision_events = self._expand_dual_supervision_events(
