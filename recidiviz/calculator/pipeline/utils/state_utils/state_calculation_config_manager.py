@@ -34,6 +34,9 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
+    StateSpecificSupervisionDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
 )
@@ -45,6 +48,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_incarceration_p
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
     UsIdSupervisionCaseCompliance,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_delegate import (
+    UsIdSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_utils import (
     us_id_get_post_incarceration_supervision_type,
@@ -64,6 +70,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_commitment_from
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_incarceration_period_pre_processing_delegate import (
     UsMoIncarcerationPreProcessingDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_delegate import (
+    UsMoSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_utils import (
     us_mo_get_month_supervision_type,
@@ -86,6 +95,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_incarceration_p
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_compliance import (
     UsNdSupervisionCaseCompliance,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_delegate import (
+    UsNdSupervisionDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_utils import (
     us_nd_get_post_incarceration_supervision_type,
     us_nd_infer_supervision_period_admission,
@@ -104,6 +116,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_p
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_compliance import (
     UsPaSupervisionCaseCompliance,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_delegate import (
+    UsPaSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_utils import (
     us_pa_get_supervising_officer_and_location_info_from_supervision_period,
@@ -144,20 +159,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionPeriod,
     StateSupervisionSentence,
 )
-
-
-def supervision_types_mutually_exclusive_for_state(state_code: str) -> bool:
-    """For some states, we want to track people on DUAL supervision as mutually exclusive from the groups of people on
-    either PAROLE and PROBATION. For others, a person can be on multiple types of supervision simultaneously
-    and contribute to counts for both types.
-        - US_ID: True
-        - US_MO: True
-        - US_ND: False
-        - US_PA: False
-
-    Returns whether our calculations should consider supervision types as distinct for the given state_code.
-    """
-    return state_code.upper() in ("US_ID", "US_MO")
 
 
 def investigation_periods_in_supervision_population(_state_code: str) -> bool:
@@ -525,6 +526,23 @@ def get_state_specific_violation_response_preprocessing_delegate(
         return UsMoViolationResponsePreprocessingDelegate()
     if state_code == StateCode.US_PA.value:
         return UsPaViolationResponsePreprocessingDelegate()
+
+    raise ValueError(f"Unexpected state code [{state_code}]")
+
+
+def get_state_specific_supervision_delegate(
+    state_code: str,
+) -> StateSpecificSupervisionDelegate:
+    """Returns the type of StateSpecificSupervisionDelegate that should be used for
+    supervision calculations in a given |state_code|."""
+    if state_code == StateCode.US_ID.value:
+        return UsIdSupervisionDelegate()
+    if state_code == StateCode.US_ND.value:
+        return UsNdSupervisionDelegate()
+    if state_code == StateCode.US_MO.value:
+        return UsMoSupervisionDelegate()
+    if state_code == StateCode.US_PA.value:
+        return UsPaSupervisionDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 
