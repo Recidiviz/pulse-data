@@ -14,30 +14,28 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import "./window.d";
-import "react-app-polyfill/ie11";
-import "react-truncate-list/dist/styles.css";
-import "core-js";
-import React from "react";
-import ReactDOM from "react-dom";
+import { Router } from "@reach/router";
+import { GlobalStyle, ToastProvider } from "@recidiviz/design-system";
 import * as Sentry from "@sentry/react";
 import { Integrations } from "@sentry/tracing";
-import styled from "styled-components/macro";
-import { Router } from "@reach/router";
-import ReactModal from "react-modal";
 import {
   BreakpointProvider,
   setup as setupUseBreakpoint,
 } from "@w11r/use-breakpoint";
-
-import { GlobalStyle, ToastProvider } from "@recidiviz/design-system";
-
+import "core-js";
+import React from "react";
+import "react-app-polyfill/ie11";
+import ReactDOM from "react-dom";
+import ReactModal from "react-modal";
+import "react-truncate-list/dist/styles.css";
+import styled from "styled-components/macro";
+import { trackScrolledToBottom } from "./analytics";
+import { breakpoints } from "./components/styles";
 import Home from "./routes/Home";
 import Verify from "./routes/Verify";
-
-import { trackScrolledToBottom } from "./analytics";
 import StoreProvider from "./stores";
-import { breakpoints } from "./components/styles";
+import { redactLocalStorageCache } from "./utils";
+import "./window.d";
 
 if (process.env.NODE_ENV !== "development") {
   Sentry.init({
@@ -94,3 +92,8 @@ ReactDOM.render(
     ReactModal.setAppElement("#root");
   }
 );
+
+// This is run every time the page is loaded anew to
+// ensure that the localStorage cache is cleared of
+// offending information.
+redactLocalStorageCache();

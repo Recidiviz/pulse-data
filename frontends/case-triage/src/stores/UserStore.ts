@@ -142,7 +142,6 @@ export default class UserStore {
         redirect_uri: window.location.origin,
         audience: window.AUTH0_CONFIG.audience,
         useRefreshTokens: true,
-        cacheLocation: "localstorage",
       },
     });
   }
