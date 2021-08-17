@@ -19,17 +19,20 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.county.views.bonds.bond_amounts_unknown_denied import (
-    BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.county.views.bonds.bond_amounts_by_booking import (
-    BOND_AMOUNTS_BY_BOOKING_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.county.views.bonds.bond_amounts_all_bookings import (
     BOND_AMOUNTS_ALL_BOOKINGS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.county.views.bonds.bond_amounts_all_bookings_bins import (
     BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.county.views.bonds.bond_amounts_by_booking import (
+    BOND_AMOUNTS_BY_BOOKING_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.county.views.bonds.bond_amounts_unknown_denied import (
+    BOND_AMOUNTS_UNKNOWN_DENIED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.county.views.bonds.bond_is_unique import (
+    BOND_IS_UNIQUE_VIEW_BUILDER,
 )
 
 BOND_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
@@ -37,4 +40,5 @@ BOND_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     BOND_AMOUNTS_BY_BOOKING_VIEW_BUILDER,
     BOND_AMOUNTS_ALL_BOOKINGS_VIEW_BUILDER,
     BOND_AMOUNTS_ALL_BOOKINGS_BINS_VIEW_BUILDER,
+    BOND_IS_UNIQUE_VIEW_BUILDER,
 ]
