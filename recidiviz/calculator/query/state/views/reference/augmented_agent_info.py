@@ -82,17 +82,8 @@ AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = f"""
     )
     SELECT
       *,
-      -- TODO(#4490): Remove the state-specific logic for generating agent_external_id after it's set in calculate
-      CASE WHEN agents.external_id IS NOT NULL AND agents.state_code IN ('US_ID') THEN agents.external_id
-           WHEN agents.external_id IS NOT NULL AND COALESCE(agents.given_names, agents.surname) IS NOT NULL
-           THEN CONCAT(agents.external_id, ': ', COALESCE(agents.given_names, ''), ' ', COALESCE(agents.surname, ''))
-           WHEN agents.external_id IS NOT NULL THEN agents.external_id
-           ELSE ARRAY_TO_STRING((SELECT ARRAY_AGG(col ORDER BY col DESC)
-                FROM UNNEST([agents.given_names, agents.surname]) AS col
-                WHERE NOT col IS NULL)
-                , '')
-           END
-       AS agent_external_id,
+      -- TODO(#8835): Deprecate this field for external_id.
+      agents.external_id AS agent_external_id
     FROM agents
 
 """
