@@ -58,3 +58,18 @@ export function remScaledPixels(val: number): string {
  * Produces, e.g., "July 30th, 2021"
  */
 export const LONG_DATE_FORMAT = "MMMM Do, YYYY";
+
+/**
+ * Clears information in the browser's local storage that was
+ * originally set, but we want to remove entirely.
+ *
+ * At the moment, this includes all metadata set by Auth0, including
+ * the access token, name, user roles, nickname, etc.
+ */
+export const redactLocalStorageCache = (): void => {
+  Object.keys(localStorage).forEach((key) => {
+    if (key.startsWith("@@auth0spajs@@::")) {
+      localStorage.removeItem(key);
+    }
+  });
+};
