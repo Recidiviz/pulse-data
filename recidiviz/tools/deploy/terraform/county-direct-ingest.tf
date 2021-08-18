@@ -23,17 +23,3 @@ module "county_direct_ingest_buckets" {
   region      = "us-east1"
   project_id  = var.project_id
 }
-
-module "direct_ingest_queues" {
-  for_each = toset([
-    "direct-ingest-scheduler-v2",        # TODO(#6455) Rename to "direct-ingest-jpp-scheduler-v2"
-    "direct-ingest-bq-import-export-v2", # TODO(#6455) Rename to "direct-ingest-jpp-bq-import-export-v2"
-    "direct-ingest-jpp-process-job-queue-v2",
-  ])
-
-  source = "./modules/serial-task-queue"
-
-  queue_name                = each.key
-  region                    = var.app_engine_region
-  max_dispatches_per_second = 100
-}
