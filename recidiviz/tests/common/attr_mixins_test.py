@@ -16,20 +16,22 @@
 # =============================================================================
 """Tests for BuildableAttr base class."""
 
-from enum import Enum
-from typing import List, Optional, Dict, Tuple, Any
-from datetime import date
 import unittest
+from datetime import date
+from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple
+
 import attr
 
 from recidiviz.common.attr_mixins import (
-    BuilderException,
     BuildableAttr,
-    DefaultableAttr,
-    _get_class_structure_reference,
-    _clear_class_structure_reference,
-    _attribute_field_type_reference_for_class,
     BuildableAttrFieldType,
+    BuilderException,
+    DefaultableAttr,
+    _attribute_field_type_reference_for_class,
+    _clear_class_structure_reference,
+    _get_class_structure_reference,
+    attr_field_type_for_field_name,
 )
 
 
@@ -421,3 +423,30 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
         )
 
         self.assertEqual(expected_attr_field_type_ref, attr_field_type_ref)
+
+
+class TestAttrFieldTypeForFieldName(unittest.TestCase):
+    """Tests the attr_field_type_for_field_name function."""
+
+    def test_attr_field_type_for_field_name(self) -> None:
+        self.assertEqual(
+            BuildableAttrFieldType.ENUM,
+            attr_field_type_for_field_name(FakeBuildableAttrDeluxe, "enum_field"),
+        )
+
+        self.assertEqual(
+            BuildableAttrFieldType.DATE,
+            attr_field_type_for_field_name(FakeBuildableAttrDeluxe, "date_field"),
+        )
+
+        self.assertEqual(
+            BuildableAttrFieldType.FORWARD_REF,
+            attr_field_type_for_field_name(
+                FakeBuildableAttrDeluxe, "field_forward_ref"
+            ),
+        )
+
+        self.assertEqual(
+            BuildableAttrFieldType.OTHER,
+            attr_field_type_for_field_name(FakeBuildableAttrDeluxe, "field_list"),
+        )
