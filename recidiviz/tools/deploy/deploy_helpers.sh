@@ -103,6 +103,10 @@ function pre_deploy_configure_infrastructure {
     verify_hash $COMMIT_HASH
     run_cmd gcloud -q app deploy cron.yaml --project=${PROJECT}
 
+    echo "Initializing task queues"
+    verify_hash $COMMIT_HASH
+    run_cmd pipenv run python -m recidiviz.tools.initialize_google_cloud_task_queues --project_id ${PROJECT} --google_auth_token $(gcloud auth print-access-token)
+
     # Update the Dataflow metric table schemas and update all BigQuery views.
     echo "Updating the BigQuery Dataflow metric table schemas to match the metric classes"
     verify_hash $COMMIT_HASH
