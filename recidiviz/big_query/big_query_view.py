@@ -16,7 +16,7 @@
 # =============================================================================
 """An implementation of bigquery.TableReference with extra functionality related to views."""
 import abc
-from typing import Any, Callable, Dict, Generic, Optional, TypeVar
+from typing import Any, Callable, Dict, Generic, Optional, Set, TypeVar
 
 import attr
 from google.cloud import bigquery
@@ -278,6 +278,10 @@ class BigQueryViewBuilder(Generic[BigQueryViewType]):
     view_id: str
     materialized_address_override: Optional[BigQueryAddress]
 
+    # The set of project ids to deploy this view in. If None, deploys this in all
+    # projects. If an empty set, does not deploy in any projects.
+    projects_to_deploy: Optional[Set[str]]
+
     def build(
         self,
         *,
@@ -306,6 +310,9 @@ class BigQueryViewBuilder(Generic[BigQueryViewType]):
         """Should be implemented by subclasses to return True if this view can be built
         (e.g. if all dependent tables /columns exist). Returns False otherwise."""
 
+    def should_deploy_in_project(self, project_id: str) -> bool:
+        return self.projects_to_deploy is None or project_id in self.projects_to_deploy
+
 
 BigQueryViewBuilderType = TypeVar("BigQueryViewBuilderType", bound=BigQueryViewBuilder)
 
@@ -323,6 +330,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         description: str,
         view_query_template: str,
         should_materialize: bool = False,
+        projects_to_deploy: Optional[Set[str]] = None,
         materialized_address_override: Optional[BigQueryAddress] = None,
         should_build_predicate: Optional[Callable[[], bool]] = None,
         # All query format kwargs args must have string values
@@ -330,6 +338,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
     ):
         self.dataset_id = dataset_id
         self.view_id = view_id
+        self.projects_to_deploy = projects_to_deploy
         self.description = description
         self.view_query_template = view_query_template
         self.should_materialize = should_materialize

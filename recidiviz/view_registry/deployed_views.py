@@ -43,6 +43,7 @@ from recidiviz.ingest.views.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as INGEST_METADATA_VIEW_BUILDERS,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.utils import environment
 from recidiviz.validation.views.view_config import (
     CROSS_PROJECT_VALIDATION_VIEW_BUILDERS,
 )
@@ -54,7 +55,7 @@ from recidiviz.validation.views.view_config import (
 )
 from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
-DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE: Dict[
+_DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE: Dict[
     BigQueryViewNamespace, Sequence[BigQueryViewBuilder]
 ] = {
     BigQueryViewNamespace.CASE_TRIAGE: CASE_TRIAGE_VIEW_BUILDERS,
@@ -69,12 +70,34 @@ DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE: Dict[
     BigQueryViewNamespace.VALIDATION_METADATA: VALIDATION_METADATA_VIEW_BUILDERS,
 }
 
+
+def deployed_view_builders_for_namespace(
+    project_id: str, namespace: BigQueryViewNamespace
+) -> List[BigQueryViewBuilder]:
+    return [
+        builder
+        for builder in _DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE[namespace]
+        if builder.should_deploy_in_project(project_id)
+    ]
+
+
+def deployed_view_builders(project_id: str) -> List[BigQueryViewBuilder]:
+    return [
+        builder
+        for builder_list in _DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.values()
+        for builder in builder_list
+        if builder.should_deploy_in_project(project_id)
+    ]
+
+
 # Full list of all deployed view builders
-DEPLOYED_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
-    builder
-    for builder_list in DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.values()
-    for builder in builder_list
-]
+@environment.local_only
+def all_deployed_view_builders() -> List[BigQueryViewBuilder]:
+    return [
+        builder
+        for builder_list in _DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE.values()
+        for builder in builder_list
+    ]
 
 
 # Full list of all deployed view builders that query from both production and staging

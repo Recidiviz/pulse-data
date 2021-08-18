@@ -15,12 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a BigQueryView that enforces that the output has the required columns."""
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional, Set
 
 from recidiviz.big_query.big_query_view import (
+    BigQueryAddress,
     BigQueryView,
     BigQueryViewBuilder,
-    BigQueryAddress,
 )
 
 
@@ -85,6 +85,7 @@ class SelectedColumnsBigQueryViewBuilder(
         columns: List[str],
         description: str = None,
         should_materialize: bool = False,
+        projects_to_deploy: Optional[Set[str]] = None,
         materialized_address_override: Optional[BigQueryAddress] = None,
         # All keyword args must have string values
         **query_format_kwargs: str,
@@ -95,6 +96,7 @@ class SelectedColumnsBigQueryViewBuilder(
         self.columns = columns
         self.description = description
         self.should_materialize = should_materialize
+        self.projects_to_deploy = projects_to_deploy
         self.materialized_address_override = materialized_address_override
         self.query_format_kwargs = query_format_kwargs
 

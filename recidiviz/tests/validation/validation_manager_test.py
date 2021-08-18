@@ -26,6 +26,7 @@ from mock import MagicMock, call, patch
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.tests.utils.matchers import UnorderedCollection
+from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
 from recidiviz.validation.checks.sameness_check import (
@@ -55,7 +56,7 @@ from recidiviz.validation.validation_models import (
 )
 from recidiviz.validation.views import view_config as validation_view_config
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
-from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
+from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 
 def get_test_validations() -> List[DataValidationJob]:
@@ -347,12 +348,13 @@ class TestHandleRequest(TestCase):
         mock_run_job.assert_not_called()
         mock_emit_failures.assert_not_called()
 
+        view_builders = deployed_view_builders(metadata.project_id())
         self.maxDiff = None
         expected_update_calls = [
             call(
                 view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-                views_to_update_builders=DEPLOYED_VIEW_BUILDERS,
-                all_view_builders=DEPLOYED_VIEW_BUILDERS,
+                views_to_update_builders=view_builders,
+                all_view_builders=view_builders,
             ),
         ]
         self.assertEqual(

@@ -28,7 +28,7 @@ from flask import Blueprint
 from opencensus.stats import aggregation, measure, view
 
 from recidiviz.big_query import view_update_manager
-from recidiviz.utils import monitoring, structured_logging
+from recidiviz.utils import metadata, monitoring, structured_logging
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.validation.checks.check_resolver import checker_for_validation
 from recidiviz.validation.configured_validations import (
@@ -48,7 +48,7 @@ from recidiviz.view_registry.dataset_overrides import (
     dataset_overrides_for_view_builders,
 )
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
-from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
+from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 m_failed_to_run_validations = measure.MeasureInt(
     "validation/num_fail_to_run",
@@ -111,11 +111,12 @@ def execute_validation(
     that have a regex match.
     If |sandbox_dataset_prefix| is supplied, performs validation using sandbox dataset
     """
+    view_builders = deployed_view_builders(metadata.project_id())
 
     sandbox_dataset_overrides = None
     if sandbox_dataset_prefix:
         sandbox_dataset_overrides = dataset_overrides_for_view_builders(
-            sandbox_dataset_prefix, DEPLOYED_VIEW_BUILDERS
+            sandbox_dataset_prefix, view_builders
         )
 
     if rematerialize_views:
@@ -124,8 +125,8 @@ def execute_validation(
         )
 
         view_update_manager.rematerialize_views_for_view_builders(
-            views_to_update_builders=DEPLOYED_VIEW_BUILDERS,
-            all_view_builders=DEPLOYED_VIEW_BUILDERS,
+            views_to_update_builders=view_builders,
+            all_view_builders=view_builders,
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             dataset_overrides=sandbox_dataset_overrides,
             # If a given view hasn't been loaded to the sandbox it will skip it

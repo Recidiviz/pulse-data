@@ -30,22 +30,22 @@ This can be run on-demand whenever locally with the following command:
 import argparse
 import logging
 import sys
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 from recidiviz.common.constants import states
 from recidiviz.metrics.export.export_config import (
+    PRODUCTS_CONFIG_PATH,
     VIEW_COLLECTION_EXPORT_INDEX,
     ProductConfigs,
-    PRODUCTS_CONFIG_PATH,
 )
 from recidiviz.metrics.export.view_export_manager import (
     export_view_data_to_cloud_storage,
 )
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.dataset_overrides import (
     dataset_overrides_for_deployed_view_datasets,
 )
-from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
-from recidiviz.utils.metadata import local_project_id_override
 
 
 def get_protected_buckets(project_id: str) -> List[str]:
@@ -71,6 +71,7 @@ def export_metrics_from_dataset_to_gcs(
     sandbox_dataset_overrides = None
     if sandbox_dataset_prefix:
         sandbox_dataset_overrides = dataset_overrides_for_deployed_view_datasets(
+            project_id=project_id,
             view_dataset_override_prefix=sandbox_dataset_prefix,
         )
 

@@ -36,7 +36,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager i
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
-from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
+from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
 LATEST_VIEW_DATASET_REGEX = re.compile(r"(us_[a-z]{2})_raw_data_up_to_date_views")
 MOCK_VIEW_PROCESS_TIME_SECONDS = 0.01
@@ -58,7 +58,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             mock_table_exists.return_value = True
 
             self.all_views = [
-                view_builder.build() for view_builder in DEPLOYED_VIEW_BUILDERS
+                view_builder.build() for view_builder in all_deployed_view_builders()
             ]
 
         # Views forming a DAG shaped like an X:

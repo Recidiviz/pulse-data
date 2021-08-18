@@ -35,7 +35,7 @@ from recidiviz.big_query.view_update_manager_utils import (
     delete_unmanaged_views_and_tables_from_dataset,
     get_managed_view_and_materialized_table_addresses_by_dataset,
 )
-from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
+from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
 
 class TestViewUpdateManagerUtils(unittest.TestCase):
@@ -54,7 +54,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             mock_table_exists.return_value = True
 
             self.all_views = [
-                view_builder.build() for view_builder in DEPLOYED_VIEW_BUILDERS
+                view_builder.build() for view_builder in all_deployed_view_builders()
             ]
         self.empty_view_list: List[BigQueryView] = []
         self.one_view_list = [
@@ -454,6 +454,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 description=f"{view['view_id']} description",
                 view_query_template="a",
                 should_materialize=False,
+                projects_to_deploy=None,
                 materialized_address_override=None,
                 should_build_predicate=None,
                 **view,
@@ -639,6 +640,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 description=f"{view['view_id']} description",
                 view_query_template="a",
                 should_materialize=False,
+                projects_to_deploy=None,
                 materialized_address_override=None,
                 should_build_predicate=None,
                 **view,
@@ -710,6 +712,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 description=f"{view['view_id']} description",
                 view_query_template="a",
                 should_materialize=False,
+                projects_to_deploy=None,
                 materialized_address_override=None,
                 should_build_predicate=None,
                 **view,

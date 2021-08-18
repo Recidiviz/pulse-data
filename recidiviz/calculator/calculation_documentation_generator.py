@@ -81,7 +81,7 @@ from recidiviz.view_registry.datasets import (
     VIEW_SOURCE_TABLE_DATASETS,
     VIEW_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS,
 )
-from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
+from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
 ESCAPED_DOUBLE_UNDERSCORE = r"\__"
 DATASETS_TO_SKIP_VIEW_DOCUMENTATION = LATEST_VIEW_DATASETS | {
@@ -209,7 +209,7 @@ class CalculationDocumentationGenerator:
         self.dag_walker = BigQueryViewDagWalker(
             _build_views_to_update(
                 view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-                candidate_view_builders=DEPLOYED_VIEW_BUILDERS,
+                candidate_view_builders=all_deployed_view_builders(),
                 dataset_overrides=None,
                 override_should_build_predicate=True,
             )
