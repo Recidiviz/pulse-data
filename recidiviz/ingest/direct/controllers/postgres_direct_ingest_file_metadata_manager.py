@@ -48,6 +48,7 @@ from recidiviz.persistence.entity.operations.entities import (
     DirectIngestIngestFileMetadata,
     DirectIngestRawFileMetadata,
 )
+from recidiviz.utils import environment
 
 
 class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataManager):
@@ -466,6 +467,23 @@ class PostgresDirectIngestIngestFileMetadataManager(
                 unprocessed_ingest_files[0]
             )
             return earliest_unprocessed_ingest_file.job_creation_time
+
+    @environment.test_only
+    def clear_ingest_file_metadata(
+        self,
+    ) -> None:
+        """Deletes all metadata rows for this metadata manager's region and ingest
+        instance.
+        """
+        with SessionFactory.using_database(
+            self.database_key,
+        ) as session:
+            table_cls = schema.DirectIngestIngestFileMetadata
+            delete_query = table_cls.__table__.delete().where(
+                table_cls.region_code == self.region_code
+                and table_cls.ingest_database_name == self.database_key.db_name
+            )
+            session.execute(delete_query)
 
 
 class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):

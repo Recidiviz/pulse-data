@@ -440,6 +440,41 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         # No files should be imported because we are paused
         self.check_imported_path_count(controller, 0)
 
+    def test_state_generate_files_after_deprecation(self) -> None:
+        controller = build_gcsfs_controller_for_tests(
+            StateTestGcsfsDirectIngestController,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            run_async=True,
+        )
+
+        file_tags = list(reversed(sorted(controller.get_file_tag_rank_list())))
+        add_paths_with_tags(
+            controller,
+            file_tags,
+            pre_normalized_file_type=GcsfsDirectIngestFileType.RAW_DATA,
+        )
+        run_task_queues_to_empty(controller)
+
+        self.validate_file_metadata(controller)
+
+        controller.file_metadata_manager.ingest_file_manager.clear_ingest_file_metadata()
+
+        # We should now have no ingest metadata rows
+        self.validate_file_metadata(
+            controller, expected_ingest_metadata_tags_with_is_processed=[]
+        )
+
+        controller.cloud_task_manager.create_direct_ingest_handle_new_files_task(
+            region=controller.region,
+            ingest_bucket=controller.ingest_bucket_path,
+            can_start_ingest=True,
+        )
+
+        run_task_queues_to_empty(controller)
+
+        # Expect that files have been processed again
+        self.validate_file_metadata(controller)
+
     @patch(
         "recidiviz.cloud_storage.gcs_pseudo_lock_manager.GcsfsFactory.build",
         Mock(return_value=FakeGCSFileSystem()),

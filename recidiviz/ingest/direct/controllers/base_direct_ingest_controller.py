@@ -800,7 +800,6 @@ class BaseDirectIngestController(Ingestor):
 
         self._register_all_new_paths_in_metadata(unprocessed_ingest_view_paths)
 
-        unprocessed_paths = unprocessed_raw_paths + unprocessed_ingest_view_paths
         did_split = False
         for path in unprocessed_ingest_view_paths:
             if self._split_file_if_necessary(path):
@@ -825,8 +824,9 @@ class BaseDirectIngestController(Ingestor):
             # that calls this function to be re-triggered.
             return
 
-        if unprocessed_paths:
-            self.schedule_next_ingest_job(just_finished_job=False)
+        # Even if there are no unprocessed paths, we still want to look for the next
+        # job because there may be new files to generate.
+        self.schedule_next_ingest_job(just_finished_job=False)
 
     def do_raw_data_import(self, data_import_args: GcsfsRawDataBQImportArgs) -> None:
         """Process a raw incoming file by importing it to BQ, tracking it in our metadata tables, and moving it to
