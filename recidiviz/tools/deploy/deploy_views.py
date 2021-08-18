@@ -34,7 +34,7 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import (
     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
-    DEPLOYED_VIEW_BUILDERS,
+    deployed_view_builders,
 )
 
 
@@ -60,6 +60,6 @@ if __name__ == "__main__":
     with local_project_id_override(known_args.project_id):
         create_managed_dataset_and_deploy_views_for_view_builders(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-            view_builders_to_update=DEPLOYED_VIEW_BUILDERS,
+            view_builders_to_update=deployed_view_builders(known_args.project_id),
             historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
         )

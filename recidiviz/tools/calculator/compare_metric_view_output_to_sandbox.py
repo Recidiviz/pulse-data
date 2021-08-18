@@ -70,15 +70,15 @@ This can be run on-demand whenever locally with the following command:
 import argparse
 import logging
 import sys
-from typing import Tuple, List, Optional
+from typing import List, Optional, Tuple
 
 from google.cloud import bigquery
 from google.cloud.bigquery import QueryJob
 from more_itertools import peekable
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.view_registry.deployed_views import (
-    DEPLOYED_VIEW_BUILDERS,
+from recidiviz.big_query.view_update_manager import (
+    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
 from recidiviz.calculator.query.state.views.dashboard.supervision.us_nd.average_change_lsir_score_by_month import (
     AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW_BUILDER,
@@ -91,11 +91,9 @@ from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data imp
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.tools.load_views_to_sandbox import load_views_to_sandbox
-from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
-from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.big_query.view_update_manager import (
-    TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
-)
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override, project_id
+from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 OUTPUT_COMPARISON_TEMPLATE = """
     WITH base_output AS (
@@ -182,7 +180,7 @@ def compare_metric_view_output_to_sandbox(
     query_jobs: List[Tuple[QueryJob, str]] = []
     skipped_views: List[str] = []
 
-    for view_builder in DEPLOYED_VIEW_BUILDERS:
+    for view_builder in deployed_view_builders(project_id()):
         # Only compare output of metric views
         if not isinstance(view_builder, MetricBigQueryViewBuilder):
             continue

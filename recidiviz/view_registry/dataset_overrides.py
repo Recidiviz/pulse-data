@@ -17,19 +17,21 @@
 """Utils for deriving a dictionary mapping dataset_ids to the dataset name they should
 be replaced with.
 """
-from typing import Dict, Optional, Sequence
 import logging
+from typing import Dict, Optional, Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
 from recidiviz.calculator.query.state.dataset_config import (
-    DATAFLOW_METRICS_MATERIALIZED_DATASET,
     DATAFLOW_METRICS_DATASET,
+    DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
+from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 
 def dataset_overrides_for_deployed_view_datasets(
-    view_dataset_override_prefix: str, dataflow_dataset_override: Optional[str] = None
+    project_id: str,
+    view_dataset_override_prefix: str,
+    dataflow_dataset_override: Optional[str] = None,
 ) -> Dict[str, str]:
     """Returns a dictionary mapping dataset_ids to the dataset name they should be
     replaced with for all views that are regularly deployed by our standard deploy
@@ -43,7 +45,7 @@ def dataset_overrides_for_deployed_view_datasets(
     """
 
     all_view_builders = []
-    for builder in DEPLOYED_VIEW_BUILDERS:
+    for builder in deployed_view_builders(project_id):
         if (
             builder.dataset_id == DATAFLOW_METRICS_MATERIALIZED_DATASET
             and dataflow_dataset_override is None

@@ -222,6 +222,7 @@ class UnionedStateSegmentsViewBuilder(BigQueryViewBuilder[BigQueryView]):
         # Dataset prefixing will ge handled automatically by view building logic
         self.dataset_id = config.unioned_regional_dataset(dataset_override_prefix=None)
         self.view_id = f"{table.name}_view"
+        self.projects_to_deploy = None
         self.materialized_address_override = BigQueryAddress(
             dataset_id=self.dataset_id,
             table_id=table.name,

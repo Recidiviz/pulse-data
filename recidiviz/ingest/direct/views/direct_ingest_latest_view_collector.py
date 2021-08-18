@@ -15,20 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Collector and Builder for the DirectIngestRawDataTableLatestView class"""
-from typing import List, Optional, Dict, Callable
+from typing import Callable, Dict, List, Optional
 
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestRawDataTableLatestView,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
     get_existing_region_dir_names,
+)
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestRawDataTableLatestView,
 )
 
 
@@ -51,6 +51,7 @@ class DirectIngestRawDataTableLatestViewBuilder(
         self.should_build_predicate = should_build_predicate
         self.view_id = f"{raw_file_config.file_tag}_latest"
         self.dataset_id = f"{self.region_code.lower()}_raw_data_up_to_date_views"
+        self.projects_to_deploy = None
         self.materialized_address_override = None
 
     def _build(

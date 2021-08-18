@@ -20,9 +20,9 @@
 from typing import Dict, Optional, Tuple
 
 from recidiviz.big_query.big_query_view import (
+    BigQueryAddress,
     BigQueryView,
     BigQueryViewBuilder,
-    BigQueryAddress,
 )
 
 PROJECT_ID_KEY = "project_id"
@@ -85,6 +85,7 @@ class MetricBigQueryViewBuilder(BigQueryViewBuilder[MetricBigQueryView]):
     ):
         self.dataset_id = dataset_id
         self.view_id = view_id
+        self.projects_to_deploy = None
         self.description = description
         self.view_query_template = view_query_template
         self.dimensions = dimensions

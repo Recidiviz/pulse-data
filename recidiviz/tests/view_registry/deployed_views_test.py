@@ -16,17 +16,23 @@
 # =============================================================================
 """Tests deployed_views"""
 
-from typing import Set
 import unittest
+from typing import Set
 from unittest.mock import MagicMock, patch
 
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
 from recidiviz.big_query.big_query_view import BigQueryAddress
-from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.view_registry.deployed_views import (
+    all_deployed_view_builders,
+    deployed_view_builders,
+)
 
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
 class DeployedViewsTest(unittest.TestCase):
+    """Tests the deployed views configuration"""
+
     def test_unique_addresses(self) -> None:
         view_addresses: Set[BigQueryAddress] = set()
         with patch.object(
@@ -37,7 +43,33 @@ class DeployedViewsTest(unittest.TestCase):
             mock_table_has_column.return_value = True
             mock_table_exists.return_value = True
 
-            for view_builder in DEPLOYED_VIEW_BUILDERS:
+            for view_builder in all_deployed_view_builders():
                 address = view_builder.build().address
                 self.assertNotIn(address, view_addresses)
                 view_addresses.add(address)
+
+    def test_deployed_views(self) -> None:
+        with patch.object(
+            BigQueryTableChecker, "_table_has_column"
+        ) as mock_table_has_column, patch.object(
+            BigQueryTableChecker, "_table_exists"
+        ) as mock_table_exists:
+            mock_table_has_column.return_value = True
+            mock_table_exists.return_value = True
+
+            all_view_builders = all_deployed_view_builders()
+            staging_view_builders = deployed_view_builders(GCP_PROJECT_STAGING)
+            prod_view_builders = deployed_view_builders(GCP_PROJECT_PRODUCTION)
+
+            self.assertGreater(len(all_view_builders), 0)
+
+            self.assertSetEqual(
+                set(staging_view_builders) | set(prod_view_builders),
+                set(all_view_builders),
+            )
+
+            self.assertGreater(len(staging_view_builders), 0)
+            self.assertLessEqual(len(staging_view_builders), len(all_view_builders))
+
+            self.assertGreater(len(prod_view_builders), 0)
+            self.assertLessEqual(len(prod_view_builders), len(all_view_builders))
