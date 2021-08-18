@@ -39,6 +39,7 @@ python -m recidiviz.tools.migrations.run_migrations_to_head \
 """
 import argparse
 import logging
+import os
 import sys
 from typing import Optional
 
@@ -56,7 +57,11 @@ from recidiviz.tools.migrations.migration_helpers import (
 )
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils import metadata
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.environment import (
+    GCP_PROJECT_PRODUCTION,
+    GCP_PROJECT_STAGING,
+    GCPEnvironment,
+)
 from recidiviz.utils.metadata import local_project_id_override
 
 
@@ -124,6 +129,8 @@ def main(
     This checks for user validations that the database and branches are correct and then runs existing pending
     migrations.
     """
+    is_prod = metadata.project_id() == GCP_PROJECT_PRODUCTION
+
     if dry_run:
         if not local_postgres_helpers.can_start_on_disk_postgresql_database():
             logging.error("pg_ctl is not installed. Cannot perform a dry-run.")
@@ -139,7 +146,10 @@ def main(
             sys.exit(1)
         logging.info("Using SSL certificate path: %s", ssl_cert_path)
 
-    is_prod = metadata.project_id() == GCP_PROJECT_PRODUCTION
+        os.environ["RECIDIVIZ_ENV"] = (
+            GCPEnvironment.PRODUCTION.value if is_prod else GCPEnvironment.STAGING.value
+        )
+
     if is_prod:
         logging.info("RUNNING AGAINST PRODUCTION\n")
 
