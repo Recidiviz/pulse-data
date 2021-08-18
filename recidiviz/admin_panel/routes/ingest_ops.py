@@ -27,8 +27,12 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockAlreadyExists,
     GCSPseudoLockDoesNotExist,
 )
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
+    DirectIngestGCSFileSystem,
+)
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
@@ -54,11 +58,18 @@ def _get_state_code_from_str(state_code_str: str) -> StateCode:
     return StateCode[state_code_str.upper()]
 
 
+def _sql_export_path(
+    project_id: str, state_code: StateCode, ingest_instance: DirectIngestInstance
+) -> GcsfsFilePath:
+    return GcsfsFilePath.from_absolute_path(
+        f"gs://{project_id}-cloud-sql-exports/{ingest_instance.value.lower()}/{state_code.value}"
+    )
+
+
 def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
     """Adds routes for ingest operations."""
 
     project_id = GCP_PROJECT_STAGING if not in_gcp() else metadata.project_id()
-    STATE_INGEST_EXPORT_URI = f"gs://{project_id}-cloud-sql-exports"
 
     @bp.route("/api/ingest_operations/fetch_ingest_state_codes", methods=["POST"])
     @requires_gae_auth
@@ -141,8 +152,10 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
 
         operation_id = cloud_sql_client.export_to_gcs_sql(
             db_key,
-            GcsfsFilePath.from_absolute_path(
-                f"{STATE_INGEST_EXPORT_URI}/{ingest_instance.value.lower()}/{state_code.value}"
+            _sql_export_path(
+                project_id=project_id,
+                ingest_instance=ingest_instance,
+                state_code=state_code,
             ),
         )
         if operation_id is None:
@@ -190,8 +203,10 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
 
         operation_id = cloud_sql_client.import_gcs_sql(
             db_key,
-            GcsfsFilePath.from_absolute_path(
-                f"{STATE_INGEST_EXPORT_URI}/{exported_ingest_instance.value.lower()}/{state_code.value}"
+            _sql_export_path(
+                project_id=project_id,
+                ingest_instance=exported_ingest_instance,
+                state_code=state_code,
             ),
         )
         if operation_id is None:
@@ -210,6 +225,30 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
             )
 
         return operation_id, HTTPStatus.OK
+
+    @bp.route(
+        "/api/ingest_operations/delete_database_import_gcs_files", methods=["POST"]
+    )
+    @requires_gae_auth
+    def _delete_database_import_gcs_files() -> Tuple[str, HTTPStatus]:
+        try:
+            state_code = StateCode(request.json["stateCode"])
+            exported_ingest_instance = DirectIngestInstance(
+                request.json["exportedDatabaseInstance"].upper()
+            )
+        except ValueError:
+            return "invalid parameters provided", HTTPStatus.BAD_REQUEST
+
+        path_to_delete = _sql_export_path(
+            project_id=project_id,
+            ingest_instance=exported_ingest_instance,
+            state_code=state_code,
+        )
+
+        fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
+        fs.delete(path=path_to_delete)
+
+        return "", HTTPStatus.OK
 
     @bp.route("/api/ingest_operations/acquire_ingest_lock", methods=["POST"])
     @requires_gae_auth

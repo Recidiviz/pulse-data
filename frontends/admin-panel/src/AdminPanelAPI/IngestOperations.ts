@@ -99,6 +99,20 @@ export const importDatabaseFromGCS = async (
   });
 };
 
+// Clean up CloudSQL import files
+export const deleteDatabaseImportGCSFiles = async (
+  stateCode: string,
+  exportedDatabaseInstance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    `/api/ingest_operations/delete_database_import_gcs_files`,
+    {
+      stateCode,
+      exportedDatabaseInstance,
+    }
+  );
+};
+
 // Acquire BQ Export lock for the STATE database
 export const acquireBQExportLock = async (
   stateCode: string,

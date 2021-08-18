@@ -67,6 +67,7 @@ export {
 export type { Message } from "./DataDiscovery";
 export {
   acquireBQExportLock,
+  deleteDatabaseImportGCSFiles,
   exportDatabaseToGCS,
   fetchIngestStateCodes,
   getIngestInstanceSummaries,
