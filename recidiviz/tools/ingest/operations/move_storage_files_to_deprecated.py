@@ -30,46 +30,36 @@ Example usage (run from `pipenv shell`):
 python -m recidiviz.tools.ingest.operations.move_storage_files_to_deprecated \
     --file-type raw --region us_nd --start-date-bound  2019-08-12 \
     --end-date-bound 2019-08-17 --project-id recidiviz-staging \
-    --file-filter "docstars" --ingest-instance PRIMARY --dry-run True
-
+    --ingest-instance PRIMARY \
+    --dry-run True \
+    [--file-tag-filters "docstars_contacts elite_offenders"]
 
 """
 import argparse
-import datetime
 import logging
 import os
-import re
-import threading
 from datetime import date
-from multiprocessing.pool import ThreadPool
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
-from progress.bar import Bar
-
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
-    INGEST_FILEPATH_REGEX,
     GcsfsDirectIngestFileType,
-    filename_parts_from_path,
     gcsfs_direct_ingest_storage_directory_path_for_region,
 )
 from recidiviz.persistence.database.schema.operations.schema import (
     DirectIngestIngestFileMetadata,
     DirectIngestRawFileMetadata,
 )
-from recidiviz.tools.gsutil_shell_helpers import (
-    gsutil_get_storage_subdirs_containing_file_types,
-    gsutil_ls,
-    gsutil_mv,
+from recidiviz.tools.ingest.operations.operate_on_storage_ingest_files_controller import (
+    IngestFilesOperationType,
+    OperateOnStorageIngestFilesController,
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.params import str_to_bool
-
-# pylint: disable=not-callable
 
 
 class MoveFilesToDeprecatedController:
@@ -85,14 +75,14 @@ class MoveFilesToDeprecatedController:
         end_date_bound: Optional[str],
         dry_run: bool,
         project_id: str,
-        file_filter: Optional[str],
+        file_tag_filters: List[str],
     ):
         self.file_type = file_type
         self.region_code = region_code
         self.start_date_bound = start_date_bound
         self.end_date_bound = end_date_bound
         self.dry_run = dry_run
-        self.file_filter = file_filter
+        self.file_tag_filters = file_tag_filters
         self.project_id = project_id
 
         if (
@@ -104,23 +94,24 @@ class MoveFilesToDeprecatedController:
                 f"Instead, found ingest_instance [{ingest_instance}]."
             )
 
-        self.region_storage_dir_path_for_file_type = (
+        self.region_storage_dir_path = (
             gcsfs_direct_ingest_storage_directory_path_for_region(
                 region_code=region_code,
                 system_level=SystemLevel.STATE,
                 ingest_instance=ingest_instance,
-                file_type=self.file_type,
                 project_id=self.project_id,
             )
         )
-        self.log_output_path = os.path.join(
-            os.path.dirname(__file__),
-            f"move_storage_files_to_deprecated_start_bound_{self.region_code}_region_{self.start_date_bound}"
-            f"_end_bound_{self.end_date_bound}_dry_run_{dry_run}_{datetime.datetime.now().isoformat()}.txt",
+
+        self.deprecated_region_storage_dir_path = (
+            GcsfsDirectoryPath.from_dir_and_subdir(
+                self.region_storage_dir_path,
+                os.path.join(
+                    "deprecated",
+                    f"deprecated_on_{date.today()}",
+                ),
+            )
         )
-        self.mutex = threading.Lock()
-        self.move_list: List[Tuple[str, str]] = []
-        self.move_progress: Optional[Bar] = None
 
     def run(self) -> None:
         """Main function that will execute the move to deprecated."""
@@ -157,106 +148,20 @@ class MoveFilesToDeprecatedController:
             dry_run=self.dry_run,
         )
 
-        destination_dir_path = os.path.join(
-            self.region_storage_dir_path_for_file_type.abs_path(),
-            "deprecated",
-            f"deprecated_on_{date.today()}",
-            f"{str(self.file_type.value)}/",
-        )
-
-        prompt_for_confirmation(
-            f"Moving files from [{self.region_storage_dir_path_for_file_type.abs_path()}] to "
-            f"[{destination_dir_path}] - continue?",
+        OperateOnStorageIngestFilesController(
+            region_code=self.region_code,
+            operation_type=IngestFilesOperationType.MOVE,
+            source_region_storage_dir_path=self.region_storage_dir_path,
+            destination_region_storage_dir_path=self.deprecated_region_storage_dir_path,
+            file_type_to_operate_on=self.file_type,
+            start_date_bound=self.start_date_bound,
+            end_date_bound=self.end_date_bound,
+            file_tag_filters=self.file_tag_filters,
             dry_run=self.dry_run,
-        )
-
-        logging.info("Finding files to move...")
-        files_to_move = self._get_files_to_move()
-
-        prompt_for_confirmation(
-            f"Found [{len(files_to_move)}] files to move - continue?",
-            dry_run=self.dry_run,
-        )
-
-        self._execute_move(files_to_move)
-        self._write_move_to_log_file()
-
-        if self.dry_run:
-            logging.info(
-                "[DRY RUN] See results in [%s].\n"
-                "Rerun with [--dry-run False] to execute move.",
-                self.log_output_path,
-            )
-        else:
-            logging.info("Move complete! See results in [%s].\n", self.log_output_path)
-
-    def _get_files_to_move(self) -> List[str]:
-        """Function that gets the files to move to deprecated based on the file_filter and end/start dates specified"""
-        subdirs = gsutil_get_storage_subdirs_containing_file_types(
-            storage_bucket_path=GcsfsDirectoryPath.from_bucket_and_blob_name(
-                self.region_storage_dir_path_for_file_type.bucket_name, self.region_code
-            ).abs_path(),
-            file_type=self.file_type,
-            lower_bound_date=self.start_date_bound,
-            upper_bound_date=self.end_date_bound,
-        )
-        result = []
-        for subdir_path in subdirs:
-            from_paths = gsutil_ls(f"{subdir_path}*.*")
-            for from_path in from_paths:
-                _, file_name = os.path.split(from_path)
-                if re.match(INGEST_FILEPATH_REGEX, file_name):
-                    if not self.file_filter or re.search(self.file_filter, file_name):
-                        result.append(from_path)
-        return result
-
-    def _write_move_to_log_file(self) -> None:
-        self.move_list.sort()
-        with open(self.log_output_path, "w") as f:
-            if self.dry_run:
-                template = "[DRY RUN] Would move {} -> {}\n"
-            else:
-                template = "Moved {} -> {}\n"
-
-            f.writelines(
-                template.format(original_path, new_path)
-                for original_path, new_path in self.move_list
-            )
-
-    def _move_files_for_date(self, from_uri: str) -> None:
-        """Function that loops through each list of files to move and moves them to the deprecated folder
-        in accordance with the date they were received and the date they were deprecated."""
-        curr_gcsfs_file_path = GcsfsFilePath.from_absolute_path(from_uri)
-        previous_date_format = filename_parts_from_path(curr_gcsfs_file_path).date_str
-        new_date_format = date.fromisoformat(previous_date_format).strftime("%Y/%m/%d/")
-        to_uri = os.path.join(
-            "gs://",
-            self.region_storage_dir_path_for_file_type.bucket_name,
-            self.region_code,
-            "deprecated",
-            f"deprecated_on_{date.today()}",
-            str(self.file_type.value),
-            new_date_format,
-            curr_gcsfs_file_path.file_name,
-        )
-        if not self.dry_run:
-            gsutil_mv(from_path=from_uri, to_path=to_uri)
-        with self.mutex:
-            self.move_list.append((from_uri, to_uri))
-            if self.move_progress:
-                self.move_progress.next()
-
-    def _execute_move(self, files_to_move: List[str]) -> None:
-        self.move_progress = Bar(
-            "Moving files to deprecated...", max=len(files_to_move)
-        )
-
-        thread_pool = ThreadPool(processes=12)
-        thread_pool.map(self._move_files_for_date, files_to_move)
-        self.move_progress.finish()
+        ).run()
 
 
-def main() -> None:
+def parse_arguments() -> argparse.Namespace:
     """Runs the move_state_files_to_deprecated script."""
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -302,14 +207,21 @@ def main() -> None:
     )
 
     parser.add_argument(
-        "--file-filter",
-        default=None,
-        help="Regex name filter - when set, will only move files that match this regex.",
+        "--file-tag-filters",
+        required=False,
+        default=[],
+        nargs="+",
+        help="List of file tags to filter for. If not set, will move all files.",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
 
+
+def main() -> None:
+    """Runs the move_state_files_to_deprecated script."""
     logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    args = parse_arguments()
 
     MoveFilesToDeprecatedController(
         file_type=GcsfsDirectIngestFileType(args.file_type),
@@ -319,7 +231,7 @@ def main() -> None:
         end_date_bound=args.end_date_bound,
         project_id=args.project_id,
         dry_run=args.dry_run,
-        file_filter=args.file_filter,
+        file_tag_filters=args.file_tag_filters,
     ).run()
 
 

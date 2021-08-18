@@ -16,6 +16,7 @@
 # =============================================================================
 """Implements a controller used to copy or move files used in ingest across buckets."""
 import datetime
+import itertools
 import logging
 import os
 import threading
@@ -26,7 +27,13 @@ from typing import List, Optional, Tuple
 
 from progress.bar import Bar
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import (
+    GcsfsDirectoryPath,
+    normalize_relative_path,
+)
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
+    SPLIT_FILE_STORAGE_SUBDIR,
+)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
 )
@@ -60,6 +67,7 @@ class OperateOnStorageIngestFilesController:
         file_type_to_operate_on: GcsfsDirectIngestFileType,
         start_date_bound: Optional[str],
         end_date_bound: Optional[str],
+        file_tag_filters: List[str],
         dry_run: bool,
     ):
         """Creates a controller responsible for copying or moving ingest files from
@@ -73,7 +81,9 @@ class OperateOnStorageIngestFilesController:
             `gs://recidiviz-staging-direct-ingest-state-storage/us_xx/`
         destination_region_storage_dir_path - root path where the files should be
             copied/moved to. Critically, this must be an ingest storage buckets, e.g.
-            `gs://recidiviz-staging-direct-ingest-state-storage/us_xx/`
+            `gs://recidiviz-staging-direct-ingest-state-storage/us_xx/`, or must have
+            the same internal structure as the ingest storage buckets, e.g. the
+            deprecated/ folder in the ingest buckets.
         file_type_to_operate_on: The file type to run this script on,
             e.g. RAW or INGEST_VIEW
         start_date_bound - optional start date in the format 1901-02-28
@@ -86,6 +96,7 @@ class OperateOnStorageIngestFilesController:
         self.dry_run = dry_run
         self.start_date_bound = start_date_bound
         self.end_date_bound = end_date_bound
+        self.file_tag_filters = file_tag_filters
         self.file_type_to_operate_on = file_type_to_operate_on
 
         self.log_output_path = os.path.join(
@@ -174,17 +185,17 @@ class OperateOnStorageIngestFilesController:
                 for original_path, new_path in self.operations_list
             )
 
-    def _operate_on_files_for_date(self, subdir_path_str: str) -> None:
-        dir_path = GcsfsDirectoryPath.from_absolute_path(subdir_path_str.rstrip("/"))
-
-        from_path = f"gs://{self.source_region_storage_dir_path.bucket_name}/{dir_path.relative_path}*"
-        to_path = f"gs://{self.destination_region_storage_dir_path.bucket_name}/{dir_path.relative_path}"
-
+    def _do_file_operation(self, operation_paths: Tuple[str, str]) -> None:
+        from_path = operation_paths[0]
+        to_path = operation_paths[1]
+        # If we're filtering for certain tags, it's expected that we might find some
+        # directories with no results.
+        allow_empty = bool(self.file_tag_filters)
         if not self.dry_run:
             if self.operation_type == IngestFilesOperationType.COPY:
-                gsutil_cp(from_path=from_path, to_path=to_path)
+                gsutil_cp(from_path=from_path, to_path=to_path, allow_empty=allow_empty)
             elif self.operation_type == IngestFilesOperationType.MOVE:
-                gsutil_mv(from_path=from_path, to_path=to_path)
+                gsutil_mv(from_path=from_path, to_path=to_path, allow_empty=allow_empty)
             else:
                 raise ValueError(f"Unexpected operation type [{self.operation_type}] ")
         with self.mutex:
@@ -192,12 +203,53 @@ class OperateOnStorageIngestFilesController:
             if self.file_operation_progress:
                 self.file_operation_progress.next()
 
-    def _execute_file_operations(self, subdirs_to_operate_on: List[str]) -> None:
-        self.file_operation_progress = Bar(
-            f"{self.operation_type.gerund().capitalize()} files from subdirectories...",
-            max=len(subdirs_to_operate_on),
+    def _get_operations_for_subdir(self, subdir_path_str: str) -> List[Tuple[str, str]]:
+        """Returns a list of (from_path, to_path) tuples representing operations
+        that should be done against files in this subdirectory.
+        """
+        subdir_path = GcsfsDirectoryPath.from_absolute_path(subdir_path_str)
+
+        from_path = subdir_path.uri() + "*"
+        relative_to_source = os.path.relpath(
+            subdir_path.uri(), self.source_region_storage_dir_path.uri()
         )
 
+        to_path = GcsfsDirectoryPath.from_dir_and_subdir(
+            self.destination_region_storage_dir_path,
+            normalize_relative_path(relative_to_source),
+        ).uri()
+
+        if not self.file_tag_filters:
+            return [(from_path, to_path)]
+
+        operations = []
+        for file_tag in self.file_tag_filters:
+            if SPLIT_FILE_STORAGE_SUBDIR in from_path:
+                # The file tag in split files is followed by a suffix like
+                # _00002_file_split_size2500
+                tag_filter = f"*_{file_tag}_*"
+            else:
+                # In all other files, the split file is followed by the extension.
+                tag_filter = f"*_{file_tag}[.]*"
+
+            operations.append(
+                (
+                    from_path.rstrip("*") + tag_filter,
+                    to_path,
+                )
+            )
+        return operations
+
+    def _execute_file_operations(self, subdirs_to_operate_on: List[str]) -> None:
         thread_pool = ThreadPool(processes=12)
-        thread_pool.map(self._operate_on_files_for_date, subdirs_to_operate_on)
+        operations_lists = thread_pool.map(
+            self._get_operations_for_subdir, subdirs_to_operate_on
+        )
+
+        all_operations = list(itertools.chain(*operations_lists))
+        self.file_operation_progress = Bar(
+            f"{self.operation_type.gerund().capitalize()} files from subdirectories...",
+            max=len(all_operations),
+        )
+        thread_pool.map(self._do_file_operation, all_operations)
         self.file_operation_progress.finish()
