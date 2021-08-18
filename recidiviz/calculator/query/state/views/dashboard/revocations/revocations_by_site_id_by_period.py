@@ -26,8 +26,9 @@ REVOCATIONS_BY_SITE_ID_BY_PERIOD_VIEW_NAME = "revocations_by_site_id_by_period"
 
 REVOCATIONS_BY_SITE_ID_BY_PERIOD_DESCRIPTION = """
  Revocations by site_id by metric period months.
- This counts all individuals admitted to prison for a revocation of supervision, broken down by the site_id of the agent
- on the source_supervision_violation_response, and by the violation type of the supervision violation.
+ This counts all individuals admitted to prison for a revocation of supervision, broken
+ down by the site_id of the district in which the person was supervised prior to the
+ revocation admission, and by the violation type of the supervision violation.
  """
 
 REVOCATIONS_BY_SITE_ID_BY_PERIOD_QUERY_TEMPLATE = """

@@ -27,12 +27,11 @@ REVOCATIONS_BY_OFFICER_BY_PERIOD_VIEW_NAME = "revocations_by_officer_by_period"
 REVOCATIONS_BY_OFFICER_BY_PERIOD_DESCRIPTION = """
  Revocations by officer by metric period months.
  This counts all individuals admitted to prison for a revocation
- of probation or parole, broken down by the agent on the
- source_supervision_violation_response.
+ of probation or parole, broken down by the site_id of the district in which the person
+ was supervised prior to the revocation admission.
  """
 
-# TODO(#2231): Join against state_agent instead of temp_officers once state_agent
-#  is properly ingested and entity-matched
+
 REVOCATIONS_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE = """
     /*{description}*/
     SELECT

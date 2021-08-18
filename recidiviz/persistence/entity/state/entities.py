@@ -20,100 +20,94 @@ Note: These classes mirror the SQL Alchemy ORM objects but are kept separate. Th
 objects additional flexibility that the SQL Alchemy ORM objects can't provide.
 """
 
-from typing import Optional, List, TypeVar, Union
-
 import datetime
+from typing import List, Optional, TypeVar, Union
+
 import attr
 
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
+from recidiviz.common.constants.bond import BondStatus, BondType
+from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.person_characteristics import (
+    Ethnicity,
+    Gender,
+    Race,
+    ResidencyStatus,
+)
+from recidiviz.common.constants.state.shared_enums import (
+    StateActingBodyType,
+    StateCustodialAuthority,
+)
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
-    StateAssessmentType,
     StateAssessmentLevel,
-)
-
-from recidiviz.common.constants.bond import BondType, BondStatus
-from recidiviz.common.constants.charge import ChargeStatus
-from recidiviz.common.constants.person_characteristics import (
-    Gender,
-    Race,
-    Ethnicity,
-    ResidencyStatus,
+    StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-
+from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
 from recidiviz.common.constants.state.state_court_case import (
     StateCourtCaseStatus,
     StateCourtType,
 )
-from recidiviz.common.constants.state.state_incarceration import (
-    StateIncarcerationType,
+from recidiviz.common.constants.state.state_early_discharge import (
+    StateEarlyDischargeDecision,
+    StateEarlyDischargeDecisionStatus,
 )
+from recidiviz.common.constants.state.state_fine import StateFineStatus
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import (
-    StateIncarcerationIncidentType,
     StateIncarcerationIncidentOutcomeType,
+    StateIncarcerationIncidentType,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
+    StateIncarcerationFacilitySecurityLevel,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    StateIncarcerationFacilitySecurityLevel,
+    StateIncarcerationPeriodStatus,
     StateSpecializedPurposeForIncarceration,
-)
-
-from recidiviz.common.constants.state.state_fine import StateFineStatus
-from recidiviz.common.constants.state.state_charge import (
-    StateChargeClassificationType,
 )
 from recidiviz.common.constants.state.state_parole_decision import (
     StateParoleDecisionOutcome,
 )
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_program_assignment import (
-    StateProgramAssignmentParticipationStatus,
     StateProgramAssignmentDischargeReason,
+    StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_early_discharge import (
-    StateEarlyDischargeDecision,
-    StateEarlyDischargeDecisionStatus,
-)
-from recidiviz.common.constants.state.shared_enums import (
-    StateActingBodyType,
-    StateCustodialAuthority,
-)
-from recidiviz.common.constants.state.state_supervision import (
-    StateSupervisionType,
-)
+from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactLocation,
+    StateSupervisionContactReason,
     StateSupervisionContactStatus,
     StateSupervisionContactType,
-    StateSupervisionContactReason,
-    StateSupervisionContactLocation,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
-    StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodTerminationReason,
     StateSupervisionLevel,
+    StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseRevocationType,
-    StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseType,
 )
-
 from recidiviz.common.date import DateRange, DurationMixin
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 
 # **** Entity Types for convenience *****:
+from recidiviz.persistence.entity.state.entity_deprecation_utils import (
+    validate_deprecated_entity_field_for_states,
+)
+
 SentenceType = TypeVar(
     "SentenceType", "StateSupervisionSentence", "StateIncarcerationSentence"
 )
@@ -1092,6 +1086,13 @@ class StateIncarcerationPeriod(
     @property
     def end_date_exclusive(self) -> Optional[datetime.date]:
         return self.release_date
+
+    def __attrs_post_init__(self) -> None:
+        validate_deprecated_entity_field_for_states(
+            entity=self,
+            field_name="source_supervision_violation_response",
+            deprecated_state_codes=["US_ID", "US_PA"],
+        )
 
 
 @attr.s(eq=False)
