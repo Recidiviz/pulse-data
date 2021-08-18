@@ -20,7 +20,12 @@ import unittest
 
 from mock import patch
 
-from recidiviz.big_query.big_query_view import BigQueryAddress, BigQueryView
+from recidiviz.big_query.big_query_view import (
+    BigQueryAddress,
+    BigQueryView,
+    SimpleBigQueryViewBuilder,
+)
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 
 class BigQueryViewTest(unittest.TestCase):
@@ -330,3 +335,41 @@ class BigQueryViewTest(unittest.TestCase):
         view_set.add(v_deep_copy)
 
         self.assertEqual(1, len(view_set))
+
+    def test_deploy_in_all(self) -> None:
+        v = SimpleBigQueryViewBuilder(
+            dataset_id="view_dataset",
+            view_id="my_view",
+            description="my_view description",
+            view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
+        )
+
+        self.assertTrue(v.should_deploy_in_project("test-project"))
+        self.assertTrue(v.should_deploy_in_project(GCP_PROJECT_STAGING))
+        self.assertTrue(v.should_deploy_in_project(GCP_PROJECT_PRODUCTION))
+
+    def test_deploy_in_staging(self) -> None:
+        v = SimpleBigQueryViewBuilder(
+            dataset_id="view_dataset",
+            view_id="my_view",
+            description="my_view description",
+            view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
+            projects_to_deploy={GCP_PROJECT_STAGING},
+        )
+
+        self.assertFalse(v.should_deploy_in_project("test-project"))
+        self.assertTrue(v.should_deploy_in_project(GCP_PROJECT_STAGING))
+        self.assertFalse(v.should_deploy_in_project(GCP_PROJECT_PRODUCTION))
+
+    def test_deploy_in_multiple(self) -> None:
+        v = SimpleBigQueryViewBuilder(
+            dataset_id="view_dataset",
+            view_id="my_view",
+            description="my_view description",
+            view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
+            projects_to_deploy={GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION},
+        )
+
+        self.assertFalse(v.should_deploy_in_project("test-project"))
+        self.assertTrue(v.should_deploy_in_project(GCP_PROJECT_STAGING))
+        self.assertTrue(v.should_deploy_in_project(GCP_PROJECT_PRODUCTION))

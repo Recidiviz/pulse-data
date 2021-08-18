@@ -39,7 +39,7 @@ from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import (
     CROSS_PROJECT_VIEW_BUILDERS,
     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
-    DEPLOYED_VIEW_BUILDERS,
+    all_deployed_view_builders,
 )
 
 _PROJECT_ID = "fake-recidiviz-project"
@@ -98,6 +98,7 @@ class ViewManagerTest(unittest.TestCase):
                 description=f"{view['view_id']} description",
                 view_query_template="a",
                 should_materialize=False,
+                projects_to_deploy=None,
                 materialized_address_override=None,
                 should_build_predicate=None,
                 **view,
@@ -489,6 +490,7 @@ class ViewManagerTest(unittest.TestCase):
                 view_query_template="a",
                 description=f"{view['view_id']} description",
                 should_materialize=False,
+                projects_to_deploy=None,
                 materialized_address_override=None,
                 should_build_predicate=None,
                 **view,
@@ -632,7 +634,7 @@ class ViewManagerTest(unittest.TestCase):
             mock_table_has_column.return_value = True
             mock_table_exists.return_value = True
             all_views = [
-                view_builder.build() for view_builder in DEPLOYED_VIEW_BUILDERS
+                view_builder.build() for view_builder in all_deployed_view_builders()
             ]
 
         expected_keys: Set[Tuple[str, str]] = set()
@@ -642,7 +644,7 @@ class ViewManagerTest(unittest.TestCase):
             expected_keys.add(dag_key)
 
     def test_no_views_in_source_data_datasets(self) -> None:
-        for view_builder in DEPLOYED_VIEW_BUILDERS:
+        for view_builder in all_deployed_view_builders():
             self.assertNotIn(
                 view_builder.dataset_id,
                 VIEW_SOURCE_TABLE_DATASETS,
@@ -662,7 +664,7 @@ class ViewManagerTest(unittest.TestCase):
             mock_table_has_column.return_value = True
             mock_table_exists.return_value = True
 
-            for view_builder in DEPLOYED_VIEW_BUILDERS:
+            for view_builder in all_deployed_view_builders():
                 view_query = view_builder.build().view_query
 
                 if (
@@ -802,7 +804,7 @@ class ViewManagerTest(unittest.TestCase):
             mock_table_has_column.return_value = True
             mock_table_exists.return_value = True
             all_views = [
-                view_builder.build() for view_builder in DEPLOYED_VIEW_BUILDERS
+                view_builder.build() for view_builder in all_deployed_view_builders()
             ]
 
         for view in all_views:

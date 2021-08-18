@@ -25,21 +25,17 @@ import logging
 
 from recidiviz.big_query.big_query_view import BigQueryAddress
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker, DagKey
-from recidiviz.big_query.view_update_manager import (
-    _build_views_to_update,
-)
-from recidiviz.view_registry.deployed_views import (
-    DEPLOYED_VIEW_BUILDERS,
-)
-from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
+from recidiviz.big_query.view_update_manager import _build_views_to_update
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.utils.params import str_to_bool
+from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
+from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
 
 def build_dag_walker(dataset_id: str, view_id: str) -> BigQueryViewDagWalker:
     is_valid_view = False
-    for builder in DEPLOYED_VIEW_BUILDERS:
+    for builder in all_deployed_view_builders():
         if (
             not is_valid_view
             and builder.dataset_id == dataset_id
@@ -51,7 +47,7 @@ def build_dag_walker(dataset_id: str, view_id: str) -> BigQueryViewDagWalker:
     return BigQueryViewDagWalker(
         _build_views_to_update(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-            candidate_view_builders=DEPLOYED_VIEW_BUILDERS,
+            candidate_view_builders=all_deployed_view_builders(),
             dataset_overrides=None,
         )
     )

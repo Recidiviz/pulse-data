@@ -44,7 +44,7 @@ from recidiviz.tests.ingest.scrape.scraper_cloud_task_manager_test import (
     CLOUD_TASK_MANAGER_PACKAGE_NAME,
 )
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
-from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
+from recidiviz.view_registry.deployed_views import deployed_view_builders
 from recidiviz.view_registry.namespaces import BigQueryViewNamespace
 
 
@@ -514,9 +514,11 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             self.mock_big_query_view_namespace
         ]
 
-        mock_deployed_views.DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE = {
-            self.mock_big_query_view_namespace: self.view_builders_for_dataset
-        }
+        mock_deployed_views.deployed_view_builders_for_namespace = (
+            lambda _project_id, namespace: self.view_builders_for_dataset
+            if namespace == self.mock_big_query_view_namespace
+            else None
+        )
 
         view_export_manager.export_view_data_to_cloud_storage(
             self.mock_export_name, override_view_exporter=mock_view_exporter
@@ -544,9 +546,13 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         in export_config.NAMESPACES_REQUIRING_FULL_UPDATE."""
         self.mock_export_config.NAMESPACES_REQUIRING_FULL_UPDATE = ["OTHER_NAMESPACE"]
 
-        mock_deployed_views.DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE = {
-            self.mock_big_query_view_namespace: self.view_builders_for_dataset
-        }
+        mock_deployed_views.deployed_view_builders_for_namespace = (
+            lambda _project_id, namespace: self.view_builders_for_dataset
+            if namespace == self.mock_big_query_view_namespace
+            else None
+        )
+        deployed_views = deployed_view_builders("test-project")
+        mock_deployed_views.deployed_view_builders.return_value = deployed_views
 
         view_export_manager.export_view_data_to_cloud_storage(
             self.mock_export_name, override_view_exporter=mock_view_exporter
@@ -554,7 +560,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
         mock_view_update_manager_rematerialize.assert_called_with(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-            all_view_builders=DEPLOYED_VIEW_BUILDERS,
+            all_view_builders=deployed_views,
             views_to_update=[view.build() for view in self.view_builders_for_dataset],
         )
 

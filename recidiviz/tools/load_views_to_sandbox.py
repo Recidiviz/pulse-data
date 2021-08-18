@@ -37,7 +37,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.metadata import local_project_id_override, project_id
 from recidiviz.utils.params import str_to_bool
 from recidiviz.view_registry.dataset_overrides import (
     dataset_overrides_for_deployed_view_datasets,
@@ -45,7 +45,7 @@ from recidiviz.view_registry.dataset_overrides import (
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import (
     CROSS_PROJECT_VIEW_BUILDERS,
-    DEPLOYED_VIEW_BUILDERS,
+    deployed_view_builders,
 )
 
 
@@ -56,13 +56,16 @@ def load_views_to_sandbox(
 ) -> None:
     """Loads all views into sandbox datasets prefixed with the sandbox_dataset_prefix."""
     sandbox_dataset_overrides = dataset_overrides_for_deployed_view_datasets(
+        project_id=project_id(),
         view_dataset_override_prefix=sandbox_dataset_prefix,
         dataflow_dataset_override=dataflow_dataset_override,
     )
 
+    view_builders = deployed_view_builders(project_id())
+
     builders_to_update = [
         builder
-        for builder in DEPLOYED_VIEW_BUILDERS
+        for builder in view_builders
         if (
             dataflow_dataset_override is not None
             # Only update views in the DATAFLOW_METRICS_MATERIALIZED_DATASET if the dataflow_dataset_override is set
@@ -76,7 +79,7 @@ def load_views_to_sandbox(
         rematerialize_views_for_view_builders(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
             views_to_update_builders=builders_to_update,
-            all_view_builders=DEPLOYED_VIEW_BUILDERS,
+            all_view_builders=view_builders,
             dataset_overrides=sandbox_dataset_overrides,
             # If a given view hasn't been loaded to the sandbox, skip it
             skip_missing_views=True,

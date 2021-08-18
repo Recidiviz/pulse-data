@@ -59,7 +59,6 @@ from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value
 from recidiviz.view_registry import deployed_views
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
-from recidiviz.view_registry.deployed_views import DEPLOYED_VIEW_BUILDERS
 
 m_failed_metric_export_validation = measure.MeasureInt(
     "bigquery/metric_view_export_manager/metric_view_export_validation_failure",
@@ -204,6 +203,7 @@ def get_configs_for_export_name(
 
 
 def rematerialize_views_for_metric_export(
+    project_id: str,
     export_view_configs: Sequence[ExportBigQueryViewConfig],
 ) -> None:
     bq_view_namespaces_to_update = {
@@ -216,9 +216,9 @@ def rematerialize_views_for_metric_export(
             in export_config.NAMESPACES_REQUIRING_FULL_UPDATE
         ):
             view_builders_for_views_to_update = (
-                deployed_views.DEPLOYED_VIEW_BUILDERS_BY_NAMESPACE[
-                    bq_view_namespace_to_update
-                ]
+                deployed_views.deployed_view_builders_for_namespace(
+                    project_id, bq_view_namespace_to_update
+                )
             )
             view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders(
                 view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
@@ -232,7 +232,7 @@ def rematerialize_views_for_metric_export(
     # will ensure that all materialized tables get refreshed.
     view_update_manager.rematerialize_views(
         views_to_update=[config.view for config in export_view_configs],
-        all_view_builders=DEPLOYED_VIEW_BUILDERS,
+        all_view_builders=deployed_views.deployed_view_builders(project_id),
         view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
     )
 
@@ -264,7 +264,7 @@ def export_view_data_to_cloud_storage(
 
     if should_materialize_views:
         rematerialize_views_for_metric_export(
-            export_view_configs=export_configs_for_filter
+            project_id=project_id, export_view_configs=export_configs_for_filter
         )
 
     do_metric_export_for_configs(

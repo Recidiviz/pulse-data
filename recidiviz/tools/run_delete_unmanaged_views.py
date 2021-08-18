@@ -38,12 +38,12 @@ from recidiviz.big_query.view_update_manager_utils import (
     get_managed_view_and_materialized_table_addresses_by_dataset,
 )
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.metadata import local_project_id_override, project_id
 from recidiviz.utils.params import str_to_bool
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import (
     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
-    DEPLOYED_VIEW_BUILDERS,
+    deployed_view_builders,
 )
 
 
@@ -69,7 +69,7 @@ def main() -> None:
 
     with local_project_id_override(args.project_id):
         views = []
-        for view_builder in DEPLOYED_VIEW_BUILDERS:
+        for view_builder in deployed_view_builders(project_id()):
             if view_builder.dataset_id in VIEW_SOURCE_TABLE_DATASETS:
                 raise ValueError(
                     f"Found view [{view_builder.view_id}] in source-table-only dataset [{view_builder.dataset_id}]"
