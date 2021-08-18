@@ -20,6 +20,7 @@ from enum import Enum
 from typing import Any, Callable, Dict, Optional, Set, Tuple, Type, TypeVar
 
 import attr
+from more_itertools import one
 
 from recidiviz.common.attr_utils import get_enum_cls, is_date, is_enum, is_forward_ref
 from recidiviz.common.str_field_utils import is_yyyymmdd_date, parse_yyyymmdd_date
@@ -85,6 +86,23 @@ def _attribute_field_type_reference_for_class(
     # Add the field type ref for this class to the cached reference
     class_structure_reference[cls] = attr_field_types
     return attr_field_types
+
+
+def attr_field_type_for_field_name(
+    cls: Type, field_name: str
+) -> BuildableAttrFieldType:
+    """Returns the BuildableAttrFieldType of the Attribute on the |cls| with the name
+    matching the given |field_name|."""
+    return one(
+        [
+            attr_field_type
+            for attribute, (
+                attr_field_type,
+                _,
+            ) in _attribute_field_type_reference_for_class(cls).items()
+            if attribute.name == field_name
+        ]
+    )
 
 
 def _map_attr_to_type_for_class(
