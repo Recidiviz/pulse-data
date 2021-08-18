@@ -16,16 +16,25 @@
 # =============================================================================
 """Helpers for calling gsutil commands inside of Python scripts."""
 import os
-import subprocess
 from typing import List, Optional
 
 from recidiviz.common.date import is_between_date_strs_inclusive, is_date_str
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
+    SPLIT_FILE_STORAGE_SUBDIR,
+)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
 )
+from recidiviz.tools.utils.script_helpers import run_command
 
 
-def gsutil_ls(gs_path: str, directories_only: bool = False) -> List[str]:
+def is_empty_response(e: RuntimeError) -> bool:
+    return "CommandException: One or more URLs matched no objects." in str(e)
+
+
+def gsutil_ls(
+    gs_path: str, directories_only: bool = False, allow_empty: bool = False
+) -> List[str]:
     """Returns list of paths returned by 'gsutil ls <gs_path>.
     E.g.
     gsutil_ls('gs://recidiviz-123-state-storage') ->
@@ -36,20 +45,22 @@ def gsutil_ls(gs_path: str, directories_only: bool = False) -> List[str]:
     """
     flags = ""
     if directories_only:
+        if "**" in gs_path:
+            raise ValueError(
+                "Double-wildcard searches are not compatible with the -d flag and "
+                "will return paths other than directories."
+            )
         flags = "-d"
 
-    res = subprocess.run(
-        f'gsutil ls {flags} "{gs_path}"',
-        shell=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=True,
-    )
+    command = f'gsutil ls {flags} "{gs_path}"'
+    try:
+        res = run_command(command, assert_success=True)
+    except RuntimeError as e:
+        if allow_empty and is_empty_response(e):
+            return []
+        raise e
 
-    if res.stderr:
-        raise ValueError(res.stderr.decode("utf-8"))
-
-    return [p for p in res.stdout.decode("utf-8").splitlines() if p != gs_path]
+    return [p for p in res.splitlines() if p != gs_path]
 
 
 # See https://github.com/GoogleCloudPlatform/gsutil/issues/464#issuecomment-633334888
@@ -58,42 +69,33 @@ _GSUTIL_PARALLEL_COMMAND_OPTIONS = (
 )
 
 
-def gsutil_cp(from_path: str, to_path: str) -> None:
+def gsutil_cp(from_path: str, to_path: str, allow_empty: bool = False) -> None:
     """Copies a file/files via 'gsutil cp'.
 
     See more documentation here:
     https://cloud.google.com/storage/docs/gsutil/commands/cp
     """
     command = f'gsutil {_GSUTIL_PARALLEL_COMMAND_OPTIONS} cp "{from_path}" "{to_path}"'
-    res = subprocess.run(
-        command,
-        shell=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=True,
-    )
-
-    if res.stderr:
-        raise ValueError(res.stderr.decode("utf-8"))
+    try:
+        run_command(command, assert_success=True)
+    except RuntimeError as e:
+        if not allow_empty or not is_empty_response(e):
+            raise e
 
 
-def gsutil_mv(from_path: str, to_path: str) -> None:
+def gsutil_mv(from_path: str, to_path: str, allow_empty: bool = False) -> None:
     """Moves a file/files via 'gsutil mv'.
 
     See more documentation here:
     https://cloud.google.com/storage/docs/gsutil/commands/mv
     """
 
-    res = subprocess.run(
-        f'gsutil {_GSUTIL_PARALLEL_COMMAND_OPTIONS} mv "{from_path}" "{to_path}"',
-        shell=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=True,
-    )
-
-    if res.stderr:
-        raise ValueError(res.stderr.decode("utf-8"))
+    command = f'gsutil {_GSUTIL_PARALLEL_COMMAND_OPTIONS} mv "{from_path}" "{to_path}"'
+    try:
+        run_command(command, assert_success=True)
+    except RuntimeError as e:
+        if not allow_empty or not is_empty_response(e):
+            raise e
 
 
 def _date_str_from_date_subdir_path(date_subdir_path: str) -> str:
@@ -110,30 +112,27 @@ def gsutil_get_storage_subdirs_containing_file_types(
 ) -> List[str]:
     """Returns all subdirs containing files of type |file_type| in the provided |storage_bucket_path| for a given
     region."""
-    single_date_dir_wildcard = f"gs://{storage_bucket_path}/{file_type.value}/*/*/*/"
+    # We search with a double wildcard and then filter in python becaue it is much
+    # faster than doing `gs://{storage_bucket_path}/{file_type.value}/*/*/*/`
+    all_files_wildcard = f"gs://{storage_bucket_path}/{file_type.value}/**"
+    paths = gsutil_ls(all_files_wildcard)
 
-    subdirs = gsutil_ls(single_date_dir_wildcard, directories_only=True)
-
-    split_file_subdirs = set()
-    if file_type == GcsfsDirectIngestFileType.INGEST_VIEW:
-        split_file_subdirs = set(
-            gsutil_ls(
-                os.path.join(single_date_dir_wildcard, "split_files/"),
-                directories_only=True,
-            )
-        )
+    all_subdirs = {os.path.dirname(path) for path in paths}
 
     subdirs_containing_files = []
-    for subdir in subdirs:
-        subdir_date = _date_str_from_date_subdir_path(subdir)
+    for subdir in all_subdirs:
+        date_subdir_path = (
+            subdir[: -len(SPLIT_FILE_STORAGE_SUBDIR)]
+            if subdir.endswith(SPLIT_FILE_STORAGE_SUBDIR)
+            else subdir
+        )
+        subdir_date = _date_str_from_date_subdir_path(date_subdir_path)
+
         if is_date_str(subdir_date) and is_between_date_strs_inclusive(
             upper_bound_date=upper_bound_date,
             lower_bound_date=lower_bound_date,
             date_of_interest=subdir_date,
         ):
-            split_file_subdir = os.path.join(subdir, "split_files/")
-            if split_file_subdir in split_file_subdirs:
-                subdirs_containing_files.append(split_file_subdir)
             subdirs_containing_files.append(subdir)
 
-    return subdirs_containing_files
+    return sorted(subdirs_containing_files)
