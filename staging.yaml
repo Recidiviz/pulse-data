@@ -20,7 +20,7 @@ readiness_check:
   app_start_timeout_sec: 120
 
 beta_settings:
-  cloud_sql_instances: recidiviz-staging:us-east1:dev-state-data, recidiviz-staging:us-east1:dev-operations-data, recidiviz-staging:us-east1:dev-justice-counts-data, recidiviz-staging:us-central1:dev-case-triage-data-0af0a
+  cloud_sql_instances: recidiviz-staging:us-east1:dev-state-data, recidiviz-staging:us-east1:dev-operations-data, recidiviz-staging:us-east1:dev-justice-counts-data, recidiviz-staging:us-central1:dev-case-triage-data-0af0a, recidiviz-staging:us-east4:dev-data-0x94b1, recidiviz-staging:us-east1:dev-operations-data-0x17a1b, recidiviz-staging:us-east1:dev-state-data-0x28b48
 
 env_variables:
   RECIDIVIZ_ENV: staging
@@ -28,6 +28,5 @@ env_variables:
   FROM_EMAIL_ADDRESS: reports@recidiviz.org
   FROM_EMAIL_NAME: Recidiviz Reports
 
-
 vpc_access_connector:
-  name: 'projects/recidiviz-staging/locations/us-east1/connectors/redis-vpc-connector'
+  name: "projects/recidiviz-staging/locations/us-east1/connectors/redis-vpc-connector"
