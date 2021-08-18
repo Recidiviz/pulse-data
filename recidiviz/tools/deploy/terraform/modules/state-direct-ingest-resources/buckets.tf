@@ -62,3 +62,13 @@ module "secondary-direct-ingest-bucket" {
   name_suffix = "${local.direct_ingest_formatted_str}-secondary"
   location    = var.region
 }
+
+# Bucket used to store any supplemental data provided by the state that is not run
+# through direct ingest, e.g. validation data.
+module "supplemental-data-bucket" {
+  source = "../cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "${local.direct_ingest_formatted_str}-supplemental"
+  location    = var.region
+}
