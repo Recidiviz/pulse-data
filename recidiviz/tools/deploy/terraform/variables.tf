@@ -72,8 +72,8 @@ variable "github_username" {
 }
 
 variable "direct_ingest_state_storage_secondary_bucket_name_suffix" {
-  type    = string
-  default = "direct-ingest-state-storage-secondary"
+  type        = string
+  default     = "direct-ingest-state-storage-secondary"
   description = <<EOT
 Name suffix of the direct ingest state storage secondary bucket.
 Used when deploying to a project that causes the full bucket name to be >63 characters
@@ -84,5 +84,6 @@ EOT
 }
 
 locals {
-  repo_url = "https://source.developers.google.com/projects/${var.project_id}/repos/github_${var.github_username}_pulse-data/revisions/${var.git_hash}/paths/recidiviz/cloud_functions"
+  repo_url      = "https://source.developers.google.com/projects/${var.project_id}/repos/github_${var.github_username}_pulse-data/revisions/${var.git_hash}/paths/recidiviz/cloud_functions"
+  is_production = var.project_id == "recidiviz-123"
 }

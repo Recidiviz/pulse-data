@@ -15,10 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-locals {
-  is_production = var.project_id == "recidiviz-123"
-}
-
 module "case_triage_database" {
   source = "./modules/cloud-sql-instance"
 
@@ -61,12 +57,12 @@ module "jails_database_v2" {
 module "justice_counts_database" {
   source = "./modules/cloud-sql-instance"
 
-  instance_key                   = "justice_counts"
-  base_secret_name               = "justice_counts"
-  region                         = "us-east1"
-  zone                           = "us-east1-c"
-  tier                           = "db-custom-1-3840" # 1 vCPU, 3.75GB Memory
-  has_readonly_user              = local.is_production
+  instance_key      = "justice_counts"
+  base_secret_name  = "justice_counts"
+  region            = "us-east1"
+  zone              = "us-east1-c"
+  tier              = "db-custom-1-3840" # 1 vCPU, 3.75GB Memory
+  has_readonly_user = local.is_production
 }
 
 

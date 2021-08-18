@@ -46,18 +46,20 @@ resource "google_project_service" "vpc_access_connector" {
 
 # VPC Connector is required for app engine to connect to Redis
 resource "google_vpc_access_connector" "redis_vpc_connector" {
-  name          = "redis-vpc-connector"
-  region        = var.app_engine_region
-  ip_cidr_range = data.google_secret_manager_secret_version.vpc_access_connector_us_east_cidr.secret_data
-  network       = "default"
+  name           = "redis-vpc-connector"
+  region         = var.app_engine_region
+  ip_cidr_range  = data.google_secret_manager_secret_version.vpc_access_connector_us_east_cidr.secret_data
+  network        = "default"
+  max_throughput = 1000
 }
 
 # VPC Connector is required for Cloud Run to connect to Redis
 resource "google_vpc_access_connector" "us_central_redis_vpc_connector" {
-  name          = "us-central-redis-vpc-ac" # Name has a 23 character limit
-  region        = var.region
-  ip_cidr_range = data.google_secret_manager_secret_version.vpc_access_connector_us_central_cidr.secret_data
-  network       = "default"
+  name           = "us-central-redis-vpc-ac" # Name has a 23 character limit
+  region         = var.region
+  ip_cidr_range  = data.google_secret_manager_secret_version.vpc_access_connector_us_central_cidr.secret_data
+  network        = "default"
+  max_throughput = 1000
 }
 
 

@@ -124,3 +124,58 @@ resource "google_cloud_run_service_iam_member" "public-access" {
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
+
+# Setting up load balancer
+# Drawn from https://github.com/terraform-google-modules/terraform-google-lb-http/blob/master/examples/cloudrun/main.tf
+resource "google_compute_region_network_endpoint_group" "serverless_neg" {
+  provider              = google-beta
+  name                  = "unified-product-neg"
+  network_endpoint_type = "SERVERLESS"
+  region                = var.region
+  cloud_run {
+    service = google_cloud_run_service.case-triage.name
+  }
+}
+
+resource "google_compute_ssl_policy" "unified-product-ssl-policy" {
+  name            = "nonprod-ssl-policy"
+  profile         = "MODERN"
+  min_tls_version = "TLS_1_2"
+}
+
+module "unified-product-load-balancer" {
+  source  = "GoogleCloudPlatform/lb-http/google//modules/serverless_negs"
+  version = "~> 5.1"
+  name    = "unified-product-lb"
+  project = var.project_id
+
+  ssl                             = true
+  ssl_policy                      = google_compute_ssl_policy.unified-product-ssl-policy.name
+  managed_ssl_certificate_domains = ["app.recidiviz.org", local.is_production ? "app-prod.recidiviz.org" : "app-staging.recidiviz.org"]
+  https_redirect                  = true
+
+  backends = {
+    default = {
+      description = null
+      groups = [
+        {
+          group = google_compute_region_network_endpoint_group.serverless_neg.id
+        }
+      ]
+      enable_cdn              = true
+      security_policy         = null
+      custom_request_headers  = null
+      custom_response_headers = null
+
+      iap_config = {
+        enable               = false
+        oauth2_client_id     = ""
+        oauth2_client_secret = ""
+      }
+      log_config = {
+        enable      = true
+        sample_rate = null
+      }
+    }
+  }
+}
