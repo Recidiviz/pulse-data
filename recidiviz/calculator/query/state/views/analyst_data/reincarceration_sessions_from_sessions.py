@@ -60,14 +60,55 @@ REINCARCERATION_SESSIONS_FROM_SESSIONS_QUERY_TEMPLATE = """
         release_session.session_id AS release_session_id,
         --release_date is the day after the session end_date which represents the last full day in the compartment
         DATE_ADD(release_session.end_date, INTERVAL 1 DAY) AS release_date,
-        DATE_DIFF(release_session.last_day_of_data, release_session.end_date, DAY) - 1 AS days_since_release,
-        CAST(FLOOR((DATE_DIFF(release_session.last_day_of_data, release_session.end_date,  DAY)-1)/30) AS INT64) AS months_since_release,
-        CAST(FLOOR((DATE_DIFF(release_session.last_day_of_data, release_session.end_date, DAY)-1)/365.25) AS INT64) AS years_since_release,
+        DATE_DIFF(release_session.last_day_of_data, DATE_ADD(release_session.end_date, INTERVAL 1 DAY), DAY) AS days_since_release,
+        
+         /* 
+        The two fields below calculate a calender count of months and years between the last day of data and the release
+        date. The DATE_DIFF function returns the number of date part intervals between two dates, which is not 
+        exactly what we want. If the last day of data is 2021-08-01 and a person is released on 2020-07-31, we would
+        want that to count as 0 months, not 1. The months_since_release field below uses the DATE_DIFF function but then 
+        subtracts 1 month in cases where the day of the month of the release date is greater than the day of 
+        the month of the last day of data. This captures cases where the month number has changed, but a full month has 
+        not gone by.
+        
+        Similar logic is used in the calendarized year count, except that rather than comparing the day of the month 
+        across months, we compare the month and day of a year across years.
+        */
+            
+        DATE_DIFF(release_session.last_day_of_data, DATE_ADD(release_session.end_date, INTERVAL 1 DAY), MONTH) 
+            - IF(EXTRACT(DAY FROM DATE_ADD(release_session.end_date, INTERVAL 1 DAY))>EXTRACT(DAY FROM release_session.last_day_of_data), 1, 0) months_since_release,
+        DATE_DIFF(release_session.last_day_of_data, DATE_ADD(release_session.end_date, INTERVAL 1 DAY), YEAR) 
+            - IF(FORMAT_DATE("%m%d", DATE_ADD(release_session.end_date, INTERVAL 1 DAY))>FORMAT_DATE("%m%d", release_session.last_day_of_data), 1, 0) years_since_release,
+        
+        CASE WHEN reincarceration_session.start_date IS NOT NULL THEN 1 ELSE 0 END AS reincarceration,
+
         reincarceration_session.session_id AS reincarceration_session_id,
         reincarceration_session.start_date AS reincarceration_date,
         DATE_DIFF(reincarceration_session.start_date, release_session.end_date, DAY) - 1 AS release_to_reincarceration_days,
-        CAST(CEILING((DATE_DIFF(reincarceration_session.start_date, release_session.end_date, DAY)-1)/30) AS INT64) AS release_to_reincarceration_months,
-        CAST(CEILING((DATE_DIFF(reincarceration_session.start_date, release_session.end_date, DAY)-1)/365.25) AS INT64) AS release_to_reincarceration_years,
+        
+        /*
+        The two fields below calculate the time between release to reincarceration date in calender months and
+        calendar years. The logic is the same as that used above to calculate time since release with two related exceptions.
+        Both of these are related to the fact that while 'time since release' fields are used to determine whether at least
+        that amount of time has passed, the 'time to reincarceration' fields are used to determine whether a reincarceration 
+        occurred within that time period. The first exception is that we add 1 to the calendar month or calendar year 
+        calculations (as to indicate the month that the reincarceration should count towards), and the second is that the 
+        day of month comparisons are now inclusive (so that a reincarceration that occurs exactly 1 month after release
+        start counts towards the 1-month reincarceration rate).
+        
+        As an example, let's say a person was released on 2/15/21 and was reincarcerated on 3/16/21. This is 29 days
+        and 1 calendar month between release and reincarceration. However, the reincarceration did not occur within the 
+        person's first month released, so it should count towards a 2-month reincarceration rate, but not a 1-month 
+        reincarceration rate. In this example, the value of release_to_reincarceration_months would be 2. If the reincarceration 
+        had instead been on 3/15/21, the value would be 1 because the reincarceration did occur within 1 month.
+        */
+         
+        DATE_DIFF(reincarceration_session.start_date, DATE_ADD(release_session.end_date, INTERVAL 1 DAY), MONTH) 
+            - IF(EXTRACT(DAY FROM DATE_ADD(release_session.end_date, INTERVAL 1 DAY))>=EXTRACT(DAY FROM reincarceration_session.start_date), 1, 0) + 1 AS release_to_reincarceration_months,
+        DATE_DIFF(reincarceration_session.start_date, DATE_ADD(release_session.end_date, INTERVAL 1 DAY), YEAR) 
+            - IF(FORMAT_DATE("%m%d", DATE_ADD(release_session.end_date, INTERVAL 1 DAY))>=FORMAT_DATE("%m%d", reincarceration_session.start_date), 1, 0) + 1 AS release_to_reincarceration_years,
+            
+       
         ROW_NUMBER() OVER(PARTITION BY release_session.person_id, release_session.session_id ORDER BY reincarceration_session.session_id) AS rn
     FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized` release_session
     LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sessions_materialized` reincarceration_session 

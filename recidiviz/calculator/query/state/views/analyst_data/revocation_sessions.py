@@ -69,14 +69,53 @@ REVOCATION_SESSIONS_QUERY_TEMPLATE = """
         session_id_start AS supervision_session_id,
         start_date AS supervision_start_date,
         DATE_DIFF(last_day_of_data, start_date, DAY) AS days_since_start,
-        CAST(FLOOR(DATE_DIFF(last_day_of_data, start_date, DAY)/30) AS INT64) AS months_since_start,
-        CAST(FLOOR(DATE_DIFF(last_day_of_data, start_date, DAY)/365.25) AS INT64) AS years_since_start,
+        
+        /* 
+        The two fields below calculate a calender count of months and years between the last day of data and the supervision
+        start date. The DATE_DIFF function returns the number of date part intervals between two dates, which is not 
+        exactly what we want. If the last day of data is 2021-08-01 and a person starts supervision on 2020-07-31, we would
+        want that to count as 0 months, not 1. The months_since_start field below uses the DATE_DIFF function but then 
+        subtracts 1 month in cases where the day of the month of the supervision start date is greater than the day of 
+        the month of the last day of data. This captures cases where the month number has changed, but a full month has 
+        not gone by.
+        
+        Similar logic is used in the calendarized year count, except that rather than comparing the day of the month 
+        across months, we compare the month and day of a year across years.
+        */
+            
+        DATE_DIFF(last_day_of_data, start_date, MONTH) 
+            - IF(EXTRACT(DAY FROM start_date)>EXTRACT(DAY FROM last_day_of_data), 1, 0) months_since_start,
+        DATE_DIFF(last_day_of_data, start_date, YEAR) 
+            - IF(FORMAT_DATE("%m%d", start_date)>FORMAT_DATE("%m%d", last_day_of_data), 1, 0) years_since_start,
+       
         revocation_date,
         CASE WHEN revocation_date IS NOT NULL THEN 1 ELSE 0 END AS revocation,
         CASE WHEN revocation_date IS NOT NULL THEN session_id_end + 1 END AS revocation_session_id,
         DATE_DIFF(revocation_date, start_date, DAY) AS supervision_start_to_revocation_days,
-        CAST(CEILING(DATE_DIFF(revocation_date, start_date, DAY)/30) AS INT64) AS supervision_start_to_revocation_months,
-        CAST(CEILING(DATE_DIFF(revocation_date, start_date, DAY)/365.25) AS INT64) AS supervision_start_to_revocation_years
+        
+        /*
+        The two fields below calculate the time between supervision start and revocation date in calender months and
+        calendar years. The logic is the same as that used above to calculate time since start with two related exceptions.
+        Both of these are related to the fact that while 'time since start' fields are used to determine whether at least
+        that amount of time has passed, the 'time to revocation' fields are used to determine whether a revocation 
+        occurred within that time period. The first exception is that we add 1 to the calendar month or calendar year 
+        calculations (as to indicate the month that the revocation should count towards), and the second is that the 
+        day of month comparisons are now inclusive (so that a revocation that occurs exactly 1 month after supervision
+        start counts towards the 1-month revocation rate).
+        
+        As an example, let's say a person started supervision on 2/15/21 and had a revocation on 3/16/21. This is 29 days
+        and 1 calendar month between supervision start and revocation. However, the revocation did not occur within the 
+        person's first month on supervision, so it should count towards a 2-month revocation rate, but not a 1-month 
+        revocation rate. In this example, the value of supervision_start_to_revocation_months would be 2. If the revocation 
+        had instead been on 3/15/21, the value would be 1 because the revocation did occur within 1 month.
+        */
+         
+        DATE_DIFF(revocation_date, start_date, MONTH) 
+            - IF(EXTRACT(DAY FROM start_date)>=EXTRACT(DAY FROM revocation_date), 1, 0) + 1 AS supervision_start_to_revocation_months,
+        DATE_DIFF(revocation_date, start_date, YEAR) 
+            - IF(FORMAT_DATE("%m%d", start_date)>=FORMAT_DATE("%m%d", revocation_date), 1, 0) + 1 AS supervision_start_to_revocation_years,
+            
+        last_day_of_data,
     FROM
         (
         SELECT 

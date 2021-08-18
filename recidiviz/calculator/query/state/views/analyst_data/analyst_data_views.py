@@ -24,6 +24,9 @@ from recidiviz.calculator.query.state.views.analyst_data.admission_start_reason_
 from recidiviz.calculator.query.state.views.analyst_data.assessment_score_sessions import (
     ASSESSMENT_SCORE_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.cohort_month_index import (
+    COHORT_MONTH_INDEX_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.compartment_level_2_dedup_priority import (
     COMPARTMENT_LEVEL_2_DEDUP_PRIORITY_VIEW_BUILDER,
 )
@@ -60,6 +63,9 @@ from recidiviz.calculator.query.state.views.analyst_data.location_sessions impor
 from recidiviz.calculator.query.state.views.analyst_data.person_demographics import (
     PERSON_DEMOGRAPHICS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.reincarceration_cohort_sessions import (
+    REINCARCERATION_COHORT_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.reincarceration_sessions_from_dataflow import (
     REINCARCERATION_SESSIONS_FROM_DATAFLOW_VIEW_BUILDER,
 )
@@ -68,6 +74,9 @@ from recidiviz.calculator.query.state.views.analyst_data.reincarceration_session
 )
 from recidiviz.calculator.query.state.views.analyst_data.release_termination_reason_dedup_priority import (
     RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.revocation_cohort_sessions import (
+    REVOCATION_COHORT_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.revocation_sessions import (
     REVOCATION_SESSIONS_VIEW_BUILDER,
@@ -180,4 +189,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     INCARCERATION_SUPER_SESSIONS_VIEW_BUILDER,
     US_MO_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
     SUPERVISION_OFFICER_CASELOAD_HEALTH_METRICS_VIEW_BUILDER,
+    REVOCATION_COHORT_SESSIONS_VIEW_BUILDER,
+    COHORT_MONTH_INDEX_VIEW_BUILDER,
+    REINCARCERATION_COHORT_SESSIONS_VIEW_BUILDER,
 ]
