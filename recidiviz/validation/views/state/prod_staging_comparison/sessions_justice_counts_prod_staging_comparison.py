@@ -52,6 +52,7 @@ SESSIONS_JUSTICE_COUNTS_PROD_STAGING_COMPARISON_VIEW_BUILDER = SimpleBigQueryVie
     validation_views_dataset=dataset_config.VIEWS_DATASET,
     staging_project_id=GCP_PROJECT_STAGING,
     prod_project_id=GCP_PROJECT_PRODUCTION,
+    projects_to_deploy={GCP_PROJECT_PRODUCTION},
     should_materialize=True,
 )
 

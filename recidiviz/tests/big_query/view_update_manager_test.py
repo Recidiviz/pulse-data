@@ -37,7 +37,6 @@ from recidiviz.view_registry.dataset_overrides import (
 )
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import (
-    CROSS_PROJECT_VIEW_BUILDERS,
     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
     all_deployed_view_builders,
 )
@@ -654,7 +653,7 @@ class ViewManagerTest(unittest.TestCase):
 
     def test_all_cross_project_views_in_cross_project_view_builders(self) -> None:
         """Tests that all views that query from both production and staging
-        environments are listed in CROSS_PROJECT_VIEW_BUILDERS."""
+        environments are only deployed to production."""
 
         with patch.object(
             BigQueryTableChecker, "_table_has_column"
@@ -671,12 +670,13 @@ class ViewManagerTest(unittest.TestCase):
                     GCP_PROJECT_STAGING in view_query
                     and GCP_PROJECT_PRODUCTION in view_query
                 ):
-                    self.assertIn(
-                        view_builder,
-                        CROSS_PROJECT_VIEW_BUILDERS,
+                    self.assertFalse(
+                        view_builder.should_deploy_in_project(GCP_PROJECT_STAGING),
                         f"Found view {view_builder.dataset_id}.{view_builder.view_id} "
-                        "that queries from both production and staging projects but "
-                        "is not listed in CROSS_PROJECT_VIEW_BUILDERS.",
+                        "that queries from both production and staging projects and is "
+                        "deployed in staging. This view should only be deployed in "
+                        "production, as staging cannot have access to production "
+                        "BigQuery.",
                     )
 
     def test_create_managed_dataset_and_deploy_views_for_view_builders_unmanaged_views_in_multiple_ds(
