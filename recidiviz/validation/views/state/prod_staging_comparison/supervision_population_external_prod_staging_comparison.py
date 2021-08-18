@@ -67,6 +67,7 @@ SUPERVISION_POPULATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER = SimpleBig
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     prod_project_id=GCP_PROJECT_PRODUCTION,
     staging_project_id=GCP_PROJECT_STAGING,
+    projects_to_deploy={GCP_PROJECT_PRODUCTION},
     should_materialize=True,
 )
 

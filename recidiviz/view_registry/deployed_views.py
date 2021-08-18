@@ -45,9 +45,6 @@ from recidiviz.ingest.views.view_config import (
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.utils import environment
 from recidiviz.validation.views.view_config import (
-    CROSS_PROJECT_VALIDATION_VIEW_BUILDERS,
-)
-from recidiviz.validation.views.view_config import (
     METADATA_VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as VALIDATION_METADATA_VIEW_BUILDERS,
 )
 from recidiviz.validation.views.view_config import (
@@ -99,10 +96,6 @@ def all_deployed_view_builders() -> List[BigQueryViewBuilder]:
         for builder in builder_list
     ]
 
-
-# Full list of all deployed view builders that query from both production and staging
-# views.
-CROSS_PROJECT_VIEW_BUILDERS = CROSS_PROJECT_VALIDATION_VIEW_BUILDERS
 
 # A list of all datasets that have ever held managed views that were updated by our
 # deploy process. This list is used to identify places where we should look for
