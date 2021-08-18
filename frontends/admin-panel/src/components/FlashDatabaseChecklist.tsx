@@ -286,13 +286,6 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   {"    "}--dry-run False
                 </CodeBlock>
               </p>
-              <p>and then run:</p>
-              <p>
-                <CodeBlock enabled={currentStep === 5}>
-                  gsutil rm gs://{projectId}-direct-ingest-state-storage/
-                  {stateCode.toLowerCase()}/ingest_view/*/*/*/split_files/*
-                </CodeBlock>
-              </p>
             </>
           }
         />

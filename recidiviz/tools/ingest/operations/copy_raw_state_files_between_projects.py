@@ -113,6 +113,7 @@ def main() -> None:
         file_type_to_operate_on=GcsfsDirectIngestFileType.RAW_DATA,
         start_date_bound=args.start_date_bound,
         end_date_bound=args.end_date_bound,
+        file_tag_filters=[],
         dry_run=args.dry_run,
     ).run()
 

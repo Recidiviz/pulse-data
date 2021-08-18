@@ -95,6 +95,7 @@ def main() -> None:
         file_type_to_operate_on=GcsfsDirectIngestFileType.INGEST_VIEW,
         start_date_bound=None,
         end_date_bound=None,
+        file_tag_filters=[],
         dry_run=args.dry_run,
     ).run()
 
