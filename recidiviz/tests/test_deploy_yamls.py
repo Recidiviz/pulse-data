@@ -17,6 +17,7 @@
 """Tests checking that all the yamls deployed by our builds parse successfully.
 """
 import os
+import re
 import unittest
 
 import deepdiff
@@ -62,18 +63,27 @@ class TestDeployYamls(unittest.TestCase):
         cloud_sql_instance_diff = diff["values_changed"].pop(
             "root['beta_settings']['cloud_sql_instances']"
         )
-        staging_cloud_sql_instances: str = cloud_sql_instance_diff["old_value"]
-        prod_cloud_sql_instances = cloud_sql_instance_diff["new_value"]
-        self.assertEqual(
-            (
-                staging_cloud_sql_instances.replace(
-                    "recidiviz-staging", "recidiviz-123"
-                )  # Staging project becomes production
-                .replace("dev-", "prod-")  # Dev prefix becomes prod
-                .replace("-0af0a", "")  # Development case triage suffix is dropped
-            ),
-            prod_cloud_sql_instances,
-        )
+        staging_cloud_sql_instances = cloud_sql_instance_diff["old_value"].split(", ")
+        prod_cloud_sql_instances = cloud_sql_instance_diff["new_value"].split(", ")
+
+        for i, instance in enumerate(staging_cloud_sql_instances):
+            instance = instance.replace("recidiviz-staging", "recidiviz-123").replace(
+                "dev-", "prod-"
+            )
+            match = re.match("(.*-data).*", instance)
+            if match:
+                staging_cloud_sql_instances[i] = match.group(1)
+            else:
+                staging_cloud_sql_instances[i] = instance
+
+        for i, instance in enumerate(prod_cloud_sql_instances):
+            match = re.match("(.*-data).*", instance)
+            if match:
+                prod_cloud_sql_instances[i] = match.group(1)
+            else:
+                prod_cloud_sql_instances[i] = instance
+
+        self.assertCountEqual(staging_cloud_sql_instances, prod_cloud_sql_instances)
 
         vpc_connector_diff = diff["values_changed"].pop(
             "root['vpc_access_connector']['name']"

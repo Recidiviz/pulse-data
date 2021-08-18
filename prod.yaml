@@ -20,7 +20,7 @@ readiness_check:
   app_start_timeout_sec: 120
 
 beta_settings:
-  cloud_sql_instances: recidiviz-123:us-east1:prod-state-data, recidiviz-123:us-east1:prod-operations-data, recidiviz-123:us-east1:prod-justice-counts-data, recidiviz-123:us-central1:prod-case-triage-data
+  cloud_sql_instances: recidiviz-123:us-east1:prod-state-data, recidiviz-123:us-east1:prod-operations-data, recidiviz-123:us-east1:prod-justice-counts-data, recidiviz-123:us-central1:prod-case-triage-data, recidiviz-123:us-east4:prod-data-0x9ea199, recidiviz-123:us-east1:prod-operations-data-0xf04e58, recidiviz-123:us-east1:prod-state-data-0xff3f45
 env_variables:
   RECIDIVIZ_ENV: production
   RECIDIVIZ_SERVICE: default
@@ -28,4 +28,4 @@ env_variables:
   FROM_EMAIL_NAME: Recidiviz Reports
 
 vpc_access_connector:
-  name: 'projects/recidiviz-123/locations/us-east1/connectors/redis-vpc-connector'
+  name: "projects/recidiviz-123/locations/us-east1/connectors/redis-vpc-connector"

@@ -124,6 +124,10 @@ locals {
       module.justice_counts_database.connection_name,
       module.operations_database.connection_name,
       module.state_database.connection_name,
+      # v2 modules
+      module.jails_database_v2.connection_name,
+      module.operations_database_v2.connection_name,
+      module.state_database_v2.connection_name,
     ]
   )
 }
