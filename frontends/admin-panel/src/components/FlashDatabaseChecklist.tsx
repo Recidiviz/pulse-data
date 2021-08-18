@@ -27,6 +27,7 @@ import * as React from "react";
 import { useHistory } from "react-router-dom";
 import {
   acquireBQExportLock,
+  deleteDatabaseImportGCSFiles,
   exportDatabaseToGCS,
   fetchIngestStateCodes,
   importDatabaseFromGCS,
@@ -44,8 +45,11 @@ import NewTabLink from "./NewTabLink";
 import StateSelector from "./Utilities/StateSelector";
 
 interface StyledStepProps extends StepProps {
-  nextButtonTitle?: string;
-  onNextButtonClick?: () => Promise<void>;
+  // Title of button that actually performs an action. If not present,
+  // only a 'Mark done' button will be present for a given step.
+  actionButtonTitle?: string;
+  // Action that will be peformed when the action button is clicked.
+  onActionButtonClick?: () => Promise<Response>;
 }
 
 interface CodeBlockProps {
@@ -100,8 +104,8 @@ const FlashDatabaseChecklist = (): JSX.Element => {
   };
 
   const StyledStep = ({
-    nextButtonTitle = "Mark Done",
-    onNextButtonClick,
+    actionButtonTitle,
+    onActionButtonClick,
     description,
     ...rest
   }: StyledStepProps): JSX.Element => {
@@ -110,41 +114,39 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     const jointDescription = (
       <>
         {description}
-        <Button
-          type="primary"
-          onClick={async () => {
-            setLoading(true);
-            if (onNextButtonClick) {
-              await onNextButtonClick();
-            } else {
-              await incrementCurrentStep();
-            }
-            setLoading(false);
-          }}
-          loading={loading}
-          style={rest.status === "process" ? undefined : { display: "none" }}
-        >
-          {nextButtonTitle}
-        </Button>
-        {onNextButtonClick && (
+        {onActionButtonClick && (
           <Button
-            ghost
             type="primary"
             onClick={async () => {
               setLoading(true);
-              await incrementCurrentStep();
+              const succeeded = await runAndCheckStatus(onActionButtonClick);
+              if (succeeded) {
+                await incrementCurrentStep();
+              }
               setLoading(false);
             }}
             loading={loading}
             style={
               rest.status === "process"
-                ? { marginLeft: 5 }
+                ? { marginRight: 5 }
                 : { display: "none" }
             }
           >
-            Mark Done
+            {actionButtonTitle}
           </Button>
         )}
+        <Button
+          type={onActionButtonClick ? undefined : "primary"}
+          onClick={async () => {
+            setLoading(true);
+            await incrementCurrentStep();
+            setLoading(false);
+          }}
+          loading={loading}
+          style={rest.status === "process" ? undefined : { display: "none" }}
+        >
+          Mark Done
+        </Button>
       </>
     );
 
@@ -172,15 +174,10 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           description={
             <p>Pause all of the ingest-related queues for {stateCode}.</p>
           }
-          nextButtonTitle="Pause Queues"
-          onNextButtonClick={async () => {
-            const request = async () =>
-              updateIngestQueuesState(stateCode, QueueState.PAUSED);
-            const succeeded = await runAndCheckStatus(request);
-            if (succeeded) {
-              await incrementCurrentStep();
-            }
-          }}
+          actionButtonTitle="Pause Queues"
+          onActionButtonClick={async () =>
+            updateIngestQueuesState(stateCode, QueueState.PAUSED)
+          }
         />
         <StyledStep
           title="Acquire PRIMARY Ingest Lock"
@@ -191,15 +188,10 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               databases until the lock is released.
             </p>
           }
-          nextButtonTitle="Acquire Lock"
-          onNextButtonClick={async () => {
-            const request = async () =>
-              acquireBQExportLock(stateCode, DirectIngestInstance.PRIMARY);
-            const succeeded = await runAndCheckStatus(request);
-            if (succeeded) {
-              await incrementCurrentStep();
-            }
-          }}
+          actionButtonTitle="Acquire Lock"
+          onActionButtonClick={async () =>
+            acquireBQExportLock(stateCode, DirectIngestInstance.PRIMARY)
+          }
         />
         <StyledStep
           title="Acquire SECONDARY Ingest Lock"
@@ -210,15 +202,10 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               databases until the lock is released.
             </p>
           }
-          nextButtonTitle="Acquire Lock"
-          onNextButtonClick={async () => {
-            const request = async () =>
-              acquireBQExportLock(stateCode, DirectIngestInstance.SECONDARY);
-            const succeeded = await runAndCheckStatus(request);
-            if (succeeded) {
-              await incrementCurrentStep();
-            }
-          }}
+          actionButtonTitle="Acquire Lock"
+          onActionButtonClick={async () =>
+            acquireBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
+          }
         />
         <StyledStep
           title="Export secondary instance data to GCS"
@@ -235,15 +222,10 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               operation succeeds, just select &#39;Mark Done&#39;.
             </p>
           }
-          nextButtonTitle="Export Data"
-          onNextButtonClick={async () => {
-            const request = async () =>
-              exportDatabaseToGCS(stateCode, DirectIngestInstance.SECONDARY);
-            const succeeded = await runAndCheckStatus(request);
-            if (succeeded) {
-              await incrementCurrentStep();
-            }
-          }}
+          actionButtonTitle="Export Data"
+          onActionButtonClick={async () =>
+            exportDatabaseToGCS(stateCode, DirectIngestInstance.SECONDARY)
+          }
         />
         <StyledStep
           title="Drop data from primary database"
@@ -329,19 +311,14 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               <code>{stateCode.toLowerCase()}_primary</code>.
             </p>
           }
-          nextButtonTitle="Import Data"
-          onNextButtonClick={async () => {
-            const request = async () =>
-              importDatabaseFromGCS(
-                stateCode,
-                DirectIngestInstance.PRIMARY,
-                DirectIngestInstance.SECONDARY
-              );
-            const succeeded = await runAndCheckStatus(request);
-            if (succeeded) {
-              await incrementCurrentStep();
-            }
-          }}
+          actionButtonTitle="Import Data"
+          onActionButtonClick={async () =>
+            importDatabaseFromGCS(
+              stateCode,
+              DirectIngestInstance.PRIMARY,
+              DirectIngestInstance.SECONDARY
+            )
+          }
         />
         <StyledStep
           title="Transition secondary instance operations information to primary"
@@ -407,15 +384,10 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               Release the ingest lock for {stateCode}&#39;s primary instance.
             </p>
           }
-          nextButtonTitle="Release Lock"
-          onNextButtonClick={async () => {
-            const request = async () =>
-              releaseBQExportLock(stateCode, DirectIngestInstance.PRIMARY);
-            const succeeded = await runAndCheckStatus(request);
-            if (succeeded) {
-              await incrementCurrentStep();
-            }
-          }}
+          actionButtonTitle="Release Lock"
+          onActionButtonClick={async () =>
+            releaseBQExportLock(stateCode, DirectIngestInstance.PRIMARY)
+          }
         />
         <StyledStep
           title="Release SECONDARY Ingest Lock"
@@ -424,33 +396,20 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               Release the ingest lock for {stateCode}&#39;s secondary instance.
             </p>
           }
-          nextButtonTitle="Release Lock"
-          onNextButtonClick={async () => {
-            const request = async () =>
-              releaseBQExportLock(stateCode, DirectIngestInstance.SECONDARY);
-            const succeeded = await runAndCheckStatus(request);
-            if (succeeded) {
-              await incrementCurrentStep();
-            }
-          }}
+          actionButtonTitle="Release Lock"
+          onActionButtonClick={async () =>
+            releaseBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
+          }
         />
         <StyledStep
           title="Pause secondary ingest"
           description={
             <p>Mark secondary ingest as paused in the operations db.</p>
           }
-          nextButtonTitle="Mark Paused"
-          onNextButtonClick={async () => {
-            const request = async () =>
-              pauseDirectIngestInstance(
-                stateCode,
-                DirectIngestInstance.SECONDARY
-              );
-            const succeeded = await runAndCheckStatus(request);
-            if (succeeded) {
-              await incrementCurrentStep();
-            }
-          }}
+          actionButtonTitle="Mark Paused"
+          onActionButtonClick={async () =>
+            pauseDirectIngestInstance(stateCode, DirectIngestInstance.SECONDARY)
+          }
         />
         <StyledStep
           title="Clear secondary database"
@@ -473,21 +432,32 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           }
         />
         <StyledStep
+          title="Clean up imported SQL files"
+          description={
+            <p>
+              Delete files containing the SQL that was imported into the{" "}
+              <code>{stateCode.toLowerCase()}_primary</code> database.
+            </p>
+          }
+          actionButtonTitle="Delete"
+          onActionButtonClick={async () =>
+            deleteDatabaseImportGCSFiles(
+              stateCode,
+              DirectIngestInstance.SECONDARY
+            )
+          }
+        />
+        <StyledStep
           title="Unpause queues"
           description={
             <p>
               Now that the database flashing is complete, unpause the queues.
             </p>
           }
-          nextButtonTitle="Unpause Queues"
-          onNextButtonClick={async () => {
-            const request = async () =>
-              updateIngestQueuesState(stateCode, QueueState.RUNNING);
-            const succeeded = await runAndCheckStatus(request);
-            if (succeeded) {
-              await incrementCurrentStep();
-            }
-          }}
+          actionButtonTitle="Unpause Queues"
+          onActionButtonClick={async () =>
+            updateIngestQueuesState(stateCode, QueueState.RUNNING)
+          }
         />
       </Steps>
     );

@@ -178,7 +178,7 @@ class CloudSQLClientImpl:
     def import_gcs_sql(
         self,
         database_key: SQLAlchemyDatabaseKey,
-        gcs_uri: GcsfsFilePath,
+        gcs_file_path: GcsfsFilePath,
     ) -> Optional[str]:
         logging.debug("Starting Cloud SQL import operation.")
         instance_name = SQLAlchemyEngineManager.get_stripped_cloudsql_instance_id(
@@ -191,7 +191,7 @@ class CloudSQLClientImpl:
                 "importContext": {
                     "database": database_key.db_name,
                     "fileType": "SQL",
-                    "uri": f"gs://{gcs_uri.abs_path()}",
+                    "uri": gcs_file_path.uri(),
                 },
             },
         )
