@@ -17,12 +17,11 @@
 """Tests for the ingest info state_converter."""
 import datetime
 import unittest
-
 from typing import List
 
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
-from recidiviz.common.constants.person_characteristics import Race, Ethnicity
+from recidiviz.common.constants.person_characteristics import Ethnicity, Race
 from recidiviz.common.constants.state.external_id_types import US_ND_ELITE, US_ND_SID
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
@@ -35,61 +34,61 @@ from recidiviz.common.constants.state.state_court_case import (
 from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import (
-    StateIncarcerationIncidentType,
     StateIncarcerationIncidentOutcomeType,
+    StateIncarcerationIncidentType,
 )
-from recidiviz.common.constants.state.state_program_assignment import (
-    StateProgramAssignmentParticipationStatus,
-    StateProgramAssignmentDischargeReason,
-)
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
 )
+from recidiviz.common.constants.state.state_program_assignment import (
+    StateProgramAssignmentDischargeReason,
+    StateProgramAssignmentParticipationStatus,
+)
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
     StateSupervisionLevel,
+    StateSupervisionPeriodStatus,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseType,
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseRevocationType,
+    StateSupervisionViolationResponseType,
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import (
-    StatePerson,
-    StatePersonExternalId,
+    StateAgent,
     StateAssessment,
-    StatePersonRace,
-    StatePersonEthnicity,
-    StateSentenceGroup,
-    StateSupervisionSentence,
+    StateBond,
     StateCharge,
     StateCourtCase,
-    StateBond,
-    StateSupervisionPeriod,
-    StateIncarcerationSentence,
-    StateIncarcerationPeriod,
-    StateIncarcerationIncident,
-    StateParoleDecision,
     StateFine,
-    StateSupervisionViolation,
-    StateSupervisionViolationResponse,
-    StateAgent,
-    StatePersonAlias,
+    StateIncarcerationIncident,
     StateIncarcerationIncidentOutcome,
+    StateIncarcerationPeriod,
+    StateIncarcerationSentence,
+    StateParoleDecision,
+    StatePerson,
+    StatePersonAlias,
+    StatePersonEthnicity,
+    StatePersonExternalId,
+    StatePersonRace,
     StateProgramAssignment,
-    StateSupervisionViolationResponseDecisionEntry,
-    StateSupervisionViolationTypeEntry,
-    StateSupervisionViolatedConditionEntry,
+    StateSentenceGroup,
     StateSupervisionCaseTypeEntry,
     StateSupervisionContact,
+    StateSupervisionPeriod,
+    StateSupervisionSentence,
+    StateSupervisionViolatedConditionEntry,
+    StateSupervisionViolation,
+    StateSupervisionViolationResponse,
+    StateSupervisionViolationResponseDecisionEntry,
+    StateSupervisionViolationTypeEntry,
 )
 from recidiviz.persistence.ingest_info_converter import ingest_info_converter
 from recidiviz.persistence.ingest_info_converter.ingest_info_converter import (
@@ -314,7 +313,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_parole_decision_ids=["DECISION_ID"],
             state_assessment_ids=["ASSESSMENT_ID"],
             state_program_assignment_ids=["PROGRAM_ASSIGNMENT_ID"],
-            source_supervision_violation_response_id="RESPONSE_ID",
         )
 
         ingest_info.state_supervision_violation_type_entries.add(
@@ -591,7 +589,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                         )
                     ],
                     assessments=[assessment],
-                    source_supervision_violation_response=response,
                 )
             ],
         )

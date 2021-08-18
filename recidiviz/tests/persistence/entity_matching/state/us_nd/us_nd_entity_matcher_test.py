@@ -22,40 +22,33 @@ import attr
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
+    StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodStatus,
 )
-from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseRevocationType,
-)
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state.entities import (
-    StatePersonExternalId,
-    StatePerson,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
-    StateSupervisionSentence,
-    StateSupervisionViolationResponse,
-    StateSupervisionViolation,
-    StateSupervisionPeriod,
+    StatePerson,
+    StatePersonExternalId,
     StateSentenceGroup,
     StateSupervisionCaseTypeEntry,
 )
 from recidiviz.persistence.entity_matching import entity_matching
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
-    generate_person,
     generate_external_id,
-    generate_incarceration_sentence,
-    generate_sentence_group,
     generate_incarceration_period,
+    generate_incarceration_sentence,
+    generate_person,
+    generate_sentence_group,
+    generate_supervision_case_type_entry,
     generate_supervision_period,
     generate_supervision_sentence,
-    generate_supervision_case_type_entry,
 )
 from recidiviz.tests.persistence.entity_matching.state.base_state_entity_matcher_test_classes import (
     BaseStateEntityMatcherTest,
@@ -176,125 +169,6 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         expected_sg = attr.evolve(entity_sg, incarceration_sentences=[expected_is])
         expected_placeholder_person = attr.evolve(
             entity_placeholder_person, sentence_groups=[expected_sg]
-        )
-
-        # Act 1 - Match
-        session = self._session()
-        matched_entities = entity_matching.match(
-            session, _US_ND, ingested_people=[placeholder_person]
-        )
-
-        # Assert 1 - Match
-        self.assert_people_match_pre_and_post_commit(
-            [expected_placeholder_person], matched_entities.people, session
-        )
-        self.assertEqual(0, matched_entities.error_count)
-        self.assertEqual(1, matched_entities.total_root_entities)
-
-    def test_runMatch_associateSvrsToIps(self) -> None:
-        # Arrange 1 - Match
-        db_placeholder_person = generate_person(state_code=_US_ND)
-        db_ip_1 = generate_incarceration_period(
-            person=db_placeholder_person,
-            state_code=_US_ND,
-            admission_date=_DATE_2,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION.value,
-        )
-        entity_ip_1 = self.to_entity(db_ip_1)
-        db_ip_2 = generate_incarceration_period(
-            person=db_placeholder_person,
-            state_code=_US_ND,
-            admission_date=_DATE_3,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION.value,
-        )
-        entity_ip_2 = self.to_entity(db_ip_2)
-        db_placeholder_is = generate_incarceration_sentence(
-            person=db_placeholder_person,
-            state_code=_US_ND,
-            incarceration_periods=[db_ip_1, db_ip_2],
-        )
-        entity_placeholder_is = self.to_entity(db_placeholder_is)
-
-        db_sg = generate_sentence_group(
-            external_id=_EXTERNAL_ID,
-            state_code=_US_ND,
-            incarceration_sentences=[db_placeholder_is],
-        )
-        entity_sg = self.to_entity(db_sg)
-
-        db_placeholder_person.sentence_groups = [db_sg]
-        entity_placeholder_person = self.to_entity(db_placeholder_person)
-
-        self._commit_to_db(db_placeholder_person)
-
-        svr_1 = StateSupervisionViolationResponse.new_with_defaults(
-            state_code=_US_ND,
-            response_date=_DATE_2 + datetime.timedelta(days=1),
-            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-        )
-        svr_2 = StateSupervisionViolationResponse.new_with_defaults(
-            state_code=_US_ND,
-            response_date=_DATE_3 - datetime.timedelta(days=1),
-            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-        )
-        placeholder_sv = StateSupervisionViolation.new_with_defaults(
-            state_code=_US_ND, supervision_violation_responses=[svr_1, svr_2]
-        )
-        placeholder_sp = StateSupervisionPeriod.new_with_defaults(
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
-            state_code=_US_ND,
-            supervision_violation_entries=[placeholder_sv],
-        )
-        placeholder_ss = StateSupervisionSentence.new_with_defaults(
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            state_code=_US_ND,
-            supervision_periods=[placeholder_sp],
-        )
-        sg = StateSentenceGroup.new_with_defaults(
-            external_id=_EXTERNAL_ID,
-            state_code=_US_ND,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            supervision_sentences=[placeholder_ss],
-        )
-        placeholder_person = StatePerson.new_with_defaults(
-            sentence_groups=[sg], state_code=_US_ND
-        )
-
-        expected_svr_1 = attr.evolve(svr_1)
-        expected_svr_2 = attr.evolve(svr_2)
-        expected_placeholder_sv = attr.evolve(
-            placeholder_sv,
-            supervision_violation_responses=[expected_svr_1, expected_svr_2],
-        )
-        expected_placeholder_sp = attr.evolve(
-            placeholder_sp, supervision_violation_entries=[expected_placeholder_sv]
-        )
-        expected_placeholder_ss = attr.evolve(
-            placeholder_ss, supervision_periods=[expected_placeholder_sp]
-        )
-
-        expected_ip_1 = attr.evolve(
-            entity_ip_1,
-            source_supervision_violation_response=expected_svr_1,
-        )
-        expected_ip_2 = attr.evolve(
-            entity_ip_2,
-            source_supervision_violation_response=expected_svr_2,
-        )
-
-        expected_placeholder_is = attr.evolve(
-            entity_placeholder_is,
-            incarceration_periods=[expected_ip_1, expected_ip_2],
-        )
-        expected_placeholder_sg = attr.evolve(
-            entity_sg,
-            supervision_sentences=[expected_placeholder_ss],
-            incarceration_sentences=[expected_placeholder_is],
-        )
-        expected_placeholder_person = attr.evolve(
-            placeholder_person,
-            person_id=entity_placeholder_person.person_id,
-            sentence_groups=[expected_placeholder_sg],
         )
 
         # Act 1 - Match

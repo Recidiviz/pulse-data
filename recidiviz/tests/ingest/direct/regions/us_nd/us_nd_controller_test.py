@@ -25,17 +25,17 @@ import attr
 
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import (
+    Ethnicity,
     Gender,
     Race,
     ResidencyStatus,
-    Ethnicity,
 )
 from recidiviz.common.constants.state.external_id_types import US_ND_ELITE, US_ND_SID
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
-    StateAssessmentType,
     StateAssessmentLevel,
+    StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
@@ -49,9 +49,9 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentType,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
-    StateIncarcerationPeriodReleaseReason,
     StateIncarcerationPeriodAdmissionReason,
+    StateIncarcerationPeriodReleaseReason,
+    StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_program_assignment import (
@@ -60,23 +60,23 @@ from recidiviz.common.constants.state.state_program_assignment import (
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_contact import (
-    StateSupervisionContactType,
-    StateSupervisionContactReason,
     StateSupervisionContactLocation,
+    StateSupervisionContactReason,
     StateSupervisionContactStatus,
+    StateSupervisionContactType,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
     StateSupervisionPeriodStatus,
     StateSupervisionPeriodTerminationReason,
-    StateSupervisionLevel,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseType,
-    StateSupervisionViolationResponseRevocationType,
     StateSupervisionViolationResponseDecision,
+    StateSupervisionViolationResponseRevocationType,
+    StateSupervisionViolationResponseType,
 )
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
@@ -85,28 +85,28 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
 from recidiviz.ingest.direct.regions.us_nd.us_nd_controller import UsNdController
 from recidiviz.ingest.models.ingest_info import (
     IngestInfo,
-    StateSentenceGroup,
-    StatePerson,
-    StateIncarcerationSentence,
+    StateAgent,
     StateAlias,
-    StateSupervisionSentence,
+    StateAssessment,
     StateCharge,
     StateCourtCase,
-    StateIncarcerationPeriod,
-    StatePersonRace,
-    StatePersonExternalId,
-    StateAssessment,
-    StatePersonEthnicity,
-    StateSupervisionPeriod,
-    StateSupervisionViolation,
-    StateSupervisionViolationResponse,
-    StateAgent,
     StateIncarcerationIncident,
     StateIncarcerationIncidentOutcome,
+    StateIncarcerationPeriod,
+    StateIncarcerationSentence,
+    StatePerson,
+    StatePersonEthnicity,
+    StatePersonExternalId,
+    StatePersonRace,
     StateProgramAssignment,
-    StateSupervisionViolationTypeEntry,
+    StateSentenceGroup,
     StateSupervisionCaseTypeEntry,
     StateSupervisionContact,
+    StateSupervisionPeriod,
+    StateSupervisionSentence,
+    StateSupervisionViolation,
+    StateSupervisionViolationResponse,
+    StateSupervisionViolationTypeEntry,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state import entities
@@ -4148,9 +4148,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             person=charge_147777.person,
         )
 
-        incarceration_period_114909_1.source_supervision_violation_response = (
-            supervision_violation_response_140408
-        )
         charge_140408.court_case = court_case_140408
         supervision_sentence_140408.charges = [charge_140408]
         supervision_violation_140408.supervision_violation_types.append(
