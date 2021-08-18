@@ -43,10 +43,7 @@ from recidiviz.view_registry.dataset_overrides import (
     dataset_overrides_for_deployed_view_datasets,
 )
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
-from recidiviz.view_registry.deployed_views import (
-    CROSS_PROJECT_VIEW_BUILDERS,
-    deployed_view_builders,
-)
+from recidiviz.view_registry.deployed_views import deployed_view_builders
 
 
 def load_views_to_sandbox(
@@ -66,13 +63,9 @@ def load_views_to_sandbox(
     builders_to_update = [
         builder
         for builder in view_builders
-        if (
-            dataflow_dataset_override is not None
-            # Only update views in the DATAFLOW_METRICS_MATERIALIZED_DATASET if the dataflow_dataset_override is set
-            or builder.dataset_id != DATAFLOW_METRICS_MATERIALIZED_DATASET
-        )
-        # Don't load views that query from multiple projects
-        and builder not in CROSS_PROJECT_VIEW_BUILDERS
+        # Only update views in the DATAFLOW_METRICS_MATERIALIZED_DATASET if the dataflow_dataset_override is set
+        if dataflow_dataset_override is not None
+        or builder.dataset_id != DATAFLOW_METRICS_MATERIALIZED_DATASET
     ]
 
     if refresh_materialized_tables_only:
