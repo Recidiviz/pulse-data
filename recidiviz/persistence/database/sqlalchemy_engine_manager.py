@@ -177,6 +177,14 @@ class SQLAlchemyEngineManager:
 
     @classmethod
     def _secret_manager_prefix_for_type(cls, schema_type: SchemaType) -> str:
+        if environment.in_gcp_staging():
+            if schema_type == SchemaType.JAILS:
+                return "jails_v2"
+            if schema_type == SchemaType.STATE:
+                return "state_v2"
+            if schema_type == SchemaType.OPERATIONS:
+                return "operations_v2"
+
         if schema_type == SchemaType.JAILS:
             return "sqlalchemy"
         if schema_type == SchemaType.STATE:

@@ -18,16 +18,18 @@
 tables.
 """
 
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 from sqlalchemy import Table
 
 from recidiviz.big_query.big_query_view import (
-    BigQueryView,
     BigQueryAddress,
+    BigQueryView,
     BigQueryViewBuilder,
 )
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.utils.environment import in_gcp_staging
 
 TABLE_QUERY_TEMPLATE = """/*{description}*/
 SELECT
@@ -110,6 +112,13 @@ class FederatedCloudSQLTableBigQueryViewBuilder(
 
     @staticmethod
     def _connection_name_for_database(database_key: SQLAlchemyDatabaseKey) -> str:
+        if in_gcp_staging():
+            # TODO(#8282): Remove this custom v2 logic when we're in the Phase 5 cleanup.
+            if database_key.schema_type == SchemaType.STATE:
+                return f"{database_key.schema_type.value.lower()}_v2_{database_key.db_name}_cloudsql"
+            if database_key.schema_type in (SchemaType.JAILS, SchemaType.OPERATIONS):
+                return f"{database_key.schema_type.value.lower()}_v2_cloudsql"
+
         if database_key.is_default_db:
             return f"{database_key.schema_type.value.lower()}_cloudsql"
 

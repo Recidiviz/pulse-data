@@ -228,12 +228,10 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 call(
                     URL.create(
                         drivername="postgresql",
-                        username="sqlalchemy_db_user_value",
-                        password="sqlalchemy_db_password_value",
+                        username="jails_v2_db_user_value",
+                        password="jails_v2_db_password_value",
                         database="postgres",
-                        query={
-                            "host": "/cloudsql/sqlalchemy_cloudsql_instance_id_value"
-                        },
+                        query={"host": "/cloudsql/jails_v2_cloudsql_instance_id_value"},
                     ),
                     isolation_level=None,
                     poolclass=None,
@@ -243,11 +241,11 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 call(
                     URL.create(
                         drivername="postgresql",
-                        username="operations_db_user_value",
-                        password="operations_db_password_value",
+                        username="operations_v2_db_user_value",
+                        password="operations_v2_db_password_value",
                         database="postgres",
                         query={
-                            "host": "/cloudsql/operations_cloudsql_instance_id_value"
+                            "host": "/cloudsql/operations_v2_cloudsql_instance_id_value"
                         },
                     ),
                     isolation_level=None,
@@ -291,10 +289,10 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 call(
                     URL.create(
                         drivername="postgresql",
-                        username="state_db_user_value",
-                        password="state_db_password_value",
+                        username="state_v2_db_user_value",
+                        password="state_v2_db_password_value",
                         database="us_xx_primary",
-                        query={"host": "/cloudsql/state_cloudsql_instance_id_value"},
+                        query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
                     ),
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
@@ -304,10 +302,10 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 call(
                     URL.create(
                         drivername="postgresql",
-                        username="state_db_user_value",
-                        password="state_db_password_value",
+                        username="state_v2_db_user_value",
+                        password="state_v2_db_password_value",
                         database="us_ww_primary",
-                        query={"host": "/cloudsql/state_cloudsql_instance_id_value"},
+                        query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
                     ),
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
@@ -317,10 +315,10 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 call(
                     URL.create(
                         drivername="postgresql",
-                        username="state_db_user_value",
-                        password="state_db_password_value",
+                        username="state_v2_db_user_value",
+                        password="state_v2_db_password_value",
                         database="us_xx_secondary",
-                        query={"host": "/cloudsql/state_cloudsql_instance_id_value"},
+                        query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
                     ),
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
@@ -330,10 +328,10 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 call(
                     URL.create(
                         drivername="postgresql",
-                        username="state_db_user_value",
-                        password="state_db_password_value",
+                        username="state_v2_db_user_value",
+                        password="state_v2_db_password_value",
                         database="us_ww_secondary",
-                        query={"host": "/cloudsql/state_cloudsql_instance_id_value"},
+                        query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
                     ),
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
