@@ -17,7 +17,7 @@
 """Defines the types needed for modeling CaseUpdates."""
 from datetime import date
 from enum import Enum
-from typing import Dict, Optional, Any
+from typing import Any, Dict, Optional, Union
 
 import attr
 import dateutil.parser
@@ -40,6 +40,8 @@ class CaseUpdateActionType(Enum):
     DOWNGRADE_INITIATED = "DOWNGRADE_INITIATED"
     INCORRECT_SUPERVISION_LEVEL_DATA = "INCORRECT_SUPERVISION_LEVEL_DATA"
 
+    INCORRECT_NEW_TO_CASELOAD_DATA = "INCORRECT_NEW_TO_CASELOAD_DATA"
+
     NOT_ON_CASELOAD = "NOT_ON_CASELOAD"
     CURRENTLY_IN_CUSTODY = "CURRENTLY_IN_CUSTODY"
 
@@ -48,6 +50,7 @@ class CaseUpdateMetadataKeys:
     LAST_EMPLOYER = "last_employer"
     LAST_RECORDED_DATE = "last_recorded_date"
     LAST_SUPERVISION_LEVEL = "last_supervision_level"
+    LAST_DAYS_WITH_CURRENT_PO = "last_days_with_current_po"
 
 
 @attr.s
@@ -57,9 +60,10 @@ class CaseActionVersionData:
     last_employer: Optional[str] = attr.ib(default=None)
     last_recorded_date: Optional[date] = attr.ib(default=None)
     last_supervision_level: Optional[str] = attr.ib(default=None)
+    last_days_with_current_po: Optional[int] = attr.ib(default=None)
 
-    def to_json(self) -> Dict[str, str]:
-        base = {}
+    def to_json(self) -> Dict[str, Union[str, int]]:
+        base: Dict[str, Union[str, int]] = {}
         if self.last_recorded_date is not None:
             base[
                 CaseUpdateMetadataKeys.LAST_RECORDED_DATE
@@ -71,6 +75,11 @@ class CaseActionVersionData:
 
         if self.last_employer is not None:
             base[CaseUpdateMetadataKeys.LAST_EMPLOYER] = self.last_employer
+
+        if self.last_days_with_current_po is not None:
+            base[
+                CaseUpdateMetadataKeys.LAST_DAYS_WITH_CURRENT_PO
+            ] = self.last_days_with_current_po
 
         return base
 

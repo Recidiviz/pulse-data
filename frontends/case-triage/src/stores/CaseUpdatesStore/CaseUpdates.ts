@@ -35,6 +35,8 @@ export enum CaseUpdateActionType {
 
   NOT_ON_CASELOAD = "NOT_ON_CASELOAD",
   CURRENTLY_IN_CUSTODY = "CURRENTLY_IN_CUSTODY",
+
+  INCORRECT_NEW_TO_CASELOAD_DATA = "INCORRECT_NEW_TO_CASELOAD_DATA",
 }
 
 export const isErrorReport = (action: CaseUpdateActionType): boolean => {
@@ -43,6 +45,7 @@ export const isErrorReport = (action: CaseUpdateActionType): boolean => {
     case CaseUpdateActionType.INCORRECT_ASSESSMENT_DATA:
     case CaseUpdateActionType.INCORRECT_EMPLOYMENT_DATA:
     case CaseUpdateActionType.INCORRECT_CONTACT_DATA:
+    case CaseUpdateActionType.INCORRECT_NEW_TO_CASELOAD_DATA:
     case CaseUpdateActionType.NOT_ON_CASELOAD:
     case CaseUpdateActionType.CURRENTLY_IN_CUSTODY:
       return true;
@@ -65,7 +68,7 @@ export interface CaseUpdate {
 
 export const CASE_UPDATE_OPPORTUNITY_ASSOCIATION: Record<
   OpportunityType,
-  [CaseUpdateActionType, CaseUpdateActionType]
+  [CaseUpdateActionType | undefined, CaseUpdateActionType]
 > = {
   [OpportunityType.OVERDUE_DOWNGRADE]: [
     CaseUpdateActionType.DOWNGRADE_INITIATED,
@@ -82,6 +85,10 @@ export const CASE_UPDATE_OPPORTUNITY_ASSOCIATION: Record<
   [OpportunityType.CONTACT]: [
     CaseUpdateActionType.SCHEDULED_FACE_TO_FACE,
     CaseUpdateActionType.INCORRECT_CONTACT_DATA,
+  ],
+  [OpportunityType.NEW_TO_CASELOAD]: [
+    undefined,
+    CaseUpdateActionType.INCORRECT_NEW_TO_CASELOAD_DATA,
   ],
 };
 
@@ -102,6 +109,8 @@ export const ACTION_TITLES: Record<CaseUpdateActionType, string> = {
   [CaseUpdateActionType.INCORRECT_EMPLOYMENT_DATA]:
     "Incorrect employment status",
   [CaseUpdateActionType.INCORRECT_CONTACT_DATA]: "Incorrect contact status",
+  [CaseUpdateActionType.INCORRECT_NEW_TO_CASELOAD_DATA]:
+    "Incorrect time on caseload",
   [CaseUpdateActionType.NOT_ON_CASELOAD]: "Not on Caseload",
   [CaseUpdateActionType.CURRENTLY_IN_CUSTODY]: "In Custody",
 };

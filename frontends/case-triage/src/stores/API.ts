@@ -42,6 +42,7 @@ interface BootstrapResponse {
   isImpersonating: boolean;
   canAccessCaseTriage: boolean;
   canAccessLeadershipDashboard: boolean;
+  stateCode: string;
 }
 
 export type ErrorResponse = {
@@ -138,6 +139,7 @@ class API {
             isImpersonating,
             canAccessCaseTriage,
             canAccessLeadershipDashboard,
+            stateCode,
           }) => {
             this.csrfToken = csrf;
             identify(segmentUserId);
@@ -147,6 +149,7 @@ class API {
             this.userStore.setLeadershipDashboardAccess(
               canAccessLeadershipDashboard
             );
+            this.userStore.setStateCode(stateCode);
 
             Sentry.setUser({ id: segmentUserId });
             Sentry.setTag("app.version", this.userStore.currentVersion);

@@ -26,6 +26,7 @@ import {
 import { rem } from "polished";
 import TruncatedList from "react-truncate-list";
 import styled from "styled-components/macro";
+import { Pill } from "../Pill";
 import { ToggleMenu } from "../ToggleMenu";
 
 interface ClientCardProps {
@@ -197,4 +198,15 @@ export const ControlLabel = styled.div`
   font-size: ${rem(13)};
   font-weight: 500;
   margin-bottom: ${rem(spacing.sm)};
+`;
+
+export const ClientNameTag = styled(Pill).attrs({
+  kind: "muted",
+  filled: true,
+})`
+  font-size: ${rem(13)};
+  height: ${rem(24)};
+  margin-left: ${rem(spacing.xs)};
+  margin-right: 0;
+  padding: ${rem(4)} ${rem(8)};
 `;

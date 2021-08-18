@@ -43,6 +43,7 @@ import { ReminderMenuItems } from "../../NeedsActionFlow/ReminderMenuItems";
 import { PolicyLink } from "../../CaseOpportunities/PolicyLink";
 import { Alert } from "./Alert";
 import { UndoContents } from "./Alert.styles";
+import { NewToCaseloadPolicy } from "./NewToCaseloadPolicy";
 
 const AlertText = ({ client, opportunity }: OpportunityReviewProps) => {
   const { policyStore } = useRootStore();
@@ -52,8 +53,7 @@ const AlertText = ({ client, opportunity }: OpportunityReviewProps) => {
     case OpportunityType.OVERDUE_DOWNGRADE:
       return (
         <>
-          {titleCase(client.fullName.given_names)} was assessed with score{" "}
-          {client.assessmentScore} on{" "}
+          {client.givenName} was assessed with score {client.assessmentScore} on{" "}
           {client.mostRecentAssessmentDate?.format("LL")}.{" "}
           {titleCase(client.possessivePronoun)} risk level is recorded as{" "}
           <strong>{client.supervisionLevelText}</strong> but should be{" "}
@@ -62,6 +62,8 @@ const AlertText = ({ client, opportunity }: OpportunityReviewProps) => {
           {client.possessivePronoun} supervision level in {omsName}.
         </>
       );
+    case OpportunityType.NEW_TO_CASELOAD:
+      return <NewToCaseloadPolicy />;
     case OpportunityType.EMPLOYMENT:
       return (
         <>

@@ -18,8 +18,8 @@
 from typing import Dict
 
 from recidiviz.case_triage.case_updates.types import (
-    CaseUpdateActionType,
     CaseActionVersionData,
+    CaseUpdateActionType,
 )
 from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
 
@@ -44,6 +44,9 @@ _ACTION_TYPE_TO_MAPPINGS: Dict[CaseUpdateActionType, Dict[str, str]] = {
     CaseUpdateActionType.INCORRECT_SUPERVISION_LEVEL_DATA: supervision_level_mappings,
     CaseUpdateActionType.NOT_ON_CASELOAD: {},
     CaseUpdateActionType.CURRENTLY_IN_CUSTODY: {},
+    CaseUpdateActionType.INCORRECT_NEW_TO_CASELOAD_DATA: {
+        "last_days_with_current_po": "days_with_current_po"
+    },
 }
 
 

@@ -117,6 +117,7 @@ const SORT_ORDER_LABELS: Record<SortOrder, string> = {
   RELEVANCE: "Relevance",
   ASSESSMENT_DATE: "Risk assessment due date",
   CONTACT_DATE: "Contact due date",
+  DAYS_WITH_PO: "New to caseload",
   START_DATE: "New to supervision",
 };
 
@@ -126,8 +127,14 @@ const SORT_ORDER_OPTIONS = SortOrderList.map((id) => ({
 }));
 
 const SortControl = observer(() => {
-  const { clientsStore } = useRootStore();
+  const { clientsStore, userStore } = useRootStore();
   const { sortOrder } = clientsStore;
+
+  let options = SORT_ORDER_OPTIONS;
+
+  if (!userStore.canSeeExtendedProfile) {
+    options = options.filter(({ id }) => id !== "DAYS_WITH_PO");
+  }
 
   return (
     <Dropdown>
@@ -135,7 +142,7 @@ const SortControl = observer(() => {
         Sort by {SORT_ORDER_LABELS[sortOrder]}
       </SortControlToggle>
       <SortControlMenu>
-        {SORT_ORDER_OPTIONS.map(({ id, label }) => (
+        {options.map(({ id, label }) => (
           <DropdownMenuItem
             key={id}
             label={label}

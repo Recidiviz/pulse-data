@@ -28,7 +28,7 @@ import {
 import { CASE_UPDATE_OPPORTUNITY_ASSOCIATION } from "../CaseUpdatesStore/CaseUpdates";
 import ErrorMessageStore from "../ErrorMessageStore";
 import type OpportunityStore from "../OpportunityStore";
-import { Opportunity } from "../OpportunityStore/Opportunity";
+import { Opportunity, OpportunityType } from "../OpportunityStore/Opportunity";
 import type PolicyStore from "../PolicyStore";
 import { ScoreMinMax } from "../PolicyStore";
 import type ClientsStore from "./ClientsStore";
@@ -105,6 +105,7 @@ export interface ClientData {
   preferredContactMethod?: PreferredContactMethod;
   receivingSSIOrDisabilityIncome: boolean;
   notes?: NoteData[];
+  daysWithCurrentPO: number;
 }
 
 const parseDate = (date?: APIDate) => {
@@ -152,6 +153,8 @@ export class Client {
   caseUpdates: CaseUpdates;
 
   currentAddress: string;
+
+  daysWithCurrentPO: number;
 
   emailAddress?: string;
 
@@ -237,6 +240,7 @@ export class Client {
     this.supervisionLevel = clientData.supervisionLevel;
     this.personExternalId = clientData.personExternalId;
     this.emailAddress = clientData.emailAddress;
+    this.daysWithCurrentPO = clientData.daysWithCurrentPO;
 
     this.phoneNumber =
       typeof clientData.phoneNumber === "string"
@@ -453,7 +457,11 @@ export class Client {
         !opp.isDeferred &&
         // not overridden by a case update
         CASE_UPDATE_OPPORTUNITY_ASSOCIATION[opp.opportunityType].every(
-          (updateKey) => !this.hasInProgressUpdate(updateKey)
+          (updateKey) => {
+            return (
+              updateKey === undefined || !this.hasInProgressUpdate(updateKey)
+            );
+          }
         )
     );
   }
@@ -576,5 +584,15 @@ export class Client {
     }
 
     return events;
+  }
+
+  get givenName(): string {
+    return titleCase(this.fullName.given_names);
+  }
+
+  get newToCaseload(): Opportunity | undefined {
+    return this.activeOpportunities.find(
+      (opp) => opp.opportunityType === OpportunityType.NEW_TO_CASELOAD
+    );
   }
 }

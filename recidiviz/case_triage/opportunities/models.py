@@ -26,6 +26,8 @@ from recidiviz.case_triage.client_utils.compliance import (
 from recidiviz.case_triage.opportunities.types import Opportunity, OpportunityType
 from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
 
+NEW_TO_CASELOAD_THRESHOLD_DAYS = 45
+
 
 @attr.s(auto_attribs=True)
 class ComputedOpportunity(Opportunity):
@@ -80,6 +82,17 @@ class ComputedOpportunity(Opportunity):
                     "status": status,
                     "daysUntilDue": days_until_due,
                 },
+                **client_args
+            )
+
+        # new client
+        if (
+            client.days_with_current_po is not None
+            and client.days_with_current_po <= NEW_TO_CASELOAD_THRESHOLD_DAYS
+        ):
+            opps[OpportunityType.NEW_TO_CASELOAD] = ComputedOpportunity(
+                opportunity_type=OpportunityType.NEW_TO_CASELOAD.value,
+                opportunity_metadata={"daysOnCaseload": client.days_with_current_po},
                 **client_args
             )
 

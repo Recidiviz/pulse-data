@@ -124,3 +124,32 @@ class TestComputedOpportunity(TestCase):
                 OpportunityType.CONTACT
             )
         )
+
+    def test_new_to_caseload(self) -> None:
+        client = generate_fake_client("123")
+
+        # suppressed if client data is missing
+        self.assertIsNone(
+            ComputedOpportunity.build_all_for_client(client).get(
+                OpportunityType.NEW_TO_CASELOAD
+            )
+        )
+
+        client.days_with_current_po = 10
+        opp = ComputedOpportunity.build_all_for_client(client).get(
+            OpportunityType.NEW_TO_CASELOAD
+        )
+        self.assertIsInstance(
+            opp,
+            ComputedOpportunity,
+        )
+        assert opp is not None
+        self.assertEqual(opp.opportunity_metadata, {"daysOnCaseload": 10})
+
+        # 45 day threshold
+        client.days_with_current_po = 46
+        self.assertIsNone(
+            ComputedOpportunity.build_all_for_client(client).get(
+                OpportunityType.NEW_TO_CASELOAD
+            )
+        )

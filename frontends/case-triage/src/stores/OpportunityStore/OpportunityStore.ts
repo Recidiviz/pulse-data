@@ -87,6 +87,14 @@ class OpportunityStore {
           return opportunity.opportunityType in OpportunityType;
         });
 
+        if (!this.userStore.canSeeExtendedProfile) {
+          opportunities = opportunities.filter((opportunity) => {
+            return (
+              opportunity.opportunityType !== OpportunityType.NEW_TO_CASELOAD
+            );
+          });
+        }
+
         runInAction(() => {
           this.opportunitiesFetched = opportunities;
         });
