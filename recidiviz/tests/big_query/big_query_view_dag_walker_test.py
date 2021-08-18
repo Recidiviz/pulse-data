@@ -1167,6 +1167,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             BigQueryAddress(
                 dataset_id="population_projection_data", table_id="simulation_run_dates"
             ),
+            BigQueryAddress(dataset_id="analyst_data", table_id="cohort_month_index"),
         }
         if node.dag_key.view_address in known_empty_parent_view_addresss:
             return
