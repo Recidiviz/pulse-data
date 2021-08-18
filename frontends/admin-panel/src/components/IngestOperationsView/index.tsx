@@ -35,7 +35,9 @@ import {
   fetchIngestStateCodes,
   getIngestInstanceSummaries,
   getIngestQueuesState,
+  pauseDirectIngestInstance,
   startIngestRun,
+  unpauseDirectIngestInstance,
   updateIngestQueuesState,
 } from "../../AdminPanelAPI";
 import useFetchedData from "../../hooks";
@@ -150,9 +152,23 @@ const IngestOperationsView = (): JSX.Element => {
           break;
         case IngestActions.PauseIngestQueues:
           await updateIngestQueuesState(stateCode, QueueState.PAUSED);
+          await fetchQueueStates(stateCode);
           break;
         case IngestActions.ResumeIngestQueues:
           await updateIngestQueuesState(stateCode, QueueState.RUNNING);
+          await fetchQueueStates(stateCode);
+          break;
+        case IngestActions.PauseIngestInstance:
+          if (ingestInstance) {
+            await pauseDirectIngestInstance(stateCode, ingestInstance);
+            await getIngestInstanceSummaries(stateCode);
+          }
+          break;
+        case IngestActions.UnpauseIngestInstance:
+          if (ingestInstance) {
+            await unpauseDirectIngestInstance(stateCode, ingestInstance);
+            await getIngestInstanceSummaries(stateCode);
+          }
           break;
         case IngestActions.ExportToGCS:
           if (ingestInstance) {
@@ -169,7 +185,6 @@ const IngestOperationsView = (): JSX.Element => {
         default:
           throw unsupportedIngestAction;
       }
-      await fetchQueueStates(stateCode);
     }
   };
 

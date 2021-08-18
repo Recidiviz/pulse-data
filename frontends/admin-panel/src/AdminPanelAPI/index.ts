@@ -75,6 +75,7 @@ export {
   pauseDirectIngestInstance,
   releaseBQExportLock,
   startIngestRun,
+  unpauseDirectIngestInstance,
   updateIngestQueuesState,
 } from "./IngestOperations";
 export {
