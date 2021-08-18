@@ -17,14 +17,13 @@
 
 """Contains util methods for UsNdMatchingDelegate."""
 import datetime
-from typing import List, Optional, Set, Union, cast
+from typing import List, Optional, Union, cast
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
-    is_commitment_from_supervision,
 )
 from recidiviz.ingest.direct.regions.us_nd import us_nd_enum_helpers
 from recidiviz.persistence.database.base_schema import StateBase
@@ -37,59 +36,8 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     default_merge_flat_fields,
-    get_all_entities_of_cls,
-)
-from recidiviz.persistence.entity_matching.state.state_violation_matching_utils import (
-    revoked_to_prison,
 )
 from recidiviz.persistence.errors import EntityMatchingError
-
-
-def associate_revocation_svrs_with_ips(merged_persons: List[schema.StatePerson]):
-    """
-    For each person in the provided |merged_persons|, attempts to associate
-    StateSupervisionViolationResponses that result in revocation with their
-    corresponding StateIncarcerationPeriod.
-    """
-    for person in merged_persons:
-        svrs = get_all_entities_of_cls(
-            [person], schema.StateSupervisionViolationResponse
-        )
-        ips = get_all_entities_of_cls([person], schema.StateIncarcerationPeriod)
-
-        revocation_svrs: List[schema.StateSupervisionViolationResponse] = []
-        for svr in svrs:
-            svr = cast(schema.StateSupervisionViolationResponse, svr)
-            if revoked_to_prison(svr) and svr.response_date:
-                revocation_svrs.append(svr)
-        revocation_ips: List[schema.StateIncarcerationPeriod] = []
-        for ip in ips:
-            ip = cast(schema.StateIncarcerationPeriod, ip)
-            admission_reason = (
-                StateIncarcerationPeriodAdmissionReason.parse_from_canonical_string(
-                    ip.admission_reason
-                )
-            )
-            if isinstance(admission_reason, StateIncarcerationPeriodAdmissionReason):
-                if (
-                    is_commitment_from_supervision(
-                        admission_reason, allow_ingest_only_enum_values=True
-                    )
-                    and ip.admission_date
-                ):
-                    revocation_ips.append(ip)
-
-        if not revocation_svrs or not revocation_ips:
-            continue
-
-        sorted_svrs = sorted(revocation_svrs, key=lambda x: x.response_date)
-
-        seen: Set[int] = set()
-        for svr in sorted_svrs:
-            closest_ip = _get_closest_matching_incarceration_period(svr, revocation_ips)
-            if closest_ip and id(closest_ip) not in seen:
-                seen.add(id(closest_ip))
-                closest_ip.source_supervision_violation_response = svr
 
 
 def _get_closest_matching_incarceration_period(

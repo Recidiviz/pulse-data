@@ -1,0 +1,20 @@
+UPDATE_QUERY = (
+    "UPDATE {{table_name}} SET {column} = NULL"
+    " WHERE state_code IN ({state_codes_to_deprecate});"
+)
+
+TABLES_TO_UPDATE = ['{primary_table}', '{primary_table}_history']
+
+def upgrade() -> None:
+    with op.get_context().autocommit_block():
+        for table in TABLES_TO_UPDATE:
+            op.execute(
+                UPDATE_QUERY.format(
+                    table_name=table
+                )
+            )
+
+
+def downgrade() -> None:
+    # Field deprecation cannot be undone
+    pass

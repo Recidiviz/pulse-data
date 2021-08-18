@@ -17,7 +17,7 @@
 
 """Contains logic for US_ND specific entity matching overrides."""
 import logging
-from typing import List, Optional, Type, Callable
+from typing import Callable, List, Optional, Type
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
@@ -33,11 +33,10 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     nonnull_fields_entity_match,
 )
 from recidiviz.persistence.entity_matching.state.us_nd.us_nd_matching_utils import (
-    associate_revocation_svrs_with_ips,
-    update_temporary_holds,
+    is_incarceration_period_match,
     merge_incarceration_periods,
     merge_incomplete_periods,
-    is_incarceration_period_match,
+    update_temporary_holds,
 )
 
 
@@ -62,11 +61,8 @@ class UsNdMatchingDelegate(BaseStateMatchingDelegate):
         logging.info("[Entity matching] Move incidents into periods")
         move_incidents_onto_periods(matched_persons)
 
-        logging.info("[Entity matching] Transform incarceration periods into " "holds")
+        logging.info("[Entity matching] Transform incarceration periods into holds")
         update_temporary_holds(matched_persons)
-
-        logging.info("[Entity matching] Associate revocation SVRs with IPs")
-        associate_revocation_svrs_with_ips(matched_persons)
 
     def perform_match_preprocessing(self, ingested_persons: List[schema.StatePerson]):
         """Performs the following ND specific preprocessing on the provided
