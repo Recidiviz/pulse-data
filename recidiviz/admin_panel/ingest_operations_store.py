@@ -31,6 +31,9 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
+from recidiviz.ingest.direct.controllers.direct_ingest_instance_status_manager import (
+    DirectIngestInstanceStatusManager,
+)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     gcsfs_direct_ingest_bucket_for_region,
@@ -258,11 +261,11 @@ class IngestOperationsStore:
             )
 
             # Get the database name corresponding to this instance
-            ingest_db_name = self._get_database_name_for_state(state_code, instance)
+            ingest_db_name = instance.database_key_for_state(state_code).db_name
 
             # Get the operations metadata for this ingest instance
             operations_db_metadata = self._get_operations_db_metadata(
-                state_code, ingest_db_name
+                state_code, instance
             )
 
             ingest_instance_summary: Dict[str, Any] = {
@@ -278,18 +281,12 @@ class IngestOperationsStore:
         return ingest_instance_summaries
 
     @staticmethod
-    def _get_database_name_for_state(
-        state_code: StateCode, instance: DirectIngestInstance
-    ) -> str:
-        """Returns the database name for the given state and instance"""
-        return instance.database_key_for_state(state_code).db_name
-
-    @staticmethod
     def _get_operations_db_metadata(
-        state_code: StateCode, ingest_db_name: str
+        state_code: StateCode, ingest_instance: DirectIngestInstance
     ) -> Dict[str, Union[int, Optional[datetime]]]:
         """Returns the following dictionary with information about the operations database for the state:
         {
+            isPaused: <bool>
             unprocessedFilesRaw: <int>
             unprocessedFilesIngestView: <int>
             dateOfEarliestUnprocessedIngestView: <datetime>
@@ -299,6 +296,7 @@ class IngestOperationsStore:
         """
         if in_development():
             return {
+                "isPaused": False,
                 "unprocessedFilesRaw": -1,
                 "unprocessedFilesIngestView": -2,
                 "dateOfEarliestUnprocessedIngestView": datetime(2021, 4, 28),
@@ -306,7 +304,9 @@ class IngestOperationsStore:
 
         file_metadata_manager = PostgresDirectIngestFileMetadataManager(
             region_code=state_code.value,
-            ingest_database_name=ingest_db_name,
+            ingest_database_name=ingest_instance.database_key_for_state(
+                state_code
+            ).db_name,
         )
 
         try:
@@ -317,7 +317,13 @@ class IngestOperationsStore:
         except DirectIngestInstanceError as _:
             num_unprocessed_raw_files = 0
 
+        ingest_instance_status_manager = DirectIngestInstanceStatusManager(
+            state_code.value, ingest_instance
+        )
+        is_paused = ingest_instance_status_manager.is_instance_paused()
+
         return {
+            "isPaused": is_paused,
             "unprocessedFilesRaw": num_unprocessed_raw_files,
             "unprocessedFilesIngestView": file_metadata_manager.get_num_unprocessed_ingest_files(),
             "dateOfEarliestUnprocessedIngestView": file_metadata_manager.get_date_of_earliest_unprocessed_ingest_file(),

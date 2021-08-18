@@ -280,3 +280,25 @@ def add_ingest_ops_routes(bp: Blueprint, admin_stores: AdminStores) -> None:
             )
 
         return "", HTTPStatus.OK
+
+    @bp.route("/api/ingest_operations/unpause_direct_ingest_instance", methods=["POST"])
+    @requires_gae_auth
+    def _unpause_direct_ingest_instance() -> Tuple[str, HTTPStatus]:
+        try:
+            state_code = StateCode(request.json["stateCode"])
+            ingest_instance = DirectIngestInstance(request.json["ingestInstance"])
+        except ValueError:
+            return "invalid parameters provided", HTTPStatus.BAD_REQUEST
+
+        ingest_status_manager = DirectIngestInstanceStatusManager(
+            region_code=state_code.value, ingest_instance=ingest_instance
+        )
+        try:
+            ingest_status_manager.unpause_instance()
+        except Exception:
+            return (
+                "something went wrong unpausing the intance",
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+
+        return "", HTTPStatus.OK

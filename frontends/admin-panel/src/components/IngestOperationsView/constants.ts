@@ -19,6 +19,9 @@ export enum IngestActions {
   PauseIngestQueues = "pause",
   ResumeIngestQueues = "resume",
 
+  PauseIngestInstance = "pause_instance",
+  UnpauseIngestInstance = "unpause_instance",
+
   ExportToGCS = "export",
   ImportFromGCS = "import",
 }
@@ -27,6 +30,9 @@ export const actionNames = {
   [IngestActions.StartIngestRun]: "Start Ingest Run",
   [IngestActions.PauseIngestQueues]: "Pause Queues",
   [IngestActions.ResumeIngestQueues]: "Resume Queues",
+
+  [IngestActions.PauseIngestInstance]: "Pause Instance",
+  [IngestActions.UnpauseIngestInstance]: "Unpause Instance",
 
   [IngestActions.ExportToGCS]: "Export to GCS",
   [IngestActions.ImportFromGCS]: "Import from GCS",
@@ -64,6 +70,7 @@ export type IngestInstanceSummary = {
 };
 
 export type OperationsDbInfo = {
+  isPaused: boolean;
   unprocessedFilesRaw: number;
   unprocessedFilesIngestView: number;
   dateOfEarliestUnprocessedIngestView: Date;

@@ -37,7 +37,9 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
   handleOnClick,
 }) => {
   const baseBucketUrl = `https://console.cloud.google.com/storage/browser/`;
-
+  const pauseUnpauseInstanceAction = data.operations.isPaused
+    ? IngestActions.UnpauseIngestInstance
+    : IngestActions.PauseIngestInstance;
   return (
     <Card
       title={data.instance}
@@ -52,17 +54,32 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
             {actionNames[IngestActions.ExportToGCS]}
           </Button>
           <Button
+            style={
+              data.operations.isPaused
+                ? { display: "none" }
+                : { marginRight: 5 }
+            }
             onClick={() => {
               handleOnClick(IngestActions.StartIngestRun, data.instance);
             }}
-            type="primary"
           >
             {actionNames[IngestActions.StartIngestRun]}
+          </Button>
+          <Button
+            onClick={() => {
+              handleOnClick(pauseUnpauseInstanceAction, data.instance);
+            }}
+            type="primary"
+          >
+            {actionNames[pauseUnpauseInstanceAction]}
           </Button>
         </>
       }
     >
       <Descriptions bordered>
+        <Descriptions.Item label="Status" span={3}>
+          {data.operations.isPaused ? "PAUSED" : "UNPAUSED"}
+        </Descriptions.Item>
         <Descriptions.Item label="Ingest Bucket" span={3}>
           <NewTabLink href={baseBucketUrl.concat(data.ingest.name)}>
             {data.ingest.name}
