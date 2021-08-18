@@ -33,6 +33,7 @@ import {
   ClientListAssessmentComparator,
   ClientListBuilder,
   ClientListContactComparator,
+  ClientListDaysWithCurrentPOComparator,
   ClientListPriorityComparator,
   ClientListSupervisionStartComparator,
   CLIENT_LIST_KIND,
@@ -48,6 +49,7 @@ export const SortOrderList = [
   "RELEVANCE",
   "CONTACT_DATE",
   "ASSESSMENT_DATE",
+  "DAYS_WITH_PO",
   "START_DATE",
 ] as const;
 export type SortOrder = typeof SortOrderList[number];
@@ -201,6 +203,9 @@ class ClientsStore {
         break;
       case "CONTACT_DATE":
         sortFn = ClientListContactComparator;
+        break;
+      case "DAYS_WITH_PO":
+        sortFn = ClientListDaysWithCurrentPOComparator;
         break;
       default:
         assertNever(this.sortOrder);

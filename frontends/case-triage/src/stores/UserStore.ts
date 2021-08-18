@@ -66,6 +66,8 @@ export default class UserStore {
 
   isImpersonating: boolean;
 
+  stateCode?: string;
+
   getTokenSilently?(options?: GetTokenSilentlyOptions): Promise<void>;
 
   login?(options?: RedirectLoginOptions): Promise<void>;
@@ -191,6 +193,10 @@ export default class UserStore {
     this.officerGivenNames = officerGivenNames;
     this.officerSurname = officerSurname;
     this.isImpersonating = isImpersonating;
+  }
+
+  setStateCode(newStateCode: string): void {
+    this.stateCode = newStateCode;
   }
 
   getOfficerFullName(): string {

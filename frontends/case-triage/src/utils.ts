@@ -60,6 +60,13 @@ export function remScaledPixels(val: number): string {
 export const LONG_DATE_FORMAT = "MMMM Do, YYYY";
 
 /**
+ * Returns "day" or "days" as is numerically appropriate.
+ */
+export const inflectDay = (days: number): string => {
+  return `day${Math.abs(days) === 1 ? "" : "s"}`;
+};
+
+/**
  * Clears information in the browser's local storage that was
  * originally set, but we want to remove entirely.
  *

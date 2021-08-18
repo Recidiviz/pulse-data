@@ -92,6 +92,7 @@ class TestCasePresenter(TestCase):
                     "notes": [],
                     "receivingSSIOrDisabilityIncome": False,
                     "mostRecentViolationDate": self.mock_client.most_recent_violation_date,
+                    "daysWithCurrentPO": self.mock_client.days_with_current_po,
                 },
             ),
         )
@@ -154,6 +155,7 @@ class TestCasePresenter(TestCase):
                     "receivingSSIOrDisabilityIncome": client_info.receiving_ssi_or_disability_income,
                     "notes": [officer_note.to_json()],
                     "mostRecentViolationDate": self.mock_client.most_recent_violation_date,
+                    "daysWithCurrentPO": self.mock_client.days_with_current_po,
                 },
             ),
         )

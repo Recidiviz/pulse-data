@@ -31,6 +31,7 @@ class OpportunityType(Enum):
     EMPLOYMENT = "EMPLOYMENT"
     ASSESSMENT = "ASSESSMENT"
     CONTACT = "CONTACT"
+    NEW_TO_CASELOAD = "NEW_TO_CASELOAD"
 
 
 class OpportunityDeferralType(Enum):

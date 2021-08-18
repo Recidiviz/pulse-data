@@ -19,7 +19,7 @@ import assertNever from "assert-never";
 import { makeAutoObservable } from "mobx";
 import moment from "moment";
 import { PillKind } from "../../components/Pill";
-import { LONG_DATE_FORMAT } from "../../utils";
+import { inflectDay, LONG_DATE_FORMAT } from "../../utils";
 
 // =============================================================================
 export enum OpportunityDeferralType {
@@ -33,6 +33,7 @@ export enum OpportunityType {
   EMPLOYMENT = "EMPLOYMENT",
   ASSESSMENT = "ASSESSMENT",
   CONTACT = "CONTACT",
+  NEW_TO_CASELOAD = "NEW_TO_CASELOAD",
 }
 
 const OPPORTUNITY_TITLES: Record<OpportunityType, string> = {
@@ -40,6 +41,7 @@ const OPPORTUNITY_TITLES: Record<OpportunityType, string> = {
   [OpportunityType.EMPLOYMENT]: "Unemployed",
   [OpportunityType.ASSESSMENT]: "Risk assessment",
   [OpportunityType.CONTACT]: "Contact",
+  [OpportunityType.NEW_TO_CASELOAD]: "New to caseload",
 };
 
 export const opportunityPriorityComparator = (
@@ -76,7 +78,7 @@ const differenceInDays = (date: moment.Moment): string => {
 
   const dayDiff = date.diff(beginningOfDay, "days");
 
-  const unitInflected = `day${Math.abs(dayDiff) > 1 ? "s" : ""}`;
+  const unitInflected = inflectDay(dayDiff);
 
   if (dayDiff < 0) {
     return `${Math.abs(dayDiff)} ${unitInflected} ago`;
@@ -134,6 +136,8 @@ export class Opportunity {
       case OpportunityType.OVERDUE_DOWNGRADE:
       case OpportunityType.EMPLOYMENT:
         return OPPORTUNITY_TITLES[this.opportunityType];
+      case OpportunityType.NEW_TO_CASELOAD:
+        return "New";
       case OpportunityType.ASSESSMENT:
       case OpportunityType.CONTACT:
         return `${OPPORTUNITY_TITLES[this.opportunityType]} ${
@@ -148,12 +152,14 @@ export class Opportunity {
     switch (this.opportunityType) {
       case OpportunityType.OVERDUE_DOWNGRADE:
         return 1;
-      case OpportunityType.EMPLOYMENT:
+      case OpportunityType.NEW_TO_CASELOAD:
         return 2;
+      case OpportunityType.EMPLOYMENT:
+        return 3;
       case OpportunityType.ASSESSMENT:
-        return this.opportunityMetadata.status === "OVERDUE" ? 3 : 4;
+        return this.opportunityMetadata.status === "OVERDUE" ? 4 : 5;
       case OpportunityType.CONTACT:
-        return this.opportunityMetadata.status === "OVERDUE" ? 5 : 6;
+        return this.opportunityMetadata.status === "OVERDUE" ? 6 : 7;
       default:
         assertNever(this.opportunityType);
     }
@@ -188,6 +194,21 @@ export class Opportunity {
     return "";
   }
 
+  /**
+   * New to Caseload opportunities report how long ago they started
+   */
+  get daysAgo(): string | null {
+    const { daysOnCaseload } = this.opportunityMetadata;
+
+    if (typeof daysOnCaseload === "number") {
+      if (daysOnCaseload === 0) return "today";
+
+      return `${daysOnCaseload} ${inflectDay(daysOnCaseload)} ago`;
+    }
+
+    return null;
+  }
+
   get title(): string {
     const titleBase = OPPORTUNITY_TITLES[this.opportunityType];
 
@@ -195,6 +216,8 @@ export class Opportunity {
       case OpportunityType.OVERDUE_DOWNGRADE:
       case OpportunityType.EMPLOYMENT:
         return titleBase;
+      case OpportunityType.NEW_TO_CASELOAD:
+        return `${titleBase}${this.daysAgo ? `: ${this.daysAgo}` : ""}`;
       case OpportunityType.CONTACT:
       case OpportunityType.ASSESSMENT:
         return `${titleBase} ${this.dueDateModifier} ${this.dueDaysFormatted}`;
@@ -209,6 +232,7 @@ export class Opportunity {
     switch (this.opportunityType) {
       case OpportunityType.OVERDUE_DOWNGRADE:
       case OpportunityType.EMPLOYMENT:
+      case OpportunityType.NEW_TO_CASELOAD:
         return undefined;
       case OpportunityType.CONTACT:
       case OpportunityType.ASSESSMENT:
@@ -235,6 +259,7 @@ export class Opportunity {
 
     switch (this.opportunityType) {
       case OpportunityType.OVERDUE_DOWNGRADE:
+      case OpportunityType.NEW_TO_CASELOAD:
         iconKind = "StarCircled";
         iconColor = palette.signal.highlight;
         pillKind = "highlight";

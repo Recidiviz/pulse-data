@@ -63,7 +63,7 @@ class PolicyStore {
     try {
       const response = await this.api.post<Policy>(
         "/api/policy_requirements_for_state",
-        { state: "US_ID" }
+        { state: this.userStore.stateCode }
       );
 
       return runInAction(() => {

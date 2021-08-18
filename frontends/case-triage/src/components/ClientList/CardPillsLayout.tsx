@@ -15,12 +15,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import * as React from "react";
+import { observer } from "mobx-react-lite";
 import {
   ClientNameSupervisionLevel,
   NameCardSection,
   MainText,
   StatusCardSection,
   SecondaryText,
+  ClientNameTag,
 } from "./ClientList.styles";
 import { titleCase } from "../../utils";
 import { ClientProps } from "./ClientList.types";
@@ -31,7 +33,12 @@ const CardPillsLayout: React.FC<ClientProps> = ({ client }: ClientProps) => {
     <>
       <NameCardSection className="fs-exclude">
         <ClientNameSupervisionLevel>
-          <MainText>{client.name}</MainText>
+          <MainText>
+            {client.name}
+            {client.newToCaseload && (
+              <ClientNameTag>{client.newToCaseload.previewText}</ClientNameTag>
+            )}
+          </MainText>
           <SecondaryText>
             {titleCase(client.supervisionType)},{" "}
             {titleCase(client.supervisionLevelText)}
@@ -44,4 +51,4 @@ const CardPillsLayout: React.FC<ClientProps> = ({ client }: ClientProps) => {
     </>
   );
 };
-export default CardPillsLayout;
+export default observer(CardPillsLayout);

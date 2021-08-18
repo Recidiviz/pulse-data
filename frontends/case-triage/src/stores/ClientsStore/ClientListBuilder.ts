@@ -101,6 +101,18 @@ export const ClientListPriorityComparator: ClientSortFn = (a, b) => {
   return ClientListContactComparator(a, b);
 };
 
+/**
+ * Sorts clients by how many days they've been on their current officer's caseload.
+ * Ties are broken by relevance.
+ */
+export const ClientListDaysWithCurrentPOComparator: ClientSortFn = (a, b) => {
+  const diff = a.daysWithCurrentPO - b.daysWithCurrentPO;
+  if (diff < 0) return -1;
+  if (diff > 0) return 1;
+
+  return ClientListPriorityComparator(a, b);
+};
+
 interface ClientListBuilderProps {
   opportunityStore: OpportunityStore;
   policyStore: PolicyStore;

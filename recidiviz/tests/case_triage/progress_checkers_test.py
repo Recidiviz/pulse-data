@@ -22,8 +22,8 @@ from recidiviz.case_triage.case_updates.progress_checker import (
     check_case_update_action_progress,
 )
 from recidiviz.case_triage.case_updates.types import (
-    CaseUpdateActionType,
     CaseActionVersionData,
+    CaseUpdateActionType,
 )
 
 
@@ -243,3 +243,35 @@ class TestProgressCheckers(TestCase):
                     current_version=CaseActionVersionData(),
                 )
             )
+
+    def test_new_to_caseload(self) -> None:
+        original = CaseActionVersionData(last_days_with_current_po=10)
+        later = CaseActionVersionData(last_days_with_current_po=25)
+        out_of_range = CaseActionVersionData(last_days_with_current_po=50)
+
+        # No change
+        self.assertTrue(
+            check_case_update_action_progress(
+                CaseUpdateActionType.INCORRECT_NEW_TO_CASELOAD_DATA,
+                last_version=original,
+                current_version=original,
+            )
+        )
+
+        # changed but still considered "new"
+        self.assertTrue(
+            check_case_update_action_progress(
+                CaseUpdateActionType.INCORRECT_NEW_TO_CASELOAD_DATA,
+                last_version=original,
+                current_version=later,
+            )
+        )
+
+        # not new anymore
+        self.assertFalse(
+            check_case_update_action_progress(
+                CaseUpdateActionType.INCORRECT_NEW_TO_CASELOAD_DATA,
+                last_version=original,
+                current_version=out_of_range,
+            )
+        )
