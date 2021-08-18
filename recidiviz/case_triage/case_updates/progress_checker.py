@@ -20,9 +20,10 @@ from typing import Callable, Dict
 import attr
 
 from recidiviz.case_triage.case_updates.types import (
-    CaseUpdateActionType,
     CaseActionVersionData,
+    CaseUpdateActionType,
 )
+from recidiviz.case_triage.opportunities.models import NEW_TO_CASELOAD_THRESHOLD_DAYS
 
 
 def _in_progress_until_changed(
@@ -57,6 +58,23 @@ def _found_employment_progress_checker(
     )
 
 
+def _new_to_caseload_progress_checker(
+    current_version: CaseActionVersionData, _last_version: CaseActionVersionData
+) -> bool:
+    """Update remains in progress until the newness threshold expires.
+    This allows for clients to become new again in the future, e.g. via transfers."""
+
+    # if there is no longer a recorded number of days, clear the update
+    # (this is not really expected but it's technically possible)
+    if current_version.last_days_with_current_po is None:
+        return False
+
+    if current_version.last_days_with_current_po > NEW_TO_CASELOAD_THRESHOLD_DAYS:
+        return False
+
+    return True
+
+
 _CASE_UPDATE_ACTION_TYPE_TO_PROGRESS_CHECKER: Dict[
     CaseUpdateActionType, Callable[[CaseActionVersionData, CaseActionVersionData], bool]
 ] = {
@@ -76,6 +94,7 @@ _CASE_UPDATE_ACTION_TYPE_TO_PROGRESS_CHECKER: Dict[
     CaseUpdateActionType.INCORRECT_SUPERVISION_LEVEL_DATA: _in_progress_until_changed,
     CaseUpdateActionType.NOT_ON_CASELOAD: _always_in_progress,
     CaseUpdateActionType.CURRENTLY_IN_CUSTODY: _always_in_progress,
+    CaseUpdateActionType.INCORRECT_NEW_TO_CASELOAD_DATA: _new_to_caseload_progress_checker,
 }
 
 

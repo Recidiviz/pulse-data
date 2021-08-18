@@ -28,6 +28,7 @@ export const clientData: ClientData = {
   caseType: "GENERAL",
   caseUpdates: {},
   currentAddress: "",
+  daysWithCurrentPO: 365,
   emailAddress: "demo@recidiviz.org",
   employer: undefined,
   employmentStartDate: null,
@@ -110,6 +111,7 @@ export const statePolicy: Policy = {
     EMPLOYMENT: "http://example.com",
     ASSESSMENT: "http://example.com",
     CONTACT: "http://example.com",
+    NEW_TO_CASELOAD: "http://example.com",
   },
   supervisionContactFrequencies: {
     GENERAL: {

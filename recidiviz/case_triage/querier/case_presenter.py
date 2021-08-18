@@ -86,6 +86,7 @@ class CasePresenter:
                 for case_update in self.case_updates
             },
             "notes": [note.to_json() for note in self.etl_client.notes],
+            "daysWithCurrentPO": self.etl_client.days_with_current_po,
         }
 
         # TODO(#5768): In the long-term, we plan to move away from enforcing the next contact

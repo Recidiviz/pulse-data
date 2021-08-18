@@ -164,6 +164,7 @@ class TestDemoUser(TestCase):
             num_assessment_upcoming = 5
             num_contact_overdue = 31
             num_contact_upcoming = 16
+            num_new_to_caseload = 11
 
             expected_opportunity_count = sum(
                 [
@@ -173,6 +174,7 @@ class TestDemoUser(TestCase):
                     num_assessment_upcoming,
                     num_contact_overdue,
                     num_contact_upcoming,
+                    num_new_to_caseload,
                 ]
             )
 

@@ -215,6 +215,7 @@ def create_api_blueprint(
                 "dashboardURL": os.getenv(
                     "DASHBOARD_URL", "https://dashboard.recidiviz.org"
                 ),
+                "stateCode": g.user_context.officer_state_code,
                 **officer_metadata,
                 **g.user_context.access_permissions.to_json(),
             }

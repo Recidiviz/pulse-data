@@ -23,6 +23,7 @@ import { ClientProps } from "./ClientList.types";
 import { StatusList } from "./ClientList.styles";
 import AlertPreview from "../AlertPreview";
 import { LONG_DATE_FORMAT } from "../../utils";
+import { OpportunityType } from "../../stores/OpportunityStore/Opportunity";
 
 export const ClientStatusList: React.FC<ClientProps> = observer(
   ({ client }: ClientProps): JSX.Element => {
@@ -44,6 +45,11 @@ export const ClientStatusList: React.FC<ClientProps> = observer(
     } else {
       // these will be suppressed if removal is pending
       client.activeOpportunities.forEach((opportunity) => {
+        // no pill for this opportunity
+        if (opportunity.opportunityType === OpportunityType.NEW_TO_CASELOAD) {
+          return;
+        }
+
         statusPills.push(
           <AlertPreview
             key={opportunity.opportunityType}
