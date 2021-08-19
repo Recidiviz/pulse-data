@@ -27,9 +27,8 @@ TABLES_TO_UPDATE = [
 
 
 def upgrade() -> None:
-    with op.get_context().autocommit_block():
-        for table in TABLES_TO_UPDATE:
-            op.execute(DELETE_QUERY.format(table_name=table))
+    for table in TABLES_TO_UPDATE:
+        op.execute(DELETE_QUERY.format(table_name=table))
 
 
 def downgrade() -> None:
