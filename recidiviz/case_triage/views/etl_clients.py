@@ -29,12 +29,13 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 CLIENT_LIST_QUERY_TEMPLATE = """
-WITH supervision_start_dates AS (
+WITH supervision_start_dates_from_sessions AS (
   SELECT
     person_id,
     state_code,
-    compartment_level_2 AS supervision_type,
-    start_date AS supervision_start_date
+    -- TODO(#8860): Remove once BENCH_WARRANT is ingested
+    IF(compartment_level_2 = "BENCH_WARRANT", "INTERNAL_UNKNOWN", compartment_level_2) AS supervision_type,
+    start_date AS sessions_start_date
   FROM
     `{project_id}.{analyst_views_dataset}.compartment_sessions_materialized`
   WHERE
@@ -107,7 +108,8 @@ latest_employment AS (
 latest_periods AS (
   SELECT
     person_id,
-    state_code
+    state_code,
+    start_date
   FROM
     `{project_id}.state.state_supervision_period`
   WHERE
@@ -125,6 +127,38 @@ most_recent_violations AS (
     person_id, 
     state_code
 ),
+supervision_start_dates AS (
+  SELECT
+    *,
+    IF (sessions_start_date IS NOT NULL, sessions_start_date, start_date) AS supervision_start_date,
+  FROM
+    `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_supervision_population_metrics_materialized`
+  LEFT JOIN
+    `{project_id}.state.state_person`
+  USING (person_id, gender, state_code)
+  INNER JOIN
+    latest_periods
+  USING (person_id, state_code)
+  -- TODO(#5463): When we ingest employment info, we should replace this joined table with the correct table.
+  LEFT JOIN
+    latest_employment
+  USING (person_external_id, state_code)
+  LEFT JOIN
+    `{project_id}.{case_triage_dataset}.client_contact_info_materialized`
+  USING (person_external_id, state_code)
+  LEFT JOIN
+    `{project_id}.{case_triage_dataset}.last_known_date_of_employment_materialized`
+  USING (person_external_id, state_code)
+  LEFT JOIN
+    latest_assessments
+  USING (person_id, state_code)
+  LEFT JOIN
+    latest_contacts
+  USING (person_id, state_code)
+  LEFT JOIN
+    supervision_start_dates_from_sessions
+  USING (person_id, state_code, supervision_type)
+),
 export_time AS (
   SELECT CURRENT_TIMESTAMP AS exported_at
 ),
@@ -133,32 +167,7 @@ ideal_query AS (
 SELECT
     {columns}
 FROM
-  `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_supervision_population_metrics_materialized`
-LEFT JOIN
-  `{project_id}.state.state_person`
-USING (person_id, gender, state_code)
-INNER JOIN
-  latest_periods
-USING (person_id, state_code)
--- TODO(#5463): When we ingest employment info, we should replace this joined table with the correct table.
-LEFT JOIN
-  latest_employment
-USING (person_external_id, state_code)
-LEFT JOIN
-  `{project_id}.{case_triage_dataset}.client_contact_info_materialized`
-USING (person_external_id, state_code)
-LEFT JOIN
-  `{project_id}.{case_triage_dataset}.last_known_date_of_employment_materialized`
-USING (person_external_id, state_code)
-LEFT JOIN
-  latest_assessments
-USING (person_id, state_code)
-LEFT JOIN
-  latest_contacts
-USING (person_id, state_code)
-LEFT JOIN
   supervision_start_dates
-USING (person_id, state_code, supervision_type)
 LEFT JOIN
   days_with_po
 USING (person_id, state_code)
