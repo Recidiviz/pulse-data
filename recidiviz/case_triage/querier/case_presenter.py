@@ -50,7 +50,7 @@ class CasePresenter:
 
         try:
             parsed_name = json.loads(self.etl_client.full_name)
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, TypeError):
             parsed_name = None
 
         base_dict = {
