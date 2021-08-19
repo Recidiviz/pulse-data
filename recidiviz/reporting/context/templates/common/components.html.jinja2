@@ -11,3 +11,32 @@
   {{ text }}
 </div>
 {%- endmacro %}
+
+{% macro section_heading(text) %}
+  <tr>
+    <td class="em_heading em_dm_txt_white" valign="top" align="left"
+      style="font-family: 'Libre Franklin', Arial, sans-serif; padding-left: 3px; font-weight: 500; font-size: 24px; line-height: 24px; letter-spacing: -0.01em; color: #00413E;">
+      {{ text }} 
+    </td>
+  </tr>
+  {{ y_padding(24) }}
+{% endmacro %}
+
+{% macro y_padding(px) %}
+  <tr>
+    <td height="{{px}}" style="height: {{px}}px;">&nbsp;</td>
+  </tr>
+{% endmacro %}
+
+{% macro x_padding(px) %}
+  <td width="{{px}}" style="width: {{px}}px;">&nbsp;</td>
+{% endmacro %}
+
+{% macro card_heading(text, align="left", colspan=None, valign="top") %}
+  <td class="em_heading em_dm_txt_white" valign="{{valign}}" align="{{align}}" 
+    {% if colspan %}colspan="{{colspan}}"{% endif %}
+    style="font-family: 'Libre Baskerville', 'Times New Roman', Times, serif; font-size: 29px; line-height: 34px; font-weight: 400; letter-spacing: -0.16px; color: #00413E;"
+  >
+    {{ text }}
+  </td>
+{% endmacro %}

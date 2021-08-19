@@ -1,0 +1,35 @@
+{% import "common/components.html.jinja2" as components %}
+
+<table
+  width="100%"
+  border="0"
+  cellspacing="0"
+  cellpadding="0"
+  class="em_full_wrap em_dm_grey"
+  bgcolor="#F2F4F4"
+  style="table-layout: fixed"
+  role="presentation"
+>
+  <tr>
+    <td align="center" valign="top">
+      <table
+        align="center"
+        width="632"
+        border="0"
+        cellspacing="0"
+        cellpadding="0"
+        class="em_main_table"
+        style="width: 632px; table-layout: fixed"
+        role="presentation"
+      >
+        <tr>
+          {{ components.x_padding(16) }}
+          <td valign="top" align="center">
+            {% block children %}{% endblock children %}
+          </td>
+          {{ components.x_padding(16) }}
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
