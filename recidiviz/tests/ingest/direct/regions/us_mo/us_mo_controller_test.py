@@ -761,37 +761,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
     def test_populate_data_tak158_tak023_tak026_incarceration_period_from_incarceration_sentence(
         self,
     ) -> None:
-        vr_110035_19890901_5 = StateSupervisionViolationResponse(
-            response_type="PERMANENT_DECISION",
-            response_date="19940609",
-            decision="REVOCATION",
-            revocation_type="S",
-            deciding_body_type="PAROLE_BOARD",
-        )
-
-        vr_110035_20010414_2 = StateSupervisionViolationResponse(
-            response_type="PERMANENT_DECISION",
-            response_date="20010420",
-            decision="REVOCATION",
-            revocation_type="X",
-            deciding_body_type="PAROLE_BOARD",
-        )
-
-        vr_110035_20010414_7_0 = StateSupervisionViolationResponse(
-            response_type="PERMANENT_DECISION",
-            response_date="20160328",
-            decision="REVOCATION",
-            revocation_type="S",
-            deciding_body_type="PAROLE_BOARD",
-        )
-        vr_110035_20010414_7_3 = StateSupervisionViolationResponse(
-            response_type="PERMANENT_DECISION",
-            response_date="20160428",
-            decision="REVOCATION",
-            revocation_type="S",
-            deciding_body_type="PAROLE_BOARD",
-        )
-
         ip_110035_19890901_1_0 = StateIncarcerationPeriod(
             state_incarceration_period_id="110035-19890901-1-0",
             status="NOT_IN_CUSTODY",
@@ -818,7 +787,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             release_date="19950206",
             release_reason="IT-BD",
             specialized_purpose_for_incarceration="S",
-            source_supervision_violation_response=vr_110035_19890901_5,
         )
 
         ip_110035_20010414_2_0 = StateIncarcerationPeriod(
@@ -829,7 +797,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             release_date="20121102",
             release_reason="IT-BP",
             specialized_purpose_for_incarceration="X",
-            source_supervision_violation_response=vr_110035_20010414_2,
         )
         ip_110035_20010414_4_0 = StateIncarcerationPeriod(
             state_incarceration_period_id="110035-20010414-4-0",
@@ -848,7 +815,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             release_date="20160428",
             release_reason="50N1010",
             specialized_purpose_for_incarceration="S",
-            source_supervision_violation_response=vr_110035_20010414_7_0,
         )
         ip_110035_20010414_7_3 = StateIncarcerationPeriod(
             state_incarceration_period_id="110035-20010414-7-3",
@@ -858,7 +824,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             release_date="20161011",
             release_reason="ID-DR",
             specialized_purpose_for_incarceration="S",
-            source_supervision_violation_response=vr_110035_20010414_7_3,
         )
 
         expected = IngestInfo(
@@ -2654,22 +2619,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             person=person_110035,
             incarceration_sentences=[sis_110035_19890901_1],
         )
-        vr_110035_19890901_5 = entities.StateSupervisionViolationResponse.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-            response_type_raw_text="PERMANENT_DECISION",
-            response_date=datetime.date(year=1994, month=6, day=9),
-            decision=StateSupervisionViolationResponseDecision.REVOCATION,
-            decision_raw_text="REVOCATION",
-            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-            revocation_type_raw_text="S",
-            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
-            deciding_body_type_raw_text="PAROLE_BOARD",
-            person=person_110035,
-        )
-        ip_110035_19890901_5_0.source_supervision_violation_response = (
-            vr_110035_19890901_5
-        )
 
         sis_110035_19890901_1.incarceration_periods = [
             ip_110035_19890901_1_0,
@@ -2692,22 +2641,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             specialized_purpose_for_incarceration_raw_text="X",
             person=person_110035,
             incarceration_sentences=[sis_110035_20010414_1],
-        )
-        vr_110035_20010414_2 = entities.StateSupervisionViolationResponse.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-            response_type_raw_text="PERMANENT_DECISION",
-            response_date=datetime.date(year=2001, month=4, day=20),
-            decision=StateSupervisionViolationResponseDecision.REVOCATION,
-            decision_raw_text="REVOCATION",
-            revocation_type=None,
-            revocation_type_raw_text="X",
-            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
-            deciding_body_type_raw_text="PAROLE_BOARD",
-            person=person_110035,
-        )
-        ip_110035_20010414_2_0.source_supervision_violation_response = (
-            vr_110035_20010414_2
         )
 
         ip_110035_20010414_4_0 = entities.StateIncarcerationPeriod.new_with_defaults(
@@ -2761,40 +2694,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             specialized_purpose_for_incarceration_raw_text="S",
             person=person_110035,
             incarceration_sentences=[sis_110035_20010414_1],
-        )
-
-        vr_110035_20010414_7_0 = entities.StateSupervisionViolationResponse.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-            response_type_raw_text="PERMANENT_DECISION",
-            response_date=datetime.date(year=2016, month=3, day=28),
-            decision=StateSupervisionViolationResponseDecision.REVOCATION,
-            decision_raw_text="REVOCATION",
-            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-            revocation_type_raw_text="S",
-            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
-            deciding_body_type_raw_text="PAROLE_BOARD",
-            person=person_110035,
-        )
-        ip_110035_20010414_7_0.source_supervision_violation_response = (
-            vr_110035_20010414_7_0
-        )
-
-        vr_110035_20010414_7_3 = entities.StateSupervisionViolationResponse.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-            response_type_raw_text="PERMANENT_DECISION",
-            response_date=datetime.date(year=2016, month=4, day=28),
-            decision=StateSupervisionViolationResponseDecision.REVOCATION,
-            decision_raw_text="REVOCATION",
-            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-            revocation_type_raw_text="S",
-            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
-            deciding_body_type_raw_text="PAROLE_BOARD",
-            person=person_110035,
-        )
-        ip_110035_20010414_7_3.source_supervision_violation_response = (
-            vr_110035_20010414_7_3
         )
 
         sis_110035_20010414_1.incarceration_periods = [
