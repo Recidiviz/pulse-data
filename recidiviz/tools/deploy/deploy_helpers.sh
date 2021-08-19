@@ -97,15 +97,14 @@ function pre_deploy_configure_infrastructure {
 
     echo "Deploying terraform"
     verify_hash $COMMIT_HASH
+    # Terraform determines certain resources by looking at the directory structure,
+    # so give our shell the ability to open plenty of file descriptors.
+    run_cmd ulimit -n 1024
     deploy_terraform_infrastructure ${PROJECT} ${COMMIT_HASH} ${DOCKER_IMAGE_TAG} || exit_on_fail
 
     echo "Deploying cron.yaml"
     verify_hash $COMMIT_HASH
     run_cmd gcloud -q app deploy cron.yaml --project=${PROJECT}
-
-    echo "Initializing task queues"
-    verify_hash $COMMIT_HASH
-    run_cmd pipenv run python -m recidiviz.tools.initialize_google_cloud_task_queues --project_id ${PROJECT} --google_auth_token $(gcloud auth print-access-token)
 
     # Update the Dataflow metric table schemas and update all BigQuery views.
     echo "Updating the BigQuery Dataflow metric table schemas to match the metric classes"
