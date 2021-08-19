@@ -33,7 +33,7 @@ import type PolicyStore from "../PolicyStore";
 import { ScoreMinMax } from "../PolicyStore";
 import type ClientsStore from "./ClientsStore";
 import { buildClientEvent, ClientEvent, ClientEventData } from "./Event";
-import { NoteData, Note } from "./Note";
+import { Note, NoteData } from "./Note";
 
 /* eslint-disable camelcase */
 interface ClientFullName {
@@ -258,13 +258,19 @@ export class Client {
       .sort(
         (a, b) => a.createdDatetime.valueOf() - b.createdDatetime.valueOf()
       );
-    const { given_names: given, surname } = clientData.fullName;
 
-    this.name = `${titleCase(given)} ${titleCase(surname)}`;
+    if (clientData.fullName === null) {
+      this.name = "Unknown";
+      this.formalName = this.name;
+    } else {
+      const { given_names: given, surname } = clientData.fullName;
 
-    this.formalName = titleCase(surname);
-    if (given) {
-      this.formalName += `, ${titleCase(given)}`;
+      this.name = `${titleCase(given)} ${titleCase(surname)}`;
+
+      this.formalName = titleCase(surname);
+      if (given) {
+        this.formalName += `, ${titleCase(given)}`;
+      }
     }
 
     this.possessivePronoun = POSSESSIVE_PRONOUNS[clientData.gender] || "their";
@@ -587,6 +593,9 @@ export class Client {
   }
 
   get givenName(): string {
+    if (this.fullName === null) {
+      return "Unknown";
+    }
     return titleCase(this.fullName.given_names);
   }
 
