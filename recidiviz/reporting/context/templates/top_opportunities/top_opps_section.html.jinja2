@@ -1,0 +1,16 @@
+{% import 'common/components.html.jinja2' as components %}
+
+{% if mismatches %}
+<table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
+class="em_wrapper" style="width:600px;" role="presentation"> {# Top Opps section #}
+
+    {{ components.section_heading("Top Opportunities")}}
+
+    <tr>
+        <td valign="top" align="center">
+            {% include "top_opportunities/supervision_mismatches.html.jinja2" %}
+        </td>
+    </tr>
+    {{ components.y_padding(32) }}
+</table>
+{% endif %}

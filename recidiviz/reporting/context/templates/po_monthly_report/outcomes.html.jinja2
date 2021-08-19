@@ -1,0 +1,303 @@
+<table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
+  class="em_wrapper" style="width:600px;" role="presentation">
+  <tr>
+    <td class="em_h18" height="40" style="height: 40px;">&nbsp;</td>
+  </tr>
+
+  {{ components.section_heading("Client Outcomes")}}
+  
+  <tr>
+    <td valign="top" align="center">
+      <table align="center" width="599" border="0" cellspacing="0" cellpadding="0"
+        class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
+        style="width:599px; border-radius: 5px;" role="presentation">
+        {% if total_revocations is not none -%}
+        <tr>
+          <td valign="top" align="center">
+            <table align="center" width="599" border="0" cellspacing="0" cellpadding="0"
+              class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
+              style="width:599px; border-radius: 5px;" role="presentation">
+              <tr>
+                <td class="em_side15" width="32" style="width: 32px;">&nbsp;</td>
+                <td valign="top" align="center">
+                  <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
+                    <tr>
+                      <td class="em_h20" height="40" style="height: 40px;">&nbsp;</td>
+                    </tr>
+                    <tr>
+                      <td valign="top" align="center">
+                        <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
+                          <tr>
+                            <td class="em_img1" width="64" valign="top" align="left"><img
+                                src="{{ static_image_path }}/ic_technical-revocation.png"
+                                width="64" height="64" alt=" " border="0"
+                                style="display: block; max-width: 64px;" /></td>
+                            <td class="em_side15" width="26" style="width: 26px;">&nbsp;</td>
+                            <td valign="top" align="left">
+                              <table align="left" width="100%" border="0" cellspacing="0"
+                                cellpadding="0" role="presentation">
+                                <tr>
+                                  <td class="em_hide" height="2"
+                                    style="height: 2px; font-size: 0px; line-height: 0px;">
+                                    <img src="{{ static_image_path }}/spacer.gif" width="1"
+                                      height="1" alt=" " border="0" style="display: block;" />
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td valign="top" align="left">
+                                    <table width="100%" border="0" cellspacing="0"
+                                      cellpadding="0" role="presentation">
+                                      <tr>
+
+                                        {{ components.card_heading(total_revocations_label, valign="bottom") }}
+                                        <td class="em_side" width="156" style="width: 156px;">
+                                          &nbsp;</td>
+                                        <td class="em_num_font em_dm_txt_white" valign="top"
+                                          align="right"
+                                          style="font-family: 'Libre Baskerville', 'Times New Roman', Times, serif; font-size: 48px; line-height: 48px; font-weight: 400; letter-spacing: -0.03em; color: #006C67;">
+                                          {{ total_revocations }} </td>
+                                      </tr>
+                                    </table>
+                                  </td>
+                                </tr>
+                              </table>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="em_h15" height="39" style="height: 39px;">&nbsp;</td>
+                    </tr>
+                  </table>
+                </td>
+                <td class="em_side15" width="32" style="width: 32px;">&nbsp;</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        {% endif -%}
+        {{ components.card_divider(static_image_path) }}
+        <tr>
+          <td class="em_h18" height="32" style="height: 32px;">&nbsp;</td>
+        </tr>
+        {% if technical_revocations is not none -%}
+        <tr>
+          <td valign="top" align="center">
+            <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
+              <tr>
+                <td class="em_side15" width="32" style="width: 32px;">&nbsp;</td>
+                <td class="em_font em_dm_txt_white" valign="top" align="left"
+                  style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 20px; line-height: 24px; font-weight: 600; color: #00413E;">
+                  Technical Only </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td class="em_h10" height="32" style="height: 32px;">&nbsp;</td>
+        </tr>
+        <tr>
+          <td valign="top" align="center">
+            <table align="center" width="599" border="0" cellspacing="0" cellpadding="0"
+              class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
+              style="width:599px; border-radius: 5px;" role="presentation">
+              <tr>
+                <td class="em_side1" width="84" style="width: 84px;">&nbsp;</td>
+                <td valign="top" align="center">
+                  <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
+                    <tr>
+                      <td valign="top" align="center">
+                        <table border="0" cellspacing="0" cellpadding="0" role="presentation">
+                          <tr>
+                            <td class="em_num1 em_dm_txt_white" valign="top" align="center"
+                              style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 32px; line-height: 38px; font-weight: 600; color: {{ technical_revocations_color }}; letter-spacing: -0.01em;">
+                              {{ technical_revocations }}</td>
+                          </tr>
+                          <tr>
+                            <td class="em_h4" height="8"
+                              style="height: 8px; font-size: 0px; line-height: 0px;">&nbsp;
+                            </td>
+                          </tr>
+                          <tr>
+                            <td class="em_font" valign="top" align="center"
+                              style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 20px; line-height: 24px; font-weight: 600; color: #7D9897;">
+                              You </td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td class="em_gap1" width="80" style="width: 80px;">&nbsp;</td>
+                      <td valign="top" align="center">
+                        <table border="0" cellspacing="0" cellpadding="0" role="presentation">
+                          <tr>
+                            <td class="em_num1 em_dm_txt_white" valign="top" align="center"
+                              style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 32px; line-height: 38px; font-weight: 600; color: {{ technical_revocations_district_average_color }}; letter-spacing: -0.01em;">
+                              {{ technical_revocations_district_average }}</td>
+                          </tr>
+                          <tr>
+                            <td class="em_h4" height="8"
+                              style="height: 8px; font-size: 0px; line-height: 0px;">&nbsp;
+                            </td>
+                          </tr>
+                          <tr>
+                            <td class="em_font" valign="top" align="center"
+                              style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 20px; line-height: 24px; font-weight: 600; color: #7D9897;">
+                              District Average </td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td class="em_gap2" width="58" style="width: 58px;">&nbsp;</td>
+                      <td valign="top" align="center">
+                        <table border="0" cellspacing="0" cellpadding="0" role="presentation">
+                          <tr>
+                            <td class="em_num1 em_dm_txt_white" valign="top" align="center"
+                              style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 32px; line-height: 38px; font-weight: 600; color: #00413E; letter-spacing: -0.01em;">
+                              {{ technical_revocations_state_average }}</td>
+                          </tr>
+                          <tr>
+                            <td class="em_h4" height="8"
+                              style="height: 8px; font-size: 0px; line-height: 0px;">&nbsp;
+                            </td>
+                          </tr>
+                          <tr>
+                            <td class="em_font" valign="top" align="center"
+                              style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 20px; line-height: 24px; font-weight: 600; color: #7D9897;">
+                              State Average </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+                <td class="em_side2" width="40" style="width: 40px;">&nbsp;</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        {% endif -%}
+        <tr>
+          <td class="em_h20" height="30" style="height: 30px;">&nbsp;</td>
+        </tr>
+        {{ components.card_divider(static_image_path) }}
+        <tr>
+          <td class="em_h18" height="32" style="height: 32px;">&nbsp;</td>
+        </tr>
+        {% if crime_revocations is not none -%}
+        <tr>
+          <td valign="top" align="center">
+            <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
+              <tr>
+                <td class="em_side15" width="32" style="width: 32px;">&nbsp;</td>
+                <td class="em_font em_dm_txt_white" valign="top" align="left"
+                  style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 20px; line-height: 24px; font-weight: 600; color: #00413E;">
+                  New Criminal Charges </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td class="em_h10" height="32" style="height: 32px;">&nbsp;</td>
+        </tr>
+        <tr>
+          <td valign="top" align="center">
+            <table align="center" width="599" border="0" cellspacing="0" cellpadding="0"
+              class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
+              style="width:599px; border-radius: 5px;" role="presentation">
+              <tr>
+                <td class="em_side1" width="84" style="width: 84px;">&nbsp;</td>
+                <td valign="top" align="center">
+                  <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
+                    <tr>
+                      <td valign="top" align="center">
+                        <table border="0" cellspacing="0" cellpadding="0" role="presentation">
+                          <tr>
+                            <td class="em_num1 em_dm_txt_white" valign="top" align="center"
+                              style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 32px; line-height: 38px; font-weight: 600; color: {{ crime_revocations_color }}; letter-spacing: -0.01em;">
+                              {{ crime_revocations }}</td>
+                          </tr>
+                          <tr>
+                            <td class="em_h4" height="8"
+                              style="height: 8px; font-size: 0px; line-height: 0px;">&nbsp;
+                            </td>
+                          </tr>
+                          <tr>
+                            <td class="em_font" valign="top" align="center"
+                              style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 20px; line-height: 24px; font-weight: 600; color: #7D9897;">
+                              You </td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td class="em_gap1" width="80" style="width: 80px;">&nbsp;</td>
+                      <td valign="top" align="center">
+                        <table border="0" cellspacing="0" cellpadding="0" role="presentation">
+                          <tr>
+                            <td class="em_num1 em_dm_txt_white" valign="top" align="center"
+                              style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 32px; line-height: 38px; font-weight: 600; color: {{ crime_revocations_district_average_color }}; letter-spacing: -0.01em;">
+                              {{ crime_revocations_district_average }}</td>
+                          </tr>
+                          <tr>
+                            <td class="em_h4" height="8"
+                              style="height: 8px; font-size: 0px; line-height: 0px;">&nbsp;
+                            </td>
+                          </tr>
+                          <tr>
+                            <td class="em_font" valign="top" align="center"
+                              style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 20px; line-height: 24px; font-weight: 600; color: #7D9897;">
+                              District Average</td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td class="em_gap2" width="58" style="width: 58px;">&nbsp;</td>
+                      <td valign="top" align="center">
+                        <table border="0" cellspacing="0" cellpadding="0" role="presentation">
+                          <tr>
+                            <td class="em_num1 em_dm_txt_white" valign="top" align="center"
+                              style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 32px; line-height: 38px; font-weight: 600; color: #00413E; letter-spacing: -0.01em;">
+                              {{ crime_revocations_state_average }}</td>
+                          </tr>
+                          <tr>
+                            <td class="em_h4" height="8"
+                              style="height: 8px; font-size: 0px; line-height: 0px;">&nbsp;
+                            </td>
+                          </tr>
+                          <tr>
+                            <td class="em_font" valign="top" align="center"
+                              style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 20px; line-height: 24px; font-weight: 600; color: #7D9897;">
+                              State Average </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+                <td class="em_side2" width="40" style="width: 40px;">&nbsp;</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        {% endif -%}
+        <tr>
+          <td class="em_h22" height="40" style="height: 40px;">&nbsp;</td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td class="em_h8" height="16" style="height: 16px; font-size: 0px; line-height: 0px;">
+      &nbsp;</td>
+  </tr>
+  {% if absconsions_label -%}
+  {{ cards.average_comparison_card(
+        static_image_path,
+        'ic_absconder.png',
+        absconsions_label,
+        absconsions,
+        '',
+        '',
+        absconsions_color,
+        absconsions_district_average_color,
+        absconsions_district_average,
+        absconsions_state_average
+      ) }}
+  {% endif -%}
+</table>

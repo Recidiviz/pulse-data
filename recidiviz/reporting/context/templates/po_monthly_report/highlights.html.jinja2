@@ -1,0 +1,57 @@
+<table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
+  class="em_wrapper" style="width:600px;" role="presentation">
+  
+  {% set section_title %}{{ review_month }} Highlights{% endset %}
+  {{ components.section_heading(section_title)}}
+  
+  {% if pos_discharges_label -%}
+  {{ cards.average_comparison_card(
+        static_image_path,
+        'ic_case-completions.png',
+        pos_discharges_label,
+        pos_discharges,
+        pos_discharges_change_color,
+        pos_discharges_change,
+        pos_discharges_color,
+        pos_discharges_district_average_color,
+        pos_discharges_district_average,
+        pos_discharges_state_average
+      ) }}
+  {% endif -%}
+  <tr>
+    <td class="em_h8" height="16" style="height: 16px; font-size: 0px; line-height: 0px;">
+      &nbsp;</td>
+  </tr>
+  {% if earned_discharges_label -%}
+  {{ cards.average_comparison_card(
+        static_image_path,
+        'ic_early-discharges.png',
+        earned_discharges_label,
+        earned_discharges,
+        earned_discharges_change_color,
+        earned_discharges_change,
+        earned_discharges_color,
+        earned_discharges_district_average_color,
+        earned_discharges_district_average,
+        earned_discharges_state_average
+      ) }}
+  {% endif -%}
+  <tr>
+    <td class="em_h8" height="16" style="height: 16px; font-size: 0px; line-height: 0px;">
+      &nbsp;</td>
+  </tr>
+  {% if supervision_downgrades_label -%}
+  {{ cards.average_comparison_card(
+        static_image_path,
+        'ic_supervision-downgrades.png',
+        supervision_downgrades_label,
+        supervision_downgrades,
+        supervision_downgrades_change_color,
+        supervision_downgrades_change,
+        supervision_downgrades_color,
+        supervision_downgrades_district_average_color,
+        supervision_downgrades_district_average,
+        supervision_downgrades_state_average
+      ) }}
+  {% endif -%}
+</table>
