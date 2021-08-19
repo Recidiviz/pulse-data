@@ -9,11 +9,12 @@
 - [ ] Bug fix (non-breaking change that fixes an issue)
 - [ ] New feature (non-breaking change that adds functionality)
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] Non-breaking refactor (change addresses some tech debt item or prepares for a later change, but does not change functionality)
 - [ ] Configuration change (adjusts configuration to achieve some end related to functionality, development, performance, or security)
 
 ## Related issues
 
-> Closes [#XXXX]
+Closes #XXXX
 
 ## Checklists
 
@@ -21,8 +22,6 @@
 
 These boxes should be checked by the submitter prior to merging:
 
-- [ ] Mypy types have been added to all functions/methods in files this PR touches (when reasonable)
-- [ ] Directories passing mypy have been removed from disallow_untyped_defs excludelist in setup.cfg (See http://go/mypy/ for more info)
 - [ ] Lint and mypy rules pass locally
 - [ ] All tests related to the changed code pass locally
 - [ ] Tests have been written to cover the code changed/added as part of this pull request
