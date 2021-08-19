@@ -386,7 +386,6 @@ message StateIncarcerationPeriod {
     repeated string state_parole_decision_ids = 17;
     repeated string state_assessment_ids = 18;
     repeated string state_program_assignment_ids = 19;
-    optional string source_supervision_violation_response_id = 20;
 }
 
 message StateSupervisionPeriod {
