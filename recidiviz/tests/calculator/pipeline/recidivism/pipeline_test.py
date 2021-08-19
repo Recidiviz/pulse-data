@@ -406,7 +406,6 @@ class TestRecidivismPipeline(unittest.TestCase):
             admission_date=date(2011, 4, 5),
             release_date=date(2014, 1, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-            source_supervision_violation_response_id=supervision_violation_response.supervision_violation_response_id,
             person_id=fake_person_id_2,
         )
 

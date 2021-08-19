@@ -20,7 +20,8 @@ from typing import Any, Dict, cast
 import cattr
 from google.protobuf import json_format
 
-from recidiviz.common import common_utils, serialization as common_serialization
+from recidiviz.common import common_utils
+from recidiviz.common import serialization as common_serialization
 from recidiviz.ingest.models import ingest_info, ingest_info_pb2
 from recidiviz.utils import trace
 
@@ -200,17 +201,6 @@ def convert_ingest_info_to_proto(
             parent_proto.state_incarceration_period_ids.append(
                 proto_period.state_incarceration_period_id
             )
-
-            if incarceration_period.source_supervision_violation_response:
-                proto_violation_response = _populate_proto(
-                    "state_supervision_violation_responses",
-                    incarceration_period.source_supervision_violation_response,
-                    "state_supervision_violation_response_id",
-                    state_supervision_violation_response_map,
-                )
-                proto_period.source_supervision_violation_response_id = (
-                    proto_violation_response.state_supervision_violation_response_id
-                )
 
             for incident in incarceration_period.state_incarceration_incidents:
                 proto_incident = _populate_proto(
@@ -1120,13 +1110,6 @@ def convert_proto_to_ingest_info(
         incarceration_period = state_incarceration_period_map[
             proto_incarceration_period.state_incarceration_period_id
         ]
-
-        if proto_incarceration_period.source_supervision_violation_response_id:
-            incarceration_period.source_supervision_violation_response = (
-                state_supervision_violation_response_map[
-                    proto_incarceration_period.source_supervision_violation_response_id
-                ]
-            )
 
         incarceration_period.state_incarceration_incidents = [
             state_incarceration_incident_map[proto_id]

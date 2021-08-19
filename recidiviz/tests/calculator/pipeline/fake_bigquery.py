@@ -55,13 +55,13 @@ ENTITY_TABLE_QUERY_REGEX = re.compile(
 
 # Regex matching queries used by calc pipelines to hydrate association table rows.
 # Example query (with newlines added for readability):
-# SELECT state_incarceration_period.incarceration_period_id,
-#   state_incarceration_period.source_supervision_violation_response_id
-# FROM `recidiviz-123.state.state_incarceration_period` state_incarceration_period
-# JOIN (SELECT * FROM `recidiviz-123.state.state_supervision_violation_response`
-#       WHERE state_code IN ('US_XX') AND person_id IN (12345)) state_supervision_violation_response
-# ON state_supervision_violation_response.supervision_violation_response_id
-#   = state_incarceration_period.source_supervision_violation_response_id
+# SELECT state_incarceration_incident_outcome.incarceration_incident_outcome_id,
+#   state_incarceration_incident_outcome.incarceration_incident_id
+# FROM `recidiviz-123.state.state_incarceration_incident_outcome` state_incarceration_incident_outcome
+# JOIN (SELECT * FROM `recidiviz-123.state.state_incarceration_incident`
+#       WHERE state_code IN ('US_XX') AND person_id IN (12345)) state_incarceration_incident
+# ON state_incarceration_incident.incarceration_incident_id
+#   = state_incarceration_incident_outcome.incarceration_incident_id
 ASSOCIATION_TABLE_QUERY_REGEX = re.compile(
     r"SELECT ([a-z_]+\.[a-z_]+), ([a-z_]+\.[a-z_]+) "
     r"FROM `([a-z\d\-]+\.[a-z_]+)\.([a-z_]+)` ([a-z_]+) "

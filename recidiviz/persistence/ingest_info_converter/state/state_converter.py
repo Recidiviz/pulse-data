@@ -18,23 +18,23 @@
 """Converts ingested IngestInfo data to the persistence layer entities."""
 
 from recidiviz.ingest.models.ingest_info_pb2 import (
-    StateSentenceGroup,
-    StatePerson,
-    StateSupervisionSentence,
-    StateIncarcerationSentence,
-    StateCharge,
-    StateIncarcerationPeriod,
-    StateSupervisionPeriod,
-    StateSupervisionViolation,
-    StateFine,
-    StateParoleDecision,
-    StateIncarcerationIncident,
     StateAssessment,
+    StateCharge,
     StateCourtCase,
-    StateSupervisionViolationResponse,
-    StateProgramAssignment,
     StateEarlyDischarge,
+    StateFine,
+    StateIncarcerationIncident,
+    StateIncarcerationPeriod,
+    StateIncarcerationSentence,
+    StateParoleDecision,
+    StatePerson,
+    StateProgramAssignment,
+    StateSentenceGroup,
     StateSupervisionContact,
+    StateSupervisionPeriod,
+    StateSupervisionSentence,
+    StateSupervisionViolation,
+    StateSupervisionViolationResponse,
 )
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.deserialize_entity_factories import (
@@ -43,34 +43,34 @@ from recidiviz.persistence.entity.state.deserialize_entity_factories import (
 )
 from recidiviz.persistence.ingest_info_converter.base_converter import BaseConverter
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
-    state_person,
+    state_agent,
     state_alias,
-    state_person_race,
-    state_person_ethnicity,
     state_assessment,
-    state_person_external_id,
-    state_sentence_group,
-    state_supervision_sentence,
-    state_incarceration_sentence,
-    state_charge,
     state_bond,
+    state_charge,
     state_court_case,
-    state_incarceration_period,
-    state_supervision_period,
-    state_parole_decision,
+    state_early_discharge,
+    state_fine,
     state_incarceration_incident,
+    state_incarceration_incident_outcome,
+    state_incarceration_period,
+    state_incarceration_sentence,
+    state_parole_decision,
+    state_person,
+    state_person_ethnicity,
+    state_person_external_id,
+    state_person_race,
+    state_program_assignment,
+    state_sentence_group,
+    state_supervision_case_type_entry,
+    state_supervision_contact,
+    state_supervision_period,
+    state_supervision_sentence,
+    state_supervision_violated_condition_entry,
     state_supervision_violation,
     state_supervision_violation_response,
-    state_fine,
-    state_agent,
-    state_incarceration_incident_outcome,
-    state_program_assignment,
-    state_supervision_violation_type_entry,
-    state_supervision_violated_condition_entry,
     state_supervision_violation_response_decision_entry,
-    state_supervision_case_type_entry,
-    state_early_discharge,
-    state_supervision_contact,
+    state_supervision_violation_type_entry,
 )
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import fn
 
@@ -459,16 +459,6 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             for assignment_id in ingest_incarceration_period.state_program_assignment_ids
         ]
         incarceration_period_builder.program_assignments = converted_program_assignments
-
-        if ingest_incarceration_period.source_supervision_violation_response_id:
-            converted_source_violation_response = self._convert_supervision_violation_response(
-                self.violation_responses[
-                    ingest_incarceration_period.source_supervision_violation_response_id
-                ]
-            )
-            incarceration_period_builder.source_supervision_violation_response = (
-                converted_source_violation_response
-            )
 
         return incarceration_period_builder.build()
 

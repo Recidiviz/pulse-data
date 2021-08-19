@@ -1452,7 +1452,6 @@ class StateIncarcerationPeriod(IngestObject):
         state_parole_decisions=None,
         state_assessments=None,
         state_program_assignments=None,
-        source_supervision_violation_response=None,
         custodial_authority=None,
     ):
         self.state_incarceration_period_id: Optional[
@@ -1486,12 +1485,8 @@ class StateIncarcerationPeriod(IngestObject):
             state_program_assignments or []
         )
 
-        self.source_supervision_violation_response: Optional[
-            StateSupervisionViolationResponse
-        ] = (source_supervision_violation_response or None)
-
     def __setattr__(self, name, value):
-        restricted_setattr(self, "source_supervision_violation_response", name, value)
+        restricted_setattr(self, "state_program_assignments", name, value)
 
     def create_state_incarceration_incident(
         self, **kwargs
@@ -1514,14 +1509,6 @@ class StateIncarcerationPeriod(IngestObject):
         program_assignment = StateProgramAssignment(**kwargs)
         self.state_program_assignments.append(program_assignment)
         return program_assignment
-
-    def create_state_supervision_violation_response(
-        self, **kwargs
-    ) -> "StateSupervisionViolationResponse":
-        self.source_supervision_violation_response = StateSupervisionViolationResponse(
-            **kwargs
-        )
-        return self.source_supervision_violation_response
 
     def get_state_incarceration_incident_by_id(
         self, state_incarceration_incident_id

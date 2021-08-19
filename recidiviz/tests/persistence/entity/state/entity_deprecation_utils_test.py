@@ -63,20 +63,20 @@ class TestValidateDeprecatedEntityFieldForStates(unittest.TestCase):
         ip = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code="US_XX",
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-            source_supervision_violation_response=entities.StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_XX"
-            ),
+            parole_decisions=[
+                entities.StateParoleDecision.new_with_defaults(state_code="US_XX")
+            ],
         )
 
         with self.assertRaises(ValueError) as e:
             entity_deprecation_utils.validate_deprecated_entity_field_for_states(
                 entity=ip,
-                field_name="source_supervision_violation_response",
+                field_name="parole_decisions",
                 deprecated_state_codes=["US_XX", "US_YY"],
             )
 
             self.assertEqual(
-                "The [source_supervision_violation_response] relationship "
+                "The [parole_decisions] relationship "
                 "is deprecated for state_code: [US_XX]. This relationship "
                 "should not be populated.",
                 e,
@@ -90,15 +90,13 @@ class TestValidateDeprecatedEntityFieldForStates(unittest.TestCase):
         ip = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code="US_ZZ",
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-            source_supervision_violation_response=entities.StateSupervisionViolationResponse.new_with_defaults(
-                state_code="US_ZZ"
-            ),
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
         )
 
         # Assert no error raised
         entity_deprecation_utils.validate_deprecated_entity_field_for_states(
             entity=ip,
-            field_name="source_supervision_violation_response",
+            field_name="incarceration_type",
             deprecated_state_codes=["US_XX", "US_YY"],
         )
 
@@ -115,7 +113,7 @@ class TestValidateDeprecatedEntityFieldForStates(unittest.TestCase):
         # Assert no error raised
         entity_deprecation_utils.validate_deprecated_entity_field_for_states(
             entity=ip,
-            field_name="source_supervision_violation_response",
+            field_name="incarceration_type",
             deprecated_state_codes=["US_XX", "US_YY"],
         )
 

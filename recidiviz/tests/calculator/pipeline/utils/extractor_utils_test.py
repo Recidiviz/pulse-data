@@ -1289,37 +1289,30 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
         is a 1-to-1 relationship to be hydrated (from the point of view of the
         root schema object), the relationship field on the root entity is
         optional, and the field is not set on the root entity ."""
-        incarceration_period_1 = database_test_utils.generate_test_incarceration_period(
-            123, [], []
+        person_id = 123
+        court_case_1 = database_test_utils.generate_test_court_case(person_id)
+
+        charge_1 = database_test_utils.generate_test_charge(
+            person_id,
+            charge_id=345,
+            court_case=court_case_1,
         )
 
-        source_supervision_violation_response = (
-            database_test_utils.generate_test_supervision_violation_response(123)
-        )
-
-        incarceration_period_1.source_supervision_violation_response_id = (
-            source_supervision_violation_response.supervision_violation_response_id
-        )
-
-        incarceration_period_2 = schema.StateIncarcerationPeriod(
-            incarceration_period_id=7777,
-            status=entities.StateIncarcerationPeriodStatus.NOT_IN_CUSTODY.value,
-            state_code="US_XX",
-            person_id=incarceration_period_1.person_id,
+        charge_2 = database_test_utils.generate_test_charge(
+            person_id,
+            charge_id=567,
+            # Relationship field unset
+            court_case=None,
         )
 
         data_dict = {
-            incarceration_period_1.__tablename__: normalized_database_base_dict_list(
-                [incarceration_period_1, incarceration_period_2]
+            schema.StateCourtCase.__tablename__: normalized_database_base_dict_list(
+                [court_case_1]
             ),
-            source_supervision_violation_response.__tablename__: [
-                normalized_database_base_dict(source_supervision_violation_response)
-            ],
-            schema.StateIncarcerationIncident.__tablename__: [],
-            schema.StateParoleDecision.__tablename__: [],
-            schema.StateAssessment.__tablename__: [],
-            schema.StateProgramAssignment.__tablename__: [],
-            schema.state_incarceration_period_program_assignment_association_table.name: [],
+            schema.StateCharge.__tablename__: normalized_database_base_dict_list(
+                [charge_1, charge_2]
+            ),
+            schema.StateBond.__tablename__: [],
         }
 
         dataset = "recidiviz-123.state"
@@ -1333,77 +1326,67 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
 
             output_properties_dict = (
                 test_pipeline | "Extract relationship properties for the "
-                "StateIncarcerationPeriod"
+                "StateCharge"
                 >> extractor_utils._ExtractRelationshipPropertyEntities(
                     dataset=dataset,
-                    parent_schema_class=schema.StateIncarcerationPeriod,
-                    parent_id_field="incarceration_period_id",
+                    parent_schema_class=schema.StateCharge,
+                    parent_id_field="charge_id",
                     unifying_id_field=entities.StatePerson.get_class_id_name(),
                     unifying_id_field_filter_set=None,
-                    state_code=incarceration_period_1.state_code,
+                    state_code=charge_1.state_code,
                 )
             )
 
-            output_supervision_violation_response = output_properties_dict.get(
-                "source_supervision_violation_response"
-            )
+            output_court_case = output_properties_dict.get("court_case")
 
             assert_that(
-                output_supervision_violation_response,
+                output_court_case,
                 ExtractAssertMatchers.validate_extract_relationship_property_entities(
-                    outer_connection_id=incarceration_period_1.person_id,
-                    inner_connection_id=incarceration_period_1.incarceration_period_id,
-                    class_type=entities.StateSupervisionViolationResponse,
+                    outer_connection_id=charge_1.person_id,
+                    inner_connection_id=charge_1.charge_id,
+                    class_type=entities.StateCourtCase,
                 ),
-                label="Validate incarceration_period relationship output",
+                label="Validate state_charge relationship output",
             )
 
             test_pipeline.run()
 
     def testExtractRelationshipPropertyEntities_OrphanedChild(self):
         """Tests the ExtractRelationshipPropertyEntities PTransform when there
-        is a 1-to-1 relationship to be hydrated (from the point of view of the
-        root schema object), the relationship field on the root entity is
-        optional, and there is an orphaned relationship entity.
+        is a 1-to-many relationship to be hydrated, the relationship field on the root
+        entity is optional, and there is an orphaned relationship entity.
 
         The expected result is that the orphaned entity is dropped, because it
         is not associated with any of the root entities we are hydrating.
         """
-        incarceration_period_1 = database_test_utils.generate_test_incarceration_period(
-            123, [], []
+        person_id = 123
+        incident_outcome_1 = (
+            database_test_utils.generate_test_incarceration_incident_outcome(person_id)
         )
 
-        source_supervision_violation_response_1 = (
-            database_test_utils.generate_test_supervision_violation_response(123)
-        )
-
-        incarceration_period_1.source_supervision_violation_response_id = (
-            source_supervision_violation_response_1.supervision_violation_response_id
-        )
-
-        source_supervision_violation_response_2 = (
-            schema.StateSupervisionViolationResponse(
-                supervision_violation_response_id=789,
-                state_code="US_XX",
-                person_id=incarceration_period_1.person_id,
+        incarceration_incident = (
+            database_test_utils.generate_test_incarceration_incident(
+                person_id, incarceration_incident_outcomes=[incident_outcome_1]
             )
         )
 
+        incident_outcome_1.incarceration_incident_id = (
+            incarceration_incident.incarceration_incident_id
+        )
+
+        incident_outcome_2 = schema.StateIncarcerationIncidentOutcome(
+            incarceration_incident_outcome_id=789,
+            state_code="US_XX",
+            person_id=person_id,
+        )
+
         data_dict = {
-            incarceration_period_1.__tablename__: normalized_database_base_dict_list(
-                [incarceration_period_1]
+            schema.StateIncarcerationIncident.__tablename__: normalized_database_base_dict_list(
+                [incarceration_incident]
             ),
-            source_supervision_violation_response_1.__tablename__: normalized_database_base_dict_list(
-                [
-                    source_supervision_violation_response_1,
-                    source_supervision_violation_response_2,
-                ]
+            schema.StateIncarcerationIncidentOutcome.__tablename__: normalized_database_base_dict_list(
+                [incident_outcome_1, incident_outcome_2]
             ),
-            schema.StateIncarcerationIncident.__tablename__: [],
-            schema.StateParoleDecision.__tablename__: [],
-            schema.StateAssessment.__tablename__: [],
-            schema.StateProgramAssignment.__tablename__: [],
-            schema.state_incarceration_period_program_assignment_association_table.name: [],
         }
 
         dataset = "recidiviz-123.state"
@@ -1417,29 +1400,29 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
 
             output_properties_dict = (
                 test_pipeline | "Extract relationship properties for the "
-                "StateIncarcerationPeriod"
+                "StateIncarcerationIncident"
                 >> extractor_utils._ExtractRelationshipPropertyEntities(
                     dataset=dataset,
-                    parent_schema_class=schema.StateIncarcerationPeriod,
-                    parent_id_field="incarceration_period_id",
+                    parent_schema_class=schema.StateIncarcerationIncident,
+                    parent_id_field="incarceration_incident_id",
                     unifying_id_field=entities.StatePerson.get_class_id_name(),
                     unifying_id_field_filter_set=None,
-                    state_code=incarceration_period_1.state_code,
+                    state_code=incarceration_incident.state_code,
                 )
             )
 
-            output_supervision_violation_response = output_properties_dict.get(
-                "source_supervision_violation_response"
+            output_incident = output_properties_dict.get(
+                "incarceration_incident_outcomes"
             )
 
             assert_that(
-                output_supervision_violation_response,
+                output_incident,
                 ExtractAssertMatchers.validate_extract_relationship_property_entities(
-                    outer_connection_id=incarceration_period_1.person_id,
-                    inner_connection_id=incarceration_period_1.incarceration_period_id,
-                    class_type=entities.StateSupervisionViolationResponse,
+                    outer_connection_id=incarceration_incident.person_id,
+                    inner_connection_id=incarceration_incident.incarceration_incident_id,
+                    class_type=entities.StateIncarcerationIncidentOutcome,
                 ),
-                label="Validate incarceration_period relationship output",
+                label="Validate incident outcome relationship output",
             )
 
             test_pipeline.run()
@@ -1812,7 +1795,7 @@ class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):
         ]
 
         output_fine = entities.StateFine.new_with_defaults(
-            fine_id=3333, status=entities.StateFineStatus.PAID, state_code="us_ca"
+            fine_id=3333, status=entities.StateFineStatus.PAID, state_code="US_XX"
         )
 
         output_fine.sentence_group = sentence_group_entity
@@ -1858,14 +1841,14 @@ class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):
         fine_2 = schema.StateFine(
             fine_id=9999,
             status=entities.StateFineStatus.PAID,
-            state_code="us_ca",
+            state_code="US_XX",
             person_id=person_id,
         )
 
         sentence_group_2 = schema.StateSentenceGroup(
             sentence_group_id=7895,
             status=StateSentenceStatus.SUSPENDED.value,
-            state_code="us_ca",
+            state_code="US_XX",
             person_id=person_id,
         )
 
@@ -1873,7 +1856,7 @@ class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):
             charge_id=1209,
             person_id=person_id,
             status=entities.ChargeStatus.PENDING,
-            state_code="us_ca",
+            state_code="US_XX",
         )
 
         fine_entity_1 = StateSchemaToEntityConverter().convert(fine_1)
@@ -1912,7 +1895,7 @@ class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):
         ]
 
         output_fine_1 = entities.StateFine.new_with_defaults(
-            fine_id=3333, status=entities.StateFineStatus.PAID, state_code="us_ca"
+            fine_id=3333, status=entities.StateFineStatus.PAID, state_code="US_XX"
         )
 
         output_fine_1.sentence_group = sentence_group_entity_1
@@ -1921,7 +1904,7 @@ class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):
         output_fine_2 = entities.StateFine.new_with_defaults(
             fine_id=fine_2.fine_id,
             status=entities.StateFineStatus.PAID,
-            state_code="us_ca",
+            state_code="US_XX",
         )
 
         output_fine_2.sentence_group = sentence_group_entity_2
