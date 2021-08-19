@@ -14,26 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+"""Helpers to make it easy to interact with Terraform from python"""
+import subprocess
 
-module "county_direct_ingest_buckets" {
-  for_each = toset(local.direct_ingest_county_codes)
-  source   = "./modules/county-direct-ingest-resources"
 
-  county_code = each.key
-  region      = "us-east1"
-  project_id  = var.project_id
-}
-
-module "direct_ingest_queues" {
-  for_each = toset([
-    "direct-ingest-scheduler-v2",        # TODO(#6455) Rename to "direct-ingest-jpp-scheduler-v2"
-    "direct-ingest-bq-import-export-v2", # TODO(#6455) Rename to "direct-ingest-jpp-bq-import-export-v2"
-    "direct-ingest-jpp-process-job-queue-v2",
-  ])
-
-  source = "./modules/serial-task-queue"
-
-  queue_name                = each.key
-  region                    = var.app_engine_region
-  max_dispatches_per_second = 100
-}
+def terraform_import(resource_addr: str, resource_id: str) -> None:
+    subprocess.run(
+        f"""
+        terraform -chdir=./recidiviz/tools/deploy/terraform import \
+        -var=project_id="" \
+        -var=docker_image_tag="" \
+        -var=git_hash="" \
+        {resource_addr} {resource_id}
+        """,
+        shell=True,
+        check=True,  # TODO(#8842): Consider removing this and returning an error instead to make it easier to resume if a run gets interrupted
+    )

@@ -15,25 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-module "county_direct_ingest_buckets" {
-  for_each = toset(local.direct_ingest_county_codes)
-  source   = "./modules/county-direct-ingest-resources"
+resource "google_cloud_tasks_queue" "queue" {
+  name     = var.queue_name
+  location = var.region
 
-  county_code = each.key
-  region      = "us-east1"
-  project_id  = var.project_id
-}
+  rate_limits {
+    max_dispatches_per_second = var.max_dispatches_per_second
+    max_concurrent_dispatches = var.max_concurrent_dispatches
+  }
 
-module "direct_ingest_queues" {
-  for_each = toset([
-    "direct-ingest-scheduler-v2",        # TODO(#6455) Rename to "direct-ingest-jpp-scheduler-v2"
-    "direct-ingest-bq-import-export-v2", # TODO(#6455) Rename to "direct-ingest-jpp-bq-import-export-v2"
-    "direct-ingest-jpp-process-job-queue-v2",
-  ])
+  retry_config {
+    max_attempts = var.max_retry_attempts
+    max_backoff = var.max_retry_backoff
+    min_backoff = var.min_retry_backoff
+  }
 
-  source = "./modules/serial-task-queue"
-
-  queue_name                = each.key
-  region                    = var.app_engine_region
-  max_dispatches_per_second = 100
+  stackdriver_logging_config {
+    sampling_ratio = var.logging_sampling_ratio
+  }
 }
