@@ -732,7 +732,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             projected_release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             admission_date=date(2017, 1, 4),
             person_id=fake_person_id,
-            source_supervision_violation_response_id=fake_svr_id,
         )
 
         assessment = schema.StateAssessment(
@@ -981,7 +980,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             admission_date=date(2011, 4, 5),
             release_date=date(2014, 1, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-            source_supervision_violation_response_id=supervision_violation_response.supervision_violation_response_id,
             person_id=fake_person_id_2,
         )
 

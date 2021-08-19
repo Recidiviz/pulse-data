@@ -104,10 +104,6 @@ from recidiviz.common.date import DateRange, DurationMixin
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 
 # **** Entity Types for convenience *****:
-from recidiviz.persistence.entity.state.entity_deprecation_utils import (
-    validate_deprecated_entity_field_for_states,
-)
-
 SentenceType = TypeVar(
     "SentenceType", "StateSupervisionSentence", "StateIncarcerationSentence"
 )
@@ -1050,12 +1046,6 @@ class StateIncarcerationPeriod(
         factory=list, validator=attr_validators.is_list
     )
 
-    # When the admission reason is PROBATION_REVOCATION or PAROLE_REVOCATION, this is the object with info about the
-    # violation/hearing that resulted in the revocation
-    source_supervision_violation_response: Optional[
-        "StateSupervisionViolationResponse"
-    ] = attr.ib(default=None)
-
     @property
     def duration(self) -> DateRange:
         """Generates a DateRange for the days covered by the incarceration period.  Since DateRange is never open,
@@ -1086,13 +1076,6 @@ class StateIncarcerationPeriod(
     @property
     def end_date_exclusive(self) -> Optional[datetime.date]:
         return self.release_date
-
-    def __attrs_post_init__(self) -> None:
-        validate_deprecated_entity_field_for_states(
-            entity=self,
-            field_name="source_supervision_violation_response",
-            deprecated_state_codes=["US_ID", "US_MO", "US_ND", "US_PA"],
-        )
 
 
 @attr.s(eq=False)

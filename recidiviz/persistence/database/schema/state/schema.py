@@ -2520,21 +2520,6 @@ class _StateIncarcerationPeriodSharedColumns(_ReferencesStatePersonSharedColumns
         "custodial authority.",
     )
 
-    @declared_attr
-    def source_supervision_violation_response_id(self) -> Column:
-        return Column(
-            Integer,
-            ForeignKey(
-                "state_supervision_violation_response."
-                "supervision_violation_response_id"
-            ),
-            index=True,
-            nullable=True,
-            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-                object_name="source supervision violation response"
-            ),
-        )
-
 
 class StateIncarcerationPeriod(StateBase, _StateIncarcerationPeriodSharedColumns):
     """Represents a StateIncarcerationPeriod in the SQL schema"""
@@ -2565,11 +2550,7 @@ class StateIncarcerationPeriod(StateBase, _StateIncarcerationPeriodSharedColumns
             "of those objects. Incarceration periods have zero to many Incarceration Incidents as children, "
             "and zero to many Parole Decisions. They also may have Assessments or Program Assignments as "
             "children, if any of those objects are explicitly related to this particular period of "
-            "incarceration. Incarceration periods also optionally have a child "
-            "source_supervision_violation_response, which is a Supervision Violation Response of "
-            "type REVOCATION that corresponds to the revocation that caused the re-incarceration leading "
-            "back to this particular incarceration period. This connection is established during entity "
-            "matching, unless that link can be explicitly provided in the source data."
+            "incarceration."
         },
     )
     incarceration_period_id = Column(
@@ -2593,10 +2574,6 @@ class StateIncarcerationPeriod(StateBase, _StateIncarcerationPeriodSharedColumns
         secondary=state_incarceration_period_program_assignment_association_table,
         backref="incarceration_periods",
         lazy="selectin",
-    )
-
-    source_supervision_violation_response = relationship(
-        "StateSupervisionViolationResponse", uselist=False, lazy="selectin"
     )
 
 

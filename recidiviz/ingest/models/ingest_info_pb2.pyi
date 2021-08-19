@@ -11,6 +11,18 @@ import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor = ...
 
+# To regenerate, ensure `mypy-protobuf` is installed:
+# ```bash
+# pipenv install --dev
+# ```
+# See the README for instructions on installing protoc if you do not yet have
+# it installed.
+#
+# Re-generate the python files including type information:
+# ```bash
+# protoc recidiviz/ingest/models/ingest_info.proto --python_out . --mypy_out .
+# ```
+
 class IngestInfo(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     PEOPLE_FIELD_NUMBER: builtins.int
@@ -460,9 +472,12 @@ class Person(google.protobuf.message.Message):
     middle_names: typing.Text = ...
     name_suffix: typing.Text = ...
     jurisdiction_id: typing.Text = ...
-    booking_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    @property
+    def booking_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
+    ]: ...
     def __init__(
         self,
         *,
@@ -576,12 +591,18 @@ class Booking(google.protobuf.message.Message):
     classification: typing.Text = ...
     total_bond_amount: typing.Text = ...
     arrest_id: typing.Text = ...
-    charge_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    @property
+    def charge_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    hold_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def hold_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
+    ]: ...
     def __init__(
         self,
         *,
@@ -1169,27 +1190,48 @@ class StatePerson(google.protobuf.message.Message):
     age: typing.Text = ...
     current_address: typing.Text = ...
     residency_status: typing.Text = ...
-    state_person_race_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    @property
+    def state_person_race_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_person_ethnicity_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_person_ethnicity_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_alias_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_alias_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_person_external_ids_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_person_external_ids_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_assessment_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_assessment_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_sentence_group_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_sentence_group_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_program_assignment_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_program_assignment_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
+    ]: ...
     supervising_officer_id: typing.Text = ...
     state_code: typing.Text = ...
     def __init__(
@@ -1597,15 +1639,24 @@ class StateSentenceGroup(google.protobuf.message.Message):
     min_length: typing.Text = ...
     max_length: typing.Text = ...
     is_life: typing.Text = ...
-    state_supervision_sentence_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    @property
+    def state_supervision_sentence_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_incarceration_sentence_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_incarceration_sentence_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_fine_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_fine_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
+    ]: ...
     def __init__(
         self,
         *,
@@ -1704,18 +1755,30 @@ class StateSupervisionSentence(google.protobuf.message.Message):
     county_code: typing.Text = ...
     min_length: typing.Text = ...
     max_length: typing.Text = ...
-    state_charge_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    @property
+    def state_charge_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_incarceration_period_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_incarceration_period_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_supervision_period_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_supervision_period_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_early_discharge_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_early_discharge_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
+    ]: ...
     def __init__(
         self,
         *,
@@ -1848,18 +1911,30 @@ class StateIncarcerationSentence(google.protobuf.message.Message):
     initial_time_served: typing.Text = ...
     good_time: typing.Text = ...
     earned_time: typing.Text = ...
-    state_charge_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    @property
+    def state_charge_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_incarceration_period_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_incarceration_period_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_supervision_period_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_supervision_period_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_early_discharge_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_early_discharge_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
+    ]: ...
     def __init__(
         self,
         *,
@@ -2003,9 +2078,12 @@ class StateFine(google.protobuf.message.Message):
     state_code: typing.Text = ...
     county_code: typing.Text = ...
     fine_dollars: typing.Text = ...
-    state_charge_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    @property
+    def state_charge_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
+    ]: ...
     def __init__(
         self,
         *,
@@ -2407,7 +2485,6 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
     STATE_PAROLE_DECISION_IDS_FIELD_NUMBER: builtins.int
     STATE_ASSESSMENT_IDS_FIELD_NUMBER: builtins.int
     STATE_PROGRAM_ASSIGNMENT_IDS_FIELD_NUMBER: builtins.int
-    SOURCE_SUPERVISION_VIOLATION_RESPONSE_ID_FIELD_NUMBER: builtins.int
     state_incarceration_period_id: typing.Text = ...
     status: typing.Text = ...
     incarceration_type: typing.Text = ...
@@ -2423,19 +2500,30 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
     release_reason: typing.Text = ...
     specialized_purpose_for_incarceration: typing.Text = ...
     custodial_authority: typing.Text = ...
-    state_incarceration_incident_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    @property
+    def state_incarceration_incident_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_parole_decision_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_parole_decision_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_assessment_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_assessment_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_program_assignment_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_program_assignment_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    source_supervision_violation_response_id: typing.Text = ...
+    ]: ...
     def __init__(
         self,
         *,
@@ -2462,7 +2550,6 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
         state_program_assignment_ids: typing.Optional[
             typing.Iterable[typing.Text]
         ] = ...,
-        source_supervision_violation_response_id: typing.Optional[typing.Text] = ...,
     ) -> None: ...
     def HasField(
         self,
@@ -2489,8 +2576,6 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
             b"release_date",
             "release_reason",
             b"release_reason",
-            "source_supervision_violation_response_id",
-            b"source_supervision_violation_response_id",
             "specialized_purpose_for_incarceration",
             b"specialized_purpose_for_incarceration",
             "state_code",
@@ -2526,8 +2611,6 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
             b"release_date",
             "release_reason",
             b"release_reason",
-            "source_supervision_violation_response_id",
-            b"source_supervision_violation_response_id",
             "specialized_purpose_for_incarceration",
             b"specialized_purpose_for_incarceration",
             "state_assessment_ids",
@@ -2585,24 +2668,42 @@ class StateSupervisionPeriod(google.protobuf.message.Message):
     supervision_level: typing.Text = ...
     supervising_officer_id: typing.Text = ...
     custodial_authority: typing.Text = ...
-    conditions: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    @property
+    def conditions(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_supervision_violation_entry_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_supervision_violation_entry_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_assessment_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_assessment_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_program_assignment_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_program_assignment_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_supervision_case_type_entry_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_supervision_case_type_entry_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_supervision_contact_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_supervision_contact_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
+    ]: ...
     def __init__(
         self,
         *,
@@ -2775,9 +2876,12 @@ class StateIncarcerationIncident(google.protobuf.message.Message):
     location_within_facility: typing.Text = ...
     incident_details: typing.Text = ...
     responding_officer_id: typing.Text = ...
-    state_incarceration_incident_outcome_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    @property
+    def state_incarceration_incident_outcome_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
+    ]: ...
     def __init__(
         self,
         *,
@@ -2934,9 +3038,12 @@ class StateParoleDecision(google.protobuf.message.Message):
     decision_outcome: typing.Text = ...
     decision_reasoning: typing.Text = ...
     corrective_action: typing.Text = ...
-    decision_agent_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    @property
+    def decision_agent_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
+    ]: ...
     def __init__(
         self,
         *,
@@ -3098,15 +3205,24 @@ class StateSupervisionViolation(google.protobuf.message.Message):
     is_violent: typing.Text = ...
     is_sex_offense: typing.Text = ...
     violated_conditions: typing.Text = ...
-    state_supervision_violation_response_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    @property
+    def state_supervision_violation_response_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_supervision_violated_condition_entry_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_supervision_violated_condition_entry_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_supervision_violation_type_entry_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_supervision_violation_type_entry_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
+    ]: ...
     def __init__(
         self,
         *,
@@ -3247,12 +3363,18 @@ class StateSupervisionViolationResponse(google.protobuf.message.Message):
     revocation_type: typing.Text = ...
     deciding_body_type: typing.Text = ...
     is_draft: typing.Text = ...
-    decision_agent_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    @property
+    def decision_agent_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
-    state_supervision_violation_response_decision_entry_ids: google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+    ]: ...
+    @property
+    def state_supervision_violation_response_decision_entry_ids(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
-    ] = ...
+    ]: ...
     def __init__(
         self,
         *,
