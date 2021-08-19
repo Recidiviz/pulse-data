@@ -30,7 +30,7 @@ US_ID_EMPLOYMENT_SESSIONS_QUERY_TEMPLATE = """
       date_array AS (
       SELECT
         *
-      FROM UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE(), INTERVAL 20 YEAR), CURRENT_DATE())) supervision_date ),
+      FROM UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE(), INTERVAL 10 YEAR), CURRENT_DATE())) supervision_date ),
       employment_clean AS (
       /* Gathers raw data on employment and employers */
       SELECT
