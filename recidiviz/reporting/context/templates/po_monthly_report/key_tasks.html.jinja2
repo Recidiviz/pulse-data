@@ -1,0 +1,182 @@
+<table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
+  class="em_wrapper" style="width:600px;" role="presentation">
+  <tr>
+    <td class="em_h20" height="40" style="height: 40px;">&nbsp;</td>
+  </tr>
+  
+  {{ components.section_heading("Key Supervision Task Completed")}}
+  
+  <tr>
+    <td valign="top" align="center">
+      <table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
+        class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
+        style="width:600px; border-radius: 5px;" role="presentation">
+        {% if assessments_label -%}
+        <tr>
+          <td valign="top" align="center">
+            <table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
+              class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
+              style="width:600px; border-radius: 5px;" role="presentation">
+              <tr>
+                <td class="em_side22" width="44" style="width: 44px;">&nbsp;</td>
+                <td valign="top" align="center">
+                  <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
+                    <tr>
+                      <td class="em_h18" height="32" style="height: 32px;">&nbsp;</td>
+                    </tr>
+                    <tr>
+                      <td valign="top" align="center">
+                        <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
+                          <tr>
+                            {{ components.card_heading(assessments_label, valign="middle") }}
+                            <td class="em_num_font em_dm_txt_white" valign="top" align="right"
+                              style="font-family: 'Libre Baskerville', 'Times New Roman', Times, serif; font-size: 48px; line-height: 48px; font-weight: 400; letter-spacing: -0.03em; color: #006C67;">
+                              {{ assessments }} </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+                <td class="em_side15" width="30" style="width: 30px;">&nbsp;</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        {% endif -%}
+        <tr>
+          <td class="em_h15" height="32" style="height: 32px;">&nbsp;</td>
+        </tr>
+        {{ components.card_divider(static_image_path) }}
+        <tr>
+          <td class="em_h15" height="32" style="height: 32px;">&nbsp;</td>
+        </tr>
+        {% if assessments_percent -%}
+        <tr>
+          <td valign="top" align="center">
+            <table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
+              class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
+              style="width:600px; border-radius: 5px;" role="presentation">
+              <tr>
+                <td class="em_side22" width="44" style="width: 44px;">&nbsp;</td>
+                <td valign="top" align="center">
+                  <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
+                    <tr>
+                      <td valign="top" align="center">
+                        <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
+                          <tr>
+                            <td class="em_font em_pright10" valign="top" align="left"
+                              style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 20px; line-height: 24px; font-weight: 600; color: #7D9897;">
+                              Percent of caseload with up-to-date assessments </td>
+                            <td width="120" class="em_num_font em_num_width" valign="top"
+                              align="right"
+                              style="font-family: 'Libre Baskerville', 'Times New Roman', Times, serif; font-size: 48px; line-height: 48px; font-weight: 400; letter-spacing: -0.03em; color: #7D9897;">
+                              {{ assessments_percent }} % </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+                <td class="em_side15" width="30" style="width: 30px;">&nbsp;</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        {% endif -%}
+        <tr>
+          <td class="em_h18" height="32" style="height: 32px;">&nbsp;</td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td class="em_h8" height="16" style="height: 16px; font-size: 0px; line-height: 0px;">
+      &nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top" align="center">
+      <table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
+        class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
+        style="width:600px; border-radius: 5px;" role="presentation">
+        {% if facetoface_label -%}
+        <tr>
+          <td valign="top" align="center">
+            <table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
+              class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
+              style="width:600px; border-radius: 5px;" role="presentation">
+              <tr>
+                <td class="em_side22" width="44" style="width: 44px;">&nbsp;</td>
+                <td valign="top" align="center">
+                  <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
+                    <tr>
+                      <td class="em_h18" height="32" style="height: 32px;">&nbsp;</td>
+                    </tr>
+                    <tr>
+                      <td valign="top" align="center">
+                        <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
+                          <tr>
+                            {{ components.card_heading(facetoface_label, valign="middle") }}
+                            <td class="em_num_font em_dm_txt_white" valign="top" align="right"
+                              style="font-family: 'Libre Baskerville', 'Times New Roman', Times, serif; font-size: 48px; line-height: 48px; font-weight: 400; letter-spacing: -0.03em; color: #006C67;">
+                              {{ facetoface }} </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+                <td class="em_side15" width="30" style="width: 30px;">&nbsp;</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        {% endif -%}
+        <tr>
+          <td class="em_h15" height="31" style="height: 31px;">&nbsp;</td>
+        </tr>
+        {{ components.card_divider(static_image_path) }}
+        <tr>
+          <td class="em_h15" height="32" style="height: 32px;">&nbsp;</td>
+        </tr>
+        <tr>
+          <td valign="top" align="center">
+            <table align="center" width="600" border="0" cellspacing="0" cellpadding="0"
+              class="em_wrapper em_dark em_border_radius" bgcolor="#ffffff"
+              style="width:600px; border-radius: 5px;" role="presentation">
+              {% if facetoface_percent -%}
+              <tr>
+                <td class="em_side22" width="44" style="width: 44px;">&nbsp;</td>
+                <td valign="top" align="center">
+                  <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
+                    <tr>
+                      <td valign="top" align="center">
+                        <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
+                          <tr>
+                            <td class="em_font em_pright10" valign="top" align="left"
+                              style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 20px; line-height: 24px; font-weight: 600; color: #7D9897;">
+                              Percent of caseload without overdue<br class="em_hide" />
+                              contact </td>
+                            <td width="120" class="em_num_font em_num_width" valign="top"
+                              align="right"
+                              style="font-family: 'Libre Baskerville', 'Times New Roman', Times, serif; font-size: 48px; line-height: 48px; font-weight: 400; letter-spacing: -0.03em; color: #7D9897;">
+                              {{ facetoface_percent }} % </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+                <td class="em_side15" width="30" style="width: 30px;">&nbsp;</td>
+              </tr>
+              {% endif -%}
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td class="em_h18" height="32" style="height: 32px;">&nbsp;</td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
