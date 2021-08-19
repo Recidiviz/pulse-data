@@ -98,8 +98,6 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import (
     ORAS_ASSESSMENTS_DOC_ID,
     PERIOD_CLOSE_CODE,
     PERIOD_CLOSE_CODE_SUBTYPE,
-    PERIOD_PURPOSE_FOR_INCARCERATION,
-    PERIOD_START_DATE,
     SENTENCE_COMPLETED_FLAG,
     SENTENCE_COUNTY_CODE,
     SENTENCE_KEY_SEQ,
@@ -465,7 +463,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 "release_reason",
                 [PERIOD_CLOSE_CODE, PERIOD_CLOSE_CODE_SUBTYPE],
             ),
-            self._create_source_violation_response,
         ]
 
         tak001_offender_identification_row_processors: List[Callable] = [
@@ -1103,44 +1100,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
                         obj.__setattr__(field_name, None)
 
         return _clear_magical_date_values
-
-    # TODO(#7331): Stop putting SSVR entities on StateIncarcerationPeriods
-    def _create_source_violation_response(
-        self,
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Creates a source supervision violation response directly on the incarceration period created in the given
-        row, if appropriate."""
-        for obj in extracted_objects:
-            if isinstance(obj, StateIncarcerationPeriod):
-                revocation_admission_reason = self._revocation_admission_reason(
-                    obj.admission_reason
-                )
-                if revocation_admission_reason:
-                    revocation_type = row.get(PERIOD_PURPOSE_FOR_INCARCERATION, None)
-                    deciding_body_type = self._deciding_body_type(
-                        revocation_admission_reason
-                    )
-
-                    violation_response = obj.create_state_supervision_violation_response(
-                        response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION.value,
-                        decision=StateSupervisionViolationResponseDecision.REVOCATION.value,
-                        revocation_type=revocation_type,
-                    )
-
-                    if (
-                        deciding_body_type
-                        == StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD
-                    ):
-                        violation_response.deciding_body_type = deciding_body_type.value
-                        # Only set response date if it's a parole board decision
-                        # Otherwise, we don't know when it actually happens
-                        violation_response.response_date = row.get(
-                            PERIOD_START_DATE, None
-                        )
 
     def _revocation_admission_reason(
         self, ip_admission_reason: Optional[str]
