@@ -134,7 +134,7 @@ def hack_us_id_supervising_officer_external_id(dataflow_metric_table: str) -> st
             `{{project_id}}.state.state_supervision_period`
           WHERE
             termination_date IS NULL
-            AND admission_reason != 'ABSCONSION'
+            AND (state_code != 'US_ID' OR admission_reason != 'ABSCONSION')
         )
         SELECT
           * EXCEPT (supervising_officer_external_id),
