@@ -145,19 +145,33 @@ CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA: Dict[
 ] = {
     SchemaType.JAILS: {
         "census_regional",
+        # TODO(#8282): Remove this once we delete the v1 databases.
         "jails_cloudsql_connection",
+        "jails_v2_cloudsql_connection",
     },
     SchemaType.CASE_TRIAGE: {
         "case_triage_cloudsql_connection",
         "case_triage_federated_regional",
     },
     SchemaType.STATE: {
+        # TODO(#8282): Remove this once we delete the v1 databases.
         "state_us_id_primary_cloudsql_connection",
+        "state_v2_us_id_primary_cloudsql_connection",
+        # TODO(#8282): Remove this once we delete the v1 databases.
         "state_us_mi_primary_cloudsql_connection",
+        "state_v2_us_mi_primary_cloudsql_connection",
+        # TODO(#8282): Remove this once we delete the v1 databases.
         "state_us_mo_primary_cloudsql_connection",
+        "state_v2_us_mo_primary_cloudsql_connection",
+        # TODO(#8282): Remove this once we delete the v1 databases.
         "state_us_nd_primary_cloudsql_connection",
+        "state_v2_us_nd_primary_cloudsql_connection",
+        # TODO(#8282): Remove this once we delete the v1 databases.
         "state_us_pa_primary_cloudsql_connection",
+        "state_v2_us_pa_primary_cloudsql_connection",
+        # TODO(#8282): Remove this once we delete the v1 databases.
         "state_us_tn_primary_cloudsql_connection",
+        "state_v2_us_tn_primary_cloudsql_connection",
         "us_id_state_regional",
         "us_mi_state_regional",
         "us_mo_state_regional",
@@ -166,7 +180,9 @@ CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA: Dict[
         "us_tn_state_regional",
     },
     SchemaType.OPERATIONS: {
+        # TODO(#8282): Remove this once we delete the v1 databases.
         "operations_cloudsql_connection",
+        "operations_v2_cloudsql_connection",
         "us_id_operations_regional",
         "us_mi_operations_regional",
         "us_mo_operations_regional",
