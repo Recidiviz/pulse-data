@@ -138,7 +138,7 @@ resource "google_compute_region_network_endpoint_group" "serverless_neg" {
 }
 
 resource "google_compute_ssl_policy" "unified-product-ssl-policy" {
-  name            = "nonprod-ssl-policy"
+  name            = "unified-product-ssl-policy"
   profile         = "MODERN"
   min_tls_version = "TLS_1_2"
 }
