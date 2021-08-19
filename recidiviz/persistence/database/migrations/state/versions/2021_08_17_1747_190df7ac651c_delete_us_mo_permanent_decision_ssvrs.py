@@ -15,14 +15,19 @@ down_revision = "787c13afabf2"
 branch_labels = None
 depends_on = None
 
+
 DELETE_QUERY = (
     "DELETE FROM {table_name}"
-    " WHERE state_code IN ('US_MO') AND response_type = 'PERMANENT_DECISION';"
+    " WHERE supervision_violation_response_id IN ("
+    " SELECT supervision_violation_response_id"
+    " FROM state_supervision_violation_response"
+    " WHERE state_code IN ('US_MO') AND response_type = 'PERMANENT_DECISION');"
 )
 
 TABLES_TO_UPDATE = [
-    "state_supervision_violation_response",
+    # Must delete from history table first to avoid violating foreign key constraint
     "state_supervision_violation_response_history",
+    "state_supervision_violation_response",
 ]
 
 
