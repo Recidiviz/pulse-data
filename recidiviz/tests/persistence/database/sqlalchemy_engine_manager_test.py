@@ -37,8 +37,14 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 class SQLAlchemyEngineManagerTest(TestCase):
     """Tests"""
 
+    def setUp(self) -> None:
+        self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.mock_project_id = self.project_id_patcher.start()
+        self.mock_project_id.return_value = "recidiviz-456"
+
     def tearDown(self) -> None:
         SQLAlchemyEngineManager.teardown_engines()
+        self.project_id_patcher.stop()
 
     def _all_db_keys(self) -> List[SQLAlchemyDatabaseKey]:
         return list(
@@ -67,6 +73,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
         # Arrange
         mock_in_gcp.return_value = True
         mock_in_production.return_value = True
+        self.mock_project_id.return_value = "recidiviz-123"
         # Pretend all secret values are just the key suffixed with '_value'
         mock_get_secret.side_effect = lambda key: f"{key}_value"
 
@@ -215,6 +222,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
         # Arrange
         mock_in_gcp.return_value = True
         mock_in_staging.return_value = True
+        self.mock_project_id.return_value = "recidiviz-staging"
         # Pretend all secret values are just the key suffixed with '_value'
         mock_get_secret.side_effect = lambda key: f"{key}_value"
 

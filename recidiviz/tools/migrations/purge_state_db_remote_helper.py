@@ -142,11 +142,12 @@ def main(
 
     if purge_schema:
         with SessionFactory.for_prod_data_client(
-            db_key, ssl_cert_path
+            db_key, os.path.abspath(ssl_cert_path)
         ) as purge_session:
             overriden_env_vars = None
             try:
                 logging.info("Purging schema...")
+
                 overriden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
                     database_key=db_key,
                     ssl_cert_path=ssl_cert_path,
