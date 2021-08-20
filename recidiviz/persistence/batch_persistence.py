@@ -16,10 +16,10 @@
 # =============================================================================
 """Contains logic for communicating with the batch persistence layer."""
 import datetime
-import logging
 import json
+import logging
 from http import HTTPStatus
-from typing import List, Optional, Set, Dict, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 from flask import Blueprint, request, url_for
 from opencensus.stats import aggregation, measure, view
@@ -32,8 +32,7 @@ from recidiviz.ingest.scrape import scrape_phase, sessions
 from recidiviz.ingest.scrape.constants import ScrapeType
 from recidiviz.ingest.scrape.scraper_cloud_task_manager import ScraperCloudTaskManager
 from recidiviz.ingest.scrape.task_params import Task
-from recidiviz.persistence import persistence
-from recidiviz.persistence import datastore_ingest_info
+from recidiviz.persistence import datastore_ingest_info, persistence
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.datastore_ingest_info import BatchIngestInfoData
@@ -233,7 +232,7 @@ def persist_to_database(
             database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.JAILS),
         )
 
-        did_write = persistence.write(proto, metadata)
+        did_write = persistence.write_ingest_info(proto, metadata)
         if did_write:
             datastore_ingest_info.batch_delete_ingest_infos_for_region(region_code)
 

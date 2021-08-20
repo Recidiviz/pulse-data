@@ -603,7 +603,9 @@ class BaseDirectIngestController(Ingestor):
         )
 
         ingest_metadata = self._get_ingest_metadata(args)
-        persist_success = persistence.write(ingest_info_proto, ingest_metadata)
+        persist_success = persistence.write_ingest_info(
+            ingest_info_proto, ingest_metadata
+        )
 
         if not persist_success:
             raise DirectIngestError(

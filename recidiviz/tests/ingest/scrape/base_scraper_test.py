@@ -265,7 +265,7 @@ class TestBaseScraper(TestCase):
         )
         self.assertCountEqual(expected_tasks, scraper.tasks)
 
-    @patch("recidiviz.persistence.persistence.write")
+    @patch("recidiviz.persistence.persistence.write_ingest_info")
     @patch.object(BaseScraper, "populate_data")
     @patch.object(BaseScraper, "_fetch_content")
     @patch.object(BaseScraper, "get_more_tasks")
@@ -310,7 +310,7 @@ class TestBaseScraper(TestCase):
         mock_get_more.assert_called_once_with(TEST_HTML, t)
         self.assertCountEqual(expected_tasks, scraper.tasks)
 
-    @patch("recidiviz.persistence.persistence.write")
+    @patch("recidiviz.persistence.persistence.write_ingest_info")
     @patch.object(BaseScraper, "populate_data")
     @patch.object(BaseScraper, "_fetch_content")
     @patch.object(BaseScraper, "get_more_tasks")
@@ -376,7 +376,7 @@ class TestBaseScraper(TestCase):
         expected_proto = convert_ingest_info_to_proto(self.ii)
         mock_write.assert_called_once_with(expected_proto, expected_metadata)
 
-    @patch("recidiviz.persistence.persistence.write")
+    @patch("recidiviz.persistence.persistence.write_ingest_info")
     @patch.object(BaseScraper, "populate_data")
     @patch.object(BaseScraper, "_fetch_content")
     @patch.object(BaseScraper, "get_more_tasks")
@@ -429,7 +429,7 @@ class TestBaseScraper(TestCase):
         mock_write.assert_called_once_with(expected_proto, expected_metadata)
         self.assertCountEqual(expected_tasks, scraper.tasks)
 
-    @patch("recidiviz.persistence.persistence.write")
+    @patch("recidiviz.persistence.persistence.write_ingest_info")
     @patch.object(BaseScraper, "populate_data")
     @patch.object(BaseScraper, "_fetch_content")
     @patch.object(BaseScraper, "get_more_tasks")
@@ -474,7 +474,7 @@ class TestBaseScraper(TestCase):
         self.assertEqual(len(scraper.tasks), 0)
 
     @patch("recidiviz.persistence.batch_persistence.write")
-    @patch("recidiviz.persistence.persistence.write")
+    @patch("recidiviz.persistence.persistence.write_ingest_info")
     @patch.object(BaseScraper, "populate_data")
     @patch.object(BaseScraper, "_fetch_content")
     @patch.object(BaseScraper, "get_more_tasks")

@@ -69,7 +69,7 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity_matching.entity_matching_types import MatchedEntities
 from recidiviz.persistence.ingest_info_converter.base_converter import (
-    IngestInfoConversionResult,
+    EntityDeserializationResult,
 )
 from recidiviz.persistence.persistence import (
     DATABASE_INVARIANT_THRESHOLD,
@@ -177,7 +177,7 @@ class TestPersistence(TestCase):
             ingest_info.people.add(full_name=FULL_NAME_1)
 
             # Act
-            persistence.write(ingest_info, DEFAULT_METADATA)
+            persistence.write_ingest_info(ingest_info, DEFAULT_METADATA)
             with SessionFactory.using_database(
                 self.database_key, autocommit=False
             ) as session:
@@ -195,7 +195,7 @@ class TestPersistence(TestCase):
             ingest_info.people.add(full_name=FULL_NAME_1)
 
             # Act
-            persistence.write(ingest_info, DEFAULT_METADATA)
+            persistence.write_ingest_info(ingest_info, DEFAULT_METADATA)
             with SessionFactory.using_database(
                 self.database_key, autocommit=False
             ) as session:
@@ -222,7 +222,7 @@ class TestPersistence(TestCase):
         mock_commit.side_effect = [error] * 5 + [mock.DEFAULT]
 
         # Act
-        persistence.write(ingest_info, DEFAULT_METADATA)
+        persistence.write_ingest_info(ingest_info, DEFAULT_METADATA)
 
         # Assert
         assert mock_commit.call_args_list == [call()] * 6
@@ -246,7 +246,7 @@ class TestPersistence(TestCase):
 
         # Act / Assert
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
-            persistence.write(ingest_info, DEFAULT_METADATA)
+            persistence.write_ingest_info(ingest_info, DEFAULT_METADATA)
 
         # Assert
         assert mock_commit.call_args_list == [call()] * 6
@@ -269,7 +269,7 @@ class TestPersistence(TestCase):
 
         # Act / Assert
         with self.assertRaises(sqlalchemy.exc.DatabaseError):
-            persistence.write(ingest_info, DEFAULT_METADATA)
+            persistence.write_ingest_info(ingest_info, DEFAULT_METADATA)
 
         # Assert
         assert mock_commit.call_args_list == [call()]
@@ -282,7 +282,7 @@ class TestPersistence(TestCase):
         ingest_info.people.add(person_id="2_GENERATE", full_name=FULL_NAME_2)
 
         # Act
-        persistence.write(ingest_info, DEFAULT_METADATA)
+        persistence.write_ingest_info(ingest_info, DEFAULT_METADATA)
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
@@ -301,7 +301,7 @@ class TestPersistence(TestCase):
         ingest_info.people.add(person_id="2", full_name=FULL_NAME_2, gender="X")
 
         # Act
-        self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
+        self.assertFalse(persistence.write_ingest_info(ingest_info, DEFAULT_METADATA))
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
@@ -329,7 +329,7 @@ class TestPersistence(TestCase):
         )
 
         # Act
-        self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
+        self.assertFalse(persistence.write_ingest_info(ingest_info, DEFAULT_METADATA))
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
@@ -355,7 +355,7 @@ class TestPersistence(TestCase):
         ingest_info.people.add(full_name=FULL_NAME_1, person_id=EXTERNAL_PERSON_ID)
 
         # Mock out 1 enum error, and no others
-        entity_converter.return_value = IngestInfoConversionResult(
+        entity_converter.return_value = EntityDeserializationResult(
             enum_parsing_errors=1,
             general_parsing_errors=0,
             protected_class_errors=0,
@@ -364,7 +364,7 @@ class TestPersistence(TestCase):
         validator.return_value = ingest_info.people, 0
 
         # Act
-        self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
+        self.assertFalse(persistence.write_ingest_info(ingest_info, DEFAULT_METADATA))
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
@@ -385,7 +385,7 @@ class TestPersistence(TestCase):
         mock_database_invariant_validator.validate_invariants.return_value = 1
 
         # Act
-        self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
+        self.assertFalse(persistence.write_ingest_info(ingest_info, DEFAULT_METADATA))
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
@@ -413,7 +413,7 @@ class TestPersistence(TestCase):
         ingest_info.people.add(person_id="3_GENERATE", full_name=FULL_NAME_3)
 
         # Act
-        self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
+        self.assertFalse(persistence.write_ingest_info(ingest_info, DEFAULT_METADATA))
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
@@ -442,7 +442,7 @@ class TestPersistence(TestCase):
         )
 
         # Act
-        persistence.write(ingest_info, DEFAULT_METADATA)
+        persistence.write_ingest_info(ingest_info, DEFAULT_METADATA)
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
@@ -466,7 +466,7 @@ class TestPersistence(TestCase):
         )
 
         # Act
-        persistence.write(ingest_info, DEFAULT_METADATA)
+        persistence.write_ingest_info(ingest_info, DEFAULT_METADATA)
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
@@ -538,7 +538,7 @@ class TestPersistence(TestCase):
         )
 
         # Act
-        persistence.write(ingest_info, metadata)
+        persistence.write_ingest_info(ingest_info, metadata)
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
@@ -611,7 +611,7 @@ class TestPersistence(TestCase):
         )
 
         # Act
-        persistence.write(ingest_info, metadata)
+        persistence.write_ingest_info(ingest_info, metadata)
 
         # Assert
         expected_booking = county_entities.Booking.new_with_defaults(
@@ -691,7 +691,7 @@ class TestPersistence(TestCase):
         ingest_info.charges.add(charge_id=EXTERNAL_ID, number_of_counts="2")
 
         # Act
-        persistence.write(ingest_info, metadata)
+        persistence.write_ingest_info(ingest_info, metadata)
 
         # Assert
         expected_charge = county_entities.Charge.new_with_defaults(
@@ -739,7 +739,7 @@ class TestPersistence(TestCase):
         ingest_info = IngestInfoProto()
 
         # Act
-        persistence.write(ingest_info, metadata)
+        persistence.write_ingest_info(ingest_info, metadata)
 
         # Assert
         with SessionFactory.using_database(
@@ -908,7 +908,7 @@ class TestPersistence(TestCase):
         ingest_info.arrests.add(arrest_id=ARREST_ID, officer_name=OFFICER_NAME_ANOTHER)
 
         # Act
-        persistence.write(ingest_info, metadata)
+        persistence.write_ingest_info(ingest_info, metadata)
 
         # Assert
         expected_arrest = county_entities.Arrest.new_with_defaults(
@@ -981,7 +981,7 @@ class TestPersistence(TestCase):
         )
 
         # Act
-        persistence.write(ingest_info, metadata)
+        persistence.write_ingest_info(ingest_info, metadata)
 
         # Assert
         expected_arrest = county_entities.Arrest.new_with_defaults(
@@ -1135,13 +1135,13 @@ class MultipleStateTestMixin:
             session.add(placeholder_person)
 
         # Write persons to be updated
-        persistence.write(
+        persistence.write_ingest_info(
             convert_ingest_info_to_proto(
                 IngestInfo(state_people=[deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)])
             ),
             INGEST_METADATA_STATE_1_INSERT,
         )
-        persistence.write(
+        persistence.write_ingest_info(
             convert_ingest_info_to_proto(
                 IngestInfo(state_people=[deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)])
             ),
@@ -1184,13 +1184,13 @@ class MultipleStateTestMixin:
             session.add(placeholder_person)
 
         # Write persons to be updated
-        persistence.write(
+        persistence.write_ingest_info(
             convert_ingest_info_to_proto(
                 IngestInfo(state_people=[deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)])
             ),
             INGEST_METADATA_STATE_1_INSERT,
         )
-        persistence.write(
+        persistence.write_ingest_info(
             convert_ingest_info_to_proto(
                 IngestInfo(state_people=[deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)])
             ),
@@ -1233,13 +1233,13 @@ class MultipleStateTestMixin:
             session.add(placeholder_person)
 
         # Write persons to be updated
-        persistence.write(
+        persistence.write_ingest_info(
             convert_ingest_info_to_proto(
                 IngestInfo(state_people=[deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)])
             ),
             INGEST_METADATA_STATE_1_INSERT,
         )
-        persistence.write(
+        persistence.write_ingest_info(
             convert_ingest_info_to_proto(
                 IngestInfo(state_people=[deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)])
             ),
@@ -1284,13 +1284,13 @@ class MultipleStateTestMixin:
             session.add(placeholder_person)
 
         # Write persons to be updated
-        persistence.write(
+        persistence.write_ingest_info(
             convert_ingest_info_to_proto(
                 IngestInfo(state_people=[deepcopy(PERSON_STATE_1_BASE_INGEST_INFO)])
             ),
             INGEST_METADATA_STATE_1_INSERT,
         )
-        persistence.write(
+        persistence.write_ingest_info(
             convert_ingest_info_to_proto(
                 IngestInfo(state_people=[deepcopy(PERSON_STATE_2_BASE_INGEST_INFO)])
             ),
@@ -1394,7 +1394,7 @@ def _run_transactions_overlapping(state_1_ingest_info, state_2_ingest_info):
     def transaction1(
         precommit_event: threading.Event, other_committed_event: threading.Event
     ):
-        persistence.write(
+        persistence.write_ingest_info(
             convert_ingest_info_to_proto(state_1_ingest_info),
             INGEST_METADATA_STATE_1_UPDATE,
             run_txn_fn=_get_run_transaction_block_commit_fn(
@@ -1403,7 +1403,7 @@ def _run_transactions_overlapping(state_1_ingest_info, state_2_ingest_info):
         )
 
     def transaction2(other_precommit_event, committed_event):
-        persistence.write(
+        persistence.write_ingest_info(
             convert_ingest_info_to_proto(state_2_ingest_info),
             INGEST_METADATA_STATE_2_UPDATE,
             run_txn_fn=_get_run_transaction_after_other_fn(
@@ -1573,7 +1573,7 @@ def _run_transactions_interleaved(state_1_ingest_info, state_2_ingest_info):
     with patch.object(sqlalchemy.orm.session.Session, "flush", delayed_flush):
 
         def transaction1():
-            persistence.write(
+            persistence.write_ingest_info(
                 convert_ingest_info_to_proto(state_1_ingest_info),
                 INGEST_METADATA_STATE_1_UPDATE,
                 run_txn_fn=_get_run_transaction_fn(1),
@@ -1582,7 +1582,7 @@ def _run_transactions_interleaved(state_1_ingest_info, state_2_ingest_info):
         def transaction2():
             # Delay start of T2
             time.sleep(DELAY)
-            persistence.write(
+            persistence.write_ingest_info(
                 convert_ingest_info_to_proto(state_2_ingest_info),
                 INGEST_METADATA_STATE_2_UPDATE,
                 run_txn_fn=_get_run_transaction_fn(2),
