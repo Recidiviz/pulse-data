@@ -1469,10 +1469,14 @@ class StateEntityMatcher(BaseEntityMatcher[entities.StatePerson]):
         entities that can have multiple parents, and merges these entities where
         possible.
         """
-        for person in persons:
-            for cls in get_multiparent_classes():
-                if cls not in self.non_placeholder_ingest_types:
-                    continue
+        for cls in get_multiparent_classes():
+            if cls not in self.non_placeholder_ingest_types:
+                continue
+            logging.info(
+                "[Entity matching] Merging multi-parent entities of class [%s]",
+                cls.__name__,
+            )
+            for person in persons:
                 entity_map: Dict[str, List[_EntityWithParentInfo]] = {}
                 self._populate_multiparent_map(person, cls, entity_map)
                 self._merge_multiparent_entities_from_map(entity_map)
