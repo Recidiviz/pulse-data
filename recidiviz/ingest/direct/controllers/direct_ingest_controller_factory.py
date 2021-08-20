@@ -30,10 +30,7 @@ from recidiviz.ingest.direct.direct_ingest_controller_utils import (
 )
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
 from recidiviz.utils import metadata, regions
-from recidiviz.utils.regions import (
-    Region,
-    get_supported_direct_ingest_region_codes,
-)
+from recidiviz.utils.regions import Region, get_supported_direct_ingest_region_codes
 
 
 class DirectIngestControllerFactory:
@@ -43,7 +40,7 @@ class DirectIngestControllerFactory:
     def build(
         cls, *, ingest_bucket_path: GcsfsBucketPath, allow_unlaunched: bool
     ) -> BaseDirectIngestController:
-        """Retrieve a direct ingest GcsfsDirectIngestController associated with a
+        """Retrieve a direct ingest BaseDirectIngestController associated with a
         particular ingest bucket.
 
         Returns:

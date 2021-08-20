@@ -76,8 +76,8 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
-from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import (
-    CsvGcsfsDirectIngestController,
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
     IngestAncestorChainOverridesCallable,
     IngestFilePostprocessorCallable,
     IngestPrimaryKeyOverrideCallable,
@@ -143,7 +143,7 @@ AGENT_NAME_AND_ID_REGEX = re.compile(r"([^,]*), (.*?) (\d+)$")
 FALLBACK_AGENT_NAME_AND_ID_REGEX = re.compile(r"(.*?) (\d+.*)$")
 
 
-class UsPaController(CsvGcsfsDirectIngestController):
+class UsPaController(BaseDirectIngestController):
     """Direct ingest controller implementation for US_PA."""
 
     @classmethod

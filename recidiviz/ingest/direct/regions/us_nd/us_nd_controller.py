@@ -19,20 +19,18 @@
 import json
 import os
 import re
-from typing import List, Optional, Dict, cast, Pattern, Tuple
+from typing import Dict, List, Optional, Pattern, Tuple, cast
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common import ncic
 from recidiviz.common.constants.charge import ChargeStatus
-from recidiviz.common.constants.enum_overrides import (
-    EnumOverrides,
-)
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.person_characteristics import Ethnicity
 from recidiviz.common.constants.state.external_id_types import US_ND_ELITE, US_ND_SID
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
-    StateAssessmentType,
     StateAssessmentClass,
+    StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import (
@@ -55,63 +53,61 @@ from recidiviz.common.str_field_utils import (
     parse_days_from_duration_pieces,
     safe_parse_days_from_duration_str,
 )
-from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import (
-    CsvGcsfsDirectIngestController,
-    IngestRowPrehookCallable,
-    IngestPrimaryKeyOverrideCallable,
-    IngestFilePostprocessorCallable,
-    IngestRowPosthookCallable,
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
     IngestAncestorChainOverridesCallable,
+    IngestFilePostprocessorCallable,
+    IngestPrimaryKeyOverrideCallable,
+    IngestRowPosthookCallable,
+    IngestRowPrehookCallable,
 )
-from recidiviz.ingest.direct.direct_ingest_controller_utils import (
-    create_if_not_exists,
+from recidiviz.ingest.direct.direct_ingest_controller_utils import create_if_not_exists
+from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import (
+    normalized_county_code,
 )
 from recidiviz.ingest.direct.regions.us_nd.us_nd_enum_helpers import (
     generate_enum_overrides,
 )
-from recidiviz.ingest.direct.state_shared_row_posthooks import (
-    copy_name_to_alias,
-    gen_label_single_external_id_hook,
-    gen_normalize_county_codes_posthook,
-    gen_set_is_life_sentence_hook,
-    gen_convert_person_ids_to_external_id_objects,
-    get_normalized_ymd_str,
-    gen_set_agent_type,
-    IngestGatingContext,
-)
-from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import (
-    normalized_county_code,
-)
 from recidiviz.ingest.direct.regions.us_nd.us_nd_judicial_district_code_reference import (
     normalized_judicial_district_code,
 )
+from recidiviz.ingest.direct.state_shared_row_posthooks import (
+    IngestGatingContext,
+    copy_name_to_alias,
+    gen_convert_person_ids_to_external_id_objects,
+    gen_label_single_external_id_hook,
+    gen_normalize_county_codes_posthook,
+    gen_set_agent_type,
+    gen_set_is_life_sentence_hook,
+    get_normalized_ymd_str,
+)
 from recidiviz.ingest.extractor.csv_data_extractor import (
-    IngestFieldCoordinates,
     AncestorChainOverridesCallable,
+    IngestFieldCoordinates,
 )
 from recidiviz.ingest.models.ingest_info import (
+    IngestInfo,
     IngestObject,
-    StatePerson,
-    StateIncarcerationSentence,
-    StateSentenceGroup,
-    StateIncarcerationPeriod,
-    StatePersonExternalId,
+    StateAgent,
     StateAssessment,
     StateCharge,
-    StateSupervisionViolation,
-    StateSupervisionViolationResponse,
-    StateAgent,
-    StateIncarcerationIncidentOutcome,
-    StateIncarcerationIncident,
-    StateSupervisionSentence,
     StateCourtCase,
-    StateSupervisionPeriod,
-    StateProgramAssignment,
+    StateIncarcerationIncident,
+    StateIncarcerationIncidentOutcome,
+    StateIncarcerationPeriod,
+    StateIncarcerationSentence,
+    StatePerson,
     StatePersonEthnicity,
-    StateSupervisionViolationTypeEntry,
+    StatePersonExternalId,
+    StateProgramAssignment,
+    StateSentenceGroup,
     StateSupervisionCaseTypeEntry,
     StateSupervisionContact,
-    IngestInfo,
+    StateSupervisionPeriod,
+    StateSupervisionSentence,
+    StateSupervisionViolation,
+    StateSupervisionViolationResponse,
+    StateSupervisionViolationTypeEntry,
 )
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import environment
@@ -119,7 +115,7 @@ from recidiviz.utils import environment
 _DOCSTARS_NEGATIVE_PATTERN: Pattern = re.compile(r"^\((?P<value>-?\d+)\)$")
 
 
-class UsNdController(CsvGcsfsDirectIngestController):
+class UsNdController(BaseDirectIngestController):
     """Direct ingest controller implementation for us_nd."""
 
     @classmethod

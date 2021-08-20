@@ -76,8 +76,8 @@ from recidiviz.common.str_field_utils import (
     safe_parse_days_from_duration_pieces,
     sorted_list_from_str,
 )
-from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import (
-    CsvGcsfsDirectIngestController,
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
     IngestFilePostprocessorCallable,
     IngestRowPosthookCallable,
 )
@@ -159,7 +159,7 @@ from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils.params import str_to_bool
 
 
-class UsIdController(CsvGcsfsDirectIngestController):
+class UsIdController(BaseDirectIngestController):
     """Direct ingest controller implementation for US_ID."""
 
     @classmethod
