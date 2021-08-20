@@ -39,7 +39,6 @@ python -m recidiviz.tools.migrations.run_migrations_to_head \
 """
 import argparse
 import logging
-import os
 import sys
 from typing import Optional
 
@@ -57,11 +56,7 @@ from recidiviz.tools.migrations.migration_helpers import (
 )
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils import metadata
-from recidiviz.utils.environment import (
-    GCP_PROJECT_PRODUCTION,
-    GCP_PROJECT_STAGING,
-    GCPEnvironment,
-)
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 
@@ -145,10 +140,6 @@ def main(
             logging.error("Exiting...")
             sys.exit(1)
         logging.info("Using SSL certificate path: %s", ssl_cert_path)
-
-        os.environ["RECIDIVIZ_ENV"] = (
-            GCPEnvironment.PRODUCTION.value if is_prod else GCPEnvironment.STAGING.value
-        )
 
     if is_prod:
         logging.info("RUNNING AGAINST PRODUCTION\n")

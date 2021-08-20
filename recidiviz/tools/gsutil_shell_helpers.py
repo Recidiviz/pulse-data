@@ -29,7 +29,9 @@ from recidiviz.tools.utils.script_helpers import run_command
 
 
 def is_empty_response(e: RuntimeError) -> bool:
-    return "CommandException: One or more URLs matched no objects." in str(e)
+    return "CommandException: One or more URLs matched no objects." in str(
+        e
+    ) or "CommandException: No URLs matched" in str(e)
 
 
 def gsutil_ls(

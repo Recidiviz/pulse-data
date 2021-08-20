@@ -16,7 +16,7 @@
 # =============================================================================
 """A class to manage all SQLAlchemy Engines for our database instances."""
 import logging
-import os.path
+import os
 from typing import Any, Dict, List, Optional
 
 import sqlalchemy
@@ -34,7 +34,7 @@ from recidiviz.persistence.database.constants import (
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.utils import environment, monitoring, secrets
+from recidiviz.utils import environment, metadata, monitoring, secrets
 
 m_failed_engine_initialization = measure.MeasureInt(
     "persistence/database/sqlalchemy_engine_initialization_failures",
@@ -177,7 +177,7 @@ class SQLAlchemyEngineManager:
 
     @classmethod
     def _secret_manager_prefix_for_type(cls, schema_type: SchemaType) -> str:
-        if environment.in_gcp_staging():
+        if metadata.project_id() == environment.GCP_PROJECT_STAGING:
             if schema_type == SchemaType.JAILS:
                 return "jails_v2"
             if schema_type == SchemaType.STATE:
