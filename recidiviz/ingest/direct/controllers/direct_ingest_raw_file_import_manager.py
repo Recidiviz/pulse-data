@@ -493,6 +493,7 @@ class DirectIngestRawFileImportManager:
 
         logging.info("Beginning BigQuery upload of raw file [%s]", path.abs_path())
 
+        self._delete_conflicting_contents_from_bigquery(path, file_metadata.file_id)
         temp_output_paths = self._upload_contents_to_temp_gcs_paths(path, file_metadata)
         self._load_contents_to_bigquery(path, temp_output_paths)
 
@@ -541,6 +542,23 @@ class DirectIngestRawFileImportManager:
         )
 
         return delegate.output_paths_with_columns
+
+    def _delete_conflicting_contents_from_bigquery(
+        self, path: GcsfsFilePath, file_id: int
+    ) -> None:
+        """Delete any rows that have already been uploaded with this file_id.
+        These rows could exist from a prior upload failing part way through
+        and removing them prevents the table from ending up with duplicate
+        rows after this upload"""
+
+        # Starts the deletion
+        delete_job = self.big_query_client.delete_from_table_async(
+            dataset_id=self._raw_tables_dataset(),
+            table_id=filename_parts_from_path(path).file_tag,
+            filter_clause="WHERE file_id = " + str(file_id),
+        )
+        # Waits for the deletion to complete
+        delete_job.result()
 
     def _load_contents_to_bigquery(
         self,

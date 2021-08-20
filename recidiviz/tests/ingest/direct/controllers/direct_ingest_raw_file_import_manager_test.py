@@ -380,7 +380,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             r"Columns likely did not parse properly.",
         ):
             self.import_manager.import_raw_file_to_big_query(
-                file_path, create_autospec(DirectIngestRawFileMetadata)
+                file_path, self._metadata_for_unprocessed_file_path(file_path)
             )
 
     def test_import_bq_file_with_ingest_view_file(self) -> None:
@@ -418,6 +418,13 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
 
         self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
         path = one(self.fs.gcs_file_system.uploaded_paths)
+
+        self.mock_big_query_client.delete_from_table_async.assert_called_with(
+            dataset_id="us_xx_raw_data",
+            table_id=self._metadata_for_unprocessed_file_path(file_path).file_tag,
+            filter_clause="WHERE file_id = "
+            + str(self._metadata_for_unprocessed_file_path(file_path).file_id),
+        )
 
         self.mock_big_query_client.load_into_table_from_cloud_storage_async.assert_called_with(
             source_uri=path.uri(),
