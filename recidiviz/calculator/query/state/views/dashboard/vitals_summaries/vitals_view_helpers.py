@@ -54,3 +54,14 @@ def make_enabled_states_filter_for_vital(
     )
 
     return f"state_code in ({enabled_states})"
+
+
+def state_specific_entity_filter() -> str:
+    """Generates a state specific entity filter"""
+    return """
+        CASE
+          WHEN state_code = 'US_ND' THEN
+            district_name != 'CENTRAL OFFICE'
+          ELSE TRUE
+        END
+    """

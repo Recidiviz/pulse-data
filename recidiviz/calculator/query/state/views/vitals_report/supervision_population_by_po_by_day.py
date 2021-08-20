@@ -22,6 +22,9 @@ from recidiviz.calculator.query.bq_utils import (
     hack_us_id_supervising_officer_external_id,
 )
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_view_helpers import (
+    state_specific_entity_filter,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -104,6 +107,7 @@ SUPERVISION_POPULATION_BY_PO_BY_DAY_QUERY_TEMPLATE = f"""
         UNNEST ([officers.supervising_officer_external_id, 'ALL']) AS supervising_officer_external_id
         WHERE date_of_supervision > DATE_SUB(CURRENT_DATE(), INTERVAL 217 DAY) -- 217 = 210 days back for avgs + 7-day buffer for late data
             AND state_code in {enabled_states}
+            AND {state_specific_entity_filter()}
         GROUP BY state_code, date_of_supervision, supervising_district_external_id, supervising_officer_external_id, district_id, district_name
     )
     
