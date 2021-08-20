@@ -69,8 +69,8 @@ from recidiviz.common.str_field_utils import (
     parse_yyyymmdd_date,
     sorted_list_from_str,
 )
-from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import (
-    CsvGcsfsDirectIngestController,
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
     IngestAncestorChainOverridesCallable,
     IngestPrimaryKeyOverrideCallable,
     IngestRowPosthookCallable,
@@ -152,7 +152,7 @@ from recidiviz.ingest.models.ingest_info import (
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
-class UsMoController(CsvGcsfsDirectIngestController):
+class UsMoController(BaseDirectIngestController):
     """Direct ingest controller implementation for US_MO."""
 
     PERIOD_SEQUENCE_PRIMARY_COL_PREFIX = "F1"

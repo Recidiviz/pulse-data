@@ -16,28 +16,28 @@
 # =============================================================================
 """Direct ingest controller implementation for US_TX_BRAZOS."""
 
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import (
-    EnumOverrides,
-    EnumMapper,
     EnumIgnorePredicate,
+    EnumMapper,
+    EnumOverrides,
 )
-from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import (
-    CsvGcsfsDirectIngestController,
-    IngestRowPosthookCallable,
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
+    IngestAncestorChainOverridesCallable,
     IngestFilePostprocessorCallable,
     IngestPrimaryKeyOverrideCallable,
-    IngestAncestorChainOverridesCallable,
+    IngestRowPosthookCallable,
 )
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     update_overrides_from_maps,
 )
 
 
-class UsTxBrazosController(CsvGcsfsDirectIngestController):
+class UsTxBrazosController(BaseDirectIngestController):
     """Direct ingest controller implementation for US_TX_BRAZOS."""
 
     @classmethod

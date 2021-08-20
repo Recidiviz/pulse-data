@@ -40,9 +40,6 @@ from recidiviz.ingest.direct.controllers import (
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
-from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import (
-    CsvGcsfsDirectIngestController,
-)
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
     to_normalized_unprocessed_file_path,
@@ -283,7 +280,7 @@ class FakeDirectIngestPreProcessedIngestViewCollector(
 
 @patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-staging"))
 def build_gcsfs_controller_for_tests(
-    controller_cls: Type[CsvGcsfsDirectIngestController],
+    controller_cls: Type[BaseDirectIngestController],
     ingest_instance: DirectIngestInstance,
     run_async: bool,
     can_start_ingest: bool = True,
@@ -295,7 +292,7 @@ def build_gcsfs_controller_for_tests(
     def mock_build_fs() -> FakeGCSFileSystem:
         return fake_fs
 
-    if "TestGcsfsDirectIngestController" in controller_cls.__name__:
+    if "TestDirectIngestController" in controller_cls.__name__:
         view_collector_cls: Type[
             BigQueryViewCollector
         ] = FakeDirectIngestPreProcessedIngestViewCollector
@@ -304,60 +301,53 @@ def build_gcsfs_controller_for_tests(
 
     with patch(
         f"{BaseDirectIngestController.__module__}.DirectIngestCloudTaskManagerImpl"
-    ) as mock_task_factory_cls:
-        with patch(
-            f"{BaseDirectIngestController.__module__}.BigQueryClientImpl"
-        ) as mock_big_query_client_cls:
-            with patch(
-                f"{BaseDirectIngestController.__module__}.DirectIngestRawFileImportManager",
-                FakeDirectIngestRawFileImportManager,
+    ) as mock_task_factory_cls, patch(
+        f"{BaseDirectIngestController.__module__}.BigQueryClientImpl"
+    ) as mock_big_query_client_cls, patch(
+        f"{BaseDirectIngestController.__module__}.DirectIngestRawFileImportManager",
+        FakeDirectIngestRawFileImportManager,
+    ), patch(
+        f"{BaseDirectIngestController.__module__}.DirectIngestPreProcessedIngestViewCollector",
+        view_collector_cls,
+    ):
+        task_manager = (
+            FakeAsyncDirectIngestCloudTaskManager()
+            if run_async
+            else FakeSynchronousDirectIngestCloudTaskManager()
+        )
+        mock_task_factory_cls.return_value = task_manager
+        mock_big_query_client_cls.return_value = FakeDirectIngestBigQueryClient(
+            project_id=metadata.project_id(),
+            fs=fake_fs,
+            region_code=controller_cls.region_code(),
+        )
+        with patch.object(GcsfsFactory, "build", new=mock_build_fs):
+            with patch.object(
+                direct_ingest_raw_table_migration_collector,
+                "regions",
+                new=regions_module,
             ):
-                with patch(
-                    f"{BaseDirectIngestController.__module__}.DirectIngestPreProcessedIngestViewCollector",
-                    view_collector_cls,
-                ):
-                    task_manager = (
-                        FakeAsyncDirectIngestCloudTaskManager()
-                        if run_async
-                        else FakeSynchronousDirectIngestCloudTaskManager()
+                controller = controller_cls(
+                    ingest_bucket_path=gcsfs_direct_ingest_bucket_for_region(
+                        region_code=controller_cls.region_code(),
+                        system_level=SystemLevel.for_region_code(
+                            controller_cls.region_code(),
+                            is_direct_ingest=True,
+                        ),
+                        ingest_instance=ingest_instance,
+                        project_id="recidiviz-xxx",
                     )
-                    mock_task_factory_cls.return_value = task_manager
-                    mock_big_query_client_cls.return_value = (
-                        FakeDirectIngestBigQueryClient(
-                            project_id=metadata.project_id(),
-                            fs=fake_fs,
-                            region_code=controller_cls.region_code(),
-                        )
-                    )
-                    with patch.object(GcsfsFactory, "build", new=mock_build_fs):
-                        with patch.object(
-                            direct_ingest_raw_table_migration_collector,
-                            "regions",
-                            new=regions_module,
-                        ):
-                            controller = controller_cls(
-                                ingest_bucket_path=gcsfs_direct_ingest_bucket_for_region(
-                                    region_code=controller_cls.region_code(),
-                                    system_level=SystemLevel.for_region_code(
-                                        controller_cls.region_code(),
-                                        is_direct_ingest=True,
-                                    ),
-                                    ingest_instance=ingest_instance,
-                                    project_id="recidiviz-xxx",
-                                )
-                            )
-                            controller.csv_reader = GcsfsCsvReader(fake_fs)
-                            controller.raw_file_import_manager.csv_reader = (
-                                controller.csv_reader
-                            )
+                )
+                controller.csv_reader = GcsfsCsvReader(fake_fs)
+                controller.raw_file_import_manager.csv_reader = controller.csv_reader
 
-                            task_manager.set_controller(controller)
-                            fake_fs.test_set_delegate(
-                                DirectIngestFakeGCSFileSystemDelegate(
-                                    controller, can_start_ingest=can_start_ingest
-                                )
-                            )
-                            return controller
+                task_manager.set_controller(controller)
+                fake_fs.test_set_delegate(
+                    DirectIngestFakeGCSFileSystemDelegate(
+                        controller, can_start_ingest=can_start_ingest
+                    )
+                )
+                return controller
 
 
 def ingest_args_for_fixture_file(

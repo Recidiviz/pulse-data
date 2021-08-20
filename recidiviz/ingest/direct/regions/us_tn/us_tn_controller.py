@@ -27,8 +27,8 @@ from recidiviz.common.constants.enum_overrides import (
 )
 from recidiviz.common.constants.state.external_id_types import US_TN_DOC
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import (
-    CsvGcsfsDirectIngestController,
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
     IngestAncestorChainOverridesCallable,
     IngestFilePostprocessorCallable,
     IngestPrimaryKeyOverrideCallable,
@@ -42,7 +42,7 @@ from recidiviz.ingest.models.ingest_info import IngestObject, StatePersonExterna
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
-class UsTnController(CsvGcsfsDirectIngestController):
+class UsTnController(BaseDirectIngestController):
     """Direct ingest controller implementation for US_TN."""
 
     @classmethod
