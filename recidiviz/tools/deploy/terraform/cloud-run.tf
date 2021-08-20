@@ -137,8 +137,15 @@ resource "google_compute_region_network_endpoint_group" "serverless_neg" {
   }
 }
 
+# TODO(#8919): Remove this once we're no longer using it in prod.
 resource "google_compute_ssl_policy" "unified-product-ssl-policy" {
   name            = "nonprod-ssl-policy"
+  profile         = "MODERN"
+  min_tls_version = "TLS_1_2"
+}
+
+resource "google_compute_ssl_policy" "modern-ssl-policy" {
+  name            = "modern-ssl-policy"
   profile         = "MODERN"
   min_tls_version = "TLS_1_2"
 }
@@ -150,7 +157,7 @@ module "unified-product-load-balancer" {
   project = var.project_id
 
   ssl                             = true
-  ssl_policy                      = google_compute_ssl_policy.unified-product-ssl-policy.name
+  ssl_policy                      = google_compute_ssl_policy.modern-ssl-policy.name
   managed_ssl_certificate_domains = ["app.recidiviz.org", local.is_production ? "app-prod.recidiviz.org" : "app-staging.recidiviz.org"]
   https_redirect                  = true
 
