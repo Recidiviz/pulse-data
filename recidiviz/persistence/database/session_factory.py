@@ -17,7 +17,6 @@
 """
 Class for generating SQLAlchemy Sessions objects for the appropriate schema.
 """
-
 from contextlib import contextmanager
 from typing import Iterator
 

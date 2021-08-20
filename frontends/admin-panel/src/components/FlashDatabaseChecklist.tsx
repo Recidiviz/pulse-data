@@ -425,7 +425,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   python -m recidiviz.tools.migrations.purge_state_db \<br />
                   {"    "}--state-code {stateCode} \<br />
                   {"    "}--ingest-instance SECONDARY \<br />
-                  {"    "}--project-id {projectId} \<br />
+                  {"    "}--project-id {projectId}
                 </CodeBlock>
               </p>
             </>

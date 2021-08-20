@@ -94,8 +94,8 @@ def get_hash_of_deployed_commit(project_id: str) -> str:
         f"--service=default --format=yaml | yq .id | tr -d \\\" | tr '-' '.'"
     )
 
-    get_commit_cmd = f"git show-ref -s $({get_tag_cmd})"
-    return run_command(get_commit_cmd, timeout_sec=30)
+    get_commit_cmd = f"git rev-list -n 1 $({get_tag_cmd})"
+    return run_command(get_commit_cmd, timeout_sec=30).strip()
 
 
 def main(
