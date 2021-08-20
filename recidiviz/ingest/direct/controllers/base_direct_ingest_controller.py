@@ -20,10 +20,16 @@
 import abc
 import datetime
 import logging
-from typing import List, Optional
+import os
+from typing import Callable, Dict, List, Optional
+
+import pandas
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
+from recidiviz.cloud_storage.gcs_file_system import (
+    GCSBlobDoesNotExistError,
+    GcsfsFileContentsHandle,
+)
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import (
@@ -56,6 +62,11 @@ from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager impor
 from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
+from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import GcsfsCsvReader
+from recidiviz.ingest.direct.controllers.gcsfs_csv_reader_delegates import (
+    ReadOneGcsfsCsvReaderDelegate,
+    SplittingGcsfsCsvReaderDelegate,
+)
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer import (
     GcsfsDirectIngestJobPrioritizer,
 )
@@ -78,8 +89,16 @@ from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     check_is_region_launched_in_env,
 )
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
+from recidiviz.ingest.direct.state_shared_row_posthooks import IngestGatingContext
+from recidiviz.ingest.extractor.csv_data_extractor import (
+    CsvDataExtractor,
+    IngestFieldCoordinates,
+    RowType,
+)
 from recidiviz.ingest.ingestor import Ingestor
 from recidiviz.ingest.models import ingest_info, serialization
+from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject
+from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.persistence import persistence
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -88,6 +107,41 @@ from recidiviz.persistence.entity.operations.entities import (
 )
 from recidiviz.utils import regions, trace
 from recidiviz.utils.regions import Region
+
+IngestRowPrehookCallable = Callable[[IngestGatingContext, RowType], None]
+IngestRowPosthookCallable = Callable[
+    [IngestGatingContext, RowType, List[IngestObject], IngestObjectCache], None
+]
+IngestFilePostprocessorCallable = Callable[
+    [IngestGatingContext, IngestInfo, Optional[IngestObjectCache]], None
+]
+IngestPrimaryKeyOverrideCallable = Callable[
+    [IngestGatingContext, RowType], IngestFieldCoordinates
+]
+IngestAncestorChainOverridesCallable = Callable[
+    [IngestGatingContext, RowType], Dict[str, str]
+]
+
+
+class DirectIngestFileSplittingGcsfsCsvReaderDelegate(SplittingGcsfsCsvReaderDelegate):
+    def __init__(
+        self,
+        path: GcsfsFilePath,
+        fs: DirectIngestGCSFileSystem,
+        output_directory_path: GcsfsDirectoryPath,
+    ):
+        super().__init__(path, fs, include_header=True)
+        self.output_directory_path = output_directory_path
+
+    def transform_dataframe(self, df: pandas.DataFrame) -> pandas.DataFrame:
+        return df
+
+    def get_output_path(self, chunk_num: int) -> GcsfsFilePath:
+        name, _extension = os.path.splitext(self.path.file_name)
+
+        return GcsfsFilePath.from_directory_and_file_name(
+            self.output_directory_path, f"temp_direct_ingest_{name}_{chunk_num}.csv"
+        )
 
 
 class BaseDirectIngestController(Ingestor):
@@ -156,6 +210,7 @@ class BaseDirectIngestController(Ingestor):
         self.ingest_instance_status_manager = DirectIngestInstanceStatusManager(
             self.region_code(), self.ingest_instance
         )
+        self.csv_reader = GcsfsCsvReader(GcsfsFactory.build())
 
     @property
     def region(self) -> Region:
@@ -466,20 +521,14 @@ class BaseDirectIngestController(Ingestor):
         start_time = datetime.datetime.now()
         logging.info("Starting ingest for ingest run [%s]", self._job_tag(args))
 
-        contents_handle = self._get_contents_handle(args)
-
-        if contents_handle is None:
+        if not self.fs.exists(args.file_path):
             logging.warning(
-                "Failed to get contents handle for ingest run [%s] - " "returning.",
-                self._job_tag(args),
+                "Path [%s] does not exist - returning.",
+                args.file_path.abs_path(),
             )
-            # If the file no-longer exists, we do want to kick the scheduler
-            # again to pick up the next file to run. We expect this to happen
-            # occasionally as a race when the scheduler picks up a file before
-            # it has been properly moved.
-            return True
+            return False
 
-        if not self._can_proceed_with_ingest_for_contents(args, contents_handle):
+        if not self._can_proceed_with_ingest_for_contents(args):
             logging.warning(
                 "Cannot proceed with contents for ingest run [%s] - returning.",
                 self._job_tag(args),
@@ -494,7 +543,20 @@ class BaseDirectIngestController(Ingestor):
             "Successfully read contents for ingest run [%s]", self._job_tag(args)
         )
 
-        if not self._are_contents_empty(args, contents_handle):
+        if not self._are_contents_empty(args):
+            contents_handle = self._get_contents_handle(args)
+
+            if contents_handle is None:
+                logging.warning(
+                    "Failed to get contents handle for ingest run [%s] - returning.",
+                    self._job_tag(args),
+                )
+                # If the file no-longer exists, we do want to kick the scheduler
+                # again to pick up the next file to run. We expect this to happen
+                # occasionally as a race when the scheduler picks up a file before
+                # it has been properly moved.
+                return True
+
             self._parse_and_persist_contents(args, contents_handle)
         else:
             logging.warning(
@@ -584,20 +646,119 @@ class BaseDirectIngestController(Ingestor):
     ) -> Optional[GcsfsFileContentsHandle]:
         return self.fs.download_to_temp_file(path)
 
-    @abc.abstractmethod
     def _are_contents_empty(
-        self, args: GcsfsIngestArgs, contents_handle: GcsfsFileContentsHandle
+        self,
+        args: GcsfsIngestArgs,
     ) -> bool:
-        """Should be overridden by subclasses to return True if the contents
-        for the given args should be considered "empty" and not parsed. For
-        example, a CSV might have a single header line but no actual data.
+        """Returns true if the CSV file is empty, i.e. it contains no non-header
+        rows.
         """
+        delegate = ReadOneGcsfsCsvReaderDelegate()
+        self.csv_reader.streaming_read(
+            args.file_path, delegate=delegate, chunk_size=1, skiprows=1
+        )
+        return delegate.df is None
 
-    @abc.abstractmethod
     def _parse(
         self, args: GcsfsIngestArgs, contents_handle: GcsfsFileContentsHandle
     ) -> ingest_info.IngestInfo:
         """Parses ingest view file contents into an IngestInfo object."""
+        file_tag = self.file_tag(args.file_path)
+        gating_context = IngestGatingContext(
+            file_tag=file_tag, ingest_instance=self.ingest_instance
+        )
+
+        if file_tag not in self.get_file_tag_rank_list():
+            raise DirectIngestError(
+                msg=f"No mapping found for tag [{file_tag}]",
+                error_type=DirectIngestErrorType.INPUT_ERROR,
+            )
+
+        file_mapping = self._yaml_filepath(file_tag)
+
+        row_pre_processors = self._get_row_pre_processors_for_file(file_tag)
+        row_post_processors = self._get_row_post_processors_for_file(file_tag)
+        file_post_processors = self._get_file_post_processors_for_file(file_tag)
+        # pylint: disable=assignment-from-none
+        primary_key_override_callback = self._get_primary_key_override_for_file(
+            file_tag
+        )
+        # pylint: disable=assignment-from-none
+        ancestor_chain_overrides_callback = (
+            self._get_ancestor_chain_overrides_callback_for_file(file_tag)
+        )
+        should_set_with_empty_values = (
+            gating_context.file_tag in self._get_files_to_set_with_empty_values()
+        )
+
+        data_extractor = CsvDataExtractor(
+            file_mapping,
+            gating_context,
+            row_pre_processors,
+            row_post_processors,
+            file_post_processors,
+            ancestor_chain_overrides_callback,
+            primary_key_override_callback,
+            self.system_level,
+            should_set_with_empty_values,
+        )
+
+        return data_extractor.extract_and_populate_data(
+            contents_handle.get_contents_iterator()
+        )
+
+    def _yaml_filepath(self, file_tag: str) -> str:
+        return os.path.join(
+            os.path.dirname(self.region.region_module.__file__),
+            self.region.region_code.lower(),
+            f"{self.region.region_code.lower()}_{file_tag}.yaml",
+        )
+
+    def _get_row_pre_processors_for_file(
+        self, _file_tag: str
+    ) -> List[IngestRowPrehookCallable]:
+        """Subclasses should override to return row_pre_processors for a given
+        file tag.
+        """
+        return []
+
+    def _get_row_post_processors_for_file(
+        self, _file_tag: str
+    ) -> List[IngestRowPosthookCallable]:
+        """Subclasses should override to return row_post_processors for a given
+        file tag.
+        """
+        return []
+
+    def _get_file_post_processors_for_file(
+        self, _file_tag: str
+    ) -> List[IngestFilePostprocessorCallable]:
+        """Subclasses should override to return file_post_processors for a given
+        file tag.
+        """
+        return []
+
+    def _get_ancestor_chain_overrides_callback_for_file(
+        self, _file_tag: str
+    ) -> Optional[IngestAncestorChainOverridesCallable]:
+        """Subclasses should override to return an
+        ancestor_chain_overrides_callback for a given file tag.
+        """
+        return None
+
+    def _get_primary_key_override_for_file(
+        self, _file_tag: str
+    ) -> Optional[IngestPrimaryKeyOverrideCallable]:
+        """Subclasses should override to return a primary_key_override for a
+        given file tag.
+        """
+        return None
+
+    def _get_files_to_set_with_empty_values(self) -> List[str]:
+        """Subclasses should override to return which files to set with empty
+        values (see CsvDataExtractor).
+        """
+        return []
 
     def _do_cleanup(self, args: GcsfsIngestArgs) -> None:
         """Does necessary cleanup once file contents have been successfully persisted to
@@ -612,16 +773,14 @@ class BaseDirectIngestController(Ingestor):
             last_processed_date_str=parts.date_str
         )
 
-    def _can_proceed_with_ingest_for_contents(
-        self, args: GcsfsIngestArgs, contents_handle: GcsfsFileContentsHandle
-    ) -> bool:
+    def _can_proceed_with_ingest_for_contents(self, args: GcsfsIngestArgs) -> bool:
         """Given a pointer to the contents, returns whether the controller can continue
         ingest.
         """
         parts = filename_parts_from_path(args.file_path)
-        return self._are_contents_empty(
-            args, contents_handle
-        ) or not self._must_split_contents(parts.file_type, args.file_path)
+        return self._are_contents_empty(args) or not self._must_split_contents(
+            parts.file_type, args.file_path
+        )
 
     def _must_split_contents(
         self, file_type: GcsfsDirectIngestFileType, path: GcsfsFilePath
@@ -633,10 +792,25 @@ class BaseDirectIngestController(Ingestor):
             self.ingest_file_split_line_limit, path
         )
 
-    @abc.abstractmethod
     def _file_meets_file_line_limit(self, line_limit: int, path: GcsfsFilePath) -> bool:
-        """Subclasses should implement to determine whether the file meets the
-        expected line limit"""
+        """Returns True if the file meets the expected line limit, false otherwise."""
+        delegate = ReadOneGcsfsCsvReaderDelegate()
+
+        # Read a chunk up to one line bigger than the acceptable size
+        try:
+            self.csv_reader.streaming_read(
+                path, delegate=delegate, chunk_size=(line_limit + 1)
+            )
+        except GCSBlobDoesNotExistError:
+            return True
+
+        if delegate.df is None:
+            # If the file is empty, it's fine.
+            return True
+
+        # If length of the only chunk is less than or equal to the acceptable
+        # size, file meets line limit.
+        return len(delegate.df) <= line_limit
 
     def _move_processed_files_to_storage_as_necessary(
         self, last_processed_date_str: str
@@ -1038,10 +1212,27 @@ class BaseDirectIngestController(Ingestor):
             ),
         )
 
-    @abc.abstractmethod
     def _split_file(self, path: GcsfsFilePath) -> List[GcsfsFilePath]:
-        """Should be implemented by subclasses to split a file accessible via the provided path into multiple
-        files and upload those files to GCS. Returns the list of upload paths."""
+        """Splits a file accessible via the provided path into multiple
+        files and uploads those files to GCS. Returns the list of upload paths.
+        """
+
+        parts = filename_parts_from_path(path)
+
+        if parts.file_type == GcsfsDirectIngestFileType.RAW_DATA:
+            raise ValueError(
+                f"Splitting raw files unsupported. Attempting to split [{path.abs_path()}]"
+            )
+
+        delegate = DirectIngestFileSplittingGcsfsCsvReaderDelegate(
+            path, self.fs, self.temp_output_directory_path
+        )
+        self.csv_reader.streaming_read(
+            path, delegate=delegate, chunk_size=self.ingest_file_split_line_limit
+        )
+        output_paths = [path for path, _ in delegate.output_paths_with_columns]
+
+        return output_paths
 
     @staticmethod
     def file_tag(file_path: GcsfsFilePath) -> str:
