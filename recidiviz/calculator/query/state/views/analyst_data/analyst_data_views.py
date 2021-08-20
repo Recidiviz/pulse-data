@@ -21,6 +21,12 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.views.analyst_data.admission_start_reason_dedup_priority import (
     ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.assessment_lsir_responses import (
+    ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.assessment_lsir_scoring_key import (
+    ASSESSMENT_LSIR_SCORING_KEY_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.assessment_score_sessions import (
     ASSESSMENT_SCORE_SESSIONS_VIEW_BUILDER,
 )
@@ -129,6 +135,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_ppo_metrics
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_ppo_metrics_supervision_level import (
     US_ID_PPO_METRICS_SUPERVISION_LEVEL_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_raw_lsir_assessments import (
+    US_ID_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_id_incarceration_population_metrics_preprocessed import (
     US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -140,6 +149,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_id_supervision_popul
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_mo_supervision_population_metrics_preprocessed import (
     US_MO_SUPERVISION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_raw_lsir_assessments import (
+    US_ND_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.violation_type_dedup_priority import (
     VIOLATION_TYPE_DEDUP_PRIORITY_VIEW_BUILDER,
@@ -192,4 +204,8 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     REVOCATION_COHORT_SESSIONS_VIEW_BUILDER,
     COHORT_MONTH_INDEX_VIEW_BUILDER,
     REINCARCERATION_COHORT_SESSIONS_VIEW_BUILDER,
+    ASSESSMENT_LSIR_SCORING_KEY_VIEW_BUILDER,
+    US_ID_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
+    US_ND_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
+    ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
 ]
