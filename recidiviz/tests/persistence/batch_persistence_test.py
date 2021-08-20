@@ -172,7 +172,7 @@ class TestBatchPersistence(TestCase):
 
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     @patch("recidiviz.utils.regions.get_region")
-    @patch("recidiviz.persistence.persistence.write")
+    @patch("recidiviz.persistence.persistence.write_ingest_info")
     def test_persist_to_db(self, mock_write, _mock_region, mock_session_return):
         mock_session = mock_session_return.return_value = create_mock_session()
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)
@@ -207,7 +207,7 @@ class TestBatchPersistence(TestCase):
 
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     @patch("recidiviz.utils.regions.get_region")
-    @patch("recidiviz.persistence.persistence.write")
+    @patch("recidiviz.persistence.persistence.write_ingest_info")
     def test_persist_to_db_multiple_tasks_one_write(
         self, mock_write, _mock_region, mock_session_return
     ):
@@ -253,7 +253,7 @@ class TestBatchPersistence(TestCase):
 
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     @patch("recidiviz.utils.regions.get_region")
-    @patch("recidiviz.persistence.persistence.write")
+    @patch("recidiviz.persistence.persistence.write_ingest_info")
     def test_persist_to_db_failed_no_write(
         self, mock_write, _mock_region, mock_session_return
     ):
@@ -299,7 +299,7 @@ class TestBatchPersistence(TestCase):
 
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     @patch("recidiviz.utils.regions.get_region")
-    @patch("recidiviz.persistence.persistence.write")
+    @patch("recidiviz.persistence.persistence.write_ingest_info")
     def test_persist_to_db_same_task_one_fail_one_pass(
         self, mock_write, _mock_region, mock_session_return
     ):
@@ -347,7 +347,7 @@ class TestBatchPersistence(TestCase):
 
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     @patch("recidiviz.utils.regions.get_region")
-    @patch("recidiviz.persistence.persistence.write")
+    @patch("recidiviz.persistence.persistence.write_ingest_info")
     def test_persist_to_db_different_regions(
         self, mock_write, _mock_region, mock_session_return
     ):
@@ -413,7 +413,7 @@ class TestBatchPersistence(TestCase):
 
     @patch("recidiviz.ingest.scrape.sessions.get_current_session")
     @patch("recidiviz.utils.regions.get_region")
-    @patch("recidiviz.persistence.persistence.write")
+    @patch("recidiviz.persistence.persistence.write_ingest_info")
     def test_persist_duplicates_to_db(
         self, mock_write, _mock_region, mock_session_return
     ):

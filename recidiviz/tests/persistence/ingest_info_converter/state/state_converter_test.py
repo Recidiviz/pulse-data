@@ -92,7 +92,7 @@ from recidiviz.persistence.entity.state.entities import (
 )
 from recidiviz.persistence.ingest_info_converter import ingest_info_converter
 from recidiviz.persistence.ingest_info_converter.ingest_info_converter import (
-    IngestInfoConversionResult,
+    EntityDeserializationResult,
 )
 from recidiviz.tests.persistence.database.database_test_utils import FakeIngestMetadata
 
@@ -110,7 +110,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
     def _convert_and_throw_on_errors(
         ingest_info: IngestInfo, metadata: IngestMetadata
     ) -> List[state_entities.StatePerson]:
-        conversion_result: IngestInfoConversionResult = (
+        conversion_result: EntityDeserializationResult = (
             ingest_info_converter.convert_to_persistence_entities(ingest_info, metadata)
         )
         if conversion_result.enum_parsing_errors > 0:

@@ -328,7 +328,7 @@ class BaseScraper(Scraper):
                             len(scraped_data.ingest_info.people),
                             self.region.region_code,
                         )
-                        persistence.write(
+                        persistence.write_ingest_info(
                             serialization.convert_ingest_info_to_proto(
                                 scraped_data.ingest_info
                             ),

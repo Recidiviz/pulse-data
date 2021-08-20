@@ -32,7 +32,7 @@ from recidiviz.persistence.entity.entities import EntityPersonType
 
 
 @attr.s(frozen=True)
-class IngestInfoConversionResult(Generic[EntityPersonType]):
+class EntityDeserializationResult(Generic[EntityPersonType]):
     enum_parsing_errors: int = attr.ib()
     general_parsing_errors: int = attr.ib()
     protected_class_errors: int = attr.ib()
@@ -46,7 +46,7 @@ class BaseConverter(Generic[EntityPersonType]):
         self.ingest_info = copy.deepcopy(ingest_info)
         self.metadata = metadata
 
-    def run_convert(self) -> IngestInfoConversionResult:
+    def run_convert(self) -> EntityDeserializationResult:
         people: List[EntityPersonType] = []
         protected_class_errors = 0
         enum_parsing_errors = 0
@@ -68,7 +68,7 @@ class BaseConverter(Generic[EntityPersonType]):
                 general_parsing_errors += 1
                 raise e
 
-        return IngestInfoConversionResult(
+        return EntityDeserializationResult(
             people=people,
             enum_parsing_errors=enum_parsing_errors,
             general_parsing_errors=general_parsing_errors,

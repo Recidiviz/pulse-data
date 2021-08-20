@@ -50,7 +50,7 @@ from recidiviz.persistence.entity_matching import entity_matching
 from recidiviz.persistence.entity_validator import entity_validator
 from recidiviz.persistence.ingest_info_converter import ingest_info_converter
 from recidiviz.persistence.ingest_info_converter.base_converter import (
-    IngestInfoConversionResult,
+    EntityDeserializationResult,
 )
 from recidiviz.persistence.ingest_info_validator import ingest_info_validator
 from recidiviz.persistence.persistence_utils import should_persist
@@ -233,7 +233,7 @@ def _mark_children_removed_from_source(booking: county_entities.Booking) -> None
 def _should_abort(
     total_root_entities: int,
     system_level: SystemLevel,
-    conversion_result: IngestInfoConversionResult,
+    conversion_result: EntityDeserializationResult,
     region_code: str,
     entity_matching_errors: int = 0,
     data_validation_errors: int = 0,
@@ -305,7 +305,7 @@ def _should_abort(
 
 
 def _calculate_overall_error_ratio(
-    conversion_result: IngestInfoConversionResult,
+    conversion_result: EntityDeserializationResult,
     entity_matching_errors: int,
     data_validation_errors: int,
     total_root_entities: int,
@@ -419,7 +419,7 @@ def retry_transaction(
 
 
 @trace.span
-def write(
+def write_ingest_info(
     ingest_info: IngestInfo,
     ingest_metadata: IngestMetadata,
     run_txn_fn: Callable[
@@ -447,7 +447,7 @@ def write(
     with monitoring.measurements(mtags) as measurements:
 
         # Convert the people one at a time and count the errors as they happen.
-        conversion_result: IngestInfoConversionResult = (
+        conversion_result: EntityDeserializationResult = (
             ingest_info_converter.convert_to_persistence_entities(
                 ingest_info, ingest_metadata
             )

@@ -16,33 +16,32 @@
 # =============================================================================
 """Tests for the ingest info county_converter."""
 import datetime
-import unittest
 import itertools
-
+import unittest
 from typing import List
 
 import attr
 
-from recidiviz.common.constants.bond import BondType, BondStatus
-from recidiviz.common.constants.county.booking import CustodyStatus
+from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.charge import ChargeStatus
+from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence.entity.county import entities as county_entities
-from recidiviz.persistence.ingest_info_converter import ingest_info_converter
 from recidiviz.persistence.entity.county.entities import (
-    Person,
-    Booking,
     Arrest,
-    Charge,
     Bond,
-    Sentence,
+    Booking,
+    Charge,
     Hold,
+    Person,
+    Sentence,
 )
+from recidiviz.persistence.ingest_info_converter import ingest_info_converter
 from recidiviz.persistence.ingest_info_converter.ingest_info_converter import (
-    IngestInfoConversionResult,
+    EntityDeserializationResult,
 )
 from recidiviz.tests.persistence.database.database_test_utils import FakeIngestMetadata
 
@@ -61,7 +60,7 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
     def _convert_and_throw_on_errors(
         ingest_info: IngestInfo, metadata: IngestMetadata
     ) -> List[county_entities.Person]:
-        conversion_result: IngestInfoConversionResult = (
+        conversion_result: EntityDeserializationResult = (
             ingest_info_converter.convert_to_persistence_entities(ingest_info, metadata)
         )
         if conversion_result.enum_parsing_errors > 0:

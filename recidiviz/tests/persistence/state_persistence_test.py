@@ -287,7 +287,7 @@ class TestStatePersistence(TestCase):
             session.add(db_person_2)
 
         # Act
-        persistence.write(ingest_info, DEFAULT_METADATA)
+        persistence.write_ingest_info(ingest_info, DEFAULT_METADATA)
 
         with SessionFactory.using_database(
             self.database_key, autocommit=False
@@ -447,7 +447,7 @@ class TestStatePersistence(TestCase):
         expected_person_2.external_ids = [expected_external_id_2]
 
         # Act
-        persistence.write(ingest_info, DEFAULT_METADATA)
+        persistence.write_ingest_info(ingest_info, DEFAULT_METADATA)
 
         with SessionFactory.using_database(
             self.database_key, autocommit=False
