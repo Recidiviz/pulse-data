@@ -20,7 +20,7 @@ from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence.ingest_info_converter.base_converter import (
     BaseConverter,
-    IngestInfoConversionResult,
+    EntityDeserializationResult,
 )
 from recidiviz.persistence.ingest_info_converter.county.county_converter import (
     CountyConverter,
@@ -34,7 +34,7 @@ from recidiviz.utils import trace
 @trace.span
 def convert_to_persistence_entities(
     ingest_info: IngestInfo, metadata: IngestMetadata
-) -> IngestInfoConversionResult:
+) -> EntityDeserializationResult:
     converter = _get_converter(ingest_info, metadata)
     return converter.run_convert()
 
