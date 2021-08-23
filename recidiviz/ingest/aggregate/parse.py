@@ -98,7 +98,7 @@ def state_aggregate() -> Tuple[str, HTTPStatus]:
     # tries to load the file into the local filesystem, since appengine is a
     # read only filesystem (except for the tmpdir) we download the file into
     # the local tmpdir and pass that in.
-    handle = fs.download_to_temp_file(path)
+    handle = fs.download_to_temp_file(path, retain_original_filename=True)
     if not handle:
         raise StateAggregateError(f"Unable to download file: {path}")
     logging.info("Successfully downloaded file from gcs: %s", handle.local_file_path)
