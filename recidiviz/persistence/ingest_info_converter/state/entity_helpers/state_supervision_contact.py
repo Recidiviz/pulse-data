@@ -18,13 +18,14 @@
 """Converts an ingest_info proto StateSupervisionContact to a persistence entity."""
 
 from recidiviz.common.constants.state.state_supervision_contact import (
-    StateSupervisionContactStatus,
-    StateSupervisionContactReason,
-    StateSupervisionContactType,
     StateSupervisionContactLocation,
+    StateSupervisionContactMethod,
+    StateSupervisionContactReason,
+    StateSupervisionContactStatus,
+    StateSupervisionContactType,
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import parse_date, normalize, parse_bool
+from recidiviz.common.str_field_utils import normalize, parse_bool, parse_date
 from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionContact
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
@@ -59,6 +60,7 @@ def copy_fields_to_builder(
         "contact_reason": StateSupervisionContactReason,
         "contact_type": StateSupervisionContactType,
         "location": StateSupervisionContactLocation,
+        "contact_method": StateSupervisionContactMethod,
     }
 
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
@@ -72,3 +74,5 @@ def copy_fields_to_builder(
     new.contact_reason_raw_text = fn(normalize, "contact_reason", proto)
     new.location = enum_mappings.get(StateSupervisionContactLocation)
     new.location_raw_text = fn(normalize, "location", proto)
+    new.contact_method = enum_mappings.get(StateSupervisionContactMethod)
+    new.contact_method_raw_text = fn(normalize, "contact_method", proto)

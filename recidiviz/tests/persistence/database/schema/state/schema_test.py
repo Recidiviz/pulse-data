@@ -132,6 +132,7 @@ class TestStateSchemaEnums(TestSchemaEnums):
             "state_supervision_contact_reason": state_supervision_contact.StateSupervisionContactReason,
             "state_supervision_contact_status": state_supervision_contact.StateSupervisionContactStatus,
             "state_supervision_contact_type": state_supervision_contact.StateSupervisionContactType,
+            "state_supervision_contact_method": state_supervision_contact.StateSupervisionContactMethod,
             "state_supervision_violation_type": state_supervision_violation.StateSupervisionViolationType,
             "state_supervision_violation_response_type": state_supervision_violation_response.StateSupervisionViolationResponseType,
             "state_supervision_violation_response_decision": state_supervision_violation_response.StateSupervisionViolationResponseDecision,

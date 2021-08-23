@@ -1714,6 +1714,7 @@ class StateSupervisionContact(IngestObject):
         contact_reason=None,
         state_code=None,
         contact_type=None,
+        contact_method=None,
         location=None,
         resulted_in_arrest=None,
         status=None,
@@ -1725,6 +1726,7 @@ class StateSupervisionContact(IngestObject):
         self.contact_reason: Optional[str] = contact_reason
         self.state_code: Optional[str] = state_code
         self.contact_type: Optional[str] = contact_type
+        self.contact_method: Optional[str] = contact_method
         self.location: Optional[str] = location
         self.resulted_in_arrest: Optional[str] = resulted_in_arrest
         self.status: Optional[str] = status

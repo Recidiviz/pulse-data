@@ -3704,6 +3704,7 @@ class StateSupervisionContact(google.protobuf.message.Message):
     CONTACT_DATE_FIELD_NUMBER: builtins.int
     CONTACT_REASON_FIELD_NUMBER: builtins.int
     CONTACT_TYPE_FIELD_NUMBER: builtins.int
+    CONTACT_METHOD_FIELD_NUMBER: builtins.int
     LOCATION_FIELD_NUMBER: builtins.int
     RESULTED_IN_ARREST_FIELD_NUMBER: builtins.int
     STATUS_FIELD_NUMBER: builtins.int
@@ -3714,6 +3715,7 @@ class StateSupervisionContact(google.protobuf.message.Message):
     contact_date: typing.Text = ...
     contact_reason: typing.Text = ...
     contact_type: typing.Text = ...
+    contact_method: typing.Text = ...
     location: typing.Text = ...
     resulted_in_arrest: typing.Text = ...
     status: typing.Text = ...
@@ -3727,6 +3729,7 @@ class StateSupervisionContact(google.protobuf.message.Message):
         contact_date: typing.Optional[typing.Text] = ...,
         contact_reason: typing.Optional[typing.Text] = ...,
         contact_type: typing.Optional[typing.Text] = ...,
+        contact_method: typing.Optional[typing.Text] = ...,
         location: typing.Optional[typing.Text] = ...,
         resulted_in_arrest: typing.Optional[typing.Text] = ...,
         status: typing.Optional[typing.Text] = ...,
@@ -3739,6 +3742,8 @@ class StateSupervisionContact(google.protobuf.message.Message):
         field_name: typing_extensions.Literal[
             "contact_date",
             b"contact_date",
+            "contact_method",
+            b"contact_method",
             "contact_reason",
             b"contact_reason",
             "contact_type",
@@ -3764,6 +3769,8 @@ class StateSupervisionContact(google.protobuf.message.Message):
         field_name: typing_extensions.Literal[
             "contact_date",
             b"contact_date",
+            "contact_method",
+            b"contact_method",
             "contact_reason",
             b"contact_reason",
             "contact_type",
