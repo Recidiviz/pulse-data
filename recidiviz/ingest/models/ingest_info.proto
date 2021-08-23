@@ -546,6 +546,7 @@ message StateSupervisionContact {
      optional string contact_date = 2;
      optional string contact_reason = 3;
      optional string contact_type = 4;
+     optional string contact_method = 11;
      optional string location = 5;
      optional string resulted_in_arrest = 6;
      optional string status = 7;

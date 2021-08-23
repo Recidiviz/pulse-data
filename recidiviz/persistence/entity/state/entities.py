@@ -80,6 +80,7 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
+    StateSupervisionContactMethod,
     StateSupervisionContactReason,
     StateSupervisionContactStatus,
     StateSupervisionContactType,
@@ -1854,6 +1855,14 @@ class StateSupervisionContact(ExternalIdEntity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt(StateSupervisionContactType)
     )
     contact_type_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    #   - How
+    contact_method: Optional[StateSupervisionContactMethod] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateSupervisionContactMethod)
+    )
+    contact_method_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
 
