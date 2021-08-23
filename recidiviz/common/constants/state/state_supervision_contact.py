@@ -40,6 +40,23 @@ class StateSupervisionContactType(EntityEnum, metaclass=EntityEnumMeta):
 
 
 @unique
+class StateSupervisionContactMethod(EntityEnum, metaclass=EntityEnumMeta):
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
+    INTERNAL_UNKNOWN = enum_strings.internal_unknown
+
+    TELEPHONE = state_enum_strings.state_supervision_contact_method_telephone
+    WRITTEN_MESSAGE = (
+        state_enum_strings.state_supervision_contact_method_written_message
+    )
+    VIRTUAL = state_enum_strings.state_supervision_contact_method_virtual
+    IN_PERSON = state_enum_strings.state_supervision_contact_method_in_person
+
+    @staticmethod
+    def _get_default_map() -> Dict[str, "StateSupervisionContactMethod"]:
+        return _STATE_SUPERVISION_CONTACT_METHOD_MAP
+
+
+@unique
 class StateSupervisionContactReason(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
@@ -134,4 +151,13 @@ _STATE_SUPERVISION_CONTACT_TYPE_MAP = {
     "TELEPHONE": StateSupervisionContactType.TELEPHONE,
     "WRITTEN MESSAGE": StateSupervisionContactType.WRITTEN_MESSAGE,
     "VIRTUAL": StateSupervisionContactType.VIRTUAL,
+}
+
+_STATE_SUPERVISION_CONTACT_METHOD_MAP = {
+    "EXTERNAL UNKNOWN": StateSupervisionContactMethod.EXTERNAL_UNKNOWN,
+    "INTERNAL UNKNOWN": StateSupervisionContactMethod.INTERNAL_UNKNOWN,
+    "TELEPHONE": StateSupervisionContactMethod.TELEPHONE,
+    "WRITTEN MESSAGE": StateSupervisionContactMethod.WRITTEN_MESSAGE,
+    "VIRTUAL": StateSupervisionContactMethod.VIRTUAL,
+    "IN PERSON": StateSupervisionContactMethod.IN_PERSON,
 }

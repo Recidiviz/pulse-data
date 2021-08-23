@@ -18,7 +18,7 @@
 import copy
 import unittest
 
-from mock import patch, Mock
+from mock import Mock, patch
 
 from recidiviz.common import common_utils
 from recidiviz.ingest.models import ingest_info, ingest_info_pb2, serialization
@@ -295,6 +295,7 @@ class TestSerialization(unittest.TestCase):
         supervision_contact = supervision_period.create_state_supervision_contact()
         supervision_contact.state_supervision_contact_id = "supervision_contact_id"
         supervision_contact.contact_type = "contact_type"
+        supervision_contact.contact_method = "contact_method"
         supervision_contacted_agent = supervision_contact.create_state_agent()
         supervision_contacted_agent.state_agent_id = "agentPO"
         supervision_contacted_agent.full_name = "Officer Paroley"
@@ -435,6 +436,7 @@ class TestSerialization(unittest.TestCase):
         supervision_contact_pb = expected_proto.state_supervision_contacts.add()
         supervision_contact_pb.state_supervision_contact_id = "supervision_contact_id"
         supervision_contact_pb.contact_type = "contact_type"
+        supervision_contact_pb.contact_method = "contact_method"
         supervision_contact_pb.contacted_agent_id = "agentPO"
         supervision_period_pb.state_supervision_contact_ids.append(
             "supervision_contact_id"

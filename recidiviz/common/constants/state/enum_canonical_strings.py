@@ -371,9 +371,15 @@ state_early_discharge_decision_status_invalid = "INVALID"
 
 # state_supervision_contact.py
 state_supervision_contact_type_face_to_face = "FACE_TO_FACE"
+# TODO(#8811): Deprecate these fields for contact type
 state_supervision_contact_type_telephone = "TELEPHONE"
 state_supervision_contact_type_written_message = "WRITTEN_MESSAGE"
 state_supervision_contact_type_virtual = "VIRTUAL"
+
+state_supervision_contact_method_telephone = "TELEPHONE"
+state_supervision_contact_method_written_message = "WRITTEN_MESSAGE"
+state_supervision_contact_method_virtual = "VIRTUAL"
+state_supervision_contact_method_in_person = "IN_PERSON"
 
 state_supervision_contact_reason_emergency_contact = "EMERGENCY_CONTACT"
 state_supervision_contact_reason_general_contact = "GENERAL_CONTACT"

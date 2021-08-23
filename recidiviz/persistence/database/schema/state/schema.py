@@ -582,6 +582,16 @@ state_supervision_contact_type = Enum(
     name="state_supervision_contact_type",
 )
 
+state_supervision_contact_method = Enum(
+    enum_strings.external_unknown,
+    enum_strings.internal_unknown,
+    state_enum_strings.state_supervision_contact_method_in_person,
+    state_enum_strings.state_supervision_contact_method_telephone,
+    state_enum_strings.state_supervision_contact_method_virtual,
+    state_enum_strings.state_supervision_contact_method_written_message,
+    name="state_supervision_contact_method",
+)
+
 # Join tables
 
 state_supervision_sentence_incarceration_period_association_table = Table(
@@ -4354,6 +4364,13 @@ class _StateSupervisionContactSharedColumns(_ReferencesStatePersonSharedColumns)
     )
     contact_type_raw_text = Column(
         String(255), comment="The raw text value of the contact type."
+    )
+    contact_method = Column(
+        state_supervision_contact_method,
+        comment="The method used to perform the contact.",
+    )
+    contact_method_raw_text = Column(
+        String(255), comment="The raw text value of the contact method."
     )
     location = Column(
         state_supervision_contact_location, comment="Where this contact took place."
