@@ -19,14 +19,14 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.county.views.charges.charge_text_counts import (
-    CHARGE_TEXT_COUNTS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.county.views.charges.charge_class_severity_ranks import (
     CHARGE_CLASS_SEVERITY_RANKS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.county.views.charges.charges_and_severity import (
-    CHARGES_AND_SEVERITY_VIEW_BUILDER,
+from recidiviz.calculator.query.county.views.charges.charge_info_all_bookings import (
+    CHARGE_INFO_ALL_BOOKINGS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.county.views.charges.charge_info_by_booking import (
+    CHARGE_INFO_BY_BOOKING_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.county.views.charges.charge_severity_all_bookings import (
     CHARGE_SEVERITY_ALL_BOOKINGS_VIEW_BUILDER,
@@ -34,8 +34,16 @@ from recidiviz.calculator.query.county.views.charges.charge_severity_all_booking
 from recidiviz.calculator.query.county.views.charges.charge_severity_counts_all_bookings import (
     CHARGE_SEVERITY_COUNTS_ALL_BOOKINGS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.county.views.charges.charge_text_counts import (
+    CHARGE_TEXT_COUNTS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.county.views.charges.charges_and_severity import (
+    CHARGES_AND_SEVERITY_VIEW_BUILDER,
+)
 
 CHARGE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    CHARGE_INFO_ALL_BOOKINGS_VIEW_BUILDER,
+    CHARGE_INFO_BY_BOOKING_VIEW_BUILDER,
     CHARGE_TEXT_COUNTS_VIEW_BUILDER,
     CHARGE_CLASS_SEVERITY_RANKS_VIEW_BUILDER,
     CHARGES_AND_SEVERITY_VIEW_BUILDER,
