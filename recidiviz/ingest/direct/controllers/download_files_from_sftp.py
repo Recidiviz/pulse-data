@@ -27,7 +27,7 @@ from paramiko import SFTPAttributes, SSHException
 from paramiko.hostkeys import HostKeyEntry
 from pysftp import CnOpts
 
-from recidiviz.cloud_storage.gcs_file_system import GcsfsSftpFileContentsHandle
+from recidiviz.cloud_storage.gcs_file_system import SftpFileContentsHandle
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
@@ -196,7 +196,7 @@ class DownloadFilesFromSftpController:
                 )
                 self.gcsfs.upload_from_contents_handle_stream(
                     path=path,
-                    contents_handle=GcsfsSftpFileContentsHandle(
+                    contents_handle=SftpFileContentsHandle(
                         sftp_connection=connection, local_file_path=file_path
                     ),
                     content_type=BYTES_CONTENT_TYPE,

@@ -23,7 +23,7 @@ import tempfile
 import uuid
 from contextlib import contextmanager
 from io import TextIOWrapper
-from typing import Any, Callable, Dict, Iterator, List, Optional, TextIO, Union
+from typing import IO, Any, Callable, Dict, Iterator, List, Optional, TextIO, Union
 
 import pysftp
 from google.api_core import exceptions, retry
@@ -49,7 +49,7 @@ class GCSBlobDoesNotExistError(ValueError):
     pass
 
 
-class GcsfsFileContentsHandle(FileContentsHandle[str, TextIO]):
+class GcsfsFileContentsHandle(FileContentsHandle[str, IO]):
     """Handle to a local copy of a file from (or to be uploaded) to GCS"""
 
     def __init__(self, local_file_path: str, cleanup_file: bool = True):
@@ -73,8 +73,8 @@ class GcsfsFileContentsHandle(FileContentsHandle[str, TextIO]):
         return cls(local_path, cleanup_file=True)
 
     @contextmanager
-    def open(self) -> Iterator[TextIO]:
-        with open(self.local_file_path, mode="r", encoding="utf-8") as f:
+    def open(self, mode: str = "r") -> Iterator[IO]:
+        with open(self.local_file_path, mode=mode) as f:
             yield f
 
     def __del__(self) -> None:
@@ -85,7 +85,7 @@ class GcsfsFileContentsHandle(FileContentsHandle[str, TextIO]):
             os.remove(self.local_file_path)
 
 
-class GcsfsSftpFileContentsHandle(FileContentsHandle[bytes, SFTPFile]):
+class SftpFileContentsHandle(FileContentsHandle[bytes, SFTPFile]):
     def __init__(self, local_file_path: str, sftp_connection: pysftp.Connection):
         super().__init__(local_file_path=local_file_path)
         self.sftp_connection = sftp_connection
@@ -99,8 +99,10 @@ class GcsfsSftpFileContentsHandle(FileContentsHandle[bytes, SFTPFile]):
                 yield line
 
     @contextmanager
-    def open(self) -> Iterator[SFTPFile]:
-        with self.sftp_connection.open(remote_file=self.local_file_path, mode="r") as f:
+    def open(self, mode: str = "r") -> Iterator[SFTPFile]:  # type: ignore
+        with self.sftp_connection.open(
+            remote_file=self.local_file_path, mode=mode
+        ) as f:
             yield f
 
 
@@ -405,7 +407,7 @@ class GCSFileSystemImpl(GCSFileSystem):
         content_type: str,
     ) -> None:
         bucket = self.storage_client.bucket(path.bucket_name)
-        with contents_handle.open() as file_stream:
+        with contents_handle.open("rb") as file_stream:
             bucket.blob(path.blob_name).upload_from_file(
                 file_stream, content_type=content_type
             )
