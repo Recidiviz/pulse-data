@@ -172,7 +172,7 @@ class GCSFileSystem:
 
     @abc.abstractmethod
     def download_to_temp_file(
-        self, path: GcsfsFilePath
+        self, path: GcsfsFilePath, retain_original_filename: bool = False
     ) -> Optional[GcsfsFileContentsHandle]:
         """Generates a new file in a temporary directory on the local file
         system (App Engine VM when in prod/staging), and downloads file contents
@@ -236,11 +236,11 @@ def retry_predicate(exception: Exception) -> Callable[[Exception], bool]:
     )(exception)
 
 
-def generate_random_temp_path() -> str:
+def generate_random_temp_path(filename: Optional[str] = None) -> str:
     temp_dir = os.path.join(tempfile.gettempdir(), "gcs_temp_files")
     os.makedirs(temp_dir, exist_ok=True)
 
-    return os.path.join(temp_dir, str(uuid.uuid4()))
+    return os.path.join(temp_dir, filename if filename else str(uuid.uuid4()))
 
 
 class GCSFileSystemImpl(GCSFileSystem):
@@ -358,9 +358,11 @@ class GCSFileSystemImpl(GCSFileSystem):
 
     @retry.Retry(predicate=retry_predicate)
     def download_to_temp_file(
-        self, path: GcsfsFilePath
+        self, path: GcsfsFilePath, retain_original_filename: bool = False
     ) -> Optional[GcsfsFileContentsHandle]:
-        temp_file_path = generate_random_temp_path()
+        temp_file_path = generate_random_temp_path(
+            path.file_name if retain_original_filename else None
+        )
 
         try:
             blob = self._get_blob(path)

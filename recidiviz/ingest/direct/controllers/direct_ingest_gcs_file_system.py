@@ -263,9 +263,11 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
         self.gcs_file_system.delete(path)
 
     def download_to_temp_file(
-        self, path: GcsfsFilePath
+        self, path: GcsfsFilePath, retain_original_filename: bool = False
     ) -> Optional[GcsfsFileContentsHandle]:
-        return self.gcs_file_system.download_to_temp_file(path)
+        return self.gcs_file_system.download_to_temp_file(
+            path, retain_original_filename
+        )
 
     def download_as_string(self, path: GcsfsFilePath, encoding: str = "utf-8") -> str:
         return self.gcs_file_system.download_as_string(path, encoding)
