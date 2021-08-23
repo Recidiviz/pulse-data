@@ -157,7 +157,7 @@ class FakeGCSFileSystem(GCSFileSystem):
             return entry.local_path
 
     def download_to_temp_file(
-        self, path: GcsfsFilePath
+        self, path: GcsfsFilePath, retain_original_filename: bool = False
     ) -> Optional[GcsfsFileContentsHandle]:
         """Downloads file contents into local temporary_file, returning path to
         temp file, or None if the path no-longer exists in the GCS file system.
