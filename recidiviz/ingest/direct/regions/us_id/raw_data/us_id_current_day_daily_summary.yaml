@@ -1,0 +1,174 @@
+file_tag: current_day_daily_summary
+file_description: |-
+  A validation view containing one record for all incarcerated and supervised
+  persons in Idaho. The view is executed once daily and provides the current
+  status of each person as of that moment.
+primary_key_cols:
+  - ofndr_num
+columns:
+  - name: ofndr_num
+    description: |-
+      Idaho external ID for person
+  - name: LastNameFirstName
+    description: |-
+      In format '{LastName}, {FirstName}'
+  - name: popdate
+    is_datetime: True
+    description: |-
+      The date when this view was executed
+  - name: move_dtd
+    is_datetime: True
+    description: |-
+      Latest movement date for given person
+  - name: Facility
+    description: |-
+      Facility housing person if incarcerated, or district of supervision.
+      This strings for these values are hard-coded into the query, and may
+      not match exactly other IDOC records.
+  - name: IDOCPopulationGrouping
+    description: |-
+      Categorizes the `Facility` field from this table into a smaller number
+      of groupings.
+  - name: fac_cd
+    description: |-
+      Code for the facility. Can be joined to `movement.fac_cd`
+  - name: lu_cd
+    description: |-
+      Code for the living unit within the facility / location. For persons on
+      probation / parole, can contain extra information about their supervision
+      status. Can be joined to `movement.lu_cd`
+  - name: loc_cd
+    description: |-
+      Code for location within facility. For persons on supervisions, provides
+      information on the office. Can be joined to `movement.loc_cd`
+  - name: move_pod
+    description: |-
+      Pod within location. Only for incarceration status.
+  - name: body_loc_cd
+  - name: body_loc_desc
+  - name: assgn_rsn_cd
+  - name: assgn_rsn_desc
+  - name: AllStatus
+    description: |-
+      Concatenation of `stat1`, `stat2`, and `stat3`
+  - name: stat1
+    description: |-
+      Status of person.
+    known_values:
+      - value: CH
+        description: Courtesy Hold
+      - value: CR
+        description: Community/Rider
+      - value: CV
+        description: Civil
+      - value: HS
+        description: History
+      - value: IP
+        description: Institutional Probation
+      - value: MC
+        description: Multiple Status Close
+      - value: "NO"
+        description: Non Idaho Commitment
+      - value: PA
+        description: Pardon Applicant
+      - value: PB
+        description: Probation
+      - value: PF
+        description: Firearm Applicant
+      - value: PR
+        description: Parole
+      - value: PS
+        description: Pre-sentence Investigation/Drug Court Pending
+      - value: PV
+        description: Parole Violator
+      - value: RJ
+        description: Rider
+      - value: TM
+        description: Termer
+  - name: stat2
+    description: |-
+      Possible additional status for multi-status persons. Rarely populated.
+  - name: stat3
+    description: |-
+      Possible additional status for multi-status persons. Rarely populated.
+  - name: Ethnicity
+    description: |-
+      Ethnicity of person.
+    known_values:
+      - value: Asian
+        description: Asian
+      - value: Black
+        description: Black
+      - value: Hispanic
+        description: Hispanic
+      - value: Native American
+        description: Native American
+      - value: Other
+        description: Other
+      - value: Unknown
+        description: Unknown
+      - value: White
+        description: White
+  - name: Sex
+    description: |-
+      Sex of person.
+    known_values:
+      - value: Female
+        description: Female
+      - value: Male
+        description: Male
+      - value: U
+        description: Unknown
+      - value: X
+        description: Female. Code is expected to be dropped soon.
+      - value: "Y"
+        description: Male. Code is expected to be dropped soon.
+  - name: Age
+    description: |-
+      Age of person in years as of `popdate`.
+  - name: AgeBracket
+    description: |-
+      Bins for ages.
+    known_values:
+      - value: "<18"
+        description: Less than 18 years.
+      - value: "18-24"
+        description: Between 18 and 24 years.
+      - value: "25-34"
+        description: Between 25 and 34 years.
+      - value: "35-44"
+        description: Between 35 and 44 years.
+      - value: "45-54"
+        description: Between 45 and 54 years.
+      - value: "55-64"
+        description: Between 55 and 64 years.
+      - value: 65 and over
+        description: Over 65 years.
+  - name: SentEffDt
+    is_datetime: True
+    description: |-
+      Sentence effective date
+  - name: EPRD
+    is_datetime: True
+    description: |-
+      Earliest possible release date
+  - name: FTRD
+    is_datetime: True
+    description: |-
+      Full term release date
+  - name: ParEligDt
+    is_datetime: True
+    description: |-
+      Parole eligibility date
+  - name: RlsDt
+    is_datetime: True
+    description: |-
+      Release date
+  - name: NextParHrgDt
+    is_datetime: True
+    description: |-
+      Next parole hearing date
+  - name: TentParDt
+    is_datetime: True
+    description: |-
+      Tentative parole date
