@@ -68,7 +68,7 @@ class TestResponsesOnMostRecentResponseDate(unittest.TestCase):
             violation_responses
         )
 
-    def test_responses_on_most_recent_response_date(self):
+    def test_responses_on_most_recent_response_date(self) -> None:
         response_dates = [
             datetime.date(2020, 1, 1),
             datetime.date(2019, 3, 1),
@@ -84,19 +84,9 @@ class TestResponsesOnMostRecentResponseDate(unittest.TestCase):
             datetime.date(2029, 10, 1), most_recent_responses[0].response_date
         )
 
-    def test_responses_on_most_recent_response_date_empty_dates(self):
-        response_dates = [
-            datetime.date(2020, 1, 1),
-            datetime.date(2019, 3, 1),
-            datetime.date(2029, 10, 1),
-            None,
-        ]
-
-        # No responses without dates should be sent to this function
-        with self.assertRaises(ValueError):
-            _ = self._test_responses_on_most_recent_response_date(response_dates)
-
-    def test_responses_on_most_recent_response_date_multiple_on_most_recent(self):
+    def test_responses_on_most_recent_response_date_multiple_on_most_recent(
+        self,
+    ) -> None:
         response_dates = [
             datetime.date(2020, 1, 1),
             datetime.date(2029, 10, 1),
@@ -119,7 +109,7 @@ class TestDefaultFilteredViolationResponsesForViolationHistory(unittest.TestCase
     def setUp(self) -> None:
         self.delegate = UsXxViolationDelegate()
 
-    def test_filter_violation_responses_for_violation_history(self):
+    def test_filter_violation_responses_for_violation_history(self) -> None:
         violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
@@ -160,8 +150,10 @@ class TestDefaultFilteredViolationResponsesForViolationHistory(unittest.TestCase
             filtered_responses,
         )
 
-    def test_default_filtered_violation_responses_for_violation_history_empty(self):
-        violation_responses = []
+    def test_default_filtered_violation_responses_for_violation_history_empty(
+        self,
+    ) -> None:
+        violation_responses: List[StateSupervisionViolationResponse] = []
 
         filtered_responses = filter_violation_responses_for_violation_history(
             violation_delegate=self.delegate,
@@ -178,7 +170,7 @@ class TestDefaultFilteredViolationResponsesForViolationHistory(unittest.TestCase
 class TestViolationResponsesInWindow(unittest.TestCase):
     """Test the violation_responses_in_window function."""
 
-    def test_violation_responses_in_window(self):
+    def test_violation_responses_in_window(self) -> None:
         violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
@@ -217,7 +209,7 @@ class TestViolationResponsesInWindow(unittest.TestCase):
             responses_in_window,
         )
 
-    def test_violation_responses_in_window_no_lower_bound(self):
+    def test_violation_responses_in_window_no_lower_bound(self) -> None:
         violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
@@ -260,7 +252,7 @@ class TestViolationResponsesInWindow(unittest.TestCase):
             responses_in_window,
         )
 
-    def test_violation_responses_in_window_all_outside_of_window(self):
+    def test_violation_responses_in_window_all_outside_of_window(self) -> None:
         violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
@@ -290,7 +282,7 @@ class TestViolationResponsesInWindow(unittest.TestCase):
 
         self.assertEqual([], responses_in_window)
 
-    def test_violation_responses_in_window_exclude_before_window(self):
+    def test_violation_responses_in_window_exclude_before_window(self) -> None:
         violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code="US_XX",
@@ -324,7 +316,7 @@ class TestViolationResponsesInWindow(unittest.TestCase):
 class TestIdentifyMostSevereResponseDecision(unittest.TestCase):
     """Tests the identify_most_severe_response_decision function."""
 
-    def test_identify_most_severe_response_decision(self):
+    def test_identify_most_severe_response_decision(self) -> None:
         decisions = [
             StateSupervisionViolationResponseDecision.CONTINUANCE,
             StateSupervisionViolationResponseDecision.REVOCATION,
@@ -336,7 +328,7 @@ class TestIdentifyMostSevereResponseDecision(unittest.TestCase):
             most_severe_decision, StateSupervisionViolationResponseDecision.REVOCATION
         )
 
-    def test_identify_most_severe_response_decision_test_all_types(self):
+    def test_identify_most_severe_response_decision_test_all_types(self) -> None:
         for decision in StateSupervisionViolationResponseDecision:
             decisions = [decision]
 

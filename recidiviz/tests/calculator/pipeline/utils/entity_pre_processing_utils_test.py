@@ -55,7 +55,7 @@ class TestIncarcerationPreProcessingDelegate(UsXxIncarcerationPreProcessingDeleg
 class TestPreProcessingManagersForCalculations(unittest.TestCase):
     """Tests the pre_processing_managers_for_calculations function."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.pre_processing_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
             ".get_state_specific_incarceration_period_pre_processing_delegate"
@@ -68,7 +68,7 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
     def tearDown(self) -> None:
         self.pre_processing_delegate_patcher.stop()
 
-    def test_pre_processing_managers_for_calculations(self):
+    def test_pre_processing_managers_for_calculations(self) -> None:
         state_code = "US_XX"
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -104,6 +104,7 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
             pre_processed_violation_responses=None,
         )
 
+        assert ip_pre_processing_manager is not None
         self.assertEqual(
             [incarceration_period],
             ip_pre_processing_manager.pre_processed_incarceration_period_index_for_calculations(
@@ -111,12 +112,13 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
                 overwrite_facility_information_in_transfers=False,
             ).incarceration_periods,
         )
+        assert sp_pre_processing_manager is not None
         self.assertEqual(
             [supervision_period],
             sp_pre_processing_manager.pre_processed_supervision_period_index_for_calculations().supervision_periods,
         )
 
-    def test_pre_processing_managers_for_calculations_no_sps(self):
+    def test_pre_processing_managers_for_calculations_no_sps(self) -> None:
         state_code = "US_XX"
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
@@ -141,6 +143,7 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
             pre_processed_violation_responses=None,
         )
 
+        assert ip_pre_processing_manager is not None
         self.assertEqual(
             [incarceration_period],
             ip_pre_processing_manager.pre_processed_incarceration_period_index_for_calculations(
@@ -150,7 +153,9 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
         )
         self.assertIsNone(sp_pre_processing_manager)
 
-    def test_pre_processing_managers_for_calculations_no_sps_state_requires(self):
+    def test_pre_processing_managers_for_calculations_no_sps_state_requires(
+        self,
+    ) -> None:
         self.mock_pre_processing_delegate.return_value = (
             TestIncarcerationPreProcessingDelegate()
         )
@@ -179,7 +184,7 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
 
     def test_pre_processing_managers_for_calculations_no_violation_responses_state_requires(
         self,
-    ):
+    ) -> None:
         self.mock_pre_processing_delegate.return_value = (
             TestIncarcerationPreProcessingDelegate()
         )
@@ -206,7 +211,7 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
                 pre_processed_violation_responses=None,
             )
 
-    def test_pre_processing_managers_for_calculations_no_ips(self):
+    def test_pre_processing_managers_for_calculations_no_ips(self) -> None:
         state_code = "US_XX"
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -230,12 +235,13 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
         )
 
         self.assertIsNone(ip_pre_processing_manager)
+        assert sp_pre_processing_manager is not None
         self.assertEqual(
             [supervision_period],
             sp_pre_processing_manager.pre_processed_supervision_period_index_for_calculations().supervision_periods,
         )
 
-    def test_pre_processing_managers_for_calculations_empty_lists(self):
+    def test_pre_processing_managers_for_calculations_empty_lists(self) -> None:
         state_code = "US_XX"
 
         (
@@ -248,5 +254,7 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
             pre_processed_violation_responses=[],
         )
 
+        assert ip_pre_processing_manager is not None
+        assert sp_pre_processing_manager is not None
         self.assertEqual([], ip_pre_processing_manager._incarceration_periods)
         self.assertEqual([], sp_pre_processing_manager._supervision_periods)

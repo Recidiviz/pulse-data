@@ -19,7 +19,7 @@
 This contains the core logic for calculating incarceration metrics on a person-by-person
 basis. It transforms IncarcerationEvents into IncarcerationMetrics.
 """
-from typing import List
+from typing import Sequence
 
 from recidiviz.calculator.pipeline.base_metric_producer import BaseMetricProducer
 from recidiviz.calculator.pipeline.incarceration.events import (
@@ -41,7 +41,7 @@ from recidiviz.calculator.pipeline.incarceration.metrics import (
 
 class IncarcerationMetricProducer(
     BaseMetricProducer[
-        List[IncarcerationEvent], IncarcerationMetricType, IncarcerationMetric
+        Sequence[IncarcerationEvent], IncarcerationMetricType, IncarcerationMetric
     ]
 ):
     """Calculates IncarcerationMetrics from IncarcerationEvents."""

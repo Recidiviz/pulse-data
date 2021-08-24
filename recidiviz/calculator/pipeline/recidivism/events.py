@@ -56,7 +56,7 @@ class ReleaseEvent(IdentifierEvent):
         return self.release_date.year
 
     @property
-    def stay_length(self) -> Optional[int]:
+    def stay_length(self) -> int:
         """Calculates the length of facility stay of a given event in months.
 
         This is rounded down to the nearest month, so a stay from 2015-01-15 to
@@ -69,9 +69,6 @@ class ReleaseEvent(IdentifierEvent):
             The length of the facility stay in months. None if the original
             admission date or release date is not known.
         """
-        if self.original_admission_date is None or self.release_date is None:
-            return None
-
         delta = relativedelta(self.release_date, self.original_admission_date)
         return delta.years * 12 + delta.months
 

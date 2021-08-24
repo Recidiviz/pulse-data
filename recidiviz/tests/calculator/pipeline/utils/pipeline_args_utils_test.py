@@ -58,7 +58,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
 
     TEST_PIPELINE = IncarcerationPipeline()
 
-    def test_minimal_incarceration_pipeline_args(self):
+    def test_minimal_incarceration_pipeline_args(self) -> None:
         # Arrange
         argv = [
             "--job_name",
@@ -85,7 +85,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
             self.DEFAULT_APACHE_BEAM_OPTIONS_DICT,
         )
 
-    def test_minimal_incarceration_pipeline_args_save_to_template(self):
+    def test_minimal_incarceration_pipeline_args_save_to_template(self) -> None:
         # Arrange
         argv = [
             "--job_name",
@@ -118,7 +118,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
             expected_apache_beam_options_dict,
         )
 
-    def test_incarceration_pipeline_args_defaults_changed(self):
+    def test_incarceration_pipeline_args_defaults_changed(self) -> None:
         # Arrange
         argv = [
             "--job_name",
@@ -193,7 +193,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
             pipeline_options.get_all_options(drop_default=True),
         )
 
-    def test_incarceration_pipeline_specify_person_id_filters(self):
+    def test_incarceration_pipeline_specify_person_id_filters(self) -> None:
         # Arrange
         argv = [
             "--job_name",
@@ -230,7 +230,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
             self.DEFAULT_APACHE_BEAM_OPTIONS_DICT,
         )
 
-    def test_incarceration_pipeline_args_additional_bad_arg(self):
+    def test_incarceration_pipeline_args_additional_bad_arg(self) -> None:
         # Arrange
         argv = [
             "--job_name",
@@ -264,7 +264,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
             _ = get_apache_beam_pipeline_options_from_args(apache_beam_args)
         self.assertEqual(2, e.exception.code)
 
-    def test_incarceration_pipeline_args_missing_arg(self):
+    def test_incarceration_pipeline_args_missing_arg(self) -> None:
         # Arrange
         argv = [
             "--job_name",

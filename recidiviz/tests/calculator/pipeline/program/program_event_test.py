@@ -32,7 +32,7 @@ from recidiviz.common.constants.state.state_supervision import StateSupervisionT
 class TestProgramEvent(unittest.TestCase):
     """ Tests for ProgramEvent and ProgramReferralEvent."""
 
-    def testProgramEvent(self):
+    def testProgramEvent(self) -> None:
         state_code = "CA"
         program_id = "PROGRAMX"
         event_date = date(2000, 11, 10)
@@ -43,7 +43,7 @@ class TestProgramEvent(unittest.TestCase):
         assert program_event.program_id == program_id
         assert program_event.event_date == event_date
 
-    def test_program_referral_event(self):
+    def test_program_referral_event(self) -> None:
         state_code = "CA"
         program_id = "PROGRAMX"
         event_date = date(2000, 11, 10)
@@ -84,7 +84,7 @@ class TestProgramEvent(unittest.TestCase):
             == supervising_district_external_id
         )
 
-    def test_eq_different_field(self):
+    def test_eq_different_field(self) -> None:
         state_code = "CA"
         program_id = "PROGRAMX"
         event_date = date(2000, 11, 10)
@@ -95,29 +95,23 @@ class TestProgramEvent(unittest.TestCase):
 
         assert first != second
 
-    def test_eq_different_types(self):
+    def test_eq_different_types(self) -> None:
         state_code = "CA"
         program_id = "PROGRAMX"
         event_date = date(2000, 11, 10)
         supervision_type = StateSupervisionType.PROBATION
-        assessment_score = 9
-        assessment_type = StateAssessmentType.ORAS
-        assessment_level = None
         participation_status = StateProgramAssignmentParticipationStatus.IN_PROGRESS
         supervising_officer_external_id = "OFFICER211"
         supervising_district_external_id = "DISTRICT 100"
 
         program_event = ProgramReferralEvent(
-            state_code,
-            event_date,
-            program_id,
-            supervision_type,
-            participation_status,
-            assessment_score,
-            assessment_type,
-            assessment_level,
-            supervising_officer_external_id,
-            supervising_district_external_id,
+            state_code=state_code,
+            event_date=event_date,
+            program_id=program_id,
+            supervision_type=supervision_type,
+            participation_status=participation_status,
+            supervising_officer_external_id=supervising_officer_external_id,
+            supervising_district_external_id=supervising_district_external_id,
         )
 
         different = "Everything you do is a banana"

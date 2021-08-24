@@ -79,7 +79,7 @@ from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_commitmen
 
 _DEFAULT_SUPERVISION_PERIOD_ID = 999
 
-DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS: Optional[Dict[int, Dict[Any, Any]]] = {
+DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS: Dict[int, Dict[Any, Any]] = {
     999: {"agent_id": 000, "agent_external_id": "XXX", "supervision_period_id": 999}
 }
 
@@ -104,7 +104,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         supervision_period_to_agent_associations: Optional[
             Dict[int, Dict[Any, Any]]
         ] = None,
-    ):
+    ) -> CommitmentDetails:
         """Helper function for testing get_commitment_from_supervision_details."""
         supervision_period_to_agent_associations = (
             supervision_period_to_agent_associations
@@ -140,7 +140,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             ),
         )
 
-    def test_get_commitment_from_supervision_details(self):
+    def test_get_commitment_from_supervision_details(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
             status=StateSupervisionPeriodStatus.TERMINATED,
@@ -165,6 +165,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             incarceration_period, [supervision_period]
         )
 
+        assert supervision_period.supervision_period_id is not None
         self.assertEqual(
             CommitmentDetails(
                 purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
@@ -172,7 +173,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 level_1_supervision_location_external_id=supervision_period.supervision_site,
                 level_2_supervision_location_external_id=None,
                 supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
-                    supervision_period.supervision_period_id
+                    supervision_period.supervision_period_id, {}
                 ).get(
                     "agent_external_id"
                 ),
@@ -184,7 +185,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             commitment_details,
         )
 
-    def test_get_commitment_from_supervision_details_us_nd(self):
+    def test_get_commitment_from_supervision_details_us_nd(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
             status=StateSupervisionPeriodStatus.TERMINATED,
@@ -209,6 +210,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             incarceration_period,
             [supervision_period],
         )
+        assert supervision_period.supervision_period_id is not None
         self.assertEqual(
             CommitmentDetails(
                 purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
@@ -216,7 +218,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 level_1_supervision_location_external_id=supervision_period.supervision_site,
                 level_2_supervision_location_external_id=None,
                 supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
-                    supervision_period.supervision_period_id
+                    supervision_period.supervision_period_id, {}
                 ).get(
                     "agent_external_id"
                 ),
@@ -228,7 +230,9 @@ class TestGetCommitmentDetails(unittest.TestCase):
             commitment_details,
         )
 
-    def test_get_commitment_from_supervision_details_no_supervision_period(self):
+    def test_get_commitment_from_supervision_details_no_supervision_period(
+        self,
+    ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=111,
             external_id="ip1",
@@ -258,7 +262,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             commitment_details,
         )
 
-    def test_get_commitment_from_supervision_details_us_pa_pvc(self):
+    def test_get_commitment_from_supervision_details_us_pa_pvc(self) -> None:
         state_code = "US_PA"
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -296,6 +300,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
         )
 
+        assert incarceration_period.incarceration_period_id is not None
         ip_index = PreProcessedIncarcerationPeriodIndex(
             incarceration_periods=[incarceration_period],
             ip_id_to_pfi_subtype={
@@ -309,6 +314,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             incarceration_period_index=ip_index,
         )
 
+        assert supervision_period.supervision_period_id is not None
         self.assertEqual(
             commitment_details,
             CommitmentDetails(
@@ -317,7 +323,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
                 supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
-                    supervision_period.supervision_period_id
+                    supervision_period.supervision_period_id, {}
                 ).get(
                     "agent_external_id"
                 ),
@@ -328,7 +334,9 @@ class TestGetCommitmentDetails(unittest.TestCase):
             ),
         )
 
-    def test_get_commitment_from_supervision_details_transfer_on_admission(self):
+    def test_get_commitment_from_supervision_details_transfer_on_admission(
+        self,
+    ) -> None:
         """Tests that the period *prior to the incarceration admission* is chosen
         when a person is transferred to a new supervision period on the date of an
         admission to incarceration."""
@@ -362,6 +370,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             incarceration_period,
             [pre_commitment_sp, supervision_period_while_in_prison],
         )
+        assert pre_commitment_sp.supervision_period_id is not None
         self.assertEqual(
             CommitmentDetails(
                 purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
@@ -369,7 +378,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 level_1_supervision_location_external_id=pre_commitment_sp.supervision_site,
                 level_2_supervision_location_external_id=None,
                 supervising_officer_external_id=DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
-                    pre_commitment_sp.supervision_period_id
+                    pre_commitment_sp.supervision_period_id, {}
                 ).get(
                     "agent_external_id"
                 ),
@@ -389,7 +398,7 @@ class TestDefaultViolationHistoryWindowPreCommitmentFromSupervision(unittest.Tes
 
     def test_default_violation_history_window_pre_commitment_from_supervision(
         self,
-    ):
+    ) -> None:
         state_code = "US_XX"
 
         supervision_violation_response_1 = (
@@ -438,7 +447,7 @@ class TestDefaultViolationHistoryWindowPreCommitmentFromSupervision(unittest.Tes
 
     def test_default_violation_history_window_pre_commitment_from_supervision_filter_after(
         self,
-    ):
+    ) -> None:
         state_code = "US_XX"
 
         supervision_violation_response_1 = (
@@ -488,7 +497,7 @@ class TestDefaultViolationHistoryWindowPreCommitmentFromSupervision(unittest.Tes
 
     def test_default_violation_history_window_pre_commitment_from_supervision_no_responses(
         self,
-    ):
+    ) -> None:
         violation_window = UsXxCommitmentFromSupervisionDelegate().violation_history_window_pre_commitment_from_supervision(
             admission_date=date(2009, 12, 14),
             sorted_and_filtered_violation_responses=[],
@@ -507,7 +516,7 @@ class TestCommitmentFromBoardHold(unittest.TestCase):
     """Tests the
     period_is_commitment_from_supervision_admission_from_parole_board_hold function."""
 
-    def test_period_is_commitment_from_parole_board_hold(self):
+    def test_period_is_commitment_from_parole_board_hold(self) -> None:
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
@@ -537,7 +546,7 @@ class TestCommitmentFromBoardHold(unittest.TestCase):
             )
         )
 
-    def test_period_is_commitment_from_parole_board_hold_not_hold(self):
+    def test_period_is_commitment_from_parole_board_hold_not_hold(self) -> None:
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
@@ -567,7 +576,9 @@ class TestCommitmentFromBoardHold(unittest.TestCase):
             )
         )
 
-    def test_period_is_commitment_from_parole_board_hold_invalid_admission(self):
+    def test_period_is_commitment_from_parole_board_hold_invalid_admission(
+        self,
+    ) -> None:
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
@@ -597,7 +608,7 @@ class TestCommitmentFromBoardHold(unittest.TestCase):
             )
         )
 
-    def test_period_is_commitment_from_parole_board_hold_not_adjacent(self):
+    def test_period_is_commitment_from_parole_board_hold_not_adjacent(self) -> None:
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             external_id="1",
             incarceration_period_id=1111,
