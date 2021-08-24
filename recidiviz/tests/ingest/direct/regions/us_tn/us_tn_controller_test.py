@@ -128,7 +128,7 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "OffenderName")
+        self.run_legacy_parse_file_test(expected, "OffenderName")
 
     def test_run_full_ingest_all_files_specific_order(self) -> None:
         self.maxDiff = None

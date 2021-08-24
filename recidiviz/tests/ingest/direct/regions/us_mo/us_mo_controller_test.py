@@ -215,7 +215,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "tak001_offender_identification")
+        self.run_legacy_parse_file_test(expected, "tak001_offender_identification")
 
     def test_populate_data_oras_assessments_weekly(self) -> None:
         expected = IngestInfo(
@@ -264,7 +264,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "oras_assessments_weekly")
+        self.run_legacy_parse_file_test(expected, "oras_assessments_weekly")
 
     def test_populate_data_tak040_offender_identification(self) -> None:
         expected = IngestInfo(
@@ -318,7 +318,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "tak040_offender_cycles")
+        self.run_legacy_parse_file_test(expected, "tak040_offender_cycles")
 
     def test_populate_data_tak022_tak023_offender_sentence_institutional(self) -> None:
         expected = IngestInfo(
@@ -576,7 +576,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(
+        self.run_legacy_parse_file_test(
             expected, "tak022_tak023_tak025_tak026_offender_sentence_institution"
         )
 
@@ -754,7 +754,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(
+        self.run_legacy_parse_file_test(
             expected, "tak022_tak024_tak025_tak026_offender_sentence_supervision"
         )
 
@@ -1024,7 +1024,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(
+        self.run_legacy_parse_file_test(
             expected,
             "tak158_tak023_tak026_incarceration_period_from_incarceration_sentence",
         )
@@ -1094,7 +1094,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(
+        self.run_legacy_parse_file_test(
             expected,
             "tak158_tak024_tak026_incarceration_period_from_supervision_sentence",
         )
@@ -1396,7 +1396,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(
+        self.run_legacy_parse_file_test(
             expected,
             "tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods",
         )
@@ -1681,7 +1681,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(
+        self.run_legacy_parse_file_test(
             expected, "tak028_tak042_tak076_tak024_violation_reports"
         )
 
@@ -1796,7 +1796,7 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "tak291_tak292_tak024_citations")
+        self.run_legacy_parse_file_test(expected, "tak291_tak292_tak024_citations")
 
     def test_run_full_ingest_all_files_specific_order(self) -> None:
         self.maxDiff = None

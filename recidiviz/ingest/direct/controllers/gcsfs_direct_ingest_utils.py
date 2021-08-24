@@ -30,6 +30,7 @@ from recidiviz.cloud_functions.direct_ingest_bucket_name_utils import (
     INGEST_SFTP_BUCKET_SUFFIX,
     build_ingest_bucket_name,
     build_ingest_storage_bucket_name,
+    get_region_code_from_direct_ingest_bucket,
 )
 from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsBucketPath,
@@ -129,6 +130,22 @@ class GcsfsIngestArgs(CloudTaskArgs):
 
     def ingest_instance(self) -> DirectIngestInstance:
         return DirectIngestInstance.for_ingest_bucket(self.file_path.bucket_path)
+
+    def job_tag(self) -> str:
+        """Returns a (short) string tag to identify an ingest run in logs."""
+        region_code = (
+            get_region_code_from_direct_ingest_bucket(
+                self.file_path.bucket_path.bucket_name
+            )
+            or "unknown_region"
+        )
+        return (
+            f"{region_code.lower()}/{self.file_path.file_name}:" f"{self.ingest_time}"
+        )
+
+    @property
+    def file_tag(self) -> str:
+        return filename_parts_from_path(self.file_path).file_tag
 
 
 @attr.s(frozen=True)

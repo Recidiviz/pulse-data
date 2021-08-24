@@ -21,7 +21,7 @@ import abc
 import datetime
 import logging
 import os
-from typing import Callable, Dict, List, Optional
+from typing import List, Optional
 
 import pandas
 
@@ -79,6 +79,18 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_region,
     gcsfs_direct_ingest_temporary_output_directory_path,
 )
+from recidiviz.ingest.direct.controllers.ingest_view_file_parser import (
+    IngestViewFileParser,
+    yaml_mappings_filepath,
+)
+from recidiviz.ingest.direct.controllers.ingest_view_processor import (
+    IngestViewProcessor,
+    IngestViewProcessorImpl,
+)
+from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
+    LegacyIngestViewProcessor,
+    LegacyIngestViewProcessorDelegate,
+)
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestFileMetadataManager,
 )
@@ -89,17 +101,7 @@ from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     check_is_region_launched_in_env,
 )
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
-from recidiviz.ingest.direct.state_shared_row_posthooks import IngestGatingContext
-from recidiviz.ingest.extractor.csv_data_extractor import (
-    CsvDataExtractor,
-    IngestFieldCoordinates,
-    RowType,
-)
 from recidiviz.ingest.ingestor import Ingestor
-from recidiviz.ingest.models import ingest_info, serialization
-from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject
-from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
-from recidiviz.persistence import persistence
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.operations.entities import (
@@ -107,20 +109,7 @@ from recidiviz.persistence.entity.operations.entities import (
 )
 from recidiviz.utils import regions, trace
 from recidiviz.utils.regions import Region
-
-IngestRowPrehookCallable = Callable[[IngestGatingContext, RowType], None]
-IngestRowPosthookCallable = Callable[
-    [IngestGatingContext, RowType, List[IngestObject], IngestObjectCache], None
-]
-IngestFilePostprocessorCallable = Callable[
-    [IngestGatingContext, IngestInfo, Optional[IngestObjectCache]], None
-]
-IngestPrimaryKeyOverrideCallable = Callable[
-    [IngestGatingContext, RowType], IngestFieldCoordinates
-]
-IngestAncestorChainOverridesCallable = Callable[
-    [IngestGatingContext, RowType], Dict[str, str]
-]
+from recidiviz.utils.yaml_dict import YAMLDict
 
 
 class DirectIngestFileSplittingGcsfsCsvReaderDelegate(SplittingGcsfsCsvReaderDelegate):
@@ -301,7 +290,7 @@ class BaseDirectIngestController(Ingestor):
         ):
             logging.info(
                 "Already have task queued for next job [%s] - returning.",
-                self._job_tag(next_job_args),
+                next_job_args.job_tag(),
             )
             return
 
@@ -311,9 +300,7 @@ class BaseDirectIngestController(Ingestor):
             )
             return
 
-        logging.info(
-            "Creating cloud task to run job [%s]", self._job_tag(next_job_args)
-        )
+        logging.info("Creating cloud task to run job [%s]", next_job_args.job_tag())
         self.cloud_task_manager.create_direct_ingest_process_job_task(
             region=self.region,
             ingest_args=next_job_args,
@@ -519,7 +506,7 @@ class BaseDirectIngestController(Ingestor):
         check_is_region_launched_in_env(self.region)
 
         start_time = datetime.datetime.now()
-        logging.info("Starting ingest for ingest run [%s]", self._job_tag(args))
+        logging.info("Starting ingest for ingest run [%s]", args.job_tag())
 
         if not self.fs.exists(args.file_path):
             logging.warning(
@@ -531,7 +518,7 @@ class BaseDirectIngestController(Ingestor):
         if not self._can_proceed_with_ingest_for_contents(args):
             logging.warning(
                 "Cannot proceed with contents for ingest run [%s] - returning.",
-                self._job_tag(args),
+                args.job_tag(),
             )
             # If we get here, we've failed to properly split a file picked up
             # by the scheduler. We don't want to schedule a new job after
@@ -539,9 +526,7 @@ class BaseDirectIngestController(Ingestor):
             # continually try to schedule this file.
             return False
 
-        logging.info(
-            "Successfully read contents for ingest run [%s]", self._job_tag(args)
-        )
+        logging.info("Successfully read contents for ingest run [%s]", args.job_tag())
 
         if not self._are_contents_empty(args):
             contents_handle = self._get_contents_handle(args)
@@ -549,7 +534,7 @@ class BaseDirectIngestController(Ingestor):
             if contents_handle is None:
                 logging.warning(
                     "Failed to get contents handle for ingest run [%s] - returning.",
-                    self._job_tag(args),
+                    args.job_tag(),
                 )
                 # If the file no-longer exists, we do want to kick the scheduler
                 # again to pick up the next file to run. We expect this to happen
@@ -562,7 +547,7 @@ class BaseDirectIngestController(Ingestor):
             logging.warning(
                 "Contents are empty for ingest run [%s] - skipping parse and "
                 "persist steps.",
-                self._job_tag(args),
+                args.job_tag(),
             )
 
         self._do_cleanup(args)
@@ -571,10 +556,41 @@ class BaseDirectIngestController(Ingestor):
         logging.info(
             "Finished ingest in [%s] sec for ingest run [%s].",
             str(duration_sec),
-            self._job_tag(args),
+            args.job_tag(),
         )
 
         return True
+
+    def get_ingest_view_processor(self, args: GcsfsIngestArgs) -> IngestViewProcessor:
+        yaml_mappings_dict = YAMLDict.from_path(
+            yaml_mappings_filepath(self.region, args.file_tag)
+        )
+        version_str = yaml_mappings_dict.peek_optional("version", str)
+
+        if not version_str:
+            # TODO(#8905): Delete this branch once all regions have migrated to new
+            #  ingest mappings structure.
+            delegate: Optional[LegacyIngestViewProcessorDelegate] = None
+            if isinstance(self, LegacyIngestViewProcessorDelegate):
+                delegate = self
+
+            if not delegate:
+                raise ValueError(
+                    f"Must implement "
+                    f"{LegacyIngestViewProcessorDelegate.__name__} interface "
+                    f"on object with type [{type(self)} to support legacy ingest."
+                )
+
+            return LegacyIngestViewProcessor(
+                region=self.region,
+                ingest_instance=self.ingest_instance,
+                delegate=delegate,
+            )
+
+        # If a version string is present, it's v2
+        return IngestViewProcessorImpl(
+            ingest_view_file_parser=IngestViewFileParser(self.region)
+        )
 
     @trace.span
     def _parse_and_persist_contents(
@@ -584,27 +600,11 @@ class BaseDirectIngestController(Ingestor):
         Runs the full ingest process for this controller for files with
         non-empty contents.
         """
-        ii = self._parse(args, contents_handle)
-        if not ii:
-            raise DirectIngestError(
-                error_type=DirectIngestErrorType.PARSE_ERROR,
-                msg="No IngestInfo after parse.",
-            )
-
-        logging.info(
-            "Successfully parsed data for ingest run [%s]", self._job_tag(args)
-        )
-
-        ingest_info_proto = serialization.convert_ingest_info_to_proto(ii)
-
-        logging.info(
-            "Successfully converted ingest_info to proto for ingest " "run [%s]",
-            self._job_tag(args),
-        )
-
-        ingest_metadata = self._get_ingest_metadata(args)
-        persist_success = persistence.write_ingest_info(
-            ingest_info_proto, ingest_metadata
+        processor = self.get_ingest_view_processor(args)
+        persist_success = processor.parse_and_persist_contents(
+            args=args,
+            contents_handle=contents_handle,
+            ingest_metadata=self._get_ingest_metadata(args),
         )
 
         if not persist_success:
@@ -613,7 +613,7 @@ class BaseDirectIngestController(Ingestor):
                 msg="Persist step failed",
             )
 
-        logging.info("Successfully persisted for ingest run [%s]", self._job_tag(args))
+        logging.info("Successfully persisted for ingest run [%s]", args.job_tag())
 
     def _get_ingest_metadata(self, args: GcsfsIngestArgs) -> IngestMetadata:
         return IngestMetadata(
@@ -623,13 +623,6 @@ class BaseDirectIngestController(Ingestor):
             enum_overrides=self.get_enum_overrides(),
             system_level=self.system_level,
             database_key=self.ingest_database_key,
-        )
-
-    def _job_tag(self, args: GcsfsIngestArgs) -> str:
-        """Returns a (short) string tag to identify an ingest run in logs."""
-        return (
-            f"{self.region.region_code}/{args.file_path.file_name}:"
-            f"{args.ingest_time}"
         )
 
     def _get_contents_handle(
@@ -660,107 +653,6 @@ class BaseDirectIngestController(Ingestor):
             args.file_path, delegate=delegate, chunk_size=1, skiprows=1
         )
         return delegate.df is None
-
-    def _parse(
-        self, args: GcsfsIngestArgs, contents_handle: GcsfsFileContentsHandle
-    ) -> ingest_info.IngestInfo:
-        """Parses ingest view file contents into an IngestInfo object."""
-        file_tag = self.file_tag(args.file_path)
-        gating_context = IngestGatingContext(
-            file_tag=file_tag, ingest_instance=self.ingest_instance
-        )
-
-        if file_tag not in self.get_file_tag_rank_list():
-            raise DirectIngestError(
-                msg=f"No mapping found for tag [{file_tag}]",
-                error_type=DirectIngestErrorType.INPUT_ERROR,
-            )
-
-        file_mapping = self._yaml_filepath(file_tag)
-
-        row_pre_processors = self._get_row_pre_processors_for_file(file_tag)
-        row_post_processors = self._get_row_post_processors_for_file(file_tag)
-        file_post_processors = self._get_file_post_processors_for_file(file_tag)
-        # pylint: disable=assignment-from-none
-        primary_key_override_callback = self._get_primary_key_override_for_file(
-            file_tag
-        )
-        # pylint: disable=assignment-from-none
-        ancestor_chain_overrides_callback = (
-            self._get_ancestor_chain_overrides_callback_for_file(file_tag)
-        )
-        should_set_with_empty_values = (
-            gating_context.file_tag in self._get_files_to_set_with_empty_values()
-        )
-
-        data_extractor = CsvDataExtractor(
-            file_mapping,
-            gating_context,
-            row_pre_processors,
-            row_post_processors,
-            file_post_processors,
-            ancestor_chain_overrides_callback,
-            primary_key_override_callback,
-            self.system_level,
-            should_set_with_empty_values,
-        )
-
-        return data_extractor.extract_and_populate_data(
-            contents_handle.get_contents_iterator()
-        )
-
-    def _yaml_filepath(self, file_tag: str) -> str:
-        return os.path.join(
-            os.path.dirname(self.region.region_module.__file__),
-            self.region.region_code.lower(),
-            f"{self.region.region_code.lower()}_{file_tag}.yaml",
-        )
-
-    def _get_row_pre_processors_for_file(
-        self, _file_tag: str
-    ) -> List[IngestRowPrehookCallable]:
-        """Subclasses should override to return row_pre_processors for a given
-        file tag.
-        """
-        return []
-
-    def _get_row_post_processors_for_file(
-        self, _file_tag: str
-    ) -> List[IngestRowPosthookCallable]:
-        """Subclasses should override to return row_post_processors for a given
-        file tag.
-        """
-        return []
-
-    def _get_file_post_processors_for_file(
-        self, _file_tag: str
-    ) -> List[IngestFilePostprocessorCallable]:
-        """Subclasses should override to return file_post_processors for a given
-        file tag.
-        """
-        return []
-
-    def _get_ancestor_chain_overrides_callback_for_file(
-        self, _file_tag: str
-    ) -> Optional[IngestAncestorChainOverridesCallable]:
-        """Subclasses should override to return an
-        ancestor_chain_overrides_callback for a given file tag.
-        """
-        return None
-
-    def _get_primary_key_override_for_file(
-        self, _file_tag: str
-    ) -> Optional[IngestPrimaryKeyOverrideCallable]:
-        """Subclasses should override to return a primary_key_override for a
-        given file tag.
-        """
-        return None
-
-    def _get_files_to_set_with_empty_values(self) -> List[str]:
-        """Subclasses should override to return which files to set with empty
-        values (see CsvDataExtractor).
-        """
-        return []
 
     def _do_cleanup(self, args: GcsfsIngestArgs) -> None:
         """Does necessary cleanup once file contents have been successfully persisted to
@@ -1235,7 +1127,3 @@ class BaseDirectIngestController(Ingestor):
         output_paths = [path for path, _ in delegate.output_paths_with_columns]
 
         return output_paths
-
-    @staticmethod
-    def file_tag(file_path: GcsfsFilePath) -> str:
-        return filename_parts_from_path(file_path).file_tag

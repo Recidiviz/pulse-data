@@ -228,7 +228,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "offender_ofndr_dob_address")
+        self.run_legacy_parse_file_test(expected, "offender_ofndr_dob_address")
 
     def test_populate_data_ofndr_tst_ofndr_tst_cert(self) -> None:
         expected = IngestInfo(
@@ -294,7 +294,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "ofndr_tst_ofndr_tst_cert")
+        self.run_legacy_parse_file_test(expected, "ofndr_tst_ofndr_tst_cert")
 
     def test_populate_data_mittimus_judge_sentence_offense_sentprob_incarceration_sentences(
         self,
@@ -405,7 +405,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(
+        self.run_legacy_parse_file_test(
             expected, "mittimus_judge_sentence_offense_sentprob_incarceration_sentences"
         )
 
@@ -529,7 +529,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(
+        self.run_legacy_parse_file_test(
             expected, "mittimus_judge_sentence_offense_sentprob_supervision_sentences"
         )
 
@@ -576,7 +576,9 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "early_discharge_incarceration_sentence")
+        self.run_legacy_parse_file_test(
+            expected, "early_discharge_incarceration_sentence"
+        )
 
     def test_populate_data_early_discharge_supervision_sentence(self) -> None:
         expected = IngestInfo(
@@ -620,7 +622,9 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "early_discharge_supervision_sentence")
+        self.run_legacy_parse_file_test(
+            expected, "early_discharge_supervision_sentence"
+        )
 
     def test_populate_data_early_discharge_incarceration_sentence_deleted_rows(
         self,
@@ -653,7 +657,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                 ),
             ]
         )
-        self.run_parse_file_test(
+        self.run_legacy_parse_file_test(
             expected, "early_discharge_incarceration_sentence_deleted_rows"
         )
 
@@ -688,7 +692,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
                 ),
             ]
         )
-        self.run_parse_file_test(
+        self.run_legacy_parse_file_test(
             expected, "early_discharge_supervision_sentence_deleted_rows"
         )
 
@@ -807,7 +811,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(
+        self.run_legacy_parse_file_test(
             expected, "movement_facility_location_offstat_incarceration_periods"
         )
 
@@ -1036,7 +1040,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(
+        self.run_legacy_parse_file_test(
             expected, "movement_facility_location_offstat_supervision_periods"
         )
 
@@ -1182,7 +1186,9 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "ofndr_tst_tst_qstn_rspns_violation_reports")
+        self.run_legacy_parse_file_test(
+            expected, "ofndr_tst_tst_qstn_rspns_violation_reports"
+        )
 
     def test_populate_data_ofndr_tst_tst_qstn_rspns_violation_reports_old(self) -> None:
         expected = IngestInfo(
@@ -1237,7 +1243,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(
+        self.run_legacy_parse_file_test(
             expected, "ofndr_tst_tst_qstn_rspns_violation_reports_old"
         )
 
@@ -1372,7 +1378,7 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "sprvsn_cntc")
+        self.run_legacy_parse_file_test(expected, "sprvsn_cntc")
 
     def test_run_full_ingest_all_files_specific_order(self) -> None:
         self.maxDiff = None

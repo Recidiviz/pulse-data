@@ -253,7 +253,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "person_external_ids")
+        self.run_legacy_parse_file_test(expected, "person_external_ids")
 
     def test_populate_data_doc_person_info(self) -> None:
         expected = IngestInfo(
@@ -360,7 +360,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "doc_person_info")
+        self.run_legacy_parse_file_test(expected, "doc_person_info")
 
     def test_populate_data_dbo_tblInmTestScore(self) -> None:
         expected = IngestInfo(
@@ -505,7 +505,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "dbo_tblInmTestScore")
+        self.run_legacy_parse_file_test(expected, "dbo_tblInmTestScore")
 
     def test_populate_data_dbo_Senrec(self) -> None:
         expected = IngestInfo(
@@ -691,7 +691,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "dbo_Senrec")
+        self.run_legacy_parse_file_test(expected, "dbo_Senrec")
 
     def test_populate_data_ccis_incarceration_period(self) -> None:
         je1989_incarceration_periods = [
@@ -787,7 +787,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "ccis_incarceration_period")
+        self.run_legacy_parse_file_test(expected, "ccis_incarceration_period")
 
     def test_populate_data_sci_incarceration_period(self) -> None:
         gf3374_incarceration_periods = [
@@ -1144,7 +1144,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "sci_incarceration_period")
+        self.run_legacy_parse_file_test(expected, "sci_incarceration_period")
 
     def test_populate_data_dbo_Miscon(self) -> None:
         expected = IngestInfo(
@@ -1315,7 +1315,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "dbo_Miscon")
+        self.run_legacy_parse_file_test(expected, "dbo_Miscon")
 
     def test_populate_data_dbo_Offender(self) -> None:
         expected = IngestInfo(
@@ -1374,7 +1374,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "dbo_Offender")
+        self.run_legacy_parse_file_test(expected, "dbo_Offender")
 
     def test_populate_data_dbo_LSIHistory(self) -> None:
         expected = IngestInfo(
@@ -1468,7 +1468,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "dbo_LSIHistory")
+        self.run_legacy_parse_file_test(expected, "dbo_LSIHistory")
 
     def test_populate_data_supervision_period(self) -> None:
         expected = IngestInfo(
@@ -1703,7 +1703,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "supervision_period_v3")
+        self.run_legacy_parse_file_test(expected, "supervision_period_v3")
 
     def test_populate_data_supervision_violation(self) -> None:
         violation_456B_1_1 = StateSupervisionViolation(
@@ -1906,7 +1906,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "supervision_violation")
+        self.run_legacy_parse_file_test(expected, "supervision_violation")
 
     def test_populate_data_supervision_violation_response(self) -> None:
         violation_456B_1_1 = StateSupervisionViolation(
@@ -2095,7 +2095,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "supervision_violation_response")
+        self.run_legacy_parse_file_test(expected, "supervision_violation_response")
 
     def test_populate_board_action(self) -> None:
         violation_456B_0_04 = StateSupervisionViolation(
@@ -2267,7 +2267,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "board_action")
+        self.run_legacy_parse_file_test(expected, "board_action")
 
     def test_populate_data_supervision_contact(self) -> None:
         expected = IngestInfo(
@@ -2348,7 +2348,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 ),
             ]
         )
-        self.run_parse_file_test(expected, "supervision_contacts")
+        self.run_legacy_parse_file_test(expected, "supervision_contacts")
 
     def test_run_full_ingest_all_files_specific_order(self) -> None:
         self.maxDiff = None

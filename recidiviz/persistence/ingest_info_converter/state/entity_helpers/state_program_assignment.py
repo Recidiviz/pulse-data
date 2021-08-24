@@ -20,11 +20,11 @@ entity.
 """
 
 from recidiviz.common.constants.state.state_program_assignment import (
-    StateProgramAssignmentParticipationStatus,
     StateProgramAssignmentDischargeReason,
+    StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import parse_date, normalize
+from recidiviz.common.str_field_utils import normalize, parse_date
 from recidiviz.ingest.models.ingest_info_pb2 import StateProgramAssignment
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
@@ -35,6 +35,8 @@ from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
 from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
+# TODO(#8905): Delete this file once all states have been migrated to v2 ingest
+#  mappings.
 def copy_fields_to_builder(
     state_program_assignment_builder: entities.StateProgramAssignment.Builder,
     proto: StateProgramAssignment,

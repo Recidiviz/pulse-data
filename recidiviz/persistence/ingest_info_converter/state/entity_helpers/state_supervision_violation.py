@@ -21,18 +21,19 @@ from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import parse_bool, parse_date, normalize
-
+from recidiviz.common.str_field_utils import normalize, parse_bool, parse_date
 from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionViolation
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    parse_region_code_with_override,
-    parse_external_id,
     fn,
+    parse_external_id,
+    parse_region_code_with_override,
 )
 from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
+# TODO(#8905): Delete this file once all states have been migrated to v2 ingest
+#  mappings.
 def copy_fields_to_builder(
     supervision_violation_builder: entities.StateSupervisionViolation.Builder,
     proto: StateSupervisionViolation,

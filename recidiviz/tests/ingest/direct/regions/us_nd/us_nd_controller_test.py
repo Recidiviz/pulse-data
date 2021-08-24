@@ -206,7 +206,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "elite_offenderidentifier")
+        self.run_legacy_parse_file_test(expected, "elite_offenderidentifier")
 
     def test_populate_data_elite_offenders(self) -> None:
         expected = IngestInfo(
@@ -254,7 +254,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "elite_offenders")
+        self.run_legacy_parse_file_test(expected, "elite_offenders")
 
     def test_populate_data_elite_alias(self) -> None:
         expected = IngestInfo(
@@ -299,7 +299,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "elite_alias")
+        self.run_legacy_parse_file_test(expected, "elite_alias")
 
     def test_populate_data_elite_offenderbookingstable(self) -> None:
         expected = IngestInfo(
@@ -334,7 +334,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "elite_offenderbookingstable")
+        self.run_legacy_parse_file_test(expected, "elite_offenderbookingstable")
 
     def test_populate_data_elite_offendersentenceaggs(self) -> None:
         incarceration_sentence_105640 = StateIncarcerationSentence(
@@ -385,7 +385,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "elite_offendersentenceaggs")
+        self.run_legacy_parse_file_test(expected, "elite_offendersentenceaggs")
 
     def test_populate_data_elite_offendersentences(self) -> None:
         sentences_114909 = [
@@ -474,7 +474,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "elite_offendersentences")
+        self.run_legacy_parse_file_test(expected, "elite_offendersentences")
 
     def test_populate_data_elite_offendersentenceterms(self) -> None:
         supervision_sentence_105640_2 = StateSupervisionSentence(
@@ -567,7 +567,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "elite_offendersentenceterms")
+        self.run_legacy_parse_file_test(expected, "elite_offendersentenceterms")
 
     def test_populate_data_elite_offenderchargestable(self) -> None:
         state_charge_105640_1 = StateCharge(
@@ -787,7 +787,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "elite_offenderchargestable")
+        self.run_legacy_parse_file_test(expected, "elite_offenderchargestable")
 
     def test_populate_data_elite_orderstable(self) -> None:
         court_case_5190 = StateCourtCase(
@@ -852,7 +852,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "elite_orderstable")
+        self.run_legacy_parse_file_test(expected, "elite_orderstable")
 
     def test_populate_data_elite_externalmovements(self) -> None:
         incarceration_periods_113377 = [
@@ -1010,7 +1010,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "elite_externalmovements")
+        self.run_legacy_parse_file_test(expected, "elite_externalmovements")
 
     def test_populate_data_elite_elite_offense_in_custody_and_pos_report_data(
         self,
@@ -1205,7 +1205,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 ),
             ]
         )
-        self.run_parse_file_test(
+        self.run_legacy_parse_file_test(
             expected, "elite_offense_in_custody_and_pos_report_data"
         )
 
@@ -1411,7 +1411,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "docstars_offenders")
+        self.run_legacy_parse_file_test(expected, "docstars_offenders")
 
     def test_populate_data_docstars_offendercasestable_with_officers(self) -> None:
         agent_63 = StateAgent(
@@ -1659,7 +1659,9 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "docstars_offendercasestable_with_officers")
+        self.run_legacy_parse_file_test(
+            expected, "docstars_offendercasestable_with_officers"
+        )
 
     def test_populate_data_docstars_offensestable(self) -> None:
         expected = IngestInfo(
@@ -1748,7 +1750,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "docstars_offensestable")
+        self.run_legacy_parse_file_test(expected, "docstars_offensestable")
 
     def test_populate_data_docstars_lsi_chronology(self) -> None:
         metadata_12345 = json.dumps(
@@ -1884,7 +1886,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "docstars_lsi_chronology")
+        self.run_legacy_parse_file_test(expected, "docstars_lsi_chronology")
 
     def test_populate_data_ftr_episode(self) -> None:
         metadata_1231 = json.dumps(
@@ -2012,7 +2014,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 ),
             ]
         )
-        self.run_parse_file_test(expected, "docstars_ftr_episode")
+        self.run_legacy_parse_file_test(expected, "docstars_ftr_episode")
 
     def test_populate_docstars_contacts(self) -> None:
         agent_22 = StateAgent(
@@ -2059,7 +2061,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_parse_file_test(expected, "docstars_contacts")
+        self.run_legacy_parse_file_test(expected, "docstars_contacts")
 
     # TODO(#2157): Move into integration specific file
     def test_run_full_ingest_all_files_specific_order(self) -> None:

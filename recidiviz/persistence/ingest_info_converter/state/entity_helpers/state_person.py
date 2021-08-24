@@ -16,14 +16,16 @@
 # ============================================================================
 """Converts an ingest_info proto StatePerson to a persistence entity."""
 
+from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StatePerson
 from recidiviz.persistence.entity.state import entities
-from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.persistence.ingest_info_converter.utils.names import parse_name
 
 
+# TODO(#8905): Delete this file once all states have been migrated to v2 ingest
+#  mappings.
 def copy_fields_to_builder(
     state_person_builder: entities.StatePerson.Builder,
     proto: StatePerson,

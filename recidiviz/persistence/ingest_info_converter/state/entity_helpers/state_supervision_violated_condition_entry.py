@@ -29,6 +29,8 @@ from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
 )
 
 
+# TODO(#8905): Delete this file once all states have been migrated to v2 ingest
+#  mappings.
 def convert(
     proto: StateSupervisionViolatedConditionEntry, metadata: IngestMetadata
 ) -> entities.StateSupervisionViolatedConditionEntry:

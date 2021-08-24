@@ -21,8 +21,8 @@ persistence entity.
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
 )
-from recidiviz.common.str_field_utils import normalize, parse_int, parse_date
 from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.str_field_utils import normalize, parse_date, parse_int
 from recidiviz.ingest.models.ingest_info_pb2 import StateIncarcerationIncidentOutcome
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
@@ -33,6 +33,8 @@ from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
 from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
+# TODO(#8905): Delete this file once all states have been migrated to v2 ingest
+#  mappings.
 def convert(
     proto: StateIncarcerationIncidentOutcome, metadata: IngestMetadata
 ) -> entities.StateIncarcerationIncidentOutcome:

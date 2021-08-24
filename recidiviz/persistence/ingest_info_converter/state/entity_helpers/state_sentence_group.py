@@ -23,6 +23,8 @@ from recidiviz.ingest.models.ingest_info_pb2 import StateSentenceGroup
 from recidiviz.persistence.entity.state import entities
 
 
+# TODO(#8905): Delete this file once all states have been migrated to v2 ingest
+#  mappings.
 def copy_fields_to_builder(
     sentence_group_builder: entities.StateSentenceGroup.Builder,
     proto: StateSentenceGroup,
