@@ -20,7 +20,7 @@ readiness_check:
   app_start_timeout_sec: 120
 
 beta_settings:
-  cloud_sql_instances: recidiviz-123:us-east4:prod-data, recidiviz-123:us-east1:usmamiddlesex-redundant
+  cloud_sql_instances: recidiviz-123:us-east4:prod-data, recidiviz-123:us-east1:usmamiddlesex-redundant, recidiviz-123:us-east4:prod-data-0x9ea199
 env_variables:
   RECIDIVIZ_ENV: production
   RECIDIVIZ_SERVICE: scrapers
