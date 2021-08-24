@@ -33,6 +33,8 @@ class StateSupervisionContactType(EntityEnum, metaclass=EntityEnumMeta):
     TELEPHONE = state_enum_strings.state_supervision_contact_type_telephone
     WRITTEN_MESSAGE = state_enum_strings.state_supervision_contact_type_written_message
     VIRTUAL = state_enum_strings.state_supervision_contact_type_virtual
+    COLLATERAL = state_enum_strings.state_supervision_contact_type_collateral
+    DIRECT = state_enum_strings.state_supervision_contact_type_direct
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSupervisionContactType"]:
@@ -151,6 +153,8 @@ _STATE_SUPERVISION_CONTACT_TYPE_MAP = {
     "TELEPHONE": StateSupervisionContactType.TELEPHONE,
     "WRITTEN MESSAGE": StateSupervisionContactType.WRITTEN_MESSAGE,
     "VIRTUAL": StateSupervisionContactType.VIRTUAL,
+    "COLLATERAL": StateSupervisionContactType.COLLATERAL,
+    "DIRECT": StateSupervisionContactType.DIRECT,
 }
 
 _STATE_SUPERVISION_CONTACT_METHOD_MAP = {
