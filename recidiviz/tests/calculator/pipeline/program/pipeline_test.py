@@ -19,7 +19,7 @@
 """Tests for program/pipeline.py"""
 import unittest
 from datetime import date
-from typing import Optional, Set
+from typing import Any, Callable, Dict, List, Optional, Set
 from unittest import mock
 
 import apache_beam as beam
@@ -109,7 +109,9 @@ class TestProgramPipeline(unittest.TestCase):
         self.pre_processing_delegate_patcher.stop()
 
     @staticmethod
-    def build_data_dict(fake_person_id: int, fake_supervision_period_id: int):
+    def build_data_dict(
+        fake_person_id: int, fake_supervision_period_id: int
+    ) -> Dict[str, List]:
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
             state_code="US_XX",
@@ -208,7 +210,7 @@ class TestProgramPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict = {
+        data_dict: Dict[str, List[Any]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
             schema.StatePersonEthnicity.__tablename__: ethnicity_data,
@@ -225,7 +227,7 @@ class TestProgramPipeline(unittest.TestCase):
 
         return data_dict
 
-    def testProgramPipeline(self):
+    def testProgramPipeline(self) -> None:
         """Tests the program pipeline."""
         fake_person_id = 12345
         fake_supervision_period_id = 12345
@@ -236,7 +238,7 @@ class TestProgramPipeline(unittest.TestCase):
 
         self.run_test_pipeline(dataset, data_dict)
 
-    def testProgramPipelineWithFilterSet(self):
+    def testProgramPipelineWithFilterSet(self) -> None:
         """Tests the program pipeline."""
         fake_person_id = 12345
         fake_supervision_period_id = 12345
@@ -255,7 +257,7 @@ class TestProgramPipeline(unittest.TestCase):
         data_dict: DataTablesDict,
         unifying_id_field_filter_set: Optional[Set[int]] = None,
         metric_types_filter: Optional[Set[str]] = None,
-    ):
+    ) -> None:
         """Runs a test version of the program pipeline."""
 
         expected_metric_types = {
@@ -283,7 +285,7 @@ class TestProgramPipeline(unittest.TestCase):
             metric_types_filter=metric_types_filter,
         )
 
-    def testProgramPipelineNoReferrals(self):
+    def testProgramPipelineNoReferrals(self) -> None:
         """Tests the program pipeline where one person does not have any
         program assignment entities."""
         fake_person_id = 12345
@@ -395,7 +397,7 @@ class TestProgramPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict = {
+        data_dict: Dict[str, List[Dict[str, Any]]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
             schema.StatePersonEthnicity.__tablename__: ethnicity_data,
@@ -440,7 +442,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         self.pre_processing_delegate_patcher.stop()
 
     @freeze_time("2009-10-19")
-    def testClassifyProgramAssignments(self):
+    def testClassifyProgramAssignments(self) -> None:
         """Tests the ClassifyProgramAssignments DoFn."""
         fake_person_id = 12345
 
@@ -495,6 +497,8 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             ],
         }
 
+        assert program_assignment.program_id is not None
+        assert program_assignment.referral_date is not None
         program_events = [
             ProgramReferralEvent(
                 state_code=program_assignment.state_code,
@@ -533,7 +537,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         test_pipeline.run()
 
     @freeze_time("2009-10-19")
-    def testClassifyProgramAssignments_us_nd(self):
+    def testClassifyProgramAssignments_us_nd(self) -> None:
         """Tests the ClassifyProgramAssignments DoFn."""
         fake_person_id = 12345
 
@@ -588,6 +592,8 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             ],
         }
 
+        assert program_assignment.program_id is not None
+        assert program_assignment.referral_date is not None
         program_events = [
             ProgramReferralEvent(
                 state_code=program_assignment.state_code,
@@ -625,7 +631,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testClassifyProgramAssignments_NoReferrals(self):
+    def testClassifyProgramAssignments_NoReferrals(self) -> None:
         """Tests the ClassifyProgramAssignments DoFn."""
         fake_person_id = 12345
 
@@ -671,8 +677,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             ],
         }
 
-        correct_output = []
-
         test_pipeline = TestPipeline()
 
         output = (
@@ -681,11 +685,11 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             | "Identify Program Events" >> beam.ParDo(ClassifyEvents(), self.identifier)
         )
 
-        assert_that(output, equal_to(correct_output))
+        assert_that(output, equal_to([]))
 
         test_pipeline.run()
 
-    def testClassifyProgramAssignments_NoAssessments(self):
+    def testClassifyProgramAssignments_NoAssessments(self) -> None:
         """Tests the ClassifyProgramAssignments DoFn."""
         fake_person_id = 12345
 
@@ -732,6 +736,8 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             ],
         }
 
+        assert program_assignment.program_id is not None
+        assert program_assignment.referral_date is not None
         program_event = ProgramReferralEvent(
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
@@ -757,7 +763,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testClassifyProgramAssignments_NoSupervision(self):
+    def testClassifyProgramAssignments_NoSupervision(self) -> None:
         """Tests the ClassifyProgramAssignments DoFn."""
         fake_person_id = 12345
 
@@ -795,6 +801,8 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             ],
         }
 
+        assert program_assignment.program_id is not None
+        assert program_assignment.referral_date is not None
         program_event = ProgramReferralEvent(
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
@@ -828,7 +836,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
         self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
         self.pipeline_config = pipeline.ProgramPipeline().pipeline_config
 
-    def testProduceProgramMetrics(self):
+    def testProduceProgramMetrics(self) -> None:
         """Tests the ProduceProgramMetrics DoFn."""
 
         fake_person = StatePerson.new_with_defaults(
@@ -893,7 +901,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testProduceProgramMetrics_NoReferrals(self):
+    def testProduceProgramMetrics_NoReferrals(self) -> None:
         """Tests the ProduceProgramMetrics when there are
         no supervision months. This should never happen because any person
         without program events is dropped entirely from the pipeline."""
@@ -936,7 +944,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testProduceProgramMetrics_NoInput(self):
+    def testProduceProgramMetrics_NoInput(self) -> None:
         """Tests the ProduceProgramMetrics when there is
         no input to the function."""
 
@@ -967,8 +975,8 @@ class AssertMatchers:
     validate pipeline outputs."""
 
     @staticmethod
-    def validate_pipeline_test():
-        def _validate_pipeline_test(output, allow_empty=False):
+    def validate_pipeline_test() -> Callable:
+        def _validate_pipeline_test(output: List, allow_empty: bool = False) -> None:
             if not allow_empty and not output:
                 raise BeamAssertException("Output metrics unexpectedly empty")
 
@@ -981,10 +989,10 @@ class AssertMatchers:
         return _validate_pipeline_test
 
     @staticmethod
-    def count_metrics(expected_metric_counts):
+    def count_metrics(expected_metric_counts: Dict[Any, Any]) -> Callable:
         """Asserts that the number of ProgramMetrics matches the expected counts."""
 
-        def _count_metrics(output):
+        def _count_metrics(output: List) -> None:
             actual_metric_counts = {}
 
             for key in expected_metric_counts.keys():

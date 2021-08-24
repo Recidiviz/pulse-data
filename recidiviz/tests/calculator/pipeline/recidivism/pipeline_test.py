@@ -22,7 +22,7 @@ import datetime
 import unittest
 from datetime import date
 from enum import Enum
-from typing import Optional, Set
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 from unittest import mock
 
 import apache_beam as beam
@@ -116,7 +116,7 @@ class TestRecidivismPipeline(unittest.TestCase):
         self.pre_processing_delegate_patcher.stop()
 
     @staticmethod
-    def build_data_dict(fake_person_id: int):
+    def build_data_dict(fake_person_id: int) -> Dict[str, List]:
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
             state_code="US_XX",
@@ -233,7 +233,7 @@ class TestRecidivismPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict = {
+        data_dict: Dict[str, List[Dict[str, Any]]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
             schema.StatePersonEthnicity.__tablename__: ethnicity_data,
@@ -254,7 +254,7 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         return data_dict
 
-    def testRecidivismPipeline(self):
+    def testRecidivismPipeline(self) -> None:
         """Tests the entire recidivism pipeline with one person and three
         incarceration periods."""
 
@@ -266,7 +266,7 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         self.run_test_pipeline(dataset, data_dict)
 
-    def testRecidivismPipelineWithFilterSet(self):
+    def testRecidivismPipelineWithFilterSet(self) -> None:
         """Tests the entire recidivism pipeline with one person and three
         incarceration periods."""
 
@@ -278,7 +278,7 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         self.run_test_pipeline(dataset, data_dict)
 
-    def testRecidivismPipeline_WithConditionalReturns(self):
+    def testRecidivismPipeline_WithConditionalReturns(self) -> None:
         """Tests the entire RecidivismPipeline with two person and three
         incarceration periods each. One entities.StatePerson has a return from a
         technical supervision violation.
@@ -449,7 +449,7 @@ class TestRecidivismPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict = {
+        data_dict: Dict[str, List[Dict[str, Any]]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             schema.StateSupervisionPeriod.__tablename__: [],
@@ -482,7 +482,7 @@ class TestRecidivismPipeline(unittest.TestCase):
         data_dict: DataTablesDict,
         unifying_id_field_filter_set: Optional[Set[int]] = None,
         metric_types_filter: Optional[Set[str]] = None,
-    ):
+    ) -> None:
         """Runs a test version of the recidivism pipeline."""
 
         expected_metric_types: Set[MetricType] = {
@@ -530,7 +530,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
     def tearDown(self) -> None:
         self.pre_processing_delegate_patcher.stop()
 
-    def testClassifyReleaseEvents(self):
+    def testClassifyReleaseEvents(self) -> None:
         """Tests the ClassifyReleaseEvents DoFn when there are two instances
         of recidivism."""
 
@@ -595,6 +595,11 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             ],
         }
 
+        assert initial_incarceration.admission_date is not None
+        assert initial_incarceration.release_date is not None
+        assert first_reincarceration.admission_date is not None
+        assert first_reincarceration.release_date is not None
+        assert subsequent_reincarceration.admission_date is not None
         first_recidivism_release_event = RecidivismReleaseEvent(
             state_code="US_XX",
             original_admission_date=initial_incarceration.admission_date,
@@ -645,7 +650,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testClassifyReleaseEvents_NoRecidivism(self):
+    def testClassifyReleaseEvents_NoRecidivism(self) -> None:
         """Tests the ClassifyReleaseEvents DoFn in the pipeline when there
         is no instance of recidivism."""
 
@@ -684,6 +689,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             ],
         }
 
+        assert only_incarceration.admission_date is not None
+        assert only_incarceration.release_date is not None
         non_recidivism_release_event = NonRecidivismReleaseEvent(
             "US_XX",
             only_incarceration.admission_date,
@@ -719,7 +726,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testClassifyReleaseEvents_NoIncarcerationPeriods(self):
+    def testClassifyReleaseEvents_NoIncarcerationPeriods(self) -> None:
         """Tests the ClassifyReleaseEvents DoFn in the pipeline when there
         are no incarceration periods. The person in this case should be
         excluded from the calculations."""
@@ -748,8 +755,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             ],
         }
 
-        correct_output = []
-
         test_pipeline = TestPipeline()
 
         output = (
@@ -759,11 +764,11 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             >> beam.ParDo(ClassifyEvents(), identifier=self.identifier)
         )
 
-        assert_that(output, equal_to(correct_output))
+        assert_that(output, equal_to([]))
 
         test_pipeline.run()
 
-    def testClassifyReleaseEvents_TwoReleasesSameYear(self):
+    def testClassifyReleaseEvents_TwoReleasesSameYear(self) -> None:
         """Tests the ClassifyReleaseEvents DoFn in the pipeline when a person
         is released twice in the same calendar year."""
 
@@ -828,6 +833,11 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             ],
         }
 
+        assert initial_incarceration.admission_date is not None
+        assert initial_incarceration.release_date is not None
+        assert first_reincarceration.admission_date is not None
+        assert first_reincarceration.release_date is not None
+        assert subsequent_reincarceration.admission_date is not None
         first_recidivism_release_event = RecidivismReleaseEvent(
             state_code="US_XX",
             original_admission_date=initial_incarceration.admission_date,
@@ -876,7 +886,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testClassifyReleaseEvents_WrongOrder(self):
+    def testClassifyReleaseEvents_WrongOrder(self) -> None:
         """Tests the ClassifyReleaseEvents DoFn when there are two instances
         of recidivism."""
 
@@ -941,6 +951,11 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             ],
         }
 
+        assert initial_incarceration.admission_date is not None
+        assert initial_incarceration.release_date is not None
+        assert first_reincarceration.admission_date is not None
+        assert first_reincarceration.release_date is not None
+        assert subsequent_reincarceration.admission_date is not None
         first_recidivism_release_event = RecidivismReleaseEvent(
             state_code="US_XX",
             original_admission_date=initial_incarceration.admission_date,
@@ -1004,7 +1019,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
 
     # TODO(#4813): This fails on dates after 2020-12-03 - is this a bug in the pipeline or in the test code?
     @freeze_time("2020-12-03")
-    def testProduceRecidivismMetrics(self):
+    def testProduceRecidivismMetrics(self) -> None:
         """Tests the ProduceRecidivismMetrics DoFn in the pipeline."""
         fake_person = entities.StatePerson.new_with_defaults(
             state_code="US_XX",
@@ -1105,7 +1120,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testProduceRecidivismMetrics_NoResults(self):
+    def testProduceRecidivismMetrics_NoResults(self) -> None:
         """Tests the ProduceRecidivismMetrics DoFn in the pipeline
         when there are no ReleaseEvents associated with the entities.StatePerson."""
         fake_person = entities.StatePerson.new_with_defaults(
@@ -1115,7 +1130,9 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
             residency_status=ResidencyStatus.PERMANENT,
         )
 
-        person_release_events = [(fake_person, {})]
+        person_release_events: List[Tuple[entities.StatePerson, Dict]] = [
+            (fake_person, {})
+        ]
 
         inputs = [
             (
@@ -1148,17 +1165,13 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testProduceRecidivismMetrics_NoPersonEvents(self):
+    def testProduceRecidivismMetrics_NoPersonEvents(self) -> None:
         """Tests the ProduceRecidivismMetrics DoFn in the pipeline
         when there is no entities.StatePerson and no ReleaseEvents."""
-
-        inputs = []
-
         test_pipeline = TestPipeline()
-
         output = (
             test_pipeline
-            | beam.Create(inputs)
+            | beam.Create([])
             | beam.ParDo(pipeline.ExtractPersonReleaseEventsMetadata())
             | "Produce Metric Combinations"
             >> beam.ParDo(
@@ -1179,7 +1192,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
 class TestRecidivismMetricWritableDict(unittest.TestCase):
     """Tests the RecidivismMetricWritableDict DoFn in the pipeline."""
 
-    def testRecidivismMetricWritableDict(self):
+    def testRecidivismMetricWritableDict(self) -> None:
         """Tests converting the ReincarcerationRecidivismMetric to a dictionary
         that can be written to BigQuery."""
         metric = MetricGroup.recidivism_metric_with_race
@@ -1196,7 +1209,7 @@ class TestRecidivismMetricWritableDict(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testRecidivismMetricWritableDict_WithDateField(self):
+    def testRecidivismMetricWritableDict_WithDateField(self) -> None:
         """Tests converting the ReincarcerationRecidivismMetric to a dictionary
         that can be written to BigQuery, where the metric contains a date
         attribute."""
@@ -1215,7 +1228,7 @@ class TestRecidivismMetricWritableDict(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testRecidivismMetricWritableDict_WithEmptyDateField(self):
+    def testRecidivismMetricWritableDict_WithEmptyDateField(self) -> None:
         """Tests converting the ReincarcerationRecidivismMetric to a dictionary
         that can be written to BigQuery, where the metric contains None on a
         date attribute."""
@@ -1308,7 +1321,7 @@ class MetricGroup:
     )
 
     @staticmethod
-    def get_list():
+    def get_list() -> List[ReincarcerationRecidivismRateMetric]:
         return [
             MetricGroup.recidivism_metric_with_age,
             MetricGroup.recidivism_metric_with_gender,
@@ -1326,24 +1339,10 @@ class AssertMatchers:
     validate pipeline outputs."""
 
     @staticmethod
-    def validate_pipeline_test():
-        def _validate_pipeline_test(output):
-
-            for metric in output:
-                if not isinstance(metric, ReincarcerationRecidivismMetric):
-                    raise BeamAssertException(
-                        "Failed assert. Output is not"
-                        "of type"
-                        " ReincarcerationRecidivismMetric."
-                    )
-
-        return _validate_pipeline_test
-
-    @staticmethod
-    def count_metrics(expected_metric_counts):
+    def count_metrics(expected_metric_counts: Dict[Any, Any]) -> Callable:
         """Asserts that the number of metric combinations matches the expected counts for each release cohort year."""
 
-        def _count_metrics(output):
+        def _count_metrics(output: List) -> None:
             actual_combination_counts = {}
 
             for key in expected_metric_counts.keys():
@@ -1370,24 +1369,8 @@ class AssertMatchers:
         return _count_metrics
 
     @staticmethod
-    def validate_job_id_on_metric(expected_job_id):
-        def _validate_job_id_on_metric(output):
-
-            for metric in output:
-
-                if metric.job_id != expected_job_id:
-                    raise BeamAssertException(
-                        "Failed assert. Output job_id: "
-                        f"{metric.job_id} does not match"
-                        "expected value: "
-                        f"{expected_job_id}"
-                    )
-
-        return _validate_job_id_on_metric
-
-    @staticmethod
-    def validate_metric_writable_dict():
-        def _validate_metric_writable_dict(output):
+    def validate_metric_writable_dict() -> Callable:
+        def _validate_metric_writable_dict(output: List) -> None:
             for metric_dict in output:
                 for _, value in metric_dict.items():
                     if isinstance(value, Enum):

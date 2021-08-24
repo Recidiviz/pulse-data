@@ -29,6 +29,7 @@ from recidiviz.calculator.pipeline.recidivism import identifier
 from recidiviz.calculator.pipeline.recidivism.events import (
     NonRecidivismReleaseEvent,
     RecidivismReleaseEvent,
+    ReleaseEvent,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -76,7 +77,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         incarceration_periods: List[StateIncarcerationPeriod],
         supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
         persons_to_recent_county_of_residence: Optional[List[Dict[str, Any]]] = None,
-    ):
+    ) -> Dict[int, List[ReleaseEvent]]:
         return self.identifier._find_release_events_by_cohort_year(
             incarceration_periods=incarceration_periods,
             supervision_periods=(supervision_periods or []),
@@ -85,7 +86,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             ),
         )
 
-    def testFindReleaseEventsByCohortYear_ignoreTemporaryCustody(self):
+    def testFindReleaseEventsByCohortYear_ignoreTemporaryCustody(self) -> None:
         """Tests the find_release_events_by_cohort_year function where a person has
         multiple admissions to periods of temporary custody. Releases from temporary
         custody should not be counted in release cohorts, and admissions to temporary
@@ -152,6 +153,9 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         self.assertEqual(1, len(release_events_by_cohort))
 
+        assert initial_incarceration_period.admission_date is not None
+        assert initial_incarceration_period.release_date is not None
+        assert revocation_incarceration_period.admission_date is not None
         self.assertCountEqual(
             [
                 RecidivismReleaseEvent(
@@ -167,7 +171,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_events_by_cohort[2010],
         )
 
-    def testFindReleaseEventsByCohortYear_ParoleBoardHoldThenRevocation(self):
+    def testFindReleaseEventsByCohortYear_ParoleBoardHoldThenRevocation(self) -> None:
         """Tests the find_release_events_by_cohort_year function where a parole board
         hold period is followed by a revocation period. In this test case the person
         did recidivate, and the revocation admission should be counted as the date of
@@ -220,6 +224,9 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         self.assertEqual(1, len(release_events_by_cohort))
 
+        assert initial_incarceration_period.admission_date is not None
+        assert initial_incarceration_period.release_date is not None
+        assert revocation_incarceration_period.admission_date is not None
         self.assertCountEqual(
             [
                 RecidivismReleaseEvent(
@@ -235,7 +242,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_events_by_cohort[2010],
         )
 
-    def test_find_release_events_by_cohort_year(self):
+    def test_find_release_events_by_cohort_year(self) -> None:
         """Tests the find_release_events_by_cohort_year function path where the
         person did recidivate."""
 
@@ -282,6 +289,11 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         self.assertEqual(2, len(release_events_by_cohort))
 
+        assert initial_incarceration_period.admission_date is not None
+        assert initial_incarceration_period.release_date is not None
+        assert first_reincarceration_period.admission_date is not None
+        assert first_reincarceration_period.release_date is not None
+        assert subsequent_reincarceration_period.admission_date is not None
         self.assertCountEqual(
             [
                 RecidivismReleaseEvent(
@@ -312,7 +324,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_events_by_cohort[2014],
         )
 
-    def test_find_release_events_by_cohort_year_no_incarcerations_at_all(self):
+    def test_find_release_events_by_cohort_year_no_incarcerations_at_all(self) -> None:
         """Tests the find_release_events_by_cohort_year function when the person
         has no StateIncarcerationPeriods."""
         release_events_by_cohort = self._test_find_release_events_by_cohort_year(
@@ -321,7 +333,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         assert not release_events_by_cohort
 
-    def test_find_release_events_by_cohort_year_no_recidivism_after_first(self):
+    def test_find_release_events_by_cohort_year_no_recidivism_after_first(self) -> None:
         """Tests the find_release_events_by_cohort_year function when the person
         does not have any StateIncarcerationPeriods after their first."""
         only_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -341,6 +353,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         assert len(release_events_by_cohort) == 1
 
+        assert only_incarceration_period.admission_date is not None
+        assert only_incarceration_period.release_date is not None
         assert release_events_by_cohort[2003] == [
             NonRecidivismReleaseEvent(
                 state_code="US_XX",
@@ -351,7 +365,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             )
         ]
 
-    def test_find_release_events_by_cohort_year_still_incarcerated(self):
+    def test_find_release_events_by_cohort_year_still_incarcerated(self) -> None:
         """Tests the find_release_events_by_cohort_year function where the
         person is still incarcerated on their very first
          StateIncarcerationPeriod."""
@@ -370,7 +384,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         assert not release_events_by_cohort
 
-    def test_find_release_events_by_cohort_year_invalid_open_period(self):
+    def test_find_release_events_by_cohort_year_invalid_open_period(self) -> None:
         """Tests the find_release_events_by_cohort_year function where the person has an open IN_CUSTODY period that is
         invalid because the person was released elsewhere after the admission to the period."""
         invalid_open_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -400,6 +414,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             ]
         )
 
+        assert closed_incarceration_period.admission_date is not None
+        assert closed_incarceration_period.release_date is not None
         assert release_events_by_cohort[2009] == [
             NonRecidivismReleaseEvent(
                 state_code="US_XX",
@@ -410,7 +426,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             )
         ]
 
-    def test_find_release_events_by_cohort_year_overlapping_periods(self):
+    def test_find_release_events_by_cohort_year_overlapping_periods(self) -> None:
         """Tests the find_release_events_by_cohort_year function where the person has two overlapping periods, caused by
         data entry errors. We don't want to create a ReleaseEvent for a release that overlaps with another period of
         incarceration, so we only produce a ReleaseEvent for the period with the later release."""
@@ -440,6 +456,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             incarceration_periods=[incarceration_period_2, incarceration_period_1]
         )
 
+        assert incarceration_period_1.admission_date is not None
+        assert incarceration_period_1.release_date is not None
         self.assertCountEqual(
             [
                 NonRecidivismReleaseEvent(
@@ -453,7 +471,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_events_by_cohort[2009],
         )
 
-    def test_find_release_events_by_cohort_year_release_same_day(self):
+    def test_find_release_events_by_cohort_year_release_same_day(self) -> None:
         """Tests the find_release_events_by_cohort_year function where the person has two periods with release dates on
         the same day. The second period is entirely nested within the first period, so will be filtered out in ip
         pre-processing."""
@@ -483,6 +501,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             incarceration_periods=[incarceration_period_2, incarceration_period_1]
         )
 
+        assert incarceration_period_1.admission_date is not None
+        assert incarceration_period_1.release_date is not None
         self.assertCountEqual(
             [
                 NonRecidivismReleaseEvent(
@@ -496,7 +516,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             release_events_by_cohort[2009],
         )
 
-    def test_find_release_events_by_cohort_year_two_open_periods(self):
+    def test_find_release_events_by_cohort_year_two_open_periods(self) -> None:
         """Tests the find_release_events_by_cohort_year function where the person has two open periods, caused by
         data entry errors. We don't want to create any release events in this situation."""
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -525,7 +545,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         self.assertEqual({}, release_events_by_cohort)
 
-    def test_find_release_events_by_cohort_year_no_recid_cond_release(self):
+    def test_find_release_events_by_cohort_year_no_recid_cond_release(self) -> None:
         """Tests the find_release_events_by_cohort_year function when the person
         does not have any StateIncarcerationPeriods after their first, and they
         were released conditionally."""
@@ -546,6 +566,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         assert len(release_events_by_cohort) == 1
 
+        assert only_incarceration_period.admission_date is not None
+        assert only_incarceration_period.release_date is not None
         assert release_events_by_cohort[2003] == [
             NonRecidivismReleaseEvent(
                 state_code="US_XX",
@@ -556,7 +578,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             )
         ]
 
-    def test_find_release_events_by_cohort_year_parole_revocation(self):
+    def test_find_release_events_by_cohort_year_parole_revocation(self) -> None:
         """Tests the find_release_events_by_cohort_year function path where the
         person was conditionally released on parole and returned for a parole
         revocation."""
@@ -594,6 +616,10 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         assert len(release_events_by_cohort) == 2
 
+        assert initial_incarceration_period.admission_date is not None
+        assert initial_incarceration_period.release_date is not None
+        assert first_reincarceration_period.admission_date is not None
+        assert first_reincarceration_period.release_date is not None
         assert release_events_by_cohort[2010] == [
             RecidivismReleaseEvent(
                 state_code="US_XX",
@@ -616,7 +642,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             )
         ]
 
-    def test_find_release_events_by_cohort_year_probation_revocation(self):
+    def test_find_release_events_by_cohort_year_probation_revocation(self) -> None:
         """Tests the find_release_events_by_cohort_year function path where the
         person was conditionally released and returned for a probation
         revocation."""
@@ -654,6 +680,10 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         assert len(release_events_by_cohort) == 2
 
+        assert initial_incarceration_period.admission_date is not None
+        assert initial_incarceration_period.release_date is not None
+        assert first_reincarceration_period.admission_date is not None
+        assert first_reincarceration_period.release_date is not None
         assert release_events_by_cohort[2010] == [
             RecidivismReleaseEvent(
                 state_code="US_XX",
@@ -676,7 +706,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             )
         ]
 
-    def test_find_release_events_by_cohort_year_cond_release_new_admit(self):
+    def test_find_release_events_by_cohort_year_cond_release_new_admit(self) -> None:
         """Tests the find_release_events_by_cohort_year function path where the
         person was conditionally released on parole but returned as a new
          admission."""
@@ -714,6 +744,10 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         assert len(release_events_by_cohort) == 2
 
+        assert initial_incarceration_period.admission_date is not None
+        assert initial_incarceration_period.release_date is not None
+        assert first_reincarceration_period.admission_date is not None
+        assert first_reincarceration_period.release_date is not None
         assert release_events_by_cohort[2010] == [
             RecidivismReleaseEvent(
                 state_code="US_XX",
@@ -736,7 +770,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             )
         ]
 
-    def test_find_release_events_by_cohort_year_sentence_served_prob_rev(self):
+    def test_find_release_events_by_cohort_year_sentence_served_prob_rev(self) -> None:
         """Tests the find_release_events_by_cohort_year function path where the
         person served their first sentence, then later returned on a probation
         revocation."""
@@ -774,6 +808,10 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         assert len(release_events_by_cohort) == 2
 
+        assert initial_incarceration_period.admission_date is not None
+        assert initial_incarceration_period.release_date is not None
+        assert first_reincarceration_period.admission_date is not None
+        assert first_reincarceration_period.release_date is not None
         assert release_events_by_cohort[2010] == [
             RecidivismReleaseEvent(
                 state_code="US_XX",
@@ -796,7 +834,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             )
         ]
 
-    def test_find_release_events_by_cohort_year_transfer_no_recidivism(self):
+    def test_find_release_events_by_cohort_year_transfer_no_recidivism(self) -> None:
         """Tests the find_release_events_by_cohort_year function path where the
         person was transferred between two incarceration periods."""
 
@@ -833,6 +871,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         assert len(release_events_by_cohort) == 1
 
+        assert initial_incarceration_period.admission_date is not None
+        assert first_reincarceration_period.release_date is not None
         assert release_events_by_cohort[2014] == [
             NonRecidivismReleaseEvent(
                 state_code="US_XX",
@@ -843,7 +883,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             )
         ]
 
-    def test_find_release_events_by_cohort_year_transfer_out_but_recid(self):
+    def test_find_release_events_by_cohort_year_transfer_out_but_recid(self) -> None:
         """Tests the find_release_events_by_cohort_year function path where the
         person was transferred out of state, then later returned on a new
         admission."""
@@ -880,6 +920,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         assert len(release_events_by_cohort) == 1
 
+        assert first_reincarceration_period.admission_date is not None
+        assert first_reincarceration_period.release_date is not None
         assert release_events_by_cohort[2014] == [
             NonRecidivismReleaseEvent(
                 state_code="US_XX",
@@ -890,7 +932,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             )
         ]
 
-    def test_find_release_events_by_cohort_year_only_placeholder_periods(self):
+    def test_find_release_events_by_cohort_year_only_placeholder_periods(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             state_code="US_XX",
@@ -945,7 +987,7 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
     def setUp(self) -> None:
         self.identifier = identifier.RecidivismIdentifier()
 
-    def test_should_include_in_release_cohort(self):
+    def test_should_include_in_release_cohort(self) -> None:
         """Tests the should_include_in_release_cohort_function for all
         possible combinations of release reason and admission reason."""
         release_date = date(2000, 1, 1)
@@ -963,7 +1005,7 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
                 RELEASE_REASON_INCLUSION.get(release_reason), should_include
             )
 
-    def test_should_include_in_release_cohort_in_custody(self):
+    def test_should_include_in_release_cohort_in_custody(self) -> None:
         status = StateIncarcerationPeriodStatus.IN_CUSTODY
         should_include = self.identifier._should_include_in_release_cohort(
             status=status,
@@ -974,7 +1016,7 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
         )
         self.assertFalse(should_include)
 
-    def test_should_include_in_release_cohort_no_release_reason(self):
+    def test_should_include_in_release_cohort_no_release_reason(self) -> None:
         status = StateIncarcerationPeriodStatus.IN_CUSTODY
         release_date = date(2000, 1, 1)
         should_include = self.identifier._should_include_in_release_cohort(
@@ -986,7 +1028,7 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
         )
         self.assertFalse(should_include)
 
-    def test_should_include_in_release_cohort_release_from_temp_custody(self):
+    def test_should_include_in_release_cohort_release_from_temp_custody(self) -> None:
         status = StateIncarcerationPeriodStatus.IN_CUSTODY
         release_date = date(2000, 1, 1)
 
@@ -1000,7 +1042,7 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
             )
             self.assertFalse(should_include)
 
-    def test_should_include_in_release_cohort_release_from_board_hold(self):
+    def test_should_include_in_release_cohort_release_from_board_hold(self) -> None:
         status = StateIncarcerationPeriodStatus.IN_CUSTODY
         release_date = date(2000, 1, 1)
 
@@ -1014,7 +1056,7 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
             )
             self.assertFalse(should_include)
 
-    def test_should_include_in_release_cohort_release_while_incarcerated(self):
+    def test_should_include_in_release_cohort_release_while_incarcerated(self) -> None:
         status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
         release_date = date(2000, 1, 31)
         next_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1037,7 +1079,7 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
         )
         self.assertFalse(should_include)
 
-    def test_coverage_of_inclusion_map(self):
+    def test_coverage_of_inclusion_map(self) -> None:
         release_reason_keys = RELEASE_REASON_INCLUSION.keys()
 
         for release_reason in StateIncarcerationPeriodReleaseReason:
@@ -1047,7 +1089,7 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
                 "handled in SHOULD_INCLUDE_WITH_RETURN_TYPE.",
             )
 
-    def test_should_include_in_release_cohort_coverage(self):
+    def test_should_include_in_release_cohort_coverage(self) -> None:
         status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
         release_date = date(1978, 11, 1)
 
@@ -1068,7 +1110,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
     def setUp(self) -> None:
         self.identifier = identifier.RecidivismIdentifier()
 
-    def test_find_valid_reincarceration_period(self):
+    def test_find_valid_reincarceration_period(self) -> None:
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -1093,6 +1135,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
 
         incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
+        assert incarceration_periods[0].release_date is not None
         reincarceration = self.identifier._find_valid_reincarceration_period(
             incarceration_periods,
             index=0,
@@ -1101,7 +1144,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
 
         self.assertEqual(incarceration_period_2, reincarceration)
 
-    def test_find_valid_reincarceration_period_overlapping_periods(self):
+    def test_find_valid_reincarceration_period_overlapping_periods(self) -> None:
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -1128,6 +1171,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
 
         # The release on incarceration_period_1 overlaps with incarceration_period_2, and should be excluded from the
         # release cohort
+        assert incarceration_periods[0].release_date is not None
         with self.assertRaises(ValueError):
             _ = self.identifier._find_valid_reincarceration_period(
                 incarceration_periods,
@@ -1135,7 +1179,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
                 release_date=incarceration_periods[0].release_date,
             )
 
-    def test_find_valid_reincarceration_period_invalid_admission_reason(self):
+    def test_find_valid_reincarceration_period_invalid_admission_reason(self) -> None:
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -1161,6 +1205,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
 
             incarceration_periods = [incarceration_period_1, incarceration_period_2]
 
+            assert incarceration_periods[0].release_date is not None
             reincarceration = self.identifier._find_valid_reincarceration_period(
                 incarceration_periods,
                 index=0,
@@ -1169,7 +1214,8 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
 
             self.assertIsNone(reincarceration)
 
-    def test_find_valid_reincarceration_period_admission_reason_coverage(self):
+    def test_find_valid_reincarceration_period_admission_reason_coverage(self) -> None:
+        release_date = date(2009, 4, 21)
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -1177,7 +1223,7 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
             state_code="US_XX",
             admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            release_date=date(2009, 4, 21),
+            release_date=release_date,
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
         )
 
@@ -1199,5 +1245,5 @@ class TestFindValidReincarcerationPeriod(unittest.TestCase):
             _ = self.identifier._find_valid_reincarceration_period(
                 incarceration_periods,
                 index=0,
-                release_date=incarceration_periods[0].release_date,
+                release_date=release_date,
             )

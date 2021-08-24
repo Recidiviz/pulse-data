@@ -30,6 +30,7 @@ from typing import (
 )
 
 import apache_beam
+from apache_beam.pvalue import PCollection
 from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from more_itertools import one
 
@@ -76,11 +77,11 @@ class FakeBigQueryAssertMatchers:
     validate pipeline outputs."""
 
     @staticmethod
-    def validate_metric_output(expected_metric_type: RecidivizMetricType):
+    def validate_metric_output(expected_metric_type: RecidivizMetricType) -> Callable:
         """Asserts that the pipeline produced the expected types of metrics, and that it produced aggregate metrics
         only for the expected aggregate metric types."""
 
-        def _validate_metric_output(output) -> None:
+        def _validate_metric_output(output: List) -> None:
             if not output:
                 raise BeamAssertException(
                     f"Failed assert. Output is empty for expected type [{expected_metric_type}]."
@@ -102,7 +103,7 @@ class FakeReadFromBigQuery(apache_beam.PTransform):
         super().__init__()
         self._table_values = table_values
 
-    def expand(self, input_or_inputs):
+    def expand(self, input_or_inputs: PCollection) -> Any:
         return input_or_inputs | "Loading table values" >> apache_beam.Create(
             self._table_values
         )
@@ -353,7 +354,7 @@ class FakeWriteToBigQuery(apache_beam.PTransform):
         self._expected_output_metric_types = expected_output_metric_types
         self._expected_metric_type = one(metric_types_for_table)
 
-    def expand(self, input_or_inputs):
+    def expand(self, input_or_inputs: PCollection) -> Any:
         if self._expected_metric_type in self._expected_output_metric_types:
             assert_that(
                 input_or_inputs,

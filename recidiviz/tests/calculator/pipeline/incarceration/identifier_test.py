@@ -206,7 +206,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         assessments: Optional[List[StateAssessment]] = None,
         violation_responses: Optional[List[StateSupervisionViolationResponse]] = None,
         supervision_period_to_agent_association: Optional[List[Dict[str, Any]]] = None,
-    ):
+    ) -> List[IncarcerationEvent]:
         sentence_groups = sentence_groups or []
         assessments = assessments or []
         violation_responses = violation_responses or []
@@ -224,7 +224,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             supervision_period_to_agent_association,
         )
 
-    def test_find_incarceration_events(self):
+    def test_find_incarceration_events(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=_DEFAULT_IP_ID,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -267,43 +267,42 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         incarceration_events = self._run_find_incarceration_events(sentence_groups)
 
-        expected_events: List[IncarcerationEvent] = expected_incarceration_stay_events(
-            incarceration_period,
-            most_serious_offense_ncic_code="0901",
-            most_serious_offense_statute="9999",
-            judicial_district_code="NW",
-        )
-
-        expected_events.extend(
-            [
-                IncarcerationStandardAdmissionEvent(
-                    state_code=incarceration_period.state_code,
-                    event_date=incarceration_period.admission_date,
-                    facility=incarceration_period.facility,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                    admission_reason_raw_text="INCARCERATION_ADMISSION",
-                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-                ),
-                IncarcerationReleaseEvent(
-                    state_code=incarceration_period.state_code,
-                    event_date=incarceration_period.release_date,
-                    facility=incarceration_period.facility,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-                    admission_reason=incarceration_period.admission_reason,
-                    total_days_incarcerated=(
-                        incarceration_period.release_date
-                        - incarceration_period.admission_date
-                    ).days,
-                    purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-                ),
-            ]
-        )
+        assert incarceration_period.admission_date is not None
+        assert incarceration_period.release_date is not None
+        expected_events = [
+            *expected_incarceration_stay_events(
+                incarceration_period,
+                most_serious_offense_ncic_code="0901",
+                most_serious_offense_statute="9999",
+                judicial_district_code="NW",
+            ),
+            IncarcerationStandardAdmissionEvent(
+                state_code=incarceration_period.state_code,
+                event_date=incarceration_period.admission_date,
+                facility=incarceration_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                admission_reason_raw_text="INCARCERATION_ADMISSION",
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            ),
+            IncarcerationReleaseEvent(
+                state_code=incarceration_period.state_code,
+                event_date=incarceration_period.release_date,
+                facility=incarceration_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+                admission_reason=incarceration_period.admission_reason,
+                total_days_incarcerated=(
+                    incarceration_period.release_date
+                    - incarceration_period.admission_date
+                ).days,
+                purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            ),
+        ]
 
         self.assertCountEqual(expected_events, incarceration_events)
 
-    def test_find_incarceration_events_transfer(self):
+    def test_find_incarceration_events_transfer(self) -> None:
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=_DEFAULT_IP_ID,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -359,53 +358,49 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         incarceration_events = self._run_find_incarceration_events(sentence_groups)
 
-        expected_events: List[IncarcerationEvent] = expected_incarceration_stay_events(
-            incarceration_period_1,
-            most_serious_offense_ncic_code="5511",
-            most_serious_offense_statute="9999",
-            judicial_district_code="NW",
-        )
-
-        expected_events.extend(
-            expected_incarceration_stay_events(
+        assert incarceration_period_1.admission_date is not None
+        assert incarceration_period_2.release_date is not None
+        expected_events = [
+            *expected_incarceration_stay_events(
+                incarceration_period_1,
+                most_serious_offense_ncic_code="5511",
+                most_serious_offense_statute="9999",
+                judicial_district_code="NW",
+            ),
+            *expected_incarceration_stay_events(
                 incarceration_period_2,
                 original_admission_reason=incarceration_period_1.admission_reason,
                 original_admission_reason_raw_text=incarceration_period_1.admission_reason_raw_text,
                 most_serious_offense_ncic_code="5511",
                 most_serious_offense_statute="9999",
-            )
-        )
-
-        expected_events.extend(
-            [
-                IncarcerationStandardAdmissionEvent(
-                    state_code=incarceration_period_1.state_code,
-                    event_date=incarceration_period_1.admission_date,
-                    facility=incarceration_period_1.facility,
-                    admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                    admission_reason_raw_text="NA",
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-                ),
-                IncarcerationReleaseEvent(
-                    state_code=incarceration_period_2.state_code,
-                    event_date=incarceration_period_2.release_date,
-                    facility=incarceration_period_2.facility,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-                    admission_reason=incarceration_period_1.admission_reason,
-                    total_days_incarcerated=(
-                        incarceration_period_2.release_date
-                        - incarceration_period_1.admission_date
-                    ).days,
-                    purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-                ),
-            ]
-        )
+            ),
+            IncarcerationStandardAdmissionEvent(
+                state_code=incarceration_period_1.state_code,
+                event_date=incarceration_period_1.admission_date,
+                facility=incarceration_period_1.facility,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                admission_reason_raw_text="NA",
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            ),
+            IncarcerationReleaseEvent(
+                state_code=incarceration_period_2.state_code,
+                event_date=incarceration_period_2.release_date,
+                facility=incarceration_period_2.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+                admission_reason=incarceration_period_1.admission_reason,
+                total_days_incarcerated=(
+                    incarceration_period_2.release_date
+                    - incarceration_period_1.admission_date
+                ).days,
+                purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            ),
+        ]
 
         self.assertCountEqual(expected_events, incarceration_events)
 
-    def test_find_incarceration_events_transfer_status_change(self):
+    def test_find_incarceration_events_transfer_status_change(self) -> None:
         """Tests that adjacent IPs with TRANSFER edges are updated to have STATUS_CHANGE
         release and admission reasons when the IPs have different
         specialized_purpose_for_incarceration values.
@@ -458,66 +453,66 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         incarceration_events = self._run_find_incarceration_events(sentence_groups)
 
-        expected_events: List[IncarcerationEvent] = expected_incarceration_stay_events(
-            incarceration_period_1
-        )
-        expected_events.extend(
-            expected_incarceration_stay_events(
+        assert incarceration_period_1.admission_date is not None
+        assert incarceration_period_1.release_date is not None
+        assert incarceration_period_2.admission_date is not None
+        assert incarceration_period_2.release_date is not None
+        assert incarceration_period_2.release_reason is not None
+        expected_events = [
+            *expected_incarceration_stay_events(incarceration_period_1),
+            *expected_incarceration_stay_events(
                 incarceration_period_2,
                 original_admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            )
-        )
-        expected_events.extend(
-            [
-                IncarcerationStandardAdmissionEvent(
-                    state_code=incarceration_period_1.state_code,
-                    event_date=incarceration_period_1.admission_date,
-                    facility=incarceration_period_1.facility,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
-                ),
-                IncarcerationReleaseEvent(
-                    state_code=incarceration_period_1.state_code,
-                    event_date=incarceration_period_1.release_date,
-                    facility=incarceration_period_1.facility,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
-                    release_reason_raw_text=incarceration_period_1.release_reason_raw_text,
-                    admission_reason=incarceration_period_1.admission_reason,
-                    total_days_incarcerated=(
-                        incarceration_period_1.release_date
-                        - incarceration_period_1.admission_date
-                    ).days,
-                    purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
-                ),
-                IncarcerationStandardAdmissionEvent(
-                    state_code=incarceration_period_2.state_code,
-                    event_date=incarceration_period_2.admission_date,
-                    facility=incarceration_period_2.facility,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
-                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-                ),
-                IncarcerationReleaseEvent(
-                    state_code=incarceration_period_2.state_code,
-                    event_date=incarceration_period_2.release_date,
-                    facility=incarceration_period_2.facility,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    release_reason=incarceration_period_2.release_reason,
-                    release_reason_raw_text=incarceration_period_2.release_reason_raw_text,
-                    admission_reason=incarceration_period_1.admission_reason,
-                    total_days_incarcerated=(
-                        incarceration_period_2.release_date
-                        - incarceration_period_2.admission_date
-                    ).days,
-                    purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-                ),
-            ]
-        )
+            ),
+            IncarcerationStandardAdmissionEvent(
+                state_code=incarceration_period_1.state_code,
+                event_date=incarceration_period_1.admission_date,
+                facility=incarceration_period_1.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+            ),
+            IncarcerationReleaseEvent(
+                state_code=incarceration_period_1.state_code,
+                event_date=incarceration_period_1.release_date,
+                facility=incarceration_period_1.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
+                release_reason_raw_text=incarceration_period_1.release_reason_raw_text,
+                admission_reason=incarceration_period_1.admission_reason,
+                total_days_incarcerated=(
+                    incarceration_period_1.release_date
+                    - incarceration_period_1.admission_date
+                ).days,
+                purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+            ),
+            IncarcerationStandardAdmissionEvent(
+                state_code=incarceration_period_2.state_code,
+                event_date=incarceration_period_2.admission_date,
+                facility=incarceration_period_2.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            ),
+            IncarcerationReleaseEvent(
+                state_code=incarceration_period_2.state_code,
+                event_date=incarceration_period_2.release_date,
+                facility=incarceration_period_2.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                release_reason=incarceration_period_2.release_reason,
+                release_reason_raw_text=incarceration_period_2.release_reason_raw_text,
+                admission_reason=incarceration_period_1.admission_reason,
+                total_days_incarcerated=(
+                    incarceration_period_2.release_date
+                    - incarceration_period_2.admission_date
+                ).days,
+                purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            ),
+        ]
+
         self.assertCountEqual(expected_events, incarceration_events)
 
-    def test_find_incarceration_events_multiple_sentences(self):
+    def test_find_incarceration_events_multiple_sentences(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=_DEFAULT_IP_ID,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -558,41 +553,40 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         incarceration_events = self._run_find_incarceration_events(sentence_groups)
 
-        expected_events: List[IncarcerationEvent] = expected_incarceration_stay_events(
-            incarceration_period, judicial_district_code="NW"
-        )
-
-        expected_events.extend(
-            [
-                IncarcerationStandardAdmissionEvent(
-                    state_code=incarceration_period.state_code,
-                    event_date=incarceration_period.admission_date,
-                    facility=incarceration_period.facility,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-                ),
-                IncarcerationReleaseEvent(
-                    state_code=incarceration_period.state_code,
-                    event_date=incarceration_period.release_date,
-                    facility=incarceration_period.facility,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-                    admission_reason=incarceration_period.admission_reason,
-                    total_days_incarcerated=(
-                        incarceration_period.release_date
-                        - incarceration_period.admission_date
-                    ).days,
-                    purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-                ),
-            ]
-        )
+        assert incarceration_period.admission_date is not None
+        assert incarceration_period.release_date is not None
+        expected_events: List[IncarcerationEvent] = [
+            *expected_incarceration_stay_events(
+                incarceration_period, judicial_district_code="NW"
+            ),
+            IncarcerationStandardAdmissionEvent(
+                state_code=incarceration_period.state_code,
+                event_date=incarceration_period.admission_date,
+                facility=incarceration_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            ),
+            IncarcerationReleaseEvent(
+                state_code=incarceration_period.state_code,
+                event_date=incarceration_period.release_date,
+                facility=incarceration_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+                admission_reason=incarceration_period.admission_reason,
+                total_days_incarcerated=(
+                    incarceration_period.release_date
+                    - incarceration_period.admission_date
+                ).days,
+                purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            ),
+        ]
 
         self.assertCountEqual(expected_events, incarceration_events)
 
     def test_find_incarceration_events_multiple_sentences_with_investigative_supervision_period_us_id(
         self,
-    ):
+    ) -> None:
         self._stop_state_specific_delegate_patchers()
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -645,43 +639,42 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         incarceration_events = self._run_find_incarceration_events(sentence_groups)
 
-        expected_events: List[IncarcerationEvent] = expected_incarceration_stay_events(
-            incarceration_period,
-            judicial_district_code="NW",
-            original_admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-        )
-
-        expected_events.extend(
-            [
-                IncarcerationStandardAdmissionEvent(
-                    state_code=incarceration_period.state_code,
-                    event_date=incarceration_period.admission_date,
-                    facility=incarceration_period.facility,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-                ),
-                IncarcerationReleaseEvent(
-                    state_code=incarceration_period.state_code,
-                    event_date=incarceration_period.release_date,
-                    facility=incarceration_period.facility,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-                    admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                    total_days_incarcerated=(
-                        incarceration_period.release_date
-                        - incarceration_period.admission_date
-                    ).days,
-                    purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-                ),
-            ]
-        )
+        assert incarceration_period.admission_date is not None
+        assert incarceration_period.release_date is not None
+        expected_events = [
+            *expected_incarceration_stay_events(
+                incarceration_period,
+                judicial_district_code="NW",
+                original_admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            ),
+            IncarcerationStandardAdmissionEvent(
+                state_code=incarceration_period.state_code,
+                event_date=incarceration_period.admission_date,
+                facility=incarceration_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            ),
+            IncarcerationReleaseEvent(
+                state_code=incarceration_period.state_code,
+                event_date=incarceration_period.release_date,
+                facility=incarceration_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                total_days_incarcerated=(
+                    incarceration_period.release_date
+                    - incarceration_period.admission_date
+                ).days,
+                purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            ),
+        ]
 
         self.assertCountEqual(expected_events, incarceration_events)
 
     def test_find_incarceration_events_purpose_for_incarceration_change_us_id(
         self,
-    ):
+    ) -> None:
         """Tests that with state code US_ID, treatment in prison periods that are followed by a transfer to general
         result in the correct IncarcerationStayEvents, IncarcerationAdmissionEvents, and
         IncarcerationReleaseEvents with updated STATUS_CHANGE reasons"""
@@ -749,75 +742,74 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         incarceration_events = self._run_find_incarceration_events(sentence_groups)
 
-        expected_events: List[IncarcerationEvent] = expected_incarceration_stay_events(
-            treatment_incarceration_period,
-            most_serious_offense_ncic_code="5511",
-            most_serious_offense_statute="9999",
-            judicial_district_code="NW",
-        )
-
-        expected_events.extend(
-            expected_incarceration_stay_events(
+        assert general_incarceration_period.admission_date is not None
+        assert treatment_incarceration_period.release_date is not None
+        assert treatment_incarceration_period.admission_date is not None
+        assert general_incarceration_period.release_date is not None
+        assert general_incarceration_period.admission_date is not None
+        expected_events: List[IncarcerationEvent] = [
+            *expected_incarceration_stay_events(
+                treatment_incarceration_period,
+                most_serious_offense_ncic_code="5511",
+                most_serious_offense_statute="9999",
+                judicial_district_code="NW",
+            ),
+            *expected_incarceration_stay_events(
                 general_incarceration_period,
                 original_admission_reason=treatment_incarceration_period.admission_reason,
                 original_admission_reason_raw_text=treatment_incarceration_period.admission_reason_raw_text,
                 most_serious_offense_ncic_code="5511",
                 most_serious_offense_statute="9999",
-            )
-        )
-
-        expected_events.extend(
-            [
-                IncarcerationStandardAdmissionEvent(
-                    state_code=treatment_incarceration_period.state_code,
-                    event_date=treatment_incarceration_period.admission_date,
-                    facility=treatment_incarceration_period.facility,
-                    admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                    admission_reason_raw_text="NA",
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
-                ),
-                IncarcerationStandardAdmissionEvent(
-                    state_code=general_incarceration_period.state_code,
-                    event_date=general_incarceration_period.admission_date,
-                    facility=general_incarceration_period.facility,
-                    admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-                ),
-                IncarcerationReleaseEvent(
-                    state_code=treatment_incarceration_period.state_code,
-                    event_date=treatment_incarceration_period.release_date,
-                    facility=treatment_incarceration_period.facility,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
-                    purpose_for_incarceration=treatment_incarceration_period.specialized_purpose_for_incarceration,
-                    admission_reason=treatment_incarceration_period.admission_reason,
-                    total_days_incarcerated=(
-                        treatment_incarceration_period.release_date
-                        - treatment_incarceration_period.admission_date
-                    ).days,
-                ),
-                IncarcerationReleaseEvent(
-                    state_code=general_incarceration_period.state_code,
-                    event_date=general_incarceration_period.release_date,
-                    facility=general_incarceration_period.facility,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-                    admission_reason=treatment_incarceration_period.admission_reason,
-                    purpose_for_incarceration=general_incarceration_period.specialized_purpose_for_incarceration,
-                    total_days_incarcerated=(
-                        general_incarceration_period.release_date
-                        - general_incarceration_period.admission_date
-                    ).days,
-                ),
-            ]
-        )
+            ),
+            IncarcerationStandardAdmissionEvent(
+                state_code=treatment_incarceration_period.state_code,
+                event_date=treatment_incarceration_period.admission_date,
+                facility=treatment_incarceration_period.facility,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                admission_reason_raw_text="NA",
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+            ),
+            IncarcerationStandardAdmissionEvent(
+                state_code=general_incarceration_period.state_code,
+                event_date=general_incarceration_period.admission_date,
+                facility=general_incarceration_period.facility,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            ),
+            IncarcerationReleaseEvent(
+                state_code=treatment_incarceration_period.state_code,
+                event_date=treatment_incarceration_period.release_date,
+                facility=treatment_incarceration_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
+                purpose_for_incarceration=treatment_incarceration_period.specialized_purpose_for_incarceration,
+                admission_reason=treatment_incarceration_period.admission_reason,
+                total_days_incarcerated=(
+                    treatment_incarceration_period.release_date
+                    - treatment_incarceration_period.admission_date
+                ).days,
+            ),
+            IncarcerationReleaseEvent(
+                state_code=general_incarceration_period.state_code,
+                event_date=general_incarceration_period.release_date,
+                facility=general_incarceration_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+                admission_reason=treatment_incarceration_period.admission_reason,
+                purpose_for_incarceration=general_incarceration_period.specialized_purpose_for_incarceration,
+                total_days_incarcerated=(
+                    general_incarceration_period.release_date
+                    - general_incarceration_period.admission_date
+                ).days,
+            ),
+        ]
 
         self.assertCountEqual(expected_events, incarceration_events)
 
     @freeze_time("2000-01-01")
-    def test_find_incarceration_events_dates_in_future(self):
+    def test_find_incarceration_events_dates_in_future(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=_DEFAULT_IP_ID,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -879,30 +871,28 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         incarceration_events = self._run_find_incarceration_events(sentence_groups)
 
-        expected_events: List[IncarcerationEvent] = expected_incarceration_stay_events(
-            incarceration_period,
-            most_serious_offense_ncic_code="0901",
-            most_serious_offense_statute="9999",
-            judicial_district_code="NW",
-        )
-
-        expected_events.extend(
-            [
-                IncarcerationStandardAdmissionEvent(
-                    state_code=incarceration_period.state_code,
-                    event_date=incarceration_period.admission_date,
-                    facility=incarceration_period.facility,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                    admission_reason_raw_text="INCARCERATION_ADMISSION",
-                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-                )
-            ]
-        )
+        assert incarceration_period.admission_date is not None
+        expected_events = [
+            *expected_incarceration_stay_events(
+                incarceration_period,
+                most_serious_offense_ncic_code="0901",
+                most_serious_offense_statute="9999",
+                judicial_district_code="NW",
+            ),
+            IncarcerationStandardAdmissionEvent(
+                state_code=incarceration_period.state_code,
+                event_date=incarceration_period.admission_date,
+                facility=incarceration_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                admission_reason_raw_text="INCARCERATION_ADMISSION",
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            ),
+        ]
 
         self.assertCountEqual(expected_events, incarceration_events)
 
-    def testFindIncarcerationEvents_only_placeholder_ips_and_sps(self):
+    def testFindIncarcerationEvents_only_placeholder_ips_and_sps(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SP_ID,
             state_code="US_XX",
@@ -945,7 +935,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         self.assertCountEqual([], incarceration_events)
 
-    def testFindIncarcerationEvents_usNd_tempCustodyFollowedByRevocation(self):
+    def testFindIncarcerationEvents_usNd_tempCustodyFollowedByRevocation(self) -> None:
         """Tests that with state code US_ND, temporary custody periods are dropped
         before finding all incarceration events.
         """
@@ -1062,6 +1052,10 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             sentence_groups, violation_responses=[ssvr, duplicate_ssvr]
         )
 
+        assert revocation_period.release_date is not None
+        assert revocation_period.release_reason is not None
+        assert revocation_period.admission_date is not None
+        assert revocation_period.admission_reason is not None
         self.assertCountEqual(
             [
                 IncarcerationStayEvent(
@@ -1117,7 +1111,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
     def test_testFindIncarcerationEvents_usNd_NewAdmissionAfterProbationRevocation(
         self,
-    ):
+    ) -> None:
         """Tests that the find_incarceration_events when run for a US_ND
         incarceration period with a NEW_ADMISSION admission reason following a
         supervision period with a REVOCATION termination reason and a PROBATION
@@ -1203,6 +1197,9 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             sentence_groups, violation_responses=violation_responses
         )
 
+        assert incarceration_period.release_reason is not None
+        assert incarceration_period.release_date is not None
+        assert incarceration_period.admission_date is not None
         self.assertCountEqual(
             [
                 IncarcerationStayEvent(
@@ -1254,7 +1251,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
     def test_testFindIncarcerationEvents_usNd_NewAdmissionAfterProbationRevocationTempCustody(
         self,
-    ):
+    ) -> None:
         """Tests that the find_incarceration_events when run for a US_ND
         incarceration period with a NEW_ADMISSION admission reason following a
         TEMPORARY_CUSTODY incarceration period, which itself follows a supervision
@@ -1354,6 +1351,9 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             sentence_groups, violation_responses=violation_responses
         )
 
+        assert incarceration_period.release_date is not None
+        assert incarceration_period.release_reason is not None
+        assert incarceration_period.admission_date is not None
         self.assertCountEqual(
             [
                 IncarcerationStayEvent(
@@ -1403,7 +1403,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             incarceration_events,
         )
 
-    def testFindIncarcerationEvents_usMo_tempCustodyFollowedByRevocation(self):
+    def testFindIncarcerationEvents_usMo_tempCustodyFollowedByRevocation(self) -> None:
         """Tests that when a temporary custody period is followed by a revocation
         period.
         """
@@ -1447,6 +1447,9 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             supervision_level=StateSupervisionLevel.MEDIUM,
         )
 
+        assert revocation_period.admission_date is not None
+        assert supervision_period.start_date is not None
+        assert temp_custody_period.admission_date is not None
         incarceration_sentence = (
             FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
                 StateIncarcerationSentence.new_with_defaults(
@@ -1527,6 +1530,12 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         incarceration_events = self._run_find_incarceration_events(sentence_groups)
 
+        assert temp_custody_period.admission_reason is not None
+        assert temp_custody_period.release_date is not None
+        assert temp_custody_period.release_reason is not None
+        assert revocation_period.release_date is not None
+        assert revocation_period.admission_reason is not None
+        assert revocation_period.release_reason is not None
         self.assertCountEqual(
             [
                 IncarcerationStayEvent(
@@ -1602,7 +1611,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             incarceration_events,
         )
 
-    def testFindIncarcerationEvents_usMo_tempCustody(self):
+    def testFindIncarcerationEvents_usMo_tempCustody(self) -> None:
         """Tests that when there is only a temporary custody period."""
         self._stop_state_specific_delegate_patchers()
 
@@ -1622,6 +1631,10 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             release_reason=StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
         )
 
+        assert temp_custody_period.admission_date is not None
+        assert temp_custody_period.admission_reason is not None
+        assert temp_custody_period.release_date is not None
+        assert temp_custody_period.release_reason is not None
         incarceration_sentence = (
             FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
                 StateIncarcerationSentence.new_with_defaults(
@@ -1731,7 +1744,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             incarceration_events,
         )
 
-    def testFindIncarcerationEvents_usId_RevocationAdmission(self):
+    def testFindIncarcerationEvents_usId_RevocationAdmission(self) -> None:
         """Tests the find_incarceration_events function for state code US_ID."""
         self._stop_state_specific_delegate_patchers()
 
@@ -1785,6 +1798,9 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         incarceration_events = self._run_find_incarceration_events(sentence_groups)
 
+        assert revocation_period.admission_date is not None
+        assert revocation_period.release_date is not None
+        assert revocation_period.release_reason is not None
         self.assertCountEqual(
             [
                 IncarcerationStayEvent(
@@ -1833,7 +1849,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
     def testFindIncarcerationEvents_usId_FailedTreatmentStatusChange(
         self,
-    ):
+    ) -> None:
         """Tests that with state code US_ID, treatment in prison periods that are
         followed by a transfer to general result in an admission event for the
         general period with the admission_reason STATUS_CHANGE.
@@ -1888,65 +1904,64 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
         incarceration_events = self._run_find_incarceration_events(sentence_groups)
 
-        expected_events: List[IncarcerationEvent] = expected_incarceration_stay_events(
-            treatment_period
-        )
-        expected_events.extend(
-            expected_incarceration_stay_events(
+        assert treatment_period.admission_date is not None
+        assert treatment_period.release_date is not None
+        assert general_period.admission_date is not None
+        assert general_period.release_date is not None
+        assert general_period.release_reason is not None
+        expected_events = [
+            *expected_incarceration_stay_events(treatment_period),
+            *expected_incarceration_stay_events(
                 general_period,
                 original_admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-            )
-        )
-        expected_events.extend(
-            [
-                IncarcerationStandardAdmissionEvent(
-                    state_code=treatment_period.state_code,
-                    event_date=treatment_period.admission_date,
-                    facility=treatment_period.facility,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
-                ),
-                IncarcerationReleaseEvent(
-                    state_code=treatment_period.state_code,
-                    event_date=treatment_period.release_date,
-                    facility=treatment_period.facility,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
-                    release_reason_raw_text=treatment_period.release_reason_raw_text,
-                    admission_reason=treatment_period.admission_reason,
-                    total_days_incarcerated=(
-                        treatment_period.release_date - treatment_period.admission_date
-                    ).days,
-                    purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
-                ),
-                IncarcerationStandardAdmissionEvent(
-                    state_code=general_period.state_code,
-                    event_date=general_period.admission_date,
-                    facility=general_period.facility,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
-                    specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-                ),
-                IncarcerationReleaseEvent(
-                    state_code=general_period.state_code,
-                    event_date=general_period.release_date,
-                    facility=general_period.facility,
-                    county_of_residence=_COUNTY_OF_RESIDENCE,
-                    release_reason=general_period.release_reason,
-                    release_reason_raw_text=general_period.release_reason_raw_text,
-                    admission_reason=treatment_period.admission_reason,
-                    total_days_incarcerated=(
-                        general_period.release_date - general_period.admission_date
-                    ).days,
-                    purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-                ),
-            ]
-        )
+            ),
+            IncarcerationStandardAdmissionEvent(
+                state_code=treatment_period.state_code,
+                event_date=treatment_period.admission_date,
+                facility=treatment_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+            ),
+            IncarcerationReleaseEvent(
+                state_code=treatment_period.state_code,
+                event_date=treatment_period.release_date,
+                facility=treatment_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                release_reason=StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
+                release_reason_raw_text=treatment_period.release_reason_raw_text,
+                admission_reason=treatment_period.admission_reason,
+                total_days_incarcerated=(
+                    treatment_period.release_date - treatment_period.admission_date
+                ).days,
+                purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+            ),
+            IncarcerationStandardAdmissionEvent(
+                state_code=general_period.state_code,
+                event_date=general_period.admission_date,
+                facility=general_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            ),
+            IncarcerationReleaseEvent(
+                state_code=general_period.state_code,
+                event_date=general_period.release_date,
+                facility=general_period.facility,
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                release_reason=general_period.release_reason,
+                release_reason_raw_text=general_period.release_reason_raw_text,
+                admission_reason=treatment_period.admission_reason,
+                total_days_incarcerated=(
+                    general_period.release_date - general_period.admission_date
+                ).days,
+                purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            ),
+        ]
 
         self.assertCountEqual(expected_events, incarceration_events)
 
-    def testFindIncarcerationEvents_usPA_SanctionAdmission(self):
+    def testFindIncarcerationEvents_usPA_SanctionAdmission(self) -> None:
         """Tests the find_incarceration_events function for periods in US_PA, where
         there is a sanction admission for shock incarceration."""
         self._stop_state_specific_delegate_patchers()
@@ -2065,6 +2080,8 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             original_admission_reason=StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
         )
 
+        assert parole_board_hold.admission_date is not None
+        assert shock_incarceration_period.admission_date is not None
         expected_admission_events = [
             IncarcerationStandardAdmissionEvent(
                 state_code=state_code,
@@ -2097,6 +2114,9 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             ),
         ]
 
+        assert parole_board_hold.release_date is not None
+        assert shock_incarceration_period.release_date is not None
+        assert shock_incarceration_period.release_reason is not None
         expected_release_events = [
             IncarcerationReleaseEvent(
                 state_code=state_code,
@@ -2128,12 +2148,12 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         ]
 
         self.assertCountEqual(
-            (
-                expected_board_hold_stay_events
-                + expected_shock_stay_events
-                + expected_admission_events
-                + expected_release_events
-            ),
+            [
+                *expected_board_hold_stay_events,
+                *expected_shock_stay_events,
+                *expected_admission_events,
+                *expected_release_events,
+            ],
             incarceration_events,
         )
 
@@ -2151,7 +2171,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
         incarceration_period_judicial_district_association: Optional[
             Dict[int, Dict[str, Any]]
         ] = None,
-    ):
+    ) -> List[IncarcerationStayEvent]:
         """Runs `find_incarceration_stays` without providing sentence information.
         Sentence information is only used in `US_MO` to inform information about
         supervision types prior to admission. All tests using this method should not
@@ -2179,7 +2199,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             county_of_residence,
         )
 
-    def test_find_incarceration_stays_type_us_mo(self):
+    def test_find_incarceration_stays_type_us_mo(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2229,6 +2249,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
         )
         supervision_sentence.sentence_group = sentence_group
 
+        assert incarceration_period.incarceration_period_id is not None
         incarceration_period_judicial_district_association = {
             incarceration_period.incarceration_period_id: {
                 "incarceration_period_id": incarceration_period.incarceration_period_id,
@@ -2256,7 +2277,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
 
         self.assertEqual(updated_expected_events, incarceration_events)
 
-    def test_find_incarceration_stays(self):
+    def test_find_incarceration_stays(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2276,7 +2297,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             incarceration_periods=[incarceration_period],
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
-        incarceration_period.supervision_sentences = [incarceration_sentence]
+        incarceration_period.incarceration_sentences = [incarceration_sentence]
 
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code="US_XX",
@@ -2297,7 +2318,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
         self.assertEqual(expected_incarceration_events, incarceration_events)
 
     @freeze_time("2019-11-01")
-    def test_find_incarceration_stays_no_release(self):
+    def test_find_incarceration_stays_no_release(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2315,7 +2336,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             incarceration_periods=[incarceration_period],
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
-        incarceration_period.supervision_sentences = [incarceration_sentence]
+        incarceration_period.incarceration_sentences = [incarceration_sentence]
 
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code="US_XX",
@@ -2335,7 +2356,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
 
         self.assertEqual(expected_incarceration_events, incarceration_events)
 
-    def test_find_incarceration_stays_no_admission_or_release(self):
+    def test_find_incarceration_stays_no_admission_or_release(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2350,7 +2371,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
                 incarceration_period, _COUNTY_OF_RESIDENCE
             )
 
-    def test_find_incarceration_stays_no_release_reason(self):
+    def test_find_incarceration_stays_no_release_reason(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2370,7 +2391,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             incarceration_periods=[incarceration_period],
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
-        incarceration_period.supervision_sentences = [incarceration_sentence]
+        incarceration_period.incarceration_sentences = [incarceration_sentence]
 
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code="US_XX",
@@ -2390,7 +2411,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
 
         self.assertEqual(expected_incarceration_events, incarceration_events)
 
-    def test_find_incarceration_stays_admitted_end_of_month(self):
+    def test_find_incarceration_stays_admitted_end_of_month(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2410,7 +2431,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             incarceration_periods=[incarceration_period],
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
-        incarceration_period.supervision_sentences = [incarceration_sentence]
+        incarceration_period.incarceration_sentences = [incarceration_sentence]
 
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code="US_XX",
@@ -2431,7 +2452,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
         self.assertEqual(expected_incarceration_events, incarceration_events)
 
     @freeze_time("2019-12-02")
-    def test_find_incarceration_stays_still_in_custody(self):
+    def test_find_incarceration_stays_still_in_custody(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2448,7 +2469,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             incarceration_periods=[incarceration_period],
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
-        incarceration_period.supervision_sentences = [incarceration_sentence]
+        incarceration_period.incarceration_sentences = [incarceration_sentence]
 
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code="US_XX",
@@ -2468,7 +2489,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
 
         self.assertEqual(expected_incarceration_events, incarceration_events)
 
-    def test_find_incarceration_stays_released_end_of_month(self):
+    def test_find_incarceration_stays_released_end_of_month(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2487,7 +2508,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             incarceration_periods=[incarceration_period],
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
-        incarceration_period.supervision_sentences = [incarceration_sentence]
+        incarceration_period.incarceration_sentences = [incarceration_sentence]
 
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code="US_XX",
@@ -2508,7 +2529,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
 
         self.assertEqual(expected_incarceration_events, incarceration_events)
 
-    def test_find_incarceration_stays_transfers_end_of_month(self):
+    def test_find_incarceration_stays_transfers_end_of_month(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2539,8 +2560,8 @@ class TestFindIncarcerationStays(unittest.TestCase):
             incarceration_periods=[incarceration_period, incarceration_period_2],
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
-        incarceration_period.supervision_sentences = [incarceration_sentence]
-        incarceration_period_2.supervision_sentences = [incarceration_sentence]
+        incarceration_period.incarceration_sentences = [incarceration_sentence]
+        incarceration_period_2.incarceration_sentences = [incarceration_sentence]
 
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code="US_XX",
@@ -2574,7 +2595,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
 
         self.assertEqual(expected_incarceration_events, incarceration_events_period_2)
 
-    def test_find_incarceration_stays_released_first_of_month(self):
+    def test_find_incarceration_stays_released_first_of_month(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2593,7 +2614,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             incarceration_periods=[incarceration_period],
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
-        incarceration_period.supervision_sentences = [incarceration_sentence]
+        incarceration_period.incarceration_sentences = [incarceration_sentence]
 
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code="US_XX",
@@ -2613,7 +2634,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
 
         self.assertEqual(expected_incarceration_events, incarceration_events)
 
-    def test_find_incarceration_stays_only_one_day(self):
+    def test_find_incarceration_stays_only_one_day(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2633,7 +2654,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
             incarceration_periods=[incarceration_period],
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
-        incarceration_period.supervision_sentences = [incarceration_sentence]
+        incarceration_period.incarceration_sentences = [incarceration_sentence]
 
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code="US_XX",
@@ -2657,7 +2678,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
 
         self.assertEqual(expected_incarceration_events, incarceration_events)
 
-    def test_find_incarceration_stays_county_jail(self):
+    def test_find_incarceration_stays_county_jail(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
@@ -2697,7 +2718,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
 
         self.assertEqual(expected_incarceration_events, incarceration_events)
 
-    def test_find_incarceration_stays_original_admission_reason(self):
+    def test_find_incarceration_stays_original_admission_reason(self) -> None:
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2743,6 +2764,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
         )
         incarceration_sentence.sentence_group = sentence_group
 
+        assert incarceration_period_1.incarceration_period_id is not None
         incarceration_period_judicial_district_association = {
             incarceration_period_1.incarceration_period_id: {
                 "incarceration_period_id": incarceration_period_1.incarceration_period_id,
@@ -2776,7 +2798,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
 
         self.assertEqual(expected_incarceration_events, incarceration_events)
 
-    def test_find_incarceration_stays_two_official_admission_reasons(self):
+    def test_find_incarceration_stays_two_official_admission_reasons(self) -> None:
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2822,6 +2844,7 @@ class TestFindIncarcerationStays(unittest.TestCase):
         )
         incarceration_sentence.sentence_group = sentence_group
 
+        assert incarceration_period_1.incarceration_period_id is not None
         incarceration_period_judicial_district_association = {
             incarceration_period_1.incarceration_period_id: {
                 "incarceration_period_id": incarceration_period_1.incarceration_period_id,
@@ -2834,7 +2857,9 @@ class TestFindIncarcerationStays(unittest.TestCase):
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
             incarceration_periods=incarceration_periods,
             ip_id_to_pfi_subtype={
-                ip.incarceration_period_id: None for ip in incarceration_periods
+                ip.incarceration_period_id: None
+                for ip in incarceration_periods
+                if ip.incarceration_period_id is not None
             },
         )
 
@@ -2891,7 +2916,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         assessments: Optional[List[StateAssessment]] = None,
         violation_responses: Optional[List[StateSupervisionViolationResponse]] = None,
         county_of_residence: Optional[str] = _COUNTY_OF_RESIDENCE,
-    ):
+    ) -> Optional[IncarcerationAdmissionEvent]:
         """Runs `admission_event_for_period` without providing sentence information.
         Sentence information is only used in `US_MO` to inform information about
         supervision types prior to admission. All tests using this method should not
@@ -2932,7 +2957,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             county_of_residence=county_of_residence,
         )
 
-    def test_admission_event_for_period_us_mo(self):
+    def test_admission_event_for_period_us_mo(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -2976,6 +3001,8 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             supervision_sentences=[supervision_sentence],
         )
 
+        assert incarceration_period.admission_date is not None
+        assert incarceration_period.admission_reason is not None
         self.assertEqual(
             IncarcerationStandardAdmissionEvent(
                 state_code=incarceration_period.state_code,
@@ -2988,7 +3015,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             admission_event,
         )
 
-    def test_admission_event_for_period(self):
+    def test_admission_event_for_period(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -3006,6 +3033,8 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             incarceration_period=incarceration_period,
         )
 
+        assert incarceration_period.admission_date is not None
+        assert incarceration_period.admission_reason is not None
         self.assertEqual(
             IncarcerationCommitmentFromSupervisionAdmissionEvent(
                 state_code=incarceration_period.state_code,
@@ -3020,7 +3049,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             admission_event,
         )
 
-    def test_admission_event_for_period_all_admission_reasons(self):
+    def test_admission_event_for_period_all_admission_reasons(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -3047,7 +3076,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
 
                 self.assertIsNotNone(admission_event)
 
-    def test_admission_event_for_period_specialized_pfi(self):
+    def test_admission_event_for_period_specialized_pfi(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -3065,6 +3094,8 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             incarceration_period=incarceration_period,
         )
 
+        assert incarceration_period.admission_date is not None
+        assert incarceration_period.admission_reason is not None
         self.assertEqual(
             IncarcerationStandardAdmissionEvent(
                 state_code=incarceration_period.state_code,
@@ -3077,7 +3108,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             admission_event,
         )
 
-    def test_admission_event_for_period_county_jail(self):
+    def test_admission_event_for_period_county_jail(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
@@ -3095,6 +3126,8 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             incarceration_period=incarceration_period,
         )
 
+        assert incarceration_period.admission_date is not None
+        assert incarceration_period.admission_reason is not None
         self.assertEqual(
             IncarcerationStandardAdmissionEvent(
                 state_code=incarceration_period.state_code,
@@ -3107,7 +3140,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             admission_event,
         )
 
-    def test_cannot_instantiate_IncarcerationAdmissionEvent(self):
+    def test_cannot_instantiate_IncarcerationAdmissionEvent(self) -> None:
         """Test to confirm that an exception will be raised if an
         IncarcerationAdmissionEvent is instantiated directly."""
         with self.assertRaises(Exception):
@@ -3199,7 +3232,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             violation_delegate=violation_delegate,
         )
 
-    def test_commitment_from_supervision_event_violation_history_cutoff(self):
+    def test_commitment_from_supervision_event_violation_history_cutoff(self) -> None:
         """Tests the _commitment_from_supervision_event_for_period function,
         specifically the logic that includes the violation reports within the violation
         window. The `old` response and violation fall within a year of the last
@@ -3326,6 +3359,8 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
+        assert incarceration_period.admission_date is not None
+        assert incarceration_period.admission_reason is not None
         expected_commitment_from_supervision_event = IncarcerationCommitmentFromSupervisionAdmissionEvent(
             state_code=supervision_period.state_code,
             event_date=incarceration_period.admission_date,
@@ -3351,7 +3386,9 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             commitment_from_supervision_event,
         )
 
-    def test_commitment_from_supervision_event_before_violation_history_cutoff(self):
+    def test_commitment_from_supervision_event_before_violation_history_cutoff(
+        self,
+    ) -> None:
         """Tests the _commitment_from_supervision_event_for_period function, specifically the logic that includes the violation
         reports within the violation window. The `old` response and violation falls before the violation history
         window. Test that the `old` response is not included in the response history."""
@@ -3455,6 +3492,8 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
+        assert incarceration_period.admission_date is not None
+        assert incarceration_period.admission_reason is not None
         expected_commitment_from_supervision_event = IncarcerationCommitmentFromSupervisionAdmissionEvent(
             state_code=supervision_period.state_code,
             event_date=incarceration_period.admission_date,
@@ -3482,7 +3521,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
 
     def test_commitment_from_supervision_event_us_mo_ignore_supplemental_for_lookback_date(
         self,
-    ):
+    ) -> None:
         """Tests the _commitment_from_supervision_event_for_period function, specifically the logic that includes the violation
         reports within the violation window. The most recent response prior to the revocation is a supplemental report,
         which should not be included when determining the date of the most recent response for the violation history
@@ -3570,6 +3609,8 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
         )
 
+        assert supervision_period.start_date is not None
+        assert supervision_period.termination_date is not None
         supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
             StateSupervisionSentence.new_with_defaults(
                 state_code="US_MO",
@@ -3595,6 +3636,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             ],
         )
 
+        assert incarceration_period.admission_date is not None
         incarceration_sentence = (
             FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
                 StateIncarcerationSentence.new_with_defaults(
@@ -3635,6 +3677,8 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             StateSupervisionPeriodSupervisionType.PROBATION
         )
 
+        assert incarceration_period.admission_date is not None
+        assert incarceration_period.admission_reason is not None
         expected_commitment_from_supervision_event = IncarcerationCommitmentFromSupervisionAdmissionEvent(
             state_code=supervision_period.state_code,
             event_date=incarceration_period.admission_date,
@@ -3660,7 +3704,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             commitment_from_supervision_event,
         )
 
-    def test_commitment_from_supervision_event_us_nd(self):
+    def test_commitment_from_supervision_event_us_nd(self) -> None:
         self._stop_state_specific_delegate_patchers()
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SP_ID,
@@ -3724,6 +3768,8 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             violation_delegate=UsNdViolationDelegate(),
         )
 
+        assert incarceration_period.admission_date is not None
+        assert incarceration_period.admission_reason is not None
         expected_commitment_from_supervision_event = IncarcerationCommitmentFromSupervisionAdmissionEvent(
             state_code=supervision_period.state_code,
             event_date=incarceration_period.admission_date,
@@ -3755,14 +3801,16 @@ class TestReleaseEventForPeriod(unittest.TestCase):
         self.identifier = identifier.IncarcerationIdentifier()
 
     def _run_release_for_period_with_no_sentences(
-        self, incarceration_period, county_of_residence
-    ):
+        self,
+        incarceration_period: StateIncarcerationPeriod,
+        county_of_residence: Optional[str],
+    ) -> Optional[IncarcerationReleaseEvent]:
         """Runs `release_event_for_period` without providing sentence information. Sentence information
         is only used to inform supervision_type_at_release for US_MO and US_ID. All tests using this method should
         not require that state specific logic.
         """
-        incarceration_sentences = []
-        supervision_sentences = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
+        supervision_sentences: List[StateSupervisionSentence] = []
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
             incarceration_periods=[incarceration_period],
@@ -3781,7 +3829,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             county_of_residence,
         )
 
-    def test_release_event_for_period(self):
+    def test_release_event_for_period(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -3800,6 +3848,9 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             incarceration_period, _COUNTY_OF_RESIDENCE
         )
 
+        assert incarceration_period.release_reason is not None
+        assert incarceration_period.release_date is not None
+        assert incarceration_period.admission_date is not None
         self.assertEqual(
             IncarcerationReleaseEvent(
                 state_code=incarceration_period.state_code,
@@ -3818,7 +3869,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             release_event,
         )
 
-    def test_release_event_for_period_all_release_reasons(self):
+    def test_release_event_for_period_all_release_reasons(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -3840,7 +3891,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
 
             self.assertIsNotNone(release_event)
 
-    def test_release_event_for_period_county_jail(self):
+    def test_release_event_for_period_county_jail(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.COUNTY_JAIL,
@@ -3858,6 +3909,9 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             incarceration_period, _COUNTY_OF_RESIDENCE
         )
 
+        assert incarceration_period.release_reason is not None
+        assert incarceration_period.release_date is not None
+        assert incarceration_period.admission_date is not None
         self.assertEqual(
             IncarcerationReleaseEvent(
                 state_code=incarceration_period.state_code,
@@ -3875,7 +3929,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             release_event,
         )
 
-    def test_release_event_for_period_us_id(self):
+    def test_release_event_for_period_us_id(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -3906,7 +3960,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             )
         ]
 
-        incarceration_sentences = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
             incarceration_periods=[incarceration_period],
@@ -3925,6 +3979,9 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
+        assert incarceration_period.release_reason is not None
+        assert incarceration_period.release_date is not None
+        assert incarceration_period.admission_date is not None
         self.assertEqual(
             IncarcerationReleaseEvent(
                 state_code=incarceration_period.state_code,
@@ -3944,7 +4001,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             release_event,
         )
 
-    def test_release_event_for_period_us_mo(self):
+    def test_release_event_for_period_us_mo(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -3980,7 +4037,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                 )
             ],
         )
-        incarceration_sentences = []
+        incarceration_sentences: List[StateIncarcerationSentence] = []
 
         incarceration_period_index = PreProcessedIncarcerationPeriodIndex(
             incarceration_periods=[incarceration_period],
@@ -3999,6 +4056,9 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
+        assert incarceration_period.release_date is not None
+        assert incarceration_period.release_reason is not None
+        assert incarceration_period.admission_date is not None
         self.assertEqual(
             IncarcerationReleaseEvent(
                 state_code=incarceration_period.state_code,
@@ -4018,18 +4078,22 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             release_event,
         )
 
-    def test_release_event_for_period_us_nd(self):
+    def test_release_event_for_period_us_nd(self) -> None:
+        admission_date = date(2008, 11, 20)
+        release_date = date(2010, 12, 4)
+        admission_reason = StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
+        release_reason = StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             state_code="US_ND",
             facility="PRISON3",
-            admission_date=date(2008, 11, 20),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            admission_date=admission_date,
+            admission_reason=admission_reason,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
-            release_date=date(2010, 12, 4),
-            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            release_date=release_date,
+            release_reason=release_reason,
             release_reason_raw_text="RPAR",
         )
 
@@ -4040,18 +4104,15 @@ class TestReleaseEventForPeriod(unittest.TestCase):
         self.assertEqual(
             IncarcerationReleaseEvent(
                 state_code=incarceration_period.state_code,
-                event_date=incarceration_period.release_date,
+                event_date=release_date,
                 facility="PRISON3",
                 county_of_residence=_COUNTY_OF_RESIDENCE,
-                release_reason=incarceration_period.release_reason,
+                release_reason=release_reason,
                 release_reason_raw_text=incarceration_period.release_reason_raw_text,
                 purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration,
                 supervision_type_at_release=StateSupervisionPeriodSupervisionType.PAROLE,
-                admission_reason=incarceration_period.admission_reason,
-                total_days_incarcerated=(
-                    incarceration_period.release_date
-                    - incarceration_period.admission_date
-                ).days,
+                admission_reason=admission_reason,
+                total_days_incarcerated=(release_date - admission_date).days,
             ),
             release_event,
         )
@@ -4063,7 +4124,7 @@ class TestGetUniquePeriodsFromSentenceGroupAndAddBackedges(unittest.TestCase):
     def setUp(self) -> None:
         self.identifier = identifier.IncarcerationIdentifier()
 
-    def test_get_unique_periods_from_sentence_groups_and_add_backedges(self):
+    def test_get_unique_periods_from_sentence_groups_and_add_backedges(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1112,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -4165,7 +4226,9 @@ class TestGetUniquePeriodsFromSentenceGroupAndAddBackedges(unittest.TestCase):
         self.assertEqual(expected_incarceration_periods, incarceration_periods)
         self.assertEqual(expected_supervision_periods, supervision_periods)
 
-    def test_get_unique_periods_from_sentence_groups_and_add_backedges_no_periods(self):
+    def test_get_unique_periods_from_sentence_groups_and_add_backedges_no_periods(
+        self,
+    ) -> None:
         sentence_groups = [
             StateSentenceGroup.new_with_defaults(
                 state_code="US_XX",
@@ -4184,15 +4247,15 @@ class TestGetUniquePeriodsFromSentenceGroupAndAddBackedges(unittest.TestCase):
             sentence_groups
         )
 
-        expected_incarceration_periods = []
-        expected_supervision_periods = []
+        expected_incarceration_periods: List[StateIncarcerationPeriod] = []
+        expected_supervision_periods: List[StateSupervisionPeriod] = []
 
         self.assertEqual(expected_incarceration_periods, incarceration_periods)
         self.assertEqual(expected_supervision_periods, supervision_periods)
 
     def test_get_unique_periods_from_sentence_groups_and_add_backedges_no_sentence_groups(
         self,
-    ):
+    ) -> None:
         (
             incarceration_periods,
             supervision_periods,
@@ -4200,8 +4263,8 @@ class TestGetUniquePeriodsFromSentenceGroupAndAddBackedges(unittest.TestCase):
             []
         )
 
-        expected_incarceration_periods = []
-        expected_supervision_periods = []
+        expected_incarceration_periods: List[StateIncarcerationPeriod] = []
+        expected_supervision_periods: List[StateSupervisionPeriod] = []
 
         self.assertEqual(expected_incarceration_periods, incarceration_periods)
         self.assertEqual(expected_supervision_periods, supervision_periods)
@@ -4213,7 +4276,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
     def setUp(self) -> None:
         self.identifier = identifier.IncarcerationIdentifier()
 
-    def test_find_most_serious_prior_charge_in_sentence_group(self):
+    def test_find_most_serious_prior_charge_in_sentence_group(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -4262,18 +4325,18 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
             incarceration_sentences=[incarceration_sentence],
         )
 
-        incarceration_period.incarceration_sentences = [incarceration_sentence]
-        incarceration_sentence.sentence_group = sentence_group
-
-        most_serious_statute = (
+        most_serious_charge = (
             self.identifier._find_most_serious_prior_charge_in_sentence_group(
-                incarceration_period, date(2008, 12, 31)
-            ).statute
+                sentence_group, date(2008, 12, 31)
+            )
         )
 
-        self.assertEqual(most_serious_statute, "8888")
+        assert most_serious_charge is not None
+        self.assertEqual(most_serious_charge.statute, "8888")
 
-    def test_find_most_serious_prior_charge_in_sentence_group_multiple_sentences(self):
+    def test_find_most_serious_prior_charge_in_sentence_group_multiple_sentences(
+        self,
+    ) -> None:
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -4367,21 +4430,18 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
             ],
         )
 
-        incarceration_period_1.incarceration_sentences = [incarceration_sentence_1]
-        incarceration_sentence_1.sentence_group = sentence_group
-
-        incarceration_period_2.incarceration_sentences = [incarceration_sentence_2]
-        incarceration_sentence_2.sentence_group = sentence_group
-
-        most_serious_statute = (
+        most_serious_charge = (
             self.identifier._find_most_serious_prior_charge_in_sentence_group(
-                incarceration_period_1, date(2008, 12, 31)
-            ).statute
+                sentence_group, date(2008, 12, 31)
+            )
         )
 
-        self.assertEqual(most_serious_statute, "3606")
+        assert most_serious_charge is not None
+        self.assertEqual(most_serious_charge.statute, "3606")
 
-    def test_find_most_serious_prior_charge_in_sentence_group_offense_after_date(self):
+    def test_find_most_serious_prior_charge_in_sentence_group_offense_after_date(
+        self,
+    ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -4442,21 +4502,18 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
             ],
         )
 
-        incarceration_period.incarceration_sentences = (
-            sentence_group.incarceration_sentences
-        )
-        incarceration_sentence_1.sentence_group = sentence_group
-        incarceration_sentence_2.sentence_group = sentence_group
-
-        most_serious_statute = (
+        most_serious_charge = (
             self.identifier._find_most_serious_prior_charge_in_sentence_group(
-                incarceration_period, date(2008, 12, 31)
-            ).statute
+                sentence_group, date(2008, 12, 31)
+            )
         )
 
-        self.assertEqual(most_serious_statute, "1111")
+        assert most_serious_charge is not None
+        self.assertEqual(most_serious_charge.statute, "1111")
 
-    def test_find_most_serious_prior_charge_in_sentence_group_charges_no_ncic(self):
+    def test_find_most_serious_prior_charge_in_sentence_group_charges_no_ncic(
+        self,
+    ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -4501,20 +4558,17 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
             incarceration_sentences=[incarceration_sentence],
         )
 
-        incarceration_period.incarceration_sentences = (
-            sentence_group.incarceration_sentences
-        )
-        incarceration_sentence.sentence_group = sentence_group
-
         most_serious_charge = (
             self.identifier._find_most_serious_prior_charge_in_sentence_group(
-                incarceration_period, date(2008, 12, 31)
+                sentence_group, date(2008, 12, 31)
             )
         )
 
         self.assertIsNone(most_serious_charge)
 
-    def test_find_most_serious_prior_charge_in_sentence_group_includes_chars(self):
+    def test_find_most_serious_prior_charge_in_sentence_group_includes_chars(
+        self,
+    ) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -4563,20 +4617,16 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
             incarceration_sentences=[incarceration_sentence],
         )
 
-        incarceration_period.incarceration_sentences = (
-            sentence_group.incarceration_sentences
-        )
-        incarceration_sentence.sentence_group = sentence_group
-
-        most_serious_statute = (
+        most_serious_charge = (
             self.identifier._find_most_serious_prior_charge_in_sentence_group(
-                incarceration_period, date(2008, 12, 31)
-            ).statute
+                sentence_group, date(2008, 12, 31)
+            )
         )
 
-        self.assertEqual(most_serious_statute, "9999")
+        assert most_serious_charge is not None
+        self.assertEqual(most_serious_charge.statute, "9999")
 
-    def test_find_most_serious_prior_offense_statute_no_offense_dates(self):
+    def test_find_most_serious_prior_offense_statute_no_offense_dates(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
@@ -4625,17 +4675,18 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         incarceration_period.incarceration_sentences = [incarceration_sentence]
         incarceration_sentence.sentence_group = sentence_group
 
-        most_serious_statute = (
+        most_serious_charge = (
             self.identifier._find_most_serious_prior_charge_in_sentence_group(
-                incarceration_period, date(2008, 12, 31)
-            ).statute
+                sentence_group, date(2008, 12, 31)
+            )
         )
 
-        self.assertEqual(most_serious_statute, "8888")
+        assert most_serious_charge is not None
+        self.assertEqual(most_serious_charge.statute, "8888")
 
     def test_find_most_serious_prior_offense_statute_offense_but_not_sentence_dates_before_cutoff(
         self,
-    ):
+    ) -> None:
         """We only look at the sentence date to determine the cutoff for most serious offense calculations."""
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -4690,15 +4741,15 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
 
         most_serious_charge = (
             self.identifier._find_most_serious_prior_charge_in_sentence_group(
-                incarceration_period, date(2008, 12, 31)
+                sentence_group, date(2008, 12, 31)
             )
         )
 
-        self.assertEqual(most_serious_charge, None)
+        self.assertIsNone(most_serious_charge)
 
     def test_find_most_serious_prior_offense_statute_sentence_but_not_offense_dates_before_cutoff(
         self,
-    ):
+    ) -> None:
         """We only look at the sentence date to determine the cutoff for most serious offense calculations."""
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -4751,13 +4802,14 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         incarceration_period.incarceration_sentences = [incarceration_sentence]
         incarceration_sentence.sentence_group = sentence_group
 
-        most_serious_statute = (
+        most_serious_charge = (
             self.identifier._find_most_serious_prior_charge_in_sentence_group(
-                incarceration_period, date(2008, 12, 31)
-            ).statute
+                sentence_group, date(2008, 12, 31)
+            )
         )
 
-        self.assertEqual(most_serious_statute, "8888")
+        assert most_serious_charge is not None
+        self.assertEqual(most_serious_charge.statute, "8888")
 
 
 def expected_incarceration_stay_events(
