@@ -19,7 +19,7 @@
 import unittest
 from collections import defaultdict
 from datetime import date
-from typing import Dict, List, Type
+from typing import Dict, List, Sequence, Type
 
 import mock
 from freezegun import freeze_time
@@ -83,7 +83,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         self.metric_producer = metric_producer.IncarcerationMetricProducer()
         self.pipeline_config = pipeline.IncarcerationPipeline().pipeline_config
 
-    def test_produce_incarceration_metrics(self):
+    def test_produce_incarceration_metrics(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -130,7 +130,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         for metric in metrics:
             assert metric.year == 2000
 
-    def test_produce_incarceration_metrics_all_types(self):
+    def test_produce_incarceration_metrics_all_types(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -203,7 +203,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_produce_incarceration_metrics_two_admissions_same_month(self):
+    def test_produce_incarceration_metrics_two_admissions_same_month(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -253,7 +253,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_produce_incarceration_metrics_commitment_from_supervision(self):
+    def test_produce_incarceration_metrics_commitment_from_supervision(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -310,7 +310,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_produce_incarceration_metrics_two_releases_same_month(self):
+    def test_produce_incarceration_metrics_two_releases_same_month(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -359,7 +359,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         self.assertEqual(expected_count, len(metrics))
 
     @freeze_time("2020-01-01")
-    def test_produce_incarceration_metrics_two_stays_same_month(self):
+    def test_produce_incarceration_metrics_two_stays_same_month(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -417,7 +417,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_produce_incarceration_metrics_two_stays_same_month_facility(self):
+    def test_produce_incarceration_metrics_two_stays_same_month_facility(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -473,7 +473,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_produce_incarceration_metrics_multiple_stays(self):
+    def test_produce_incarceration_metrics_multiple_stays(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -530,7 +530,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_produce_incarceration_metrics_multiple_stays_one_month(self):
+    def test_produce_incarceration_metrics_multiple_stays_one_month(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -587,7 +587,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
-    def test_produce_incarceration_metrics_multiple_overlapping_stays(self):
+    def test_produce_incarceration_metrics_multiple_overlapping_stays(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_ND",
             person_id=12345,
@@ -645,7 +645,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         self.assertEqual(expected_count, len(metrics))
 
     @freeze_time("2000-03-30")
-    def test_produce_incarceration_metrics_calculation_month_count(self):
+    def test_produce_incarceration_metrics_calculation_month_count(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -691,7 +691,9 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             assert metric.year == 2000
 
     @freeze_time("2000-03-30")
-    def test_produce_incarceration_metrics_calculation_month_count_exclude(self):
+    def test_produce_incarceration_metrics_calculation_month_count_exclude(
+        self,
+    ) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -732,7 +734,9 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         self.assertEqual(0, len(metrics))
 
     @freeze_time("2000-03-30")
-    def test_produce_incarceration_metrics_calculation_month_count_include_one(self):
+    def test_produce_incarceration_metrics_calculation_month_count_include_one(
+        self,
+    ) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -790,7 +794,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
     @freeze_time("2010-12-31")
     def test_produce_incarceration_metrics_calculation_month_count_include_monthly(
         self,
-    ):
+    ) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -835,7 +839,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         for metric in metrics:
             assert metric.year == 2007
 
-    def test_produce_incarceration_metrics_includes_statute_output(self):
+    def test_produce_incarceration_metrics_includes_statute_output(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -933,7 +937,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             },
         },
     )
-    def test_produce_incarceration_metrics_secondary_person_external_id(self):
+    def test_produce_incarceration_metrics_secondary_person_external_id(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -991,7 +995,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
                 self.assertEqual("SID9889", metric.secondary_person_external_id)
 
     def expected_metrics_count(
-        self, incarceration_events: List[IncarcerationEvent]
+        self, incarceration_events: Sequence[IncarcerationEvent]
     ) -> int:
         """Calculates the expected number of characteristic combinations given the
         incarceration events."""

@@ -17,7 +17,7 @@
 """Tests for incarceration/pipeline.py"""
 import unittest
 from datetime import date
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, List, Optional, Set
 from unittest import mock
 
 import apache_beam as beam
@@ -173,7 +173,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
         self.violation_pre_processing_delegate_patcher.stop()
 
     @staticmethod
-    def _default_data_dict():
+    def _default_data_dict() -> Dict[str, List]:
         return {
             schema.StatePerson.__tablename__: [],
             schema.StatePersonRace.__tablename__: [],
@@ -210,7 +210,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
     def build_incarceration_pipeline_data_dict(
         self, fake_person_id: int, state_code: str = "US_XX"
-    ):
+    ) -> Dict[str, List]:
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
             state_code=state_code,
@@ -486,7 +486,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
         return data_dict
 
     @freeze_time("2015-01-31")
-    def testIncarcerationPipeline(self):
+    def testIncarcerationPipeline(self) -> None:
         fake_person_id = 12345
         data_dict = self.build_incarceration_pipeline_data_dict(
             fake_person_id=fake_person_id
@@ -501,7 +501,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
         )
 
     @freeze_time("2015-01-31")
-    def testIncarcerationPipelineFilterMetrics(self):
+    def testIncarcerationPipelineFilterMetrics(self) -> None:
         fake_person_id = 12345
         data_dict = self.build_incarceration_pipeline_data_dict(
             fake_person_id=fake_person_id
@@ -519,7 +519,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
             metric_types_filter=metric_types_filter,
         )
 
-    def testIncarcerationPipelineUsMo(self):
+    def testIncarcerationPipelineUsMo(self) -> None:
         fake_person_id = 12345
         data_dict = self.build_incarceration_pipeline_data_dict(
             fake_person_id=fake_person_id, state_code="US_MO"
@@ -533,7 +533,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
             expected_metric_types=ALL_METRIC_TYPES_SET,
         )
 
-    def testIncarcerationPipelineWithFilterSet(self):
+    def testIncarcerationPipelineWithFilterSet(self) -> None:
         fake_person_id = 12345
         data_dict = self.build_incarceration_pipeline_data_dict(
             fake_person_id=fake_person_id
@@ -585,7 +585,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
     def build_incarceration_pipeline_data_dict_no_incarceration(
         self, fake_person_id: int
-    ):
+    ) -> Dict[str, List]:
         """Builds a data_dict for a run of the pipeline where the person has no incarceration."""
         fake_person_1 = schema.StatePerson(
             state_code="US_XX",
@@ -720,7 +720,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
         return data_dict
 
-    def testIncarcerationPipelineNoIncarceration(self):
+    def testIncarcerationPipelineNoIncarceration(self) -> None:
         """Tests the incarceration pipeline when a person does not have any
         incarceration periods."""
         fake_person_id = 12345
@@ -788,8 +788,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         ip_to_judicial_district_kv: List[Dict[Any, Any]] = None,
         supervision_period_to_agent_associations_as_kv: List[Dict[Any, Any]] = None,
         person_id_to_county_kv: List[Dict[Any, Any]] = None,
-    ):
-
+    ) -> Dict[str, List]:
         return {
             "person": [person],
             "assessments": assessments or [],
@@ -802,7 +801,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             "persons_to_recent_county_of_residence": person_id_to_county_kv or [],
         }
 
-    def testClassifyIncarcerationEvents(self):
+    def testClassifyIncarcerationEvents(self) -> None:
         """Tests the ClassifyIncarcerationEvents DoFn."""
         fake_person_id = 12345
         state_code = "US_XX"
@@ -890,6 +889,10 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             "supervision_period_id": supervision_period.supervision_period_id,
         }
 
+        assert incarceration_period.admission_date is not None
+        assert incarceration_period.admission_reason is not None
+        assert incarceration_period.release_date is not None
+        assert incarceration_period.release_reason is not None
         incarceration_events = [
             IncarcerationStayEvent(
                 admission_reason=incarceration_period.admission_reason,
@@ -960,7 +963,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testClassifyIncarcerationEvents_NoSentenceGroups(self):
+    def testClassifyIncarcerationEvents_NoSentenceGroups(self) -> None:
         """Tests the ClassifyIncarcerationEvents DoFn when the person has no sentence groups."""
         fake_person = StatePerson.new_with_defaults(
             state_code="US_XX",
@@ -987,7 +990,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testClassifyIncarcerationEventsWithPeriodsAfterDeath(self):
+    def testClassifyIncarcerationEventsWithPeriodsAfterDeath(self) -> None:
         """Tests the ClassifyIncarcerationEvents DoFn for when a person has periods
         that occur after a period ending in their death."""
         fake_person_id = 12345
@@ -1085,6 +1088,10 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             "judicial_district_code": "NW",
         }
 
+        assert incarceration_period_with_death.admission_date is not None
+        assert incarceration_period_with_death.release_date is not None
+        assert incarceration_period_with_death.admission_reason is not None
+        assert incarceration_period_with_death.release_reason is not None
         incarceration_events = [
             IncarcerationStayEvent(
                 admission_reason=incarceration_period_with_death.admission_reason,
@@ -1157,7 +1164,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
         self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
         self.pipeline_config = pipeline.IncarcerationPipeline().pipeline_config
 
-    def testProduceIncarcerationMetrics(self):
+    def testProduceIncarcerationMetrics(self) -> None:
         """Tests the ProduceIncarcerationMetrics DoFn."""
         fake_person = StatePerson.new_with_defaults(
             state_code="US_XX",
@@ -1226,7 +1233,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testProduceIncarcerationMetrics_NoIncarceration(self):
+    def testProduceIncarcerationMetrics_NoIncarceration(self) -> None:
         """Tests the ProduceIncarcerationMetrics when there are
         no incarceration_events. This should never happen because any person
         without incarceration events is dropped entirely from the pipeline."""
@@ -1269,7 +1276,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
         test_pipeline.run()
 
-    def testProduceIncarcerationMetrics_NoInput(self):
+    def testProduceIncarcerationMetrics_NoInput(self) -> None:
         """Tests the ProduceIncarcerationMetrics when there is
         no input to the function."""
 
@@ -1299,8 +1306,8 @@ class AssertMatchers:
     validate pipeline outputs."""
 
     @staticmethod
-    def validate_metric_type(allow_empty: bool = False):
-        def _validate_metric_type(output):
+    def validate_metric_type(allow_empty: bool = False) -> Callable:
+        def _validate_metric_type(output: List[Any]) -> None:
             if not allow_empty and not output:
                 raise BeamAssertException("Output metrics unexpectedly empty")
 
@@ -1313,11 +1320,11 @@ class AssertMatchers:
         return _validate_metric_type
 
     @staticmethod
-    def count_metrics(expected_metric_counts):
+    def count_metrics(expected_metric_counts: Dict[Any, Any]) -> Callable:
         """Asserts that the number of metric combinations matches the expected
         counts."""
 
-        def _count_metrics(output):
+        def _count_metrics(output: List[Any]) -> None:
             actual_combination_counts = {}
 
             for key in expected_metric_counts.keys():
@@ -1345,10 +1352,12 @@ class AssertMatchers:
         return _count_metrics
 
     @staticmethod
-    def validate_pipeline_test(expected_metric_types: Set[IncarcerationMetricType]):
+    def validate_pipeline_test(
+        expected_metric_types: Set[IncarcerationMetricType],
+    ) -> Callable:
         """Asserts that the pipeline produced the expected types of metrics."""
 
-        def _validate_pipeline_test(output):
+        def _validate_pipeline_test(output: List[Any]) -> None:
             observed_metric_types: Set[IncarcerationMetricType] = set()
 
             for metric in output:

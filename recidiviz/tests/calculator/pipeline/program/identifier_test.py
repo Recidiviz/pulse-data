@@ -19,6 +19,7 @@
 
 import unittest
 from datetime import date
+from typing import List
 from unittest import mock
 
 from dateutil.relativedelta import relativedelta
@@ -81,7 +82,7 @@ class TestFindProgramEvents(unittest.TestCase):
         self.pre_processing_delegate_patcher.stop()
 
     @freeze_time("2020-01-02")
-    def test_find_program_events(self):
+    def test_find_program_events(self) -> None:
         program_assignment = StateProgramAssignment.new_with_defaults(
             state_code="US_XX",
             program_id="PG3",
@@ -119,6 +120,9 @@ class TestFindProgramEvents(unittest.TestCase):
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
         )
 
+        assert program_assignment.program_id is not None
+        assert program_assignment.referral_date is not None
+        assert program_assignment.start_date is not None
         expected_events = [
             ProgramReferralEvent(
                 state_code=program_assignment.state_code,
@@ -153,7 +157,7 @@ class TestFindProgramEvents(unittest.TestCase):
 
         self.assertListEqual(program_events, expected_events)
 
-    def test_find_program_events_no_program_assignments(self):
+    def test_find_program_events_no_program_assignments(self) -> None:
         program_events = self.identifier._find_program_events(
             [], [], [], DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST
         )
@@ -176,7 +180,7 @@ class TestFindProgramReferrals(unittest.TestCase):
     def tearDown(self) -> None:
         self.assessment_types_patcher.stop()
 
-    def test_find_program_referrals(self):
+    def test_find_program_referrals(self) -> None:
         program_assignment = StateProgramAssignment.new_with_defaults(
             state_code="US_XX",
             program_id="PG3",
@@ -212,6 +216,8 @@ class TestFindProgramReferrals(unittest.TestCase):
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
         )
 
+        assert program_assignment.program_id is not None
+        assert program_assignment.referral_date is not None
         self.assertListEqual(
             [
                 ProgramReferralEvent(
@@ -230,15 +236,15 @@ class TestFindProgramReferrals(unittest.TestCase):
             program_referrals,
         )
 
-    def test_find_program_referrals_no_referral(self):
+    def test_find_program_referrals_no_referral(self) -> None:
         program_assignment = StateProgramAssignment.new_with_defaults(
             state_code="US_XX",
             program_id="PG3",
             participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO,
         )
 
-        assessments = []
-        supervision_periods = []
+        assessments: List[StateAssessment] = []
+        supervision_periods: List[StateSupervisionPeriod] = []
 
         program_referrals = self.identifier._find_program_referrals(
             program_assignment,
@@ -249,7 +255,7 @@ class TestFindProgramReferrals(unittest.TestCase):
 
         self.assertListEqual([], program_referrals)
 
-    def test_find_program_referrals_multiple_assessments(self):
+    def test_find_program_referrals_multiple_assessments(self) -> None:
         program_assignment = StateProgramAssignment.new_with_defaults(
             state_code="US_XX",
             program_id="PG3",
@@ -291,6 +297,8 @@ class TestFindProgramReferrals(unittest.TestCase):
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
         )
 
+        assert program_assignment.program_id is not None
+        assert program_assignment.referral_date is not None
         self.assertListEqual(
             [
                 ProgramReferralEvent(
@@ -306,7 +314,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             program_referrals,
         )
 
-    def test_find_program_referrals_assessment_after_referral(self):
+    def test_find_program_referrals_assessment_after_referral(self) -> None:
         program_assignment = StateProgramAssignment.new_with_defaults(
             state_code="US_XX",
             program_id="PG3",
@@ -329,7 +337,7 @@ class TestFindProgramReferrals(unittest.TestCase):
         )
 
         assessments = [assessment_1, assessment_2]
-        supervision_periods = []
+        supervision_periods: List[StateSupervisionPeriod] = []
 
         program_referrals = self.identifier._find_program_referrals(
             program_assignment,
@@ -338,6 +346,8 @@ class TestFindProgramReferrals(unittest.TestCase):
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
         )
 
+        assert program_assignment.program_id is not None
+        assert program_assignment.referral_date is not None
         self.assertListEqual(
             [
                 ProgramReferralEvent(
@@ -352,7 +362,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             program_referrals,
         )
 
-    def test_find_program_referrals_multiple_supervisions(self):
+    def test_find_program_referrals_multiple_supervisions(self) -> None:
         program_assignment = StateProgramAssignment.new_with_defaults(
             state_code="US_XX",
             program_id="PG3",
@@ -397,6 +407,8 @@ class TestFindProgramReferrals(unittest.TestCase):
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
         )
 
+        assert program_assignment.program_id is not None
+        assert program_assignment.referral_date is not None
         self.assertListEqual(
             [
                 ProgramReferralEvent(
@@ -421,7 +433,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             program_referrals,
         )
 
-    def test_find_program_referrals_officer_info_us_nd(self):
+    def test_find_program_referrals_officer_info_us_nd(self) -> None:
         program_assignment = StateProgramAssignment.new_with_defaults(
             state_code="US_ND",
             program_id="PG3",
@@ -450,6 +462,7 @@ class TestFindProgramReferrals(unittest.TestCase):
         assessments = [assessment]
         supervision_periods = [supervision_period]
 
+        assert supervision_period.supervision_period_id is not None
         supervision_period_agent_associations = {
             supervision_period.supervision_period_id: {
                 "agent_id": 000,
@@ -464,7 +477,9 @@ class TestFindProgramReferrals(unittest.TestCase):
             supervision_periods,
             supervision_period_agent_associations,
         )
-        self.maxDiff = None
+
+        assert program_assignment.program_id is not None
+        assert program_assignment.referral_date is not None
         self.assertListEqual(
             [
                 ProgramReferralEvent(
@@ -492,7 +507,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
         self.identifier = identifier.ProgramIdentifier()
 
     @freeze_time("2000-01-01")
-    def test_find_program_participation_events(self):
+    def test_find_program_participation_events(self) -> None:
         program_assignment = StateProgramAssignment.new_with_defaults(
             state_code="US_XX",
             program_id="PG3",
@@ -516,6 +531,8 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
             program_assignment, supervision_periods
         )
 
+        assert program_assignment.program_id is not None
+        assert program_assignment.start_date is not None
         expected_events = [
             ProgramParticipationEvent(
                 state_code=program_assignment.state_code,
@@ -536,7 +553,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
         ]
         self.assertListEqual(expected_events, participation_events)
 
-    def test_find_program_participation_events_not_actively_participating(self):
+    def test_find_program_participation_events_not_actively_participating(self) -> None:
         program_assignment = StateProgramAssignment.new_with_defaults(
             state_code="US_XX",
             program_id="PG3",
@@ -561,6 +578,8 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
             program_assignment, supervision_periods
         )
 
+        assert program_assignment.program_id is not None
+        assert program_assignment.start_date is not None
         expected_events = [
             ProgramParticipationEvent(
                 state_code=program_assignment.state_code,
@@ -590,7 +609,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
 
         self.assertListEqual(expected_events, participation_events)
 
-    def test_find_program_participation_events_no_start_date(self):
+    def test_find_program_participation_events_no_start_date(self) -> None:
         program_assignment = StateProgramAssignment.new_with_defaults(
             state_code="US_XX",
             program_id="PG3",
@@ -600,7 +619,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
             program_location_id="LOCATION",
         )
 
-        supervision_periods = []
+        supervision_periods: List[StateSupervisionPeriod] = []
 
         participation_events = self.identifier._find_program_participation_events(
             program_assignment, supervision_periods
@@ -608,7 +627,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
 
         self.assertEqual([], participation_events)
 
-    def test_find_program_participation_events_no_discharge_date(self):
+    def test_find_program_participation_events_no_discharge_date(self) -> None:
         program_assignment = StateProgramAssignment.new_with_defaults(
             state_code="US_XX",
             program_id="PG3",
@@ -619,7 +638,7 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
             start_date=date(1999, 11, 2),
         )
 
-        supervision_periods = []
+        supervision_periods: List[StateSupervisionPeriod] = []
 
         participation_events = self.identifier._find_program_participation_events(
             program_assignment, supervision_periods
@@ -634,7 +653,7 @@ class TestFindSupervisionPeriodsOverlappingWithDate(unittest.TestCase):
     def setUp(self) -> None:
         self.identifier = identifier.ProgramIdentifier()
 
-    def test_find_supervision_periods_overlapping_with_date(self):
+    def test_find_supervision_periods_overlapping_with_date(self) -> None:
         referral_date = date(2013, 3, 1)
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -657,7 +676,9 @@ class TestFindSupervisionPeriodsOverlappingWithDate(unittest.TestCase):
 
         self.assertListEqual(supervision_periods, supervision_periods_during_referral)
 
-    def test_find_supervision_periods_overlapping_with_date_no_termination(self):
+    def test_find_supervision_periods_overlapping_with_date_no_termination(
+        self,
+    ) -> None:
         referral_date = date(2013, 3, 1)
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -678,7 +699,7 @@ class TestFindSupervisionPeriodsOverlappingWithDate(unittest.TestCase):
 
         self.assertListEqual(supervision_periods, supervision_periods_during_referral)
 
-    def test_find_supervision_periods_overlapping_with_date_no_overlap(self):
+    def test_find_supervision_periods_overlapping_with_date_no_overlap(self) -> None:
         referral_date = date(2019, 3, 1)
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -708,7 +729,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
     def setUp(self) -> None:
         self.identifier = identifier.ProgramIdentifier()
 
-    def test_referrals_for_supervision_periods(self):
+    def test_referrals_for_supervision_periods(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             status=StateSupervisionPeriodStatus.TERMINATED,
@@ -745,7 +766,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             program_referrals,
         )
 
-    def test_referrals_for_supervision_periods_same_type(self):
+    def test_referrals_for_supervision_periods_same_type(self) -> None:
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             status=StateSupervisionPeriodStatus.TERMINATED,
@@ -803,7 +824,7 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
             program_referrals,
         )
 
-    def test_referrals_for_supervision_periods_different_types(self):
+    def test_referrals_for_supervision_periods_different_types(self) -> None:
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             status=StateSupervisionPeriodStatus.TERMINATED,
