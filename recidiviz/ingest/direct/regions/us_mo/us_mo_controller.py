@@ -71,9 +71,12 @@ from recidiviz.common.str_field_utils import (
 )
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
+)
+from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
     IngestAncestorChainOverridesCallable,
     IngestPrimaryKeyOverrideCallable,
     IngestRowPosthookCallable,
+    LegacyIngestViewProcessorDelegate,
 )
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     create_if_not_exists,
@@ -152,7 +155,9 @@ from recidiviz.ingest.models.ingest_info import (
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
-class UsMoController(BaseDirectIngestController):
+# TODO(#8899): Delete LegacyIngestViewProcessorDelegate superclass when we have fully
+#  migrated this state to new ingest mappings version.
+class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelegate):
     """Direct ingest controller implementation for US_MO."""
 
     PERIOD_SEQUENCE_PRIMARY_COL_PREFIX = "F1"
@@ -566,29 +571,34 @@ class UsMoController(BaseDirectIngestController):
         ]
         return file_tags
 
-    def _get_row_pre_processors_for_file(self, file_tag: str) -> List[Callable]:
+    # TODO(#8899): Delete LegacyIngestViewProcessorDelegate methods when we have fully
+    #  migrated this state to new ingest mappings version.
+    def get_row_pre_processors_for_file(self, file_tag: str) -> List[Callable]:
         return self.row_pre_processors_by_file.get(file_tag, [])
 
-    def _get_row_post_processors_for_file(
+    def get_row_post_processors_for_file(
         self, file_tag: str
     ) -> List[IngestRowPosthookCallable]:
         return self.row_post_processors_by_file.get(file_tag, [])
 
-    def _get_file_post_processors_for_file(self, _file_tag: str) -> List[Callable]:
+    def get_file_post_processors_for_file(self, _file_tag: str) -> List[Callable]:
         post_processors: List[Callable] = [
             gen_convert_person_ids_to_external_id_objects(self._get_id_type),
         ]
         return post_processors
 
-    def _get_primary_key_override_for_file(
+    def get_primary_key_override_for_file(
         self, file_tag: str
     ) -> Optional[IngestPrimaryKeyOverrideCallable]:
         return self.primary_key_override_by_file.get(file_tag, None)
 
-    def _get_ancestor_chain_overrides_callback_for_file(
+    def get_ancestor_chain_overrides_callback_for_file(
         self, file_tag: str
     ) -> Optional[Callable]:
         return self.ancestor_chain_override_by_file.get(file_tag, None)
+
+    def get_files_to_set_with_empty_values(self) -> List[str]:
+        return []
 
     @classmethod
     def generate_enum_overrides(cls) -> EnumOverrides:

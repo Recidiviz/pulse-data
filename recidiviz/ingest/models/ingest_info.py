@@ -26,6 +26,8 @@ PLURALS = {
     "booking": "bookings",
     "charge": "charges",
     "hold": "holds",
+    # TODO(#8905): Delete all references to state schema objects from this map once
+    #  ingest mappings overhaul is complete for all states.
     "state_person": "state_people",
     "state_person_race": "state_person_races",
     "state_person_ethnicity": "state_person_ethnicities",
@@ -47,6 +49,8 @@ PLURALS = {
 }
 
 
+# TODO(#8905): Delete all references to state schema objects from this file once
+#  ingest mappings overhaul is complete for all states.
 class IngestObject:
     """Abstract base class for all the objects contained by IngestInfo"""
 

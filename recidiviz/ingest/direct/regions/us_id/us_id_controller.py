@@ -78,8 +78,14 @@ from recidiviz.common.str_field_utils import (
 )
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
+)
+from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
+    IngestAncestorChainOverridesCallable,
     IngestFilePostprocessorCallable,
+    IngestPrimaryKeyOverrideCallable,
     IngestRowPosthookCallable,
+    IngestRowPrehookCallable,
+    LegacyIngestViewProcessorDelegate,
 )
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     create_if_not_exists,
@@ -159,7 +165,9 @@ from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils.params import str_to_bool
 
 
-class UsIdController(BaseDirectIngestController):
+# TODO(#8900): Delete LegacyIngestViewProcessorDelegate superclass when we have fully
+#  migrated this state to new ingest mappings version.
+class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelegate):
     """Direct ingest controller implementation for US_ID."""
 
     @classmethod
@@ -636,15 +644,35 @@ class UsIdController(BaseDirectIngestController):
     def get_enum_overrides(self) -> EnumOverrides:
         return self.enum_overrides
 
-    def _get_file_post_processors_for_file(
+    # TODO(#8900): Delete LegacyIngestViewProcessorDelegate methods when we have fully
+    #  migrated this state to new ingest mappings version.
+    def get_file_post_processors_for_file(
         self, file_tag: str
     ) -> List[IngestFilePostprocessorCallable]:
         return self.file_post_processors_by_file.get(file_tag, [])
 
-    def _get_row_post_processors_for_file(
+    def get_row_post_processors_for_file(
         self, file_tag: str
     ) -> List[IngestRowPosthookCallable]:
         return self.row_post_processors_by_file.get(file_tag, [])
+
+    def get_row_pre_processors_for_file(
+        self, _file_tag: str
+    ) -> List[IngestRowPrehookCallable]:
+        return []
+
+    def get_ancestor_chain_overrides_callback_for_file(
+        self, _file_tag: str
+    ) -> Optional[IngestAncestorChainOverridesCallable]:
+        return None
+
+    def get_primary_key_override_for_file(
+        self, _file_tag: str
+    ) -> Optional[IngestPrimaryKeyOverrideCallable]:
+        return None
+
+    def get_files_to_set_with_empty_values(self) -> List[str]:
+        return []
 
     @staticmethod
     def _get_id_type(file_tag: str) -> Optional[str]:

@@ -17,7 +17,6 @@
 
 """Direct ingest controller implementation for us_nd."""
 import json
-import os
 import re
 from typing import Dict, List, Optional, Pattern, Tuple, cast
 
@@ -55,11 +54,14 @@ from recidiviz.common.str_field_utils import (
 )
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
+)
+from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
     IngestAncestorChainOverridesCallable,
     IngestFilePostprocessorCallable,
     IngestPrimaryKeyOverrideCallable,
     IngestRowPosthookCallable,
     IngestRowPrehookCallable,
+    LegacyIngestViewProcessorDelegate,
 )
 from recidiviz.ingest.direct.direct_ingest_controller_utils import create_if_not_exists
 from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import (
@@ -115,7 +117,9 @@ from recidiviz.utils import environment
 _DOCSTARS_NEGATIVE_PATTERN: Pattern = re.compile(r"^\((?P<value>-?\d+)\)$")
 
 
-class UsNdController(BaseDirectIngestController):
+# TODO(#8901): Delete LegacyIngestViewProcessorDelegate superclass when we have fully
+#  migrated this state to new ingest mappings version.
+class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelegate):
     """Direct ingest controller implementation for us_nd."""
 
     @classmethod
@@ -296,17 +300,19 @@ class UsNdController(BaseDirectIngestController):
 
         return str(int(float(dec_str.replace(",", ""))))
 
-    def _get_row_pre_processors_for_file(
+    # TODO(#8901): Delete LegacyIngestViewProcessorDelegate methods when we have fully
+    #  migrated this state to new ingest mappings version.
+    def get_row_pre_processors_for_file(
         self, file_tag: str
     ) -> List[IngestRowPrehookCallable]:
         return self.row_pre_processors_by_file.get(file_tag, [])
 
-    def _get_row_post_processors_for_file(
+    def get_row_post_processors_for_file(
         self, file_tag: str
     ) -> List[IngestRowPosthookCallable]:
         return self.row_post_processors_by_file.get(file_tag, [])
 
-    def _get_file_post_processors_for_file(
+    def get_file_post_processors_for_file(
         self, _file_tag: str
     ) -> List[IngestFilePostprocessorCallable]:
         post_processors: List[IngestFilePostprocessorCallable] = [
@@ -315,17 +321,17 @@ class UsNdController(BaseDirectIngestController):
         ]
         return post_processors
 
-    def _get_ancestor_chain_overrides_callback_for_file(
+    def get_ancestor_chain_overrides_callback_for_file(
         self, file: str
     ) -> Optional[IngestAncestorChainOverridesCallable]:
         return self.ancestor_chain_overrides_callback_by_file.get(file, None)
 
-    def _get_primary_key_override_for_file(
+    def get_primary_key_override_for_file(
         self, file: str
     ) -> Optional[IngestPrimaryKeyOverrideCallable]:
         return self.primary_key_override_hook_by_file.get(file, None)
 
-    def _get_files_to_set_with_empty_values(self) -> List[str]:
+    def get_files_to_set_with_empty_values(self) -> List[str]:
         return self.files_to_set_with_empty_values
 
     @staticmethod
@@ -1069,10 +1075,6 @@ class UsNdController(BaseDirectIngestController):
 
     def get_enum_overrides(self) -> EnumOverrides:
         return self.enum_overrides
-
-
-def _yaml_filepath(filename: str) -> str:
-    return os.path.join(os.path.dirname(__file__), filename)
 
 
 def _generate_sentence_primary_key(

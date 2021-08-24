@@ -45,6 +45,9 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsDirectIngestFileType,
     GcsfsIngestViewExportArgs,
 )
+from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
+    LegacyIngestViewProcessor,
+)
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
@@ -190,7 +193,12 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
             cls.temp_db_dir
         )
 
-    def run_parse_file_test(
+    # TODO(#8908): Write function analogous to |run_legacy_parse_file_test| for testing
+    #  parsing for the v2 ingest mappings process.
+
+    # TODO(#8905): Delete this function once we have migrated all states to use the new
+    #   version of ingest mappings that skip ingest info entirely.
+    def run_legacy_parse_file_test(
         self, expected: IngestInfo, fixture_file_name: str
     ) -> IngestInfo:
         """Runs a test that reads and parses a given fixture file. Returns the
@@ -232,7 +240,15 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
 
         if fixture_contents_handle is None:
             self.fail("fixture_contents_handle should not be None")
-        final_info = self.controller._parse(args, fixture_contents_handle)
+        processor = self.controller.get_ingest_view_processor(args)
+
+        if not isinstance(processor, LegacyIngestViewProcessor):
+            raise ValueError(f"Unexpected processor type: {type(processor)}")
+
+        # pylint:disable=protected-access
+        final_info = processor._parse_ingest_info(
+            args, fixture_contents_handle, self.controller._get_ingest_metadata(args)
+        )
 
         print_visible_header_label("FINAL")
         print(final_info)

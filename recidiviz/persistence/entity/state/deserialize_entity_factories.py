@@ -25,8 +25,8 @@ from recidiviz.common.constants.enum_parser import (
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.str_field_utils import normalize_flat_json
 from recidiviz.persistence.entity.entity_deserialize import (
-    entity_deserialize,
     EntityFieldConverter,
+    entity_deserialize,
 )
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
@@ -86,3 +86,6 @@ class StateSentenceGroupFactory:
             },
             **kwargs
         )
+
+
+# TODO(#8909): Add factories for remainder of state schema here.

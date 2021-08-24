@@ -45,6 +45,8 @@ def _get_converter(ingest_info: IngestInfo, metadata: IngestMetadata) -> BaseCon
     if system_level == SystemLevel.COUNTY:
         return CountyConverter(ingest_info, metadata)
 
+    # TODO(#8905): Delete this block once all states have been migrated to v2 ingest
+    #  mappings.
     if system_level == SystemLevel.STATE:
         return StateConverter(ingest_info, metadata)
 

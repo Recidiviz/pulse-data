@@ -36,6 +36,8 @@ from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
 from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
+# TODO(#8905): Delete this file once all states have been migrated to v2 ingest
+#  mappings.
 def copy_fields_to_builder(
     supervision_contact_builder: entities.StateSupervisionContact.Builder,
     proto: StateSupervisionContact,

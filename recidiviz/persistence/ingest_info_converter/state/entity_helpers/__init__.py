@@ -16,3 +16,6 @@
 # ============================================================================
 
 """Data converters specifically for the state-level entities."""
+
+# TODO(#8905): Delete everything in this directory once all states have been migrated to
+#  v2 ingest mappings.
