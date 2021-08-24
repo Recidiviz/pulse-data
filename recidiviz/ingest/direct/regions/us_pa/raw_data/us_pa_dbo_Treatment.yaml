@@ -6,27 +6,52 @@ primary_key_cols:
   - TreatmentID
 columns:
   - name: ParoleNumber
+    description: |-
+      External ID for a unique person who has been supervised by PADOC.
   - name: ParoleCountID
+    description: |-
+      External ID for a particular stint of a particular person under supervision by PADOC.
   - name: TreatmentID
+    description: |-
+      External ID for a particular bout of treatment.
   - name: TrtType
   - name: TrtDO
   - name: TrtCounty
   - name: TrtClassCode
   - name: TrtIndProgID
   - name: TrtStartDateYear
+    description: |-
+      The year that treatment started.
   - name: TrtStartDateMonth
+    description: |-
+      The month that treatment started.
   - name: TrtStartDateDay
+    description: |-
+      The day that treatment started.
   - name: TrtEndDateYear
+    description: |-
+      The year that treatment ended.
   - name: TrtEndDateMonth
+    description: |-
+      The month that treatment ended.
   - name: TrtEndDateDay
+    description: |-
+      The day that treatment ended.
   - name: TrtStatusCode
   - name: TrtProgramCode
+    description: |-
+      The code associated with the given treatment program.
   - name: TrtProgramDescription
   - name: TrtIndexAct97
   - name: OtherState
   - name: OtherStateFac
   - name: LastModifiedBy
+    description: |-
+      Who the record was last modified by.
   - name: LastModifiedDateTime
+    is_datetime: True
+    description: |-
+      When the record was last modified.
   - name: TrtHrsImposed
   - name: TrtHrsCompleted
 separator: ‡
