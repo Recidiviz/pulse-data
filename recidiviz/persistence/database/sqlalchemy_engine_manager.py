@@ -34,7 +34,7 @@ from recidiviz.persistence.database.constants import (
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.utils import environment, metadata, monitoring, secrets
+from recidiviz.utils import environment, monitoring, secrets
 
 m_failed_engine_initialization = measure.MeasureInt(
     "persistence/database/sqlalchemy_engine_initialization_failures",
@@ -177,20 +177,14 @@ class SQLAlchemyEngineManager:
 
     @classmethod
     def _secret_manager_prefix_for_type(cls, schema_type: SchemaType) -> str:
-        if metadata.project_id() == environment.GCP_PROJECT_STAGING:
-            if schema_type == SchemaType.JAILS:
-                return "jails_v2"
-            if schema_type == SchemaType.STATE:
-                return "state_v2"
-            if schema_type == SchemaType.OPERATIONS:
-                return "operations_v2"
-
+        # TODO(#8282): Clean up the _v2 suffix eventually.
         if schema_type == SchemaType.JAILS:
-            return "sqlalchemy"
+            return "jails_v2"
         if schema_type == SchemaType.STATE:
-            return "state"
+            return "state_v2"
         if schema_type == SchemaType.OPERATIONS:
-            return "operations"
+            return "operations_v2"
+
         if schema_type == SchemaType.JUSTICE_COUNTS:
             return "justice_counts"
         if schema_type == SchemaType.CASE_TRIAGE:

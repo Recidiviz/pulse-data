@@ -87,12 +87,10 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 call(
                     URL.create(
                         drivername="postgresql",
-                        username="sqlalchemy_db_user_value",
-                        password="sqlalchemy_db_password_value",
+                        username="jails_v2_db_user_value",
+                        password="jails_v2_db_password_value",
                         database="postgres",
-                        query={
-                            "host": "/cloudsql/sqlalchemy_cloudsql_instance_id_value"
-                        },
+                        query={"host": "/cloudsql/jails_v2_cloudsql_instance_id_value"},
                     ),
                     isolation_level=None,
                     poolclass=None,
@@ -102,11 +100,11 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 call(
                     URL.create(
                         drivername="postgresql",
-                        username="operations_db_user_value",
-                        password="operations_db_password_value",
+                        username="operations_v2_db_user_value",
+                        password="operations_v2_db_password_value",
                         database="postgres",
                         query={
-                            "host": "/cloudsql/operations_cloudsql_instance_id_value"
+                            "host": "/cloudsql/operations_v2_cloudsql_instance_id_value"
                         },
                     ),
                     isolation_level=None,
@@ -150,10 +148,10 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 call(
                     URL.create(
                         drivername="postgresql",
-                        username="state_db_user_value",
-                        password="state_db_password_value",
+                        username="state_v2_db_user_value",
+                        password="state_v2_db_password_value",
                         database="us_xx_primary",
-                        query={"host": "/cloudsql/state_cloudsql_instance_id_value"},
+                        query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
                     ),
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
@@ -163,10 +161,10 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 call(
                     URL.create(
                         drivername="postgresql",
-                        username="state_db_user_value",
-                        password="state_db_password_value",
+                        username="state_v2_db_user_value",
+                        password="state_v2_db_password_value",
                         database="us_ww_primary",
-                        query={"host": "/cloudsql/state_cloudsql_instance_id_value"},
+                        query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
                     ),
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
@@ -176,10 +174,10 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 call(
                     URL.create(
                         drivername="postgresql",
-                        username="state_db_user_value",
-                        password="state_db_password_value",
+                        username="state_v2_db_user_value",
+                        password="state_v2_db_password_value",
                         database="us_xx_secondary",
-                        query={"host": "/cloudsql/state_cloudsql_instance_id_value"},
+                        query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
                     ),
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
@@ -189,10 +187,10 @@ class SQLAlchemyEngineManagerTest(TestCase):
                 call(
                     URL.create(
                         drivername="postgresql",
-                        username="state_db_user_value",
-                        password="state_db_password_value",
+                        username="state_v2_db_user_value",
+                        password="state_v2_db_password_value",
                         database="us_ww_secondary",
-                        query={"host": "/cloudsql/state_cloudsql_instance_id_value"},
+                        query={"host": "/cloudsql/state_v2_cloudsql_instance_id_value"},
                     ),
                     isolation_level="SERIALIZABLE",
                     poolclass=sqlalchemy.pool.NullPool,
@@ -370,9 +368,9 @@ class SQLAlchemyEngineManagerTest(TestCase):
         self.assertEqual(ids, ["111", "222", "333", "444", "555"])
         mock_secrets.assert_has_calls(
             [
-                mock.call("sqlalchemy_cloudsql_instance_id"),
-                mock.call("state_cloudsql_instance_id"),
-                mock.call("operations_cloudsql_instance_id"),
+                mock.call("jails_v2_cloudsql_instance_id"),
+                mock.call("state_v2_cloudsql_instance_id"),
+                mock.call("operations_v2_cloudsql_instance_id"),
                 mock.call("justice_counts_cloudsql_instance_id"),
                 mock.call("case_triage_cloudsql_instance_id"),
             ],
@@ -393,7 +391,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
 
         # Assert
         self.assertEqual(instance_id, "111")
-        mock_secrets.assert_called_with("operations_cloudsql_instance_id")
+        mock_secrets.assert_called_with("operations_v2_cloudsql_instance_id")
 
     @patch("recidiviz.utils.secrets.get_secret")
     def testGetAllStrippedCloudSqlRegion(self, mock_secrets: mock.MagicMock) -> None:
@@ -409,4 +407,4 @@ class SQLAlchemyEngineManagerTest(TestCase):
 
         # Assert
         self.assertEqual(region, "us-central1")
-        mock_secrets.assert_called_with("operations_cloudsql_instance_id")
+        mock_secrets.assert_called_with("operations_v2_cloudsql_instance_id")
