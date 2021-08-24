@@ -32,6 +32,7 @@ import styled from "styled-components/macro";
 import { trackScrolledToBottom } from "./analytics";
 import { breakpoints } from "./components/styles";
 import Home from "./routes/Home";
+import Onboarding from "./routes/Onboarding";
 import Verify from "./routes/Verify";
 import StoreProvider from "./stores";
 import { redactLocalStorageCache } from "./utils";
@@ -82,6 +83,7 @@ ReactDOM.render(
         <GlobalStyle />
         <RoutingContainer>
           <Verify path="verify" />
+          <Onboarding path="onboarding" />
           <Home path="/" />
         </RoutingContainer>
       </ToastProvider>

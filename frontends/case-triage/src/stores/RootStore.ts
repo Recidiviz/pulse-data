@@ -23,6 +23,7 @@ import ErrorMessageStore from "./ErrorMessageStore";
 import OpportunityStore from "./OpportunityStore";
 import PolicyStore from "./PolicyStore";
 import UserStore from "./UserStore";
+import OfficerMetadataStore from "./OfficerMetadataStore";
 
 configure({
   useProxies: "never",
@@ -36,6 +37,8 @@ export default class RootStore {
   clientsStore: ClientsStore;
 
   errorMessageStore: ErrorMessageStore;
+
+  officerMetadataStore: OfficerMetadataStore;
 
   opportunityStore: OpportunityStore;
 
@@ -80,6 +83,10 @@ export default class RootStore {
       api: this.api,
       clientsStore: this.clientsStore,
       userStore: this.userStore,
+    });
+
+    this.officerMetadataStore = new OfficerMetadataStore({
+      api: this.api,
     });
   }
 }

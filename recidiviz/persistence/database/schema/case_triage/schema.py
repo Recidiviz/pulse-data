@@ -512,3 +512,11 @@ class OfficerMetadata(CaseTriageBase):
         String(255), nullable=False, index=True, primary_key=True
     )
     has_seen_onboarding = Column(Boolean, nullable=False, default=False)
+
+    @classmethod
+    def from_officer(cls, officer: ETLOfficer) -> "OfficerMetadata":
+        return cls(
+            state_code=officer.state_code,
+            officer_external_id=officer.external_id,
+            has_seen_onboarding=False,
+        )

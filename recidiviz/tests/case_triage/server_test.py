@@ -19,7 +19,7 @@ from datetime import date, datetime, timedelta
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional, Tuple
 from unittest import TestCase, mock
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 from urllib import parse
 
 import pytest
@@ -39,10 +39,11 @@ from recidiviz.case_triage.opportunities.types import (
 from recidiviz.case_triage.querier.case_update_presenter import CaseUpdateStatus
 from recidiviz.case_triage.querier.querier import OfficerDoesNotExistError
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
-from recidiviz.case_triage.user_context import UserContext
+from recidiviz.case_triage.user_context import REGISTRATION_DATE_CLAIM, UserContext
 from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLClientEvent,
     ETLOfficer,
+    OfficerMetadata,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -729,6 +730,19 @@ class TestCaseTriageAPIRoutes(TestCase):
             )
             self.assertEqual(note["text"], attempted_injection)
 
+    def test_post_set_has_seen_onboarding(self) -> None:
+        with self.helpers.using_officer(self.officer):
+            response = self.helpers.post_set_has_seen_onboarding(
+                has_seen_onboarding=True
+            )
+            self.assertEqual(response["status"], "ok")
+
+        with self.helpers.using_demo_user():
+            response = self.helpers.post_set_has_seen_onboarding(
+                has_seen_onboarding=True
+            )
+            self.assertEqual(response["status"], "ok")
+
     def test_readonly_access_to_endpoints(self) -> None:
         with self.helpers.using_readonly_user(
             self.officer.email_address
@@ -874,6 +888,9 @@ class TestCaseTriageAPIRoutes(TestCase):
             g.user_context = UserContext.base_context_for_email(
                 "not-found-admin@not-recidiviz.org", auth_store
             )
+            g.user_context.jwt_claims[
+                REGISTRATION_DATE_CLAIM
+            ] = "2021-01-08T22:02:17.863Z"
             # Perform initial impersonation
             response = self.test_client.get(
                 f"/api/bootstrap?{IMPERSONATED_EMAIL_KEY}={parse.quote(hash_email('non-existent@not-recidiviz.org'))}"
@@ -892,7 +909,7 @@ class TestCaseTriageAPIRoutes(TestCase):
             self.assertIsNone(g.user_context.current_user)
             with self.test_client.session_transaction() as sess:  # type: ignore
                 self.assertTrue(IMPERSONATED_EMAIL_KEY not in session)
-            self.assertEqual(response.status_code, HTTPStatus.OK)
+            self.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
 
     def test_unimpersonating_without_impersonating(self) -> None:
         auth_store = AuthorizationStore()
@@ -925,6 +942,9 @@ class TestUserImpersonation(TestCase):
             "officer_id_1", "officer1@not-recidiviz.org"
         )
 
+        self.admin_email = "admin@not-recidiviz.org"
+        self.non_admin_email = "non-admin@not-recidiviz.org"
+
         self.test_app = Flask(__name__)
         self.test_app.secret_key = "NOT-A-SECRET"
         self.helpers = CaseTriageTestHelpers.from_test(self, self.test_app)
@@ -944,6 +964,13 @@ class TestUserImpersonation(TestCase):
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
 
+    @patch(
+        "recidiviz.case_triage.officer_metadata.interface.OfficerMetadataInterface.get_officer_metadata"
+    )
+    @patch(
+        "recidiviz.case_triage.user_context.UserContext.is_admin",
+        new_callable=PropertyMock,
+    )
     @patch("recidiviz.case_triage.authorization.AuthorizationStore.can_impersonate")
     @patch("recidiviz.case_triage.querier.querier.CaseTriageQuerier.officer_for_email")
     @patch(
@@ -958,55 +985,55 @@ class TestUserImpersonation(TestCase):
         mock_officer_for_hashed_email: MagicMock,
         mock_officer_for_email: MagicMock,
         mock_can_impersonate: MagicMock,
+        mock_is_admin: PropertyMock,
+        mock_get_officer_metadata: MagicMock,
     ) -> None:
-        def test_officer_for_hashed_email(_: Session, _hashed_email: str) -> ETLOfficer:
-            raise OfficerDoesNotExistError
+        officer = generate_fake_officer(officer_id="test", email=self.non_admin_email)
 
-        def test_officer_for_email(_: Session, email: str) -> ETLOfficer:
-            return generate_fake_officer(officer_id="test", email=email)
+        mock_can_impersonate.return_value = False
+        mock_officer_for_email.return_value = officer
+        mock_officer_for_hashed_email.side_effect = OfficerDoesNotExistError
+        mock_get_access_permissions.return_value = AccessPermissions(
+            can_access_case_triage=True,
+            can_access_leadership_dashboard=False,
+            impersonatable_state_codes=set(),
+        )
+        mock_is_admin.return_value = False
+        mock_get_officer_metadata.return_value = OfficerMetadata.from_officer(officer)
 
-        def test_impersonate(_email: str, _other_email: str) -> bool:
-            return False
-
-        def test_get_access_permissions(_email: str) -> AccessPermissions:
-            return AccessPermissions(
-                can_access_case_triage=True,
-                can_access_leadership_dashboard=False,
-                impersonatable_state_codes=set(),
-            )
-
-        mock_can_impersonate.side_effect = test_impersonate
-        mock_officer_for_email.side_effect = test_officer_for_email
-        mock_officer_for_hashed_email.side_effect = test_officer_for_hashed_email
-        mock_get_access_permissions.side_effect = test_get_access_permissions
         with self.test_app.test_request_context():
             # Test that if there's no given email, a non-admin falls through as if
             # impersonation didn't happen at all.
             with self.test_client.session_transaction() as sess:  # type: ignore
-                sess["user_info"] = {
-                    "email": "non-admin@not-recidiviz.org",
-                }
-            g.user_context = UserContext("non-admin@not-recidiviz.org", self.auth_store)
+                sess["user_info"] = {"email": self.non_admin_email}
+            g.user_context = UserContext(self.non_admin_email, self.auth_store)
+            g.user_context.jwt_claims[
+                REGISTRATION_DATE_CLAIM
+            ] = "2021-01-08T22:02:17.863Z"
             response = self.test_client.get("/api/bootstrap")
-            self.assertEqual(response.status_code, HTTPStatus.OK)
+            self.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
 
             # Test that if there's a given email, a non-admin also falls through as if
             # impersonation didn't happen at all and that key is no longer in the session.
             with self.test_client.session_transaction() as sess:  # type: ignore
-                sess["user_info"] = {
-                    "email": "non-admin@not-recidiviz.org",
-                }
-            g.user_context = UserContext("non-admin@not-recidiviz.org", self.auth_store)
+                sess["user_info"] = {"email": self.non_admin_email}
+            g.user_context = UserContext(self.non_admin_email, self.auth_store)
+            g.user_context.jwt_claims[
+                REGISTRATION_DATE_CLAIM
+            ] = "2021-01-08T22:02:17.863Z"
             response = self.test_client.get(
                 f"/api/bootstrap?{IMPERSONATED_EMAIL_KEY}={parse.quote(hash_email('user@not-recidiviz.org'))}"
             )
             with self.test_client.session_transaction() as sess:  # type: ignore
                 self.assertTrue(IMPERSONATED_EMAIL_KEY not in session)
-            self.assertEqual(response.status_code, HTTPStatus.OK)
+            self.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
             self.assertEqual(
-                g.user_context.current_user.email_address, "non-admin@not-recidiviz.org"
+                g.user_context.current_user.email_address, self.non_admin_email
             )
 
+    @patch(
+        "recidiviz.case_triage.officer_metadata.interface.OfficerMetadataInterface.get_officer_metadata"
+    )
     @patch(
         "recidiviz.case_triage.querier.querier.CaseTriageQuerier.officer_for_hashed_email"
     )
@@ -1017,30 +1044,34 @@ class TestUserImpersonation(TestCase):
         self,
         mock_get_access_permissions: MagicMock,
         mock_officer_for_hashed_email: MagicMock,
+        mock_get_officer_metadata: MagicMock,
     ) -> None:
-        def test_officer_for_hashed_email(_: Session, _hashed_email: str) -> ETLOfficer:
-            return generate_fake_officer(
-                officer_id="test",
-                email="non-admin@not-recidiviz.org",
-                state_code="US_XX",
-            )
+        officer = generate_fake_officer(
+            officer_id="test",
+            email=self.non_admin_email,
+            state_code="US_XX",
+        )
 
-        def test_get_access_permissions(_email: str) -> AccessPermissions:
-            return AccessPermissions(
-                can_access_case_triage=True,
-                can_access_leadership_dashboard=False,
-                impersonatable_state_codes={"US_XX"},
-            )
+        officer_metadata = OfficerMetadata.from_officer(officer)
 
-        mock_officer_for_hashed_email.side_effect = test_officer_for_hashed_email
-        mock_get_access_permissions.side_effect = test_get_access_permissions
+        access_permissions = AccessPermissions(
+            can_access_case_triage=True,
+            can_access_leadership_dashboard=False,
+            impersonatable_state_codes={"US_XX"},
+        )
+
+        mock_officer_for_hashed_email.return_value = officer
+        mock_get_officer_metadata.return_value = officer_metadata
+        mock_get_access_permissions.return_value = access_permissions
+
         with self.test_app.test_request_context():
-            self.auth_store.case_triage_admin_users = ["admin@not-recidiviz.org"]
+            self.auth_store.case_triage_admin_users = [self.admin_email]
             with self.test_client.session_transaction() as sess:  # type: ignore
-                sess["user_info"] = {
-                    "email": "admin@not-recidiviz.org",
-                }
-            g.user_context = UserContext("admin@not-recidiviz.org", self.auth_store)
+                sess["user_info"] = {"email": self.admin_email}
+            g.user_context = UserContext(self.admin_email, self.auth_store)
+            g.user_context.jwt_claims[
+                REGISTRATION_DATE_CLAIM
+            ] = "2021-01-08T22:02:17.863Z"
             response = self.test_client.get(
                 f"/api/bootstrap?{IMPERSONATED_EMAIL_KEY}={parse.quote(hash_email('non-admin@not-recidiviz.org'))}"
             )
@@ -1069,9 +1100,7 @@ class TestUserImpersonation(TestCase):
         mock_officer_for_email: MagicMock,
     ) -> None:
         def test_officer_for_hashed_email(_: Session, _hashed_email: str) -> ETLOfficer:
-            return generate_fake_officer(
-                officer_id="test", email="non-admin@not-recidiviz.org"
-            )
+            return generate_fake_officer(officer_id="test", email=self.non_admin_email)
 
         def test_officer_for_email(_: Session, email: str) -> ETLOfficer:
             return generate_fake_officer(officer_id="test", email=email)
@@ -1087,15 +1116,13 @@ class TestUserImpersonation(TestCase):
         mock_officer_for_email.side_effect = test_officer_for_email
         mock_get_access_permissions.side_effect = test_get_access_permissions
         with self.test_app.test_request_context():
-            self.auth_store.case_triage_admin_users = ["admin@not-recidiviz.org"]
+            self.auth_store.case_triage_admin_users = [self.admin_email]
             with self.test_client.session_transaction() as sess:  # type: ignore
-                sess["user_info"] = {
-                    "email": "admin@not-recidiviz.org",
-                }
-            g.user_context = UserContext("admin@not-recidiviz.org", self.auth_store)
+                sess["user_info"] = {"email": self.admin_email}
+            g.user_context = UserContext(self.admin_email, self.auth_store)
             # Perform initial impersonation
             self.test_client.get(
-                f"/api/bootstrap?{IMPERSONATED_EMAIL_KEY}={parse.quote(hash_email('non-admin@not-recidiviz.org'))}"
+                f"/api/bootstrap?{IMPERSONATED_EMAIL_KEY}={parse.quote(hash_email(self.non_admin_email))}"
             )
 
             # Undo impersonation
@@ -1107,6 +1134,6 @@ class TestUserImpersonation(TestCase):
     def test_no_user_context(self) -> None:
         with self.test_app.test_request_context():
             response = self.test_client.get(
-                f"/impersonate_user?{IMPERSONATED_EMAIL_KEY}=non-admin%40not-recidiviz.org"
+                f"/impersonate_user?{IMPERSONATED_EMAIL_KEY}={parse.quote(self.non_admin_email)}"
             )
             self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
