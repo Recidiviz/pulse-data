@@ -98,6 +98,10 @@ class UpdateNoteSchema(CamelCaseSchema):
     text = fields.Str(required=True, validate=non_empty_string)
 
 
+class SetHasSeenOnboardingSchema(CamelCaseSchema):
+    has_seen_onboarding = fields.Bool(required=True)
+
+
 def requires_api_schema(api_schema: Type[Schema]) -> Callable:
     def inner(route: Callable) -> Callable:
         @wraps(route)

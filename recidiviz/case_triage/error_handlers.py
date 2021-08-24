@@ -18,6 +18,7 @@ from http import HTTPStatus
 
 from flask import Flask, Response, jsonify
 from flask_wtf.csrf import CSRFError
+from jwt import MissingRequiredClaimError
 from marshmallow import ValidationError
 
 from recidiviz.case_triage.exceptions import CaseTriageBadRequestException
@@ -61,9 +62,19 @@ def handle_no_caseload_error(_: NoCaseloadException) -> Response:
     )
 
 
+def handle_missing_required_claim_error(error: MissingRequiredClaimError) -> Response:
+    return handle_auth_error(
+        CaseTriageBadRequestException(
+            "missing_required_claim",
+            f"{error.claim} was missing from the provided token",
+        )
+    )
+
+
 def register_error_handlers(app: Flask) -> None:
     """ Registers error handlers """
     app.errorhandler(CSRFError)(handle_csrf_error)
     app.errorhandler(ValidationError)(handle_validation_error)
     app.errorhandler(NoCaseloadException)(handle_no_caseload_error)
+    app.errorhandler(MissingRequiredClaimError)(handle_missing_required_claim_error)
     app.errorhandler(FlaskException)(handle_auth_error)

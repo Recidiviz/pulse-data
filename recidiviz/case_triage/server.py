@@ -17,7 +17,7 @@
 """Backend entry point for Case Triage API server."""
 import json
 import os
-from typing import Dict
+from typing import Dict, Union
 
 import sentry_sdk
 from flask import Flask, Response, g, send_from_directory, session
@@ -99,14 +99,16 @@ setup_scoped_sessions(app, db_url)
 
 
 # Auth setup
-def on_successful_authorization(payload: Dict[str, str], token: str) -> None:
+def on_successful_authorization(
+    jwt_claims: Dict[str, Union[str, int]], token: str
+) -> None:
     """
     Memoize the user's info (email_address, picture, etc) into our session
     """
 
     # Populate the session with user information; This could have changed since the last request
-    if session.get("jwt_sub", None) != payload["sub"]:
-        session["jwt_sub"] = payload["sub"]
+    if session.get("jwt_sub", None) != jwt_claims["sub"]:
+        session["jwt_sub"] = jwt_claims["sub"]
         session["user_info"] = get_userinfo(authorization_config.domain, token)
         # Also pop the impersonated email key if it exists, since the request could've been an impersonation request prior.
         if IMPERSONATED_EMAIL_KEY in session:
@@ -123,7 +125,7 @@ def on_successful_authorization(payload: Dict[str, str], token: str) -> None:
         raise auth_error
 
     email = session["user_info"]["email"].lower()
-    g.user_context = UserContext(email, authorization_store)
+    g.user_context = UserContext(email, authorization_store, jwt_claims=jwt_claims)
 
     if (
         not g.user_context.access_permissions.can_access_case_triage
