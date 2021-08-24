@@ -400,6 +400,48 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
                 file_path, create_autospec(DirectIngestRawFileMetadata)
             )
 
+    def test_import_bq_file_with_new_raw_file(self) -> None:
+        file_path = path_for_fixture_file_in_test_gcs_directory(
+            bucket_path=self.ingest_bucket_path,
+            filename="tagC.csv",
+            should_normalize=True,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
+        )
+
+        fixture_util.add_direct_ingest_path(
+            self.fs.gcs_file_system, file_path, region_code=self.test_region.region_code
+        )
+
+        # This is a brand new file so the table does not exist
+        self.mock_big_query_client.table_exists.return_value = False
+
+        self.import_manager.import_raw_file_to_big_query(
+            file_path, self._metadata_for_unprocessed_file_path(file_path)
+        )
+
+        self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_paths))
+        path = one(self.fs.gcs_file_system.uploaded_paths)
+
+        # Delete should not be called since the table does not exist
+        self.mock_big_query_client.delete_from_table_async.assert_not_called()
+
+        self.mock_big_query_client.load_into_table_from_cloud_storage_async.assert_called_with(
+            source_uri=path.uri(),
+            destination_dataset_ref=bigquery.DatasetReference(
+                self.project_id, "us_xx_raw_data"
+            ),
+            destination_table_id="tagC",
+            destination_table_schema=[
+                bigquery.SchemaField("COL1", "STRING", "NULLABLE"),
+                bigquery.SchemaField("COL2", "STRING", "NULLABLE"),
+                bigquery.SchemaField("COL3", "STRING", "NULLABLE"),
+                bigquery.SchemaField("file_id", "INTEGER", "REQUIRED"),
+                bigquery.SchemaField("update_datetime", "DATETIME", "REQUIRED"),
+            ],
+        )
+        self.assertEqual(2, self.num_lines_uploaded)
+        self._check_no_temp_files_remain()
+
     def test_import_bq_file_with_raw_file(self) -> None:
         file_path = path_for_fixture_file_in_test_gcs_directory(
             bucket_path=self.ingest_bucket_path,

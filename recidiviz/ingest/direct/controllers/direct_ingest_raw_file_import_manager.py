@@ -551,10 +551,20 @@ class DirectIngestRawFileImportManager:
         and removing them prevents the table from ending up with duplicate
         rows after this upload"""
 
+        dataset_id = self._raw_tables_dataset()
+        table_id = filename_parts_from_path(path).file_tag
+        if not self.big_query_client.table_exists(
+            self.big_query_client.dataset_ref_for_id(dataset_id), table_id
+        ):
+            logging.info(
+                "Skipping row cleanup as %s.%s does not yet exist", dataset_id, table_id
+            )
+            return
+
         # Starts the deletion
         delete_job = self.big_query_client.delete_from_table_async(
-            dataset_id=self._raw_tables_dataset(),
-            table_id=filename_parts_from_path(path).file_tag,
+            dataset_id=dataset_id,
+            table_id=table_id,
             filter_clause="WHERE file_id = " + str(file_id),
         )
         # Waits for the deletion to complete
