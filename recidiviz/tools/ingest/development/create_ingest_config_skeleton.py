@@ -61,7 +61,7 @@ def initialize_state_directories(state_code: str) -> None:
         )
         sys.exit(1)
 
-    with open(base_config_path, "w") as file:
+    with open(base_config_path, "w", encoding="utf-8") as file:
         file.writelines(
             [
                 f"default_encoding: {PLACEHOLDER_TO_DO_STRING}\n",
@@ -111,7 +111,7 @@ def write_skeleton_config(
         for field in fields
     ]
 
-    with open(config_path, "w") as config_file:
+    with open(config_path, "w", encoding="utf-8") as config_file:
         for line in config:
             config_file.write(line + "\n")
 

@@ -41,7 +41,7 @@ class ReportContext(ABC):
 
         self._validate_recipient_has_expected_fields(recipient)
 
-        with open(self.get_properties_filepath()) as properties_file:
+        with open(self.get_properties_filepath(), encoding="utf-8") as properties_file:
             self.properties = json.loads(properties_file.read())
 
     @abstractmethod

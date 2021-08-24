@@ -301,7 +301,7 @@ class TestRegions(TestCase):
 
 
 @contextmanager
-def mock_manifest_open(filename: str, *args: Any) -> Iterator[IO]:
+def mock_manifest_open(filename: str, *args: Any, **kwargs: Any) -> Iterator[IO]:
     if filename.endswith("manifest.yaml"):
         region = filename.split("/")[-2]
         if region in REGION_TO_MANIFEST:
@@ -310,7 +310,9 @@ def mock_manifest_open(filename: str, *args: Any) -> Iterator[IO]:
             file_object.__iter__.return_value = content.splitlines(True)
             yield file_object
             return
-    yield open(filename, *args)
+    if "encoding" not in kwargs:
+        kwargs["encoding"] = "utf-8"
+    yield open(filename, *args, **kwargs)  # pylint: disable=W1514
 
 
 def with_manifest(func: Callable, *args: Any, **kwargs: Any) -> Any:

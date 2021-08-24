@@ -39,7 +39,7 @@ class Simulator:
     """Runs simulations for SuperSimulation."""
 
     def __init__(self, microsim: bool, time_converter: TimeConverter) -> None:
-        self.pop_simulations: Dict[str, PopulationSimulation] = dict()
+        self.pop_simulations: Dict[str, PopulationSimulation] = {}
         self.microsim = microsim
         self.time_converter = time_converter
 

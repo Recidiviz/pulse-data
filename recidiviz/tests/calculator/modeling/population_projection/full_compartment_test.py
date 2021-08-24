@@ -15,15 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Test the FullCompartment object"""
-
-from typing import Optional, List
 import unittest
+from typing import List, Optional
+
 import pandas as pd
-from recidiviz.calculator.modeling.population_projection.full_compartment import (
-    FullCompartment,
-)
+
 from recidiviz.calculator.modeling.population_projection.compartment_transitions import (
     CompartmentTransitions,
+)
+from recidiviz.calculator.modeling.population_projection.full_compartment import (
+    FullCompartment,
 )
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 
@@ -33,7 +34,7 @@ class TestFullCompartment(unittest.TestCase):
 
     test_supervision_data = pd.DataFrame()
     test_incarceration_data = pd.DataFrame()
-    compartment_policies: List[SparkPolicy] = list()
+    compartment_policies: List[SparkPolicy] = []
     incarceration_transition_table: Optional[CompartmentTransitions] = None
     release_transition_table: Optional[CompartmentTransitions] = None
     historical_data = pd.DataFrame()

@@ -44,7 +44,7 @@ class PoMonthlyReportContextTests(TestCase):
 
     def setUp(self) -> None:
         with open(
-            os.path.join(os.path.dirname(__file__), FIXTURE_FILE)
+            os.path.join(os.path.dirname(__file__), FIXTURE_FILE), encoding="utf-8"
         ) as fixture_file:
             self.recipient = Recipient.from_report_json(json.loads(fixture_file.read()))
             self.recipient.data["batch_id"] = "20201105123033"

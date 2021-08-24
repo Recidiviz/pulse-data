@@ -16,24 +16,25 @@
 # =============================================================================
 """Composition object for SubSimulation to initialize compartments for a macro-simulation and scale populations."""
 import logging
-from typing import Dict, List, Any, Tuple
+from typing import Any, Dict, List, Tuple
+
 import pandas as pd
 
-from recidiviz.calculator.modeling.population_projection.spark_compartment import (
-    SparkCompartment,
-)
-from recidiviz.calculator.modeling.population_projection.sub_simulation.sub_simulation import (
-    SubSimulation,
-)
 from recidiviz.calculator.modeling.population_projection.compartment_transitions import (
     CompartmentTransitions,
 )
-from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 from recidiviz.calculator.modeling.population_projection.full_compartment import (
     FullCompartment,
 )
 from recidiviz.calculator.modeling.population_projection.shell_compartment import (
     ShellCompartment,
+)
+from recidiviz.calculator.modeling.population_projection.spark_compartment import (
+    SparkCompartment,
+)
+from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
+from recidiviz.calculator.modeling.population_projection.sub_simulation.sub_simulation import (
+    SubSimulation,
 )
 
 
@@ -126,7 +127,7 @@ class SubSimulationFactory:
             )
 
         # Create a transition object for each compartment and year with policies applied and store shell policies
-        shell_policies = dict()
+        shell_policies = {}
         for compartment in compartments_architecture:
             # Select any policies that are applicable for this compartment
             compartment_policies = SparkPolicy.get_compartment_policies(

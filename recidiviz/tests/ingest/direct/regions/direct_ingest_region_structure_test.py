@@ -27,10 +27,13 @@ from mock import patch
 from parameterized import parameterized
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.ingest.direct import regions
-from recidiviz.ingest.direct import templates
+from recidiviz.ingest.direct import regions, templates
 from recidiviz.ingest.direct.controllers import direct_ingest_controller_factory
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
+)
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
     DirectIngestControllerFactory,
 )
@@ -38,10 +41,9 @@ from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
-    DirectIngestRegionRawFileConfig,
     DirectIngestRawFileConfig,
+    DirectIngestRegionRawFileConfig,
 )
-from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration import (
     UpdateRawTableMigration,
 )
@@ -50,9 +52,6 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration_colle
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
-)
-from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
-    BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     gcsfs_direct_ingest_bucket_for_region,
@@ -63,7 +62,7 @@ from recidiviz.ingest.direct.direct_ingest_region_utils import (
 )
 from recidiviz.tools import deploy
 from recidiviz.utils.environment import GCPEnvironment
-from recidiviz.utils.regions import get_region, Region
+from recidiviz.utils.regions import Region, get_region
 
 _REGION_REGEX = re.compile(r"us_[a-z]{2}(_[a-z]+)?")
 
@@ -123,7 +122,7 @@ class DirectIngestRegionDirStructureBase:
             self.test.assertTrue(
                 os.path.exists(yaml_path), f"Path [{yaml_path}] does not exist."
             )
-            with open(yaml_path, "r") as ymlfile:
+            with open(yaml_path, "r", encoding="utf-8") as ymlfile:
                 file_contents = yaml.full_load(ymlfile)
                 self.test.assertTrue(file_contents)
                 validate_contents_fn(yaml_path, file_contents)
@@ -359,7 +358,7 @@ class DirectIngestRegionDirStructure(
             "terraform",
             "direct_ingest_state_codes.yaml",
         )
-        with open(yaml_path, "r") as ymlfile:
+        with open(yaml_path, "r", encoding="utf-8") as ymlfile:
             region_codes_list = yaml.full_load(ymlfile)
 
         for region in self.region_dir_names:

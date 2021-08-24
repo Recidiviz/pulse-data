@@ -180,7 +180,7 @@ class FakeGCSFileSystem(GCSFileSystem):
         self, path: GcsfsFilePath, contents: str, content_type: str
     ) -> None:
         temp_path = generate_random_temp_path()
-        with open(temp_path, "w") as f:
+        with open(temp_path, "w", encoding="utf-8") as f:
             f.write(contents)
 
         self._add_entry(FakeGCSFileSystemEntry(path, temp_path, content_type))

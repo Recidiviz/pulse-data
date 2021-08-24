@@ -125,7 +125,7 @@ class EndpointDocumentationGenerator:
             for path_params in self.get_path_parameters(rule.rule)
         ]
         path_params = ", ".join(sorted(escaped_path_params))
-        with open(specification_template_path, "r") as spec_file:
+        with open(specification_template_path, "r", encoding="utf-8") as spec_file:
             spec = spec_file.read().format(
                 endpoint=self._escape_special_characters(rule.rule),
                 methods=methods,
@@ -164,7 +164,7 @@ class EndpointDocumentationGenerator:
             specification_template_path, rule
         )
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w") as markdown_doc_file:
+        with open(path, "w", encoding="utf-8") as markdown_doc_file:
             markdown_doc_file.write(documentation)
 
 

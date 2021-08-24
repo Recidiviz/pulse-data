@@ -15,11 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Reads fields from an ingest_info proto and parses them into EntityEnums."""
-from typing import Dict, Optional, Set, Mapping
+from typing import Dict, Mapping, Optional, Set
 
 from more_itertools import one
 
-from recidiviz.common.constants.entity_enum import EntityEnumMeta, EntityEnum
+from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import fn
 
@@ -53,7 +53,7 @@ class EnumMappings:
         """
         self.parsed_enums_from_original_field: Dict[
             EntityEnumMeta, Dict[str, EntityEnum]
-        ] = dict()
+        ] = {}
         self.all_parsed_enums: Set[EntityEnum] = set()
 
         for field_name, from_enum in enum_fields.items():

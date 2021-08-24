@@ -33,7 +33,7 @@ certain offenses. This is a reference tool.
 """
 
 import csv
-from typing import Dict, Optional, List
+from typing import Dict, List, Optional
 
 import attr
 
@@ -56,7 +56,7 @@ def _get_NCIC() -> Dict[str, NcicCode]:
     global _NCIC
 
     if not _NCIC:
-        with open(_NCIC_FILEPATH, "r") as file:
+        with open(_NCIC_FILEPATH, "r", encoding="utf-8") as file:
             reader = csv.DictReader(file)
             for row in reader:
                 code = row["ncic_code"]

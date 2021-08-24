@@ -24,6 +24,7 @@ python -m recidiviz.tools.add_enum_overrides
 
 import argparse
 import logging
+
 import pandas as pd
 
 
@@ -35,7 +36,7 @@ def add_enum_override(
     scraper_file = (
         f"recidiviz/ingest/scrape/regions/{scraper_name}/{scraper_name}_scraper.py"
     )
-    with open(scraper_file) as file:
+    with open(scraper_file, encoding="utf-8") as file:
         lines = file.readlines()
     index = next(
         (
@@ -71,7 +72,7 @@ def add_enum_override(
             "        return overrides_builder.build()\n",
         ]
         lines.extend(override_builder)
-    with open(scraper_file, "w") as file:
+    with open(scraper_file, "w", encoding="utf-8") as file:
         file.writelines(lines)
 
 

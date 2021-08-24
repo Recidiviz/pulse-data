@@ -16,11 +16,11 @@
 # =============================================================================
 """Util functions useful for any region specific SQL queries."""
 import os
-from typing import List, Tuple, Optional, Set
+from typing import List, Optional, Set, Tuple
 
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
-    DirectIngestRegionRawFileConfig,
     DirectIngestRawFileConfig,
+    DirectIngestRegionRawFileConfig,
 )
 
 
@@ -44,7 +44,9 @@ def _write_all_queries_to_files(
         os.mkdir(dir_path)
 
     for query_name, query_str in query_name_to_query_list:
-        with open(os.path.join(dir_path, f"{query_name}.sql"), "w") as output_path:
+        with open(
+            os.path.join(dir_path, f"{query_name}.sql"), "w", encoding="utf-8"
+        ) as output_path:
             output_path.write(query_str)
 
 

@@ -64,7 +64,7 @@ def write_process_log(process: subprocess.CompletedProcess) -> None:
     if not os.path.exists(DEPLOY_LOG_DIRECTORY):
         os.mkdir(DEPLOY_LOG_DIRECTORY)
 
-    with open(DEPLOY_PIPELINE_TEMPLATES_LOG, "a+") as f:
+    with open(DEPLOY_PIPELINE_TEMPLATES_LOG, "a+", encoding="utf-8") as f:
         f.writelines(build_process_log(process))
 
 

@@ -15,14 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """SuperSimulation composed object for outputting simulation results."""
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
 import pandas as pd
-from recidiviz.calculator.modeling.population_projection.utils import (
-    bq_utils,
-)
+
 from recidiviz.calculator.modeling.population_projection.super_simulation.time_converter import (
     TimeConverter,
 )
+from recidiviz.calculator.modeling.population_projection.utils import bq_utils
 
 
 class Exporter:
@@ -169,7 +169,7 @@ class Exporter:
                 f"Excluded population has duplicate rows for compartments: {excluded_pop}"
             )
 
-        scale_factors = dict()
+        scale_factors = {}
         for _index, row in excluded_pop:
             compartment_total_pop = total_pop[
                 total_pop.compartment == row.compartment

@@ -45,7 +45,7 @@ def get_migration_header_section(migration_filepath: str) -> str:
     """
     header_section_lines = []
 
-    with open(migration_filepath, "r") as migration_file:
+    with open(migration_filepath, "r", encoding="utf-8") as migration_file:
         for line in migration_file.readlines():
             header_section_lines.append(line)
             if line.startswith(_HEADER_SECTION_FINAL_LINE_START):

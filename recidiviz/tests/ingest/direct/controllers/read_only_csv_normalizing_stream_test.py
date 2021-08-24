@@ -91,7 +91,7 @@ class TestCsvNormalizingIO(unittest.TestCase):
             )
             contents = preprocessed_fp.read()
 
-        with open(expected_result_path) as fp_expected:
+        with open(expected_result_path, encoding="utf-8") as fp_expected:
             expected_contents = fp_expected.read()
 
         self.assertEqual(expected_contents, contents)
@@ -118,7 +118,7 @@ class TestCsvNormalizingIO(unittest.TestCase):
                 lines.append(preprocessed_fp.readline(max_read_length))
 
         expected_lines = []
-        with open(expected_result_path) as fp_expected:
+        with open(expected_result_path, encoding="utf-8") as fp_expected:
             for _ in range(num_reads):
                 expected_lines.append(fp_expected.readline(max_read_length or -1))
 
@@ -165,7 +165,7 @@ class TestCsvNormalizingIO(unittest.TestCase):
                 contents += block_contents
 
         expected_contents = ""
-        with open(expected_result_path) as fp_expected:
+        with open(expected_result_path, encoding="utf-8") as fp_expected:
             while True:
                 block_contents = fp_expected.read(block_size)
                 if not block_contents:

@@ -17,15 +17,17 @@
 """SuperSimulation composed object for initializing simulations."""
 import logging
 from datetime import datetime
-from typing import Dict, Any, List, Tuple, Optional, Callable
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
 import numpy as np
 import pandas as pd
+
+from recidiviz.calculator.modeling.population_projection.super_simulation.time_converter import (
+    TimeConverter,
+)
 from recidiviz.calculator.modeling.population_projection.utils import (
     ignite_bq_utils,
     spark_bq_utils,
-)
-from recidiviz.calculator.modeling.population_projection.super_simulation.time_converter import (
-    TimeConverter,
 )
 
 
@@ -43,7 +45,7 @@ class Initializer:
     ) -> None:
         self.time_converter = time_converter
         self.microsim = microsim
-        self.data_dict: Dict[str, Any] = dict()
+        self.data_dict: Dict[str, Any] = {}
         self.override_cross_flow_function: Optional[Callable] = None
 
         self._set_user_inputs(yaml_user_inputs)
@@ -157,8 +159,8 @@ class Initializer:
     def get_inputs_for_microsim_baseline_over_time(
         self, start_run_dates: List[datetime]
     ) -> Tuple[Dict[datetime, Dict[str, Any]], Dict[datetime, int]]:
-        data_input_dict = dict()
-        first_relevant_ts_dict = dict()
+        data_input_dict = {}
+        first_relevant_ts_dict = {}
         for start_date in start_run_dates:
             data_input_dict[start_date] = self.get_data_inputs(start_date)
             first_relevant_ts_dict[
@@ -207,7 +209,7 @@ class Initializer:
 
     def _set_user_inputs(self, yaml_user_inputs: Dict[str, Any]) -> None:
         """Populate the simulation user inputs"""
-        self.user_inputs = dict()
+        self.user_inputs = {}
         self.user_inputs[
             "start_time_step"
         ] = self.time_converter.convert_year_to_time_step(
