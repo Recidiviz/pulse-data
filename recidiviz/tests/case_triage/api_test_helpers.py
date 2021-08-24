@@ -292,3 +292,13 @@ class CaseTriageTestHelpers:
     @staticmethod
     def from_test(test: TestCase, test_app: Flask) -> "CaseTriageTestHelpers":
         return CaseTriageTestHelpers(test, test_app)
+
+    def post_set_has_seen_onboarding(self, has_seen_onboarding: bool) -> Dict[str, str]:
+        response = self.test_client.post(
+            "/api/set_has_seen_onboarding",
+            json={"hasSeenOnboarding": has_seen_onboarding},
+        )
+
+        self.test.assertEqual(response.status_code, HTTPStatus.OK, response.get_json())
+
+        return response.get_json()

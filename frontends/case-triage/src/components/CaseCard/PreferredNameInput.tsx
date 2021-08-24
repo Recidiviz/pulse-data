@@ -29,8 +29,10 @@ export const PreferredNameInput: React.FC<PreferredNameInputProps> = ({
   client,
 }) => {
   const { clientsStore, errorMessageStore } = useRootStore();
-  const [isToggled, setIsToggled, toggleRef, toggledRef] =
-    useToggleFocus<HTMLButtonElement, HTMLInputElement>();
+  const [isToggled, setIsToggled, toggleRef, toggledRef] = useToggleFocus<
+    HTMLButtonElement,
+    HTMLInputElement
+  >();
 
   const handleNameChange = async (name: string) => {
     setIsToggled(false);

@@ -17,6 +17,7 @@
 """Implements API routes for the Case Triage app."""
 import logging
 import os
+from datetime import datetime
 from functools import wraps
 from http import HTTPStatus
 from typing import Any, Callable, Dict, List, Optional
@@ -36,6 +37,7 @@ from recidiviz.case_triage.api_schemas import (
     PreferredNameSchema,
     ReceivingSSIOrDisabilityIncomeSchema,
     ResolveNoteSchema,
+    SetHasSeenOnboardingSchema,
     UpdateNoteSchema,
     requires_api_schema,
 )
@@ -51,6 +53,7 @@ from recidiviz.case_triage.exceptions import (
     CaseTriagePersonNotOnCaseloadException,
     CaseTriageSecretForbiddenException,
 )
+from recidiviz.case_triage.officer_metadata.interface import OfficerMetadataInterface
 from recidiviz.case_triage.officer_notes.interface import (
     OfficerNoteDoesNotExistError,
     OfficerNotesInterface,
@@ -71,7 +74,7 @@ from recidiviz.case_triage.querier.querier import (
     PersonDoesNotExistError,
 )
 from recidiviz.case_triage.state_utils.requirements import policy_requirements_for_state
-from recidiviz.case_triage.user_context import Permission
+from recidiviz.case_triage.user_context import REGISTRATION_DATE_CLAIM, Permission
 from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
 
 IMPERSONATED_EMAIL_KEY = "impersonated_email"
@@ -191,20 +194,28 @@ def create_api_blueprint(
         api, "/bootstrap", [Permission.READ_WRITE, Permission.READ_ONLY]
     )
     def _get_bootstrap() -> str:
-        officer_metadata: Dict[str, Any] = (
+        officer_metadata = OfficerMetadataInterface.get_officer_metadata(
+            current_session,
+            g.user_context.officer_state_code,
+            g.user_context.officer_id,
+        )
+
+        officer_names: Dict[str, Any] = (
             {
                 "officerGivenNames": g.user_context.current_user.given_names,
                 "officerSurname": g.user_context.current_user.surname,
-                "isImpersonating": g.user_context.email
-                != g.user_context.current_user.email_address,
             }
             if g.user_context.current_user
             else {
                 "officerGivenNames": None,
                 "officerSurname": None,
-                "isImpersonating": False,
             }
         )
+
+        registration_date_string = g.user_context.get_claim(REGISTRATION_DATE_CLAIM)
+        # Drops the zero offset `Z` suffix before parsing the registration date
+        registration_date = datetime.fromisoformat(registration_date_string[:-1])
+
         return jsonify(
             {
                 "csrf": generate_csrf(current_app.secret_key),
@@ -216,7 +227,11 @@ def create_api_blueprint(
                     "DASHBOARD_URL", "https://dashboard.recidiviz.org"
                 ),
                 "stateCode": g.user_context.officer_state_code,
-                **officer_metadata,
+                "isImpersonating": g.user_context.is_impersonating,
+                "shouldSeeOnboarding": g.user_context.should_see_onboarding(
+                    registration_date, officer_metadata
+                ),
+                **officer_names,
                 **g.user_context.access_permissions.to_json(),
             }
         )
@@ -457,5 +472,19 @@ def create_api_blueprint(
             )
         except PersonDoesNotExistError as e:
             raise CaseTriagePersonNotOnCaseloadException from e
+
+    @route_with_permissions(
+        api, "/set_has_seen_onboarding", [Permission.READ_WRITE], methods=["POST"]
+    )
+    @requires_api_schema(SetHasSeenOnboardingSchema)
+    def _post_set_has_seen_onboarding() -> Response:
+        OfficerMetadataInterface.set_has_seen_onboarding(
+            current_session,
+            g.user_context.officer_state_code,
+            g.user_context.officer_id,
+            g.api_data["has_seen_onboarding"],
+        )
+
+        return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
     return api

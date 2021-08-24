@@ -20,10 +20,11 @@ from datetime import datetime
 from enum import Enum
 from functools import cached_property
 from hashlib import sha256
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import attr
 import pytz
+from jwt import MissingRequiredClaimError
 
 from recidiviz.case_triage.authorization import (
     KNOWN_EXPERIMENTS,
@@ -39,7 +40,11 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLClient,
     ETLOfficer,
     ETLOpportunity,
+    OfficerMetadata,
 )
+
+REGISTRATION_DATE_CLAIM = "https://dashboard.recidiviz.org/registration_date"
+ONBOARDING_LAUNCH_DATE = datetime.fromisoformat("2021-08-20T00:00:00.000")
 
 
 class Permission(Enum):
@@ -59,6 +64,7 @@ class UserContext:
     email: str = attr.ib()
     authorization_store: AuthorizationStore = attr.ib()
     current_user: ETLOfficer = attr.ib(default=None)
+    jwt_claims: Dict[str, Union[str, int]] = attr.ib(factory=dict)
 
     @classmethod
     def base_context_for_email(
@@ -68,6 +74,18 @@ class UserContext:
 
     def can_impersonate(self, other_officer: ETLOfficer) -> bool:
         return self.authorization_store.can_impersonate(self.email, other_officer)
+
+    @property
+    def is_admin(self) -> bool:
+        return (
+            self.current_user
+            and self.current_user.email_address
+            in self.authorization_store.case_triage_admin_users
+        )
+
+    @property
+    def is_impersonating(self) -> bool:
+        return self.current_user and self.current_user.email_address != self.email
 
     @property
     def can_see_demo_data(self) -> bool:
@@ -139,3 +157,23 @@ class UserContext:
         email_as_bytes = email.lower().encode("ascii")
         digest = sha256(email_as_bytes).digest()
         return b64encode(digest).decode("utf-8")
+
+    def get_claim(self, claim: str) -> Union[str, int]:
+        if claim not in self.jwt_claims:
+            raise MissingRequiredClaimError(claim)
+
+        return self.jwt_claims[claim]
+
+    def should_see_onboarding(
+        self, registration_date: datetime, officer_metadata: OfficerMetadata
+    ) -> bool:
+        """The user should see the onboarding flow if they are:
+        1. logged in as (not impersonating) an officer
+        2. they signed up after the onboarding launch date or are an admin user
+        """
+
+        return not officer_metadata.has_seen_onboarding and (
+            self.is_admin
+            or self.should_see_demo
+            or registration_date >= ONBOARDING_LAUNCH_DATE
+        )

@@ -21,9 +21,13 @@ import createAuth0Client, {
   RedirectLoginOptions,
   User,
 } from "@auth0/auth0-spa-js";
-import { makeAutoObservable, runInAction } from "mobx";
+import { makeAutoObservable, runInAction, when } from "mobx";
 import qs from "qs";
+import { navigate } from "@reach/router";
 import { titleCase } from "../utils";
+
+export const REGISTRATION_DATE_CLAIM =
+  "https://dashboard.recidiviz.org/registration_date";
 
 interface UserStoreProps {
   authSettings: Auth0ClientOptions;
@@ -68,7 +72,9 @@ export default class UserStore {
 
   stateCode?: string;
 
-  getTokenSilently?(options?: GetTokenSilentlyOptions): Promise<void>;
+  shouldSeeOnboarding: boolean;
+
+  getTokenSilently?(options?: GetTokenSilentlyOptions): Promise<string>;
 
   login?(options?: RedirectLoginOptions): Promise<void>;
 
@@ -95,6 +101,12 @@ export default class UserStore {
     this.officerGivenNames = "";
     this.officerSurname = "";
     this.isImpersonating = false;
+    this.shouldSeeOnboarding = false;
+
+    when(
+      () => this.isAuthorized && this.shouldSeeOnboarding,
+      () => navigate("/onboarding")
+    );
   }
 
   async authorize(): Promise<void> {
@@ -211,5 +223,9 @@ export default class UserStore {
 
   get canSeeExtendedProfile(): boolean {
     return this.isInExperiment(KNOWN_EXPERIMENTS.ExtendedProfile);
+  }
+
+  setShouldSeeOnboarding(shouldSeeOnboarding: boolean): void {
+    this.shouldSeeOnboarding = shouldSeeOnboarding;
   }
 }
