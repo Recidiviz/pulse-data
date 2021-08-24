@@ -112,6 +112,12 @@ class StateSupervisionContactLocation(EntityEnum, metaclass=EntityEnumMeta):
     LAW_ENFORCEMENT_AGENCY = (
         state_enum_strings.state_supervision_contact_location_law_enforcement_agency
     )
+    PAROLE_COMMISSION = (
+        state_enum_strings.state_supervision_contact_location_parole_commission
+    )
+    ALTERNATIVE_WORK_SITE = (
+        state_enum_strings.state_supervision_contact_location_alternative_work_site
+    )
 
     @staticmethod
     def _get_default_map() -> Dict[str, "StateSupervisionContactLocation"]:
@@ -129,6 +135,8 @@ _STATE_SUPERVISION_CONTACT_LOCATION_MAP = {
     "SUPERVISION OFFICE": StateSupervisionContactLocation.SUPERVISION_OFFICE,
     "TREATMENT PROVIDER": StateSupervisionContactLocation.TREATMENT_PROVIDER,
     "LAW ENFORCEMENT AGENCY": StateSupervisionContactLocation.LAW_ENFORCEMENT_AGENCY,
+    "PAROLE COMMISSION": StateSupervisionContactLocation.PAROLE_COMMISSION,
+    "ALTERNATIVE WORK SITE": StateSupervisionContactLocation.ALTERNATIVE_WORK_SITE,
 }
 
 _STATE_SUPERVISION_CONTACT_STATUS_MAP = {

@@ -552,6 +552,8 @@ state_supervision_contact_location = Enum(
     state_enum_strings.state_supervision_contact_location_supervision_office,
     state_enum_strings.state_supervision_contact_location_treatment_provider,
     state_enum_strings.state_supervision_contact_location_law_enforcement_agency,
+    state_enum_strings.state_supervision_contact_location_parole_commission,
+    state_enum_strings.state_supervision_contact_location_alternative_work_site,
     name="state_supervision_contact_location",
 )
 
