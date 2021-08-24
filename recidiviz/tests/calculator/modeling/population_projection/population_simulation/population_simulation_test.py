@@ -15,18 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Test the PopulationSimulation object"""
-from typing import Any, Dict, Optional
 import unittest
 from copy import deepcopy
+from typing import Any, Dict, Optional
 from unittest.mock import patch
 
 import pandas as pd
-from pandas.testing import assert_index_equal, assert_frame_equal
-
+from pandas.testing import assert_frame_equal, assert_index_equal
 
 from recidiviz.calculator.modeling.population_projection.population_simulation.population_simulation_factory import (
-    PopulationSimulationFactory,
     PopulationSimulation,
+    PopulationSimulationFactory,
 )
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 from recidiviz.calculator.modeling.population_projection.transition_table import (
@@ -40,8 +39,8 @@ class TestPopulationSimulation(unittest.TestCase):
     test_outflows_data = pd.DataFrame()
     test_transitions_data = pd.DataFrame()
     test_total_population_data = pd.DataFrame()
-    user_inputs: Dict[str, Any] = dict()
-    simulation_architecture: Dict[str, str] = dict()
+    user_inputs: Dict[str, Any] = {}
+    simulation_architecture: Dict[str, str] = {}
     macro_population_simulation = Optional[PopulationSimulation]
     macro_projection = pd.DataFrame()
 

@@ -56,7 +56,7 @@ class EmailGenerationTests(TestCase):
         self.mock_gcs_file_system = self.gcs_file_system_patcher.start()
         self.mock_gcs_file_system.return_value = self.gcs_file_system
 
-        with open(self.fixture_file_path()) as fixture_file:
+        with open(self.fixture_file_path(), encoding="utf-8") as fixture_file:
             self.recipient = Recipient.from_report_json(json.loads(fixture_file.read()))
 
         self.state_code = StateCode.US_ID

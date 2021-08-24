@@ -123,7 +123,7 @@ class ValidationRegionConfig:
     def from_yaml(cls, yaml_path: str) -> "ValidationRegionConfig":
         """Parses a region validation config file at the given path into a ValidationRegionConfig object."""
 
-        with open(yaml_path, "r") as f:
+        with open(yaml_path, "r", encoding="utf-8") as f:
             file_contents = yaml.full_load(f)
             region_code = file_contents["region_code"]
 
@@ -215,7 +215,7 @@ class ValidationGlobalConfig:
 
     @classmethod
     def from_yaml(cls, yaml_path: str) -> "ValidationGlobalConfig":
-        with open(yaml_path, "r") as f:
+        with open(yaml_path, "r", encoding="utf-8") as f:
             file_contents = yaml.full_load(f)
             disable_list = file_contents["disabled"]
 

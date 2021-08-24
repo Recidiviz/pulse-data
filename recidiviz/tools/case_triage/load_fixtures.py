@@ -56,7 +56,7 @@ def reset_case_triage_fixtures() -> None:
     with connection.cursor() as cursor:
 
         def _import_csv(path: str, table: str) -> None:
-            with open(path, "r") as csv:
+            with open(path, "r", encoding="utf-8") as csv:
                 cursor.copy_expert(
                     f"COPY {table} FROM STDIN WITH DELIMITER ',' CSV",
                     csv,

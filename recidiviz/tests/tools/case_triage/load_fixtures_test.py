@@ -20,6 +20,7 @@ from unittest import TestCase
 
 import pytest
 from pytest_alembic import runner
+from pytest_alembic.config import Config
 
 from recidiviz.case_triage.views.view_config import ETL_TABLES
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -59,10 +60,12 @@ class TestLoadFixtures(TestCase):
             db_url=local_postgres_helpers.on_disk_postgres_db_url(),
         )
         with runner(
-            {
-                "file": self.db_key.alembic_file,
-                "script_location": self.db_key.migrations_location,
-            },
+            Config.from_raw_config(
+                {
+                    "file": self.db_key.alembic_file,
+                    "script_location": self.db_key.migrations_location,
+                }
+            ),
             engine,
         ) as r:
             r.migrate_up_to("head")

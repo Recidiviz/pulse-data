@@ -16,17 +16,19 @@
 # =============================================================================
 """SuperSimulation composed object for validating simulation results."""
 from typing import Dict, List, Optional, Tuple, Union
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
+
 from recidiviz.calculator.modeling.population_projection.population_simulation.population_simulation import (
     PopulationSimulation,
 )
-from recidiviz.calculator.modeling.population_projection.super_simulation.time_converter import (
-    TimeConverter,
-)
 from recidiviz.calculator.modeling.population_projection.predicted_admissions import (
     ProjectionType,
+)
+from recidiviz.calculator.modeling.population_projection.super_simulation.time_converter import (
+    TimeConverter,
 )
 
 
@@ -36,8 +38,8 @@ class Validator:
     def __init__(self, microsim: bool, time_converter: TimeConverter) -> None:
         self.microsim = microsim
         self.time_converter = time_converter
-        self.output_data: Dict[str, pd.DataFrame] = dict()
-        self.pop_simulations: Dict[str, PopulationSimulation] = dict()
+        self.output_data: Dict[str, pd.DataFrame] = {}
+        self.pop_simulations: Dict[str, PopulationSimulation] = {}
 
     def reset(
         self,
@@ -47,7 +49,7 @@ class Validator:
         if output_data:
             self.output_data = output_data
         else:
-            self.output_data = dict()
+            self.output_data = {}
         self.pop_simulations = pop_simulations
 
     def calculate_baseline_transition_error(

@@ -17,11 +17,12 @@
 
 """Utilities for working with fixture data in ingest unit testing."""
 
-import os
 import inspect
 import json
-from typing import Dict, Any
+import os
+from typing import Any, Dict
 from xml.etree import ElementTree
+
 import html5lib
 from lxml import html
 
@@ -62,7 +63,9 @@ def as_string_from_relative_path(relative_path: str) -> str:
             /recidiviz/tests/ingest directory.
 
     """
-    with open(file_path_from_relative_path(relative_path)) as fixture_file:
+    with open(
+        file_path_from_relative_path(relative_path), encoding="utf-8"
+    ) as fixture_file:
         string = fixture_file.read()
     return string
 

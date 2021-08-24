@@ -89,7 +89,7 @@ def test_test_only_not_test() -> None:
     def get() -> str:
         return track
 
-    with patch.dict("recidiviz.__dict__"), patch.object(sys, "modules", dict()):
+    with patch.dict("recidiviz.__dict__"), patch.object(sys, "modules", {}):
         del recidiviz.__dict__["called_from_test"]
         assert not hasattr(recidiviz, "called_from_test")
 

@@ -53,7 +53,7 @@ This is because all data points are plotted using valid_from.  """.format(
     itp=STATE_AGGREGATE_STITCH_SUBSET_VIEW_BUILDER.view_id,
 )
 
-with open(os.path.splitext(__file__)[0] + ".sql") as fp:
+with open(os.path.splitext(__file__)[0] + ".sql", encoding="utf-8") as fp:
     _QUERY_TEMPLATE = fp.read()
 
 COMBINED_STITCH_DROP_OVERLAPPING_TOTAL_JAIL_POP_VIEW_BUILDER = (

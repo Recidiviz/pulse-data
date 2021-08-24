@@ -176,11 +176,11 @@ def _create_test_files(subs: Dict[str, str], vendor: Optional[str]) -> None:
 def _populate_file(
     template_path: str, target_path: str, substitutions: Dict[str, str]
 ) -> None:
-    with open(template_path) as template_file:
+    with open(template_path, encoding="utf-8") as template_file:
         template = Template(template_file.read())
         contents = template.substitute(substitutions)
 
-    with open(target_path, "w") as target:
+    with open(target_path, "w", encoding="utf-8") as target:
         target.write(contents)
 
 

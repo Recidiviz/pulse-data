@@ -29,7 +29,7 @@ _DESCRIPTION = """
 Copy single count data to a format for stitching.
 """
 
-with open(os.path.splitext(__file__)[0] + ".sql") as fp:
+with open(os.path.splitext(__file__)[0] + ".sql", encoding="utf-8") as fp:
     _QUERY_TEMPLATE = fp.read()
 
 SINGLE_COUNT_STITCH_SUBSET_VIEW_BUILDER = SimpleBigQueryViewBuilder(

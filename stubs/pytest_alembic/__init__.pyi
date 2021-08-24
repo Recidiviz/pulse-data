@@ -18,6 +18,7 @@ from typing import Any, ContextManager, Dict, List, Optional
 
 from sqlalchemy.engine import Engine
 
+from .config import Config
 from .history import AlembicHistory
 
 class MigrationContext:
@@ -32,5 +33,5 @@ class MigrationContext:
     def migrate_up_to(self, revision: str) -> None: ...
 
 def runner(
-    config: Dict[str, Any], engine: Optional[Engine] = None
+    config: Config, engine: Optional[Engine] = None
 ) -> ContextManager[MigrationContext]: ...

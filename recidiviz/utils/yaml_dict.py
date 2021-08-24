@@ -37,7 +37,7 @@ class YAMLDict:
 
     @classmethod
     def from_path(cls, yaml_path: str) -> "YAMLDict":
-        with open(yaml_path) as yaml_file:
+        with open(yaml_path, encoding="utf-8") as yaml_file:
             loaded_raw_yaml = yaml.safe_load(yaml_file)
             if not isinstance(loaded_raw_yaml, dict):
                 raise ValueError(

@@ -172,7 +172,7 @@ class OperateOnStorageIngestFilesController:
 
     def _write_copies_to_log_file(self) -> None:
         self.operations_list.sort()
-        with open(self.log_output_path, "w") as f:
+        with open(self.log_output_path, "w", encoding="utf-8") as f:
             if self.dry_run:
                 template = "[DRY RUN] Would {} {} -> {}\n"
             else:

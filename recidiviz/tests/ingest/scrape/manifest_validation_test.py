@@ -33,7 +33,7 @@ class ManifestValidationTest(unittest.TestCase):
     def test_AllSet(self) -> None:
         manifest_filenames = glob.glob(_REGIONS_DIR + "/**/manifest.yaml")
         for manifest_filename in manifest_filenames:
-            with open(manifest_filename, "r") as yaml_file:
+            with open(manifest_filename, "r", encoding="utf-8") as yaml_file:
                 manifest = yaml.full_load(yaml_file)
                 for val in manifest.values():
                     self.assertIsNotNone(

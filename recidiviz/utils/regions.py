@@ -245,7 +245,8 @@ def get_region_manifest(region_code: str, region_module: ModuleType) -> Dict[str
     with open(
         os.path.join(
             os.path.dirname(region_module.__file__), region_code, MANIFEST_NAME
-        )
+        ),
+        encoding="utf-8",
     ) as region_manifest:
         return yaml.full_load(region_manifest)
 

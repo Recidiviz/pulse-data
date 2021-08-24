@@ -18,6 +18,7 @@ import sys
 from typing import List
 
 from pytest_alembic import runner
+from pytest_alembic.config import Config
 from sqlalchemy import create_engine
 
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -45,7 +46,7 @@ def _get_migration_body_section(
     """Returns string of body section of enum migration by interpolating
     provided values into enum migration template
     """
-    with open(_PATH_TO_BODY_SECTION_TEMPLATE, "r") as template_file:
+    with open(_PATH_TO_BODY_SECTION_TEMPLATE, "r", encoding="utf-8") as template_file:
         template = template_file.read()
     return template.format(
         primary_table=primary_table_name,
@@ -68,10 +69,12 @@ def _get_old_enum_values(schema_type: SchemaType, enum_name: str) -> List[str]:
 
     try:
         # Fetch enums
-        default_config = {
-            "file": database_key.alembic_file,
-            "script_location": database_key.migrations_location,
-        }
+        default_config = Config.from_raw_config(
+            {
+                "file": database_key.alembic_file,
+                "script_location": database_key.migrations_location,
+            }
+        )
         with runner(default_config, engine) as r:
             r.migrate_up_to("head")
         conn = engine.connect()
@@ -198,7 +201,7 @@ def main() -> None:
     )
     file_content = "{}\n{}".format(header_section, body_section)
 
-    with open(migration_filepath, "w") as migration_file:
+    with open(migration_filepath, "w", encoding="utf-8") as migration_file:
         migration_file.write(file_content)
 
     print(f"Successfully generated migration: {migration_filename}")
