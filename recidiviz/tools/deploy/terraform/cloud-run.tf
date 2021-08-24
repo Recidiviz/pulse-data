@@ -92,7 +92,6 @@ resource "google_cloud_run_service" "case-triage" {
         "autoscaling.knative.dev/minScale"        = 1
         "autoscaling.knative.dev/maxScale"        = var.max_case_triage_instances
         "run.googleapis.com/cloudsql-instances"   = local.joined_connection_string
-        "run.googleapis.com/sandbox"              = "gvisor"
         "run.googleapis.com/vpc-access-connector" = google_vpc_access_connector.us_central_redis_vpc_connector.name
         "run.googleapis.com/vpc-access-egress"    = "private-ranges-only"
       }
@@ -135,13 +134,6 @@ resource "google_compute_region_network_endpoint_group" "serverless_neg" {
   cloud_run {
     service = google_cloud_run_service.case-triage.name
   }
-}
-
-# TODO(#8919): Remove this once we're no longer using it in prod.
-resource "google_compute_ssl_policy" "unified-product-ssl-policy" {
-  name            = "nonprod-ssl-policy"
-  profile         = "MODERN"
-  min_tls_version = "TLS_1_2"
 }
 
 resource "google_compute_ssl_policy" "modern-ssl-policy" {
