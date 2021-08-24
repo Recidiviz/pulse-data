@@ -38,7 +38,7 @@ def _get_migration_body_section(
     """Returns string of body section of field deprecation migration by interpolating
     provided values into field deprecation migration template
     """
-    with open(_PATH_TO_BODY_SECTION_TEMPLATE, "r") as template_file:
+    with open(_PATH_TO_BODY_SECTION_TEMPLATE, "r", encoding="utf-8") as template_file:
         template = template_file.read()
     return template.format(
         primary_table=primary_table_name,
@@ -103,7 +103,7 @@ def main() -> None:
     )
     file_content = "{}\n{}".format(header_section, body_section)
 
-    with open(migration_filepath, "w") as migration_file:
+    with open(migration_filepath, "w", encoding="utf-8") as migration_file:
         migration_file.write(file_content)
 
     print(f"Successfully generated migration: {migration_filename}")

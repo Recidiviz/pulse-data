@@ -26,7 +26,7 @@ def update_summary_file(catalog: List[str], catalog_title: str) -> None:
         - catalog - the list of strings to add
         - catalog_title - the title of the section to update"""
 
-    with open(SUMMARY_PATH, "r") as summary_file:
+    with open(SUMMARY_PATH, "r", encoding="utf-8") as summary_file:
         summary_contents = summary_file.readlines()
 
     remove_from = next(
@@ -47,5 +47,5 @@ def update_summary_file(catalog: List[str], catalog_title: str) -> None:
     updated_summary.extend(catalog)
     updated_summary.extend(summary_contents[remove_up_until : len(summary_contents)])
 
-    with open(SUMMARY_PATH, "w") as summary_file:
+    with open(SUMMARY_PATH, "w", encoding="utf-8") as summary_file:
         summary_file.write("".join(updated_summary))

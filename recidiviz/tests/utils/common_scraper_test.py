@@ -17,7 +17,7 @@
 
 """Base test class for scrapers."""
 from datetime import datetime
-from typing import Optional, List, TypeVar, Generic
+from typing import Generic, List, Optional, TypeVar
 
 import yaml
 from lxml import html
@@ -34,7 +34,7 @@ from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.models.single_count import SingleCount
 from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.scrape.base_scraper import BaseScraper
-from recidiviz.ingest.scrape.task_params import Task, ScrapedData
+from recidiviz.ingest.scrape.task_params import ScrapedData, Task
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.utils.individual_ingest_test import IndividualIngestTest
@@ -70,7 +70,7 @@ class CommonScraperTest(Generic[ScraperT], IndividualIngestTest):
 
     def test_yaml_is_correct(self) -> None:
         if self.yaml:
-            with open(self.yaml, "r") as ymlfile:
+            with open(self.yaml, "r", encoding="utf-8") as ymlfile:
                 manifest = yaml.full_load(ymlfile)
 
             person = ingest_info.IngestInfo().create_person()

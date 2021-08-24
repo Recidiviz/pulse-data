@@ -278,13 +278,13 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         If the ID column is in the proper format, this function will no-op.
         """
 
-        for field_name in {
+        for field_name in [
             "ROOT_OFFENDER_ID",
             "ALIAS_OFFENDER_ID",
             "OFFENDER_ID",
             "OFFENDER_BOOK_ID",
             "ORDER_ID",
-        }:
+        ]:
             if field_name in row:
                 row[field_name] = self._decimal_str_as_int_str(row[field_name])
 

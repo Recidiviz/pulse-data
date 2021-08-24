@@ -36,12 +36,12 @@ list of objects; or create new objects as needed.
 
 import abc
 import logging
-from typing import Union, List, Optional, Sequence, Dict, Set, Tuple, Any
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
 
 import yaml
 from lxml.html import HtmlElement
 
-from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject, PLURALS
+from recidiviz.ingest.models.ingest_info import PLURALS, IngestInfo, IngestObject
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.ingest.models.ingest_object_hierarchy import get_ancestor_class_sequence
 
@@ -61,7 +61,7 @@ class DataExtractor(metaclass=abc.ABCMeta):
                 stitching together IngestInfo object graphs where id mappings
                 don't suffice.
         """
-        with open(key_mapping_file, "r") as ymlfile:
+        with open(key_mapping_file, "r", encoding="utf-8") as ymlfile:
             self.manifest = yaml.full_load(ymlfile)
         self.keys = self.manifest.get("key_mappings", {})
         self.multi_keys = self.manifest.get("multi_key_mapping", {})

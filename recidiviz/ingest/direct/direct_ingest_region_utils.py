@@ -20,8 +20,8 @@ from typing import List
 
 import yaml
 
-from recidiviz.ingest.direct import regions
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct import regions
 from recidiviz.tools import deploy
 from recidiviz.utils import regions as regions_utils
 
@@ -69,7 +69,7 @@ def get_direct_ingest_states_with_sftp_queue() -> List[StateCode]:
         "terraform",
         "sftp_state_alpha_codes.yaml",
     )
-    with open(yaml_path, "r") as ymlfile:
+    with open(yaml_path, "r", encoding="utf-8") as ymlfile:
         sftp_state_alpha_codes: List[str] = yaml.full_load(ymlfile)
 
     return [

@@ -46,7 +46,9 @@ def generate_client_events_fixture() -> None:
     and writes them to a CSV fixture file."""
 
     events = []
-    with open("./recidiviz/tools/case_triage/fixtures/etl_clients.csv") as csvfile:
+    with open(
+        "./recidiviz/tools/case_triage/fixtures/etl_clients.csv", encoding="utf-8"
+    ) as csvfile:
         clients = csv.reader(csvfile)
         for index, row in enumerate(clients):
             client_data = csv_row_to_etl_client_json(row)
@@ -97,7 +99,9 @@ def generate_client_events_fixture() -> None:
                 events.append(assessment_event)
 
     with open(
-        "./recidiviz/tools/case_triage/fixtures/etl_client_events.csv", "w"
+        "./recidiviz/tools/case_triage/fixtures/etl_client_events.csv",
+        "w",
+        encoding="utf-8",
     ) as csvfile:
         writer = csv.DictWriter(
             csvfile,

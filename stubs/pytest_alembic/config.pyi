@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,23 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Util functions common to all tests."""
-import os
+from typing import Any, Dict, Union
 
+import alembic
 
-def print_visible_header_label(label_text: str) -> None:
-    """Prints three long lines of '*' characters, followed by a text label on
-    its own line. Used to print a very visible header between other debug
-    printouts.
-    """
-    for _ in range(0, 3):
-        print("*" * 200)
-    print(f"\n{label_text}")
-
-
-def in_docker() -> bool:
-    """ Returns: True if running in a Docker container, else False """
-    if not os.path.exists("/proc/1/cgroup"):
-        return False
-    with open("/proc/1/cgroup", "rt", encoding="utf-8") as ifh:
-        return "docker" in ifh.read()
+class Config:
+    @classmethod
+    def from_raw_config(
+        cls, raw_config: Union[Dict[str, Any], alembic.config.Config, None] = None
+    ) -> "Config": ...

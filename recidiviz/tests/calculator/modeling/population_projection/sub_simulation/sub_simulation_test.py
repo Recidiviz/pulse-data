@@ -18,20 +18,21 @@
 # pylint: disable=super-init-not-called, unused-variable
 
 import unittest
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 from unittest.mock import patch
 
 import pandas as pd
-from recidiviz.calculator.modeling.population_projection.sub_simulation.sub_simulation_factory import (
-    SubSimulationFactory,
-)
+
 from recidiviz.calculator.modeling.population_projection.full_compartment import (
     FullCompartment,
 )
+from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 from recidiviz.calculator.modeling.population_projection.sub_simulation.sub_simulation import (
     SubSimulation,
 )
-from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
+from recidiviz.calculator.modeling.population_projection.sub_simulation.sub_simulation_factory import (
+    SubSimulationFactory,
+)
 
 
 class FakeCompartment(FullCompartment):
@@ -59,9 +60,9 @@ class TestSubSimulation(unittest.TestCase):
     test_outflow_data = pd.DataFrame()
     test_transitions_data = pd.DataFrame()
     starting_cohort_sizes = pd.DataFrame()
-    test_architecture: Dict[str, str] = dict()
-    compartment_policies: List[SparkPolicy] = list()
-    test_user_inputs: Dict[str, Any] = dict()
+    test_architecture: Dict[str, str] = {}
+    compartment_policies: List[SparkPolicy] = []
+    test_user_inputs: Dict[str, Any] = {}
 
     @classmethod
     def setUpClass(cls) -> None:

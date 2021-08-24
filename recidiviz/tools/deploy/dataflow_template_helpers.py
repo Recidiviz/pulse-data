@@ -53,7 +53,7 @@ class PipelineYaml:
 def load_pipeline_config_yaml(template_yaml_path: str) -> PipelineYaml:
     logging.info("Loading templates at path %s", template_yaml_path)
 
-    with open(template_yaml_path, "r") as yaml_file:
+    with open(template_yaml_path, "r", encoding="utf-8") as yaml_file:
         pipeline_config_yaml = yaml.full_load(yaml_file)
 
         if pipeline_config_yaml:

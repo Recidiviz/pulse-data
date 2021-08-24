@@ -23,11 +23,11 @@ def persist_file_contents(documentation: str, markdown_path: str) -> bool:
     changed."""
     prior_documentation = None
     if os.path.exists(markdown_path):
-        with open(markdown_path, "r") as md_file:
+        with open(markdown_path, "r", encoding="utf-8") as md_file:
             prior_documentation = md_file.read()
 
     if prior_documentation != documentation:
-        with open(markdown_path, "w") as md_file:
+        with open(markdown_path, "w", encoding="utf-8") as md_file:
             md_file.write(documentation)
             return True
     return False

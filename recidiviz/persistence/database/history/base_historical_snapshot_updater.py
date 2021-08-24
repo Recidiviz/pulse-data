@@ -23,16 +23,14 @@ See BaseHistoricalSnapshotUpdater for further documentation.
 
 import abc
 import logging
-from datetime import datetime
 from collections import defaultdict
+from datetime import datetime
 from types import ModuleType
-from typing import Any, List, Generic, Type, Set, Callable, Optional, Dict
+from typing import Any, Callable, Dict, Generic, List, Optional, Set, Type
 
 import attr
-
 from sqlalchemy import text
 
-from recidiviz.persistence.database.session import Session
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.history_table_shared_columns_mixin import (
@@ -40,6 +38,7 @@ from recidiviz.persistence.database.schema.history_table_shared_columns_mixin im
 )
 from recidiviz.persistence.database.schema.schema_person_type import SchemaPersonType
 from recidiviz.persistence.database.schema_utils import HISTORICAL_TABLE_CLASS_SUFFIX
+from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
 
 
@@ -121,7 +120,7 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
 
         schema: ModuleType = self.get_schema_module()
 
-        root_entities: List[DatabaseEntity] = list()
+        root_entities: List[DatabaseEntity] = []
         root_entities.extend(root_people)
         root_entities.extend(orphaned_entities)
 

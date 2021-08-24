@@ -55,16 +55,16 @@ class RawDataConfigWriterTest(unittest.TestCase):
                     output_path=test_output_path,
                     raw_file_config=config,
                 )
-                with open(test_output_path, "r") as f:
+                with open(test_output_path, "r", encoding="utf-8") as f:
                     lines = f.readlines()
-                with open(test_output_path, "w") as f:
+                with open(test_output_path, "w", encoding="utf-8") as f:
                     for line in lines:
                         if PLACEHOLDER_TO_DO_STRING not in line:
                             f.write(line)
 
-                with open(config.file_path, "r") as f:
+                with open(config.file_path, "r", encoding="utf-8") as f:
                     expected_contents = f.read()
 
-                with open(test_output_path, "r") as f:
+                with open(test_output_path, "r", encoding="utf-8") as f:
                     written_contents = f.read()
                 self.assertEqual(expected_contents, written_contents)

@@ -17,14 +17,12 @@
 """ Helper file for collecting and consolidating raw ingest file/ingest view configurations """
 import csv
 import os
-from typing import List
-from typing import Optional
+from typing import List, Optional
 
 import attr
 
 import recidiviz
 from recidiviz.common.constants.states import StateCode
-
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
 )
@@ -93,7 +91,7 @@ def get_ingest_view_configs(
                 f"tests/ingest/direct/direct_ingest_fixtures/{region_code}/{view.ingest_view_name}.csv",
             )
 
-            with open(fixture_path, "r") as f:
+            with open(fixture_path, "r", encoding="utf-8") as f:
                 columns = f.readline().split(",")
         except FileNotFoundError:
             continue

@@ -64,7 +64,8 @@ def generate_json_fixtures_from_csv(
 ) -> None:
     converted_fixtures = []
     with open(
-        f"./recidiviz/tools/case_triage/fixtures/etl_{fixture_type}.csv"
+        f"./recidiviz/tools/case_triage/fixtures/etl_{fixture_type}.csv",
+        encoding="utf-8",
     ) as csvfile:
         csv_reader = csv.reader(csvfile)
         for row in csv_reader:
@@ -74,7 +75,9 @@ def generate_json_fixtures_from_csv(
             converted_fixtures.append(converter_fn(row))
 
     with open(
-        f"./recidiviz/case_triage/fixtures/demo_{fixture_type}.json", "w"
+        f"./recidiviz/case_triage/fixtures/demo_{fixture_type}.json",
+        "w",
+        encoding="utf-8",
     ) as jsonfile:
         json.dump(converted_fixtures, jsonfile, default=str)
 

@@ -16,27 +16,28 @@
 # =============================================================================
 """Tests the functions in the us_pa_enum_helpers file."""
 import unittest
+
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
 )
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionLevel,
-    StateSupervisionPeriodSupervisionType,
-    StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodTerminationReason,
-)
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactType,
+)
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+    StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.us_pa.us_pa_controller import UsPaController
 from recidiviz.ingest.direct.regions.us_pa.us_pa_enum_helpers import (
     incarceration_period_admission_reason_mapper,
-    incarceration_period_release_reason_mapper,
     incarceration_period_purpose_mapper,
+    incarceration_period_release_reason_mapper,
     supervision_contact_location_mapper,
     supervision_contact_type_mapper,
 )
@@ -54,7 +55,7 @@ class TestUsPaEnumMappings(unittest.TestCase):
         fixture_path = direct_ingest_fixture_path(
             region_code=self.region_code, file_name="admission_reason_raw_text.csv"
         )
-        with open(fixture_path, "r") as f:
+        with open(fixture_path, "r", encoding="utf-8") as f:
             while True:
                 admission_reason_str = f.readline().strip()
                 if not admission_reason_str:
@@ -69,7 +70,7 @@ class TestUsPaEnumMappings(unittest.TestCase):
         fixture_path = direct_ingest_fixture_path(
             region_code=self.region_code, file_name="release_reason_raw_text.csv"
         )
-        with open(fixture_path, "r") as f:
+        with open(fixture_path, "r", encoding="utf-8") as f:
             while True:
                 release_reason_str = f.readline().strip()
                 if not release_reason_str:
@@ -82,7 +83,7 @@ class TestUsPaEnumMappings(unittest.TestCase):
         fixture_path = direct_ingest_fixture_path(
             region_code=self.region_code, file_name="purpose_raw_text.csv"
         )
-        with open(fixture_path, "r") as f:
+        with open(fixture_path, "r", encoding="utf-8") as f:
             while True:
                 purpose_str = f.readline().strip()
                 if not purpose_str:
@@ -96,7 +97,7 @@ class TestUsPaEnumMappings(unittest.TestCase):
         fixture_path = direct_ingest_fixture_path(
             region_code=self.region_code, file_name="supervision_level_raw_text.csv"
         )
-        with open(fixture_path, "r") as f:
+        with open(fixture_path, "r", encoding="utf-8") as f:
             while True:
                 supervision_level_str = f.readline().strip()
                 if not supervision_level_str:
@@ -109,7 +110,7 @@ class TestUsPaEnumMappings(unittest.TestCase):
             region_code=self.region_code,
             file_name="supervision_period_supervision_type_raw_text.csv",
         )
-        with open(fixture_path, "r") as f:
+        with open(fixture_path, "r", encoding="utf-8") as f:
             while True:
                 supervision_type_str = f.readline().strip()
                 if not supervision_type_str:
@@ -124,7 +125,7 @@ class TestUsPaEnumMappings(unittest.TestCase):
             region_code=self.region_code,
             file_name="supervision_period_admission_reason_raw_text.csv",
         )
-        with open(fixture_path, "r") as f:
+        with open(fixture_path, "r", encoding="utf-8") as f:
             while True:
                 supervision_type_str = f.readline().strip()
                 if not supervision_type_str:
@@ -139,7 +140,7 @@ class TestUsPaEnumMappings(unittest.TestCase):
             region_code=self.region_code,
             file_name="supervision_period_termination_reason_raw_text.csv",
         )
-        with open(fixture_path, "r") as f:
+        with open(fixture_path, "r", encoding="utf-8") as f:
             while True:
                 supervision_type_str = f.readline().strip()
                 if not supervision_type_str:
@@ -153,7 +154,7 @@ class TestUsPaEnumMappings(unittest.TestCase):
             region_code=self.region_code,
             file_name="supervision_contacts_location_raw_text.csv",
         )
-        with open(fixture_path, "r") as f:
+        with open(fixture_path, "r", encoding="utf-8") as f:
             while True:
                 supervision_contact_location_str = f.readline().strip()
                 if not supervision_contact_location_str:
@@ -169,7 +170,7 @@ class TestUsPaEnumMappings(unittest.TestCase):
             region_code=self.region_code,
             file_name="supervision_contacts_type_raw_text.csv",
         )
-        with open(fixture_path, "r") as f:
+        with open(fixture_path, "r", encoding="utf-8") as f:
             while True:
                 supervision_contact_type_str = f.readline().strip()
                 if not supervision_contact_type_str:

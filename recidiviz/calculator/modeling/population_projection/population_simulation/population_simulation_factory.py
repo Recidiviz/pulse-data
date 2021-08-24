@@ -178,7 +178,7 @@ class PopulationSimulationFactory:
         Helper function for initialize_simulation. Populates sub_group_ids_dict so we can recover sub-group properties
         during validation.
         """
-        sub_group_ids_dict = dict()
+        sub_group_ids_dict = {}
         for simulation_group_name, _ in transitions_data.groupby(disaggregation_axes):
             sub_group_id = str(simulation_group_name)
 
@@ -215,7 +215,7 @@ class PopulationSimulationFactory:
         should_initialize_compartment_populations: bool,
     ) -> Dict[str, SubSimulation]:
         """Helper function for initialize_simulation. Initialize one sub simulation per sub-population."""
-        sub_simulations = dict()
+        sub_simulations = {}
 
         # reset indices to facilitate unused data tracking
         transitions_data = transitions_data.reset_index(drop=True)

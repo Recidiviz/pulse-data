@@ -157,10 +157,10 @@ class DirectIngestFilesGenerator:
             - Updates license year in all files to be the current year
             - Adds placeholders
         """
-        with open(file_path) as f:
+        with open(file_path, encoding="utf-8") as f:
             file_contents = f.readlines()
 
-        with open(file_path, "w") as updated_f:
+        with open(file_path, "w", encoding="utf-8") as updated_f:
             for line in file_contents:
                 if re.search("US_XX", line):
                     line = re.sub("US_XX", self.region_code.upper(), line)

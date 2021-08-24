@@ -40,7 +40,7 @@ class TestUsIdEnumMappings(unittest.TestCase):
         enum_overrides = UsIdController.generate_enum_overrides()
 
         actual_mappings = set()
-        with open(fixture_path, "r") as f:
+        with open(fixture_path, "r", encoding="utf-8") as f:
             while True:
                 raw_text_value = f.readline().strip()
                 if not raw_text_value:

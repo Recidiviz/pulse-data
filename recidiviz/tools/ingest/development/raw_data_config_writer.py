@@ -118,9 +118,9 @@ class RawDataConfigWriter:
 
         prior_config = None
         if os.path.exists(output_path):
-            with open(output_path, "r") as raw_data_config_file:
+            with open(output_path, "r", encoding="utf-8") as raw_data_config_file:
                 prior_config = raw_data_config_file.read()
 
         if prior_config != config:
-            with open(output_path, "w") as raw_data_config_file:
+            with open(output_path, "w", encoding="utf-8") as raw_data_config_file:
                 raw_data_config_file.write(config)

@@ -234,7 +234,7 @@ class TestUsMoEnumHelpers(unittest.TestCase):
             region_code=self.region_code,
             file_name="tak026_incarceration_admission_status_combos.txt",
         )
-        with open(fixture_path, "r") as f:
+        with open(fixture_path, "r", encoding="utf-8") as f:
             while True:
                 status_list_str = f.readline().strip()
                 if not status_list_str:
@@ -263,7 +263,7 @@ class TestUsMoEnumHelpers(unittest.TestCase):
             region_code=self.region_code,
             file_name="incarceration_period_release_reason_raw_text.csv",
         )
-        with open(fixture_path, "r") as f:
+        with open(fixture_path, "r", encoding="utf-8") as f:
             while True:
                 release_reason_str = f.readline().strip()
                 if not release_reason_str:

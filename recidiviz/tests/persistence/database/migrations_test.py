@@ -25,6 +25,7 @@ from unittest.case import TestCase
 import pytest
 from alembic.autogenerate import render_python_code
 from pytest_alembic import runner
+from pytest_alembic.config import Config
 from sqlalchemy import create_engine
 
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
@@ -89,11 +90,13 @@ class MigrationsTestBase(TestCase):
 
         return enums
 
-    def default_config(self) -> Dict[str, str]:
-        return {
-            "file": self.database_key.alembic_file,
-            "script_location": self.database_key.migrations_location,
-        }
+    def default_config(self) -> Config:
+        return Config.from_raw_config(
+            {
+                "file": self.database_key.alembic_file,
+                "script_location": self.database_key.migrations_location,
+            }
+        )
 
     @property
     @abc.abstractmethod

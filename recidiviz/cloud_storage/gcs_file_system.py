@@ -74,7 +74,8 @@ class GcsfsFileContentsHandle(FileContentsHandle[str, IO]):
 
     @contextmanager
     def open(self, mode: str = "r") -> Iterator[IO]:
-        with open(self.local_file_path, mode=mode) as f:
+        encoding = None if "b" in mode else "utf-8"
+        with open(self.local_file_path, mode=mode, encoding=encoding) as f:
             yield f
 
     def __del__(self) -> None:

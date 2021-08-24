@@ -24,9 +24,8 @@ import tabula
 import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
+from recidiviz.common import fips, str_field_utils
 from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
-from recidiviz.common import str_field_utils
-from recidiviz.common import fips
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema.aggregate.schema import (
@@ -85,7 +84,7 @@ def _parse_county_table(filename: str) -> pd.DataFrame:
     # Drop rows from header on second table (page 4)
     result = result[~result["county_name"].isin(("Florida", "County"))]
 
-    for column_name in {"county_population", "average_daily_population"}:
+    for column_name in ["county_population", "average_daily_population"]:
         result[column_name] = result[column_name].apply(locale.atoi)
 
     # Sometimes extra notes are indicated in the date reported field.
@@ -133,7 +132,7 @@ def _parse_facility_table(filename: str) -> pd.DataFrame:
     result["average_daily_population"] = (
         result["average_daily_population"].apply(_use_stale_adp).apply(_to_int)
     )
-    for column_name in {"number_felony_pretrial", "number_misdemeanor_pretrial"}:
+    for column_name in ["number_felony_pretrial", "number_misdemeanor_pretrial"]:
         result[column_name] = result[column_name].apply(_to_int)
 
     return result

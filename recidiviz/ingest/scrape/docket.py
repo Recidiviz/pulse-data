@@ -66,7 +66,7 @@ Attributes:
 import csv
 import json
 import logging
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 from google.cloud import pubsub
 
@@ -146,7 +146,7 @@ def load_background_target_list(
 
     pubsub_helper.create_topic_and_subscription(scrape_key, pubsub_type=PUBSUB_TYPE)
 
-    with open(name_file, "r") as csvfile:
+    with open(name_file, "r", encoding="utf-8") as csvfile:
         names_reader = csv.reader(csvfile)
 
         for row in names_reader:

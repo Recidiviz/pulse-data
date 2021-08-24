@@ -42,5 +42,5 @@ def get_vendor_queue_params(vendor: str) -> Optional[Dict[str, Any]]:
     queue_param_path = os.path.join(BASE_VENDOR_PATH, vendor, "queue.yaml")
     if not os.path.exists(queue_param_path):
         return None
-    with open(queue_param_path) as queue_params:
+    with open(queue_param_path, encoding="utf-8") as queue_params:
         return yaml.full_load(queue_params) or {}

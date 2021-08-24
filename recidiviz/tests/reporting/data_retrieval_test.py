@@ -194,7 +194,8 @@ class EmailGenerationTests(TestCase):
         with open(
             os.path.join(
                 f"{os.path.dirname(__file__)}/context/po_monthly_report", FIXTURE_FILE
-            )
+            ),
+            encoding="utf-8",
         ) as fixture_file:
             # Remove newlines
             self._write_test_data(json.dumps(json.loads(fixture_file.read())))
@@ -232,7 +233,8 @@ class EmailGenerationTests(TestCase):
         with open(
             os.path.join(
                 f"{os.path.dirname(__file__)}/context/po_monthly_report", FIXTURE_FILE
-            )
+            ),
+            encoding="utf-8",
         ) as fixture_file:
             # Remove newlines
             self._write_test_data(json.dumps(json.loads(fixture_file.read())))

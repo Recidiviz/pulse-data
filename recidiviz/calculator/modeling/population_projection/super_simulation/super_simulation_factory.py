@@ -15,25 +15,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Population projection simulation initializer object -- instantiates SuperSimulation"""
-from typing import Dict, Any, Tuple
+from typing import Any, Dict, Tuple
 
+from recidiviz.calculator.modeling.population_projection.super_simulation.exporter import (
+    Exporter,
+)
 from recidiviz.calculator.modeling.population_projection.super_simulation.initializer import (
     Initializer,
 )
 from recidiviz.calculator.modeling.population_projection.super_simulation.simulator import (
     Simulator,
 )
-from recidiviz.calculator.modeling.population_projection.super_simulation.validator import (
-    Validator,
-)
-from recidiviz.calculator.modeling.population_projection.super_simulation.exporter import (
-    Exporter,
+from recidiviz.calculator.modeling.population_projection.super_simulation.super_simulation import (
+    SuperSimulation,
 )
 from recidiviz.calculator.modeling.population_projection.super_simulation.time_converter import (
     TimeConverter,
 )
-from recidiviz.calculator.modeling.population_projection.super_simulation.super_simulation import (
-    SuperSimulation,
+from recidiviz.calculator.modeling.population_projection.super_simulation.validator import (
+    Validator,
 )
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -90,7 +90,7 @@ class SuperSimulationFactory:
 
         cls._check_valid_yaml_inputs(initialization_params)
 
-        model_params: Dict[str, Any] = dict()
+        model_params: Dict[str, Any] = {}
 
         model_params["reference_year"] = initialization_params.pop(
             "reference_date", float
@@ -150,13 +150,13 @@ class SuperSimulationFactory:
                 f"Only one data input can be set in the yaml file, not {len(given_data_inputs)}"
             )
 
-        data_inputs: Dict[str, Any] = dict()
+        data_inputs: Dict[str, Any] = {}
 
         if "big_query_inputs" in given_data_inputs.keys():
             big_query_inputs_yaml_dict = given_data_inputs.pop_dict("big_query_inputs")
             big_query_inputs_keys = big_query_inputs_yaml_dict.keys()
 
-            big_query_inputs_dict: Dict[str, str] = dict()
+            big_query_inputs_dict: Dict[str, str] = {}
             for k in big_query_inputs_keys:
                 big_query_inputs_dict[k] = big_query_inputs_yaml_dict.pop(k, str)
 
@@ -178,7 +178,7 @@ class SuperSimulationFactory:
     ) -> Dict[str, Any]:
         """Helper to retrieve user_inputs for get_model_params"""
 
-        user_inputs: Dict[str, Any] = dict()
+        user_inputs: Dict[str, Any] = {}
         user_inputs_yaml_dict = initialization_params.pop_dict("user_inputs")
 
         if "big_query_simulation_tag" in model_params["data_inputs_raw"].keys():
@@ -220,7 +220,7 @@ class SuperSimulationFactory:
         )
         compartments_architecture_keys = compartments_architecture_raw.keys()
 
-        compartments_architecture_dict: Dict[str, Any] = dict()
+        compartments_architecture_dict: Dict[str, Any] = {}
         for k in compartments_architecture_keys:
             compartments_architecture_dict[
                 k
@@ -230,7 +230,7 @@ class SuperSimulationFactory:
         compartment_costs_raw = initialization_params.pop_dict(compartment_costs_key)
         compartment_costs_keys = compartment_costs_raw.keys()
 
-        compartment_costs_dict: Dict[str, float] = dict()
+        compartment_costs_dict: Dict[str, float] = {}
         for k in compartment_costs_keys:
             compartment_costs_dict[k] = compartment_costs_raw.pop(k, float)
 
