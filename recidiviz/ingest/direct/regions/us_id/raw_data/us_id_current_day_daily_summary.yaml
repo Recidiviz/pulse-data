@@ -5,6 +5,7 @@ file_description: |-
   status of each person as of that moment.
 primary_key_cols:
   - ofndr_num
+  - popdate
 columns:
   - name: ofndr_num
     description: |-
