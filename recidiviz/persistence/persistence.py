@@ -427,32 +427,64 @@ def write_ingest_info(
     ] = retry_transaction,
 ) -> bool:
     """
-    If in prod or if 'PERSIST_LOCALLY' is set to true, persist each person in
-    the ingest_info. If a person with the given surname/birthday already exists,
-    then update that person.
+    If should_persist(), persist each person in the ingest_info. If a person with the
+    given surname/birthday already exists, then update that person.
 
     Otherwise, simply log the given ingest_infos for debugging
 
-    `run_txn_fn` is exposed primarily for testing and should typically be left as `retry_transaction`. `run_txn_fn`
-    must handle the coordination of the transaction including, when to run the body of the transaction and when to
-    commit, rollback, or close the session.
+    `run_txn_fn` is exposed primarily for testing and should typically be left as
+    `retry_transaction`. `run_txn_fn` must handle the coordination of the transaction
+    including, when to run the body of the transaction and when to commit or rollback
+    the session.
     """
     ingest_info_validator.validate(ingest_info)
+
+    # TODO(#8905): Once direct ingest regions have migrated to ingest mappings overhaul,
+    #  assert that SystemLevel != STATE here.
+
+    # Convert the people one at a time and count the errors as they happen.
+    conversion_result: EntityDeserializationResult = (
+        ingest_info_converter.convert_to_persistence_entities(
+            ingest_info, ingest_metadata
+        )
+    )
+    total_people = _get_total_people(ingest_info, ingest_metadata)
+
+    return write_entities(
+        conversion_result,
+        ingest_metadata,
+        total_people,
+        run_txn_fn,
+    )
+
+
+@trace.span
+def write_entities(
+    conversion_result: EntityDeserializationResult,
+    ingest_metadata: IngestMetadata,
+    total_people: int,
+    run_txn_fn: Callable[
+        [Session, MeasurementMap, Callable[[Session], bool], Optional[int]], bool
+    ] = retry_transaction,
+) -> bool:
+    """If should_persist(), persist each object in the |conversion_result|. If an object
+    representing any given entity already exists, that object is merely updated via the
+    entity matching process.
+
+    Otherwise, if should_persist() is false, goes through the motions without
+    actually committing anything to the database.
+
+    `run_txn_fn` is exposed primarily for testing and should typically be left as
+    `retry_transaction`. `run_txn_fn` must handle the coordination of the transaction
+    including, when to run the body of the transaction and when to commit or rollback
+    the session.
+    """
 
     mtags: Dict[str, Union[bool, str]] = {
         monitoring.TagKey.SHOULD_PERSIST: should_persist(),
         monitoring.TagKey.PERSISTED: False,
     }
-    total_people = _get_total_people(ingest_info, ingest_metadata)
     with monitoring.measurements(mtags) as measurements:
-
-        # Convert the people one at a time and count the errors as they happen.
-        conversion_result: EntityDeserializationResult = (
-            ingest_info_converter.convert_to_persistence_entities(
-                ingest_info, ingest_metadata
-            )
-        )
-
         people, data_validation_errors = entity_validator.validate(
             conversion_result.people
         )

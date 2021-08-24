@@ -22,13 +22,15 @@ from recidiviz.common.str_field_utils import normalize
 from recidiviz.ingest.models.ingest_info_pb2 import StateAlias
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    parse_region_code_with_override,
     fn,
+    parse_region_code_with_override,
 )
 from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 from recidiviz.persistence.ingest_info_converter.utils.names import parse_name
 
 
+# TODO(#8905): Delete this file once all states have been migrated to v2 ingest
+#  mappings.
 def convert(proto: StateAlias, metadata: IngestMetadata) -> entities.StatePersonAlias:
     """Converts an ingest_info proto StateAlias to a persistence entity."""
     new = entities.StatePersonAlias.builder()

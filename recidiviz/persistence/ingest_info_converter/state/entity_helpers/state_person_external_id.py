@@ -26,6 +26,8 @@ from recidiviz.persistence.entity.state.deserialize_entity_factories import (
 )
 
 
+# TODO(#8905): Delete this file once all states have been migrated to v2 ingest
+#  mappings.
 def convert(
     proto: StatePersonExternalId, metadata: IngestMetadata
 ) -> entities.StatePersonExternalId:

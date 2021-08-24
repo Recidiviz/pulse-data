@@ -55,6 +55,8 @@ def convert_ingest_info_to_proto(
     bond_map: Dict[str, ingest_info.Bond] = {}
     sentence_map: Dict[str, ingest_info.Sentence] = {}
 
+    # TODO(#8905): Delete all references to state schema objects from this file once
+    #  ingest mappings overhaul is complete for all states.
     state_person_map: Dict[str, ingest_info.StatePerson] = {}
     state_person_race_map: Dict[str, ingest_info.StatePersonRace] = {}
     state_person_ethnicity_map: Dict[str, ingest_info.StatePersonEthnicity] = {}

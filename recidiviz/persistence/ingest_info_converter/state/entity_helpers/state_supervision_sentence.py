@@ -20,18 +20,20 @@ persistence entity."""
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.str_field_utils import normalize, parse_date, parse_days
 from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionSentence
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn,
-    parse_external_id,
     parse_completion_date,
+    parse_external_id,
     parse_region_code_with_override,
 )
-from recidiviz.common.str_field_utils import parse_days, normalize, parse_date
 from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
+# TODO(#8905): Delete this file once all states have been migrated to v2 ingest
+#  mappings.
 def copy_fields_to_builder(
     supervision_sentence_builder: entities.StateSupervisionSentence.Builder,
     proto: StateSupervisionSentence,

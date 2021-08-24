@@ -29,10 +29,14 @@ from recidiviz.common.constants.state.external_id_types import US_TN_DOC
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
+)
+from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
     IngestAncestorChainOverridesCallable,
     IngestFilePostprocessorCallable,
     IngestPrimaryKeyOverrideCallable,
     IngestRowPosthookCallable,
+    IngestRowPrehookCallable,
+    LegacyIngestViewProcessorDelegate,
 )
 from recidiviz.ingest.direct.regions.us_tn.us_tn_enum_helpers import (
     generate_enum_overrides,
@@ -42,7 +46,9 @@ from recidiviz.ingest.models.ingest_info import IngestObject, StatePersonExterna
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
-class UsTnController(BaseDirectIngestController):
+# TODO(#8903): Delete LegacyIngestViewProcessorDelegate superclass when we have fully
+#  migrated this state to new ingest mappings version.
+class UsTnController(BaseDirectIngestController, LegacyIngestViewProcessorDelegate):
     """Direct ingest controller implementation for US_TN."""
 
     @classmethod
@@ -82,25 +88,35 @@ class UsTnController(BaseDirectIngestController):
     def get_enum_overrides(self) -> EnumOverrides:
         return self.enum_overrides
 
-    def _get_row_post_processors_for_file(
+    # TODO(#8903): Delete LegacyIngestViewProcessorDelegate methods when we have fully
+    #  migrated this state to new ingest mappings version.
+    def get_row_post_processors_for_file(
         self, file_tag: str
     ) -> List[IngestRowPosthookCallable]:
         return self.row_post_processors_by_file.get(file_tag, [])
 
-    def _get_file_post_processors_for_file(
+    def get_file_post_processors_for_file(
         self, file_tag: str
     ) -> List[IngestFilePostprocessorCallable]:
         return self.file_post_processors_by_file.get(file_tag, [])
 
-    def _get_primary_key_override_for_file(
+    def get_primary_key_override_for_file(
         self, file: str
     ) -> Optional[IngestPrimaryKeyOverrideCallable]:
         return self.primary_key_override_hook_by_file.get(file, None)
 
-    def _get_ancestor_chain_overrides_callback_for_file(
+    def get_ancestor_chain_overrides_callback_for_file(
         self, file: str
     ) -> Optional[IngestAncestorChainOverridesCallable]:
         return self.ancestor_chain_overrides_callback_by_file.get(file, None)
+
+    def get_row_pre_processors_for_file(
+        self, _file_tag: str
+    ) -> List[IngestRowPrehookCallable]:
+        return []
+
+    def get_files_to_set_with_empty_values(self) -> List[str]:
+        return []
 
     @staticmethod
     def _normalize_external_id_type(

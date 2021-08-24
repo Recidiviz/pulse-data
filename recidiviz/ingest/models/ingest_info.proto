@@ -41,6 +41,10 @@ message IngestInfo {
     repeated Sentence sentences = 7;
     repeated SentenceRelationship sentence_relationships = 8;
 
+    // TODO(#8905
+): Delete all references to state schema objects from this file once
+    //  ingest mappings overhaul is complete for all states.
+
     repeated StatePerson state_people = 9;
     repeated StatePersonRace state_person_races = 10;
     repeated StatePersonEthnicity state_person_ethnicities = 11;

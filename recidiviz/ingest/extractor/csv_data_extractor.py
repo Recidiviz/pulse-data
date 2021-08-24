@@ -22,18 +22,18 @@ model and returned.
 import collections.abc
 import csv
 import logging
-from collections import defaultdict, OrderedDict
+from collections import OrderedDict, defaultdict
 from typing import (
     Any,
+    Callable,
     Dict,
-    Set,
+    Generic,
+    Iterable,
     List,
     Optional,
-    Iterable,
-    Union,
-    Callable,
-    Generic,
+    Set,
     TypeVar,
+    Union,
 )
 
 import more_itertools
@@ -93,6 +93,8 @@ class CsvDataExtractor(Generic[HookContextType], DataExtractor):
     def __init__(
         self,
         key_mapping_file: str,
+        # TODO(#8905): Consider significantly simplifying this class to remove all
+        #  callback / hook codepaths once all direct ingest usages have been eliminated.
         hook_context: HookContextType,
         row_pre_hooks: Optional[List[RowPrehookCallable]] = None,
         row_post_hooks: Optional[List[RowPosthookCallable]] = None,

@@ -17,11 +17,11 @@
 
 """Converts an ingest_info proto StateBond to a persistence entity."""
 
-from typing import cast, Optional
+from typing import Optional, cast
 
-from recidiviz.common.str_field_utils import normalize, parse_date
 from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.str_field_utils import normalize, parse_date
 from recidiviz.ingest.models.ingest_info_pb2 import StateBond
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils import converter_utils
@@ -33,6 +33,8 @@ from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
 from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
+# TODO(#8905): Delete this file once all states have been migrated to v2 ingest
+#  mappings.
 def convert(proto: StateBond, metadata: IngestMetadata) -> entities.StateBond:
     """Converts an ingest_info proto StateBond to a persistence entity."""
     new = entities.StateBond.builder()

@@ -28,6 +28,10 @@ from recidiviz.common.constants.enum_overrides import (
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
+from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
+    IngestRowPrehookCallable,
+    LegacyIngestViewProcessorDelegate,
+)
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     update_overrides_from_maps,
 )
@@ -39,7 +43,9 @@ from recidiviz.ingest.extractor.csv_data_extractor import (
 )
 
 
-class UsXxController(BaseDirectIngestController):
+# TODO(#8908): Delete LegacyIngestViewProcessorDelegate superclass once ingest mappings
+#   overhaul is ready for new states going forward.
+class UsXxController(BaseDirectIngestController, LegacyIngestViewProcessorDelegate):
     """Direct ingest controller implementation for US_XX."""
 
     @classmethod
@@ -86,22 +92,32 @@ class UsXxController(BaseDirectIngestController):
     def get_enum_overrides(self) -> EnumOverrides:
         return self.enum_overrides
 
-    def _get_row_post_processors_for_file(
+    # TODO(#8908): Delete LegacyIngestViewProcessorDelegate methods once ingest mappings
+    #   overhaul is ready for new states going forward.
+    def get_row_post_processors_for_file(
         self, file_tag: str
     ) -> List[RowPosthookCallable]:
         return self.row_post_processors_by_file.get(file_tag, [])
 
-    def _get_file_post_processors_for_file(
+    def get_file_post_processors_for_file(
         self, file_tag: str
     ) -> List[FilePostprocessorCallable]:
         return self.file_post_processors_by_file.get(file_tag, [])
 
-    def _get_primary_key_override_for_file(
+    def get_primary_key_override_for_file(
         self, file: str
     ) -> Optional[PrimaryKeyOverrideCallable]:
         return self.primary_key_override_hook_by_file.get(file, None)
 
-    def _get_ancestor_chain_overrides_callback_for_file(
+    def get_ancestor_chain_overrides_callback_for_file(
         self, file: str
     ) -> Optional[AncestorChainOverridesCallable]:
         return self.ancestor_chain_overrides_callback_by_file.get(file, None)
+
+    def get_row_pre_processors_for_file(
+        self, _file_tag: str
+    ) -> List[IngestRowPrehookCallable]:
+        return []
+
+    def get_files_to_set_with_empty_values(self) -> List[str]:
+        return []

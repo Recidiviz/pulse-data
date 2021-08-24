@@ -18,18 +18,20 @@
 """Converts an ingest_info proto StateSupervisionCaseTypeEntry to a
 persistence entity."""
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.str_field_utils import normalize
 from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.str_field_utils import normalize
 from recidiviz.ingest.models.ingest_info import StateSupervisionCaseTypeEntry
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn,
-    parse_region_code_with_override,
     parse_external_id,
+    parse_region_code_with_override,
 )
 from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
+# TODO(#8905): Delete this file once all states have been migrated to v2 ingest
+#  mappings.
 def convert(
     proto: StateSupervisionCaseTypeEntry, metadata: IngestMetadata
 ) -> entities.StateSupervisionCaseTypeEntry:

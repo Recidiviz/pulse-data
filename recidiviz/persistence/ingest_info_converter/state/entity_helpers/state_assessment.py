@@ -19,11 +19,11 @@
 
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
-    StateAssessmentType,
     StateAssessmentLevel,
+    StateAssessmentType,
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import parse_date, normalize, parse_int
+from recidiviz.common.str_field_utils import normalize, parse_date, parse_int
 from recidiviz.ingest.models.ingest_info_pb2 import StateAssessment
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
@@ -34,6 +34,8 @@ from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
 from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
+# TODO(#8905): Delete this file once all states have been migrated to v2 ingest
+#  mappings.
 def copy_fields_to_builder(
     state_assessment_builder: entities.StateAssessment.Builder,
     proto: StateAssessment,

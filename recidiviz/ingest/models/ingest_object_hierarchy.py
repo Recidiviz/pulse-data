@@ -45,6 +45,8 @@ _HIERARCHY_MAP: Dict[
     "hold": ("person", "booking"),
     "bond": ("person", "booking", "charge"),
     "sentence": ("person", "booking", "charge"),
+    # TODO(#8905): Delete all state schema objects from this map once ingest mappings
+    #  overhaul is complete for all states.
     "state_person": (),
     "state_person_race": ("state_person",),
     "state_person_ethnicity": ("state_person",),
