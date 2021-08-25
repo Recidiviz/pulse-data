@@ -18,6 +18,7 @@
 
 from typing import Union
 
+from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.enum_parser import (
     EnumParser,
     get_parser_for_enum_with_default,
@@ -122,6 +123,21 @@ class StateAgentFactory(EntityFactory):
                     get_parser_for_enum_with_default(
                         StateAgentType.PRESENT_WITHOUT_INFO
                     ),
+                ),
+            },
+            **kwargs
+        )
+
+
+class StateChargeFactory(EntityFactory):
+    @staticmethod
+    def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StateCharge:
+        return entity_deserialize(
+            cls=entities.StateCharge,
+            converter_overrides={
+                "status": EntityFieldConverter(
+                    EnumParser,
+                    get_parser_for_enum_with_default(ChargeStatus.PRESENT_WITHOUT_INFO),
                 ),
             },
             **kwargs
