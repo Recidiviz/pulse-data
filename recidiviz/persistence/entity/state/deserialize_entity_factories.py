@@ -22,9 +22,11 @@ from recidiviz.common.constants.enum_parser import (
     EnumParser,
     get_parser_for_enum_with_default,
 )
+from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.str_field_utils import normalize_flat_json
 from recidiviz.persistence.entity.entity_deserialize import (
+    EntityFactory,
     EntityFieldConverter,
     entity_deserialize,
 )
@@ -34,7 +36,7 @@ from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
 )
 
 
-class StatePersonExternalIdFactory:
+class StatePersonExternalIdFactory(EntityFactory):
     @staticmethod
     def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StatePersonExternalId:
         return entity_deserialize(
@@ -42,7 +44,7 @@ class StatePersonExternalIdFactory:
         )
 
 
-class StatePersonFactory:
+class StatePersonFactory(EntityFactory):
     @staticmethod
     def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StatePerson:
         return entity_deserialize(
@@ -55,7 +57,7 @@ class StatePersonFactory:
         )
 
 
-class StatePersonRaceFactory:
+class StatePersonRaceFactory(EntityFactory):
     @staticmethod
     def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StatePersonRace:
         return entity_deserialize(
@@ -63,7 +65,7 @@ class StatePersonRaceFactory:
         )
 
 
-class StatePersonEthnicityFactory:
+class StatePersonEthnicityFactory(EntityFactory):
     @staticmethod
     def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StatePersonEthnicity:
         return entity_deserialize(
@@ -71,7 +73,7 @@ class StatePersonEthnicityFactory:
         )
 
 
-class StateSentenceGroupFactory:
+class StateSentenceGroupFactory(EntityFactory):
     @staticmethod
     def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StateSentenceGroup:
         return entity_deserialize(
@@ -81,6 +83,44 @@ class StateSentenceGroupFactory:
                     EnumParser,
                     get_parser_for_enum_with_default(
                         StateSentenceStatus.PRESENT_WITHOUT_INFO
+                    ),
+                ),
+            },
+            **kwargs
+        )
+
+
+class StateAssessmentFactory(EntityFactory):
+    @staticmethod
+    def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StateAssessment:
+        return entity_deserialize(
+            cls=entities.StateAssessment, converter_overrides={}, **kwargs
+        )
+
+
+class StatePersonAliasFactory(EntityFactory):
+    @staticmethod
+    def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StatePersonAlias:
+        return entity_deserialize(
+            cls=entities.StatePersonAlias,
+            converter_overrides={
+                "full_name": EntityFieldConverter(str, normalize_flat_json),
+            },
+            **kwargs
+        )
+
+
+class StateAgentFactory(EntityFactory):
+    @staticmethod
+    def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StateAgent:
+        return entity_deserialize(
+            cls=entities.StateAgent,
+            converter_overrides={
+                "full_name": EntityFieldConverter(str, normalize_flat_json),
+                "agent_type": EntityFieldConverter(
+                    EnumParser,
+                    get_parser_for_enum_with_default(
+                        StateAgentType.PRESENT_WITHOUT_INFO
                     ),
                 ),
             },

@@ -38,6 +38,7 @@ from recidiviz.ingest.models.ingest_info_pb2 import (
 )
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StateAssessmentFactory,
     StatePersonFactory,
     StateSentenceGroupFactory,
 )
@@ -611,7 +612,7 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             ingest_assessment,
         )
 
-        return assessment_builder.build()
+        return assessment_builder.build(StateAssessmentFactory.deserialize)
 
     def _convert_program_assignment(self, ingest_assignment: StateProgramAssignment):
         """Converts an ingest_info proto StateProgramAssignment to a
