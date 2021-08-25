@@ -16,18 +16,15 @@
 # ============================================================================
 
 """Converts an ingest_info proto StateAgent to a persistence entity."""
-
+from recidiviz.common import common_utils
+from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import normalize
 from recidiviz.ingest.models.ingest_info_pb2 import StateAgent
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn,
-    parse_external_id,
-    parse_region_code_with_override,
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StateAgentFactory,
 )
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 from recidiviz.persistence.ingest_info_converter.utils.names import parse_name
 
 
@@ -37,20 +34,18 @@ def convert(proto: StateAgent, metadata: IngestMetadata) -> entities.StateAgent:
     """Converts an ingest_info proto StateAgent to a persistence entity."""
     new = entities.StateAgent.builder()
 
-    enum_fields = {
-        "agent_type": StateAgentType,
-    }
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
-
     # enum values
-    new.agent_type = enum_mappings.get(
-        StateAgentType, default=StateAgentType.PRESENT_WITHOUT_INFO
+    new.agent_type = EnumParser(
+        getattr(proto, "agent_type"), StateAgentType, metadata.enum_overrides
     )
-    new.agent_type_raw_text = fn(normalize, "agent_type", proto)
+    new.agent_type_raw_text = getattr(proto, "agent_type")
 
     # 1-to-1 mappings
-    new.external_id = fn(parse_external_id, "state_agent_id", proto)
-    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
+    state_agent_id = getattr(proto, "state_agent_id")
+    new.external_id = (
+        None if common_utils.is_generated_id(state_agent_id) else state_agent_id
+    )
+    new.state_code = metadata.region
     new.full_name = parse_name(proto)
 
-    return new.build()
+    return new.build(StateAgentFactory.deserialize)

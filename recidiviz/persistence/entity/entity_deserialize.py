@@ -15,28 +15,28 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Provides a decorator for augmenting Entity classes with a deserialization constructor."""
-
-from typing import Dict, Callable, Any, Type, Union, TypeVar, Generic
+from abc import abstractmethod
+from typing import Any, Callable, Dict, Generic, Type, TypeVar, Union
 
 import attr
 
 from recidiviz.common.attr_utils import (
-    is_forward_ref,
-    is_list,
-    is_str,
+    is_attr_decorated,
     is_date,
     is_enum,
+    is_forward_ref,
     is_int,
-    is_attr_decorated,
+    is_list,
+    is_str,
 )
+from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.str_field_utils import (
     normalize,
+    parse_bool,
     parse_date,
     parse_int,
-    parse_bool,
 )
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.utils.types import T
 
 EntityT = TypeVar("EntityT", bound=Entity)
@@ -121,3 +121,10 @@ def entity_deserialize(
             converted_args[field_name] = convert_field_value(field_, kwargs[field_name])
 
     return cls(**converted_args)  # type: ignore[call-arg]
+
+
+class EntityFactory(Generic[EntityT]):
+    @staticmethod
+    @abstractmethod
+    def deserialize(**kwargs: Union[str, EnumParser]) -> EntityT:
+        """Instantiates an entity from the provided list of arguments."""

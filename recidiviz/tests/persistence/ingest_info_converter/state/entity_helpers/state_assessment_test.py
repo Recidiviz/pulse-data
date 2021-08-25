@@ -21,11 +21,14 @@ from datetime import date
 
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
-    StateAssessmentType,
     StateAssessmentLevel,
+    StateAssessmentType,
 )
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StateAssessmentFactory,
+)
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_assessment,
 )
@@ -37,7 +40,7 @@ _EMPTY_METADATA = FakeIngestMetadata.for_state("us_nd")
 class StateAssessmentConverterTest(unittest.TestCase):
     """Tests for converting assessments."""
 
-    def testParseStateAssessment(self):
+    def testParseStateAssessment(self) -> None:
         # Arrange
         ingest_assessment = ingest_info_pb2.StateAssessment(
             assessment_class="RISK",
@@ -55,7 +58,7 @@ class StateAssessmentConverterTest(unittest.TestCase):
         state_assessment.copy_fields_to_builder(
             assessment_builder, ingest_assessment, _EMPTY_METADATA
         )
-        result = assessment_builder.build()
+        result = assessment_builder.build(StateAssessmentFactory.deserialize)
 
         # Assert
         expected_result = entities.StateAssessment.new_with_defaults(

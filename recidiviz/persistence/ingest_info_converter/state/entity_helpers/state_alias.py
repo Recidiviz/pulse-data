@@ -16,16 +16,14 @@
 # ============================================================================
 
 """Converts an ingest_info proto StateAlias to a persistence entity."""
+from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import normalize
 from recidiviz.ingest.models.ingest_info_pb2 import StateAlias
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn,
-    parse_region_code_with_override,
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StatePersonAliasFactory,
 )
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 from recidiviz.persistence.ingest_info_converter.utils.names import parse_name
 
 
@@ -35,17 +33,14 @@ def convert(proto: StateAlias, metadata: IngestMetadata) -> entities.StatePerson
     """Converts an ingest_info proto StateAlias to a persistence entity."""
     new = entities.StatePersonAlias.builder()
 
-    enum_fields = {
-        "alias_type": StatePersonAliasType,
-    }
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
-
     # enum values
-    new.alias_type = enum_mappings.get(StatePersonAliasType)
-    new.alias_type_raw_text = fn(normalize, "alias_type", proto)
+    new.alias_type = EnumParser(
+        getattr(proto, "alias_type"), StatePersonAliasType, metadata.enum_overrides
+    )
+    new.alias_type_raw_text = getattr(proto, "alias_type")
 
     # 1-to-1 mappings
-    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
+    new.state_code = metadata.region
     new.full_name = parse_name(proto)
 
-    return new.build()
+    return new.build(StatePersonAliasFactory.deserialize)
