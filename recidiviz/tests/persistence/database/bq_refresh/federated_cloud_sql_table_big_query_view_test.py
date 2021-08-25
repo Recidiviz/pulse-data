@@ -26,15 +26,13 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
     DirectIngestInstance,
 )
-from recidiviz.persistence.database.base_schema import StateBase, JailsBase
+from recidiviz.persistence.database.base_schema import JailsBase, StateBase
 from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_table_big_query_view import (
-    FederatedCloudSQLTableBigQueryViewBuilder,
     FederatedCloudSQLTableBigQueryView,
+    FederatedCloudSQLTableBigQueryViewBuilder,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
-from recidiviz.persistence.database.sqlalchemy_database_key import (
-    SQLAlchemyDatabaseKey,
-)
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.view_registry.dataset_overrides import (
     dataset_overrides_for_view_builders,
 )
@@ -76,7 +74,7 @@ schema-specific datasets (`state`, `jails`, `justice_counts`, etc)."""
 SELECT
     *
 FROM EXTERNAL_QUERY(
-    "test-project.us-east2.state_us_xx_primary_cloudsql",
+    "test-project.us-east2.state_v2_us_xx_primary_cloudsql",
     "SELECT * FROM state_person;"
 )"""
 
@@ -88,7 +86,7 @@ FROM EXTERNAL_QUERY(
         self.assertEqual(expected_description, view.description)
         self.assertEqual(
             BigQueryAddress(
-                dataset_id="state_us_xx_primary_cloudsql_connection",
+                dataset_id="state_v2_us_xx_primary_cloudsql_connection",
                 table_id="state_person",
             ),
             view.address,
@@ -111,7 +109,7 @@ FROM EXTERNAL_QUERY(
         self.assertEqual(expected_description, view_with_overrides.description)
         self.assertEqual(
             BigQueryAddress(
-                dataset_id="test_prefix_state_us_xx_primary_cloudsql_connection",
+                dataset_id="test_prefix_state_v2_us_xx_primary_cloudsql_connection",
                 table_id="state_person",
             ),
             view_with_overrides.address,
@@ -149,7 +147,7 @@ schema-specific datasets (`state`, `jails`, `justice_counts`, etc)."""
 SELECT
     *
 FROM EXTERNAL_QUERY(
-    "test-project.us-east2.state_us_xx_secondary_cloudsql",
+    "test-project.us-east2.state_v2_us_xx_secondary_cloudsql",
     "SELECT * FROM state_person;"
 )"""
 
@@ -161,7 +159,7 @@ FROM EXTERNAL_QUERY(
         self.assertEqual(expected_description, view.description)
         self.assertEqual(
             BigQueryAddress(
-                dataset_id="state_us_xx_secondary_cloudsql_connection",
+                dataset_id="state_v2_us_xx_secondary_cloudsql_connection",
                 table_id="state_person",
             ),
             view.address,
@@ -194,7 +192,7 @@ schema-specific datasets (`state`, `jails`, `justice_counts`, etc)."""
 SELECT
     *
 FROM EXTERNAL_QUERY(
-    "test-project.us-east2.jails_cloudsql",
+    "test-project.us-east2.jails_v2_cloudsql",
     "SELECT * FROM person;"
 )"""
 
@@ -206,7 +204,7 @@ FROM EXTERNAL_QUERY(
         self.assertEqual(expected_description, view.description)
         self.assertEqual(
             BigQueryAddress(
-                dataset_id="jails_cloudsql_connection",
+                dataset_id="jails_v2_cloudsql_connection",
                 table_id="person",
             ),
             view.address,

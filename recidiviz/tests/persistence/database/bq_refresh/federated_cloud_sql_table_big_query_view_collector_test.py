@@ -214,7 +214,8 @@ class FederatedCloudSQLTableBigQueryViewCollectorTest(unittest.TestCase):
             materialized_addresses.add(view.materialized_address)
 
         self.assertEqual(
-            {"operations_cloudsql_connection"}, {a.dataset_id for a in view_addresses}
+            {"operations_v2_cloudsql_connection"},
+            {a.dataset_id for a in view_addresses},
         )
 
         expected_materialized_datasets = {
@@ -258,7 +259,8 @@ class FederatedCloudSQLTableBigQueryViewCollectorTest(unittest.TestCase):
             materialized_addresses.add(view.materialized_address)
 
         self.assertEqual(
-            {"operations_cloudsql_connection"}, {a.dataset_id for a in view_addresses}
+            {"operations_v2_cloudsql_connection"},
+            {a.dataset_id for a in view_addresses},
         )
         self.assertNotIn(
             "us_nd_operations_regional", {a.dataset_id for a in materialized_addresses}
@@ -302,7 +304,7 @@ class FederatedCloudSQLTableBigQueryViewCollectorTest(unittest.TestCase):
                 self.assertTrue("birthdate_inferred_from_age" not in view.view_query)
 
         self.assertEqual(
-            {"jails_cloudsql_connection"}, {a.dataset_id for a in view_addresses}
+            {"jails_v2_cloudsql_connection"}, {a.dataset_id for a in view_addresses}
         )
         self.assertEqual(
             {"census_regional"}, {a.dataset_id for a in materialized_addresses}
