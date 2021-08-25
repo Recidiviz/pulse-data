@@ -1,0 +1,32 @@
+file_tag: docstars_REF_PROVIDER_LOCATION
+file_description: |-
+  Each row represents a Free Through Recovery (FTR) provider location. These are actual
+  office locations that provide the service.
+primary_key_cols:
+  - LOCATION_ID
+columns:
+  - name: LOCATION_ID
+    description: |-
+      ID for a location of the FTR provider.
+  - name: PROVIDER_ID
+    description: |-
+      ID of the FTR provider.
+  - name: DESCRIPTION
+    description: |-
+      Description for the FTR provider location, typically the city (e.g. Bismarck)
+  - name: CAPACITY
+    description: |-
+      The capacity of the FTR provider location, per the contract.
+  - name: REGION
+    description: |-
+      ID of the region that the FTR provider location is in. This is set by DHS and
+      corresponds to their service zones, which are geographic regions of the state.
+      These are not the same as DOCR parole office locations.
+  - name: ACTIVE
+    description: |-
+      Yes/No for whether this FTR provider location is currently active.
+  - name: UNDERSERVED
+    description: |-
+      Yes/No for whether funding is targeted at specific populations (e.g. multi-county
+      reservation areas or rural areas that have a lack of mental health or substance
+      use treatment can be designated as underserved).
