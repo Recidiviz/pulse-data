@@ -16,9 +16,11 @@
 # =============================================================================
 """Wrapper around the Auth0 Client
 """
+import time
 from typing import Dict, List, Optional, TypedDict
 
 from auth0.v3.authentication import GetToken
+from auth0.v3.exceptions import RateLimitError
 from auth0.v3.management import Auth0
 
 from recidiviz.utils import secrets
@@ -100,14 +102,25 @@ class Auth0Client:
         return all_users
 
     def update_user_app_metadata(
-        self,
-        user_id: str,
-        app_metadata: Auth0AppMetadata,
+        self, user_id: str, app_metadata: Auth0AppMetadata, max_retries: int = 10
     ) -> None:
         """Updates a single Auth0 user's app_metadata field. Root-level properties are merged, and any nested properties
         are replaced. To delete an app_metadata property, send None as the value. To delete the app_metadata entirely,
         send an empty dictionary."""
-        return self.client.users.update(id=user_id, body={"app_metadata": app_metadata})
+        # TODO(#8991): Remove retry logic and update Auth0Client once auto rate limiting feature is released in package.
+        attempts = 0
+        while True:
+            try:
+                self.client.users.update(
+                    id=user_id, body={"app_metadata": app_metadata}
+                )
+            except RateLimitError as error:
+                attempts += 1
+                if attempts > max_retries:
+                    raise error
+                time.sleep((2 ** attempts))
+                continue
+            break
 
     @staticmethod
     def _create_search_users_by_email_query(email_addresses: List[str]) -> str:
