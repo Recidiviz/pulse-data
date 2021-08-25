@@ -29,7 +29,7 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.case_triage.views.dataset_config import (
     VIEWS_DATASET as CASE_TRIAGE_DATASET,
 )
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 CASE_TRIAGE_EVENTS_VIEW_NAME = "case_triage_metrics"
@@ -42,7 +42,7 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
       WITH column_wise AS
      (
       SELECT user_id, EXTRACT(DATE from timestamp) as date_measurement, action_taken, count(*) as counts
-        from `{case_triage_metrics_project}.{case_triage_segment}.frontend_person_action_taken`
+        from `{project_id}.{case_triage_segment_dataset}.frontend_person_action_taken`
         group by 1,2,3
      ),
 
@@ -72,7 +72,7 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
                 , COUNT(DISTINCT selected.timestamp) AS persons_selected_events
                 , COUNT(DISTINCT scrolled.timestamp) AS scrolled_to_bottom_events
                 , COUNT(DISTINCT updated.timestamp) AS case_updated_events
-          FROM `{case_triage_metrics_project}.{case_triage_segment}.tracks` metrics
+          FROM `{project_id}.{case_triage_segment_dataset}.tracks` metrics
           INNER JOIN `{project_id}.{static_reference_tables_dataset}.case_triage_users` recipients
                 ON metrics.user_id = recipients.segment_id
           LEFT JOIN `{project_id}.{po_report_dataset}.officer_supervision_district_association_materialized` district
@@ -80,15 +80,15 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
                 AND district.state_code = recipients.state_code
                 AND EXTRACT(MONTH FROM metrics.timestamp) = district.month
                 AND EXTRACT(YEAR FROM metrics.timestamp) = district.year
-           LEFT JOIN `{case_triage_metrics_project}.{case_triage_segment}.pages` page
+           LEFT JOIN `{project_id}.{case_triage_segment_dataset}.pages` page
                 ON page.user_id = recipients.segment_id
-           LEFT JOIN `{case_triage_metrics_project}.{case_triage_segment}.frontend_person_selected` selected
+           LEFT JOIN `{project_id}.{case_triage_segment_dataset}.frontend_person_selected` selected
                 ON selected.user_id = recipients.segment_id
                 AND EXTRACT(DATE FROM selected.timestamp) = EXTRACT(DATE FROM metrics.timestamp)
-          LEFT JOIN `{case_triage_metrics_project}.{case_triage_segment}.frontend_scrolled_to_bottom` scrolled
+          LEFT JOIN `{project_id}.{case_triage_segment_dataset}.frontend_scrolled_to_bottom` scrolled
                 ON scrolled.user_id = recipients.segment_id
                 AND EXTRACT(DATE FROM scrolled.timestamp) = EXTRACT(DATE FROM metrics.timestamp)
-          LEFT JOIN `{case_triage_metrics_project}.{case_triage_segment}.frontend_person_case_updated` updated
+          LEFT JOIN `{project_id}.{case_triage_segment_dataset}.frontend_person_case_updated` updated
                 ON updated.user_id = recipients.segment_id
                 AND EXTRACT(DATE FROM updated.timestamp) = EXTRACT(DATE FROM metrics.timestamp)
 
@@ -213,7 +213,7 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
              , ROW_NUMBER() OVER (PARTITION BY selected.person_external_id, EXTRACT(DATE FROM selected.timestamp) ORDER BY date_of_supervision desc) AS rn
              , metrics.supervision_type
              , metrics.supervision_level
-             FROM `{case_triage_metrics_project}.{case_triage_segment}.frontend_person_selected` selected
+             FROM `{project_id}.{case_triage_segment_dataset}.frontend_person_selected` selected
              LEFT JOIN `{project_id}.{dataflow_metrics_materialized_dataset}.most_recent_supervision_population_metrics_materialized` metrics
                 ON selected.person_external_id = metrics.person_external_id
                 AND metrics.date_of_supervision < EXTRACT(DATE FROM selected.timestamp)
@@ -232,7 +232,7 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
                 , correct_levels_select.supervision_type
                 , correct_levels_select.supervision_level
             --if they have employment during the timestamp period
-          FROM `{case_triage_metrics_project}.{case_triage_segment}.frontend_person_selected` selected
+          FROM `{project_id}.{case_triage_segment_dataset}.frontend_person_selected` selected
           LEFT JOIN employ
                   ON employ.person_external_id = selected.person_external_id
                   AND employ.recorded_start_date <= EXTRACT(date from selected.timestamp)
@@ -287,7 +287,7 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
                 EXTRACT(DATE FROM updated.timestamp) ORDER BY date_of_supervision desc) AS rn,
              metrics.supervision_type,
              metrics.supervision_level,
-             FROM `{case_triage_metrics_project}.{case_triage_segment}.frontend_person_case_updated` updated
+             FROM `{project_id}.{case_triage_segment_dataset}.frontend_person_case_updated` updated
              LEFT JOIN `{project_id}.{dataflow_metrics_materialized_dataset}.most_recent_supervision_population_metrics_materialized` metrics
                 ON updated.person_external_id = metrics.person_external_id
                 AND metrics.date_of_supervision < EXTRACT(DATE FROM updated.timestamp)
@@ -306,7 +306,7 @@ CASE_TRIAGE_EVENTS_QUERY_TEMPLATE = """
                 , correct_levels_update.supervision_type
                 , correct_levels_update.supervision_level
             --if they have employment during the timestmap period
-          FROM `{case_triage_metrics_project}.{case_triage_segment}.frontend_person_case_updated` updated
+          FROM `{project_id}.{case_triage_segment_dataset}.frontend_person_case_updated` updated
           LEFT JOIN employ
             ON employ.person_external_id = updated.person_external_id
             AND employ.recorded_start_date <= EXTRACT(date from updated.timestamp)
@@ -416,8 +416,7 @@ CASE_TRIAGE_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     po_report_dataset=PO_REPORT_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     case_triage_dataset=CASE_TRIAGE_DATASET,
-    case_triage_segment=CASE_TRIAGE_SEGMENT_DATASET,
-    case_triage_metrics_project=GCP_PROJECT_PRODUCTION,
+    case_triage_segment_dataset=CASE_TRIAGE_SEGMENT_DATASET,
     should_materialize=True,
 )
 
