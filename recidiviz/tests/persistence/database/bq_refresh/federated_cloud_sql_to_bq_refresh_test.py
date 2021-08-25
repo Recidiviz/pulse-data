@@ -197,7 +197,7 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
         f"{FEDERATED_REFRESH_PACKAGE_NAME}.CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA",
         {
             SchemaType.OPERATIONS: {
-                "operations_cloudsql_connection",
+                "operations_v2_cloudsql_connection",
                 "us_xx_operations_regional",
                 "us_ww_operations_regional",
                 "operations_regional",
@@ -232,7 +232,7 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
             [
                 mock.call(
                     DatasetReference(
-                        "recidiviz-staging", "operations_cloudsql_connection"
+                        "recidiviz-staging", "operations_v2_cloudsql_connection"
                     ),
                     None,
                 ),
@@ -312,7 +312,8 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
             [
                 mock.call(
                     DatasetReference(
-                        "recidiviz-staging", "my_prefix_operations_cloudsql_connection"
+                        "recidiviz-staging",
+                        "my_prefix_operations_v2_cloudsql_connection",
                     ),
                     expiration_ms,
                 ),
