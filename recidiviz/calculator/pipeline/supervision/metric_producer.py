@@ -20,7 +20,7 @@ This contains the core logic for calculating supervision metrics on a person-by-
 basis. It transforms SupervisionEvents into SupervisionMetrics.
 """
 from operator import attrgetter
-from typing import Any, Dict, List, Optional, Type
+from typing import Dict, List, Optional, Type
 
 from recidiviz.calculator.pipeline.base_metric_producer import BaseMetricProducer
 from recidiviz.calculator.pipeline.pipeline_type import PipelineType
@@ -32,7 +32,6 @@ from recidiviz.calculator.pipeline.supervision.events import (
     SupervisionTerminationEvent,
 )
 from recidiviz.calculator.pipeline.supervision.metrics import (
-    SuccessfulSupervisionSentenceDaysServedMetric,
     SupervisionCaseComplianceMetric,
     SupervisionDowngradeMetric,
     SupervisionMetric,
@@ -74,7 +73,6 @@ class SupervisionMetricProducer(
             ],
             ProjectedSupervisionCompletionEvent: [
                 SupervisionMetricType.SUPERVISION_SUCCESS,
-                SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED,
             ],
             SupervisionStartEvent: [SupervisionMetricType.SUPERVISION_START],
             SupervisionTerminationEvent: [
@@ -90,7 +88,6 @@ class SupervisionMetricProducer(
             SupervisionMetricType.SUPERVISION_POPULATION: SupervisionPopulationMetric,
             SupervisionMetricType.SUPERVISION_START: SupervisionStartMetric,
             SupervisionMetricType.SUPERVISION_SUCCESS: SupervisionSuccessMetric,
-            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: SuccessfulSupervisionSentenceDaysServedMetric,
             SupervisionMetricType.SUPERVISION_TERMINATION: SupervisionTerminationMetric,
         }
 
@@ -178,20 +175,6 @@ class SupervisionMetricProducer(
                     )
 
                 if self.include_event_in_metric(event, metric_type):
-                    additional_attributes: Dict[str, Any] = {}
-
-                    if (
-                        isinstance(
-                            event,
-                            ProjectedSupervisionCompletionEvent,
-                        )
-                        and metric_type
-                        == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
-                    ):
-                        additional_attributes[
-                            "days_served"
-                        ] = event.sentence_days_served
-
                     metric = build_metric(
                         pipeline=pipeline_type.value.lower(),
                         event=event,
@@ -200,7 +183,6 @@ class SupervisionMetricProducer(
                         event_date=event_date,
                         person_metadata=person_metadata,
                         pipeline_job_id=pipeline_job_id,
-                        additional_attributes=additional_attributes,
                     )
 
                     if not isinstance(metric, SupervisionMetric):
@@ -250,19 +232,6 @@ class SupervisionMetricProducer(
                     (SupervisionPopulationEvent,),
                 )
                 and not supervision_period_is_out_of_state(event)
-            )
-        if (
-            metric_type
-            == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
-        ):
-            return (
-                isinstance(event, ProjectedSupervisionCompletionEvent)
-                and event.successful_completion
-                # Only include successful sentences where the person was not incarcerated during the sentence
-                # in this metric
-                and not event.incarcerated_during_sentence
-                # Only include this event in this metric if there is a recorded number of days served
-                and event.sentence_days_served is not None
             )
         if metric_type in (
             SupervisionMetricType.SUPERVISION_START,

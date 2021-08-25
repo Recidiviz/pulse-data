@@ -36,7 +36,6 @@ from recidiviz.calculator.pipeline.supervision.events import (
     SupervisionTerminationEvent,
 )
 from recidiviz.calculator.pipeline.supervision.metrics import (
-    SuccessfulSupervisionSentenceDaysServedMetric,
     SupervisionMetricType,
     SupervisionOutOfStatePopulationMetric,
     SupervisionPopulationMetric,
@@ -400,11 +399,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         expected_count = expected_metrics_count(supervision_events)
 
         self.assertEqual(expected_count, len(metrics))
-        assert any(
-            isinstance(metric, SuccessfulSupervisionSentenceDaysServedMetric)
-            and metric.days_served == 998
-            for metric in metrics
-        )
 
     def test_produce_supervision_metrics_supervision_unsuccessful(self) -> None:
         """Tests the produce_supervision_metrics function when there is a ProjectedSupervisionCompletionEvent
@@ -481,10 +475,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             not metric.successful_completion
             for metric in metrics
             if isinstance(metric, SupervisionSuccessMetric)
-        )
-        assert all(
-            not isinstance(metric, SuccessfulSupervisionSentenceDaysServedMetric)
-            for metric in metrics
         )
 
     def test_produce_supervision_metrics_supervision_mixed_success(self) -> None:
@@ -1354,100 +1344,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric in metrics
         )
 
-    def test_produce_supervision_metrics_only_successful_sentence_length(self) -> None:
-        person = StatePerson.new_with_defaults(
-            state_code="US_XX",
-            person_id=12345,
-            birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
-        )
-
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
-        )
-
-        person.ethnicities = [ethnicity]
-
-        termination_event = SupervisionTerminationEvent(
-            state_code="US_XX",
-            year=2010,
-            month=1,
-            event_date=date(2010, 1, 13),
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            assessment_score=11,
-            assessment_type=StateAssessmentType.LSIR,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            assessment_score_change=-9,
-        )
-
-        supervision_events: List[SupervisionEvent] = [
-            ProjectedSupervisionCompletionEvent(
-                state_code="US_XX",
-                year=2010,
-                month=3,
-                event_date=date(2010, 3, 31),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                successful_completion=True,
-                incarcerated_during_sentence=False,
-                sentence_days_served=500,
-                supervising_officer_external_id="officer45",
-                supervising_district_external_id="district5",
-            ),
-            termination_event,
-            SupervisionPopulationEvent(
-                state_code="US_MO",
-                year=2010,
-                month=1,
-                event_date=date(2010, 1, 1),
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                projected_end_date=None,
-            ),
-            SupervisionPopulationEvent(
-                state_code="US_MO",
-                year=2010,
-                month=1,
-                event_date=date(2010, 1, 2),
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                projected_end_date=None,
-            ),
-        ]
-
-        inclusions_dict = {
-            metric_type: (
-                metric_type
-                == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
-            )
-            for metric_type in SupervisionMetricType
-        }
-
-        metrics = self.metric_producer.produce_metrics(
-            person,
-            supervision_events,
-            inclusions_dict,
-            calculation_end_month="2010-12",
-            calculation_month_count=12,
-            person_metadata=_DEFAULT_PERSON_METADATA,
-            pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
-        )
-
-        expected_count = expected_metrics_count(
-            supervision_events,
-            include_all_metrics=False,
-            metric_to_include=SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED,
-        )
-
-        self.assertEqual(expected_count, len(metrics))
-        assert all(
-            isinstance(metric, SuccessfulSupervisionSentenceDaysServedMetric)
-            and metric.days_served == 500
-            for metric in metrics
-        )
-
     def test_produce_supervision_metrics_only_population(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
@@ -1525,85 +1421,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         self.assertEqual(expected_count, len(metrics))
         assert all(
             isinstance(metric, SupervisionPopulationMetric) for metric in metrics
-        )
-
-    def test_produce_supervision_metrics_only_successful_sentence_length_duplicate_month_longer_sentence(
-        self,
-    ) -> None:
-        person = StatePerson.new_with_defaults(
-            state_code="US_XX",
-            person_id=12345,
-            birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
-        )
-
-        race = StatePersonRace.new_with_defaults(state_code="US_XX", race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code="US_XX", ethnicity=Ethnicity.NOT_HISPANIC
-        )
-
-        person.ethnicities = [ethnicity]
-
-        supervision_events: List[SupervisionEvent] = [
-            ProjectedSupervisionCompletionEvent(
-                state_code="US_XX",
-                year=2018,
-                month=3,
-                event_date=date(2018, 3, 31),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                successful_completion=True,
-                incarcerated_during_sentence=False,
-                sentence_days_served=500,
-                supervising_officer_external_id="officer45",
-                supervising_district_external_id="district5",
-            ),
-            ProjectedSupervisionCompletionEvent(
-                state_code="US_XX",
-                year=2018,
-                month=3,
-                event_date=date(2018, 3, 31),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                successful_completion=True,
-                incarcerated_during_sentence=False,
-                sentence_days_served=501,
-                supervising_officer_external_id="officer45",
-                supervising_district_external_id="district5",
-            ),
-        ]
-
-        inclusions_dict = {
-            metric_type: (
-                metric_type
-                == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
-            )
-            for metric_type in SupervisionMetricType
-        }
-
-        metrics = self.metric_producer.produce_metrics(
-            person,
-            supervision_events,
-            inclusions_dict,
-            calculation_end_month="2018-03",
-            calculation_month_count=1,
-            person_metadata=_DEFAULT_PERSON_METADATA,
-            pipeline_job_id=_PIPELINE_JOB_ID,
-            pipeline_type=self.pipeline_config.pipeline_type,
-        )
-
-        expected_count = expected_metrics_count(
-            supervision_events,
-            include_all_metrics=False,
-            metric_to_include=SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED,
-        )
-
-        self.assertEqual(expected_count, len(metrics))
-        assert all(
-            isinstance(metric, SuccessfulSupervisionSentenceDaysServedMetric)
-            and metric.days_served in (500, 501)
-            for metric in metrics
         )
 
     def test_produce_supervision_metrics_compliance_metrics(self) -> None:
@@ -2167,95 +1984,6 @@ class TestIncludeEventInMetric(unittest.TestCase):
             )
         )
 
-    def test_include_in_metric_supervision_successful_days_served(self) -> None:
-        event = ProjectedSupervisionCompletionEvent(
-            state_code="US_XX",
-            year=2018,
-            month=3,
-            event_date=date(2018, 3, 31),
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            case_type=StateSupervisionCaseType.GENERAL,
-            successful_completion=True,
-            incarcerated_during_sentence=False,
-            sentence_days_served=998,
-            supervising_officer_external_id="officer45",
-            supervising_district_external_id="district5",
-        )
-
-        self.assertTrue(
-            self.metric_producer.include_event_in_metric(
-                event, SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
-            )
-        )
-
-    def test_include_in_metric_supervision_successful_days_served_unsuccessful(
-        self,
-    ) -> None:
-        event = ProjectedSupervisionCompletionEvent(
-            state_code="US_XX",
-            year=2018,
-            month=3,
-            event_date=date(2018, 3, 31),
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            case_type=StateSupervisionCaseType.GENERAL,
-            successful_completion=False,
-            incarcerated_during_sentence=False,
-            sentence_days_served=998,
-            supervising_officer_external_id="officer45",
-            supervising_district_external_id="district5",
-        )
-
-        self.assertFalse(
-            self.metric_producer.include_event_in_metric(
-                event, SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
-            )
-        )
-
-    def test_include_in_metric_supervision_successful_days_served_incarcerated_in_sentence(
-        self,
-    ) -> None:
-        event = ProjectedSupervisionCompletionEvent(
-            state_code="US_XX",
-            year=2018,
-            month=3,
-            event_date=date(2018, 3, 31),
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            case_type=StateSupervisionCaseType.GENERAL,
-            successful_completion=True,
-            incarcerated_during_sentence=True,
-            sentence_days_served=998,
-            supervising_officer_external_id="officer45",
-            supervising_district_external_id="district5",
-        )
-
-        self.assertFalse(
-            self.metric_producer.include_event_in_metric(
-                event, SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
-            )
-        )
-
-    def test_include_in_metric_supervision_successful_days_served_no_days_served(
-        self,
-    ) -> None:
-        event = ProjectedSupervisionCompletionEvent(
-            state_code="US_XX",
-            year=2018,
-            month=3,
-            event_date=date(2018, 3, 31),
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            case_type=StateSupervisionCaseType.GENERAL,
-            successful_completion=True,
-            incarcerated_during_sentence=False,
-            supervising_officer_external_id="officer45",
-            supervising_district_external_id="district5",
-        )
-
-        self.assertFalse(
-            self.metric_producer.include_event_in_metric(
-                event, SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
-            )
-        )
-
 
 def expected_metrics_count(
     supervision_events: List[SupervisionEvent],
@@ -2287,20 +2015,6 @@ def expected_metrics_count(
                     for event in supervision_events
                     if isinstance(event, SupervisionPopulationEvent)
                     and event.supervision_level_downgrade_occurred
-                ]
-            )
-        elif (
-            metric_type
-            == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
-        ):
-            output_count_by_metric_type[metric_type] = len(
-                [
-                    event
-                    for event in supervision_events
-                    if isinstance(event, ProjectedSupervisionCompletionEvent)
-                    and event.sentence_days_served is not None
-                    and event.successful_completion
-                    and not event.incarcerated_during_sentence
                 ]
             )
         elif metric_type == SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION:
