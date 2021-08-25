@@ -14,16 +14,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""US_MO implementation of the supervision delegate"""
-from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
-    StateSpecificSupervisionDelegate,
+"""Unit tests for state_specific_supervision_delegate default functions"""
+import unittest
+
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_delegate import (
+    UsXxSupervisionDelegate,
 )
 
 
-class UsMoSupervisionDelegate(StateSpecificSupervisionDelegate):
-    """US_MO implementation of the supervision delegate"""
+class TestStateSpecificSupervisionDelegate(unittest.TestCase):
+    """Unit tests for state_specific_supervision_delegate default function implementations."""
 
-    def supervision_types_mutually_exclusive(self) -> bool:
-        """In US_MO, people on DUAL supervision are tracked as mutually exclusive from groups of people
-        on PAROLE or PROBATION."""
-        return True
+    def setUp(self) -> None:
+        self.supervision_delegate = UsXxSupervisionDelegate()
+
+    def test_supervision_location_from_supervision_site(self) -> None:
+        (
+            level_1,
+            level_2,
+        ) = self.supervision_delegate.supervision_location_from_supervision_site("1")
+        self.assertEqual(level_1, "1")
+        self.assertEqual(level_2, None)

@@ -97,6 +97,9 @@ from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_commitmen
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_delegate import (
+    UsXxSupervisionDelegate,
+)
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violation_response_preprocessing_delegate import (
     UsXxViolationResponsePreprocessingDelegate,
 )
@@ -165,12 +168,18 @@ class TestIncarcerationPipeline(unittest.TestCase):
         self.mock_violation_pre_processing_delegate.return_value = (
             UsXxViolationResponsePreprocessingDelegate()
         )
+        self.supervision_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_supervision_delegate"
+        )
+        self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
+        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
 
     def tearDown(self) -> None:
         self.incarceration_pre_processing_delegate_patcher.stop()
         self.commitment_from_supervision_delegate_patcher.stop()
         self.violation_delegate_patcher.stop()
         self.violation_pre_processing_delegate_patcher.stop()
+        self.supervision_delegate_patcher.stop()
 
     @staticmethod
     def _default_data_dict() -> Dict[str, List]:
@@ -772,12 +781,18 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         self.mock_violation_pre_processing_delegate.return_value = (
             UsXxViolationResponsePreprocessingDelegate()
         )
+        self.supervision_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_supervision_delegate"
+        )
+        self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
+        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
 
     def tearDown(self) -> None:
         self.incarceration_pre_processing_delegate_patcher.stop()
         self.commitment_from_supervision_delegate_patcher.stop()
         self.violation_delegate_patcher.stop()
         self.violation_pre_processing_delegate_patcher.stop()
+        self.supervision_delegate_patcher.stop()
 
     @staticmethod
     def load_person_entities_dict(

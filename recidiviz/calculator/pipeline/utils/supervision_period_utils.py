@@ -21,6 +21,9 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from recidiviz.calculator.pipeline.utils.period_utils import (
     sort_periods_by_set_dates_and_statuses,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
+    StateSpecificSupervisionDelegate,
+)
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
@@ -147,17 +150,23 @@ def filter_out_unknown_supervision_period_supervision_type_periods(
     ]
 
 
-def default_get_state_specific_supervising_officer_and_location_info_function(
+def supervising_officer_and_location_info(
     supervision_period: StateSupervisionPeriod,
     supervision_period_to_agent_associations: Dict[int, Dict[str, Any]],
+    supervision_delegate: StateSpecificSupervisionDelegate,
 ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
-    """Given |supervision_period| returns the relevant officer and supervision
-    location info.
+    """
+    Extracts supervising officer and location information associated with a supervision_period in the given state.
+
+    Returns a tuple of supervising_officer_external_id and level 1/2 location information.
     """
     supervising_officer_external_id = None
-    level_1_supervision_location = supervision_period.supervision_site
-    # No generic support for level_2_supervision_location
-    level_2_supervision_location = None
+    (
+        level_1_supervision_location,
+        level_2_supervision_location,
+    ) = supervision_delegate.supervision_location_from_supervision_site(
+        supervision_period.supervision_site
+    )
 
     if not supervision_period.supervision_period_id:
         raise ValueError("Unexpected null supervision_period_id")
@@ -171,6 +180,6 @@ def default_get_state_specific_supervising_officer_and_location_info_function(
 
     return (
         supervising_officer_external_id,
-        level_1_supervision_location or None,
-        level_2_supervision_location or None,
+        level_1_supervision_location,
+        level_2_supervision_location,
     )

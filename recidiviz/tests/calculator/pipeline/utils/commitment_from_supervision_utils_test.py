@@ -30,12 +30,15 @@ from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_inde
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    get_state_specific_supervising_officer_and_location_info_function,
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
+    StateSpecificSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_incarceration_period_pre_processing_delegate import (
     PURPOSE_FOR_INCARCERATION_PVC,
     SHOCK_INCARCERATION_PVC,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_delegate import (
+    UsPaSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.violation_utils import (
     VIOLATION_HISTORY_WINDOW_MONTHS,
@@ -76,6 +79,9 @@ from recidiviz.persistence.entity.state.entities import (
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_commitment_from_supervision_utils import (
     UsXxCommitmentFromSupervisionDelegate,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_delegate import (
+    UsXxSupervisionDelegate,
+)
 
 _DEFAULT_SUPERVISION_PERIOD_ID = 999
 
@@ -104,6 +110,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
         supervision_period_to_agent_associations: Optional[
             Dict[int, Dict[Any, Any]]
         ] = None,
+        supervision_delegate: StateSpecificSupervisionDelegate = UsXxSupervisionDelegate(),
     ) -> CommitmentDetails:
         """Helper function for testing get_commitment_from_supervision_details."""
         supervision_period_to_agent_associations = (
@@ -134,10 +141,8 @@ class TestGetCommitmentDetails(unittest.TestCase):
             incarceration_sentences=[],
             supervision_sentences=[],
             commitment_from_supervision_delegate=UsXxCommitmentFromSupervisionDelegate(),
+            supervision_delegate=supervision_delegate,
             supervision_period_to_agent_associations=supervision_period_to_agent_associations,
-            state_specific_officer_and_location_info_from_supervision_period_fn=get_state_specific_supervising_officer_and_location_info_function(
-                incarceration_period.state_code
-            ),
         )
 
     def test_get_commitment_from_supervision_details(self) -> None:
@@ -310,6 +315,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
 
         commitment_details = self._test_get_commitment_from_supervision_details(
             incarceration_period,
+            supervision_delegate=UsPaSupervisionDelegate(),
             supervision_periods=[supervision_period],
             incarceration_period_index=ip_index,
         )

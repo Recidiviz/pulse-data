@@ -47,6 +47,9 @@ from recidiviz.persistence.entity.state.entities import (
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_delegate import (
+    UsXxSupervisionDelegate,
+)
 
 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS = {
     999: {"agent_id": 000, "agent_external_id": "XXX", "supervision_period_id": 999}
@@ -75,11 +78,17 @@ class TestFindProgramEvents(unittest.TestCase):
         self.mock_pre_processing_delegate.return_value = (
             UsXxIncarcerationPreProcessingDelegate()
         )
+        self.supervision_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.program.identifier.get_state_specific_supervision_delegate"
+        )
+        self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
+        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
         self.identifier = identifier.ProgramIdentifier()
 
     def tearDown(self) -> None:
         self.assessment_types_patcher.stop()
         self.pre_processing_delegate_patcher.stop()
+        self.supervision_delegate_patcher.stop()
 
     @freeze_time("2020-01-02")
     def test_find_program_events(self) -> None:
@@ -175,10 +184,16 @@ class TestFindProgramReferrals(unittest.TestCase):
         )
         self.mock_assessment_types = self.assessment_types_patcher.start()
         self.mock_assessment_types.return_value = [StateAssessmentType.ORAS]
+        self.supervision_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.program.identifier.get_state_specific_supervision_delegate"
+        )
+        self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
+        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
         self.identifier = identifier.ProgramIdentifier()
 
     def tearDown(self) -> None:
         self.assessment_types_patcher.stop()
+        self.supervision_delegate_patcher.stop()
 
     def test_find_program_referrals(self) -> None:
         program_assignment = StateProgramAssignment.new_with_defaults(
@@ -727,7 +742,15 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
     """Tests the referrals_for_supervision_periods function."""
 
     def setUp(self) -> None:
+        self.supervision_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.program.identifier.get_state_specific_supervision_delegate"
+        )
+        self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
+        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
         self.identifier = identifier.ProgramIdentifier()
+
+    def tearDown(self) -> None:
+        self.supervision_delegate_patcher.stop()
 
     def test_referrals_for_supervision_periods(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(

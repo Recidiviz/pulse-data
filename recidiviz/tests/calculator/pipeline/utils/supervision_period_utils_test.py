@@ -18,17 +18,37 @@
 
 """Tests for supervision_period_utils.py."""
 import unittest
+from datetime import date
 
+import attr
+
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_delegate import (
+    UsIdSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_delegate import (
+    UsMoSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_delegate import (
+    UsNdSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_delegate import (
+    UsPaSupervisionDelegate,
+)
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     identify_most_severe_case_type,
+    supervising_officer_and_location_info,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodStatus,
+    StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
+)
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_delegate import (
+    UsXxSupervisionDelegate,
 )
 
 
@@ -80,3 +100,265 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
         most_severe_case_type = identify_most_severe_case_type(supervision_period)
 
         self.assertEqual(most_severe_case_type, StateSupervisionCaseType.GENERAL)
+
+
+DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE: StateSupervisionPeriod = StateSupervisionPeriod.new_with_defaults(
+    supervision_period_id=111,
+    external_id="sp1",
+    status=StateSupervisionPeriodStatus.TERMINATED,
+    state_code="US_XX",
+    start_date=date(2017, 3, 5),
+    termination_date=date(2017, 5, 9),
+    supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+)
+
+DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS = {
+    111: {
+        "agent_id": 123,
+        "agent_external_id": "agent_external_id_1",
+        "supervision_period_id": 111,
+    }
+}
+
+
+class TestSupervisingOfficerAndLocationInfo(unittest.TestCase):
+    """Tests the supervising_officer_and_location_info function."""
+
+    def test_get_supervising_officer_and_location_info_from_supervision_period(
+        self,
+    ) -> None:
+        supervision_period = attr.evolve(
+            DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE, supervision_site="1"
+        )
+
+        (
+            supervising_officer_external_id,
+            level_1_supervision_location,
+            level_2_supervision_location,
+        ) = supervising_officer_and_location_info(
+            supervision_period,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            UsXxSupervisionDelegate(),
+        )
+
+        self.assertEqual("agent_external_id_1", supervising_officer_external_id)
+        self.assertEqual("1", level_1_supervision_location)
+        self.assertEqual(None, level_2_supervision_location)
+
+    def test_get_supervising_officer_and_location_info_from_supervision_period_no_site(
+        self,
+    ) -> None:
+        (
+            supervising_officer_external_id,
+            level_1_supervision_location,
+            level_2_supervision_location,
+        ) = supervising_officer_and_location_info(
+            DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            UsXxSupervisionDelegate(),
+        )
+
+        self.assertEqual("agent_external_id_1", supervising_officer_external_id)
+        self.assertEqual(None, level_1_supervision_location)
+        self.assertEqual(None, level_2_supervision_location)
+
+    def test_get_supervising_officer_and_location_info_no_agent(self) -> None:
+        supervision_period = attr.evolve(
+            DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
+            supervision_period_id=666,  # No mapping for this ID
+            supervision_site="1",
+        )
+
+        (
+            supervising_officer_external_id,
+            level_1_supervision_location,
+            level_2_supervision_location,
+        ) = supervising_officer_and_location_info(
+            supervision_period,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            UsXxSupervisionDelegate(),
+        )
+
+        self.assertEqual(None, supervising_officer_external_id)
+        self.assertEqual("1", level_1_supervision_location)
+        self.assertEqual(None, level_2_supervision_location)
+
+    def test_get_supervising_officer_and_location_info_from_supervision_period_us_id(
+        self,
+    ) -> None:
+        supervision_period = attr.evolve(
+            DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
+            state_code="US_ID",
+            supervision_site="DISTRICT OFFICE 6, POCATELLO|UNKNOWN",
+        )
+
+        (
+            supervising_officer_external_id,
+            level_1_supervision_location,
+            level_2_supervision_location,
+        ) = supervising_officer_and_location_info(
+            supervision_period,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            UsIdSupervisionDelegate(),
+        )
+
+        self.assertEqual("agent_external_id_1", supervising_officer_external_id)
+        self.assertEqual("UNKNOWN", level_1_supervision_location)
+        self.assertEqual("DISTRICT OFFICE 6, POCATELLO", level_2_supervision_location)
+
+        supervision_period = attr.evolve(
+            DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
+            state_code="US_ID",
+            supervision_site="PAROLE COMMISSION OFFICE|DEPORTED",
+        )
+
+        (
+            supervising_officer_external_id,
+            level_1_supervision_location,
+            level_2_supervision_location,
+        ) = supervising_officer_and_location_info(
+            supervision_period,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            UsIdSupervisionDelegate(),
+        )
+
+        self.assertEqual("agent_external_id_1", supervising_officer_external_id)
+        self.assertEqual("DEPORTED", level_1_supervision_location)
+        self.assertEqual("PAROLE COMMISSION OFFICE", level_2_supervision_location)
+
+        supervision_period = attr.evolve(
+            DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
+            state_code="US_ID",
+            supervision_site="DISTRICT OFFICE 4, BOISE|",
+        )
+
+        (
+            supervising_officer_external_id,
+            level_1_supervision_location,
+            level_2_supervision_location,
+        ) = supervising_officer_and_location_info(
+            supervision_period,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            UsIdSupervisionDelegate(),
+        )
+
+        self.assertEqual("agent_external_id_1", supervising_officer_external_id)
+        self.assertEqual(None, level_1_supervision_location)
+        self.assertEqual("DISTRICT OFFICE 4, BOISE", level_2_supervision_location)
+
+        supervision_period = attr.evolve(
+            DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
+            state_code="US_ID",
+            supervision_site=None,
+        )
+
+        (
+            supervising_officer_external_id,
+            level_1_supervision_location,
+            level_2_supervision_location,
+        ) = supervising_officer_and_location_info(
+            supervision_period,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            UsIdSupervisionDelegate(),
+        )
+
+        self.assertEqual("agent_external_id_1", supervising_officer_external_id)
+        self.assertEqual(None, level_1_supervision_location)
+        self.assertEqual(None, level_2_supervision_location)
+
+    def test_get_supervising_officer_and_location_info_from_supervision_period_us_mo(
+        self,
+    ) -> None:
+        supervision_period = attr.evolve(
+            DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
+            state_code="US_MO",
+            supervision_site="04C",
+        )
+
+        (
+            supervising_officer_external_id,
+            level_1_supervision_location,
+            level_2_supervision_location,
+        ) = supervising_officer_and_location_info(
+            supervision_period,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            UsMoSupervisionDelegate(),
+        )
+
+        self.assertEqual("agent_external_id_1", supervising_officer_external_id)
+        self.assertEqual("04C", level_1_supervision_location)
+        self.assertEqual(None, level_2_supervision_location)
+
+    def test_get_supervising_officer_and_location_info_from_supervision_period_us_nd(
+        self,
+    ) -> None:
+        supervision_period_agent_associations = {
+            111: {
+                "agent_id": 123,
+                "agent_external_id": "agent_external_id_1",
+                "supervision_period_id": 111,
+            }
+        }
+
+        supervision_period = attr.evolve(
+            DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
+            state_code="US_ND",
+            supervision_site="SITE_1",
+        )
+
+        (
+            supervising_officer_external_id,
+            level_1_supervision_location,
+            level_2_supervision_location,
+        ) = supervising_officer_and_location_info(
+            supervision_period,
+            supervision_period_agent_associations,
+            UsNdSupervisionDelegate(),
+        )
+
+        self.assertEqual("agent_external_id_1", supervising_officer_external_id)
+        self.assertEqual("SITE_1", level_1_supervision_location)
+        self.assertEqual(None, level_2_supervision_location)
+
+    def test_get_supervising_officer_and_location_info_from_supervision_period_us_pa(
+        self,
+    ) -> None:
+        supervision_period = attr.evolve(
+            DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
+            state_code="US_PA",
+            supervision_site="CO|CO - CENTRAL OFFICE|9110",
+        )
+
+        (
+            supervising_officer_external_id,
+            level_1_supervision_location,
+            level_2_supervision_location,
+        ) = supervising_officer_and_location_info(
+            supervision_period,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            UsPaSupervisionDelegate(),
+        )
+
+        self.assertEqual("agent_external_id_1", supervising_officer_external_id)
+        self.assertEqual("CO - CENTRAL OFFICE", level_1_supervision_location)
+        self.assertEqual("CO", level_2_supervision_location)
+
+        supervision_period = attr.evolve(
+            DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
+            state_code="US_PA",
+            supervision_site=None,
+        )
+
+        (
+            supervising_officer_external_id,
+            level_1_supervision_location,
+            level_2_supervision_location,
+        ) = supervising_officer_and_location_info(
+            supervision_period,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            UsPaSupervisionDelegate(),
+        )
+
+        self.assertEqual("agent_external_id_1", supervising_officer_external_id)
+        self.assertEqual(None, level_1_supervision_location)
+        self.assertEqual(None, level_2_supervision_location)
