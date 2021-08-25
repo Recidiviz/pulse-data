@@ -1,0 +1,43 @@
+file_tag: docstars_ref_ftr_providers
+file_description: |-
+  Each row represents a Free Through Recovery (FTR) provider.
+primary_key_cols:
+  - PROVIDER_ID
+columns:
+  - name: PROVIDER_ID
+    description: |-
+      ID of the FTR provider.
+  - name: BUSINESS_NAME
+    description: |-
+      Name of the FTR provider.
+  - name: ADDRESS1
+    description: |-
+      First line of the primary business address of the FTR Provider (e.g. 1234 1st Ave.).
+  - name: ADDRESS2
+    description: |-
+      Second line of the primary business address of the FTR Provider (e.g. Suite 6).
+  - name: CITY
+    description: |-
+      City for the primary business address of the FTR Provider.
+  - name: STATE
+    description: |-
+      State for the primary business address of the FTR Provider.
+  - name: ZIP
+    description: |-
+      Zip code for the primary business address of the FTR Provider.
+  - name: ACTIVE
+    description: |-
+      Yes/No for whether the FTR provider is currently active.
+  - name: INTAKE_EMAIL
+    description: |-
+      Email for intake point of contact at the FTR Provider.
+  - name: CERTIFICATION_NO
+    description: |-
+      Random number chosen by DOCR, specific to the FTR Provider, but with no known
+      meaningful purpose.
+  - name: OFFICE_PHONE
+    description: |-
+      Primary phone number for the FTR Provider.
+  - name: CELL_PHONE
+    description: |-
+      Additional phone number for the FTR Provider, typically empty.
