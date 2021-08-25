@@ -16,22 +16,16 @@
 # =============================================================================
 
 """Converts an ingest_info proto StateAssessment to a persistence entity."""
-
+from recidiviz.common import common_utils
+from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentLevel,
     StateAssessmentType,
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import normalize, parse_date, parse_int
 from recidiviz.ingest.models.ingest_info_pb2 import StateAssessment
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn,
-    parse_external_id,
-    parse_region_code_with_override,
-)
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
@@ -49,24 +43,34 @@ def copy_fields_to_builder(
 
     new = state_assessment_builder
 
-    enum_fields = {
-        "assessment_class": StateAssessmentClass,
-        "assessment_type": StateAssessmentType,
-        "assessment_level": StateAssessmentLevel,
-    }
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
-
     # Enum mappings
-    new.assessment_class = enum_mappings.get(StateAssessmentClass)
-    new.assessment_class_raw_text = fn(normalize, "assessment_class", proto)
-    new.assessment_type = enum_mappings.get(StateAssessmentType)
-    new.assessment_type_raw_text = fn(normalize, "assessment_type", proto)
-    new.assessment_level = enum_mappings.get(StateAssessmentLevel)
-    new.assessment_level_raw_text = fn(normalize, "assessment_level", proto)
+    new.assessment_class = EnumParser(
+        getattr(proto, "assessment_class"),
+        StateAssessmentClass,
+        metadata.enum_overrides,
+    )
+    new.assessment_class_raw_text = getattr(proto, "assessment_class")
+
+    new.assessment_type = EnumParser(
+        getattr(proto, "assessment_type"), StateAssessmentType, metadata.enum_overrides
+    )
+    new.assessment_type_raw_text = getattr(proto, "assessment_type")
+
+    new.assessment_level = EnumParser(
+        getattr(proto, "assessment_level"),
+        StateAssessmentLevel,
+        metadata.enum_overrides,
+    )
+    new.assessment_level_raw_text = getattr(proto, "assessment_level")
 
     # 1-to-1 mappings
-    new.external_id = fn(parse_external_id, "state_assessment_id", proto)
-    new.assessment_date = fn(parse_date, "assessment_date", proto)
-    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
-    new.assessment_score = fn(parse_int, "assessment_score", proto)
-    new.assessment_metadata = fn(normalize, "assessment_metadata", proto)
+    state_assessment_id = getattr(proto, "state_assessment_id")
+    new.external_id = (
+        None
+        if common_utils.is_generated_id(state_assessment_id)
+        else state_assessment_id
+    )
+    new.assessment_date = getattr(proto, "assessment_date")
+    new.state_code = metadata.region
+    new.assessment_score = getattr(proto, "assessment_score")
+    new.assessment_metadata = getattr(proto, "assessment_metadata")
