@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Creates a view for collapsing raw ID employment data into contiguous periods of employment or unemployment"""
+"""Creates a view for collapsing raw ID employment data into contiguous periods of employment or unemployment overlapping with a supervision super session"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
@@ -23,7 +23,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 US_ID_EMPLOYMENT_SESSIONS_VIEW_NAME = "us_id_employment_sessions"
 
-US_ID_EMPLOYMENT_SESSIONS_VIEW_DESCRIPTION = """View of continuous periods of unemployment or employment, along with attributes of employment"""
+US_ID_EMPLOYMENT_SESSIONS_VIEW_DESCRIPTION = """View of continuous periods of unemployment or employment, along with attributes of employment, overlapping with time on supervision"""
 
 US_ID_EMPLOYMENT_SESSIONS_QUERY_TEMPLATE = """
     WITH
@@ -85,7 +85,8 @@ US_ID_EMPLOYMENT_SESSIONS_QUERY_TEMPLATE = """
         AND s.state_code = e.state_code
       ),
       dedup_employment_daily AS (
-      /* De-duplicates employment data to a single row per person and date, and aggregates multiple job titles/employers into a single array */
+      /* De-duplicates employment data to a single row per person and date, and aggregates multiple job titles/employers
+       into a single array */
       SELECT
         state_code,
         person_id,
@@ -94,7 +95,6 @@ US_ID_EMPLOYMENT_SESSIONS_QUERY_TEMPLATE = """
         last_verified_date,
         employment_start_date,
         supervision_date,
-        employment_attributes,
         DATE_SUB(supervision_date, INTERVAL ROW_NUMBER() 
             OVER(PARTITION BY person_id, is_employed, supervision_super_session_id 
                 ORDER BY supervision_date ASC) DAY
@@ -112,36 +112,65 @@ US_ID_EMPLOYMENT_SESSIONS_QUERY_TEMPLATE = """
           -- If there is at least one period of employment on a given day, mark as employed
           LOGICAL_AND(is_unemployed) IS FALSE AS is_employed,
           -- Collection of attributes of every employment period within continuous period of employment
-          ARRAY_AGG(STRUCT(employer_name, job_title, employment_start_date, employment_end_date, wage, hours_per_week, employment_end_reason, metric_source)) employment_attributes,
         FROM employment_daily
         GROUP BY state_code, person_id, supervision_date, supervision_super_session_id
       ) 
+    ),
+    employment_attributes AS (
+    /* Gets distinct raw periods of employment along with information about employment */
+        SELECT DISTINCT
+            person_id,
+            employer_name,
+            job_title,
+            employment_start_date,
+            employment_end_date,
+            wage,
+            hours_per_week,
+            employment_end_reason,
+            metric_source
+        FROM employment_daily
+    ),
+    employment_sessions AS (
+    /* Aggregates daily data into sessions of continuous employment */
+        SELECT DISTINCT
+            state_code,
+            person_id,
+            is_employed,
+            supervision_super_session_id, 
+            MAX(last_verified_date) OVER(PARTITION BY person_id, is_employed, supervision_super_session_id, group_continuous_dates_with_status) AS last_verified_date,
+            MIN(employment_start_date) OVER(PARTITION BY person_id, is_employed, supervision_super_session_id, group_continuous_dates_with_status) AS earliest_employment_period_start_date,
+            MIN(supervision_date) OVER(PARTITION BY person_id, is_employed, supervision_super_session_id, group_continuous_dates_with_status) AS employment_status_start_date,
+            NULLIF(MAX(supervision_date) OVER(PARTITION BY person_id, is_employed, supervision_super_session_id, group_continuous_dates_with_status), CURRENT_DATE()) AS employment_status_end_date,
+        FROM dedup_employment_daily
+    ),
+    employment_sessions_with_attributes AS (
+    /* Joins employment sessions with all overlapping raw periods of employment to get employment attributes */
+        SELECT DISTINCT
+            s.*, a.* EXCEPT (person_id),
+        FROM employment_sessions s
+        LEFT JOIN employment_attributes a
+            ON s.person_id = a.person_id 
+            AND (
+                a.employment_start_date BETWEEN s.employment_status_start_date AND COALESCE(s.employment_status_end_date, '9999-01-01')
+                OR COALESCE(a.employment_end_date, CURRENT_DATE()) BETWEEN s.employment_status_start_date AND COALESCE(s.employment_status_end_date, '9999-01-01')
+            )
+            AND COALESCE(employer_name, job_title) IS NOT NULL
     )
-    SELECT
-      * EXCEPT(rn)
-    FROM (
-      SELECT
+    /* Aggregate all employment periods into an array of structs for a single session of continuous employment status */
+    SELECT 
         state_code,
         person_id,
         is_employed,
         supervision_super_session_id,
-        MAX(last_verified_date) OVER(PARTITION BY person_id, is_employed, supervision_super_session_id, group_continuous_dates_with_status) AS last_verified_date,
-        /* Two employment start dates are relevant here: 
-            - `earliest_employment_period_start_date` indicates the actual start date of the first employment period in this employment session, which may fall outside the supervision session.
-            - `employment_status_start_date` indicates the first date on which the employment period was active within the current supervision super session.
-        The former is relevant for calculating the number of days someone has been employed at a time by including days of employment while at liberty (e.g., before the start of probation term),
-        while the latter is relevant for session calculations that require characterizing time on supervision with certain employment attributes.
-            */
-            
-        MIN(employment_start_date) OVER(PARTITION BY person_id, is_employed, supervision_super_session_id, group_continuous_dates_with_status) AS earliest_employment_period_start_date,
-        MIN(supervision_date) OVER(PARTITION BY person_id, is_employed, supervision_super_session_id, group_continuous_dates_with_status) AS employment_status_start_date,
-        NULLIF(MAX(supervision_date) OVER(PARTITION BY person_id, is_employed, supervision_super_session_id, group_continuous_dates_with_status), CURRENT_DATE()) AS employment_status_end_date,
-        employment_attributes,
-        ROW_NUMBER() OVER(PARTITION BY person_id, is_employed, supervision_super_session_id, group_continuous_dates_with_status) rn
-      FROM
-        dedup_employment_daily )
-    WHERE rn = 1
-    AND state_code = 'US_ID'
+        last_verified_date,
+        earliest_employment_period_start_date,
+        employment_status_start_date,
+        employment_status_end_date,
+        ARRAY_AGG(
+            STRUCT(employer_name, job_title, employment_start_date, employment_end_date, wage, hours_per_week, employment_end_reason, metric_source)
+            ) AS employment_attributes,
+    FROM employment_sessions_with_attributes
+    GROUP BY 1,2,3,4,5,6,7,8
 """
 
 US_ID_EMPLOYMENT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
