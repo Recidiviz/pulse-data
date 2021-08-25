@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_ID implementation of the supervision delegate"""
+from typing import Optional, Tuple
+
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
 )
@@ -24,4 +26,24 @@ class UsIdSupervisionDelegate(StateSpecificSupervisionDelegate):
     """US_ID implementation of the supervision delegate"""
 
     def supervision_types_mutually_exclusive(self) -> bool:
+        """In US_ID, people on DUAL supervision are tracked as mutually exclusive from groups of people
+        on PAROLE or PROBATION."""
         return True
+
+    def supervision_location_from_supervision_site(
+        self, supervision_site: Optional[str]
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """In US_ID, supervision_site follows format {supervision district}|{location/office within district}"""
+        # TODO(#3829): Remove this helper once we've once we've built level 1/level 2 supervision
+        #  location distinction directly into our schema.
+        level_1_supervision_location = None
+        level_2_supervision_location = None
+        if supervision_site:
+            (
+                level_2_supervision_location,
+                level_1_supervision_location,
+            ) = supervision_site.split("|")
+        return (
+            level_1_supervision_location or None,
+            level_2_supervision_location or None,
+        )

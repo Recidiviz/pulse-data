@@ -38,7 +38,10 @@ from recidiviz.calculator.pipeline.utils.execution_utils import (
     list_of_dicts_to_dict_with_keys,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
-    get_state_specific_supervising_officer_and_location_info_function,
+    get_state_specific_supervision_delegate,
+)
+from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
+    supervising_officer_and_location_info,
 )
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
@@ -332,6 +335,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
         Returns one ProgramReferralEvent for each of the supervision periods that
         overlap with the referral."""
         program_referrals: List[ProgramReferralEvent] = []
+        supervision_delegate = get_state_specific_supervision_delegate(state_code)
 
         if supervision_periods:
             for supervision_period in supervision_periods:
@@ -340,10 +344,10 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
                     supervising_officer_external_id,
                     level_1_supervision_location_external_id,
                     level_2_supervision_location_external_id,
-                ) = get_state_specific_supervising_officer_and_location_info_function(
-                    state_code=supervision_period.state_code
-                )(
-                    supervision_period, supervision_period_to_agent_associations
+                ) = supervising_officer_and_location_info(
+                    supervision_period,
+                    supervision_period_to_agent_associations,
+                    supervision_delegate,
                 )
 
                 deprecated_supervising_district_external_id = (

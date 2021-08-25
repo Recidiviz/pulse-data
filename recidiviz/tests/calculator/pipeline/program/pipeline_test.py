@@ -78,6 +78,9 @@ from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_delegate import (
+    UsXxSupervisionDelegate,
+)
 from recidiviz.tests.persistence.database import database_test_utils
 
 ALL_METRIC_INCLUSIONS_DICT = {metric_type: True for metric_type in ProgramMetricType}
@@ -103,10 +106,16 @@ class TestProgramPipeline(unittest.TestCase):
         self.mock_pre_processing_delegate.return_value = (
             UsXxIncarcerationPreProcessingDelegate()
         )
+        self.supervision_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.program.identifier.get_state_specific_supervision_delegate"
+        )
+        self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
+        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
 
     def tearDown(self) -> None:
         self.assessment_types_patcher.stop()
         self.pre_processing_delegate_patcher.stop()
+        self.supervision_delegate_patcher.stop()
 
     @staticmethod
     def build_data_dict(
@@ -435,11 +444,17 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         self.mock_pre_processing_delegate.return_value = (
             UsXxIncarcerationPreProcessingDelegate()
         )
+        self.supervision_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.program.identifier.get_state_specific_supervision_delegate"
+        )
+        self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
+        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
         self.identifier = identifier.ProgramIdentifier()
 
     def tearDown(self) -> None:
         self.assessment_types_patcher.stop()
         self.pre_processing_delegate_patcher.stop()
+        self.supervision_delegate_patcher.stop()
 
     @freeze_time("2009-10-19")
     def testClassifyProgramAssignments(self) -> None:
