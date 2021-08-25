@@ -23,6 +23,9 @@ from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StateChargeFactory,
+)
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_charge,
 )
@@ -34,7 +37,7 @@ _EMPTY_METADATA = FakeIngestMetadata.for_state("us_nd")
 class StateChargeConverterTest(unittest.TestCase):
     """Tests for converting charges."""
 
-    def testParseStateCharge(self):
+    def testParseStateCharge(self) -> None:
         # Arrange
         ingest_charge = ingest_info_pb2.StateCharge(
             status="ACQUITTED",
@@ -63,7 +66,7 @@ class StateChargeConverterTest(unittest.TestCase):
         state_charge.copy_fields_to_builder(
             charge_builder, ingest_charge, _EMPTY_METADATA
         )
-        result = charge_builder.build()
+        result = charge_builder.build(StateChargeFactory.deserialize)
 
         # Assert
         expected_result = entities.StateCharge.new_with_defaults(
@@ -92,7 +95,7 @@ class StateChargeConverterTest(unittest.TestCase):
 
         self.assertEqual(result, expected_result)
 
-    def testParseStateCharge_ncicCodeButNoDescription(self):
+    def testParseStateCharge_ncicCodeButNoDescription(self) -> None:
         # Arrange
         ingest_charge = ingest_info_pb2.StateCharge(
             status="ACQUITTED",
@@ -114,7 +117,7 @@ class StateChargeConverterTest(unittest.TestCase):
         state_charge.copy_fields_to_builder(
             charge_builder, ingest_charge, _EMPTY_METADATA
         )
-        result = charge_builder.build()
+        result = charge_builder.build(StateChargeFactory.deserialize)
 
         # Assert
         expected_result = entities.StateCharge.new_with_defaults(
@@ -131,13 +134,13 @@ class StateChargeConverterTest(unittest.TestCase):
             date_charged=date(year=2111, month=1, day=10),
             state_code="US_ND",
             ncic_code="4801",
-            description="RESISTING ARREST",
+            description=None,
             attempted=False,
         )
 
         self.assertEqual(result, expected_result)
 
-    def testParseStateCharge_ncicCodeButNoDescription_codeNotFound(self):
+    def testParseStateCharge_ncicCodeButNoDescription_codeNotFound(self) -> None:
         # Arrange
         ingest_charge = ingest_info_pb2.StateCharge(
             status="ACQUITTED",
@@ -156,7 +159,7 @@ class StateChargeConverterTest(unittest.TestCase):
         state_charge.copy_fields_to_builder(
             charge_builder, ingest_charge, _EMPTY_METADATA
         )
-        result = charge_builder.build()
+        result = charge_builder.build(StateChargeFactory.deserialize)
 
         # Assert
         expected_result = entities.StateCharge.new_with_defaults(

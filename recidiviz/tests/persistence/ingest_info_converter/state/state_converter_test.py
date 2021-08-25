@@ -520,7 +520,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             classification_type_raw_text="M",
             classification_subtype="1",
             ncic_code="5006",
-            description="FALSE STATEMENT",
             state_code="US_ND",
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             court_case=court_case,

@@ -39,6 +39,7 @@ from recidiviz.ingest.models.ingest_info_pb2 import (
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.deserialize_entity_factories import (
     StateAssessmentFactory,
+    StateChargeFactory,
     StatePersonFactory,
     StateSentenceGroupFactory,
 )
@@ -409,7 +410,7 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             ingest_charge,
         )
 
-        return charge_builder.build()
+        return charge_builder.build(StateChargeFactory.deserialize)
 
     def _convert_court_case(self, ingest_court_case: StateCourtCase):
         court_case_builder = entities.StateCourtCase.builder()
