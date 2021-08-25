@@ -517,7 +517,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_SUCCESS,
             SupervisionMetricType.SUPERVISION_START,
             SupervisionMetricType.SUPERVISION_TERMINATION,
-            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED,
         }
 
         self.run_test_pipeline(dataset, data_dict, expected_metric_types)
@@ -1070,7 +1069,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_SUCCESS,
             SupervisionMetricType.SUPERVISION_TERMINATION,
             SupervisionMetricType.SUPERVISION_START,
-            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED,
         }
 
         self.run_test_pipeline(dataset, data_dict, expected_metric_types)

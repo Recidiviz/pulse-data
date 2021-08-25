@@ -1208,9 +1208,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         SupervisionMetricType.SUPERVISION_SUCCESS: [
             ProjectedSupervisionCompletionEvent
         ],
-        SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: [
-            ProjectedSupervisionCompletionEvent
-        ],
         SupervisionMetricType.SUPERVISION_TERMINATION: [SupervisionTerminationEvent],
         SupervisionMetricType.SUPERVISION_DOWNGRADE: [SupervisionPopulationEvent],
     }

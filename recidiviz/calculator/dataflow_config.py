@@ -36,7 +36,6 @@ from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
 from recidiviz.calculator.pipeline.supervision.metrics import (
-    SuccessfulSupervisionSentenceDaysServedMetric,
     SupervisionCaseComplianceMetric,
     SupervisionDowngradeMetric,
     SupervisionMetricType,
@@ -98,7 +97,6 @@ DATAFLOW_METRICS_TO_TABLES: Dict[Type[RecidivizMetric], str] = {
     SupervisionPopulationMetric: "supervision_population_metrics",
     SupervisionStartMetric: "supervision_start_metrics",
     SupervisionSuccessMetric: "supervision_success_metrics",
-    SuccessfulSupervisionSentenceDaysServedMetric: "successful_supervision_sentence_days_served_metrics",
     SupervisionTerminationMetric: "supervision_termination_metrics",
     # ViolationMetrics
     ViolationWithResponseMetric: "violation_with_response_metrics",
@@ -124,7 +122,6 @@ DATAFLOW_TABLES_TO_METRIC_TYPES: Dict[str, RecidivizMetricType] = {
     "supervision_population_metrics": SupervisionMetricType.SUPERVISION_POPULATION,
     "supervision_start_metrics": SupervisionMetricType.SUPERVISION_START,
     "supervision_success_metrics": SupervisionMetricType.SUPERVISION_SUCCESS,
-    "successful_supervision_sentence_days_served_metrics": SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED,
     "supervision_termination_metrics": SupervisionMetricType.SUPERVISION_TERMINATION,
     # ViolationMetrics
     "violation_with_response_metrics": ViolationMetricType.VIOLATION,

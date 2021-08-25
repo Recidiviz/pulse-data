@@ -50,9 +50,6 @@ class SupervisionMetricType(RecidivizMetricType):
     SUPERVISION_OUT_OF_STATE_POPULATION = "SUPERVISION_OUT_OF_STATE_POPULATION"
     SUPERVISION_START = "SUPERVISION_START"
     SUPERVISION_SUCCESS = "SUPERVISION_SUCCESS"
-    SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED = (
-        "SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED"
-    )
     SUPERVISION_TERMINATION = "SUPERVISION_TERMINATION"
     SUPERVISION_DOWNGRADE = "SUPERVISION_DOWNGRADE"
 
@@ -157,7 +154,8 @@ class SupervisionOutOfStatePopulationMetric(SupervisionPopulationMetric):
 
 @attr.s
 class SupervisionSuccessMetric(SupervisionMetric, PersonLevelMetric):
-    """Subclass of SupervisionMetric that contains supervision success and failure counts."""
+    """Subclass of SupervisionMetric that contains supervision success and failure
+    counts."""
 
     @classmethod
     def get_description(cls) -> str:
@@ -173,29 +171,8 @@ class SupervisionSuccessMetric(SupervisionMetric, PersonLevelMetric):
     # Whether this represents a successful completion
     successful_completion: bool = attr.ib(default=None)
 
-
-@attr.s
-class SuccessfulSupervisionSentenceDaysServedMetric(SupervisionMetric):
-    """Subclass of SupervisionMetric that contains the average number of days served for successful supervision
-    sentences with projected completion dates in the month of the metric, where the person did not spend any time
-    incarcerated in the duration of the sentence."""
-
-    @classmethod
-    def get_description(cls) -> str:
-        return (
-            "TODO(#7563): Add SuccessfulSupervisionSentenceDaysServedMetric description"
-        )
-
-    # Required characteristics
-
-    # The type of SupervisionMetric
-    metric_type: SupervisionMetricType = attr.ib(
-        init=False,
-        default=SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED,
-    )
-
     # Days served for this sentence
-    days_served: int = attr.ib(default=None)
+    sentence_days_served: int = attr.ib(default=None)
 
 
 @attr.s
