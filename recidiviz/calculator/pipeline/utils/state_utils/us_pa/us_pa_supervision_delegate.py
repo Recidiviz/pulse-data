@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_PA implementation of the supervision delegate"""
+from typing import Optional, Tuple
+
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
 )
@@ -22,3 +24,22 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_
 
 class UsPaSupervisionDelegate(StateSpecificSupervisionDelegate):
     """US_PA implementation of the supervision delegate"""
+
+    def supervision_location_from_supervision_site(
+        self, supervision_site: Optional[str]
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """In US_PA, supervision_site follows format {supervision district}|{supervision suboffice}|{supervision unit org code}"""
+        # TODO(#3829): Remove this helper once we've once we've built level 1/level 2 supervision
+        #  location distinction directly into our schema.
+        level_1_supervision_location = None
+        level_2_supervision_location = None
+        if supervision_site:
+            (
+                level_2_supervision_location,
+                level_1_supervision_location,
+                _org_code,
+            ) = supervision_site.split("|")
+        return (
+            level_1_supervision_location or None,
+            level_2_supervision_location or None,
+        )

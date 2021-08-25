@@ -19,7 +19,7 @@ import logging
 
 # TODO(#2995): Make a state config file for every state and every one of these state-specific calculation methodologies
 from datetime import date
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import List, Optional
 
 from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
@@ -55,7 +55,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_del
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_utils import (
     us_id_get_post_incarceration_supervision_type,
     us_id_get_pre_incarceration_supervision_type,
-    us_id_get_supervising_officer_and_location_info_from_supervision_period,
     us_id_get_supervision_period_admission_override,
     us_id_supervision_period_is_out_of_state,
 )
@@ -120,9 +119,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_com
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_delegate import (
     UsPaSupervisionDelegate,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_utils import (
-    us_pa_get_supervising_officer_and_location_info_from_supervision_period,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violation_response_preprocessing_delegate import (
     UsPaViolationResponsePreprocessingDelegate,
 )
@@ -131,9 +127,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violations_dele
 )
 from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
-)
-from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
-    default_get_state_specific_supervising_officer_and_location_info_function,
 )
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
     get_month_supervision_type_default,
@@ -545,26 +538,6 @@ def get_state_specific_supervision_delegate(
         return UsPaSupervisionDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
-
-
-# TODO(#3829): Remove this helper once we've built level 1/level 2 supervision
-#  location distinction directly into our schema (info currently packed into
-#  supervision_site for states that have both).
-def get_state_specific_supervising_officer_and_location_info_function(
-    state_code: str,
-) -> Callable[
-    [StateSupervisionPeriod, Dict[int, Dict[str, Any]]],
-    Tuple[Optional[str], Optional[str], Optional[str]],
-]:
-    """Returns the function that should be used to extract supervising officer and
-    location information associated with a supervision_period in the given state."""
-
-    if state_code == StateCode.US_ID.value:
-        return us_id_get_supervising_officer_and_location_info_from_supervision_period
-    if state_code == StateCode.US_PA.value:
-        return us_pa_get_supervising_officer_and_location_info_from_supervision_period
-
-    return default_get_state_specific_supervising_officer_and_location_info_function
 
 
 def state_specific_supervision_admission_reason_override(

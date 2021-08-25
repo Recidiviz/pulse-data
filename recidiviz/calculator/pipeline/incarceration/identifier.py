@@ -57,11 +57,14 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_post_incarceration_supervision_type,
     get_state_specific_commitment_from_supervision_delegate,
-    get_state_specific_supervising_officer_and_location_info_function,
+    get_state_specific_supervision_delegate,
     get_state_specific_violation_delegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
+    StateSpecificSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
@@ -526,6 +529,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                 get_state_specific_commitment_from_supervision_delegate(state_code)
             )
             violation_delegate = get_state_specific_violation_delegate(state_code)
+            supervision_delegate = get_state_specific_supervision_delegate(state_code)
 
             if is_commitment_from_supervision(admission_reason):
 
@@ -541,6 +545,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
                     county_of_residence=county_of_residence,
                     commitment_from_supervision_delegate=commitment_from_supervision_delegate,
                     violation_delegate=violation_delegate,
+                    supervision_delegate=supervision_delegate,
                 )
 
             return IncarcerationStandardAdmissionEvent(
@@ -568,6 +573,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         county_of_residence: Optional[str],
         commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
         violation_delegate: StateSpecificViolationDelegate,
+        supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> IncarcerationCommitmentFromSupervisionAdmissionEvent:
         """
         Returns the IncarcerationCommitmentFromSupervisionAdmissionEvent corresponding to
@@ -577,7 +583,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
         """
         admission_date = incarceration_period.admission_date
         admission_reason = incarceration_period.admission_reason
-        state_code = incarceration_period.state_code
 
         if not admission_date or not admission_reason:
             raise ValueError(
@@ -657,9 +662,7 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             supervision_sentences=supervision_sentences,
             commitment_from_supervision_delegate=commitment_from_supervision_delegate,
             supervision_period_to_agent_associations=supervision_period_to_agent_associations,
-            state_specific_officer_and_location_info_from_supervision_period_fn=get_state_specific_supervising_officer_and_location_info_function(
-                state_code
-            ),
+            supervision_delegate=supervision_delegate,
         )
 
         deprecated_supervising_district_external_id = (

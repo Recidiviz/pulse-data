@@ -43,17 +43,26 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
+    StateSpecificSupervisionDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import (
     SupervisionTypeSpan,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_delegate import (
+    UsMoSupervisionDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violations_delegate import (
     UsMoViolationDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_commitment_from_supervision_delegate import (
     UsNdCommitmentFromSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_delegate import (
+    UsNdSupervisionDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_violations_delegate import (
     UsNdViolationDelegate,
@@ -110,6 +119,9 @@ from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_commitmen
 )
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
+)
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_delegate import (
+    UsXxSupervisionDelegate,
 )
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violation_response_preprocessing_delegate import (
     UsXxViolationResponsePreprocessingDelegate,
@@ -190,6 +202,11 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         self.mock_violation_pre_processing_delegate.return_value = (
             UsXxViolationResponsePreprocessingDelegate()
         )
+        self.supervision_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_supervision_delegate"
+        )
+        self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
+        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
 
     def tearDown(self) -> None:
         self._stop_state_specific_delegate_patchers()
@@ -199,6 +216,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         self.commitment_from_supervision_delegate_patcher.stop()
         self.violation_delegate_patcher.stop()
         self.violation_pre_processing_delegate_patcher.stop()
+        self.supervision_delegate_patcher.stop()
 
     def _run_find_incarceration_events(
         self,
@@ -2895,6 +2913,11 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         )
         self.mock_violation_delegate = self.violation_delegate_patcher.start()
         self.mock_violation_delegate.return_value = UsXxViolationDelegate()
+        self.supervision_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_supervision_delegate"
+        )
+        self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
+        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
         self.identifier = identifier.IncarcerationIdentifier()
 
     def tearDown(self) -> None:
@@ -2903,6 +2926,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
     def _stop_state_specific_delegate_patchers(self) -> None:
         self.commitment_from_supervision_delegate_patcher.stop()
         self.violation_delegate_patcher.stop()
+        self.supervision_delegate_patcher.stop()
 
     def _run_admission_event_for_period(
         self,
@@ -3162,18 +3186,25 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         )
         self.mock_violation_delegate = self.violation_delegate_patcher.start()
         self.mock_violation_delegate.return_value = UsXxViolationDelegate()
+        self.supervision_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.incarceration.identifier.get_state_specific_supervision_delegate"
+        )
+        self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
+        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
 
     def tearDown(self) -> None:
         self._stop_state_specific_delegate_patchers()
 
     def _stop_state_specific_delegate_patchers(self) -> None:
         self.violation_delegate_patcher.stop()
+        self.supervision_delegate_patcher.stop()
 
     def _run_commitment_from_supervision_event_for_period(
         self,
         incarceration_period: StateIncarcerationPeriod,
         pre_commitment_supervision_period: Optional[StateSupervisionPeriod],
         violation_delegate: StateSpecificViolationDelegate,
+        supervision_delegate: StateSpecificSupervisionDelegate,
         incarceration_period_index: Optional[
             PreProcessedIncarcerationPeriodIndex
         ] = None,
@@ -3230,6 +3261,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             county_of_residence=_COUNTY_OF_RESIDENCE,
             commitment_from_supervision_delegate=commitment_from_supervision_delegate,
             violation_delegate=violation_delegate,
+            supervision_delegate=supervision_delegate,
         )
 
     def test_commitment_from_supervision_event_violation_history_cutoff(self) -> None:
@@ -3352,6 +3384,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
                 incarceration_period=incarceration_period,
                 violation_responses=violation_responses,
                 violation_delegate=UsXxViolationDelegate(),
+                supervision_delegate=UsXxSupervisionDelegate(),
             )
         )
 
@@ -3485,6 +3518,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
                 incarceration_period=incarceration_period,
                 violation_responses=violation_responses,
                 violation_delegate=UsXxViolationDelegate(),
+                supervision_delegate=UsXxSupervisionDelegate(),
             )
         )
 
@@ -3670,6 +3704,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
                 supervision_sentences=[supervision_sentence],
                 incarceration_sentences=[incarceration_sentence],
                 violation_delegate=UsMoViolationDelegate(),
+                supervision_delegate=UsMoSupervisionDelegate(),
             )
         )
 
@@ -3766,6 +3801,7 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             incarceration_sentences=[],
             commitment_from_supervision_delegate=UsNdCommitmentFromSupervisionDelegate(),
             violation_delegate=UsNdViolationDelegate(),
+            supervision_delegate=UsNdSupervisionDelegate(),
         )
 
         assert incarceration_period.admission_date is not None

@@ -17,7 +17,7 @@
 """US_ID-specific implementations of functions related to supervision."""
 from collections import defaultdict
 from datetime import date
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set
 
 from dateutil.relativedelta import relativedelta
 
@@ -259,36 +259,3 @@ def us_id_get_supervision_period_admission_override(
     ):
         return StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
     return supervision_period.admission_reason
-
-
-def us_id_get_supervising_officer_and_location_info_from_supervision_period(
-    supervision_period: StateSupervisionPeriod,
-    supervision_period_to_agent_associations: Dict[int, Dict[str, Any]],
-) -> Tuple[Optional[str], Optional[str], Optional[str]]:
-    supervising_officer_external_id = None
-    level_1_supervision_location = None
-    level_2_supervision_location = None
-
-    if not supervision_period.supervision_period_id:
-        raise ValueError("Unexpected null supervision_period_id")
-
-    if supervision_period.supervision_site:
-        # In ID, supervision_site follows format
-        # "{supervision district}|{location/office within district}"
-        (
-            level_2_supervision_location,
-            level_1_supervision_location,
-        ) = supervision_period.supervision_site.split("|")
-
-    agent_info = supervision_period_to_agent_associations.get(
-        supervision_period.supervision_period_id
-    )
-
-    if agent_info is not None:
-        supervising_officer_external_id = agent_info["agent_external_id"]
-
-    return (
-        supervising_officer_external_id,
-        level_1_supervision_location or None,
-        level_2_supervision_location or None,
-    )

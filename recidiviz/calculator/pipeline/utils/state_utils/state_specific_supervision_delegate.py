@@ -18,6 +18,7 @@
 for state-specific decisions involved in categorizing various attributes of
 supervision."""
 import abc
+from typing import Optional, Tuple
 
 
 class StateSpecificSupervisionDelegate(abc.ABC):
@@ -28,6 +29,24 @@ class StateSpecificSupervisionDelegate(abc.ABC):
         either PAROLE and PROBATION. For others, a person can be on multiple types of supervision simultaneously
         and contribute to counts for both types.
 
+        Default behavior is that supervision types are *not* mutually exclusive, meaning a person can be on multiple types of supervision simultaneously.
+
         Returns whether our calculations should consider supervision types as distinct for the given state_code.
         """
         return False
+
+    def supervision_location_from_supervision_site(
+        self, supervision_site: Optional[str]
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """Retrieves level 1 and level 2 location information from a supervision site.
+        By default, returns the |supervision_site| as the level 1 location, and None as the level 2 location.
+        """
+        # TODO(#3829): Remove this helper once we've once we've built level 1/level 2 supervision
+        #  location distinction directly into our schema.
+        level_1_supervision_location = supervision_site
+        level_2_supervision_location = None
+
+        return (
+            level_1_supervision_location or None,
+            level_2_supervision_location or None,
+        )

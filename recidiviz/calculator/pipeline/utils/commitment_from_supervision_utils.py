@@ -17,7 +17,7 @@
 """Utils for calculations regarding incarceration admissions that are commitments from
 supervision."""
 import datetime
-from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple
+from typing import Any, Dict, List, NamedTuple, Optional
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
     periods_are_temporally_adjacent,
@@ -35,9 +35,13 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
+    StateSpecificSupervisionDelegate,
+)
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     filter_out_unknown_supervision_period_supervision_type_periods,
     identify_most_severe_case_type,
+    supervising_officer_and_location_info,
 )
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
     get_pre_incarceration_supervision_type_from_ip_admission_reason,
@@ -92,11 +96,8 @@ def get_commitment_from_supervision_details(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
     commitment_from_supervision_delegate: StateSpecificCommitmentFromSupervisionDelegate,
+    supervision_delegate: StateSpecificSupervisionDelegate,
     supervision_period_to_agent_associations: Optional[Dict[int, Dict[Any, Any]]],
-    state_specific_officer_and_location_info_from_supervision_period_fn: Callable[
-        [StateSupervisionPeriod, Dict[int, Dict[str, Any]]],
-        Tuple[Optional[str], Optional[str], Optional[str]],
-    ],
 ) -> CommitmentDetails:
     """Identifies various attributes of the commitment to incarceration from
     supervision.
@@ -119,8 +120,10 @@ def get_commitment_from_supervision_details(
             supervising_officer_external_id,
             level_1_supervision_location_external_id,
             level_2_supervision_location_external_id,
-        ) = state_specific_officer_and_location_info_from_supervision_period_fn(
-            pre_commitment_supervision_period, supervision_period_to_agent_associations
+        ) = supervising_officer_and_location_info(
+            pre_commitment_supervision_period,
+            supervision_period_to_agent_associations,
+            supervision_delegate,
         )
 
     if not incarceration_period.specialized_purpose_for_incarceration:
