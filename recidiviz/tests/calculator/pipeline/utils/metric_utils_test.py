@@ -40,7 +40,6 @@ from recidiviz.calculator.pipeline.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
 from recidiviz.calculator.pipeline.supervision.metrics import (
-    SuccessfulSupervisionSentenceDaysServedMetric,
     SupervisionCaseComplianceMetric,
     SupervisionDowngradeMetric,
     SupervisionMetricType,
@@ -197,7 +196,6 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_POPULATION: SupervisionPopulationMetric,
             SupervisionMetricType.SUPERVISION_START: SupervisionStartMetric,
             SupervisionMetricType.SUPERVISION_SUCCESS: SupervisionSuccessMetric,
-            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: SuccessfulSupervisionSentenceDaysServedMetric,
             SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION: SupervisionOutOfStatePopulationMetric,
             SupervisionMetricType.SUPERVISION_DOWNGRADE: SupervisionDowngradeMetric,
         }
