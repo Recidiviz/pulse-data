@@ -38,6 +38,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from sqlalchemy.sql.expression import text
 
 from recidiviz.persistence.database.base_schema import CaseTriageBase
 
@@ -280,7 +281,13 @@ class ETLClientEvent(CaseTriageBase, ETLDerivedEntity):
 
     __tablename__ = "etl_client_events"
 
-    event_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    event_id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        # need this because events are loaded directly to the DB via ETL without IDs
+        server_default=text("gen_random_uuid()"),
+    )
 
     person_external_id = Column(String(255), nullable=False, index=True)
     state_code = Column(String(255), nullable=False, index=True)
