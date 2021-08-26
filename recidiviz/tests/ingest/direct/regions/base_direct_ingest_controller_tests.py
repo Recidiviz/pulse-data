@@ -193,9 +193,6 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
             cls.temp_db_dir
         )
 
-    # TODO(#8908): Write function analogous to |run_legacy_parse_file_test| for testing
-    #  parsing for the v2 ingest mappings process.
-
     # TODO(#8905): Delete this function once we have migrated all states to use the new
     #   version of ingest mappings that skip ingest info entirely.
     def run_legacy_parse_file_test(

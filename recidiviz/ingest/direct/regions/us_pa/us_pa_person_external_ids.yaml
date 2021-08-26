@@ -1,10 +1,28 @@
-key_mappings:
-  recidiviz_master_person_id: state_person.state_person_id
+manifest_language: 1.0.0
+input_columns:
+  - recidiviz_master_person_id
+  - control_numbers
+  - inmate_numbers
+  - parole_numbers
+unused_columns:
+  - recidiviz_master_person_id  # Internal Recidiviz person ID
+output:
+  StatePerson:
+    external_ids:
+      # PA DOC id numbers
+      - $foreach: control_numbers
+        StatePersonExternalId:
+          external_id: $iter
+          id_type: \"US_PA_CONT"
 
-primary_key:
-  recidiviz_master_person_id: state_person.state_person_id
+      # Inmate numbers
+      - $foreach: inmate_numbers
+        StatePersonExternalId:
+          external_id: $iter
+          id_type: \"US_PA_INMATE"
 
-keys_to_ignore:
-  - control_numbers   # PA DOC id numbers - Handled manually in controller
-  - inmate_numbers   # Inmate numbers linking DOC and Parole numbers - Handled manually in controller
-  - parole_numbers  # Parole numbers - Handled manually in controller
+      # Parole numbers
+      - $foreach: parole_numbers
+        StatePersonExternalId:
+          external_id: $iter
+          id_type: \"US_PA_PBPP"
