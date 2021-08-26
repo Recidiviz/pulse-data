@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Functionality for working with objects parsed from YAML."""
-
+import copy
 from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
 import yaml
@@ -101,6 +101,10 @@ class YAMLDict:
             raise KeyError(f"Expected {field} in input: {repr(self.raw_yaml)}")
         return value
 
+    def peek_type(self, field: str) -> Type:
+        """Returns the type of the object at |field|. Throws if no such field exists."""
+        return type(self.peek(field, object))
+
     def __len__(self) -> int:
         return len(self.raw_yaml)
 
@@ -109,3 +113,7 @@ class YAMLDict:
 
     def keys(self) -> List[str]:
         return list(self.raw_yaml.keys())
+
+    def copy(self) -> "YAMLDict":
+        """Returns a deep copy of this YamlDict."""
+        return YAMLDict(copy.deepcopy(self.raw_yaml))
