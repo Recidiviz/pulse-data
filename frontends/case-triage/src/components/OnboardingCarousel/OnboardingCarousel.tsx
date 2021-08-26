@@ -14,17 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import React from "react";
 import { navigate } from "@reach/router";
 import { Icon, IconSVG } from "@recidiviz/design-system";
 import { observer } from "mobx-react-lite";
-import { Carousel, CarouselIndicators } from "../Carousel";
+import React from "react";
 import {
   ONBOARDING_DATA,
   ONBOARDING_NEEDS,
-  ONBOARDING_OPPORTUNITIES,
   ONBOARDING_WHICH_CLIENT,
 } from "../../assets/onboarding";
+import { useRootStore } from "../../stores";
+import { Carousel, CarouselIndicators } from "../Carousel";
 import {
   GetStartedButton,
   OnboardingBodyText,
@@ -36,7 +36,6 @@ import {
   OnboardingSlide,
   OnboardingText,
 } from "./OnboardingCarousel.styles";
-import { useRootStore } from "../../stores";
 
 const OnboardingCarousel: React.FC = () => {
   const { policyStore, officerMetadataStore } = useRootStore();

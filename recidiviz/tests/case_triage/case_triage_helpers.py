@@ -76,6 +76,13 @@ def generate_fake_client(
     if last_face_to_face_date is None:
         last_face_to_face_date = date.today()
     next_recommended_assessment_date = last_assessment_date + timedelta(days=365)
+    if last_face_to_face_date is not None:
+        # Arbitrarily pick 120 days for fake clients
+        next_recommended_face_to_face_date = last_face_to_face_date + timedelta(
+            days=120
+        )
+    else:
+        next_recommended_face_to_face_date = None
 
     return ETLClient(
         person_external_id=client_id,
@@ -91,6 +98,7 @@ def generate_fake_client(
         next_recommended_assessment_date=next_recommended_assessment_date,
         assessment_score=assessment_score,
         most_recent_face_to_face_date=last_face_to_face_date,
+        next_recommended_face_to_face_date=next_recommended_face_to_face_date,
         most_recent_home_visit_date=last_home_visit_date,
     )
 

@@ -21,10 +21,7 @@ import json
 from datetime import date
 from typing import Any, Dict, List
 
-from recidiviz.case_triage.client_utils.compliance import (
-    get_next_face_to_face_date,
-    get_next_home_visit_date,
-)
+from recidiviz.case_triage.client_utils.compliance import get_next_home_visit_date
 from recidiviz.case_triage.demo_helpers import unconvert_fake_person_id_for_demo_user
 from recidiviz.case_triage.querier.case_update_presenter import CaseUpdatePresenter
 from recidiviz.case_triage.querier.utils import _json_map_dates_to_strings
@@ -75,6 +72,7 @@ class CasePresenter:
             "assessmentScore": self.etl_client.assessment_score,
             "nextAssessmentDate": self.etl_client.next_recommended_assessment_date,
             "mostRecentFaceToFaceDate": self.etl_client.most_recent_face_to_face_date,
+            "nextFaceToFaceDate": self.etl_client.next_recommended_face_to_face_date,
             "mostRecentHomeVisitDate": self.etl_client.most_recent_home_visit_date,
             "emailAddress": self.etl_client.email_address,
             "phoneNumber": self.etl_client.phone_number,
@@ -89,13 +87,7 @@ class CasePresenter:
             "daysWithCurrentPO": self.etl_client.days_with_current_po,
         }
 
-        # TODO(#5768): In the long-term, we plan to move away from enforcing the next contact
-        # and next assessment so explicitly. This is why we're implementing this in QueriedClient
-        # and hard-coding the relation to US_ID as a quick stop gap, as opposed to putting this in
-        # the calculation pipeline where this information _should_ reside.
-        next_face_to_face_date = get_next_face_to_face_date(self.etl_client)
-        if next_face_to_face_date:
-            base_dict["nextFaceToFaceDate"] = next_face_to_face_date
+        # TODO(#5768): Eventually move next home visit date to our calculate pipeline.
         next_home_visit_date = get_next_home_visit_date(self.etl_client)
         if next_home_visit_date:
             base_dict["nextHomeVisitDate"] = next_home_visit_date
@@ -107,18 +99,19 @@ class CasePresenter:
             and "UNEMP" not in self.etl_client.employer.upper(),
             # If the F2F contact is missing, that means there may be no need for it. Otherwise, if the
             # next due face to face contact is after today, the need is met.
-            "faceToFaceContact": next_face_to_face_date is None
-            or bool(next_face_to_face_date > today),
+            "faceToFaceContact": self.etl_client.next_recommended_face_to_face_date
+            is None
+            or self.etl_client.next_recommended_face_to_face_date > today,
             # If the home visit contact is missing, that means there may be no need for it. Otherwise, if the
             # next due home visit contact is after today, the need is met.
             # TODO(#7320): This field determines whether compliance is up-to-date assuming
             # the rules apply to F2F home visits and not collateral home visits. More work is
             # needed to determine what the correct application of rules should actually be.
             "homeVisitContact": next_home_visit_date is None
-            or bool(next_home_visit_date > today),
+            or next_home_visit_date > today,
             # If the next assessment is due after today, the need is met.
             "assessment": self.etl_client.next_recommended_assessment_date is None
-            or bool(self.etl_client.next_recommended_assessment_date > today),
+            or self.etl_client.next_recommended_assessment_date > today,
         }
 
         if (client_info := self.etl_client.client_info) is not None:
