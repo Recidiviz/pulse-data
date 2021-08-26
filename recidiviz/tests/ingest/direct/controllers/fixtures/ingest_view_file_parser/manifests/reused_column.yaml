@@ -1,0 +1,15 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONNAME
+  - PERSONID
+unused_columns: []
+output:
+  FakePerson:
+    name: PERSONNAME
+    external_ids:
+      - FakePersonExternalId:
+          external_id: PERSONID
+          id_type: \"ID_TYPE"
+    aliases:
+      - FakePersonAlias:
+          full_name: PERSONNAME

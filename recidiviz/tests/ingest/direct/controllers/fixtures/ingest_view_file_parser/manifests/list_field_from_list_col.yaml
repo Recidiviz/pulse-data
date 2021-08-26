@@ -1,0 +1,13 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONNAME
+  - PERSONIDS
+unused_columns: []
+output:
+  FakePerson:
+    name: PERSONNAME
+    external_ids:
+      - $foreach: PERSONIDS
+        FakePersonExternalId:
+          external_id: $iter
+          id_type: \"US_XX_ID_TYPE"

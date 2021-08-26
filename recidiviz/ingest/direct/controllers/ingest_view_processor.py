@@ -28,6 +28,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     GcsfsIngestArgs,
 )
 from recidiviz.ingest.direct.controllers.ingest_view_file_parser import (
+    FileFormat,
     IngestViewFileParser,
 )
 from recidiviz.persistence import persistence
@@ -71,6 +72,7 @@ class IngestViewProcessorImpl(IngestViewProcessor):
         parsed_entities = self.ingest_view_file_parser.parse(
             file_tag=args.file_tag,
             contents_handle=contents_handle,
+            file_format=FileFormat.CSV,
         )
 
         if all(isinstance(e, state_entities.StatePerson) for e in parsed_entities):

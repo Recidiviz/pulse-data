@@ -80,7 +80,9 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import (
     gcsfs_direct_ingest_temporary_output_directory_path,
 )
 from recidiviz.ingest.direct.controllers.ingest_view_file_parser import (
+    MANIFEST_LANGUAGE_VERSION_KEY,
     IngestViewFileParser,
+    IngestViewFileParserDelegateImpl,
     yaml_mappings_filepath,
 )
 from recidiviz.ingest.direct.controllers.ingest_view_processor import (
@@ -565,7 +567,9 @@ class BaseDirectIngestController(Ingestor):
         yaml_mappings_dict = YAMLDict.from_path(
             yaml_mappings_filepath(self.region, args.file_tag)
         )
-        version_str = yaml_mappings_dict.peek_optional("version", str)
+        version_str = yaml_mappings_dict.peek_optional(
+            MANIFEST_LANGUAGE_VERSION_KEY, str
+        )
 
         if not version_str:
             # TODO(#8905): Delete this branch once all regions have migrated to new
@@ -589,7 +593,11 @@ class BaseDirectIngestController(Ingestor):
 
         # If a version string is present, it's v2
         return IngestViewProcessorImpl(
-            ingest_view_file_parser=IngestViewFileParser(self.region)
+            ingest_view_file_parser=IngestViewFileParser(
+                delegate=IngestViewFileParserDelegateImpl(
+                    self.region, self.system_level.schema_type()
+                )
+            )
         )
 
     @trace.span
