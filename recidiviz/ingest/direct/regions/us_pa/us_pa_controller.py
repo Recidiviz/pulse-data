@@ -202,7 +202,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         ]
 
         self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
-            "person_external_ids": [self._hydrate_person_external_ids],
             "doc_person_info": doc_person_info_postprocessors,
             "dbo_tblInmTestScore": [
                 gen_label_single_external_id_hook(US_PA_CONTROL),
@@ -250,7 +249,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         self.file_post_processors_by_file: Dict[
             str, List[IngestFilePostprocessorCallable]
         ] = {
-            "person_external_ids": [],
             "doc_person_info": [],
             "dbo_tblInmTestScore": [],
             "dbo_Senrec": [
@@ -829,52 +827,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         ]:
             return US_PA_PBPP
         return None
-
-    @staticmethod
-    def _hydrate_person_external_ids(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Creates StatePersonExternalId entities from all of the identifiers in the given row."""
-        for obj in extracted_objects:
-            if isinstance(obj, StatePerson):
-                control_numbers = (
-                    row["control_numbers"].split(",") if row["control_numbers"] else []
-                )
-                parole_numbers = (
-                    row["parole_numbers"].split(",") if row["parole_numbers"] else []
-                )
-
-                external_ids_to_create = []
-                inmate_numbers = (
-                    row["inmate_numbers"].split(",") if row["inmate_numbers"] else []
-                )
-                for inmate_number in inmate_numbers:
-                    external_ids_to_create.append(
-                        StatePersonExternalId(
-                            state_person_external_id_id=inmate_number,
-                            id_type=US_PA_INMATE,
-                        )
-                    )
-
-                for control_number in control_numbers:
-                    external_ids_to_create.append(
-                        StatePersonExternalId(
-                            state_person_external_id_id=control_number,
-                            id_type=US_PA_CONTROL,
-                        )
-                    )
-                for parole_number in parole_numbers:
-                    external_ids_to_create.append(
-                        StatePersonExternalId(
-                            state_person_external_id_id=parole_number,
-                            id_type=US_PA_PBPP,
-                        )
-                    )
-                for id_to_create in external_ids_to_create:
-                    create_if_not_exists(id_to_create, obj, "state_person_external_ids")
 
     @staticmethod
     def _hydrate_sentence_group_ids(

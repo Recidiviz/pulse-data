@@ -14,31 +14,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Unit and integration tests for US_XX direct ingest."""
-from typing import Type
-
-from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
-    BaseDirectIngestController,
-)
+"""Ingest view parser tests for US_XX direct ingest."""
 from recidiviz.persistence.database.schema_utils import SchemaType
-from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import (
-    BaseDirectIngestControllerTests,
+from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
+    StateIngestViewParserTestBase,
 )
 
-_REGION_CODE_UPPER = "US_XX"
 
-
-class TestUsXxController(BaseDirectIngestControllerTests):
-    """Unit tests for each US_XX file to be ingested."""
-
-    @classmethod
-    def region_code(cls) -> str:
-        return _REGION_CODE_UPPER.lower()
-
-    @classmethod
-    def controller_cls(cls) -> Type[BaseDirectIngestController]:
-        pass  # Return instance of UsXxController
+class UsXxIngestViewParserTest(StateIngestViewParserTestBase):
+    """Parser unit tests for each US_XX ingest view file to be ingested."""
 
     @classmethod
     def schema_type(cls) -> SchemaType:
         raise NotImplementedError("Choose one of STATE or JAILS")
+
+    @classmethod
+    def region_code(cls) -> str:
+        return "US_XX"
+
+    # Add parsing tests for new ingest view files here #
