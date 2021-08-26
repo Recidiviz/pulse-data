@@ -92,8 +92,8 @@ class TestComputedOpportunity(TestCase):
 
     def test_contact(self) -> None:
         today = date.today()
-        overdue_date = today - timedelta(days=50)
-        upcoming_date = today - timedelta(days=40)
+        overdue_date = today - timedelta(days=125)
+        upcoming_date = today - timedelta(days=115)
         no_opp_date = today - timedelta(days=10)
 
         client = generate_fake_client("abc", last_face_to_face_date=overdue_date)
@@ -107,7 +107,7 @@ class TestComputedOpportunity(TestCase):
             opp.opportunity_metadata, {"status": "OVERDUE", "daysUntilDue": -5}
         )
 
-        client.most_recent_face_to_face_date = upcoming_date
+        client = generate_fake_client("abc", last_face_to_face_date=upcoming_date)
         opp = ComputedOpportunity.build_all_for_client(client).get(
             OpportunityType.CONTACT
         )
@@ -118,7 +118,7 @@ class TestComputedOpportunity(TestCase):
             opp.opportunity_metadata, {"status": "UPCOMING", "daysUntilDue": 5}
         )
 
-        client.most_recent_face_to_face_date = no_opp_date
+        client = generate_fake_client("abc", last_face_to_face_date=no_opp_date)
         self.assertIsNone(
             ComputedOpportunity.build_all_for_client(client).get(
                 OpportunityType.CONTACT

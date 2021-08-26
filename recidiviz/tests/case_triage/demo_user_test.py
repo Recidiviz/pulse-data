@@ -159,28 +159,39 @@ class TestDemoUser(TestCase):
         with self.helpers.using_demo_user():
             # these numbers reflect the conditions represented in data fixtures
             # that result in opportunities
-            num_unemployed = 58
             num_assessment_overdue = 33
             num_assessment_upcoming = 5
-            num_contact_overdue = 31
-            num_contact_upcoming = 16
-            num_new_to_caseload = 11
 
-            expected_opportunity_count = sum(
-                [
-                    len(self.demo_opportunities),
-                    num_unemployed,
-                    num_assessment_overdue,
-                    num_assessment_upcoming,
-                    num_contact_overdue,
-                    num_contact_upcoming,
-                    num_new_to_caseload,
-                ]
+            num_contact_overdue = 34
+            num_contact_upcoming = 17
+
+            computed_opportunity_amounts = {
+                OpportunityType.EMPLOYMENT: 58,
+                OpportunityType.ASSESSMENT: num_assessment_overdue
+                + num_assessment_upcoming,
+                OpportunityType.CONTACT: num_contact_overdue + num_contact_upcoming,
+                OpportunityType.NEW_TO_CASELOAD: 11,
+            }
+
+            expected_opportunity_count = len(self.demo_opportunities) + sum(
+                computed_opportunity_amounts.values()
             )
 
-            self.assertEqual(
-                len(self.helpers.get_opportunities()), expected_opportunity_count
-            )
+            api_opportunities = self.helpers.get_opportunities()
+            for opp_type, amount in computed_opportunity_amounts.items():
+                self.assertEqual(
+                    len(
+                        [
+                            opp
+                            for opp in api_opportunities
+                            if opp["opportunityType"] == opp_type.value
+                        ]
+                    ),
+                    amount,
+                    f"mismatch for {opp_type=}",
+                )
+
+            self.assertEqual(len(api_opportunities), expected_opportunity_count)
 
     def test_defer_opportunity(self) -> None:
         with self.helpers.using_demo_user():
