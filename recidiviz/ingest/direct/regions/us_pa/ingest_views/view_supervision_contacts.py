@@ -25,11 +25,10 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
 SELECT
-    FACT_PAROLEE_CNTC_SUMRY_ID as contact_id,
-    PERSON_ID as person_id,
     PAROLE_NUMBER as parole_number,
-    CAST(LEFT(START_DATE, 10) AS DATE) AS contact_start_date,
-    CAST(LEFT(END_DATE, 10) AS DATE) AS contact_end_date,
+    CAST(SAFE_CAST(CREATED_DATE AS DATETIME) AS DATE) as created_date,
+    CAST(SAFE_CAST(START_DATE AS DATETIME) AS DATE) AS contact_start_date,
+    CAST(SAFE_CAST(END_DATE AS DATETIME) AS DATE) AS contact_end_date,
     DURATION_MINS as duration,
     CONTACT_TYPE as contact_type,
     METHOD as method,
@@ -48,7 +47,7 @@ VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_pa",
     ingest_view_name="supervision_contacts",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="parole_number ASC, contact_id ASC",
+    order_by_cols="parole_number ASC, contact_type ASC",
 )
 
 if __name__ == "__main__":

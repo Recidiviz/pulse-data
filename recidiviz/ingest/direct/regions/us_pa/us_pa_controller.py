@@ -293,6 +293,7 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "supervision_violation": _generate_supervision_violation_primary_key,
             "supervision_violation_response": _generate_supervision_violation_response_primary_key,
             "board_action": _generate_board_action_supervision_violation_response_primary_key,
+            "supervision_contacts": _generate_supervision_contact_primary_key,
         }
 
         self.ancestor_chain_overrides_callback_by_file: Dict[
@@ -1659,3 +1660,17 @@ def _state_supervision_violation_response_ancestor_chain_overrides(
     violation_id = f"{person_id}-{parole_count}-{set_id}"
 
     return {"state_supervision_violation": violation_id}
+
+
+def _generate_supervision_contact_primary_key(
+    _gating_context: IngestGatingContext, row: Dict[str, str]
+) -> IngestFieldCoordinates:
+    parole_number = row["parole_number"]
+    created_date = row["created_date"]
+    duration = row["duration"]
+    contact_type = row["contact_type"]
+
+    contact_id = f"{parole_number}-{created_date}-{contact_type}-{duration}"
+    return IngestFieldCoordinates(
+        "state_supervision_contact", "state_supervision_contact_id", contact_id
+    )
