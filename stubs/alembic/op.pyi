@@ -15,10 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-import sqlalchemy as sa
-
 from typing import List, Optional, Union
 
+import sqlalchemy as sa
 from alembic.runtime.migration import MigrationContext
 from sqlalchemy import Column
 from sqlalchemy.dialects import postgresql
@@ -45,6 +44,7 @@ def alter_column(
     comment: Optional[str] = None,
     existing_comment: Optional[str] = None,
     existing_server_default: Optional[sa.Text] = None,
+    server_default: Optional[sa.Text] = None,
     autoincrement: Optional[bool] = False,
 ) -> None: ...
 def create_check_constraint(
