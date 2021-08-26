@@ -19,7 +19,7 @@ from datetime import date, datetime, timedelta
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional, Tuple
 from unittest import TestCase, mock
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import MagicMock, patch
 from urllib import parse
 
 import pytest
@@ -967,10 +967,6 @@ class TestUserImpersonation(TestCase):
     @patch(
         "recidiviz.case_triage.officer_metadata.interface.OfficerMetadataInterface.get_officer_metadata"
     )
-    @patch(
-        "recidiviz.case_triage.user_context.UserContext.is_admin",
-        new_callable=PropertyMock,
-    )
     @patch("recidiviz.case_triage.authorization.AuthorizationStore.can_impersonate")
     @patch("recidiviz.case_triage.querier.querier.CaseTriageQuerier.officer_for_email")
     @patch(
@@ -985,7 +981,6 @@ class TestUserImpersonation(TestCase):
         mock_officer_for_hashed_email: MagicMock,
         mock_officer_for_email: MagicMock,
         mock_can_impersonate: MagicMock,
-        mock_is_admin: PropertyMock,
         mock_get_officer_metadata: MagicMock,
     ) -> None:
         officer = generate_fake_officer(officer_id="test", email=self.non_admin_email)
@@ -998,7 +993,6 @@ class TestUserImpersonation(TestCase):
             can_access_leadership_dashboard=False,
             impersonatable_state_codes=set(),
         )
-        mock_is_admin.return_value = False
         mock_get_officer_metadata.return_value = OfficerMetadata.from_officer(officer)
 
         with self.test_app.test_request_context():

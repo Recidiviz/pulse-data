@@ -77,11 +77,7 @@ class UserContext:
 
     @property
     def is_admin(self) -> bool:
-        return (
-            self.current_user
-            and self.current_user.email_address
-            in self.authorization_store.case_triage_admin_users
-        )
+        return self.email in self.authorization_store.case_triage_admin_users
 
     @property
     def is_impersonating(self) -> bool:
@@ -167,13 +163,17 @@ class UserContext:
     def should_see_onboarding(
         self, registration_date: datetime, officer_metadata: OfficerMetadata
     ) -> bool:
-        """The user should see the onboarding flow if they are:
-        1. logged in as (not impersonating) an officer
-        2. they signed up after the onboarding launch date or are an admin user
-        """
+        # The onboarding flow is never shown to the user more than once
+        if officer_metadata.has_seen_onboarding:
+            return False
 
-        return not officer_metadata.has_seen_onboarding and (
-            self.is_admin
-            or self.should_see_demo
-            or registration_date >= ONBOARDING_LAUNCH_DATE
-        )
+        # and it is never shown to the user when viewing another officer's caseload.
+        if self.is_impersonating:
+            return False
+
+        # It is shown to all users that are viewing their demo caseload
+        if self.should_see_demo:
+            return True
+
+        # or if the user registered after the onboarding launch date
+        return registration_date >= ONBOARDING_LAUNCH_DATE
