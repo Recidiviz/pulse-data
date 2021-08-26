@@ -81,7 +81,7 @@ class TestCasePresenter(TestCase):
                     "mostRecentFaceToFaceDate": self.mock_client.most_recent_face_to_face_date,
                     "mostRecentHomeVisitDate": self.mock_client.most_recent_home_visit_date,
                     "nextAssessmentDate": date(2022, 2, 1),
-                    "nextFaceToFaceDate": date(2021, 3, 1),
+                    "nextFaceToFaceDate": self.mock_client.next_recommended_face_to_face_date,
                     "nextHomeVisitDate": date(2021, 5, 3),
                     "needsMet": {
                         "employment": False,
@@ -142,7 +142,7 @@ class TestCasePresenter(TestCase):
                     "mostRecentFaceToFaceDate": self.mock_client.most_recent_face_to_face_date,
                     "mostRecentHomeVisitDate": self.mock_client.most_recent_home_visit_date,
                     "nextAssessmentDate": date(2022, 2, 1),
-                    "nextFaceToFaceDate": date(2021, 3, 1),
+                    "nextFaceToFaceDate": self.mock_client.next_recommended_face_to_face_date,
                     "nextHomeVisitDate": date(2021, 5, 3),
                     "needsMet": {
                         "employment": False,

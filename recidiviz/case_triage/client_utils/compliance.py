@@ -20,61 +20,16 @@ import logging
 from datetime import date, timedelta
 from typing import Literal, Optional, Tuple
 
-import numpy as np
-
-# TODO(#5768): Remove some of these imports once we've figured out our preferred contact method.
+# TODO(#5768): Remove the rest of these imports once we move next home visit logic fully to calc pipeline.
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
-    NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS,
     NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS,
-    SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS,
     US_ID_SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS,
 )
 from recidiviz.case_triage.exceptions import CaseTriageInvalidStateException
-from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
 from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
-
-
-def get_next_face_to_face_date(client: ETLClient) -> Optional[date]:
-    """Calculates the next face-to-face contact date. It returns None if no
-    future face-to-face contact is required."""
-
-    # TODO(#5768): Eventually move this calculation to our calculate pipeline.
-    # In the meantime, we're hard-coding the relation to US_ID as a quick stop gap
-    if client.state_code != "US_ID":
-        raise CaseTriageInvalidStateException(client.state_code)
-
-    case_type = StateSupervisionCaseType(client.case_type)
-    supervision_level = StateSupervisionLevel(client.supervision_level)
-    if (
-        case_type not in SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS
-        or supervision_level
-        not in SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[case_type]
-    ):
-        logging.warning(
-            "Could not find requirements for case type %s, supervision level %s",
-            client.case_type,
-            client.supervision_level,
-        )
-        return None
-
-    if client.most_recent_face_to_face_date is None:
-        return np.busday_offset(
-            client.supervision_start_date,
-            NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS,
-            roll="forward",
-        ).astype(date)
-
-    face_to_face_requirements = SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[case_type][
-        supervision_level
-    ]
-    if face_to_face_requirements[0] == 0:
-        return None
-    return client.most_recent_face_to_face_date + timedelta(
-        days=(face_to_face_requirements[1] // face_to_face_requirements[0])
-    )
 
 
 def get_next_home_visit_date(client: ETLClient) -> Optional[date]:
@@ -147,9 +102,8 @@ def get_contact_due_details(client: ETLClient) -> Optional[Tuple[DueDateStatus, 
     # should be assuming that home visits must be F2F visits and not collateral visits.
     # As a result, until we do more investigation into what the appropriate application
     # of state policy is, we're not showing home visits as the next contact dates.
-    due_date = get_next_face_to_face_date(client)
-    if due_date:
-        status = _get_due_date_status(due_date, 30)
-        if status:
+
+    if (due_date := client.next_recommended_face_to_face_date) :
+        if (status := _get_due_date_status(due_date, 30)) :
             return (status, _get_days_until_due(due_date))
     return None
