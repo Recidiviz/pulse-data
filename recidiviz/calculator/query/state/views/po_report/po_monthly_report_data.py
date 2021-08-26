@@ -83,15 +83,9 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
         ARRAY_AGG(
           IF(next_recommended_face_to_face_date <= LAST_DAY(DATE(year, month, 1), MONTH), STRUCT(person_external_id, full_name), NULL)
           IGNORE NULLS
-        ) AS facetoface_out_of_date_clients
-      FROM `{project_id}.{po_report_dataset}.report_data_by_person_by_month_materialized`
-      GROUP BY state_code, year, month, officer_external_id
-    ),
-    compliance_caseloads AS (
-      SELECT
-        state_code, year, month, officer_external_id,
+        ) AS facetoface_out_of_date_clients,
         COUNT(DISTINCT person_id) AS caseload_count
-      FROM `{project_id}.{po_report_dataset}.supervision_compliance_by_person_by_month_materialized`
+      FROM `{project_id}.{po_report_dataset}.report_data_by_person_by_month_materialized`
       GROUP BY state_code, year, month, officer_external_id
     ),
     averages_by_state_and_district AS (
@@ -155,14 +149,14 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       state_avg.avg_absconsions AS absconsions_state_average,
       report_month.assessments_out_of_date_clients,
       report_month.assessments,
-      IF(caseload_count = 0,
+      IF(report_month.caseload_count = 0,
         1,
-        IEEE_DIVIDE(report_month.assessments_up_to_date, caseload_count)) * 100 AS assessments_percent,
+        IEEE_DIVIDE(report_month.assessments_up_to_date, report_month.caseload_count)) * 100 AS assessments_percent,
       report_month.facetoface_out_of_date_clients,
       report_month.facetoface,
-      IF(caseload_count = 0,
+      IF(report_month.caseload_count = 0,
         1,
-        IEEE_DIVIDE(report_month.facetoface_frequencies_sufficient, caseload_count)) * 100 as facetoface_percent
+        IEEE_DIVIDE(report_month.facetoface_frequencies_sufficient, report_month.caseload_count)) * 100 as facetoface_percent
     FROM `{project_id}.{static_reference_dataset}.po_report_recipients`
     LEFT JOIN report_data_per_officer report_month
       USING (state_code, officer_external_id)
@@ -176,8 +170,6 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       WHERE district = 'ALL'
     ) state_avg
       USING (state_code, year, month)
-    LEFT JOIN compliance_caseloads
-      USING (state_code, year, month, officer_external_id)
     LEFT JOIN (
       SELECT
         * EXCEPT (year, month),

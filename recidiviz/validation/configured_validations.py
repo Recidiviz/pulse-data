@@ -143,6 +143,9 @@ from recidiviz.validation.views.state.po_report_avgs_per_district_state import (
 from recidiviz.validation.views.state.po_report_distinct_by_officer_month import (
     PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.po_report_invalid_percentages import (
+    PO_REPORT_INVALID_PERCENTAGES_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.po_report_missing_fields import (
     PO_REPORT_COMPARISON_COLUMNS,
     PO_REPORT_MISSING_FIELDS_VIEW_BUILDER,
@@ -303,6 +306,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=PO_REPORT_INVALID_PERCENTAGES_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(
