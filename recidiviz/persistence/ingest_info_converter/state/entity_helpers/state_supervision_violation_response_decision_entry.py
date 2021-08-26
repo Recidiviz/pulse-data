@@ -37,6 +37,7 @@ from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import Enum
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
 #  mappings.
+# TODO(#6989): Stop converting the revocation_type fields once they have been deleted
 def convert(
     proto: StateSupervisionViolationResponseDecisionEntry, metadata: IngestMetadata
 ) -> entities.StateSupervisionViolationResponseDecisionEntry:

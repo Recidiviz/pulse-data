@@ -105,6 +105,10 @@ from recidiviz.common.date import DateRange, DurationMixin
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 
 # **** Entity Types for convenience *****:
+from recidiviz.persistence.entity.state.entity_deprecation_utils import (
+    validate_deprecated_entity_field_for_states,
+)
+
 SentenceType = TypeVar(
     "SentenceType", "StateSupervisionSentence", "StateIncarcerationSentence"
 )
@@ -1667,6 +1671,19 @@ class StateSupervisionViolationResponse(
     decision_agents: List["StateAgent"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
+
+    def __attrs_post_init__(self) -> None:
+        validate_deprecated_entity_field_for_states(
+            entity=self,
+            field_name="revocation_type",
+            deprecated_state_codes=["US_ID", "US_MO", "US_PA"],
+        )
+
+        validate_deprecated_entity_field_for_states(
+            entity=self,
+            field_name="revocation_type_raw_text",
+            deprecated_state_codes=["US_ID", "US_MO", "US_PA"],
+        )
 
 
 @attr.s(eq=False)
