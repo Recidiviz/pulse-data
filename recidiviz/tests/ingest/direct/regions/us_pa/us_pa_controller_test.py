@@ -2287,7 +2287,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                         StateSupervisionPeriod(
                                             state_supervision_contacts=[
                                                 StateSupervisionContact(
-                                                    state_supervision_contact_id="1",
+                                                    state_supervision_contact_id="456B-2014-09-15-Offender-30",
                                                     contact_date="2014-09-15",
                                                     contact_type="Offender-Home",
                                                     location="None-Home",
@@ -2300,7 +2300,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                                     ),
                                                 ),
                                                 StateSupervisionContact(
-                                                    state_supervision_contact_id="5",
+                                                    state_supervision_contact_id="456B-2016-10-02-Both-50",
                                                     contact_date="2016-10-01",
                                                     contact_type="Both-Email",
                                                     location="Employer-Email",
@@ -2313,7 +2313,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                                     ),
                                                 ),
                                                 StateSupervisionContact(
-                                                    state_supervision_contact_id="6",
+                                                    state_supervision_contact_id="456B-2016-10-04-Collateral-50",
                                                     contact_date="2016-10-03",
                                                     contact_type="Collateral-Home",
                                                     location="None-Home",
@@ -2326,7 +2326,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                                     ),
                                                 ),
                                                 StateSupervisionContact(
-                                                    state_supervision_contact_id="7",
+                                                    state_supervision_contact_id="456B-2016-10-05-Collateral-30",
                                                     contact_date="2016-10-04",
                                                     contact_type="Collateral-Field",
                                                     location="CourtProbationStaf-Field",
@@ -5065,7 +5065,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         )
 
         p2_sc_2_1 = entities.StateSupervisionContact.new_with_defaults(
-            external_id="1",
+            external_id="456B-2014-09-15-OFFENDER-30",
             person=person_2,
             supervision_periods=[p2_placeholder_sp_for_contacts],
             state_code=_STATE_CODE_UPPER,
@@ -5080,7 +5080,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         )
 
         p2_sc_2_2 = entities.StateSupervisionContact.new_with_defaults(
-            external_id="5",
+            external_id="456B-2016-10-02-BOTH-50",
             person=person_2,
             supervision_periods=[p2_placeholder_sp_for_contacts],
             state_code=_STATE_CODE_UPPER,
@@ -5095,7 +5095,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         )
 
         p2_sc_2_3 = entities.StateSupervisionContact.new_with_defaults(
-            external_id="6",
+            external_id="456B-2016-10-04-COLLATERAL-50",
             person=person_2,
             supervision_periods=[p2_placeholder_sp_for_contacts],
             state_code=_STATE_CODE_UPPER,
@@ -5110,7 +5110,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         )
 
         p2_sc_2_4 = entities.StateSupervisionContact.new_with_defaults(
-            external_id="7",
+            external_id="456B-2016-10-05-COLLATERAL-30",
             person=person_2,
             supervision_periods=[p2_placeholder_sp_for_contacts],
             state_code=_STATE_CODE_UPPER,

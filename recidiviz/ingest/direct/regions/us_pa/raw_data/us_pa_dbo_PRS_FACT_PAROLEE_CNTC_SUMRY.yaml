@@ -2,15 +2,30 @@ file_tag: dbo_PRS_FACT_PAROLEE_CNTC_SUMRY
 file_description: |-
   This file is provided by PADOC and provides an entry for a supervision contact that was made.
 primary_key_cols:
-  - FACT_PAROLEE_CNTC_SUMRY_ID
+# This table can have rows retroactively updated by agents with corrections between ingest dates
+# as well as multiple rows within one ingest date that semantically represent the same contact made to
+# a person on supervision.
+# Fields such as METHOD, CONTACT_TYPE, ATTEMPTED, ASSISTED, COLLATERAL_TYPE are not included in this primary key due to
+# evidence of retroactive updates to those fields. 
+# PRL_AGNT_EMPL_NO is also relatively stable in combination to the four fields identified below but is excluded out of 
+# possibility that it could transfer from one agent to another within PADOC.
+# These four fields are identified as relatively stable to represent one contact - CREATED_DATE may indicate a date later
+# than START_DATE or END_DATE due to manual input by parole agents, but is hardly changed due to every other adjustment
+# after is a retroactive update to other fields. CONTACT_TYPE and DURATION_MINS, in this case, also hardly change, but
+# DURATION_MINS is included because there may be multiple of the same CONTACT_TYPE contacts created but for slightly different
+# purposes.
+  - PAROLE_NUMBER
+  - CREATED_DATE
+  - CONTACT_TYPE
+  - DURATION_MINS
 columns:
   - name: FACT_PAROLEE_CNTC_SUMRY_ID
     description: |-
-      Unique identifier for a given supervision contact.
+      Incremental identifier used for the report that generates the contacts.
   - name: REPORT_DATE
   - name: PERSON_ID
     description: |-
-      Unique identifier for the person within the PADOC system
+      Unknown identifier for a person within the PADOC system. We currently do not ingest any external ids of this kind within PA, therefore this is not used for any mappings.
   - name: PAROLE_NUMBER
     description: |-
       Unique identifier for the person on supervision
@@ -74,10 +89,10 @@ columns:
         description: Place of employment
   - name: ATTEMPTED
     description: |-
-      Yes/No of whether the agent initiates the contact
+      Yes/No of whether the agent was able to complete the contact (yes means attempted, not completed, no means completed)
   - name: COLLATERAL_TYPE
     description: |-
-      Categorical to describe the agency or individuals contacted as part of a collateral contact
+      Categorical to describe the agency or individuals contacted as part of a collateral contact, null if the contact is direct face-to-face
     known_values:
       - value: Associate
         description: TODO(#7280) - Clarify with PADOC
@@ -115,7 +130,7 @@ columns:
         description: contact made with the treatment provider of the person on supervision
   - name: ASSISTED
     description: |-
-      Yes/No if the agent is assisted by another parole officer
+      Yes if the agent is assisted by another parole officer, null otherwise
   - name: CASE_NOTE_TYPE_CODE
     description: |-
       Unclear, all entries are ROI
