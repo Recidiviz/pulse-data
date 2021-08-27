@@ -124,7 +124,7 @@ def deploy_pipeline_templates(template_yaml_path: str, project_id: str) -> None:
             max_workers=8,
         ) as execution:
             execution.wait_with_progress_bar(
-                "Deploying pipeline templates...", timeout=10 * 60
+                "Deploying pipeline templates...", timeout=20 * 60
             )
     except DeployPipelineFailedError:
         sys.exit(1)
