@@ -14,7 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Creates the view builder and view for listing all clients."""
+"""Creates the view builder and view for listing all clients.
+
+To output this query, run:
+  python -m recidiviz.case_triage.views.etl_clients
+"""
 
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
