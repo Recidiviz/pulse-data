@@ -81,7 +81,8 @@ def _get_file_for_endpoint_rule(rule: Rule) -> Optional[str]:
         if endpoint_module in module or not file_for_endpoint:
             for func, _ in getmembers(sys.modules[module], isfunction):
                 if func == function_name:
-                    file_for_endpoint = os.path.relpath(sys.modules[module].__file__)
+                    top_level_idx = sys.modules[module].__file__.find("recidiviz/")
+                    file_for_endpoint = sys.modules[module].__file__[top_level_idx:]
                     break
     return file_for_endpoint
 
