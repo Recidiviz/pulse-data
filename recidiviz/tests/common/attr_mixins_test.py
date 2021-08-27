@@ -19,7 +19,7 @@
 import unittest
 from datetime import date
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import attr
 
@@ -27,10 +27,12 @@ from recidiviz.common.attr_mixins import (
     BuildableAttr,
     BuildableAttrFieldType,
     BuilderException,
+    CachedAttributeInfo,
     DefaultableAttr,
     _attribute_field_type_reference_for_class,
     _clear_class_structure_reference,
     _get_class_structure_reference,
+    attr_field_enum_cls_for_field_name,
     attr_field_type_for_field_name,
 )
 
@@ -391,29 +393,32 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
 
         attributes = attr.fields_dict(FakeBuildableAttrDeluxe).values()
 
-        expected_attr_field_type_ref: Dict[
-            attr.Attribute, Tuple[BuildableAttrFieldType, Optional[Any]]
-        ] = {}
+        expected_attr_field_type_ref: Dict[str, CachedAttributeInfo] = {}
         for attribute in attributes:
-            if "enum" in attribute.name:
+            name = attribute.name
+            if "enum" in name:
                 enum_cls = FakeEnum
 
-                expected_attr_field_type_ref[attribute] = (
+                expected_attr_field_type_ref[name] = CachedAttributeInfo(
+                    attribute,
                     BuildableAttrFieldType.ENUM,
                     enum_cls,
                 )
             elif "date" in attribute.name:
-                expected_attr_field_type_ref[attribute] = (
+                expected_attr_field_type_ref[name] = CachedAttributeInfo(
+                    attribute,
                     BuildableAttrFieldType.DATE,
                     None,
                 )
             elif "forward_ref" in attribute.name:
-                expected_attr_field_type_ref[attribute] = (
+                expected_attr_field_type_ref[name] = CachedAttributeInfo(
+                    attribute,
                     BuildableAttrFieldType.FORWARD_REF,
                     None,
                 )
             else:
-                expected_attr_field_type_ref[attribute] = (
+                expected_attr_field_type_ref[name] = CachedAttributeInfo(
+                    attribute,
                     BuildableAttrFieldType.OTHER,
                     None,
                 )
@@ -449,4 +454,28 @@ class TestAttrFieldTypeForFieldName(unittest.TestCase):
         self.assertEqual(
             BuildableAttrFieldType.OTHER,
             attr_field_type_for_field_name(FakeBuildableAttrDeluxe, "field_list"),
+        )
+
+
+class TestAttrFieldEnumClsForFieldName(unittest.TestCase):
+    """Tests the attr_field_enum_cls_for_field_name function."""
+
+    def test_attr_enum_cls_for_field_name(self) -> None:
+        self.assertEqual(
+            FakeEnum,
+            attr_field_enum_cls_for_field_name(FakeBuildableAttrDeluxe, "enum_field"),
+        )
+
+        self.assertIsNone(
+            attr_field_enum_cls_for_field_name(FakeBuildableAttrDeluxe, "date_field")
+        )
+
+        self.assertIsNone(
+            attr_field_enum_cls_for_field_name(
+                FakeBuildableAttrDeluxe, "field_forward_ref"
+            )
+        )
+
+        self.assertIsNone(
+            attr_field_enum_cls_for_field_name(FakeBuildableAttrDeluxe, "field_list")
         )
