@@ -10,4 +10,4 @@ output:
       - $foreach: PERSONIDS
         FakePersonExternalId:
           external_id: $iter
-          id_type: \"US_XX_ID_TYPE"
+          id_type: $literal("US_XX_ID_TYPE")

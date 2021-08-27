@@ -73,7 +73,7 @@ MIN_LANGUAGE_VERSION = "1.0.0"
 MAX_LANGUAGE_VERSION = "1.0.0"
 
 # String literals are denoted like \"MY_STR"
-STRING_LITERAL_VALUE_REGEX = re.compile(r"^\\\"(.+)\"$")
+STRING_LITERAL_VALUE_REGEX = re.compile(r"^\$literal\(\"(.+)\"\)$")
 
 
 class IngestViewFileParserDelegate:

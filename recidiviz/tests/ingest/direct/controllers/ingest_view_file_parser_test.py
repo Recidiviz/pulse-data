@@ -514,7 +514,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         loops = 10000
         expected_loops_per_sec = 100000
         expected_time = loops * (1 / expected_loops_per_sec)
-        string_literal_field_value = '\\"MY_LITERAL_VALUE"'
+        string_literal_field_value = '$literal("MY_LITERAL_VALUE")'
 
         start_regex = datetime.datetime.now()
         for _ in range(loops):
