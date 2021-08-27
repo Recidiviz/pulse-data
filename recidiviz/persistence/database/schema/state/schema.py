@@ -583,6 +583,7 @@ state_supervision_contact_type = Enum(
     state_enum_strings.state_supervision_contact_type_virtual,
     state_enum_strings.state_supervision_contact_type_collateral,
     state_enum_strings.state_supervision_contact_type_direct,
+    state_enum_strings.state_supervision_contact_type_both_collateral_and_direct,
     name="state_supervision_contact_type",
 )
 
