@@ -95,6 +95,7 @@ const IngestOperationsView = (): JSX.Element => {
       setIngestInstanceSummariesLoading(true);
       await fetchQueueStates(stateCode);
       await fetchIngestInstanceSummaries(stateCode);
+      setQueueStatesLoading(false);
     }
   }, [stateCode]);
 
@@ -127,7 +128,6 @@ const IngestOperationsView = (): JSX.Element => {
     const response = await getIngestQueuesState(regionCodeInput);
     const result: QueueMetadata[] = await response.json();
     setQueueStates(result);
-    setQueueStatesLoading(false);
   }
 
   async function fetchIngestInstanceSummaries(regionCodeInput: string) {
@@ -185,6 +185,7 @@ const IngestOperationsView = (): JSX.Element => {
         default:
           throw unsupportedIngestAction;
       }
+      setQueueStatesLoading(false);
     }
   };
 
