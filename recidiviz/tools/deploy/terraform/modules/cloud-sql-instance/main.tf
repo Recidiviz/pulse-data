@@ -59,6 +59,14 @@ variable "zone" {
   type = string
 }
 
+# Whether backups are enabled
+# TODO(#8282): Remove this option and always enforce backups_enabled once we
+# delete the v1 databases.
+variable "backups_enabled" {
+  type    = bool
+  default = true
+}
+
 
 # Used for allowing access from `prod-data-client` to the CloudSQL instance
 data "google_secret_manager_secret_version" "prod_data_client_cidr" { secret = "prod_data_client_cidr" }
@@ -110,9 +118,9 @@ resource "google_sql_database_instance" "data" {
     availability_type = "REGIONAL"
 
     backup_configuration {
-      enabled                        = true
+      enabled                        = var.backups_enabled
       location                       = "us"
-      point_in_time_recovery_enabled = true  # needed for HA
+      point_in_time_recovery_enabled = true # needed for HA
     }
 
     ip_configuration {
