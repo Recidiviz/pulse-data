@@ -46,7 +46,7 @@ class CheckAssertionsTest(unittest.TestCase):
             os.path.relpath(ingest_info.__file__),
             os.path.relpath(ingest_info.__file__)[:-2] + "proto",
         ]
-        expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str]]] = [
+        expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str], str]] = [
             (
                 frozenset(
                     (
@@ -60,6 +60,7 @@ class CheckAssertionsTest(unittest.TestCase):
                         os.path.relpath(ingest_info_pb2.__file__) + "i",
                     )
                 ),
+                "ingest",
             )
         ]
 
@@ -80,11 +81,8 @@ class CheckAssertionsTest(unittest.TestCase):
 
     def test_pipfile_unhappy(self) -> None:
         modified_files = ["Pipfile"]
-        expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str]]] = [
-            (
-                frozenset(["Pipfile"]),
-                frozenset(["Pipfile.lock"]),
-            )
+        expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str], str]] = [
+            (frozenset(["Pipfile"]), frozenset(["Pipfile.lock"]), "pipfile")
         ]
 
         self._run_test(modified_files, expected_failures, [])
@@ -117,10 +115,11 @@ class CheckAssertionsTest(unittest.TestCase):
             "recidiviz/ingest/direct/regions/us_nd/raw_data/whatever.yaml",
             "recidiviz/ingest/direct/regions/us_nd/raw_data/something_else.yaml",
         ]
-        expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str]]] = [
+        expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str], str]] = [
             (
                 frozenset(["recidiviz/ingest/direct/regions/us_nd/"]),
                 frozenset(["docs/ingest/us_nd/"]),
+                "ingest_docs",
             )
         ]
 
@@ -132,10 +131,11 @@ class CheckAssertionsTest(unittest.TestCase):
             "docs/ingest/us_nd/raw_data.md",
             "recidiviz/ingest/direct/regions/us_mo/raw_data/whatever.yaml",
         ]
-        expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str]]] = [
+        expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str], str]] = [
             (
                 frozenset(["recidiviz/ingest/direct/regions/us_mo/"]),
                 frozenset(["docs/ingest/us_mo/"]),
+                "ingest_docs",
             )
         ]
 
@@ -160,14 +160,16 @@ class CheckAssertionsTest(unittest.TestCase):
             "recidiviz/ingest/direct/direct_ingest_control.py",
             "recidiviz/ingest/aggregate/single_count.py",
         ]
-        expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str]]] = [
+        expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str], str]] = [
             (
                 frozenset(["recidiviz/ingest/aggregate/single_count.py"]),
                 frozenset(["docs/endpoints/single_count/single_count.md"]),
+                "endpoints_docs",
             ),
             (
                 frozenset(["recidiviz/ingest/direct/direct_ingest_control.py"]),
                 frozenset(["docs/endpoints/direct"]),
+                "endpoints_docs",
             ),
         ]
         self._run_test(modified_files, expected_failures, [])
@@ -178,7 +180,7 @@ class CheckAssertionsTest(unittest.TestCase):
     def _run_test(
         self,
         modified_files: List[str],
-        expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str]]],
+        expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str], str]],
         skipped_assertion_keys: List[str],
     ) -> None:
         failed_assertions = check_assertions(
