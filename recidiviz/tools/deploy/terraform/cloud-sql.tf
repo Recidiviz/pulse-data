@@ -27,7 +27,7 @@ module "case_triage_database" {
   require_ssl_connection = true
 }
 
-
+# TODO(#8282): Delete this database on 2/25/2021.
 module "jails_database" {
   source = "./modules/cloud-sql-instance"
 
@@ -39,6 +39,8 @@ module "jails_database" {
   # 4 vCPU, 15GB Memory | 1 vCPU, 3.75GB Memory
   tier              = local.is_production ? "db-custom-4-15360" : "db-custom-1-3840"
   has_readonly_user = local.is_production
+
+  backups_enabled = false
 }
 
 module "jails_database_v2" {
@@ -65,7 +67,7 @@ module "justice_counts_database" {
   has_readonly_user = local.is_production
 }
 
-
+# TODO(#8282): Delete this database on 2/25/2021.
 module "operations_database" {
   source = "./modules/cloud-sql-instance"
 
@@ -76,6 +78,8 @@ module "operations_database" {
   zone              = "us-east1-b"
   tier              = "db-custom-1-3840" # 1 vCPU, 3.75GB Memory
   has_readonly_user = local.is_production
+
+  backups_enabled = false
 }
 
 module "operations_database_v2" {
@@ -90,7 +94,7 @@ module "operations_database_v2" {
   has_readonly_user = true
 }
 
-
+# TODO(#8282): Delete this database on 2/25/2021.
 module "state_database" {
   source = "./modules/cloud-sql-instance"
 
@@ -101,6 +105,8 @@ module "state_database" {
   zone              = "us-east1-c"
   tier              = "db-custom-4-16384" # 4 vCPUs, 16GB Memory
   has_readonly_user = local.is_production
+
+  backups_enabled = false
 }
 
 module "state_database_v2" {
