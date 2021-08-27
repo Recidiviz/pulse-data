@@ -34,9 +34,6 @@ num_allowed_rows_overrides:
   - validation_name: incarceration_admission_after_open_period
     num_allowed_rows_override: 60
     override_reason: TODO(#4058) - Needs investigation.
-  - validation_name: incarceration_release_prior_to_admission
-    num_allowed_rows_override: 10
-    override_reason: TODO(#4058) - Needs investigation.
   - validation_name: supervision_termination_prior_to_start
     num_allowed_rows_override: 2
     override_reason: TODO(#4058) - Needs investigation.

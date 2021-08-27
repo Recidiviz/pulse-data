@@ -14,8 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+"""A view revealing when state incarceration periods have release dates prior to admission dates.
 
-"""A view revealing when state incarceration periods have release dates prior to admission dates."""
+To build, run:
+    python -m recidiviz.validation.views.state.incarceration_release_prior_to_admission
+"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config

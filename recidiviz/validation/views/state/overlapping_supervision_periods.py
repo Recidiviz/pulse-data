@@ -19,6 +19,9 @@
 
 Note: for some states it may be expected that supervision periods overlap. In this case, we should add this validation
 to the `exclusions` section of that state's validation config.
+
+To build, run:
+    python -m recidiviz.validation.views.state.overlapping_supervision_periods
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
