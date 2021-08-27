@@ -226,7 +226,7 @@ def _match_filenames(
 
 def check_assertions(
     modified_files: FrozenSet[str], sets_to_skip: FrozenSet[str]
-) -> List[Tuple[FrozenSet[str], FrozenSet[str]]]:
+) -> List[Tuple[FrozenSet[str], FrozenSet[str], str]]:
     """Checks that all of the the modified files against the global set of modification assertions, and returns any
     failed assertions.
 
@@ -234,7 +234,7 @@ def check_assertions(
     set are not themselves modified, that constitutes a failure. However, if that set is provided as one of the sets
     to skip, then any such failure is ignored.
     """
-    failed_assertion_files: List[Tuple[FrozenSet[str], FrozenSet[str]]] = []
+    failed_assertion_files: List[Tuple[FrozenSet[str], FrozenSet[str], str]] = []
 
     for set_to_validate, modifications in MODIFIED_FILE_ASSERTIONS.items():
         if set_to_validate in sets_to_skip:
@@ -246,7 +246,9 @@ def check_assertions(
                 modified_files, required_modification_sets
             )
             if failed_prefixes:
-                failed_assertion_files.append((matched_prefixes, failed_prefixes))
+                failed_assertion_files.append(
+                    (matched_prefixes, failed_prefixes, set_to_validate)
+                )
 
     return failed_assertion_files
 
@@ -261,11 +263,16 @@ def _get_modified_files(commit_range: str) -> FrozenSet[str]:
     return frozenset(git.stdout.decode().splitlines())
 
 
-def _format_failure(failure: Tuple[FrozenSet[str], FrozenSet[str]]) -> str:
+def _format_failure(failure: Tuple[FrozenSet[str], FrozenSet[str], str]) -> str:
     """Returns the set of source modification assertion failures in a pretty-printable format."""
-    return "Failure:\n\tModified file(s):\n{}\n\tWithout modifying file(s):\n{}".format(
-        "\n".join(map(lambda file: "\t\t" + file, failure[0])),
-        "\n".join(map(lambda file: "\t\t" + file, failure[1])),
+    matched_prefixes = failure[0]
+    failed_prefixes = failure[1]
+    set_to_validate = failure[2]
+    return "Failure:\n\tModified file(s):\n{}\n\tWithout modifying file(s):\n{}\n{}".format(
+        "\n".join(map(lambda file: "\t\t" + file, matched_prefixes)),
+        "\n".join(map(lambda file: "\t\t" + file, failed_prefixes)),
+        f"If your change does not require documentation changes, prefix your commit with "
+        f'"[skip validation {set_to_validate}]".',
     )
 
 
