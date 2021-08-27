@@ -13,16 +13,16 @@ output:
       - $foreach: control_numbers
         StatePersonExternalId:
           external_id: $iter
-          id_type: \"US_PA_CONT"
+          id_type: $literal("US_PA_CONT")
 
       # Inmate numbers
       - $foreach: inmate_numbers
         StatePersonExternalId:
           external_id: $iter
-          id_type: \"US_PA_INMATE"
+          id_type: $literal("US_PA_INMATE")
 
       # Parole numbers
       - $foreach: parole_numbers
         StatePersonExternalId:
           external_id: $iter
-          id_type: \"US_PA_PBPP"
+          id_type: $literal("US_PA_PBPP")

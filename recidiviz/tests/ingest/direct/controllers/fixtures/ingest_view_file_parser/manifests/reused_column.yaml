@@ -9,7 +9,7 @@ output:
     external_ids:
       - FakePersonExternalId:
           external_id: PERSONID
-          id_type: \"ID_TYPE"
+          id_type: $literal("ID_TYPE")
     aliases:
       - FakePersonAlias:
           full_name: PERSONNAME
