@@ -16,7 +16,16 @@
 # =============================================================================
 from typing import Any, Dict, List
 
-from recidiviz.auth.auth0_client import Auth0AppMetadata, Auth0User
+from recidiviz.auth.auth0_client import Auth0AppMetadata
 
-class RateLimitError(BaseException):
-    def __init__(self, error_code: int, message: str, reset_at: int): ...
+from .rest import RestClientOptions
+
+class Users:
+    def list(self, per_page: int, fields: List[str], q: str) -> Dict[str, Any]: ...
+    def update(self, id: str, body: Dict[str, Auth0AppMetadata]) -> None: ...
+
+class Auth0:
+    users: Users
+    def __init__(
+        self, domain: str, token: str, rest_options: RestClientOptions
+    ) -> None: ...
