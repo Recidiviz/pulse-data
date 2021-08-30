@@ -17,19 +17,28 @@
 """
 This module contains various pieces related to the Case Triage authentication / authorization flow
 """
-import json
 from functools import wraps
 from http import HTTPStatus
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 from urllib.request import urlopen
 
 import jwt
-import requests
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from flask import request
 from jwt.api_jwk import PyJWKSet
 
 from recidiviz.utils.flask_exception import FlaskException
+
+EMAIL_ADDRESS_CLAIM = "https://dashboard.recidiviz.org/email_address"
+
+TokenClaims = Dict[str, Union[str, int]]
+
+
+def get_jwt_claim(claim: str, claims: TokenClaims) -> Union[str, int]:
+    if claim not in claims:
+        raise jwt.MissingRequiredClaimError(claim)
+
+    return claims[claim]
 
 
 class AuthorizationError(FlaskException):
@@ -166,7 +175,7 @@ def build_auth0_authorization_decorator(
                         description="Unable to parse authentication token.",
                     ) from e
 
-                on_successful_authorization(payload, token)
+                on_successful_authorization(payload)
 
                 return route(*args, **kwargs)
 
@@ -180,10 +189,7 @@ def build_auth0_authorization_decorator(
     return decorated
 
 
-def get_userinfo(domain: str, token: str) -> Dict[str, str]:
-    """Fetch the user's information from Auth0"""
-    response = requests.get(
-        f"https://{domain}/userinfo", headers={"Authorization": f"Bearer {token}"}
-    )
-
-    return json.loads(response.text)
+def get_userinfo(claims: TokenClaims) -> Dict[str, str]:
+    """Retrieve the user's information from Auth0 access token"""
+    email = str(get_jwt_claim(EMAIL_ADDRESS_CLAIM, claims))
+    return {"email": email}
