@@ -35,7 +35,7 @@ def _import_csv_to_temp_table(
     tmp_table_name: str,
     gcs_uri: GcsfsFilePath,
     columns: List[str],
-    seconds_to_wait: int = 60,
+    seconds_to_wait: int,
 ) -> None:
     """Imports a GCS CSV file to a temp table that is created with the destination table as a template."""
     with SessionFactory.using_database(database_key=database_key) as session:
@@ -83,7 +83,7 @@ def import_gcs_csv_to_cloud_sql(
     gcs_uri: GcsfsFilePath,
     columns: List[str],
     region_code: Optional[str] = None,
-    seconds_to_wait: int = 60,
+    seconds_to_wait: int = 60 * 5,  # 5 minutes
 ) -> None:
     """Implements the import of GCS CSV to Cloud SQL by creating a temporary table, uploading the
     results to the temporary table, and then swapping the contents of the table.

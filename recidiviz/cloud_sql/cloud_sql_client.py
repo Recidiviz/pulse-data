@@ -76,7 +76,7 @@ class CloudSQLClient:
 
     @abc.abstractmethod
     def wait_until_operation_completed(
-        self, operation_id: str, seconds_to_wait: int = 30
+        self, operation_id: str, seconds_to_wait: int
     ) -> bool:
         """Returns True if the operation succeeded and False if failed or the timeout was met."""
 
@@ -199,7 +199,7 @@ class CloudSQLClientImpl:
         return resp.get("name")
 
     def wait_until_operation_completed(
-        self, operation_id: str, seconds_to_wait: int = 30
+        self, operation_id: str, seconds_to_wait: int
     ) -> bool:
         """Sleeps until the Cloud SQL operation with the given id has finished,
         returning whether or not it finished successfully/healthily."""
