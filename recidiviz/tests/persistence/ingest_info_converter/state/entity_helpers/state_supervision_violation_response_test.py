@@ -20,10 +20,10 @@ import unittest
 from datetime import date
 
 from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseType,
+    StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseRevocationType,
-    StateSupervisionViolationResponseDecidingBodyType,
+    StateSupervisionViolationResponseType,
 )
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
@@ -32,7 +32,7 @@ from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
 )
 from recidiviz.tests.persistence.database.database_test_utils import FakeIngestMetadata
 
-_EMPTY_METADATA = FakeIngestMetadata.for_state("us_nd")
+_EMPTY_METADATA = FakeIngestMetadata.for_state("US_XX")
 
 
 class StateSupervisionViolationResponseConverterTest(unittest.TestCase):
@@ -48,7 +48,7 @@ class StateSupervisionViolationResponseConverterTest(unittest.TestCase):
             deciding_body_type="PAROLE_BOARD",
             state_supervision_violation_response_id="RESPONSE_ID",
             response_date="1/2/2111",
-            state_code="us_nd",
+            state_code="US_XX",
             is_draft="True",
         )
 
@@ -72,7 +72,7 @@ class StateSupervisionViolationResponseConverterTest(unittest.TestCase):
             deciding_body_type_raw_text="PAROLE_BOARD",
             external_id="RESPONSE_ID",
             response_date=date(year=2111, month=1, day=2),
-            state_code="US_ND",
+            state_code="US_XX",
             is_draft=True,
         )
 
