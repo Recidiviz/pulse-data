@@ -10,7 +10,7 @@ child_key_mappings:
   TB_CTY: state_supervision_period.county_code
   JUDGE: state_agent.full_name
   REV_DATE: state_supervision_violation_response.response_date
-  RevoDispo: state_supervision_violation_response.revocation_type
+  RevoDispo: state_supervision_violation_response_decision_entry.decision
   current_supervision_level: state_supervision_period.supervision_level
 
 ancestor_keys:

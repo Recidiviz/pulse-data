@@ -75,7 +75,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
-    StateSupervisionViolationResponseRevocationType,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.str_field_utils import normalize
@@ -106,6 +105,7 @@ from recidiviz.ingest.models.ingest_info import (
     StateSupervisionSentence,
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
+    StateSupervisionViolationResponseDecisionEntry,
     StateSupervisionViolationTypeEntry,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
@@ -1442,9 +1442,12 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 StateSupervisionViolationResponse(
                     response_type="PERMANENT_DECISION",
                     response_date="12/8/2014",
-                    decision="REVOCATION",
-                    revocation_type="DOCR Inmate Sentence",
                     decision_agents=[agent_63],
+                    supervision_violation_response_decisions=[
+                        StateSupervisionViolationResponseDecisionEntry(
+                            decision="DOCR Inmate Sentence",
+                        )
+                    ],
                 )
             ],
         )
@@ -1458,9 +1461,12 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 StateSupervisionViolationResponse(
                     response_type="PERMANENT_DECISION",
                     response_date="10/27/2018",
-                    decision="REVOCATION",
-                    revocation_type="DOCR Inmate Sentence",
                     decision_agents=[agent_77],
+                    supervision_violation_response_decisions=[
+                        StateSupervisionViolationResponseDecisionEntry(
+                            decision="DOCR Inmate Sentence",
+                        )
+                    ],
                 )
             ],
         )
@@ -1475,9 +1481,12 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 StateSupervisionViolationResponse(
                     response_type="PERMANENT_DECISION",
                     response_date="2/27/2016",
-                    decision="REVOCATION",
-                    revocation_type="DOCR Inmate Sentence",
                     decision_agents=[agent_77],
+                    supervision_violation_response_decisions=[
+                        StateSupervisionViolationResponseDecisionEntry(
+                            decision="DOCR Inmate Sentence",
+                        )
+                    ],
                 )
             ],
         )
@@ -3947,19 +3956,33 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 supervision_violation=supervision_violation_117111,
             )
         )
-        supervision_violation_response_117111 = entities.StateSupervisionViolationResponse.new_with_defaults(
-            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-            response_type_raw_text="PERMANENT_DECISION",
-            response_date=datetime.date(year=2014, month=12, day=8),
-            decision=StateSupervisionViolationResponseDecision.REVOCATION,
-            decision_raw_text="REVOCATION",
-            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-            revocation_type_raw_text="DOCR INMATE SENTENCE",
-            state_code=_STATE_CODE,
-            decision_agents=[agent_63],
-            supervision_violation=supervision_violation_117111,
-            person=supervision_violation_117111.person,
+        supervision_violation_response_117111 = (
+            entities.StateSupervisionViolationResponse.new_with_defaults(
+                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                response_type_raw_text="PERMANENT_DECISION",
+                response_date=datetime.date(year=2014, month=12, day=8),
+                state_code=_STATE_CODE,
+                decision_agents=[agent_63],
+                supervision_violation=supervision_violation_117111,
+                person=supervision_violation_117111.person,
+            )
         )
+        supervision_violation_response_decision_entry_117111 = (
+            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=_STATE_CODE,
+                decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                decision_raw_text="DOCR INMATE SENTENCE",
+                person=supervision_violation_117111.person,
+            )
+        )
+
+        supervision_violation_response_decision_entry_117111.supervision_violation_response = (
+            supervision_violation_response_117111
+        )
+        supervision_violation_response_117111.supervision_violation_response_decisions = [
+            supervision_violation_response_decision_entry_117111
+        ]
+
         supervision_violation_117111.supervision_violation_responses.append(
             supervision_violation_response_117111
         )
@@ -4033,19 +4056,34 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 supervision_violation=supervision_violation_140408,
             )
         )
-        supervision_violation_response_140408 = entities.StateSupervisionViolationResponse.new_with_defaults(
-            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-            response_type_raw_text="PERMANENT_DECISION",
-            response_date=datetime.date(year=2018, month=10, day=27),
-            decision=StateSupervisionViolationResponseDecision.REVOCATION,
-            decision_raw_text="REVOCATION",
-            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-            revocation_type_raw_text="DOCR INMATE SENTENCE",
-            state_code=_STATE_CODE,
-            decision_agents=[agent_77],
-            supervision_violation=supervision_violation_140408,
-            person=supervision_violation_140408.person,
+        supervision_violation_response_140408 = (
+            entities.StateSupervisionViolationResponse.new_with_defaults(
+                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                response_type_raw_text="PERMANENT_DECISION",
+                response_date=datetime.date(year=2018, month=10, day=27),
+                state_code=_STATE_CODE,
+                decision_agents=[agent_77],
+                supervision_violation=supervision_violation_140408,
+                person=supervision_violation_140408.person,
+            )
         )
+        supervision_violation_response_decision_entry_140408 = (
+            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=_STATE_CODE,
+                decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                decision_raw_text="DOCR INMATE SENTENCE",
+                person=supervision_violation_140408.person,
+            )
+        )
+
+        supervision_violation_response_decision_entry_140408.supervision_violation_response = (
+            supervision_violation_response_140408
+        )
+
+        supervision_violation_response_140408.supervision_violation_response_decisions = [
+            supervision_violation_response_decision_entry_140408
+        ]
+
         charge_140408 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
@@ -4116,19 +4154,33 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 supervision_violation=supervision_violation_147777,
             )
         )
-        supervision_violation_response_147777 = entities.StateSupervisionViolationResponse.new_with_defaults(
-            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
-            response_type_raw_text="PERMANENT_DECISION",
-            response_date=datetime.date(year=2016, month=2, day=27),
-            decision=StateSupervisionViolationResponseDecision.REVOCATION,
-            decision_raw_text="REVOCATION",
-            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-            revocation_type_raw_text="DOCR INMATE SENTENCE",
-            decision_agents=[agent_77],
-            state_code=_STATE_CODE,
-            supervision_violation=supervision_violation_147777,
-            person=supervision_violation_147777.person,
+        supervision_violation_response_147777 = (
+            entities.StateSupervisionViolationResponse.new_with_defaults(
+                response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+                response_type_raw_text="PERMANENT_DECISION",
+                response_date=datetime.date(year=2016, month=2, day=27),
+                decision_agents=[agent_77],
+                state_code=_STATE_CODE,
+                supervision_violation=supervision_violation_147777,
+                person=supervision_violation_147777.person,
+            )
         )
+        supervision_violation_response_decision_entry_147777 = (
+            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=_STATE_CODE,
+                decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                decision_raw_text="DOCR INMATE SENTENCE",
+                person=supervision_violation_147777.person,
+            )
+        )
+
+        supervision_violation_response_decision_entry_147777.supervision_violation_response = (
+            supervision_violation_response_147777
+        )
+
+        supervision_violation_response_147777.supervision_violation_response_decisions = [
+            supervision_violation_response_decision_entry_147777
+        ]
         charge_147777 = entities.StateCharge.new_with_defaults(
             state_code=_STATE_CODE,
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
