@@ -16,6 +16,7 @@
 # =============================================================================
 
 """This file contains all of the relevant cloud functions"""
+import json
 import logging
 import os
 from base64 import b64decode
@@ -25,9 +26,7 @@ from typing import Any, Dict, Tuple, TypeVar
 from cloud_function_utils import (  # type: ignore[import]
     GCP_PROJECT_ID_KEY,
     IAP_CLIENT_ID,
-    get_dataflow_template_bucket,
     make_iap_request,
-    trigger_dataflow_job_from_template,
 )
 
 # Mypy errors "Cannot find implementation or library stub for module named 'xxxx'" ignored here because cloud functions
@@ -64,6 +63,9 @@ _APP_ENGINE_UPDATE_AUTH0_USER_METADATA_URL = (
 _APP_ENGINE_IMPORT_USER_RESTRICTIONS_CSV_TO_SQL_URL = "https://{}.appspot.com/auth/handle_import_user_restrictions_csv_to_sql?region_code={}"
 _APP_ENGINE_IMPORT_CASE_TRIAGE_ETL_CSV_TO_SQL_URL = (
     "https://{}.appspot.com/case_triage_ops/handle_gcs_imports?filename={}"
+)
+_CLOUDSQL_TO_BQ_POST_DEPLOY_REFRESH = (
+    "http://{}.appspot.com/create_refresh_bq_schema_task/{}"
 )
 
 
@@ -316,11 +318,11 @@ def export_metric_view_data(
     return "", HTTPStatus(response.status_code)
 
 
-def trigger_daily_calculation_pipeline_dag(
+def trigger_calculation_pipeline_dag(
     data: Dict[str, Any], _context: ContextType
 ) -> Tuple[str, HTTPStatus]:
     """This function is triggered by a Pub/Sub event, triggers an Airflow DAG where all
-    the daily calculation pipelines run simultaneously.
+    the calculation pipelines (either daily or historical) run simultaneously.
     """
     project_id = os.environ.get(GCP_PROJECT_ID_KEY, "")
     if not project_id:
@@ -341,8 +343,15 @@ def trigger_daily_calculation_pipeline_dag(
         error_str = "The environment variable 'AIRFLOW_URI' is not set"
         logging.error(error_str)
         return error_str, HTTPStatus.BAD_REQUEST
+
+    pipeline_dag_type = os.environ.get("PIPELINE_DAG_TYPE")
+    if not pipeline_dag_type:
+        error_str = "The environment variable 'PIPELINE_DAG_TYPE' is not set"
+        logging.error(error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
+
     # The name of the DAG you wish to trigger
-    dag_name = "{}_calculation_pipeline_dag".format(project_id)
+    dag_name = "{}_{}_calculation_pipeline_dag".format(project_id, pipeline_dag_type)
     webserver_url = "{}/api/experimental/dags/{}/dag_runs".format(airflow_uri, dag_name)
 
     monitor_response = make_iap_request(
@@ -352,41 +361,36 @@ def trigger_daily_calculation_pipeline_dag(
     return "", HTTPStatus(monitor_response.status_code)
 
 
-def start_calculation_pipeline(
-    _event: Dict[str, Any], _context: ContextType
+def trigger_post_deploy_cloudsql_to_bq_refresh(
+    _data: Dict[str, Any], _context: ContextType
 ) -> Tuple[str, HTTPStatus]:
-    """This function, which is triggered by a Pub/Sub event, can kick off any single Dataflow pipeline template."""
+    """This function is triggered by a Pub/Sub event to begin the refresh of BigQuery
+    data for a given schema, pulling data from the appropriate CloudSQL Postgres
+    instance, and to trigger the historical pipelines once the refresh is complete.
+    """
     project_id = os.environ.get(GCP_PROJECT_ID_KEY)
     if not project_id:
-        error_str = (
-            "No project_id set for call to run a calculation pipeline, returning."
-        )
+        error_str = "No project id set for call to refresh BigQuery data, returning."
         logging.error(error_str)
         return error_str, HTTPStatus.BAD_REQUEST
 
-    bucket = get_dataflow_template_bucket(project_id)
-
-    template_name = os.environ.get("TEMPLATE_NAME")
-    if not template_name:
-        error_str = "No template_name set, returning."
+    schema = os.environ.get("SCHEMA")
+    if not schema:
+        error_str = "The schema variable 'SCHEMA' is not set."
         logging.error(error_str)
         return error_str, HTTPStatus.BAD_REQUEST
 
-    job_name = os.environ.get("JOB_NAME")
-    if not job_name:
-        error_str = "No job_name set, returning."
-        logging.error(error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
+    url = _CLOUDSQL_TO_BQ_POST_DEPLOY_REFRESH.format(project_id, schema)
 
-    region = os.environ.get("REGION")
-    if not region:
-        error_str = "No region set, returning."
-        logging.error(error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
+    data = {"pipeline_run_type": "historical"} if schema.upper() == "STATE" else {}
 
-    response = trigger_dataflow_job_from_template(
-        project_id, bucket, template_name, job_name, region
+    logging.info("project_id: %s", project_id)
+    logging.info("Calling URL: %s", url)
+
+    # Hit the cloud function backend, which starts the post-deploy refresh of the
+    # given schema
+    response = make_iap_request(
+        url, IAP_CLIENT_ID[project_id], method="POST", body=json.dumps(data).encode()
     )
-
-    logging.info("The response to triggering the Dataflow job is: %s", response)
-    return str(response), HTTPStatus.OK
+    logging.info("The response status is %s", response.status_code)
+    return "", HTTPStatus(response.status_code)

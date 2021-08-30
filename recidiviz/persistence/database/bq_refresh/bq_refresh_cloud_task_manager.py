@@ -20,6 +20,7 @@ exports.
 
 import datetime
 import uuid
+from typing import Dict, Optional
 
 import pytz
 
@@ -52,13 +53,15 @@ class BQRefreshCloudTaskManager:
         return self.bq_cloud_task_queue_manager.get_queue_info()
 
     def create_reattempt_create_refresh_tasks_task(
-        self, schema: str, lock_id: str
+        self, schema: str, lock_id: str, pipeline_run_type: Optional[str]
     ) -> None:
         """Schedules a task that will reattempt to create BQ refresh tasks in 1 minute.
 
         Args:
             lock_id: The id of the currently held BQ refresh lock.
             schema: Which schema the export is for
+            pipeline_run_type: Which pipeline run should be triggered after the
+                refresh, if any
         """
         task_id = "{}-{}-{}".format(
             "reenqueue_wait_task",
@@ -66,6 +69,9 @@ class BQRefreshCloudTaskManager:
             uuid.uuid4(),
         )
         body = {"lock_id": lock_id}
+        if pipeline_run_type:
+            body["pipeline_run_type"] = pipeline_run_type
+
         self.job_monitor_cloud_task_queue_manager.create_task(
             task_id=task_id,
             body=body,
@@ -73,11 +79,16 @@ class BQRefreshCloudTaskManager:
             schedule_delay_seconds=60,
         )
 
-    def create_refresh_bq_schema_task(self, schema_type: SchemaType) -> None:
+    def create_refresh_bq_schema_task(
+        self,
+        schema_type: SchemaType,
+        body: Dict[str, str],
+    ) -> None:
         """Queues a task to refresh the given schema in BQ.
 
         Args:
             schema_type: The SchemaType of the table being exported.
+            body: The body of the request
         """
         task_id = "{}-{}-{}".format(
             schema_type.value,
@@ -88,5 +99,5 @@ class BQRefreshCloudTaskManager:
         self.bq_cloud_task_queue_manager.create_task(
             task_id=task_id,
             relative_uri=f"/cloud_sql_to_bq/refresh_bq_schema/{schema_type.value}",
-            body={},
+            body=body,
         )

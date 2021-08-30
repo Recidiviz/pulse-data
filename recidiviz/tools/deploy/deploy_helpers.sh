@@ -300,24 +300,15 @@ function post_deploy_triggers {
     CALC_CHANGES_SINCE_LAST_DEPLOY=$2
 
     if [[ $CALC_CHANGES_SINCE_LAST_DEPLOY -eq 1 ]]; then
-        # We trigger historical calculations with every deploy where we believe there could be code changes that impact
-        # historical metric output.
-        echo "Triggering historical calculation pipelines"
+        # We trigger a refresh of data from CloudSQL to BigQuery followed by historical
+        # calculations with every deploy where we believe there could be code changes
+        # that impact historical metric output.
+        echo "Triggering CloudSQL to BigQuery refresh and historical pipelines"
 
         # Note: using exit_on_fail instead of run_cmd since the quoted string doesn't translate well when passed to run_cmd
-        gcloud pubsub topics publish v1.calculator.us_id_historical_incarceration --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
-        gcloud pubsub topics publish v1.calculator.us_id_historical_supervision --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
-        gcloud pubsub topics publish v1.calculator.us_id_historical_violation --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
-        gcloud pubsub topics publish v1.calculator.us_mo_historical_incarceration --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
-        gcloud pubsub topics publish v1.calculator.us_mo_historical_supervision --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
-        gcloud pubsub topics publish v1.calculator.us_mo_historical_violation --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
-        gcloud pubsub topics publish v1.calculator.us_nd_historical_incarceration --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
-        gcloud pubsub topics publish v1.calculator.us_nd_historical_supervision --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
-        gcloud pubsub topics publish v1.calculator.us_nd_historical_program --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
-        gcloud pubsub topics publish v1.calculator.us_pa_historical_incarceration --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
-        gcloud pubsub topics publish v1.calculator.us_pa_historical_supervision --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
-        gcloud pubsub topics publish v1.calculator.us_pa_historical_violation --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
+        gcloud pubsub topics publish v1.trigger_post_deploy_cloudsql_to_bq_refresh_state --project ${PROJECT} --message="Triggering CloudSQL to BigQuery refresh and historical pipelines" || exit_on_fail
+
     else
-        echo "Skipping historical calculation pipeline trigger - no relevant code changes"
+        echo "Skipping CloudSQL to BigQuery refresh and historical pipelines - no relevant code changes"
     fi
 }

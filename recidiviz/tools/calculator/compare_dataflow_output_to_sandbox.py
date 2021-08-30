@@ -203,7 +203,7 @@ def compare_dataflow_output_to_sandbox(
     query_jobs: List[Tuple[QueryJob, str]] = []
 
     pipelines = YAMLDict.from_path(PRODUCTION_TEMPLATES_PATH).pop_dicts(
-        "daily_pipelines"
+        "incremental_pipelines"
     )
 
     for pipeline in pipelines:

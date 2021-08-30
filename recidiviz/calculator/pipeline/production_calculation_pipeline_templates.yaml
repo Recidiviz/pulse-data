@@ -5,7 +5,7 @@
 
 # List of pipelines with their necessary details
 
-daily_pipelines:
+incremental_pipelines:
   # Full US_ND calculations with no time limit
   - pipeline: recidivism
     job_name: full-us-nd-recidivism-calculations
