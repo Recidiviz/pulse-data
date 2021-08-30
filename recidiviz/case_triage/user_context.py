@@ -24,7 +24,6 @@ from typing import Dict, Optional, Union
 
 import attr
 import pytz
-from jwt import MissingRequiredClaimError
 
 from recidiviz.case_triage.authorization import (
     KNOWN_EXPERIMENTS,
@@ -42,6 +41,7 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLOpportunity,
     OfficerMetadata,
 )
+from recidiviz.utils.auth.auth0 import TokenClaims, get_jwt_claim
 
 REGISTRATION_DATE_CLAIM = "https://dashboard.recidiviz.org/registration_date"
 ONBOARDING_LAUNCH_DATE = datetime.fromisoformat("2021-08-20T00:00:00.000")
@@ -64,7 +64,7 @@ class UserContext:
     email: str = attr.ib()
     authorization_store: AuthorizationStore = attr.ib()
     current_user: ETLOfficer = attr.ib(default=None)
-    jwt_claims: Dict[str, Union[str, int]] = attr.ib(factory=dict)
+    jwt_claims: TokenClaims = attr.ib(factory=dict)
 
     @classmethod
     def base_context_for_email(
@@ -155,10 +155,7 @@ class UserContext:
         return b64encode(digest).decode("utf-8")
 
     def get_claim(self, claim: str) -> Union[str, int]:
-        if claim not in self.jwt_claims:
-            raise MissingRequiredClaimError(claim)
-
-        return self.jwt_claims[claim]
+        return get_jwt_claim(claim, self.jwt_claims)
 
     def should_see_onboarding(
         self, registration_date: datetime, officer_metadata: OfficerMetadata

@@ -17,13 +17,14 @@
 """Backend entry point for Case Triage API server."""
 import json
 import os
-from typing import Dict, Union
+from typing import Dict
 
 import sentry_sdk
 from flask import Flask, Response, g, send_from_directory, session
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
+from jwt.exceptions import MissingRequiredClaimError
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 from recidiviz.case_triage.admin_flask_views import RefreshAuthStore
@@ -47,6 +48,8 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import (
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.auth.auth0 import (
     Auth0Config,
+    AuthorizationError,
+    TokenClaims,
     build_auth0_authorization_decorator,
     get_userinfo,
 )
@@ -99,9 +102,16 @@ setup_scoped_sessions(app, db_url)
 
 
 # Auth setup
-def on_successful_authorization(
-    jwt_claims: Dict[str, Union[str, int]], token: str
-) -> None:
+def _get_userinfo_from_token(claims: TokenClaims) -> Dict[str, str]:
+    try:
+        return get_userinfo(claims)
+    except MissingRequiredClaimError as e:
+        raise AuthorizationError(
+            code="invalid_claims", description="claims must include email address"
+        ) from e
+
+
+def on_successful_authorization(jwt_claims: TokenClaims) -> None:
     """
     Memoize the user's info (email_address, picture, etc) into our session
     """
@@ -109,7 +119,7 @@ def on_successful_authorization(
     # Populate the session with user information; This could have changed since the last request
     if session.get("jwt_sub", None) != jwt_claims["sub"]:
         session["jwt_sub"] = jwt_claims["sub"]
-        session["user_info"] = get_userinfo(authorization_config.domain, token)
+        session["user_info"] = _get_userinfo_from_token(jwt_claims)
         # Also pop the impersonated email key if it exists, since the request could've been an impersonation request prior.
         if IMPERSONATED_EMAIL_KEY in session:
             session.pop(IMPERSONATED_EMAIL_KEY)
@@ -121,8 +131,15 @@ def on_successful_authorization(
 
     if "email" not in session["user_info"]:
         # This happens when API routes are hit with well-formed but
-        # invalid authorization tokens.
-        raise auth_error
+        # invalid authorization tokens, or if a previous error in populating user_info
+        # was stored on the session.
+
+        # to recover from errors, try refreshing user info
+        session["user_info"] = _get_userinfo_from_token(jwt_claims)
+
+        # if that didn't work, deny access
+        if "email" not in session["user_info"]:
+            raise auth_error
 
     email = session["user_info"]["email"].lower()
     g.user_context = UserContext(email, authorization_store, jwt_claims=jwt_claims)
