@@ -85,7 +85,7 @@ class Auth0ModuleTest(unittest.TestCase):
         )
 
         authorization_decorator = build_auth0_authorization_decorator(
-            self.authorization_config, (lambda payload, token: None)
+            self.authorization_config, (lambda payload: None)
         )
 
         @self.test_app.errorhandler(FlaskException)
