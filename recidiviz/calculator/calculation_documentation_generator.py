@@ -216,13 +216,15 @@ class CalculationDocumentationGenerator:
         )
         self.prod_templates_yaml = YAMLDict.from_path(PRODUCTION_TEMPLATES_PATH)
 
-        self.daily_pipelines = self.prod_templates_yaml.pop_dicts("daily_pipelines")
+        self.incremental_pipelines = self.prod_templates_yaml.pop_dicts(
+            "incremental_pipelines"
+        )
         self.historical_pipelines = self.prod_templates_yaml.pop_dicts(
             "historical_pipelines"
         )
 
         self.metric_calculations_by_state = self._get_state_metric_calculations(
-            self.daily_pipelines, "daily"
+            self.incremental_pipelines, "daily"
         )
         # combine with the historical pipelines
         for name, metric_info_list in self._get_state_metric_calculations(
@@ -314,7 +316,7 @@ class CalculationDocumentationGenerator:
         pipeline template."""
         states = {
             pipeline.peek("state_code", str).upper()
-            for pipeline in self.daily_pipelines
+            for pipeline in self.incremental_pipelines
         }.union(
             {
                 pipeline.peek("state_code", str).upper()

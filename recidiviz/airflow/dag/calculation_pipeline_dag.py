@@ -21,16 +21,16 @@ This file is uploaded to GCS on deploy.
 import datetime
 import os
 from base64 import b64encode
+from typing import Any, Dict
 
 from airflow import models
 from airflow.contrib.operators.pubsub_operator import PubSubPublishOperator
 
 try:
-    from yaml_dict import YAMLDict  # type: ignore
-
     from recidiviz_dataflow_operator import (  # type: ignore
         RecidivizDataflowTemplateOperator,
     )
+    from yaml_dict import YAMLDict  # type: ignore
 except ImportError:
     from recidiviz.airflow.dag.recidiviz_dataflow_operator import (
         RecidivizDataflowTemplateOperator,
@@ -75,21 +75,38 @@ def get_zone_for_region(pipeline_region: str) -> str:
     raise ValueError(f"Unexpected region: {pipeline_region}")
 
 
+def get_dataflow_default_args(pipeline_config: YAMLDict) -> Dict[str, Any]:
+    region = pipeline_config.pop("region", str)
+    zone = get_zone_for_region(region)
+
+    dataflow_args = default_args.copy()
+    dataflow_args.update(
+        {
+            "project": project_id,
+            "region": region,
+            "zone": zone,
+            "tempLocation": f"gs://{project_id}-dataflow-templates/staging/",
+        }
+    )
+
+    return dataflow_args
+
+
 # By setting catchup to False and max_active_runs to 1, we ensure that at
 # most one instance of this DAG is running at a time. Because we set catchup
 # to false, it ensures that new DAG runs aren't enqueued while the old one is
 # waiting to finish.
 with models.DAG(
-    dag_id="{}_calculation_pipeline_dag".format(project_id),
+    dag_id="{}_incremental_calculation_pipeline_dag".format(project_id),
     default_args=default_args,
     schedule_interval=None,
     catchup=False,
     max_active_runs=1,
-) as dag:
+) as daily_dag:
     if config_file is None:
         raise Exception("Configuration file not specified")
 
-    pipelines = YAMLDict.from_path(config_file).pop_dicts("daily_pipelines")
+    pipelines = YAMLDict.from_path(config_file).pop_dicts("incremental_pipelines")
 
     case_triage_export = trigger_export_operator("CASE_TRIAGE")
 
@@ -101,20 +118,9 @@ with models.DAG(
     }
 
     for pipeline in pipelines:
-        region = pipeline.pop("region", str)
-        zone = get_zone_for_region(region)
+        dataflow_default_args = get_dataflow_default_args(pipeline)
+
         state_code = pipeline.pop("state_code", str)
-
-        dataflow_default_args = default_args.copy()
-        dataflow_default_args.update(
-            {
-                "project": project_id,
-                "region": region,
-                "zone": zone,
-                "tempLocation": f"gs://{project_id}-dataflow-templates/staging/",
-            }
-        )
-
         pipeline_name = pipeline.pop("job_name", str)
 
         calculation_pipeline = RecidivizDataflowTemplateOperator(
@@ -134,3 +140,35 @@ with models.DAG(
     _ = trigger_export_operator("INGEST_METADATA")
     _ = trigger_export_operator("VALIDATION_METADATA")
     _ = trigger_export_operator("JUSTICE_COUNTS")
+
+
+# By setting catchup to False and max_active_runs to 1, we ensure that at
+# most one instance of this DAG is running at a time. Because we set catchup
+# to false, it ensures that new DAG runs aren't enqueued while the old one is
+# waiting to finish.
+with models.DAG(
+    dag_id="{}_historical_calculation_pipeline_dag".format(project_id),
+    default_args=default_args,
+    schedule_interval=None,
+    catchup=False,
+    max_active_runs=1,
+) as historical_dag:
+    # TODO(#9010): Have the historical DAG mirror incremental DAG in everything but
+    #  calculation month counts
+    if config_file is None:
+        raise Exception("Configuration file not specified")
+
+    pipelines = YAMLDict.from_path(config_file).pop_dicts("historical_pipelines")
+
+    for pipeline in pipelines:
+        dataflow_default_args = get_dataflow_default_args(pipeline)
+
+        state_code = pipeline.pop("state_code", str)
+        pipeline_name = pipeline.pop("job_name", str)
+
+        calculation_pipeline = RecidivizDataflowTemplateOperator(
+            task_id=pipeline_name,
+            template=f"gs://{project_id}-dataflow-templates/templates/{pipeline_name}",
+            job_name=pipeline_name,
+            dataflow_default_options=dataflow_default_args,
+        )

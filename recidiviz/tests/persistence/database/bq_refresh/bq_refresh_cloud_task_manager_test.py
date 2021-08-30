@@ -20,22 +20,23 @@ import datetime
 import json
 import unittest
 
+import mock
 from freezegun import freeze_time
 from google.cloud import tasks_v2
 from google.protobuf import timestamp_pb2
-import mock
 from mock import patch
 
-from recidiviz.persistence.database.bq_refresh import bq_refresh_cloud_task_manager
-from recidiviz.persistence.database.bq_refresh.bq_refresh_cloud_task_manager import (
-    BQRefreshCloudTaskManager,
-)
+from recidiviz.calculator.pipeline.pipeline_type import PipelineRunType
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     QUEUES_REGION,
 )
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import (
-    JOB_MONITOR_QUEUE_V2,
     BIGQUERY_QUEUE_V2,
+    JOB_MONITOR_QUEUE_V2,
+)
+from recidiviz.persistence.database.bq_refresh import bq_refresh_cloud_task_manager
+from recidiviz.persistence.database.bq_refresh.bq_refresh_cloud_task_manager import (
+    BQRefreshCloudTaskManager,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 
@@ -72,9 +73,11 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
         queue_path = f"queue_path/{self.mock_project_id}/{QUEUES_REGION}"
         task_id = "reenqueue_wait_task-2019-04-13-random-uuid"
         task_path = f"{queue_path}/{task_id}"
+        pipeline_run_type = PipelineRunType.INCREMENTAL.value
 
         body = {
             "lock_id": lock_id,
+            "pipeline_run_type": pipeline_run_type,
         }
 
         mock_client.return_value.task_path.return_value = task_path
@@ -82,7 +85,9 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
 
         # Act
         BQRefreshCloudTaskManager().create_reattempt_create_refresh_tasks_task(
-            schema=schema, lock_id=lock_id
+            schema=schema,
+            pipeline_run_type=pipeline_run_type,
+            lock_id=lock_id,
         )
 
         # Assert
@@ -119,17 +124,18 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
         uuid = "random-uuid"
         mock_uuid.uuid4.return_value = uuid
 
-        schema_type = SchemaType.JAILS.value
+        schema_type = SchemaType.STATE.value
         queue_path = f"queue_path/{self.mock_project_id}/{QUEUES_REGION}"
         task_id = f"{schema_type}-2019-04-12-random-uuid"
         task_path = f"{queue_path}/{task_id}"
+        body = {"pipeline_run_type": PipelineRunType.INCREMENTAL.value}
 
         task = tasks_v2.types.task_pb2.Task(
             name=task_path,
             app_engine_http_request={
                 "http_method": "POST",
-                "relative_uri": "/cloud_sql_to_bq/refresh_bq_schema/JAILS",
-                "body": json.dumps({}).encode(),
+                "relative_uri": "/cloud_sql_to_bq/refresh_bq_schema/STATE",
+                "body": json.dumps(body).encode(),
             },
         )
 
@@ -138,7 +144,7 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
 
         # Act
         BQRefreshCloudTaskManager().create_refresh_bq_schema_task(
-            schema_type=SchemaType.JAILS
+            schema_type=SchemaType.STATE, body=body
         )
 
         # Assert
