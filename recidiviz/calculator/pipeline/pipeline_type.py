@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Stores enums related to various calculation pipelines"""
+import enum
 from enum import Enum
 
 
@@ -26,3 +27,12 @@ class PipelineType(Enum):
     RECIDIVISM = "RECIDIVISM"
     SUPERVISION = "SUPERVISION"
     VIOLATION = "VIOLATION"
+
+
+class PipelineRunType(enum.Enum):
+    """Describes the types of pipeline runs that occur."""
+
+    # Pipelines scheduled to run daily
+    INCREMENTAL = "INCREMENTAL"
+    # Historical pipelines that only run on deploys
+    HISTORICAL = "HISTORICAL"

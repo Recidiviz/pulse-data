@@ -21,7 +21,7 @@ Mostly copied from:
 https://cloud.google.com/iap/docs/authentication-howto#iap_make_request-python
 """
 import urllib.parse
-from typing import Any, Dict, List
+from typing import Any, List
 
 import google.auth
 import google.auth.app_engine
@@ -32,8 +32,6 @@ import google.oauth2.service_account
 import requests
 from google.auth import crypt
 from google.auth.transport.requests import Request
-from googleapiclient.discovery import build
-from oauth2client.client import GoogleCredentials
 
 IAP_CLIENT_ID = {
     "recidiviz-staging": (
@@ -128,34 +126,6 @@ def make_iap_request(
     return response
 
 
-def trigger_dataflow_job_from_template(
-    project_id: str, bucket: str, template: str, job_name: str, location: str
-) -> Dict[str, Any]:
-    """Trigger the Dataflow job at the given template location and execute it
-    with the given `job_name`."""
-    credentials = GoogleCredentials.get_application_default()
-    service = build("dataflow", "v1b3", credentials=credentials)
-
-    body = {
-        "jobName": "{job_name}".format(job_name=job_name),
-        "gcsPath": "gs://{bucket}/templates/{template}".format(
-            bucket=bucket, template=template
-        ),
-        "environment": {
-            "tempLocation": "gs://{bucket}/temp".format(bucket=bucket),
-        },
-    }
-
-    request = (
-        service.projects()
-        .locations()
-        .templates()
-        .create(projectId=project_id, body=body, location=location)
-    )
-    response = request.execute()
-    return response
-
-
 def get_google_open_id_connect_token(
     service_account_credentials: google.oauth2.credentials.Credentials,
 ) -> str:
@@ -173,10 +143,6 @@ def get_google_open_id_connect_token(
         request, _OAUTH_TOKEN_URI, body
     )
     return token_response["id_token"]
-
-
-def get_dataflow_template_bucket(project_id: str) -> str:
-    return f"{project_id}-dataflow-templates"
 
 
 def build_query_param_string(

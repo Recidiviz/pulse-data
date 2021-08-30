@@ -1,7 +1,7 @@
 # Mock file to test utils that reference the production_calculation_pipeline_templates.yaml
 # file
 
-daily_pipelines:
+incremental_pipelines:
   # Full US_XX calculations with no time limit
   - pipeline: pipeline_no_limit
     job_name: full-us-xx-pipeline_no_limit-calculations

@@ -29,12 +29,12 @@ from __future__ import absolute_import
 import argparse
 import logging
 import sys
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
+
+from googleapiclient.discovery import build
+from oauth2client.client import GoogleCredentials
 
 from recidiviz.calculator.dataflow_config import PRODUCTION_TEMPLATES_PATH
-from recidiviz.cloud_functions.cloud_function_utils import (
-    trigger_dataflow_job_from_template,
-)
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -62,11 +62,39 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     return parser.parse_known_args(argv)
 
 
+def _trigger_dataflow_job_from_template(
+    project_id: str, bucket: str, template: str, job_name: str, location: str
+) -> Dict[str, Any]:
+    """Trigger the Dataflow job at the given template location and execute it
+    with the given `job_name`."""
+    credentials = GoogleCredentials.get_application_default()
+    service = build("dataflow", "v1b3", credentials=credentials)
+
+    body = {
+        "jobName": "{job_name}".format(job_name=job_name),
+        "gcsPath": "gs://{bucket}/templates/{template}".format(
+            bucket=bucket, template=template
+        ),
+        "environment": {
+            "tempLocation": "gs://{bucket}/temp".format(bucket=bucket),
+        },
+    }
+
+    request = (
+        service.projects()
+        .locations()
+        .templates()
+        .create(projectId=project_id, body=body, location=location)
+    )
+    response = request.execute()
+    return response
+
+
 def _pipeline_regions_by_job_name() -> Dict[str, str]:
     """Parses the production_calculation_pipeline_templates.yaml config file to determine
     which region a pipeline should be run in."""
-    daily_pipelines = YAMLDict.from_path(PRODUCTION_TEMPLATES_PATH).pop_dicts(
-        "daily_pipelines"
+    incremental_pipelines = YAMLDict.from_path(PRODUCTION_TEMPLATES_PATH).pop_dicts(
+        "incremental_pipelines"
     )
     historical_pipelines = YAMLDict.from_path(PRODUCTION_TEMPLATES_PATH).pop_dicts(
         "historical_pipelines"
@@ -74,7 +102,7 @@ def _pipeline_regions_by_job_name() -> Dict[str, str]:
 
     pipeline_regions = {
         pipeline.pop("job_name", str): pipeline.pop("region", str)
-        for pipeline in daily_pipelines
+        for pipeline in incremental_pipelines
     }
 
     pipeline_regions.update(
@@ -109,7 +137,7 @@ def trigger_dataflow_template() -> None:
             f"No defined region in {PRODUCTION_TEMPLATES_PATH} for job_name {job_name}."
         )
 
-    response = trigger_dataflow_job_from_template(
+    response = _trigger_dataflow_job_from_template(
         project_id=known_args.project_id,
         bucket=f"{known_args.project_id}-dataflow-templates",
         template=template_name,

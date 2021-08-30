@@ -42,12 +42,12 @@ class PipelineConfig(TypedDict):
 
 @attr.s(auto_attribs=True)
 class PipelineYaml:
-    daily_pipelines: List[PipelineConfig]
+    incremental_pipelines: List[PipelineConfig]
     historical_pipelines: List[PipelineConfig]
 
     @property
     def all_pipelines(self) -> List[PipelineConfig]:
-        return self.daily_pipelines + self.historical_pipelines
+        return self.incremental_pipelines + self.historical_pipelines
 
 
 def load_pipeline_config_yaml(template_yaml_path: str) -> PipelineYaml:

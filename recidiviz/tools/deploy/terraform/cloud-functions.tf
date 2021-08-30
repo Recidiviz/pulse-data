@@ -111,8 +111,8 @@ resource "google_cloudfunctions_function" "parse-state-aggregate" {
   timeout = 540
 }
 
-resource "google_cloudfunctions_function" "trigger_daily_calculation_pipeline_dag" {
-  name    = "trigger_daily_calculation_pipeline_dag"
+resource "google_cloudfunctions_function" "trigger_incremental_calculation_pipeline_dag" {
+  name    = "trigger_incremental_calculation_pipeline_dag"
   runtime = "python38"
   labels = {
     "deployment-tool" = "terraform"
@@ -120,15 +120,16 @@ resource "google_cloudfunctions_function" "trigger_daily_calculation_pipeline_da
 
   event_trigger {
     event_type = "google.pubsub.topic.publish"
-    resource   = "projects/${var.project_id}/topics/v1.calculator.trigger_daily_pipelines"
+    resource   = "projects/${var.project_id}/topics/v1.calculator.trigger_incremental_pipelines"
   }
 
-  entry_point = "trigger_daily_calculation_pipeline_dag"
+  entry_point = "trigger_calculation_pipeline_dag"
   environment_variables = {
     # This is an output variable from the composer environment, relevant docs:
     # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri
     "AIRFLOW_URI" = google_composer_environment.default.config.0.airflow_uri
     "GCP_PROJECT" = var.project_id
+    "PIPELINE_DAG_TYPE" = "incremental"
     # Gets the IAP client id to use when talking to airflow from our custom python source.
     "IAP_CLIENT_ID" = data.external.composer_iap_client_id.result.iap_client_id
   }
@@ -137,6 +138,36 @@ resource "google_cloudfunctions_function" "trigger_daily_calculation_pipeline_da
     url = local.repo_url
   }
 }
+
+
+resource "google_cloudfunctions_function" "trigger_historical_calculation_pipeline_dag" {
+  name    = "trigger_historical_calculation_pipeline_dag"
+  runtime = "python38"
+  labels = {
+    "deployment-tool" = "terraform"
+  }
+
+  event_trigger {
+    event_type = "google.pubsub.topic.publish"
+    resource   = "projects/${var.project_id}/topics/v1.calculator.trigger_historical_pipelines"
+  }
+
+  entry_point = "trigger_calculation_pipeline_dag"
+  environment_variables = {
+    # This is an output variable from the composer environment, relevant docs:
+    # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri
+    "AIRFLOW_URI" = google_composer_environment.default.config.0.airflow_uri
+    "GCP_PROJECT" = var.project_id
+    "PIPELINE_DAG_TYPE" = "historical"
+    # Gets the IAP client id to use when talking to airflow from our custom python source.
+    "IAP_CLIENT_ID" = data.external.composer_iap_client_id.result.iap_client_id
+  }
+
+  source_repository {
+    url = local.repo_url
+  }
+}
+
 
 # Cloud Function that calls an endpoint to update Auth0 users with the updated user restrictions file from the
 # triggering bucket
@@ -177,6 +208,29 @@ resource "google_cloudfunctions_function" "handle_new_case_triage_etl" {
   entry_point = "handle_new_case_triage_etl"
   environment_variables = {
     "GCP_PROJECT" = var.project_id
+  }
+
+  source_repository {
+    url = local.repo_url
+  }
+}
+
+resource "google_cloudfunctions_function" "trigger_post_deploy_cloudsql_to_bq_refresh_state" {
+  name    = "trigger_post_deploy_cloudsql_to_bq_refresh_state"
+  runtime = "python38"
+  labels = {
+    "deployment-tool" = "terraform"
+  }
+
+  event_trigger {
+    event_type = "google.pubsub.topic.publish"
+    resource   = "projects/${var.project_id}/topics/v1.trigger_post_deploy_cloudsql_to_bq_refresh_state"
+  }
+
+  entry_point = "trigger_post_deploy_cloudsql_to_bq_refresh"
+  environment_variables = {
+    "GCP_PROJECT" = var.project_id
+    "SCHEMA" = "state"
   }
 
   source_repository {

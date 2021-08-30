@@ -5,5 +5,5 @@
 
 # List of pipelines with their necessary details
 
-daily_pipelines: []
+incremental_pipelines: []
 historical_pipelines: []

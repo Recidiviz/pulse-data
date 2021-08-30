@@ -19,11 +19,12 @@ import json
 import logging
 import uuid
 from http import HTTPStatus
-from typing import Tuple
+from typing import Optional, Tuple
 
 import flask
 from flask import request
 
+from recidiviz.calculator.pipeline.pipeline_type import PipelineRunType
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockDoesNotExist
 from recidiviz.ingest.direct.direct_ingest_control import kick_all_schedulers
 from recidiviz.persistence.database.bq_refresh.bq_refresh_cloud_task_manager import (
@@ -49,7 +50,9 @@ cloud_sql_to_bq_blueprint = flask.Blueprint("export_manager", __name__)
     "/create_refresh_bq_schema_task/<schema_arg>", methods=["GET", "POST"]
 )
 @requires_gae_auth
-def wait_for_ingest_to_create_tasks(schema_arg: str) -> Tuple[str, HTTPStatus]:
+def wait_for_ingest_to_create_tasks(
+    schema_arg: str,
+) -> Tuple[str, HTTPStatus]:
     """Worker function to wait until ingest is not running to queue a task to run
     /refresh_bq_schema. Before doing anything, grabs the refresh lock to indicate that
     a refresh wants to start and ingest should yield ASAP. Then:
@@ -69,6 +72,22 @@ def wait_for_ingest_to_create_tasks(schema_arg: str) -> Tuple[str, HTTPStatus]:
             HTTPStatus.BAD_REQUEST,
         )
 
+    pipeline_run_type_arg = get_pipeline_run_type_arg()
+
+    if not pipeline_run_type_arg and schema_type == SchemaType.STATE:
+        # If no pipeline_run_type_arg is specified for the STATE schema, then we default
+        # to the incremental run type
+        pipeline_run_type_arg = PipelineRunType.INCREMENTAL.value
+
+    if pipeline_run_type_arg:
+        try:
+            _ = PipelineRunType(pipeline_run_type_arg.upper())
+        except ValueError:
+            return (
+                f"Unexpected value for pipeline_run_type: [{pipeline_run_type_arg}]",
+                HTTPStatus.BAD_REQUEST,
+            )
+
     lock_id = get_or_create_lock_id()
     logging.info("Request lock id: %s", lock_id)
 
@@ -77,14 +96,18 @@ def wait_for_ingest_to_create_tasks(schema_arg: str) -> Tuple[str, HTTPStatus]:
 
     task_manager = BQRefreshCloudTaskManager()
     if not lock_manager.can_proceed(schema_type):
-        logging.info("Regions running, renqueuing this task.")
+        logging.info("Regions running, re-enqueuing this task.")
         task_manager.create_reattempt_create_refresh_tasks_task(
-            lock_id=lock_id, schema=schema_arg
+            lock_id=lock_id, schema=schema_arg, pipeline_run_type=pipeline_run_type_arg
         )
         return "", HTTPStatus.OK
 
     logging.info("No regions running, triggering BQ refresh.")
-    task_manager.create_refresh_bq_schema_task(schema_type=schema_type)
+    body = {"pipeline_run_type": pipeline_run_type_arg} if pipeline_run_type_arg else {}
+    task_manager.create_refresh_bq_schema_task(
+        schema_type=schema_type,
+        body=body,
+    )
     return "", HTTPStatus.OK
 
 
@@ -132,12 +155,16 @@ def refresh_bq_schema(schema_arg: str) -> Tuple[str, HTTPStatus]:
 
     federated_bq_schema_refresh(schema_type=schema_type)
 
-    # Publish a message to the Pub/Sub topic once state BQ export is complete
     if schema_type is SchemaType.STATE:
-        pubsub_helper.publish_message_to_topic(
-            message="State export to BQ complete",
-            topic="v1.calculator.trigger_daily_pipelines",
-        )
+        pipeline_run_type_arg = get_pipeline_run_type_arg()
+
+        if pipeline_run_type_arg:
+            logging.info("Triggering %s pipeline DAG.", pipeline_run_type_arg)
+
+            pubsub_helper.publish_message_to_topic(
+                message="State export to BQ complete",
+                topic=f"v1.calculator.trigger_{pipeline_run_type_arg.lower()}_pipelines",
+            )
 
     # Unlock export lock when all BQ exports complete
     lock_manager = CloudSqlToBQLockManager()
@@ -165,3 +192,17 @@ def get_or_create_lock_id() -> str:
         lock_id = json_data["lock_id"]
 
     return lock_id
+
+
+def get_pipeline_run_type_arg() -> Optional[str]:
+    json_data_text = request.get_data(as_text=True)
+    try:
+        json_data = json.loads(json_data_text)
+    except (TypeError, json.decoder.JSONDecodeError):
+        json_data = {}
+    if "pipeline_run_type" not in json_data:
+        pipeline_run_type = None
+    else:
+        pipeline_run_type = json_data["pipeline_run_type"]
+
+    return pipeline_run_type
