@@ -19,10 +19,10 @@ from typing import List
 
 from recidiviz.cloud_sql.cloud_sql_client import CloudSQLClientImpl
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
 
 
 def export_from_cloud_sql_to_gcs_csv(
@@ -46,7 +46,9 @@ def export_from_cloud_sql_to_gcs_csv(
     if operation_id is None:
         raise RuntimeError("Cloud SQL export operation was not started successfully.")
 
-    operation_succeeded = cloud_sql_client.wait_until_operation_completed(operation_id)
+    operation_succeeded = cloud_sql_client.wait_until_operation_completed(
+        operation_id, 60
+    )
 
     if not operation_succeeded:
         raise RuntimeError("Cloud SQL export failed.")
