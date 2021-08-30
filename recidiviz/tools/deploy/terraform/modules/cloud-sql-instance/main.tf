@@ -59,12 +59,11 @@ variable "zone" {
   type = string
 }
 
-# Whether backups are enabled
-# TODO(#8282): Remove this option and always enforce backups_enabled once we
-# delete the v1 databases.
-variable "backups_enabled" {
+# Whether the instance is deprecated.
+# TODO(#8282): Remove this option once we delete the v1 databases.
+variable "deprecated" {
   type    = bool
-  default = true
+  default = false
 }
 
 
@@ -113,14 +112,18 @@ resource "google_sql_database_instance" "data" {
   region           = var.region
 
   settings {
-    disk_autoresize   = true
-    tier              = var.tier
-    availability_type = "REGIONAL"
+    disk_autoresize = true
+    tier            = var.tier
+
+    # Turns off high availability for deprecated instances
+    availability_type = var.deprecated ? "ZONAL" : "REGIONAL"
 
     backup_configuration {
-      enabled                        = var.backups_enabled
-      location                       = "us"
-      point_in_time_recovery_enabled = true # needed for HA
+      enabled  = !var.deprecated
+      location = "us"
+
+      # needed for HA, but must be false if backups are set to false
+      point_in_time_recovery_enabled = !var.deprecated
     }
 
     ip_configuration {
