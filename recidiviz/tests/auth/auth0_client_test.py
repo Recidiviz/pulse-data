@@ -16,9 +16,7 @@
 # =============================================================================
 """Tests for the wrapper class Auth0Client"""
 from unittest import TestCase
-from unittest.mock import call, patch
-
-from auth0.v3.exceptions import RateLimitError
+from unittest.mock import patch
 
 from recidiviz.auth.auth0_client import Auth0AppMetadata, Auth0Client
 
@@ -93,44 +91,4 @@ class Auth0ClientTest(TestCase):
         )
         self.mock_client.users.update.assert_called_once_with(
             id="1", body={"app_metadata": app_metadata}
-        )
-
-    def test_update_user_app_metadata_rate_limit_raises_error(self) -> None:
-        """Assert that it raises an error once it reaches max_retries"""
-        with self.assertRaises(RateLimitError):
-            app_metadata: Auth0AppMetadata = {
-                "allowed_supervision_location_ids": ["12", "AP"],
-                "allowed_supervision_location_level": "level_1_supervision_location",
-                "can_access_leadership_dashboard": False,
-                "can_access_case_triage": False,
-                "routes": None,
-            }
-            self.mock_client.users.update.side_effect = RateLimitError(
-                429, "Rate limit error", 1
-            )
-            self.auth0_client.update_user_app_metadata(
-                user_id="1", app_metadata=app_metadata, max_retries=2
-            )
-
-    def test_update_user_app_metadata_rate_limit_retries(self) -> None:
-        """Assert that it successfully retries the request and exits when it succeeds."""
-        app_metadata: Auth0AppMetadata = {
-            "allowed_supervision_location_ids": ["12", "AP"],
-            "allowed_supervision_location_level": "level_1_supervision_location",
-            "can_access_leadership_dashboard": False,
-            "can_access_case_triage": False,
-            "routes": None,
-        }
-        self.mock_client.users.update.side_effect = [
-            RateLimitError(429, "Rate limit error", 1),
-            None,
-        ]
-        self.auth0_client.update_user_app_metadata(
-            user_id="1", app_metadata=app_metadata, max_retries=2
-        )
-        self.mock_client.users.update.assert_has_calls(
-            [
-                call(id="1", body={"app_metadata": app_metadata}),
-                call(id="1", body={"app_metadata": app_metadata}),
-            ]
         )
