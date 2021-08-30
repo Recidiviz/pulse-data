@@ -44,7 +44,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.states import StateCode
@@ -1320,8 +1319,6 @@ def _record_revocation_on_violation_response(
     violation_response.response_type = (
         StateSupervisionViolationResponseType.PERMANENT_DECISION.value
     )
-    violation_response.decision = (
-        StateSupervisionViolationResponseDecision.REVOCATION.value
-    )
+
     if terminating_officer:
         create_if_not_exists(terminating_officer, violation_response, "decision_agents")

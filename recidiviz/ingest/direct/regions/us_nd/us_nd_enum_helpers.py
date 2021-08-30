@@ -57,7 +57,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseRevocationType,
+    StateSupervisionViolationResponseDecision,
 )
 from recidiviz.ingest.direct.direct_ingest_controller_utils import (
     update_overrides_from_maps,
@@ -178,7 +178,13 @@ def generate_enum_overrides() -> EnumOverrides:
         # TODO(#2891): Ensure that this gets mapped down to a supervision_period_supervision_type of INVESTIGATION
         # on the supervision period that this gets copied down to in the hook for Docstars Offender Cases
         StateSupervisionType.PRE_CONFINEMENT: ["PRE-TRIAL"],
-        StateSupervisionViolationResponseRevocationType.REINCARCERATION: [
+        StateSupervisionViolationResponseDecision.CONTINUANCE: [
+            "PLACED BACK ON PROBATION/PAROLE",
+        ],
+        StateSupervisionViolationResponseDecision.SERVICE_TERMINATION: [
+            "SUPERVISION TERMINATED",
+        ],
+        StateSupervisionViolationResponseDecision.REVOCATION: [
             "COUNTY JAIL SENTENCE",
             "COUNTY JAIL SENTENCE FOLLOWED BY PROBATION",
             "DOCR INMATE SENTENCE",
