@@ -40,7 +40,7 @@ module "jails_database" {
   tier              = local.is_production ? "db-custom-4-15360" : "db-custom-1-3840"
   has_readonly_user = local.is_production
 
-  backups_enabled = false
+  deprecated = true
 }
 
 module "jails_database_v2" {
@@ -79,7 +79,7 @@ module "operations_database" {
   tier              = "db-custom-1-3840" # 1 vCPU, 3.75GB Memory
   has_readonly_user = local.is_production
 
-  backups_enabled = false
+  deprecated = true
 }
 
 module "operations_database_v2" {
@@ -106,7 +106,7 @@ module "state_database" {
   tier              = "db-custom-4-16384" # 4 vCPUs, 16GB Memory
   has_readonly_user = local.is_production
 
-  backups_enabled = false
+  deprecated = true
 }
 
 module "state_database_v2" {
