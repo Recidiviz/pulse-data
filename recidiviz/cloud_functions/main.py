@@ -65,7 +65,7 @@ _APP_ENGINE_IMPORT_CASE_TRIAGE_ETL_CSV_TO_SQL_URL = (
     "https://{}.appspot.com/case_triage_ops/handle_gcs_imports?filename={}"
 )
 _CLOUDSQL_TO_BQ_POST_DEPLOY_REFRESH = (
-    "http://{}.appspot.com/create_refresh_bq_schema_task/{}"
+    "https://{}.appspot.com/cloud_sql_to_bq/create_refresh_bq_schema_task/{}"
 )
 
 
@@ -390,7 +390,7 @@ def trigger_post_deploy_cloudsql_to_bq_refresh(
     # Hit the cloud function backend, which starts the post-deploy refresh of the
     # given schema
     response = make_iap_request(
-        url, IAP_CLIENT_ID[project_id], method="POST", body=json.dumps(data).encode()
+        url, IAP_CLIENT_ID[project_id], method="POST", data=json.dumps(data).encode()
     )
     logging.info("The response status is %s", response.status_code)
     return "", HTTPStatus(response.status_code)
