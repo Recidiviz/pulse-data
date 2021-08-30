@@ -16,12 +16,11 @@
 # =============================================================================
 """Wrapper around the Auth0 Client
 """
-import time
 from typing import Dict, List, Optional, TypedDict
 
 from auth0.v3.authentication import GetToken
-from auth0.v3.exceptions import RateLimitError
 from auth0.v3.management import Auth0
+from auth0.v3.management.rest import RestClientOptions
 
 from recidiviz.utils import secrets
 
@@ -42,6 +41,7 @@ Auth0User = TypedDict(
 
 # The max results the API allows per page is 50, but the lucene query can become too long, so we limit it by 25.
 MAX_RESULTS_PER_PAGE = 25
+MAX_RATE_LIMIT_RETRIES = 10
 
 
 class Auth0Client:
@@ -64,9 +64,12 @@ class Auth0Client:
         self._domain = domain
         self._client_id = client_id
         self._client_secret = client_secret
+        self._rest_options = RestClientOptions(retries=MAX_RATE_LIMIT_RETRIES)
 
         self.audience = f"https://{self._domain}/api/v2/"
-        self.client = Auth0(self._domain, self.access_token)
+        self.client = Auth0(
+            self._domain, self.access_token, rest_options=self._rest_options
+        )
 
     def get_token(self) -> Dict[str, str]:
         """Makes a request to the Auth0 Management API for an access token using the client credentials
@@ -102,25 +105,12 @@ class Auth0Client:
         return all_users
 
     def update_user_app_metadata(
-        self, user_id: str, app_metadata: Auth0AppMetadata, max_retries: int = 10
+        self, user_id: str, app_metadata: Auth0AppMetadata
     ) -> None:
         """Updates a single Auth0 user's app_metadata field. Root-level properties are merged, and any nested properties
         are replaced. To delete an app_metadata property, send None as the value. To delete the app_metadata entirely,
         send an empty dictionary."""
-        # TODO(#8991): Remove retry logic and update Auth0Client once auto rate limiting feature is released in package.
-        attempts = 0
-        while True:
-            try:
-                self.client.users.update(
-                    id=user_id, body={"app_metadata": app_metadata}
-                )
-            except RateLimitError as error:
-                attempts += 1
-                if attempts > max_retries:
-                    raise error
-                time.sleep((2 ** attempts))
-                continue
-            break
+        return self.client.users.update(id=user_id, body={"app_metadata": app_metadata})
 
     @staticmethod
     def _create_search_users_by_email_query(email_addresses: List[str]) -> str:

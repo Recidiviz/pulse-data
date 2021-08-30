@@ -14,14 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-from typing import Any, Dict, List
+from typing import Optional, Union
 
-from recidiviz.auth.auth0_client import Auth0AppMetadata, Auth0User
-
-class Users:
-    def list(self, per_page: int, fields: List[str], q: str) -> Dict[str, Any]: ...
-    def update(self, id: str, body: Dict[str, Auth0AppMetadata]) -> None: ...
-
-class Auth0:
-    users: Users
-    def __init__(self, domain: str, access_token: str) -> None: ...
+class RestClientOptions:
+    def __init__(
+        self,
+        telemetry: Optional[bool] = None,
+        timeout: Optional[Union[float, tuple]] = None,
+        retries: Optional[int] = None,
+    ): ...
