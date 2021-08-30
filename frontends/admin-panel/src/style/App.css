@@ -17,6 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 =============================================================================
 */
 @import "~antd/dist/antd.css";
+@import "~antd/dist/antd.dark.css" (prefers-color-scheme: dark);
 @import "DataDiscovery.css";
 
 .main-content {
@@ -39,16 +40,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   white-space: normal !important;
 }
 
-.ant-layout-sider-children {
-  background-color: #ffffff;
-}
-
 .ant-table-tbody > tr.metadata-table-row > td.ant-table-cell {
   padding: 0px;
 }
 
 tr.metadata-table-row > td.ant-table-cell > div {
   padding: 16px;
+}
+
+.ant-layout-sider-children {
+  background-color: #ffffff;
 }
 
 .success {
@@ -68,4 +69,14 @@ tr.metadata-table-row > td.ant-table-cell > div {
 
 .ant-anchor-ink::before {
   background-color: #c6c6c6;
+}
+
+@media screen and (prefers-color-scheme: dark) {
+  .ant-layout-sider-children {
+    background-color: rgb(20, 20, 20);
+  }
+
+  .ant-menu-inline {
+    border-right-width: 0;
+  }
 }
