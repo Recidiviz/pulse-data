@@ -136,7 +136,6 @@ class TestStateSchemaEnums(TestSchemaEnums):
             "state_supervision_violation_type": state_supervision_violation.StateSupervisionViolationType,
             "state_supervision_violation_response_type": state_supervision_violation_response.StateSupervisionViolationResponseType,
             "state_supervision_violation_response_decision": state_supervision_violation_response.StateSupervisionViolationResponseDecision,
-            "state_supervision_violation_response_revocation_type": state_supervision_violation_response.StateSupervisionViolationResponseRevocationType,
             "state_supervision_violation_response_deciding_body_type": state_supervision_violation_response.StateSupervisionViolationResponseDecidingBodyType,
         }
 

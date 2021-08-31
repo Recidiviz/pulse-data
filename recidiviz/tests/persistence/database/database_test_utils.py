@@ -41,7 +41,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
-    StateSupervisionViolationResponseRevocationType,
 )
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.persistence.database.schema.state import schema as state_schema
@@ -99,8 +98,6 @@ def generate_test_supervision_violation_response(
                 state_code="US_XX",
                 decision=StateSupervisionViolationResponseDecision.REVOCATION.value,
                 decision_raw_text="REV",
-                revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION.value,
-                revocation_type_raw_text="REINC",
                 person_id=person_id,
             )
         ],

@@ -94,30 +94,6 @@ class StateSupervisionViolationResponseDecision(EntityEnum, metaclass=EntityEnum
         return _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_MAP
 
 
-@unique
-class StateSupervisionViolationResponseRevocationType(
-    EntityEnum, metaclass=EntityEnumMeta
-):
-    REINCARCERATION = (
-        state_enum_strings.state_supervision_violation_response_revocation_type_reincarceration
-    )
-    RETURN_TO_SUPERVISION = (
-        state_enum_strings.state_supervision_violation_response_revocation_type_return_to_supervision
-    )
-    SHOCK_INCARCERATION = (
-        state_enum_strings.state_supervision_violation_response_revocation_type_shock_incarceration
-    )
-    TREATMENT_IN_PRISON = (
-        state_enum_strings.state_supervision_violation_response_revocation_type_treatment_in_prison
-    )
-
-    @staticmethod
-    def _get_default_map() -> Dict[
-        str, "StateSupervisionViolationResponseRevocationType"
-    ]:
-        return _STATE_SUPERVISION_VIOLATION_RESPONSE_REVOCATION_TYPE_MAP
-
-
 # TODO(#3108): Transition this enum to use StateActingBodyType
 @unique
 class StateSupervisionViolationResponseDecidingBodyType(
@@ -165,16 +141,6 @@ _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_MAP = {
     "TREATMENT IN FIELD": StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD,
     "WARNING": StateSupervisionViolationResponseDecision.WARNING,
     "WARRANT ISSUED": StateSupervisionViolationResponseDecision.WARRANT_ISSUED,
-}
-
-_STATE_SUPERVISION_VIOLATION_RESPONSE_REVOCATION_TYPE_MAP = {
-    "REINCARCERATION": StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-    "SUPERVISION TERMINATED": StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-    "PLACED BACK ON PROBATION PAROLE": StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
-    "SUPERVISION": StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
-    "RETURN TO SUPERVISION": StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
-    "SHOCK INCARCERATION": StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-    "TREATMENT IN PRISON": StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON,
 }
 
 _STATE_SUPERVISION_VIOLATION_RESPONSE_DECIDING_BODY_TYPE_MAP = {

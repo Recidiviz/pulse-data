@@ -195,13 +195,13 @@ def is_commitment_from_supervision(
     """
     if not admission_reason:
         return False
-    revocation_types = [
+    commitment_admissions = [
         StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
     ]
-    non_revocation_types = [
+    non_commitment_admissions = [
         StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
         StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
         StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
@@ -213,9 +213,9 @@ def is_commitment_from_supervision(
         StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
         StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
     ]
-    if admission_reason in revocation_types:
+    if admission_reason in commitment_admissions:
         return True
-    if admission_reason in non_revocation_types:
+    if admission_reason in non_commitment_admissions:
         return False
     if (
         admission_reason
