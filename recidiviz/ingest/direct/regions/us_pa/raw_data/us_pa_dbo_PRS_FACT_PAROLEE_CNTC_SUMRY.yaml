@@ -1,19 +1,19 @@
 file_tag: dbo_PRS_FACT_PAROLEE_CNTC_SUMRY
 file_description: |-
   This file is provided by PADOC and provides an entry for a supervision contact that was made.
+  
+  This table can have rows retroactively updated by agents with corrections between ingest dates
+  as well as multiple rows within one ingest date that semantically represent the same contact made to
+  a person on supervision.
+  Fields such as METHOD, CONTACT_TYPE, ATTEMPTED, ASSISTED, COLLATERAL_TYPE are not included in this primary key due to
+  evidence of retroactive updates to those fields. 
+  PRL_AGNT_EMPL_NO is also relatively stable in combination to the four fields identified below but is excluded out of 
+  possibility that it could transfer from one agent to another within PADOC.
+  The four fields PAROLE_NUMBER, CREATED_DATE, CONTACT_TYPE, DURATION_MINS are identified as relatively stable to represent one contact 
+  - CREATED_DATE may indicate a date later than START_DATE or END_DATE due to manual input by parole agents, but is hardly changed due 
+  to every other adjustment after is a retroactive update to other fields. CONTACT_TYPE and DURATION_MINS, in this case, also hardly change, 
+  but DURATION_MINS is included because there may be multiple of the same CONTACT_TYPE contacts created but for slightly different purposes.
 primary_key_cols:
-# This table can have rows retroactively updated by agents with corrections between ingest dates
-# as well as multiple rows within one ingest date that semantically represent the same contact made to
-# a person on supervision.
-# Fields such as METHOD, CONTACT_TYPE, ATTEMPTED, ASSISTED, COLLATERAL_TYPE are not included in this primary key due to
-# evidence of retroactive updates to those fields. 
-# PRL_AGNT_EMPL_NO is also relatively stable in combination to the four fields identified below but is excluded out of 
-# possibility that it could transfer from one agent to another within PADOC.
-# These four fields are identified as relatively stable to represent one contact - CREATED_DATE may indicate a date later
-# than START_DATE or END_DATE due to manual input by parole agents, but is hardly changed due to every other adjustment
-# after is a retroactive update to other fields. CONTACT_TYPE and DURATION_MINS, in this case, also hardly change, but
-# DURATION_MINS is included because there may be multiple of the same CONTACT_TYPE contacts created but for slightly different
-# purposes.
   - PAROLE_NUMBER
   - CREATED_DATE
   - CONTACT_TYPE
