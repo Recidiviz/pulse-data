@@ -44,7 +44,7 @@ from recidiviz.ingest.direct.regions.us_pa.us_pa_enum_helpers import (
 from recidiviz.tests.ingest.direct.fixture_util import direct_ingest_fixture_path
 
 
-class TestUsPaEnumMappings(unittest.TestCase):
+class TestUsPaEnumMapperFunctions(unittest.TestCase):
     """Tests the mapper functions from the us_pa_enum_helpers file
     which parse raw text from the incarceration period ingest view"""
 

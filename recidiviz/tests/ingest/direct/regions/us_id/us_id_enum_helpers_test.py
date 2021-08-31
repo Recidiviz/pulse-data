@@ -25,7 +25,7 @@ from recidiviz.ingest.direct.regions.us_id.us_id_controller import UsIdControlle
 from recidiviz.tests.ingest.direct.fixture_util import direct_ingest_fixture_path
 
 
-class TestUsIdEnumMappings(unittest.TestCase):
+class TestUsIdEnumMapperFunctions(unittest.TestCase):
     """Tests the mapper functions from the us_id_enum_helpers file which map raw text
     to enums"""
 

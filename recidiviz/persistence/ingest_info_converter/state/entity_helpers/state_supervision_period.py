@@ -35,7 +35,9 @@ from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     parse_external_id,
     parse_region_code_with_override,
 )
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
+    IngestInfoProtoEnumMapper,
+)
 
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
@@ -71,7 +73,9 @@ def copy_fields_to_builder(
         "supervision_level": StateSupervisionLevel,
         "custodial_authority": StateCustodialAuthority,
     }
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
+    proto_enum_mapper = IngestInfoProtoEnumMapper(
+        proto, enum_fields, metadata.enum_overrides
+    )
 
     # enum values
     # Status default based on presence of admission/release dates
@@ -81,22 +85,26 @@ def copy_fields_to_builder(
         status_default = StateSupervisionPeriodStatus.UNDER_SUPERVISION
     else:
         status_default = StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
-    new.status = enum_mappings.get(StateSupervisionPeriodStatus, default=status_default)
+    new.status = proto_enum_mapper.get(
+        StateSupervisionPeriodStatus, default=status_default
+    )
 
     new.status_raw_text = fn(normalize, "status", proto)
-    new.supervision_type = enum_mappings.get(StateSupervisionType)
+    new.supervision_type = proto_enum_mapper.get(StateSupervisionType)
     new.supervision_type_raw_text = fn(normalize, "supervision_type", proto)
-    new.supervision_period_supervision_type = enum_mappings.get(
+    new.supervision_period_supervision_type = proto_enum_mapper.get(
         StateSupervisionPeriodSupervisionType
     )
     new.supervision_period_supervision_type_raw_text = fn(
         normalize, "supervision_period_supervision_type", proto
     )
-    new.admission_reason = enum_mappings.get(StateSupervisionPeriodAdmissionReason)
+    new.admission_reason = proto_enum_mapper.get(StateSupervisionPeriodAdmissionReason)
     new.admission_reason_raw_text = fn(normalize, "admission_reason", proto)
-    new.termination_reason = enum_mappings.get(StateSupervisionPeriodTerminationReason)
+    new.termination_reason = proto_enum_mapper.get(
+        StateSupervisionPeriodTerminationReason
+    )
     new.termination_reason_raw_text = fn(normalize, "termination_reason", proto)
-    new.supervision_level = enum_mappings.get(StateSupervisionLevel)
+    new.supervision_level = proto_enum_mapper.get(StateSupervisionLevel)
     new.supervision_level_raw_text = fn(normalize, "supervision_level", proto)
-    new.custodial_authority = enum_mappings.get(StateCustodialAuthority)
+    new.custodial_authority = proto_enum_mapper.get(StateCustodialAuthority)
     new.custodial_authority_raw_text = fn(normalize, "custodial_authority", proto)

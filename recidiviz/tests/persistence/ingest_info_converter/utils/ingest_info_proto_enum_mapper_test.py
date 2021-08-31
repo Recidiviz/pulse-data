@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for enum_mappings.py"""
+"""Tests for proto_enum_mapper.py"""
 import unittest
 
 from recidiviz.common.constants.charge import ChargeStatus
@@ -25,13 +25,15 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
 )
 from recidiviz.ingest.models.ingest_info_pb2 import Charge, StateIncarcerationPeriod
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
+    IngestInfoProtoEnumMapper,
+)
 
 
-class EnumMappingsTest(unittest.TestCase):
-    """Tests for EnumMappings"""
+class IngestInfoProtoEnumMapperTest(unittest.TestCase):
+    """Tests for IngestInfoProtoEnumMapper"""
 
-    def testEnumFromOriginalFieldIsPreferred(self):
+    def testEnumFromOriginalFieldIsPreferred(self) -> None:
         enum_fields = {
             "charge_class": ChargeClass,
             "status": ChargeStatus,
@@ -41,13 +43,15 @@ class EnumMappingsTest(unittest.TestCase):
         overrides_builder = EnumOverrides.Builder()
         overrides_builder.add("O", ChargeClass.PROBATION_VIOLATION)
         overrides_builder.add("VIOLATION", ChargeClass.INFRACTION, ChargeStatus)
-        enum_mappings = EnumMappings(proto, enum_fields, overrides_builder.build())
-
-        self.assertEqual(
-            ChargeClass.PROBATION_VIOLATION, enum_mappings.get(ChargeClass)
+        proto_enum_mapper = IngestInfoProtoEnumMapper(
+            proto, enum_fields, overrides_builder.build()
         )
 
-    def testEnumMultipleFieldShareEnumType(self):
+        self.assertEqual(
+            ChargeClass.PROBATION_VIOLATION, proto_enum_mapper.get(ChargeClass)
+        )
+
+    def testEnumMultipleFieldShareEnumType(self) -> None:
         enum_fields = {
             "admission_reason": StateIncarcerationPeriodAdmissionReason,
             "projected_release_reason": StateIncarcerationPeriodReleaseReason,
@@ -60,13 +64,13 @@ class EnumMappingsTest(unittest.TestCase):
             release_reason="SERVED",
         )
 
-        enum_mappings = EnumMappings(
+        proto_enum_mapper = IngestInfoProtoEnumMapper(
             proto, enum_fields, EnumOverrides.Builder().build()
         )
 
         self.assertEqual(
             StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-            enum_mappings.get(
+            proto_enum_mapper.get(
                 StateIncarcerationPeriodReleaseReason,
                 field_name="projected_release_reason",
             ),
@@ -74,12 +78,12 @@ class EnumMappingsTest(unittest.TestCase):
 
         self.assertEqual(
             StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-            enum_mappings.get(
+            proto_enum_mapper.get(
                 StateIncarcerationPeriodReleaseReason, field_name="release_reason"
             ),
         )
 
-    def testMultipleMappingsFails(self):
+    def testMultipleMappingsFails(self) -> None:
         enum_fields = {
             "degree": ChargeDegree,
             "status": ChargeStatus,
@@ -89,7 +93,9 @@ class EnumMappingsTest(unittest.TestCase):
         overrides_builder = EnumOverrides.Builder()
         overrides_builder.add("O", ChargeClass.PROBATION_VIOLATION, ChargeDegree)
         overrides_builder.add("VIOLATION", ChargeClass.INFRACTION, ChargeStatus)
-        enum_mappings = EnumMappings(proto, enum_fields, overrides_builder.build())
+        proto_enum_mapper = IngestInfoProtoEnumMapper(
+            proto, enum_fields, overrides_builder.build()
+        )
 
         with self.assertRaises(ValueError):
-            enum_mappings.get(ChargeClass)
+            proto_enum_mapper.get(ChargeClass)

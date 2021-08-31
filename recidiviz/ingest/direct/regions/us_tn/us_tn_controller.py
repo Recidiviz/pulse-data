@@ -22,7 +22,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import (
     EnumIgnorePredicate,
-    EnumMapper,
+    EnumMapperFn,
     EnumOverrides,
 )
 from recidiviz.common.constants.state.external_id_types import US_TN_DOC
@@ -78,7 +78,7 @@ class UsTnController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         ] = {}
 
     ENUM_OVERRIDES: Dict[EntityEnum, List[str]] = {}
-    ENUM_MAPPERS: Dict[EntityEnumMeta, EnumMapper] = {}
+    ENUM_MAPPER_FUNCTIONS: Dict[EntityEnumMeta, EnumMapperFn] = {}
     ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {}
     ENUM_IGNORE_PREDICATES: Dict[EntityEnumMeta, EnumIgnorePredicate] = {}
 

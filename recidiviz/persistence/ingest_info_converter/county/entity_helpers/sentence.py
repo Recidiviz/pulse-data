@@ -17,19 +17,21 @@
 """Converts an ingest_info proto Sentence to a persistence entity."""
 
 from recidiviz.common.constants.county.sentence import SentenceStatus
+from recidiviz.common.str_field_utils import (
+    normalize,
+    parse_bool,
+    parse_date,
+    parse_days,
+    parse_dollars,
+)
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn,
-    parse_external_id,
     parse_completion_date,
+    parse_external_id,
 )
-from recidiviz.common.str_field_utils import (
-    parse_dollars,
-    parse_bool,
-    parse_days,
-    normalize,
-    parse_date,
+from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
+    IngestInfoProtoEnumMapper,
 )
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
 def copy_fields_to_builder(sentence_builder, proto, metadata) -> None:
@@ -43,10 +45,12 @@ def copy_fields_to_builder(sentence_builder, proto, metadata) -> None:
     enum_fields = {
         "status": SentenceStatus,
     }
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
+    proto_enum_mapper = IngestInfoProtoEnumMapper(
+        proto, enum_fields, metadata.enum_overrides
+    )
 
     # Enum mappings
-    new.status = enum_mappings.get(
+    new.status = proto_enum_mapper.get(
         SentenceStatus, default=SentenceStatus.PRESENT_WITHOUT_INFO
     )
     new.status_raw_text = fn(normalize, "status", proto)

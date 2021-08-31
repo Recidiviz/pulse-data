@@ -31,7 +31,9 @@ from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn,
     parse_region_code_with_override,
 )
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
+    IngestInfoProtoEnumMapper,
+)
 
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
@@ -47,10 +49,12 @@ def convert(
     enum_fields = {
         "decision": StateSupervisionViolationResponseDecision,
     }
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
+    proto_enum_mapper = IngestInfoProtoEnumMapper(
+        proto, enum_fields, metadata.enum_overrides
+    )
 
     # Enum mappings
-    new.decision = enum_mappings.get(StateSupervisionViolationResponseDecision)
+    new.decision = proto_enum_mapper.get(StateSupervisionViolationResponseDecision)
     new.decision_raw_text = fn(normalize, "decision", proto)
 
     # 1-to-1 mappings

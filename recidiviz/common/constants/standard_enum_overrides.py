@@ -49,7 +49,7 @@ def get_standard_enum_overrides() -> EnumOverrides:
             overrides_builder.add(ethnicity_string, ethnicity_enum, Race)
 
     overrides_builder.add("OUT ON BOND", BondStatus.POSTED, BondType)
-    overrides_builder.add_mapper(_felony_mapper, ChargeClass, ChargeStatus)
+    overrides_builder.add_mapper_fn(_felony_mapper, ChargeClass, ChargeStatus)
 
     return overrides_builder.build()
 

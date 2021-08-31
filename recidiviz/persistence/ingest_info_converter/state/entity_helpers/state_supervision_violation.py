@@ -29,7 +29,9 @@ from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     parse_external_id,
     parse_region_code_with_override,
 )
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
+    IngestInfoProtoEnumMapper,
+)
 
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
@@ -46,10 +48,12 @@ def copy_fields_to_builder(
     enum_fields = {
         "violation_type": StateSupervisionViolationType,
     }
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
+    proto_enum_mapper = IngestInfoProtoEnumMapper(
+        proto, enum_fields, metadata.enum_overrides
+    )
 
     # enum values
-    new.violation_type = enum_mappings.get(StateSupervisionViolationType)
+    new.violation_type = proto_enum_mapper.get(StateSupervisionViolationType)
     new.violation_type_raw_text = fn(normalize, "violation_type", proto)
 
     # 1-to-1 mappings

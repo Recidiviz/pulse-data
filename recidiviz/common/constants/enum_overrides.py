@@ -24,7 +24,7 @@ import attr
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.str_field_utils import normalize
 
-EnumMapper = Callable[[str], Optional[EntityEnum]]
+EnumMapperFn = Callable[[str], Optional[EntityEnum]]
 EnumIgnorePredicate = Callable[[str], bool]
 EntityEnumType = Union[Type[EntityEnum], EntityEnumMeta]
 
@@ -38,7 +38,7 @@ class EnumOverrides:
     """
 
     _str_mappings_dict: Dict[EntityEnumType, Dict[str, EntityEnum]] = attr.ib()
-    _mappers_dict: Dict[EntityEnumType, Set["EnumMapper"]] = attr.ib()
+    _mapper_fns_dict: Dict[EntityEnumType, Set["EnumMapperFn"]] = attr.ib()
     _ignores: Dict[EntityEnumType, Set[str]] = attr.ib()
     _ignore_predicates_dict: Dict[EntityEnumType, Set[EnumIgnorePredicate]] = attr.ib()
 
@@ -59,9 +59,9 @@ class EnumOverrides:
             return direct_lookup
 
         matches = {
-            mapper(label)
-            for mapper in self._mappers_dict[enum_class]
-            if mapper(label) is not None
+            mapper_fn(label)
+            for mapper_fn in self._mapper_fns_dict[enum_class]
+            if mapper_fn(label) is not None
         }
         if len(matches) > 1:
             raise ValueError(
@@ -77,7 +77,7 @@ class EnumOverrides:
     def to_builder(self) -> "Builder":
         builder = self.Builder()
         builder._str_mappings_dict = self._str_mappings_dict
-        builder._mappers_dict = self._mappers_dict
+        builder._mapper_fns_dict = self._mapper_fns_dict
         builder._ignores = self._ignores
         builder._ignore_predicates_dict = self._ignore_predicates_dict
         return builder
@@ -93,7 +93,9 @@ class EnumOverrides:
             self._str_mappings_dict: Dict[
                 EntityEnumType, Dict[str, EntityEnum]
             ] = defaultdict(dict)
-            self._mappers_dict: Dict[EntityEnumType, Set[EnumMapper]] = defaultdict(set)
+            self._mapper_fns_dict: Dict[
+                EntityEnumType, Set[EnumMapperFn]
+            ] = defaultdict(set)
             self._ignores: Dict[EntityEnumType, Set[str]] = defaultdict(set)
             self._ignore_predicates_dict: Dict[
                 EntityEnumType, Set[EnumIgnorePredicate]
@@ -102,30 +104,34 @@ class EnumOverrides:
         def build(self) -> "EnumOverrides":
             return EnumOverrides(
                 self._str_mappings_dict,
-                self._mappers_dict,
+                self._mapper_fns_dict,
                 self._ignores,
                 self._ignore_predicates_dict,
             )
 
-        def add_mapper(
+        def add_mapper_fn(
             self,
-            mapper: EnumMapper,
+            mapper_fn: EnumMapperFn,
             mapped_cls: EntityEnumType,
             from_field: Optional[EntityEnumType] = None,
         ) -> "EnumOverrides.Builder":
-            """Adds a |mapper| which maps field values to enums within the |mapped_cls|. |mapper| must be a
-            Callable which, given a string value, returns an enum of class |mapped_cls| or None.
+            """Adds a |mapper_fn| which maps field values to enums within the
+            |mapped_cls|. |mapper_fn| must be a Callable which, given a string value,
+            returns an enum of class |mapped_cls| or None.
 
-            Optionally, the |from_field| parameter allows values to be mapped across fields. For example:
-            `add_mapper(bond_status_mapper, BondStatus, BondType)` remaps the bond_type field to a bond_status when
-            the bond_status_mapper returns an enum value. Mappings *between* entity types are not allowed.
+            Optionally, the |from_field| parameter allows values to be mapped across
+            fields. For example:
+                `add_mapper_fn(bond_status_mapper, BondStatus, BondType)`
+            remaps the bond_type field to a bond_status when the bond_status_mapper
+            returns an enum value. Mappings *between* entity types are not allowed.
 
-            Note: take care not to add multiple mappers which map the same field value to different enums, as
-            EnumOverrides.parse will throw an exception.
+            Note: take care not to add multiple mapper functions which map the same
+            field value to different enums, as EnumOverrides.parse will throw an
+            exception.
             """
             if from_field is None:
                 from_field = mapped_cls
-            self._mappers_dict[from_field].add(mapper)
+            self._mapper_fns_dict[from_field].add(mapper_fn)
             return self
 
         def add(

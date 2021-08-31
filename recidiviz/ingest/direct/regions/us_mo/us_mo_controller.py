@@ -25,7 +25,7 @@ from recidiviz.common import ncic
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import (
     EnumIgnorePredicate,
-    EnumMapper,
+    EnumMapperFn,
     EnumOverrides,
 )
 from recidiviz.common.constants.standard_enum_overrides import (
@@ -203,7 +203,7 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     PERIOD_MAGICAL_DATES = ["0", "99999999"]
 
     # TODO(#2898): Complete transition to TAK026 for IncarcerationPeriod statuses
-    ENUM_MAPPERS: Dict[EntityEnumMeta, EnumMapper] = {
+    ENUM_MAPPER_FUNCTIONS: Dict[EntityEnumMeta, EnumMapperFn] = {
         StateAgentType: supervising_officer_mapper,
         StateSupervisionPeriodAdmissionReason: supervision_period_admission_reason_mapper,
         StateSupervisionPeriodTerminationReason: supervision_period_termination_reason_mapper,
@@ -590,7 +590,7 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             base_overrides,
             cls.ENUM_OVERRIDES,
             cls.ENUM_IGNORES,
-            cls.ENUM_MAPPERS,
+            cls.ENUM_MAPPER_FUNCTIONS,
             cls.ENUM_IGNORE_PREDICATES,
         )
 
