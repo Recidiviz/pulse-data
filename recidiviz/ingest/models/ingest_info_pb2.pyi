@@ -3296,11 +3296,9 @@ class StateSupervisionViolationResponseDecisionEntry(google.protobuf.message.Mes
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_ENTRY_ID_FIELD_NUMBER: builtins.int
     DECISION_FIELD_NUMBER: builtins.int
-    REVOCATION_TYPE_FIELD_NUMBER: builtins.int
     STATE_CODE_FIELD_NUMBER: builtins.int
     state_supervision_violation_response_decision_entry_id: typing.Text = ...
     decision: typing.Text = ...
-    revocation_type: typing.Text = ...
     state_code: typing.Text = ...
     def __init__(
         self,
@@ -3309,7 +3307,6 @@ class StateSupervisionViolationResponseDecisionEntry(google.protobuf.message.Mes
             typing.Text
         ] = ...,
         decision: typing.Optional[typing.Text] = ...,
-        revocation_type: typing.Optional[typing.Text] = ...,
         state_code: typing.Optional[typing.Text] = ...,
     ) -> None: ...
     def HasField(
@@ -3317,8 +3314,6 @@ class StateSupervisionViolationResponseDecisionEntry(google.protobuf.message.Mes
         field_name: typing_extensions.Literal[
             "decision",
             b"decision",
-            "revocation_type",
-            b"revocation_type",
             "state_code",
             b"state_code",
             "state_supervision_violation_response_decision_entry_id",
@@ -3330,8 +3325,6 @@ class StateSupervisionViolationResponseDecisionEntry(google.protobuf.message.Mes
         field_name: typing_extensions.Literal[
             "decision",
             b"decision",
-            "revocation_type",
-            b"revocation_type",
             "state_code",
             b"state_code",
             "state_supervision_violation_response_decision_entry_id",

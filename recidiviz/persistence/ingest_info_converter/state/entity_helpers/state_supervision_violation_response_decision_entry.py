@@ -20,7 +20,6 @@ StateSupervisionViolationResponseDecisionEntry to a persistence entity.
 
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
-    StateSupervisionViolationResponseRevocationType,
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.str_field_utils import normalize
@@ -37,7 +36,6 @@ from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import Enum
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
 #  mappings.
-# TODO(#6989): Stop converting the revocation_type fields once they have been deleted
 def convert(
     proto: StateSupervisionViolationResponseDecisionEntry, metadata: IngestMetadata
 ) -> entities.StateSupervisionViolationResponseDecisionEntry:
@@ -48,18 +46,12 @@ def convert(
 
     enum_fields = {
         "decision": StateSupervisionViolationResponseDecision,
-        "revocation_type": StateSupervisionViolationResponseRevocationType,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
     # Enum mappings
     new.decision = enum_mappings.get(StateSupervisionViolationResponseDecision)
     new.decision_raw_text = fn(normalize, "decision", proto)
-
-    new.revocation_type = enum_mappings.get(
-        StateSupervisionViolationResponseRevocationType
-    )
-    new.revocation_type_raw_text = fn(normalize, "revocation_type", proto)
 
     # 1-to-1 mappings
     new.state_code = parse_region_code_with_override(proto, "state_code", metadata)

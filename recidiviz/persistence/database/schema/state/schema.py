@@ -455,14 +455,6 @@ state_supervision_violation_response_decision = Enum(
     name="state_supervision_violation_response_decision",
 )
 
-state_supervision_violation_response_revocation_type = Enum(
-    state_enum_strings.state_supervision_violation_response_revocation_type_reincarceration,
-    state_enum_strings.state_supervision_violation_response_revocation_type_return_to_supervision,
-    state_enum_strings.state_supervision_violation_response_revocation_type_shock_incarceration,
-    state_enum_strings.state_supervision_violation_response_revocation_type_treatment_in_prison,
-    name="state_supervision_violation_response_revocation_type",
-)
-
 state_supervision_violation_response_deciding_body_type = Enum(
     state_enum_strings.state_supervision_violation_response_deciding_body_type_court,
     state_enum_strings.state_supervision_violation_response_deciding_body_parole_board,
@@ -3703,14 +3695,6 @@ class _StateSupervisionViolationResponseDecisionEntrySharedColumns(
     decision_raw_text = Column(
         String(255),
         comment="The raw text value of the supervision violation response decision.",
-    )
-    revocation_type = Column(
-        state_supervision_violation_response_revocation_type,
-        comment="The specific type of revocation that the person will be subject to, if "
-        "applicable.",
-    )
-    revocation_type_raw_text = Column(
-        String(255), comment="The raw text value of the revocation type."
     )
 
     @declared_attr

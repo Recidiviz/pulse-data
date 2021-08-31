@@ -98,7 +98,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,
-    StateSupervisionViolationResponseRevocationType,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.date import DateRange, DurationMixin
@@ -1557,21 +1556,6 @@ class StateSupervisionViolationResponseDecisionEntry(
         default=None, validator=attr_validators.is_opt_str
     )
 
-    # Only nonnull if one of the decisions is REVOCATION
-    # TODO(#6989): DEPRECATED - DELETE IN FOLLOW-UP PR
-    revocation_type: Optional[
-        StateSupervisionViolationResponseRevocationType
-    ] = attr.ib(
-        default=None,
-        validator=attr_validators.is_opt(
-            StateSupervisionViolationResponseRevocationType
-        ),
-    )
-    # TODO(#6989): DEPRECATED - DELETE IN FOLLOW-UP PR
-    revocation_type_raw_text: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
     supervision_violation_response_decision_entry_id: Optional[int] = attr.ib(
@@ -1583,19 +1567,6 @@ class StateSupervisionViolationResponseDecisionEntry(
     supervision_violation_response: Optional[
         "StateSupervisionViolationResponse"
     ] = attr.ib(default=None)
-
-    def __attrs_post_init__(self) -> None:
-        validate_deprecated_entity_field_for_states(
-            entity=self,
-            field_name="revocation_type",
-            deprecated_state_codes=["US_ID", "US_MO", "US_ND", "US_PA"],
-        )
-
-        validate_deprecated_entity_field_for_states(
-            entity=self,
-            field_name="revocation_type_raw_text",
-            deprecated_state_codes=["US_ID", "US_MO", "US_ND", "US_PA"],
-        )
 
 
 @attr.s(eq=False)

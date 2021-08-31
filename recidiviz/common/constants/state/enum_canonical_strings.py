@@ -316,17 +316,6 @@ state_supervision_violation_response_decision_treatment_in_field = "TREATMENT_IN
 state_supervision_violation_response_decision_warning = "WARNING"
 state_supervision_violation_response_decision_warrant_issued = "WARRANT_ISSUED"
 
-state_supervision_violation_response_revocation_type_reincarceration = "REINCARCERATION"
-state_supervision_violation_response_revocation_type_return_to_supervision = (
-    "RETURN_TO_SUPERVISION"
-)
-state_supervision_violation_response_revocation_type_shock_incarceration = (
-    "SHOCK_INCARCERATION"
-)
-state_supervision_violation_response_revocation_type_treatment_in_prison = (
-    "TREATMENT_IN_PRISON"
-)
-
 state_supervision_violation_response_deciding_body_type_court = "COURT"
 state_supervision_violation_response_deciding_body_parole_board = "PAROLE_BOARD"
 state_supervision_violation_response_deciding_body_type_supervision_officer = (

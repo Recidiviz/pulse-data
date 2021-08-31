@@ -54,7 +54,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
-    StateSupervisionViolationResponseRevocationType,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
@@ -347,7 +346,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         ingest_info.state_supervision_violation_response_decision_entries.add(
             state_supervision_violation_response_decision_entry_id="VIOLATION_RESPONSE_DECISION_ENTRY_ID",
             decision="REVOCATION",
-            revocation_type="REINCARCERATION",
             state_code="US_XX",
         )
 
@@ -478,8 +476,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     decision_raw_text="REVOCATION",
-                    revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-                    revocation_type_raw_text="REINCARCERATION",
                 )
             ],
         )

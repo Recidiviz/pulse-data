@@ -46,7 +46,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
-    StateSupervisionViolationResponseRevocationType,
 )
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.session import Session
@@ -1754,10 +1753,11 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             incarceration_periods=[db_incarceration_period],
         )
         entity_incarceration_sentence = self.to_entity(db_incarceration_sentence)
-        db_supervision_violation_response_decision = generate_supervision_violation_response_decision_entry(
-            person=db_person,
-            decision=StateSupervisionViolationResponseDecision.REVOCATION.value,
-            revocation_type=StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON.value,
+        db_supervision_violation_response_decision = (
+            generate_supervision_violation_response_decision_entry(
+                person=db_person,
+                decision=StateSupervisionViolationResponseDecision.REVOCATION.value,
+            )
         )
         entity_supervision_violation_response_decision = self.to_entity(
             db_supervision_violation_response_decision
