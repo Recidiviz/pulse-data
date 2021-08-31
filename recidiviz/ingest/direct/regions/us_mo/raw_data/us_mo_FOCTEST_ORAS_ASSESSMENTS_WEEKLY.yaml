@@ -61,7 +61,13 @@ columns:
       Assessment Score
   - name: E20
     description: |-
-      Person who administered the assessment
+      Full name of the person who administered the assessment
   - name: E21
+    description: |-
+      Surname of the person who administered the assessment
+  - name: E22
+    description: |-
+      Given name of the person who administered the assessment
+  - name: E23
     description: |-
       Assessment Date (Date entered into UCCI system).
