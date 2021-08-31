@@ -17,10 +17,12 @@
 """Classes containing both region-specific and global information for our validation flows."""
 
 from enum import Enum
-from typing import Dict
+from typing import Dict, Optional
 
 import attr
 import yaml
+
+from recidiviz.utils.yaml_dict import YAMLDict
 
 
 class ValidationExclusionType(Enum):
@@ -62,26 +64,78 @@ class ValidationMaxAllowedErrorOverride:
     # Name of the SamenessDataValidationCheck whose error threshold should be overridden
     validation_name: str = attr.ib()
 
-    # The new max_allowed_error value
-    max_allowed_error_override: float = attr.ib()
+    # A string description reason for why the error threshold is being overridden. Should contain a TO-DO with a task
+    # number if we plan to improve this threshold.
+    override_reason: str = attr.ib()
 
-    @max_allowed_error_override.validator
-    def _check_max_allowed_error(
+    # The new hard_max_allowed_error value. This is the alerting threshold, so any error that exceeds this
+    # should be investigated.
+    hard_max_allowed_error_override: Optional[float] = attr.ib()
+
+    # The new soft_max_allowed_error value. This sets the max desired threshold, so all errors less than or equal
+    # to this would be considered successful and errors greater would either be just okay, or require investigation
+    # depending on whether they they exceed the hard_max_allowed_error_override
+    soft_max_allowed_error_override: Optional[float] = attr.ib()
+
+    @hard_max_allowed_error_override.validator
+    def _check_hard_max_allowed_error(
         self, _attribute: attr.Attribute, value: float
     ) -> None:
-        if not isinstance(value, float):
+        if not isinstance(value, float) and value:
             raise ValueError(
                 f"Unexpected type [{type(value)}] for error value [{value}]"
             )
+
+        if not value:
+            return
 
         if not 0.0 <= value <= 1.0:
             raise ValueError(
                 f"Allowed error value must be between 0.0 and 1.0. Found instead: [{value}]"
             )
+        if (
+            self.soft_max_allowed_error_override
+            and value < self.soft_max_allowed_error_override
+        ):
+            raise ValueError(
+                f"Value cannot be less than soft_max_allowed_error_override. "
+                f"Found instead: {value} vs. {self.soft_max_allowed_error_override}"
+            )
 
-    # A string description reason for why the error threshold is being overridden. Should contain a TO-DO with a task
-    # number if we plan to improve this threshold.
-    override_reason: str = attr.ib()
+    @soft_max_allowed_error_override.validator
+    def _check_soft_max_allowed_error(
+        self, _attribute: attr.Attribute, value: float
+    ) -> None:
+        if not isinstance(value, float) and value:
+            raise ValueError(
+                f"Unexpected type [{type(value)}] for error value [{value}]"
+            )
+
+        if not value:
+            return
+
+        if not 0.0 <= value <= 1.0:
+            raise ValueError(
+                f"Allowed error value must be between 0.0 and 1.0. Found instead: [{value}]"
+            )
+        if (
+            self.hard_max_allowed_error_override
+            and value > self.hard_max_allowed_error_override
+        ):
+            raise ValueError(
+                f"Value cannot be greater than hard_max_allowed_error_override. "
+                f"Found instead: {value} vs. {self.hard_max_allowed_error_override}"
+            )
+
+    def __attrs_post_init__(self) -> None:
+        if (
+            not self.soft_max_allowed_error_override
+            and not self.hard_max_allowed_error_override
+        ):
+            raise ValueError(
+                "soft_max_allowed_error_override and hard_max_allowed_error_override not set. "
+                "One of the these variable should be set."
+            )
 
 
 @attr.s(frozen=True)
@@ -95,12 +149,69 @@ class ValidationNumAllowedRowsOverride:
     # Name of the ExistenceDataValidationCheck validation whose error threshold should be overridden
     validation_name: str = attr.ib()
 
-    # The new max_allowed_error value
-    num_allowed_rows_override: float = attr.ib()
-
     # A string description reason for why the error threshold is being overridden. Should contain a TO-DO with a task
     # number if we plan to improve this threshold.
     override_reason: str = attr.ib()
+
+    # The new hard_num_allowed_rows value. This is the alerting threshold, so any error that exceeds this
+    # should be investigated.
+    hard_num_allowed_rows_override: Optional[int] = attr.ib()
+
+    # The new soft_num_allowed_rows value. This sets the max desired threshold, so all errors less than or equal
+    # to this would be considered successful and errors greater would either be just okay, or require investigation
+    # depending on whether they they exceed the hard_max_allowed_error_override
+    soft_num_allowed_rows_override: Optional[int] = attr.ib()
+
+    @hard_num_allowed_rows_override.validator
+    def _check_hard_num_allowed_rows_override(
+        self, _attribute: attr.Attribute, value: int
+    ) -> None:
+        if not value:
+            return
+
+        if value < 0:
+            raise ValueError(
+                f"Allowed error value must be between greater or equal to 0: [{value}]"
+            )
+
+        if (
+            self.soft_num_allowed_rows_override
+            and value < self.soft_num_allowed_rows_override
+        ):
+            raise ValueError(
+                f"Value cannot be less than soft_num_allowed_rows_override. "
+                f"Found instead: {value} vs. {self.soft_num_allowed_rows_override}"
+            )
+
+    @soft_num_allowed_rows_override.validator
+    def _check_soft_num_allowed_rows_override(
+        self, _attribute: attr.Attribute, value: int
+    ) -> None:
+        if not value:
+            return
+
+        if value < 0:
+            raise ValueError(
+                f"Allowed error value must be between greater or equal to 0: [{value}]"
+            )
+        if (
+            self.hard_num_allowed_rows_override
+            and value > self.hard_num_allowed_rows_override
+        ):
+            raise ValueError(
+                f"Value cannot be greater than hard_max_allowed_error_override. "
+                f"Found instead: {value} vs. {self.hard_num_allowed_rows_override}"
+            )
+
+    def __attrs_post_init__(self) -> None:
+        if (
+            not self.soft_num_allowed_rows_override
+            and not self.hard_num_allowed_rows_override
+        ):
+            raise ValueError(
+                "soft_num_allowed_rows_override and hard_num_allowed_rows_override not set. "
+                "One of the these variable should be set."
+            )
 
 
 @attr.s(frozen=True)
@@ -123,77 +234,87 @@ class ValidationRegionConfig:
     def from_yaml(cls, yaml_path: str) -> "ValidationRegionConfig":
         """Parses a region validation config file at the given path into a ValidationRegionConfig object."""
 
-        with open(yaml_path, "r", encoding="utf-8") as f:
-            file_contents = yaml.full_load(f)
-            region_code = file_contents["region_code"]
+        file_contents = YAMLDict.from_path(yaml_path)
+        region_code = file_contents.pop("region_code", str)
+        exclusions = {}
+        for exclusion_dict in file_contents.pop_dicts("exclusions"):
+            validation_name = exclusion_dict.pop("validation_name", str)
 
-            exclusions = {}
-            for exclusion_dict in file_contents["exclusions"]:
-                validation_name = exclusion_dict["validation_name"]
-
-                if validation_name in exclusions:
-                    raise ValueError(
-                        f"Found multiple exclusions defined for the same validation: [{validation_name}]"
-                    )
-
-                exclusions[validation_name] = ValidationExclusion(
-                    region_code=region_code,
-                    validation_name=validation_name,
-                    exclusion_type=ValidationExclusionType(
-                        exclusion_dict["exclusion_type"]
-                    ),
-                    exclusion_reason=exclusion_dict["exclusion_reason"],
-                )
-            max_allowed_error_overrides = {}
-            for max_allowed_error_override_dict in file_contents[
-                "max_allowed_error_overrides"
-            ]:
-                validation_name = max_allowed_error_override_dict["validation_name"]
-
-                if validation_name in max_allowed_error_overrides:
-                    raise ValueError(
-                        f"Found multiple error overrides defined for the same validation: [{validation_name}]"
-                    )
-
-                max_allowed_error_overrides[
-                    validation_name
-                ] = ValidationMaxAllowedErrorOverride(
-                    region_code=region_code,
-                    validation_name=validation_name,
-                    max_allowed_error_override=float(
-                        max_allowed_error_override_dict["max_allowed_error_override"]
-                    ),
-                    override_reason=max_allowed_error_override_dict["override_reason"],
+            if validation_name in exclusions:
+                raise ValueError(
+                    f"Found multiple exclusions defined for the same validation: [{validation_name}]"
                 )
 
-            num_allowed_rows_overrides = {}
-            for num_allowed_rows_override_dict in file_contents[
-                "num_allowed_rows_overrides"
-            ]:
-                validation_name = num_allowed_rows_override_dict["validation_name"]
-
-                if validation_name in num_allowed_rows_override_dict:
-                    raise ValueError(
-                        f"Found multiple num row overrides defined for the same validation: [{validation_name}]"
-                    )
-
-                num_allowed_rows_overrides[
-                    validation_name
-                ] = ValidationNumAllowedRowsOverride(
-                    region_code=region_code,
-                    validation_name=validation_name,
-                    num_allowed_rows_override=int(
-                        num_allowed_rows_override_dict["num_allowed_rows_override"]
-                    ),
-                    override_reason=num_allowed_rows_override_dict["override_reason"],
-                )
-
-            return ValidationRegionConfig(
+            exclusions[validation_name] = ValidationExclusion(
                 region_code=region_code,
-                exclusions=exclusions,
-                max_allowed_error_overrides=max_allowed_error_overrides,
-                num_allowed_rows_overrides=num_allowed_rows_overrides,
+                validation_name=validation_name,
+                exclusion_type=ValidationExclusionType(
+                    exclusion_dict.pop("exclusion_type", str)
+                ),
+                exclusion_reason=exclusion_dict.pop("exclusion_reason", str),
             )
+        max_allowed_error_overrides = {}
+        for max_allowed_error_override_dict in file_contents.pop_dicts(
+            "max_allowed_error_overrides"
+        ):
+            validation_name = max_allowed_error_override_dict.pop(
+                "validation_name", str
+            )
+
+            if validation_name in max_allowed_error_overrides:
+                raise ValueError(
+                    f"Found multiple error overrides defined for the same validation: [{validation_name}]"
+                )
+
+            max_allowed_error_overrides[
+                validation_name
+            ] = ValidationMaxAllowedErrorOverride(
+                region_code=region_code,
+                validation_name=validation_name,
+                hard_max_allowed_error_override=max_allowed_error_override_dict.pop_optional(
+                    "hard_max_allowed_error_override", float
+                ),
+                soft_max_allowed_error_override=max_allowed_error_override_dict.pop_optional(
+                    "soft_max_allowed_error_override", float
+                ),
+                override_reason=max_allowed_error_override_dict.pop(
+                    "override_reason", str
+                ),
+            )
+
+        num_allowed_rows_overrides = {}
+        for num_allowed_rows_override_dict in file_contents.pop_dicts(
+            "num_allowed_rows_overrides"
+        ):
+            validation_name = num_allowed_rows_override_dict.pop("validation_name", str)
+
+            if validation_name in num_allowed_rows_overrides:
+                raise ValueError(
+                    f"Found multiple num row overrides defined for the same validation: [{validation_name}]"
+                )
+
+            num_allowed_rows_overrides[
+                validation_name
+            ] = ValidationNumAllowedRowsOverride(
+                region_code=region_code,
+                validation_name=validation_name,
+                hard_num_allowed_rows_override=num_allowed_rows_override_dict.pop_optional(
+                    "hard_num_allowed_rows_override", int
+                ),
+                soft_num_allowed_rows_override=num_allowed_rows_override_dict.pop_optional(
+                    "soft_num_allowed_rows_override", int
+                ),
+                override_reason=num_allowed_rows_override_dict.pop(
+                    "override_reason", str
+                ),
+            )
+
+        return ValidationRegionConfig(
+            region_code=region_code,
+            exclusions=exclusions,
+            max_allowed_error_overrides=max_allowed_error_overrides,
+            num_allowed_rows_overrides=num_allowed_rows_overrides,
+        )
 
 
 @attr.s(frozen=True)

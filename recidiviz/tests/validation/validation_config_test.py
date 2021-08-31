@@ -70,7 +70,8 @@ class ValidationConfigTest(unittest.TestCase):
             "sameness_view": ValidationMaxAllowedErrorOverride(
                 region_code="US_XX",
                 validation_name="sameness_view",
-                max_allowed_error_override=0.3,
+                hard_max_allowed_error_override=0.3,
+                soft_max_allowed_error_override=0.3,
                 override_reason="This is hard to get right",
             )
         }
@@ -79,7 +80,8 @@ class ValidationConfigTest(unittest.TestCase):
             "existence_view": ValidationNumAllowedRowsOverride(
                 region_code="US_XX",
                 validation_name="existence_view",
-                num_allowed_rows_override=10,
+                hard_num_allowed_rows_override=10,
+                soft_num_allowed_rows_override=10,
                 override_reason="These should not exist. TODO(#0001) - fix it.",
             )
         }
@@ -138,7 +140,9 @@ class ValidationConfigTest(unittest.TestCase):
 
         # Act
         with self.assertRaisesRegex(
-            ValueError, r"^could not convert string to float: '0.3.0'$"
+            ValueError,
+            r"^The hard_max_allowed_error_override must be of type float. "
+            r"Invalid hard_max_allowed_error_override, expected <class 'float'> but received: '0.3.0'$",
         ):
             _ = ValidationRegionConfig.from_yaml(yaml_path)
 

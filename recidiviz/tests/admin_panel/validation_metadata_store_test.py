@@ -28,6 +28,7 @@ from recidiviz.admin_panel.validation_metadata_store import (
     ValidationStatusResults,
     ValidationStatusStore,
 )
+from recidiviz.validation.validation_models import ValidationResultStatus
 
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
@@ -58,7 +59,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
                 "validation_name": "test_view",
                 "region_code": "US_XX",
                 "did_run": True,
-                "was_successful": True,
+                "validation_result_status": ValidationResultStatus.SUCCESS,
                 "result_details_type": "SamenessStringsValidationResultDetails",
                 "has_data": True,
                 "error_amount": 0.123456,
@@ -71,7 +72,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
                 "validation_name": "test_view",
                 "region_code": "US_YY",
                 "did_run": True,
-                "was_successful": False,
+                "validation_result_status": ValidationResultStatus.FAIL_HARD,
                 "result_details_type": "SamenessStringsValidationResultDetails",
                 "has_data": True,
                 "error_amount": 0.999,
@@ -84,7 +85,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
                 "validation_name": "other_view",
                 "region_code": "US_XX",
                 "did_run": False,
-                "was_successful": None,
+                "validation_result_status": None,
                 "result_details_type": None,
                 "has_data": None,
                 "error_amount": None,
@@ -148,7 +149,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
                 "validation_name": "test_view",
                 "region_code": "US_XX",
                 "did_run": True,
-                "was_successful": True,
+                "validation_result_status": "SUCCESS",
                 "result_details_type": "SamenessNumbersValidationResultDetails",
                 "has_data": True,
                 "error_amount": 0.123456,
@@ -161,7 +162,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
                 "validation_name": "test_view",
                 "region_code": "US_YY",
                 "did_run": True,
-                "was_successful": False,
+                "validation_result_status": False,
                 "result_details_type": "SamenessNumbersValidationResultDetails",
                 "has_data": True,
                 "error_amount": 0.999999,

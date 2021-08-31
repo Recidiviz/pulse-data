@@ -33,6 +33,7 @@ from recidiviz.validation.validation_models import (
     DataValidationJobResultDetails,
     ValidationCategory,
     ValidationCheckType,
+    ValidationResultStatus,
 )
 
 
@@ -53,6 +54,7 @@ class ValidationResultForStorage:
     did_run: bool = attr.ib()
 
     was_successful: Optional[bool] = attr.ib()
+    validation_result_status: Optional[ValidationResultStatus] = attr.ib()
     failure_description: Optional[str] = attr.ib()
     result_details_type: Optional[str] = attr.ib()
     result_details: Optional[DataValidationJobResultDetails] = attr.ib()
@@ -82,6 +84,7 @@ class ValidationResultForStorage:
             region_code=result.validation_job.region_code,
             did_run=True,
             was_successful=result.was_successful,
+            validation_result_status=result.validation_result_status,
             failure_description=result.result_details.failure_description(),
             result_details_type=result.result_details.__class__.__name__,
             result_details=result.result_details,
@@ -105,6 +108,7 @@ class ValidationResultForStorage:
             region_code=job.region_code,
             did_run=False,
             was_successful=None,
+            validation_result_status=None,
             failure_description=None,
             result_details_type=None,
             result_details=None,

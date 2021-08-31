@@ -19,19 +19,22 @@
 in a given validation result set."""
 
 from typing import Optional
+
 import attr
 import more_itertools
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.validation.checks.validation_checker import ValidationChecker
+from recidiviz.validation.validation_config import ValidationRegionConfig
 from recidiviz.validation.validation_models import (
-    DataValidationJobResultDetails,
-    ValidationCheckType,
     DataValidationCheck,
     DataValidationJob,
     DataValidationJobResult,
+    DataValidationJobResultDetails,
+    ValidationCheckType,
+    ValidationResultStatus,
+    validate_result_status,
 )
-from recidiviz.validation.validation_config import ValidationRegionConfig
 
 
 @attr.s(frozen=True)
@@ -43,7 +46,15 @@ class ExistenceDataValidationCheck(DataValidationCheck):
         default=ValidationCheckType.EXISTENCE
     )
 
-    num_allowed_rows: int = attr.ib(default=0)
+    hard_num_allowed_rows: int = attr.ib(default=0)
+    soft_num_allowed_rows: int = attr.ib(default=0)
+
+    def __attrs_post_init__(self) -> None:
+        if self.hard_num_allowed_rows < self.soft_num_allowed_rows:
+            raise ValueError(
+                f"soft_num_allowed_rows cannot be greater than hard_num_allowed_rows. "
+                f"Found instead: {self.soft_num_allowed_rows} vs. {self.hard_num_allowed_rows}"
+            )
 
     def updated_for_region(
         self, region_config: ValidationRegionConfig
@@ -51,29 +62,57 @@ class ExistenceDataValidationCheck(DataValidationCheck):
         num_allowed_rows_config = region_config.num_allowed_rows_overrides.get(
             self.validation_name, None
         )
-        num_allowed_rows = (
-            num_allowed_rows_config.num_allowed_rows_override
-            if num_allowed_rows_config
-            else self.num_allowed_rows
-        )
 
-        return attr.evolve(self, num_allowed_rows=num_allowed_rows)
+        hard_num_allowed_rows = self.hard_num_allowed_rows
+        soft_num_allowed_rows = self.soft_num_allowed_rows
+        if num_allowed_rows_config:
+            hard_num_allowed_rows = (
+                num_allowed_rows_config.hard_num_allowed_rows_override
+                or self.hard_num_allowed_rows
+            )
+            soft_num_allowed_rows = (
+                num_allowed_rows_config.soft_num_allowed_rows_override
+                or self.soft_num_allowed_rows
+            )
+
+        return attr.evolve(
+            self,
+            hard_num_allowed_rows=hard_num_allowed_rows,
+            soft_num_allowed_rows=soft_num_allowed_rows,
+        )
 
 
 @attr.s(frozen=True, kw_only=True)
 class ExistenceValidationResultDetails(DataValidationJobResultDetails):
     num_invalid_rows: int = attr.ib()
-    num_allowed_rows: int = attr.ib()
+    hard_num_allowed_rows: int = attr.ib()
+    soft_num_allowed_rows: int = attr.ib()
 
-    def was_successful(self) -> bool:
-        return self.num_invalid_rows <= self.num_allowed_rows
+    def validation_result_status(self) -> ValidationResultStatus:
+        return validate_result_status(
+            self.num_invalid_rows,
+            self.soft_num_allowed_rows,
+            self.hard_num_allowed_rows,
+        )
 
     def failure_description(self) -> Optional[str]:
-        if self.was_successful():
+        validation_result_status = self.validation_result_status()
+        if validation_result_status == ValidationResultStatus.SUCCESS:
             return None
-        return (
-            f"Found [{self.num_invalid_rows}] invalid rows, more than the allowed "
-            f"[{self.num_allowed_rows}]"
+        if validation_result_status in (
+            ValidationResultStatus.FAIL_SOFT,
+            ValidationResultStatus.FAIL_HARD,
+        ):
+            error_type_text = {
+                ValidationResultStatus.FAIL_SOFT: "soft",
+                ValidationResultStatus.FAIL_HARD: "hard",
+            }
+            return (
+                f"Found [{self.num_invalid_rows}] invalid rows, more than the allowed "
+                f"[{self.soft_num_allowed_rows}] ({error_type_text[validation_result_status]})"
+            )
+        raise AttributeError(
+            f"failure_description for validation_result_status {validation_result_status} not set"
         )
 
 
@@ -90,6 +129,7 @@ class ExistenceValidationChecker(ValidationChecker[ExistenceDataValidationCheck]
             validation_job=validation_job,
             result_details=ExistenceValidationResultDetails(
                 num_invalid_rows=more_itertools.ilen(query_job),
-                num_allowed_rows=validation_job.validation.num_allowed_rows,
+                hard_num_allowed_rows=validation_job.validation.hard_num_allowed_rows,
+                soft_num_allowed_rows=validation_job.validation.soft_num_allowed_rows,
             ),
         )

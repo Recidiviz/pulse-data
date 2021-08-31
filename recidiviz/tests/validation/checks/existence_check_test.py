@@ -32,6 +32,7 @@ from recidiviz.validation.validation_models import (
     DataValidationJobResult,
     ValidationCategory,
     ValidationCheckType,
+    ValidationResultStatus,
 )
 
 
@@ -75,7 +76,7 @@ class TestExistenceValidationChecker(TestCase):
             DataValidationJobResult(
                 validation_job=job,
                 result_details=ExistenceValidationResultDetails(
-                    num_invalid_rows=0, num_allowed_rows=0
+                    num_invalid_rows=0, hard_num_allowed_rows=0, soft_num_allowed_rows=0
                 ),
             ),
         )
@@ -106,7 +107,7 @@ class TestExistenceValidationChecker(TestCase):
             DataValidationJobResult(
                 validation_job=job,
                 result_details=ExistenceValidationResultDetails(
-                    num_invalid_rows=2, num_allowed_rows=0
+                    num_invalid_rows=2, hard_num_allowed_rows=0, soft_num_allowed_rows=0
                 ),
             ),
         )
@@ -128,7 +129,8 @@ class TestExistenceValidationChecker(TestCase):
                     description="test_view description",
                     view_query_template="select * from literally_anything",
                 ),
-                num_allowed_rows=2,
+                hard_num_allowed_rows=2,
+                soft_num_allowed_rows=2,
             ),
         )
         result = ExistenceValidationChecker.run_check(job)
@@ -138,38 +140,116 @@ class TestExistenceValidationChecker(TestCase):
             DataValidationJobResult(
                 validation_job=job,
                 result_details=ExistenceValidationResultDetails(
-                    num_invalid_rows=2, num_allowed_rows=2
+                    num_invalid_rows=2, hard_num_allowed_rows=2, soft_num_allowed_rows=2
                 ),
             ),
         )
+
+    def test_existence_check_failures_between_soft_and_hard_threshold(self) -> None:
+        self.mock_client.run_query_async.return_value = [
+            "some result row",
+            "some other result row",
+        ]
+
+        job = DataValidationJob(
+            region_code="US_VA",
+            validation=ExistenceDataValidationCheck(
+                validation_category=ValidationCategory.INVARIANT,
+                validation_type=ValidationCheckType.EXISTENCE,
+                view_builder=SimpleBigQueryViewBuilder(
+                    dataset_id="my_dataset",
+                    view_id="test_view",
+                    description="test_view description",
+                    view_query_template="select * from literally_anything",
+                ),
+                hard_num_allowed_rows=2,
+                soft_num_allowed_rows=0,
+            ),
+        )
+        result = ExistenceValidationChecker.run_check(job)
+
+        self.assertEqual(
+            result,
+            DataValidationJobResult(
+                validation_job=job,
+                result_details=ExistenceValidationResultDetails(
+                    num_invalid_rows=2, hard_num_allowed_rows=2, soft_num_allowed_rows=0
+                ),
+            ),
+        )
+
+    def test_existence_check_incorrect_max_errors_raises_error(self) -> None:
+        self.mock_client.run_query_async.return_value = [
+            "some result row",
+            "some other result row",
+        ]
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^soft_num_allowed_rows cannot be greater than hard_num_allowed_rows\. Found instead: 10 vs\. 2$",
+        ):
+            _ = DataValidationJob(
+                region_code="US_VA",
+                validation=ExistenceDataValidationCheck(
+                    validation_category=ValidationCategory.INVARIANT,
+                    validation_type=ValidationCheckType.EXISTENCE,
+                    view_builder=SimpleBigQueryViewBuilder(
+                        dataset_id="my_dataset",
+                        view_id="test_view",
+                        description="test_view description",
+                        view_query_template="select * from literally_anything",
+                    ),
+                    hard_num_allowed_rows=2,
+                    soft_num_allowed_rows=10,
+                ),
+            )
 
 
 class TestExistenceValidationResultDetails(TestCase):
     """Tests for ExistenceValidationResultDetails."""
 
-    def success(self) -> None:
+    def test_success(self) -> None:
         result = ExistenceValidationResultDetails(
-            num_invalid_rows=0, num_allowed_rows=0
+            num_invalid_rows=0, hard_num_allowed_rows=0, soft_num_allowed_rows=0
         )
 
-        self.assertTrue(result.was_successful())
-        self.assertIsNone(result.failure_description())
-
-    def success_some_invalid(self) -> None:
-        result = ExistenceValidationResultDetails(
-            num_invalid_rows=2, num_allowed_rows=2
-        )
-
-        self.assertTrue(result.was_successful())
-        self.assertIsNone(result.failure_description())
-
-    def failure(self) -> None:
-        result = ExistenceValidationResultDetails(
-            num_invalid_rows=2, num_allowed_rows=0
-        )
-
-        self.assertFalse(result.was_successful())
         self.assertEqual(
+            ValidationResultStatus.SUCCESS, result.validation_result_status()
+        )
+        self.assertIsNone(result.failure_description())
+
+    def test_success_some_invalid(self) -> None:
+        result = ExistenceValidationResultDetails(
+            num_invalid_rows=2, hard_num_allowed_rows=4, soft_num_allowed_rows=2
+        )
+
+        self.assertEqual(
+            ValidationResultStatus.SUCCESS, result.validation_result_status()
+        )
+        self.assertIsNone(result.failure_description())
+
+    def test_failure(self) -> None:
+        result = ExistenceValidationResultDetails(
+            num_invalid_rows=2, hard_num_allowed_rows=0, soft_num_allowed_rows=0
+        )
+
+        self.assertEqual(
+            ValidationResultStatus.FAIL_HARD, result.validation_result_status()
+        )
+        self.assertEqual(
+            "Found [2] invalid rows, more than the allowed [0] (hard)",
             result.failure_description(),
-            "Found [2] invalid rows, though [0] were expected",
+        )
+
+    def test_soft_failure(self) -> None:
+        result = ExistenceValidationResultDetails(
+            num_invalid_rows=2, hard_num_allowed_rows=2, soft_num_allowed_rows=0
+        )
+
+        self.assertEqual(
+            ValidationResultStatus.FAIL_SOFT, result.validation_result_status()
+        )
+        self.assertEqual(
+            "Found [2] invalid rows, more than the allowed [0] (soft)",
+            result.failure_description(),
         )

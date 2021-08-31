@@ -10,9 +10,11 @@ exclusions:
     exclusion_reason: We do not have this data
 max_allowed_error_overrides:
   - validation_name: sameness_view
-    max_allowed_error_override: 0.3
+    hard_max_allowed_error_override: 0.3
+    soft_max_allowed_error_override: 0.3
     override_reason: This is hard to get right
 num_allowed_rows_overrides:
   - validation_name: existence_view
-    num_allowed_rows_override: 10
+    hard_num_allowed_rows_override: 10
+    soft_num_allowed_rows_override: 10
     override_reason: These should not exist. TODO(#0001) - fix it.
