@@ -2063,14 +2063,12 @@ class StateSupervisionViolationResponseDecisionEntry(IngestObject):
         self,
         state_supervision_violation_response_decision_entry_id=None,
         decision=None,
-        revocation_type=None,
         state_code=None,
     ):
         self.state_supervision_violation_response_decision_entry_id: Optional[
             str
         ] = state_supervision_violation_response_decision_entry_id
         self.decision: Optional[str] = decision
-        self.revocation_type: Optional[str] = revocation_type
         self.state_code: Optional[str] = state_code
 
     def __setattr__(self, name, value):

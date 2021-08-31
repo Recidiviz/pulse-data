@@ -487,7 +487,6 @@ message StateSupervisionViolation {
 message StateSupervisionViolationResponseDecisionEntry {
     optional string state_supervision_violation_response_decision_entry_id = 1;
     optional string decision = 2;
-    optional string revocation_type = 3;
     optional string state_code = 4;
 }
 
