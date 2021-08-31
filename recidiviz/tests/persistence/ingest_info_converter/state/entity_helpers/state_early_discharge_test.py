@@ -19,13 +19,16 @@
 import unittest
 from datetime import date
 
+from recidiviz.common.constants.state.shared_enums import StateActingBodyType
 from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecision,
     StateEarlyDischargeDecisionStatus,
 )
-from recidiviz.common.constants.state.shared_enums import StateActingBodyType
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StateEarlyDischargeFactory,
+)
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_early_discharge,
 )
@@ -37,7 +40,7 @@ _EMPTY_METADATA = FakeIngestMetadata.for_state("us_nd")
 class StateEarlyDischargeConverterTest(unittest.TestCase):
     """Tests for converting state early discharges."""
 
-    def testParseStateSupervisionViolationResponse(self):
+    def testParseStateSupervisionViolationResponse(self) -> None:
         # Arrange
         ingest_response = ingest_info_pb2.StateEarlyDischarge(
             state_early_discharge_id="id1",
@@ -56,7 +59,7 @@ class StateEarlyDischargeConverterTest(unittest.TestCase):
         state_early_discharge.copy_fields_to_builder(
             response_builder, ingest_response, _EMPTY_METADATA
         )
-        result = response_builder.build()
+        result = response_builder.build(StateEarlyDischargeFactory.deserialize)
 
         # Assert
         expected_result = entities.StateEarlyDischarge.new_with_defaults(

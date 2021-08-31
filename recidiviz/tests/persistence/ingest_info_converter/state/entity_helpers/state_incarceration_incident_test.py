@@ -24,6 +24,9 @@ from recidiviz.common.constants.state.state_incarceration_incident import (
 )
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StateIncarcerationIncidentFactory,
+)
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_incarceration_incident,
 )
@@ -35,7 +38,7 @@ _EMPTY_METADATA = FakeIngestMetadata.for_state("us_ca")
 class StateIncarcerationIncidentConverterTest(unittest.TestCase):
     """Tests for converting incidents."""
 
-    def testParseStateIncarcerationIncident(self):
+    def testParseStateIncarcerationIncident(self) -> None:
         # Arrange
         ingest_incident = ingest_info_pb2.StateIncarcerationIncident(
             state_incarceration_incident_id="INCIDENT_ID",
@@ -52,7 +55,7 @@ class StateIncarcerationIncidentConverterTest(unittest.TestCase):
         state_incarceration_incident.copy_fields_to_builder(
             incident_builder, ingest_incident, _EMPTY_METADATA
         )
-        result = incident_builder.build()
+        result = incident_builder.build(StateIncarcerationIncidentFactory.deserialize)
 
         # Assert
         expected_result = entities.StateIncarcerationIncident(

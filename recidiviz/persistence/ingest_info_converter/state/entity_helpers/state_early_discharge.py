@@ -16,21 +16,16 @@
 # =============================================================================
 
 """Converts an ingest_info proto StateEarlyDischarge to a persistence entity."""
+from recidiviz.common import common_utils
+from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.state.shared_enums import StateActingBodyType
 from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecision,
     StateEarlyDischargeDecisionStatus,
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import normalize, parse_date
 from recidiviz.ingest.models.ingest_info_pb2 import StateEarlyDischarge
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn,
-    parse_external_id,
-    parse_region_code_with_override,
-)
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
@@ -43,31 +38,41 @@ def copy_fields_to_builder(
     """Converts an ingest_info proto StateEarlyDischarge to a early discharge entity."""
     new = early_discharge_builder
 
-    enum_fields = {
-        "decision": StateEarlyDischargeDecision,
-        "decision_status": StateEarlyDischargeDecisionStatus,
-        "deciding_body_type": StateActingBodyType,
-        "requesting_body_type": StateActingBodyType,
-    }
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
-
     # enum values
-    new.decision = enum_mappings.get(StateEarlyDischargeDecision)
-    new.decision_raw_text = fn(normalize, "decision", proto)
-    new.decision_status = enum_mappings.get(StateEarlyDischargeDecisionStatus)
-    new.decision_status_raw_text = fn(normalize, "decision_status", proto)
-    new.deciding_body_type = enum_mappings.get(
-        StateActingBodyType, field_name="deciding_body_type"
+    new.decision = EnumParser(
+        getattr(proto, "decision"),
+        StateEarlyDischargeDecision,
+        metadata.enum_overrides,
     )
-    new.deciding_body_type_raw_text = fn(normalize, "deciding_body_type", proto)
-    new.requesting_body_type = enum_mappings.get(
-        StateActingBodyType, field_name="requesting_body_type"
+    new.decision_raw_text = getattr(proto, "decision")
+    new.decision_status = EnumParser(
+        getattr(proto, "decision_status"),
+        StateEarlyDischargeDecisionStatus,
+        metadata.enum_overrides,
     )
-    new.requesting_body_type_raw_text = fn(normalize, "requesting_body_type", proto)
+    new.decision_status_raw_text = getattr(proto, "decision_status")
+    new.deciding_body_type = EnumParser(
+        getattr(proto, "deciding_body_type"),
+        StateActingBodyType,
+        metadata.enum_overrides,
+    )
+    new.deciding_body_type_raw_text = getattr(proto, "deciding_body_type")
+    new.requesting_body_type = EnumParser(
+        getattr(proto, "requesting_body_type"),
+        StateActingBodyType,
+        metadata.enum_overrides,
+    )
+    new.requesting_body_type_raw_text = getattr(proto, "requesting_body_type")
 
     # 1-to-1 mappings
-    new.external_id = fn(parse_external_id, "state_early_discharge_id", proto)
-    new.request_date = fn(parse_date, "request_date", proto)
-    new.decision_date = fn(parse_date, "decision_date", proto)
-    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
-    new.county_code = fn(normalize, "county_code", proto)
+
+    state_early_discharge_id = getattr(proto, "state_early_discharge_id")
+    new.external_id = (
+        None
+        if common_utils.is_generated_id(state_early_discharge_id)
+        else state_early_discharge_id
+    )
+    new.request_date = getattr(proto, "request_date")
+    new.decision_date = getattr(proto, "decision_date")
+    new.state_code = metadata.region
+    new.county_code = getattr(proto, "county_code")

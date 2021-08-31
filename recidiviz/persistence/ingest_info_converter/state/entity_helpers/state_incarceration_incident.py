@@ -17,20 +17,14 @@
 
 """Converts an ingest_info proto StateIncarcerationIncident to a
 persistence entity."""
-
+from recidiviz.common import common_utils
+from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentType,
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import normalize, parse_date
 from recidiviz.ingest.models.ingest_info_pb2 import StateIncarcerationIncident
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn,
-    parse_external_id,
-    parse_region_code_with_override,
-)
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
@@ -47,19 +41,24 @@ def copy_fields_to_builder(
     """
     new = state_incarceration_incident_builder
 
-    enum_fields = {
-        "incident_type": StateIncarcerationIncidentType,
-    }
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
-
     # enum values
-    new.incident_type = enum_mappings.get(StateIncarcerationIncidentType)
-    new.incident_type_raw_text = fn(normalize, "incident_type", proto)
+    new.incident_type = EnumParser(
+        getattr(proto, "incident_type"),
+        StateIncarcerationIncidentType,
+        metadata.enum_overrides,
+    )
+    new.incident_type_raw_text = getattr(proto, "incident_type")
 
     # 1-to-1 mappings
-    new.external_id = fn(parse_external_id, "state_incarceration_incident_id", proto)
-    new.incident_date = fn(parse_date, "incident_date", proto)
-    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
-    new.facility = fn(normalize, "facility", proto)
-    new.location_within_facility = fn(normalize, "location_within_facility", proto)
-    new.incident_details = fn(normalize, "incident_details", proto)
+
+    state_incarceration_incident_id = getattr(proto, "state_incarceration_incident_id")
+    new.external_id = (
+        None
+        if common_utils.is_generated_id(state_incarceration_incident_id)
+        else state_incarceration_incident_id
+    )
+    new.incident_date = getattr(proto, "incident_date")
+    new.state_code = metadata.region
+    new.facility = getattr(proto, "facility")
+    new.location_within_facility = getattr(proto, "location_within_facility")
+    new.incident_details = getattr(proto, "incident_details")
