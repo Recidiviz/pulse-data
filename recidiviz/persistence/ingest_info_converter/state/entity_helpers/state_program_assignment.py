@@ -18,21 +18,15 @@
 """Converts an ingest_info proto StateProgramAssignment to a persistence
 entity.
 """
-
+from recidiviz.common import common_utils
+from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentDischargeReason,
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import normalize, parse_date
 from recidiviz.ingest.models.ingest_info_pb2 import StateProgramAssignment
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn,
-    parse_external_id,
-    parse_region_code_with_override,
-)
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
@@ -50,27 +44,31 @@ def copy_fields_to_builder(
 
     new = state_program_assignment_builder
 
-    enum_fields = {
-        "participation_status": StateProgramAssignmentParticipationStatus,
-        "discharge_reason": StateProgramAssignmentDischargeReason,
-    }
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
-
     # Enum mappings
-    new.participation_status = enum_mappings.get(
+    new.participation_status = EnumParser(
+        getattr(proto, "participation_status"),
         StateProgramAssignmentParticipationStatus,
-        default=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO,
+        metadata.enum_overrides,
     )
-    new.participation_status_raw_text = fn(normalize, "participation_status", proto)
-    new.discharge_reason = enum_mappings.get(StateProgramAssignmentDischargeReason)
-    new.discharge_reason_raw_text = fn(normalize, "discharge_reason", proto)
+    new.participation_status_raw_text = getattr(proto, "participation_status")
+    new.discharge_reason = EnumParser(
+        getattr(proto, "discharge_reason"),
+        StateProgramAssignmentDischargeReason,
+        metadata.enum_overrides,
+    )
+    new.discharge_reason_raw_text = getattr(proto, "discharge_reason")
 
     # 1-to-1 mappings
-    new.external_id = fn(parse_external_id, "state_program_assignment_id", proto)
-    new.referral_date = fn(parse_date, "referral_date", proto)
-    new.start_date = fn(parse_date, "start_date", proto)
-    new.discharge_date = fn(parse_date, "discharge_date", proto)
-    new.program_id = fn(normalize, "program_id", proto)
-    new.program_location_id = fn(normalize, "program_location_id", proto)
-    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
-    new.referral_metadata = fn(normalize, "referral_metadata", proto)
+    state_program_assignment_id = getattr(proto, "state_program_assignment_id")
+    new.external_id = (
+        None
+        if common_utils.is_generated_id(state_program_assignment_id)
+        else state_program_assignment_id
+    )
+    new.referral_date = getattr(proto, "referral_date")
+    new.start_date = getattr(proto, "start_date")
+    new.discharge_date = getattr(proto, "discharge_date")
+    new.program_id = getattr(proto, "program_id")
+    new.program_location_id = getattr(proto, "program_location_id")
+    new.state_code = metadata.region
+    new.referral_metadata = getattr(proto, "referral_metadata")

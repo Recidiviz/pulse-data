@@ -43,7 +43,7 @@ _METADATA_WITH_OVERRIDES = FakeIngestMetadata.for_state(
 class StateIncarcerationIncidentOutcomeConverterTest(unittest.TestCase):
     """Tests for converting StateIncarcerationIncidentOutcomes."""
 
-    def testParseStateIncarcerationIncident(self):
+    def testParseStateIncarcerationIncident(self) -> None:
         # Arrange
         ingest_incident_outcome = ingest_info_pb2.StateIncarcerationIncidentOutcome(
             state_incarceration_incident_outcome_id="INCIDENT_OUTCOME_ID",
