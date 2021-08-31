@@ -24,6 +24,10 @@ from recidiviz.common.constants.enum_parser import (
     get_parser_for_enum_with_default,
 )
 from recidiviz.common.constants.state.state_agent import StateAgentType
+from recidiviz.common.constants.state.state_court_case import (
+    StateCourtCaseStatus,
+    StateCourtType,
+)
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.str_field_utils import normalize_flat_json
 from recidiviz.persistence.entity.entity_deserialize import (
@@ -141,6 +145,47 @@ class StateChargeFactory(EntityFactory):
                 ),
             },
             **kwargs
+        )
+
+
+class StateCourtCaseFactory(EntityFactory):
+    @staticmethod
+    def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StateCourtCase:
+        return entity_deserialize(
+            cls=entities.StateCourtCase,
+            converter_overrides={
+                "status": EntityFieldConverter(
+                    EnumParser,
+                    get_parser_for_enum_with_default(
+                        StateCourtCaseStatus.PRESENT_WITHOUT_INFO
+                    ),
+                ),
+                "court_type": EntityFieldConverter(
+                    EnumParser,
+                    get_parser_for_enum_with_default(
+                        StateCourtType.PRESENT_WITHOUT_INFO
+                    ),
+                ),
+            },
+            **kwargs
+        )
+
+
+class StateEarlyDischargeFactory(EntityFactory):
+    @staticmethod
+    def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StateEarlyDischarge:
+        return entity_deserialize(
+            cls=entities.StateEarlyDischarge, converter_overrides={}, **kwargs
+        )
+
+
+class StateIncarcerationIncidentFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: Union[str, EnumParser]
+    ) -> entities.StateIncarcerationIncident:
+        return entity_deserialize(
+            cls=entities.StateIncarcerationIncident, converter_overrides={}, **kwargs
         )
 
 
