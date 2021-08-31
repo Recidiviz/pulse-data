@@ -30,7 +30,9 @@ from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     parse_external_id,
     parse_region_code_with_override,
 )
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
+    IngestInfoProtoEnumMapper,
+)
 
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
@@ -43,12 +45,14 @@ def convert(proto: StateBond, metadata: IngestMetadata) -> entities.StateBond:
         "status": BondStatus,
         "bond_type": BondType,
     }
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
+    proto_enum_mapper = IngestInfoProtoEnumMapper(
+        proto, enum_fields, metadata.enum_overrides
+    )
 
     # enum values
-    new.status = enum_mappings.get(BondStatus)
+    new.status = proto_enum_mapper.get(BondStatus)
     new.status_raw_text = fn(normalize, "status", proto)
-    new.bond_type = enum_mappings.get(BondType)
+    new.bond_type = proto_enum_mapper.get(BondType)
     new.bond_type_raw_text = fn(normalize, "bond_type", proto)
 
     # 1-to-1 mappings

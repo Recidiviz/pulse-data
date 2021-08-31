@@ -18,18 +18,20 @@
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.charge import ChargeClass, ChargeDegree
 from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.str_field_utils import (
+    normalize,
+    parse_bool,
+    parse_date,
+    parse_dollars,
+)
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn,
     parse_external_id,
 )
-from recidiviz.common.str_field_utils import (
-    parse_dollars,
-    parse_bool,
-    normalize,
-    parse_date,
+from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
+    IngestInfoProtoEnumMapper,
 )
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
 def copy_fields_to_builder(
@@ -46,14 +48,16 @@ def copy_fields_to_builder(
         "charge_class": ChargeClass,
         "status": ChargeStatus,
     }
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
+    proto_enum_mapper = IngestInfoProtoEnumMapper(
+        proto, enum_fields, metadata.enum_overrides
+    )
 
     # Enum values
-    new.degree = enum_mappings.get(ChargeDegree)
+    new.degree = proto_enum_mapper.get(ChargeDegree)
     new.degree_raw_text = fn(normalize, "degree", proto)
-    new.charge_class = enum_mappings.get(ChargeClass)
+    new.charge_class = proto_enum_mapper.get(ChargeClass)
     new.class_raw_text = fn(normalize, "charge_class", proto)
-    new.status = enum_mappings.get(
+    new.status = proto_enum_mapper.get(
         ChargeStatus, default=ChargeStatus.PRESENT_WITHOUT_INFO
     )
     new.status_raw_text = fn(normalize, "status", proto)

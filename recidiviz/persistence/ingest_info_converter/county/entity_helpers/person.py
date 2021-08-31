@@ -27,7 +27,9 @@ from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     parse_external_id,
     parse_residency_status,
 )
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
+    IngestInfoProtoEnumMapper,
+)
 
 # Suffixes used in county names in uszipcode library
 from recidiviz.persistence.ingest_info_converter.utils.names import parse_name
@@ -57,16 +59,18 @@ def copy_fields_to_builder(person_builder, proto, metadata):
         "race": Race,
         "ethnicity": Ethnicity,
     }
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
+    proto_enum_mapper = IngestInfoProtoEnumMapper(
+        proto, enum_fields, metadata.enum_overrides
+    )
 
     new = person_builder
 
     # Enum mappings
-    new.race = enum_mappings.get(Race)
+    new.race = proto_enum_mapper.get(Race)
     new.race_raw_text = fn(normalize, "race", proto)
-    new.ethnicity = enum_mappings.get(Ethnicity)
+    new.ethnicity = proto_enum_mapper.get(Ethnicity)
     new.ethnicity_raw_text = fn(normalize, "ethnicity", proto)
-    new.gender = enum_mappings.get(Gender)
+    new.gender = proto_enum_mapper.get(Gender)
     new.gender_raw_text = fn(normalize, "gender", proto)
 
     # 1-to-1 mappings

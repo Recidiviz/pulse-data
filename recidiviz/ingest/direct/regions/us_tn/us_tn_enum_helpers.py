@@ -20,7 +20,7 @@ from typing import Dict, List
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import (
     EnumIgnorePredicate,
-    EnumMapper,
+    EnumMapperFn,
     EnumOverrides,
 )
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
@@ -46,7 +46,7 @@ def generate_enum_overrides() -> EnumOverrides:
 
     ignores: Dict[EntityEnumMeta, List[str]] = {}
 
-    override_mappers: Dict[EntityEnumMeta, EnumMapper] = {}
+    override_mappers: Dict[EntityEnumMeta, EnumMapperFn] = {}
 
     ignore_predicates: Dict[EntityEnumMeta, EnumIgnorePredicate] = {}
 

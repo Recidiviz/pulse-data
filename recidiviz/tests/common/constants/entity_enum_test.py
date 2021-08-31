@@ -17,7 +17,7 @@
 """Tests for BuildableAttr base class."""
 
 import unittest
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 from recidiviz.common.constants.entity_enum import EntityEnum, EnumParsingError
 from recidiviz.common.constants.enum_overrides import EnumOverrides
@@ -115,7 +115,7 @@ class EntityEnumTest(unittest.TestCase):
             raise ValueError("Something bad happened!")
 
         overrides_builder = EnumOverrides.Builder()
-        overrides_builder.add_mapper(very_bad_mapper_that_asserts, FakeEntityEnum)
+        overrides_builder.add_mapper_fn(very_bad_mapper_that_asserts, FakeEntityEnum)
 
         overrides = overrides_builder.build()
 

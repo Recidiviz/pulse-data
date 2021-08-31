@@ -15,15 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Converts an ingest_info proto Hold to a persistence entity."""
-from recidiviz.common.str_field_utils import normalize
 from recidiviz.common.constants.county.hold import HoldStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.str_field_utils import normalize
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn,
     parse_external_id,
 )
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
+    IngestInfoProtoEnumMapper,
+)
 
 
 def convert(proto, metadata: IngestMetadata) -> entities.Hold:
@@ -33,9 +35,13 @@ def convert(proto, metadata: IngestMetadata) -> entities.Hold:
     enum_fields = {
         "status": HoldStatus,
     }
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
+    proto_enum_mapper = IngestInfoProtoEnumMapper(
+        proto, enum_fields, metadata.enum_overrides
+    )
 
-    new.status = enum_mappings.get(HoldStatus, default=HoldStatus.PRESENT_WITHOUT_INFO)
+    new.status = proto_enum_mapper.get(
+        HoldStatus, default=HoldStatus.PRESENT_WITHOUT_INFO
+    )
     new.status_raw_text = fn(normalize, "status", proto)
 
     new.external_id = fn(parse_external_id, "hold_id", proto)
