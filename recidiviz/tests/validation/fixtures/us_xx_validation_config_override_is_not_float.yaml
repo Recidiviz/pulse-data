@@ -4,6 +4,6 @@ region_code: US_XX
 exclusions: []
 max_allowed_error_overrides:
   - validation_name: another_view
-    max_allowed_error_override: 0.3.0
+    hard_max_allowed_error_override: 0.3.0
     override_reason: The error override is not a float here
 num_allowed_rows_overrides: []

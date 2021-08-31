@@ -36,6 +36,7 @@ from recidiviz.validation.validation_models import (
     DataValidationJobResult,
     ValidationCategory,
     ValidationCheckType,
+    ValidationResultStatus,
 )
 
 
@@ -93,7 +94,7 @@ class TestSamenessValidationChecker(TestCase):
 
         return return_values
 
-    def test_samneness_check_no_comparison_columns(self) -> None:
+    def test_sameness_check_no_comparison_columns(self) -> None:
         with self.assertRaisesRegex(
             ValueError, r"^Found only \[0\] comparison columns, expected at least 2\.$"
         ):
@@ -109,7 +110,7 @@ class TestSamenessValidationChecker(TestCase):
                 ),
             )
 
-    def test_samneness_check_bad_max_error(self) -> None:
+    def test_sameness_check_bad_max_error(self) -> None:
         with self.assertRaisesRegex(
             ValueError,
             r"^Allowed error value must be between 0\.0 and 1\.0\. Found instead: \[1\.5\]$",
@@ -125,7 +126,8 @@ class TestSamenessValidationChecker(TestCase):
                     description="test_view description",
                     view_query_template="select * from literally_anything",
                 ),
-                max_allowed_error=1.5,
+                hard_max_allowed_error=1.5,
+                soft_max_allowed_error=1.5,
             )
 
     def test_sameness_check_validation_name(self) -> None:
@@ -183,7 +185,9 @@ class TestSamenessValidationChecker(TestCase):
             DataValidationJobResult(
                 validation_job=job,
                 result_details=SamenessPerRowValidationResultDetails(
-                    failed_rows=[], max_allowed_error=0.0
+                    failed_rows=[],
+                    hard_max_allowed_error=0.02,
+                    soft_max_allowed_error=0.02,
                 ),
             ),
         )
@@ -198,6 +202,8 @@ class TestSamenessValidationChecker(TestCase):
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+                soft_max_allowed_error=0.0,
+                hard_max_allowed_error=0.0,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
@@ -219,7 +225,8 @@ class TestSamenessValidationChecker(TestCase):
                             0.02,
                         )
                     ],
-                    max_allowed_error=0.0,
+                    hard_max_allowed_error=0.0,
+                    soft_max_allowed_error=0.0,
                 ),
             ),
         )
@@ -234,7 +241,8 @@ class TestSamenessValidationChecker(TestCase):
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-                max_allowed_error=0.02,
+                hard_max_allowed_error=0.02,
+                soft_max_allowed_error=0.02,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
@@ -250,7 +258,9 @@ class TestSamenessValidationChecker(TestCase):
             DataValidationJobResult(
                 validation_job=job,
                 result_details=SamenessPerRowValidationResultDetails(
-                    failed_rows=[], max_allowed_error=0.02
+                    failed_rows=[],
+                    hard_max_allowed_error=0.02,
+                    soft_max_allowed_error=0.02,
                 ),
             ),
         )
@@ -265,7 +275,8 @@ class TestSamenessValidationChecker(TestCase):
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-                max_allowed_error=0.02,
+                hard_max_allowed_error=0.02,
+                soft_max_allowed_error=0.02,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
@@ -287,7 +298,8 @@ class TestSamenessValidationChecker(TestCase):
                             0.03,
                         )
                     ],
-                    max_allowed_error=0.02,
+                    hard_max_allowed_error=0.02,
+                    soft_max_allowed_error=0.02,
                 ),
             ),
         )
@@ -305,7 +317,8 @@ class TestSamenessValidationChecker(TestCase):
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-                max_allowed_error=0.02,
+                hard_max_allowed_error=0.02,
+                soft_max_allowed_error=0.02,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
@@ -335,10 +348,117 @@ class TestSamenessValidationChecker(TestCase):
                             0.3333333333333333,
                         ),
                     ],
-                    max_allowed_error=0.02,
+                    hard_max_allowed_error=0.02,
+                    soft_max_allowed_error=0.02,
                 ),
             ),
         )
+
+    def test_sameness_check_numbers_multiple_rows_and_some_above_soft_margin(
+        self,
+    ) -> None:
+        self.mock_client.run_query_async.return_value = [
+            {"a": 97, "b": 100, "c": 99},
+            {"a": 14, "b": 21, "c": 14},
+        ]
+
+        job = DataValidationJob(
+            region_code="US_XX",
+            validation=SamenessDataValidationCheck(
+                validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
+                validation_type=ValidationCheckType.SAMENESS,
+                comparison_columns=["a", "b", "c"],
+                sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+                hard_max_allowed_error=0.5,
+                soft_max_allowed_error=0.03,
+                view_builder=SimpleBigQueryViewBuilder(
+                    dataset_id="my_dataset",
+                    view_id="test_view",
+                    description="test_view description",
+                    view_query_template="select * from literally_anything",
+                ),
+            ),
+        )
+        result = SamenessValidationChecker.run_check(job)
+
+        self.assertEqual(
+            result,
+            DataValidationJobResult(
+                validation_job=job,
+                result_details=SamenessPerRowValidationResultDetails(
+                    failed_rows=[
+                        (
+                            ResultRow(
+                                label_values=(), comparison_values=(14.0, 21.0, 14.0)
+                            ),
+                            0.3333333333333333,
+                        ),
+                    ],
+                    hard_max_allowed_error=0.5,
+                    soft_max_allowed_error=0.03,
+                ),
+            ),
+        )
+
+    def test_sameness_check_different_max_error_values(self) -> None:
+        self.mock_client.run_query_async.return_value = [{"a": 10, "b": 10, "c": 10}]
+
+        job = DataValidationJob(
+            region_code="US_XX",
+            validation=SamenessDataValidationCheck(
+                validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
+                validation_type=ValidationCheckType.SAMENESS,
+                comparison_columns=["a", "b", "c"],
+                sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+                soft_max_allowed_error=0.0,
+                hard_max_allowed_error=0.5,
+                view_builder=SimpleBigQueryViewBuilder(
+                    dataset_id="my_dataset",
+                    view_id="test_view",
+                    description="test_view description",
+                    view_query_template="select * from literally_anything",
+                ),
+            ),
+        )
+        result = SamenessValidationChecker.run_check(job)
+
+        self.assertEqual(
+            result,
+            DataValidationJobResult(
+                validation_job=job,
+                result_details=SamenessPerRowValidationResultDetails(
+                    failed_rows=[],
+                    hard_max_allowed_error=0.5,
+                    soft_max_allowed_error=0.0,
+                ),
+            ),
+        )
+
+    def test_sameness_check_incorrect_max_errors_raises_error(self) -> None:
+        self.mock_client.run_query_async.return_value = [{"a": 10, "b": 10, "c": 10}]
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Value cannot be less than soft_max_allowed_error\. "
+            r"Found instead: 0\.01 vs\. 0\.02\. Make sure you are setting both errors\.$",
+        ):
+            _ = DataValidationJob(
+                region_code="US_XX",
+                validation=SamenessDataValidationCheck(
+                    validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
+                    validation_type=ValidationCheckType.SAMENESS,
+                    comparison_columns=["a", "b", "c"],
+                    soft_max_allowed_error=0.02,
+                    hard_max_allowed_error=0.01,
+                    sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+                    view_builder=SimpleBigQueryViewBuilder(
+                        dataset_id="my_dataset",
+                        view_id="test_view",
+                        description="test_view description",
+                        view_query_template="select * from literally_anything",
+                    ),
+                ),
+            )
 
     def test_sameness_check_strings_same_values(self) -> None:
         self.mock_client.run_query_async.return_value = [
@@ -370,7 +490,8 @@ class TestSamenessValidationChecker(TestCase):
                 result_details=SamenessPerViewValidationResultDetails(
                     num_error_rows=0,
                     total_num_rows=1,
-                    max_allowed_error=0.0,
+                    hard_max_allowed_error=0.02,
+                    soft_max_allowed_error=0.02,
                     non_null_counts_per_column_per_partition=[
                         (("test",), {"a": 1, "b": 1, "c": 1}),
                     ],
@@ -408,7 +529,8 @@ class TestSamenessValidationChecker(TestCase):
                 result_details=SamenessPerViewValidationResultDetails(
                     num_error_rows=0,
                     total_num_rows=1,
-                    max_allowed_error=0.0,
+                    hard_max_allowed_error=0.02,
+                    soft_max_allowed_error=0.02,
                     non_null_counts_per_column_per_partition=[
                         (("test",), {"a": 0, "b": 0, "c": 0})
                     ],
@@ -451,7 +573,8 @@ class TestSamenessValidationChecker(TestCase):
                 result_details=SamenessPerViewValidationResultDetails(
                     num_error_rows=0,
                     total_num_rows=1,
-                    max_allowed_error=0.0,
+                    hard_max_allowed_error=0.02,
+                    soft_max_allowed_error=0.02,
                     non_null_counts_per_column_per_partition=[
                         (("test",), {"a": 1, "b": 1, "c": 1}),
                     ],
@@ -489,7 +612,8 @@ class TestSamenessValidationChecker(TestCase):
                 result_details=SamenessPerViewValidationResultDetails(
                     num_error_rows=0,
                     total_num_rows=1,
-                    max_allowed_error=0.0,
+                    hard_max_allowed_error=0.02,
+                    soft_max_allowed_error=0.02,
                     non_null_counts_per_column_per_partition=[
                         (("test",), {"a": 0, "b": 0, "c": 0})
                     ],
@@ -579,7 +703,8 @@ class TestSamenessValidationChecker(TestCase):
                 result_details=SamenessPerViewValidationResultDetails(
                     num_error_rows=1,
                     total_num_rows=1,
-                    max_allowed_error=0.0,
+                    hard_max_allowed_error=0.02,
+                    soft_max_allowed_error=0.02,
                     non_null_counts_per_column_per_partition=[
                         (("test",), {"a": 1, "b": 1, "c": 1}),
                     ],
@@ -622,7 +747,8 @@ class TestSamenessValidationChecker(TestCase):
                 result_details=SamenessPerViewValidationResultDetails(
                     num_error_rows=1,
                     total_num_rows=1,
-                    max_allowed_error=0.0,
+                    hard_max_allowed_error=0.02,
+                    soft_max_allowed_error=0.02,
                     non_null_counts_per_column_per_partition=[
                         (("test",), {"a": 1, "b": 1, "c": 1}),
                     ],
@@ -660,7 +786,8 @@ class TestSamenessValidationChecker(TestCase):
                 result_details=SamenessPerViewValidationResultDetails(
                     num_error_rows=1,
                     total_num_rows=1,
-                    max_allowed_error=0.0,
+                    hard_max_allowed_error=0.02,
+                    soft_max_allowed_error=0.02,
                     non_null_counts_per_column_per_partition=[
                         (("test",), {"a": 1, "b": 1, "c": 0}),
                     ],
@@ -697,7 +824,8 @@ class TestSamenessValidationChecker(TestCase):
                 result_details=SamenessPerViewValidationResultDetails(
                     num_error_rows=1,
                     total_num_rows=1,
-                    max_allowed_error=0.0,
+                    hard_max_allowed_error=0.02,
+                    soft_max_allowed_error=0.02,
                     non_null_counts_per_column_per_partition=[
                         (("test",), {"a": 1, "b": 1, "c": 0}),
                     ],
@@ -765,7 +893,7 @@ class TestSamenessValidationChecker(TestCase):
 
     def test_sameness_check_strings_different_values_within_margin(self) -> None:
         num_bad_rows = 2
-        max_allowed_error = num_bad_rows / 100
+        hard_max_allowed_error = num_bad_rows / 100
 
         self.mock_client.run_query_async.return_value = (
             self.return_string_values_with_num_bad_rows(num_bad_rows)
@@ -779,7 +907,7 @@ class TestSamenessValidationChecker(TestCase):
                 comparison_columns=["a", "b", "c"],
                 partition_columns=["p"],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
-                max_allowed_error=max_allowed_error,
+                hard_max_allowed_error=hard_max_allowed_error,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
@@ -797,7 +925,8 @@ class TestSamenessValidationChecker(TestCase):
                 result_details=SamenessPerViewValidationResultDetails(
                     num_error_rows=2,
                     total_num_rows=100,
-                    max_allowed_error=0.02,
+                    hard_max_allowed_error=0.02,
+                    soft_max_allowed_error=0.02,
                     non_null_counts_per_column_per_partition=[
                         (("test",), {"a": 100, "b": 100, "c": 100}),
                     ],
@@ -807,7 +936,7 @@ class TestSamenessValidationChecker(TestCase):
 
     def test_sameness_check_dates_different_values_within_margin(self) -> None:
         num_bad_rows = 2
-        max_allowed_error = num_bad_rows / 100
+        hard_max_allowed_error = num_bad_rows / 100
 
         self.mock_client.run_query_async.return_value = (
             self.return_date_values_with_num_bad_rows(num_bad_rows)
@@ -821,7 +950,7 @@ class TestSamenessValidationChecker(TestCase):
                 comparison_columns=["a", "b", "c"],
                 partition_columns=["p"],
                 sameness_check_type=SamenessDataValidationCheckType.DATES,
-                max_allowed_error=max_allowed_error,
+                hard_max_allowed_error=hard_max_allowed_error,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
@@ -839,7 +968,8 @@ class TestSamenessValidationChecker(TestCase):
                 result_details=SamenessPerViewValidationResultDetails(
                     num_error_rows=2,
                     total_num_rows=100,
-                    max_allowed_error=0.02,
+                    hard_max_allowed_error=0.02,
+                    soft_max_allowed_error=0.02,
                     non_null_counts_per_column_per_partition=[
                         (("test",), {"a": 100, "b": 100, "c": 100}),
                     ],
@@ -862,7 +992,8 @@ class TestSamenessValidationChecker(TestCase):
                 comparison_columns=["a", "b", "c"],
                 partition_columns=["p"],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
-                max_allowed_error=max_allowed_error,
+                hard_max_allowed_error=max_allowed_error,
+                soft_max_allowed_error=max_allowed_error,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
@@ -880,7 +1011,8 @@ class TestSamenessValidationChecker(TestCase):
                 result_details=SamenessPerViewValidationResultDetails(
                     num_error_rows=5,
                     total_num_rows=100,
-                    max_allowed_error=0.04,
+                    hard_max_allowed_error=0.04,
+                    soft_max_allowed_error=0.04,
                     non_null_counts_per_column_per_partition=[
                         (("test",), {"a": 100, "b": 100, "c": 100}),
                     ],
@@ -903,7 +1035,8 @@ class TestSamenessValidationChecker(TestCase):
                 comparison_columns=["a", "b", "c"],
                 partition_columns=["p"],
                 sameness_check_type=SamenessDataValidationCheckType.DATES,
-                max_allowed_error=max_allowed_error,
+                hard_max_allowed_error=max_allowed_error,
+                soft_max_allowed_error=max_allowed_error,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
@@ -921,7 +1054,8 @@ class TestSamenessValidationChecker(TestCase):
                 result_details=SamenessPerViewValidationResultDetails(
                     num_error_rows=5,
                     total_num_rows=100,
-                    max_allowed_error=0.04,
+                    hard_max_allowed_error=0.04,
+                    soft_max_allowed_error=0.04,
                     non_null_counts_per_column_per_partition=[
                         (("test",), {"a": 100, "b": 100, "c": 100}),
                     ],
@@ -950,7 +1084,8 @@ class TestSamenessValidationChecker(TestCase):
                 comparison_columns=["a", "b"],
                 partition_columns=["region", "date"],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
-                max_allowed_error=0.0,
+                hard_max_allowed_error=0.0,
+                soft_max_allowed_error=0.0,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
@@ -968,7 +1103,8 @@ class TestSamenessValidationChecker(TestCase):
                 result_details=SamenessPerViewValidationResultDetails(
                     num_error_rows=3,
                     total_num_rows=7,
-                    max_allowed_error=0.0,
+                    hard_max_allowed_error=0.0,
+                    soft_max_allowed_error=0.0,
                     non_null_counts_per_column_per_partition=[
                         (("US_XX", "2021-01-31"), {"a": 3, "b": 3}),
                         (("US_XX", "2020-12-31"), {"a": 2, "b": 3}),
@@ -1018,7 +1154,8 @@ class TestSamenessValidationChecker(TestCase):
                 comparison_columns=["a", "b"],
                 partition_columns=["region", "date"],
                 sameness_check_type=SamenessDataValidationCheckType.DATES,
-                max_allowed_error=0.0,
+                hard_max_allowed_error=0.0,
+                soft_max_allowed_error=0.0,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
@@ -1036,7 +1173,8 @@ class TestSamenessValidationChecker(TestCase):
                 result_details=SamenessPerViewValidationResultDetails(
                     num_error_rows=3,
                     total_num_rows=7,
-                    max_allowed_error=0.0,
+                    hard_max_allowed_error=0.0,
+                    soft_max_allowed_error=0.0,
                     non_null_counts_per_column_per_partition=[
                         (("US_XX", "2021-01-31"), {"a": 3, "b": 3}),
                         (("US_XX", "2020-12-31"), {"a": 2, "b": 3}),
@@ -1047,7 +1185,7 @@ class TestSamenessValidationChecker(TestCase):
 
     def test_sameness_checks_no_partition_columns(self) -> None:
         num_bad_rows = 2
-        max_allowed_error = num_bad_rows / 100
+        hard_max_allowed_error = num_bad_rows / 100
 
         self.mock_client.run_query_async.return_value = (
             self.return_string_values_with_num_bad_rows(num_bad_rows)
@@ -1060,7 +1198,7 @@ class TestSamenessValidationChecker(TestCase):
                 validation_type=ValidationCheckType.SAMENESS,
                 comparison_columns=["a", "b", "c"],
                 sameness_check_type=SamenessDataValidationCheckType.STRINGS,
-                max_allowed_error=max_allowed_error,
+                hard_max_allowed_error=hard_max_allowed_error,
                 view_builder=SimpleBigQueryViewBuilder(
                     dataset_id="my_dataset",
                     view_id="test_view",
@@ -1078,7 +1216,8 @@ class TestSamenessValidationChecker(TestCase):
                 result_details=SamenessPerViewValidationResultDetails(
                     num_error_rows=2,
                     total_num_rows=100,
-                    max_allowed_error=0.02,
+                    hard_max_allowed_error=0.02,
+                    soft_max_allowed_error=0.02,
                     non_null_counts_per_column_per_partition=[
                         (tuple(), {"a": 100, "b": 100, "c": 100}),
                     ],
@@ -1092,10 +1231,12 @@ class TestSamenessPerRowValidationResultDetails(TestCase):
 
     def test_success(self) -> None:
         result = SamenessPerRowValidationResultDetails(
-            failed_rows=[], max_allowed_error=0.0
+            failed_rows=[], hard_max_allowed_error=0.0, soft_max_allowed_error=0.0
         )
 
-        self.assertTrue(result.was_successful())
+        self.assertEqual(
+            ValidationResultStatus.SUCCESS, result.validation_result_status()
+        )
         self.assertIsNone(result.failure_description())
 
     def test_failure(self) -> None:
@@ -1103,15 +1244,19 @@ class TestSamenessPerRowValidationResultDetails(TestCase):
             failed_rows=[
                 (ResultRow(label_values=(), comparison_values=(98, 100, 99)), 0.02)
             ],
-            max_allowed_error=0.0,
+            hard_max_allowed_error=0.0,
+            soft_max_allowed_error=0.0,
         )
 
-        self.assertFalse(result.was_successful())
         self.assertEqual(
+            ValidationResultStatus.FAIL_HARD, result.validation_result_status()
+        )
+        self.assertEqual(
+            "1 row(s) had unacceptable margins of error. Of those rows, 1 row(s) exceeded the "
+            "hard threshold and 0 row(s) exceeded the soft threshold. "
+            "The acceptable margin of error is only 0.0 (hard) and 0.0 (soft), "
+            "but the validation returned rows with errors as high as 0.02.",
             result.failure_description(),
-            "1 row(s) had unacceptable margins of error. The acceptable margin "
-            "of error is only 0.0, but the validation returned rows with "
-            "errors as high as 0.02.",
         )
 
     def test_failure_multiple_rows(self) -> None:
@@ -1120,15 +1265,60 @@ class TestSamenessPerRowValidationResultDetails(TestCase):
                 (ResultRow(label_values=(), comparison_values=(98, 100, 99)), 0.02),
                 (ResultRow(label_values=(), comparison_values=(14, 21, 14)), 0.3333333),
             ],
-            max_allowed_error=0.01,
+            hard_max_allowed_error=0.01,
+            soft_max_allowed_error=0.01,
         )
 
-        self.assertFalse(result.was_successful())
         self.assertEqual(
+            ValidationResultStatus.FAIL_HARD, result.validation_result_status()
+        )
+        self.assertEqual(
+            "2 row(s) had unacceptable margins of error. Of those rows, 2 row(s) exceeded the "
+            "hard threshold and 0 row(s) exceeded the soft threshold. "
+            "The acceptable margin of error is only 0.01 (hard) and 0.01 (soft), "
+            "but the validation returned rows with errors as high as 0.3333.",
             result.failure_description(),
-            "2 row(s) had unacceptable margins of error. The acceptable margin "
-            "of error is only 0.01, but the validation returned rows with "
-            "errors as high as 0.3333.",
+        )
+
+    def test_hard_and_soft_failure_multiple_rows(self) -> None:
+        result = SamenessPerRowValidationResultDetails(
+            failed_rows=[
+                (ResultRow(label_values=(), comparison_values=(98, 100, 99)), 0.02),
+                (ResultRow(label_values=(), comparison_values=(14, 21, 14)), 0.3333333),
+            ],
+            hard_max_allowed_error=0.05,
+            soft_max_allowed_error=0.01,
+        )
+
+        self.assertEqual(
+            ValidationResultStatus.FAIL_HARD, result.validation_result_status()
+        )
+        self.assertEqual(
+            "2 row(s) had unacceptable margins of error. Of those rows, "
+            "1 row(s) exceeded the hard threshold and 1 row(s) exceeded the soft threshold. "
+            "The acceptable margin of error is only 0.05 (hard) and 0.01 (soft), "
+            "but the validation returned rows with errors as high as 0.3333.",
+            result.failure_description(),
+        )
+
+    def test_soft_failure_multiple_rows(self) -> None:
+        result = SamenessPerRowValidationResultDetails(
+            failed_rows=[
+                (ResultRow(label_values=(), comparison_values=(98, 100, 99)), 0.02),
+                (ResultRow(label_values=(), comparison_values=(14, 21, 14)), 0.3333333),
+            ],
+            hard_max_allowed_error=0.5,
+            soft_max_allowed_error=0.01,
+        )
+
+        self.assertEqual(
+            ValidationResultStatus.FAIL_SOFT, result.validation_result_status()
+        )
+        self.assertEqual(
+            "2 row(s) exceeded the soft_max_allowed_error threshold. "
+            "The acceptable margin of error is 0.01 (soft), "
+            "but the validation returned rows with errors as high as 0.3333.",
+            result.failure_description(),
         )
 
 
@@ -1139,79 +1329,115 @@ class TestSamenessPerViewValidationResultDetails(TestCase):
         result = SamenessPerViewValidationResultDetails(
             num_error_rows=0,
             total_num_rows=1,
-            max_allowed_error=0.0,
+            hard_max_allowed_error=0.0,
+            soft_max_allowed_error=0.0,
             non_null_counts_per_column_per_partition=[
                 (tuple(), {"a": 1, "b": 1, "c": 1}),
             ],
         )
 
-        self.assertTrue(result.was_successful())
+        self.assertEqual(
+            ValidationResultStatus.SUCCESS, result.validation_result_status()
+        )
         self.assertIsNone(result.failure_description())
 
     def test_success_some_errors(self) -> None:
         result = SamenessPerViewValidationResultDetails(
             num_error_rows=5,
             total_num_rows=100,
-            max_allowed_error=0.05,
+            hard_max_allowed_error=0.05,
+            soft_max_allowed_error=0.05,
             non_null_counts_per_column_per_partition=[
                 (tuple(), {"a": 100, "b": 100, "c": 100}),
             ],
         )
 
-        self.assertTrue(result.was_successful())
+        self.assertEqual(
+            ValidationResultStatus.SUCCESS, result.validation_result_status()
+        )
         self.assertIsNone(result.failure_description())
 
     def test_failure_some_errors(self) -> None:
         result = SamenessPerViewValidationResultDetails(
             num_error_rows=5,
             total_num_rows=100,
-            max_allowed_error=0.04,
+            hard_max_allowed_error=0.04,
+            soft_max_allowed_error=0.04,
             non_null_counts_per_column_per_partition=[
                 (tuple(), {"a": 100, "b": 100, "c": 100}),
             ],
         )
 
-        self.assertFalse(result.was_successful())
         self.assertEqual(
-            result.failure_description(),
+            ValidationResultStatus.FAIL_HARD, result.validation_result_status()
+        )
+        self.assertEqual(
             "5 out of 100 row(s) did not contain matching strings. "
-            "The acceptable margin of error is only 0.04, but the "
+            "The acceptable margin of error is 0.04 (hard), but the "
             "validation returned an error rate of 0.05.",
+            result.failure_description(),
+        )
+
+    def test_soft_failure_some_errors(self) -> None:
+        result = SamenessPerViewValidationResultDetails(
+            num_error_rows=5,
+            total_num_rows=100,
+            hard_max_allowed_error=0.05,
+            soft_max_allowed_error=0.02,
+            non_null_counts_per_column_per_partition=[
+                (tuple(), {"a": 100, "b": 100, "c": 100}),
+            ],
+        )
+
+        self.assertEqual(
+            ValidationResultStatus.FAIL_SOFT, result.validation_result_status()
+        )
+        self.assertEqual(
+            "5 out of 100 row(s) did not contain matching strings. "
+            "The acceptable margin of error is 0.02 (soft), "
+            "but the validation returned an error rate of 0.05.",
+            result.failure_description(),
         )
 
     def test_failure_all_errors(self) -> None:
         result = SamenessPerViewValidationResultDetails(
             num_error_rows=1,
             total_num_rows=1,
-            max_allowed_error=0.0,
+            hard_max_allowed_error=0.0,
+            soft_max_allowed_error=0.0,
             non_null_counts_per_column_per_partition=[
                 (tuple(), {"a": 1, "b": 1, "c": 1}),
             ],
         )
 
-        self.assertFalse(result.was_successful())
         self.assertEqual(
-            result.failure_description(),
+            ValidationResultStatus.FAIL_HARD, result.validation_result_status()
+        )
+        self.assertEqual(
             "1 out of 1 row(s) did not contain matching strings. "
-            "The acceptable margin of error is only 0.0, but the "
+            "The acceptable margin of error is 0.0 (hard), but the "
             "validation returned an error rate of 1.0.",
+            result.failure_description(),
         )
 
     def test_multiple_partitions(self) -> None:
         result = SamenessPerViewValidationResultDetails(
             num_error_rows=3,
             total_num_rows=7,
-            max_allowed_error=0.0,
+            hard_max_allowed_error=0.0,
+            soft_max_allowed_error=0.0,
             non_null_counts_per_column_per_partition=[
                 (("US_XX", "2021-01-31"), {"a": 3, "b": 3}),
                 (("US_XX", "2020-12-31"), {"a": 2, "b": 3}),
             ],
         )
 
-        self.assertFalse(result.was_successful())
         self.assertEqual(
-            result.failure_description(),
+            ValidationResultStatus.FAIL_HARD, result.validation_result_status()
+        )
+        self.assertEqual(
             "3 out of 7 row(s) did not contain matching strings. "
-            "The acceptable margin of error is only 0.0, but the "
+            "The acceptable margin of error is 0.0 (hard), but the "
             "validation returned an error rate of 0.4286.",
+            result.failure_description(),
         )

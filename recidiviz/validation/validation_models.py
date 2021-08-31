@@ -40,6 +40,15 @@ class ValidationCategory(Enum):
     FRESHNESS = "FRESHNESS"
 
 
+class ValidationResultStatus(Enum):
+    # Validation was successful and is within the desired error threshold (less than or equal to the soft threshold)
+    SUCCESS = "SUCCESS"
+    # Validation exceeded the soft threshold but not the hard threshold. These are known failures.
+    FAIL_SOFT = "FAIL_SOFT"
+    # Validation exceeded the hard threshold. These should be investigated.
+    FAIL_HARD = "FAIL_HARD"
+
+
 @attr.s(frozen=True)
 class DataValidationCheck(BuildableAttr):
     """Models a type of validation check that can be performed."""
@@ -97,10 +106,20 @@ class DataValidationJob(Generic[DataValidationType], BuildableAttr):
         return _query_str_for_region_code(view=view, region_code=self.region_code)
 
 
+def validate_result_status(
+    error_rate: float, soft_threshold: float, hard_threshold: float
+) -> ValidationResultStatus:
+    if error_rate <= soft_threshold:
+        return ValidationResultStatus.SUCCESS
+    if error_rate <= hard_threshold:
+        return ValidationResultStatus.FAIL_SOFT
+    return ValidationResultStatus.FAIL_HARD
+
+
 class DataValidationJobResultDetails(abc.ABC):
     @abc.abstractmethod
-    def was_successful(self) -> bool:
-        """Whether or not the validation job was successful"""
+    def validation_result_status(self) -> ValidationResultStatus:
+        """Describes if the validation error was acceptable or unacceptable (and to what degree)"""
 
     @abc.abstractmethod
     def failure_description(self) -> Optional[str]:
@@ -118,14 +137,19 @@ class DataValidationJobResult:
     result_details: DataValidationJobResultDetails = attr.ib()
 
     @property
+    def validation_result_status(self) -> ValidationResultStatus:
+        """Whether or not the validation was successful"""
+        return self.result_details.validation_result_status()
+
+    @property
     def was_successful(self) -> bool:
         """Whether or not the validation was successful"""
-        return self.result_details.was_successful()
+        return self.validation_result_status != ValidationResultStatus.FAIL_HARD
 
     def __str__(self) -> str:
         return (
             f"DataValidationJobResult["
-            f"\n\twas_successful: {self.was_successful},"
+            f"\n\tvalidation_result_status: {self.validation_result_status},"
             f"\n\tfailure_description: {self.result_details.failure_description()},"
             f"\n\tvalidation["
             f"\n\t\tregion_code: {self.validation_job.region_code},"

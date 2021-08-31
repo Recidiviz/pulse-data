@@ -34,6 +34,7 @@ from recidiviz.validation.validation_models import (
     DataValidationJobResult,
     ValidationCategory,
     ValidationCheckType,
+    ValidationResultStatus,
 )
 from recidiviz.validation.validation_result_storage import (
     ValidationResultForStorage,
@@ -70,7 +71,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 ),
             ),
             result_details=SamenessPerRowValidationResultDetails(
-                failed_rows=[], max_allowed_error=0.0
+                failed_rows=[], hard_max_allowed_error=0.0, soft_max_allowed_error=0.0
             ),
         )
 
@@ -93,10 +94,13 @@ class TestValidationResultStorage(unittest.TestCase):
                 region_code="US_XX",
                 did_run=True,
                 was_successful=True,
+                validation_result_status=ValidationResultStatus.SUCCESS,
                 failure_description=None,
                 result_details_type="SamenessPerRowValidationResultDetails",
                 result_details=SamenessPerRowValidationResultDetails(
-                    failed_rows=[], max_allowed_error=0.0
+                    failed_rows=[],
+                    hard_max_allowed_error=0.0,
+                    soft_max_allowed_error=0.0,
                 ),
                 validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
             ),
@@ -113,9 +117,10 @@ class TestValidationResultStorage(unittest.TestCase):
                 "region_code": "US_XX",
                 "did_run": True,
                 "was_successful": True,
+                "validation_result_status": "SUCCESS",
                 "failure_description": None,
                 "result_details_type": "SamenessPerRowValidationResultDetails",
-                "result_details": '{"failed_rows": [], "max_allowed_error": 0.0}',
+                "result_details": '{"failed_rows": [], "hard_max_allowed_error": 0.0, "soft_max_allowed_error": 0.0}',
                 "validation_category": "EXTERNAL_AGGREGATE",
             },
             result.to_serializable(),
@@ -126,7 +131,8 @@ class TestValidationResultStorage(unittest.TestCase):
         result_details = SamenessPerViewValidationResultDetails(
             num_error_rows=0,
             total_num_rows=5,
-            max_allowed_error=0.5,
+            hard_max_allowed_error=0.5,
+            soft_max_allowed_error=0.5,
             non_null_counts_per_column_per_partition=[
                 (("US_XX", "2020-12-01"), {"internal": 5, "external": 5})
             ],
@@ -170,6 +176,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 region_code="US_XX",
                 did_run=True,
                 was_successful=True,
+                validation_result_status=ValidationResultStatus.SUCCESS,
                 failure_description=None,
                 result_details_type="SamenessPerViewValidationResultDetails",
                 result_details=result_details,
@@ -188,9 +195,10 @@ class TestValidationResultStorage(unittest.TestCase):
                 "region_code": "US_XX",
                 "did_run": True,
                 "was_successful": True,
+                "validation_result_status": "SUCCESS",
                 "failure_description": None,
                 "result_details_type": "SamenessPerViewValidationResultDetails",
-                "result_details": '{"num_error_rows": 0, "total_num_rows": 5, "max_allowed_error": 0.5, "non_null_counts_per_column_per_partition": [[["US_XX", "2020-12-01"], {"internal": 5, "external": 5}]]}',
+                "result_details": '{"num_error_rows": 0, "total_num_rows": 5, "hard_max_allowed_error": 0.5, "soft_max_allowed_error": 0.5, "non_null_counts_per_column_per_partition": [[["US_XX", "2020-12-01"], {"internal": 5, "external": 5}]]}',
                 "validation_category": "EXTERNAL_INDIVIDUAL",
             },
             result.to_serializable(),
@@ -202,7 +210,8 @@ class TestValidationResultStorage(unittest.TestCase):
             failed_rows=[
                 (ResultRow(label_values=("US_XX",), comparison_values=(5, 10)), 0.5)
             ],
-            max_allowed_error=0.0,
+            hard_max_allowed_error=0.0,
+            soft_max_allowed_error=0.0,
         )
         job_result = DataValidationJobResult(
             validation_job=DataValidationJob(
@@ -242,8 +251,11 @@ class TestValidationResultStorage(unittest.TestCase):
                 region_code="US_XX",
                 did_run=True,
                 was_successful=False,
-                failure_description="1 row(s) had unacceptable margins of error. The "
-                "acceptable margin of error is only 0.0, but the validation returned "
+                validation_result_status=ValidationResultStatus.FAIL_HARD,
+                failure_description="1 row(s) had unacceptable margins of error. "
+                "Of those rows, 1 row(s) exceeded the hard threshold and 0 row(s) "
+                "exceeded the soft threshold. The acceptable margin of error is only "
+                "0.0 (hard) and 0.0 (soft), but the validation returned "
                 "rows with errors as high as 0.5.",
                 result_details_type="SamenessPerRowValidationResultDetails",
                 result_details=result_details,
@@ -262,11 +274,18 @@ class TestValidationResultStorage(unittest.TestCase):
                 "region_code": "US_XX",
                 "did_run": True,
                 "was_successful": False,
-                "failure_description": "1 row(s) had unacceptable margins of error. The "
-                "acceptable margin of error is only 0.0, but the validation returned "
-                "rows with errors as high as 0.5.",
+                "validation_result_status": "FAIL_HARD",
+                "failure_description": "1 row(s) had unacceptable margins of error. Of those "
+                "rows, 1 row(s) exceeded the hard threshold and 0 "
+                "row(s) exceeded the soft threshold. The acceptable "
+                "margin of error is only 0.0 (hard) and 0.0 (soft), "
+                "but the validation returned rows with errors as high "
+                "as 0.5.",
+                "result_details": '{"failed_rows": [[{"label_values": ["US_XX"], '
+                '"comparison_values": [5, 10]}, 0.5]], '
+                '"hard_max_allowed_error": 0.0, "soft_max_allowed_error": '
+                "0.0}",
                 "result_details_type": "SamenessPerRowValidationResultDetails",
-                "result_details": '{"failed_rows": [[{"label_values": ["US_XX"], "comparison_values": [5, 10]}, 0.5]], "max_allowed_error": 0.0}',
                 "validation_category": "EXTERNAL_AGGREGATE",
             },
             result.to_serializable(),
@@ -309,6 +328,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 region_code="US_XX",
                 did_run=False,
                 was_successful=None,
+                validation_result_status=None,
                 failure_description=None,
                 result_details_type=None,
                 result_details=None,
@@ -327,6 +347,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 "region_code": "US_XX",
                 "did_run": False,
                 "was_successful": None,
+                "validation_result_status": None,
                 "failure_description": None,
                 "result_details_type": None,
                 "result_details": None,
@@ -358,10 +379,13 @@ class TestValidationResultStorage(unittest.TestCase):
                     region_code="US_XX",
                     did_run=True,
                     was_successful=True,
+                    validation_result_status=ValidationResultStatus.SUCCESS,
                     failure_description=None,
                     result_details_type="SamenessPerRowValidationResultDetails",
                     result_details=SamenessPerRowValidationResultDetails(
-                        failed_rows=[], max_allowed_error=0.0
+                        failed_rows=[],
+                        hard_max_allowed_error=0.0,
+                        soft_max_allowed_error=0.0,
                     ),
                     validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 ),
@@ -392,10 +416,13 @@ class TestValidationResultStorage(unittest.TestCase):
                     region_code="US_XX",
                     did_run=True,
                     was_successful=True,
+                    validation_result_status=ValidationResultStatus.SUCCESS,
                     failure_description=None,
                     result_details_type="SamenessPerRowValidationResultDetails",
                     result_details=SamenessPerRowValidationResultDetails(
-                        failed_rows=[], max_allowed_error=0.0
+                        failed_rows=[],
+                        hard_max_allowed_error=0.0,
+                        soft_max_allowed_error=0.0,
                     ),
                     validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 ),
@@ -409,6 +436,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     region_code="US_XX",
                     did_run=True,
                     was_successful=False,
+                    validation_result_status=ValidationResultStatus.FAIL_HARD,
                     failure_description="1 row(s) had unacceptable margins of error. The "
                     "acceptable margin of error is only 0.0, but the validation returned "
                     "rows with errors as high as 0.5.",
@@ -422,7 +450,8 @@ class TestValidationResultStorage(unittest.TestCase):
                                 0.5,
                             )
                         ],
-                        max_allowed_error=0.0,
+                        hard_max_allowed_error=0.0,
+                        soft_max_allowed_error=0.0,
                     ),
                     validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 ),
@@ -436,6 +465,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     region_code="US_XX",
                     did_run=False,
                     was_successful=None,
+                    validation_result_status=None,
                     failure_description=None,
                     result_details_type=None,
                     result_details=None,
@@ -458,9 +488,10 @@ class TestValidationResultStorage(unittest.TestCase):
                     "region_code": "US_XX",
                     "did_run": True,
                     "was_successful": True,
+                    "validation_result_status": "SUCCESS",
                     "failure_description": None,
                     "result_details_type": "SamenessPerRowValidationResultDetails",
-                    "result_details": '{"failed_rows": [], "max_allowed_error": 0.0}',
+                    "result_details": '{"failed_rows": [], "hard_max_allowed_error": 0.0, "soft_max_allowed_error": 0.0}',
                     "validation_category": "EXTERNAL_AGGREGATE",
                 },
                 {
@@ -473,9 +504,10 @@ class TestValidationResultStorage(unittest.TestCase):
                     "region_code": "US_XX",
                     "did_run": True,
                     "was_successful": False,
+                    "validation_result_status": "FAIL_HARD",
                     "failure_description": "1 row(s) had unacceptable margins of error. The acceptable margin of error is only 0.0, but the validation returned rows with errors as high as 0.5.",
                     "result_details_type": "SamenessPerRowValidationResultDetails",
-                    "result_details": '{"failed_rows": [[{"label_values": ["US_XX"], "comparison_values": [5, 10]}, 0.5]], "max_allowed_error": 0.0}',
+                    "result_details": '{"failed_rows": [[{"label_values": ["US_XX"], "comparison_values": [5, 10]}, 0.5]], "hard_max_allowed_error": 0.0, "soft_max_allowed_error": 0.0}',
                     "validation_category": "EXTERNAL_AGGREGATE",
                 },
                 {
@@ -488,6 +520,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     "region_code": "US_XX",
                     "did_run": False,
                     "was_successful": None,
+                    "validation_result_status": None,
                     "failure_description": None,
                     "result_details_type": None,
                     "result_details": None,

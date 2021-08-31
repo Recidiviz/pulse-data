@@ -34,6 +34,8 @@ from recidiviz.validation.validation_models import (
     DataValidationJobResult,
     DataValidationJobResultDetails,
     ValidationCheckType,
+    ValidationResultStatus,
+    validate_result_status,
 )
 
 EMPTY_STRING_VALUE = "EMPTY_STRING_VALUE"
@@ -82,11 +84,12 @@ class SamenessDataValidationCheck(DataValidationCheck):
         default=SamenessDataValidationCheckType.NUMBERS
     )
 
-    # The acceptable margin of error across the range of compared values. Defaults to 0.0 (no difference allowed)
-    max_allowed_error: float = attr.ib(default=0.0)
+    # The acceptable margin of error across the range of compared values. Defaults to 0.02 (small difference allowed)
+    hard_max_allowed_error: float = attr.ib(default=0.02)
+    soft_max_allowed_error: float = attr.ib(default=0.02)
 
-    @max_allowed_error.validator
-    def _check_max_allowed_error(
+    @hard_max_allowed_error.validator
+    def _check_hard_max_allowed_error(
         self, _attribute: attr.Attribute, value: float
     ) -> None:
         if not isinstance(value, float):
@@ -99,6 +102,33 @@ class SamenessDataValidationCheck(DataValidationCheck):
                 f"Allowed error value must be between 0.0 and 1.0. Found instead: [{value}]"
             )
 
+        if value < self.soft_max_allowed_error:
+            raise ValueError(
+                f"Value cannot be less than soft_max_allowed_error. "
+                f"Found instead: {value} vs. {self.soft_max_allowed_error}. "
+                f"Make sure you are setting both errors."
+            )
+
+    @soft_max_allowed_error.validator
+    def _check_soft_max_allowed_error(
+        self, _attribute: attr.Attribute, value: float
+    ) -> None:
+        if not isinstance(value, float):
+            raise ValueError(
+                f"Unexpected type [{type(value)}] for error value [{value}]"
+            )
+
+        if not 0.0 <= value <= 1.0:
+            raise ValueError(
+                f"Allowed error value must be between 0.0 and 1.0. Found instead: [{value}]"
+            )
+
+        if value > self.hard_max_allowed_error:
+            raise ValueError(
+                f"Value cannot be greater than hard_max_allowed_error. "
+                f"Found instead: {value} vs. {self.hard_max_allowed_error}"
+            )
+
     validation_type: ValidationCheckType = attr.ib(default=ValidationCheckType.SAMENESS)
 
     def updated_for_region(
@@ -107,12 +137,24 @@ class SamenessDataValidationCheck(DataValidationCheck):
         max_allowed_error_config = region_config.max_allowed_error_overrides.get(
             self.validation_name, None
         )
-        max_allowed_error = (
-            max_allowed_error_config.max_allowed_error_override
-            if max_allowed_error_config
-            else self.max_allowed_error
+
+        hard_max_allowed_error = self.hard_max_allowed_error
+        soft_max_allowed_error = self.soft_max_allowed_error
+        if max_allowed_error_config:
+            hard_max_allowed_error = (
+                max_allowed_error_config.hard_max_allowed_error_override
+                or self.hard_max_allowed_error
+            )
+            soft_max_allowed_error = (
+                max_allowed_error_config.soft_max_allowed_error_override
+                or self.soft_max_allowed_error
+            )
+
+        return attr.evolve(
+            self,
+            hard_max_allowed_error=hard_max_allowed_error,
+            soft_max_allowed_error=soft_max_allowed_error,
         )
-        return attr.evolve(self, max_allowed_error=max_allowed_error)
 
 
 RowValueType = TypeVar("RowValueType", float, str)
@@ -134,7 +176,8 @@ class SamenessPerViewValidationResultDetails(DataValidationJobResultDetails):
 
     num_error_rows: int = attr.ib()
     total_num_rows: int = attr.ib()
-    max_allowed_error: float = attr.ib()
+    hard_max_allowed_error: float = attr.ib()
+    soft_max_allowed_error: float = attr.ib()
 
     # This field is not used directly in checking for failures but provides additional
     # context for analyzing results.
@@ -158,16 +201,30 @@ class SamenessPerViewValidationResultDetails(DataValidationJobResultDetails):
             else 0.0
         )
 
-    def was_successful(self) -> bool:
-        return self.error_rate <= self.max_allowed_error
+    def validation_result_status(self) -> ValidationResultStatus:
+        return validate_result_status(
+            self.error_rate, self.soft_max_allowed_error, self.hard_max_allowed_error
+        )
 
     def failure_description(self) -> Optional[str]:
-        if self.was_successful():
+        validation_result_status = self.validation_result_status()
+        if validation_result_status == ValidationResultStatus.SUCCESS:
             return None
-        return (
-            f"{self.num_error_rows} out of {self.total_num_rows} row(s) did not contain matching "
-            f"strings. The acceptable margin of error is only {self.max_allowed_error}, "
-            f"but the validation returned an error rate of {round(self.error_rate, 4)}."
+        if validation_result_status in (
+            ValidationResultStatus.FAIL_SOFT,
+            ValidationResultStatus.FAIL_HARD,
+        ):
+            error_type_text = {
+                ValidationResultStatus.FAIL_SOFT: "soft",
+                ValidationResultStatus.FAIL_HARD: "hard",
+            }
+            return (
+                f"{self.num_error_rows} out of {self.total_num_rows} row(s) did not contain matching strings. "
+                f"The acceptable margin of error is {self.soft_max_allowed_error} ({error_type_text[validation_result_status]}), "
+                f"but the validation returned an error rate of {round(self.error_rate, 4)}."
+            )
+        raise AttributeError(
+            f"failure_description for validation_result_status {validation_result_status} not set"
         )
 
 
@@ -179,7 +236,8 @@ class SamenessPerRowValidationResultDetails(DataValidationJobResultDetails):
     # List of failed rows, where each entry is a tuple containing the row and the amount
     # of error for that row.
     failed_rows: List[Tuple[ResultRow[float], float]] = attr.ib()
-    max_allowed_error: float = attr.ib()
+    hard_max_allowed_error: float = attr.ib()
+    soft_max_allowed_error: float = attr.ib()
 
     @property
     def highest_error(self) -> Optional[float]:
@@ -189,16 +247,64 @@ class SamenessPerRowValidationResultDetails(DataValidationJobResultDetails):
             else None
         )
 
-    def was_successful(self) -> bool:
-        return not self.failed_rows
+    @property
+    def rows_soft_failure(self) -> Optional[List[Tuple[ResultRow[float], float]]]:
+        return self._filter_row_of_result_status(ValidationResultStatus.FAIL_SOFT)
+
+    @property
+    def rows_hard_failure(self) -> Optional[List[Tuple[ResultRow[float], float]]]:
+        return self._filter_row_of_result_status(ValidationResultStatus.FAIL_HARD)
+
+    def _filter_row_of_result_status(
+        self, result_status_filter: ValidationResultStatus
+    ) -> Optional[List[Tuple[ResultRow[float], float]]]:
+        return (
+            [
+                row
+                for row in self.failed_rows
+                if (
+                    result_status_filter
+                    == validate_result_status(
+                        row[1], self.soft_max_allowed_error, self.hard_max_allowed_error
+                    )
+                )
+            ]
+            if self.failed_rows
+            else None
+        )
+
+    def validation_result_status(self) -> ValidationResultStatus:
+        if not self.failed_rows:
+            return ValidationResultStatus.SUCCESS
+        if not self.highest_error:
+            raise AttributeError(
+                f"highest_error should not be null since failed_rows is not null. failed_rows: {self.failed_rows}"
+            )
+        return validate_result_status(
+            self.highest_error, self.soft_max_allowed_error, self.hard_max_allowed_error
+        )
 
     def failure_description(self) -> Optional[str]:
-        if self.was_successful():
+        validation_result_status = self.validation_result_status()
+        if validation_result_status == ValidationResultStatus.SUCCESS:
             return None
-        return (
-            f"{len(self.failed_rows)} row(s) had unacceptable margins of error. The "
-            f"acceptable margin of error is only {self.max_allowed_error}, but the "
-            f"validation returned rows with errors as high as {self.highest_error}."
+        if validation_result_status == ValidationResultStatus.FAIL_SOFT:
+            return (
+                f"{len(self.failed_rows)} row(s) exceeded the soft_max_allowed_error threshold. The "
+                f"acceptable margin of error is {self.soft_max_allowed_error} (soft), but the "
+                f"validation returned rows with errors as high as {self.highest_error}."
+            )
+        if validation_result_status == ValidationResultStatus.FAIL_HARD:
+            return (
+                f"{len(self.failed_rows)} row(s) had unacceptable margins of error. Of those rows, "
+                f"{len(self.rows_hard_failure or [])} row(s) exceeded the hard threshold and "
+                f"{len(self.rows_soft_failure or [])} row(s) exceeded the soft threshold. The "
+                f"acceptable margin of error is only {self.hard_max_allowed_error} (hard) "
+                f"and {self.soft_max_allowed_error} (soft), but the "
+                f"validation returned rows with errors as high as {self.highest_error}."
+            )
+        raise AttributeError(
+            f"failure_description for validation_result_status {validation_result_status} not set"
         )
 
 
@@ -210,7 +316,6 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
         cls, validation_job: DataValidationJob[SamenessDataValidationCheck]
     ) -> DataValidationJobResult:
         comparison_columns = validation_job.validation.comparison_columns
-        max_allowed_error = validation_job.validation.max_allowed_error
 
         query_job = BigQueryClientImpl().run_query_async(validation_job.query_str(), [])
 
@@ -218,32 +323,41 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
             validation_job.validation.sameness_check_type
             == SamenessDataValidationCheckType.NUMBERS
         ):
-            return SamenessValidationChecker.run_check_per_row(
-                validation_job, comparison_columns, max_allowed_error, query_job
+            return DataValidationJobResult(
+                validation_job=validation_job,
+                result_details=SamenessValidationChecker.run_check_per_row(
+                    validation_job.validation,
+                    comparison_columns,
+                    query_job,
+                ),
             )
         if (
             validation_job.validation.sameness_check_type
             == SamenessDataValidationCheckType.STRINGS
         ):
-            return SamenessValidationChecker.run_check_per_view(
-                validation_job,
-                comparison_columns,
-                max_allowed_error,
-                query_job,
-                str,
-                EMPTY_STRING_VALUE,
+            return DataValidationJobResult(
+                validation_job=validation_job,
+                result_details=SamenessValidationChecker.run_check_per_view(
+                    validation_job.validation,
+                    comparison_columns,
+                    query_job,
+                    str,
+                    EMPTY_STRING_VALUE,
+                ),
             )
         if (
             validation_job.validation.sameness_check_type
             == SamenessDataValidationCheckType.DATES
         ):
-            return SamenessValidationChecker.run_check_per_view(
-                validation_job,
-                comparison_columns,
-                max_allowed_error,
-                query_job,
-                datetime.date,
-                EMPTY_DATE_VALUE,
+            return DataValidationJobResult(
+                validation_job=validation_job,
+                result_details=SamenessValidationChecker.run_check_per_view(
+                    validation_job.validation,
+                    comparison_columns,
+                    query_job,
+                    datetime.date,
+                    EMPTY_DATE_VALUE,
+                ),
             )
 
         raise ValueError(
@@ -252,11 +366,10 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
 
     @staticmethod
     def run_check_per_row(
-        validation_job: DataValidationJob[SamenessDataValidationCheck],
+        validation: SamenessDataValidationCheck,
         comparison_columns: List[str],
-        max_allowed_error: float,
         query_job: QueryJob,
-    ) -> DataValidationJobResult:
+    ) -> SamenessPerRowValidationResultDetails:
         """Performs the validation check for sameness check types, where the values being compares are numbers (either
         ints or floats)."""
         failed_rows: List[Tuple[ResultRow[float], float]] = []
@@ -270,14 +383,14 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
                     if value is None:
                         raise ValueError(
                             f"Unexpected None value for column [{column}] in validation "
-                            f"[{validation_job.validation.validation_name}]."
+                            f"[{validation.validation_name}]."
                         )
                     try:
                         float_value = float(value)
                     except ValueError as e:
                         raise ValueError(
                             f"Could not cast value [{value}] in column [{column}] to a float in validation "
-                            f"[{validation_job.validation.validation_name}]."
+                            f"[{validation.validation_name}]."
                         ) from e
                     comparison_values.append(float_value)
                 else:
@@ -295,7 +408,7 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
                 max_value, min_value = min_value, max_value
 
             error = (max_value - min_value) / max_value
-            if error > max_allowed_error:
+            if error > validation.soft_max_allowed_error:
                 failed_rows.append(
                     (
                         ResultRow(
@@ -306,22 +419,20 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
                     )
                 )
 
-        return DataValidationJobResult(
-            validation_job=validation_job,
-            result_details=SamenessPerRowValidationResultDetails(
-                failed_rows=failed_rows, max_allowed_error=max_allowed_error
-            ),
+        return SamenessPerRowValidationResultDetails(
+            failed_rows=failed_rows,
+            hard_max_allowed_error=validation.hard_max_allowed_error,
+            soft_max_allowed_error=validation.soft_max_allowed_error,
         )
 
     @staticmethod
     def run_check_per_view(
-        validation_job: DataValidationJob[SamenessDataValidationCheck],
+        validation: SamenessDataValidationCheck,
         comparison_columns: List[str],
-        max_allowed_error: float,
         query_job: QueryJob,
         type_to_check: Type[PerViewRowType],
         empty_value: PerViewRowType,
-    ) -> DataValidationJobResult:
+    ) -> SamenessPerViewValidationResultDetails:
         """Performs the validation check for sameness check types, where the values being compared are strings."""
         num_errors = 0
         num_rows = 0
@@ -335,11 +446,8 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
             unique_values: Set[PerViewRowType] = set()
 
             partition_key = (
-                tuple(
-                    str(row.get(column))
-                    for column in validation_job.validation.partition_columns
-                )
-                if validation_job.validation.partition_columns
+                tuple(str(row.get(column)) for column in validation.partition_columns)
+                if validation.partition_columns
                 else tuple()
             )
             if partition_key not in non_null_counts_per_column_per_partition:
@@ -359,8 +467,8 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
                     unique_values.add(value)
                 else:
                     raise ValueError(
-                        f"Unexpected type [{type(value)}] for value [{value}] in {validation_job.validation.sameness_check_type.value} validation "
-                        f"[{validation_job.validation.validation_name}]."
+                        f"Unexpected type [{type(value)}] for value [{value}] in {validation.sameness_check_type.value} validation "
+                        f"[{validation.validation_name}]."
                     )
 
             # If there is more than one unique value in the row, then there's an issue
@@ -368,14 +476,12 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
                 # Increment the number of errors
                 num_errors += 1
 
-        return DataValidationJobResult(
-            validation_job=validation_job,
-            result_details=SamenessPerViewValidationResultDetails(
-                num_error_rows=num_errors,
-                total_num_rows=num_rows,
-                max_allowed_error=max_allowed_error,
-                non_null_counts_per_column_per_partition=list(
-                    non_null_counts_per_column_per_partition.items()
-                ),
+        return SamenessPerViewValidationResultDetails(
+            num_error_rows=num_errors,
+            total_num_rows=num_rows,
+            hard_max_allowed_error=validation.hard_max_allowed_error,
+            soft_max_allowed_error=validation.soft_max_allowed_error,
+            non_null_counts_per_column_per_partition=list(
+                non_null_counts_per_column_per_partition.items()
             ),
         )
