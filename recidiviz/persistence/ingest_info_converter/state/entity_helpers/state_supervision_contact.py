@@ -33,7 +33,9 @@ from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     parse_external_id,
     parse_region_code_with_override,
 )
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
+    IngestInfoProtoEnumMapper,
+)
 
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
@@ -65,16 +67,18 @@ def copy_fields_to_builder(
         "contact_method": StateSupervisionContactMethod,
     }
 
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
+    proto_enum_mapper = IngestInfoProtoEnumMapper(
+        proto, enum_fields, metadata.enum_overrides
+    )
 
     # enum values
-    new.status = enum_mappings.get(StateSupervisionContactStatus)
+    new.status = proto_enum_mapper.get(StateSupervisionContactStatus)
     new.status_raw_text = fn(normalize, "status", proto)
-    new.contact_type = enum_mappings.get(StateSupervisionContactType)
+    new.contact_type = proto_enum_mapper.get(StateSupervisionContactType)
     new.contact_type_raw_text = fn(normalize, "contact_type", proto)
-    new.contact_reason = enum_mappings.get(StateSupervisionContactReason)
+    new.contact_reason = proto_enum_mapper.get(StateSupervisionContactReason)
     new.contact_reason_raw_text = fn(normalize, "contact_reason", proto)
-    new.location = enum_mappings.get(StateSupervisionContactLocation)
+    new.location = proto_enum_mapper.get(StateSupervisionContactLocation)
     new.location_raw_text = fn(normalize, "location", proto)
-    new.contact_method = enum_mappings.get(StateSupervisionContactMethod)
+    new.contact_method = proto_enum_mapper.get(StateSupervisionContactMethod)
     new.contact_method_raw_text = fn(normalize, "contact_method", proto)

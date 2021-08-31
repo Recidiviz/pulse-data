@@ -104,7 +104,8 @@ class EntityEnumMeta(EnumMeta):
             if isinstance(e, EnumParsingError):
                 raise e
 
-            # If a mapper throws another type of error, convert it to an enum parsing error
+            # If a mapper function throws another type of error, convert it to an enum
+            # parsing error.
             raise EnumParsingError(cls, label) from e
 
         if overridden_value is not None:
@@ -143,7 +144,11 @@ class EntityEnum(Enum, metaclass=EntityEnumMeta):
         raise NotImplementedError
 
     @classmethod
-    def _missing_value_(cls, name: str):
+    def _missing_value_(cls: Type[ClsT], name: str) -> Optional[ClsT]:
+        """DO NOT DELETE THIS. It is a very hacky override of an inner function in the
+        aenum library which makes it so we raise an EnumParsingError and not a
+        ValueError when we try to instantiate an enum value with an unknown string.
+        """
         return cls.parse_from_canonical_string(name.upper())
 
 

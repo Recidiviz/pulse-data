@@ -21,9 +21,9 @@ from typing import Dict, List, TypeVar
 
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import (
-    EnumOverrides,
-    EnumMapper,
     EnumIgnorePredicate,
+    EnumMapperFn,
+    EnumOverrides,
 )
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
 from recidiviz.ingest.models.ingest_info import IngestObject
@@ -70,7 +70,7 @@ def update_overrides_from_maps(
     base_enum_overrides: EnumOverrides,
     overrides: Dict[EntityEnum, List[str]],
     ignores: Dict[EntityEnumMeta, List[str]],
-    override_mappers: Dict[EntityEnumMeta, EnumMapper],
+    enum_mapper_functions: Dict[EntityEnumMeta, EnumMapperFn],
     ignore_predicates: Dict[EntityEnumMeta, EnumIgnorePredicate],
 ) -> EnumOverrides:
     overrides_builder = base_enum_overrides.to_builder()
@@ -83,8 +83,8 @@ def update_overrides_from_maps(
         for text_token in text_tokens:
             overrides_builder.ignore(text_token, ignored_enum)
 
-    for mapped_enum_cls, mapper in override_mappers.items():
-        overrides_builder.add_mapper(mapper, mapped_enum_cls)
+    for mapped_enum_cls, mapper in enum_mapper_functions.items():
+        overrides_builder.add_mapper_fn(mapper, mapped_enum_cls)
 
     for ignored_enum_cls, ignore_predicate in ignore_predicates.items():
         overrides_builder.ignore_with_predicate(ignore_predicate, ignored_enum_cls)

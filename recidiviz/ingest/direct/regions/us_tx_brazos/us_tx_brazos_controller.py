@@ -22,7 +22,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import (
     EnumIgnorePredicate,
-    EnumMapper,
+    EnumMapperFn,
     EnumOverrides,
 )
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
@@ -73,7 +73,7 @@ class UsTxBrazosController(
         ] = {}
 
     ENUM_OVERRIDES: Dict[EntityEnum, List[str]] = {}
-    ENUM_MAPPERS: Dict[EntityEnumMeta, EnumMapper] = {}
+    ENUM_MAPPER_FUNCTIONS: Dict[EntityEnumMeta, EnumMapperFn] = {}
     ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {}
     ENUM_IGNORE_PREDICATES: Dict[EntityEnumMeta, EnumIgnorePredicate] = {}
 
@@ -87,7 +87,7 @@ class UsTxBrazosController(
             base_overrides,
             self.ENUM_OVERRIDES,
             self.ENUM_IGNORES,
-            self.ENUM_MAPPERS,
+            self.ENUM_MAPPER_FUNCTIONS,
             self.ENUM_IGNORE_PREDICATES,
         )
 

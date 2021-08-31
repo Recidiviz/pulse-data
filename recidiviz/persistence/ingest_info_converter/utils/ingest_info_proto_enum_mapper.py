@@ -24,11 +24,11 @@ from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import fn
 
 
-class EnumMappings:
+class IngestInfoProtoEnumMapper:
     """Reads fields from an ingest_info proto and parses them into EntityEnums.
     Initialize this class with a specific proto, a mapping of parsing functions,
-    and the overrides map. Call enum_mappings.get to retrieve the value from
-    an enum type."""
+    and the overrides map. Call IngestInfoProtoEnumMapper.get to retrieve the value
+    from an enum type."""
 
     def __init__(
         self, proto, enum_fields: Mapping[str, EntityEnumMeta], overrides: EnumOverrides
@@ -36,15 +36,15 @@ class EnumMappings:
         """
         Initializes a mapping from enum fields within a single Entity to enum
         values. If enum fields map to enum values in a different entity, those
-        values will be ignored. EnumMappings prefers values that are the same
-        type as the field they are from; for example, if both ChargeClass and
-        ChargeStatus fields map to a ChargeClass, we will return the ChargeClass
-        from the charge_class field. However, if multiple fields map to
-        different values of the another enum type (for example, if ChargeDegree
-        and ChargeStatus fields map to two ChargeClasses), an error will be
-        raised on calling |get|. If the given enum fields dict contains multiple
-        fields that map to the same enum type, both will be retrievable by their
-        field name in the `get` method below.
+        values will be ignored. IngestInfoProtoEnumMapper prefers values that
+        are the same type as the field they are from; for example, if both
+        ChargeClass and ChargeStatus fields map to a ChargeClass, we will return
+        the ChargeClass from the charge_class field. However, if multiple fields
+        map to different values of the another enum type (for example, if
+        ChargeDegree and ChargeStatus fields map to two ChargeClasses), an error
+        will be raised on calling |get|. If the given enum fields dict contains
+        multiple fields that map to the same enum type, both will be retrievable
+        by their field name in the `get` method below.
         Args:
             proto: the proto to read fields from, e.g. Person, Booking, etc.
             enum_fields: a mapping from field names (e.g. custody_status) to

@@ -35,7 +35,9 @@ from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     parse_external_id,
     parse_region_code_with_override,
 )
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
+    IngestInfoProtoEnumMapper,
+)
 
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
@@ -72,7 +74,9 @@ def copy_fields_to_builder(
         "custodial_authority": StateCustodialAuthority,
     }
 
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
+    proto_enum_mapper = IngestInfoProtoEnumMapper(
+        proto, enum_fields, metadata.enum_overrides
+    )
 
     # enum values
     # Status default based on presence of admission/release dates
@@ -82,36 +86,38 @@ def copy_fields_to_builder(
         status_default = StateIncarcerationPeriodStatus.IN_CUSTODY
     else:
         status_default = StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
-    new.status = enum_mappings.get(
+    new.status = proto_enum_mapper.get(
         StateIncarcerationPeriodStatus, default=status_default
     )
 
     new.status_raw_text = fn(normalize, "status", proto)
-    new.incarceration_type = enum_mappings.get(
+    new.incarceration_type = proto_enum_mapper.get(
         StateIncarcerationType, default=StateIncarcerationType.STATE_PRISON
     )
     new.incarceration_type_raw_text = fn(normalize, "incarceration_type", proto)
-    new.facility_security_level = enum_mappings.get(
+    new.facility_security_level = proto_enum_mapper.get(
         StateIncarcerationFacilitySecurityLevel
     )
     new.facility_security_level_raw_text = fn(
         normalize, "facility_security_level", proto
     )
-    new.admission_reason = enum_mappings.get(StateIncarcerationPeriodAdmissionReason)
+    new.admission_reason = proto_enum_mapper.get(
+        StateIncarcerationPeriodAdmissionReason
+    )
     new.admission_reason_raw_text = fn(normalize, "admission_reason", proto)
-    new.projected_release_reason = enum_mappings.get(
+    new.projected_release_reason = proto_enum_mapper.get(
         StateIncarcerationPeriodReleaseReason, field_name="projected_release_reason"
     )
     new.projected_release_reason_raw_text = fn(
         normalize, "projected_release_reason", proto
     )
-    new.release_reason = enum_mappings.get(
+    new.release_reason = proto_enum_mapper.get(
         StateIncarcerationPeriodReleaseReason, field_name="release_reason"
     )
 
     new.release_reason_raw_text = fn(normalize, "release_reason", proto)
 
-    new.specialized_purpose_for_incarceration = enum_mappings.get(
+    new.specialized_purpose_for_incarceration = proto_enum_mapper.get(
         StateSpecializedPurposeForIncarceration,
         field_name="specialized_purpose_for_incarceration",
     )
@@ -119,7 +125,7 @@ def copy_fields_to_builder(
         normalize, "specialized_purpose_for_incarceration", proto
     )
 
-    new.custodial_authority = enum_mappings.get(
+    new.custodial_authority = proto_enum_mapper.get(
         StateCustodialAuthority, field_name="custodial_authority"
     )
     new.custodial_authority_raw_text = fn(normalize, "custodial_authority", proto)

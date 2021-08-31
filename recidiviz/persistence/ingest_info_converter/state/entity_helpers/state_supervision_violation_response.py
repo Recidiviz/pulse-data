@@ -32,7 +32,9 @@ from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     parse_external_id,
     parse_region_code_with_override,
 )
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
+    IngestInfoProtoEnumMapper,
+)
 
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
@@ -51,15 +53,17 @@ def copy_fields_to_builder(
         "decision": StateSupervisionViolationResponseDecision,
         "deciding_body_type": StateSupervisionViolationResponseDecidingBodyType,
     }
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
+    proto_enum_mapper = IngestInfoProtoEnumMapper(
+        proto, enum_fields, metadata.enum_overrides
+    )
 
     # enum values
-    new.response_type = enum_mappings.get(StateSupervisionViolationResponseType)
+    new.response_type = proto_enum_mapper.get(StateSupervisionViolationResponseType)
     new.response_type_raw_text = fn(normalize, "response_type", proto)
     new.response_subtype = fn(normalize, "response_subtype", proto)
-    new.decision = enum_mappings.get(StateSupervisionViolationResponseDecision)
+    new.decision = proto_enum_mapper.get(StateSupervisionViolationResponseDecision)
     new.decision_raw_text = fn(normalize, "decision", proto)
-    new.deciding_body_type = enum_mappings.get(
+    new.deciding_body_type = proto_enum_mapper.get(
         StateSupervisionViolationResponseDecidingBodyType
     )
     new.deciding_body_type_raw_text = fn(normalize, "deciding_body_type", proto)

@@ -18,20 +18,22 @@
 from datetime import date
 from typing import Optional, Tuple
 
-from recidiviz.common.str_field_utils import normalize, parse_date
 from recidiviz.common.constants.county.booking import (
     AdmissionReason,
     Classification,
     CustodyStatus,
     ReleaseReason,
 )
-from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.fid import validate_fid
+from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.str_field_utils import normalize, parse_date
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn,
     parse_external_id,
 )
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
+    IngestInfoProtoEnumMapper,
+)
 
 
 def copy_fields_to_builder(booking_builder, proto, metadata):
@@ -48,18 +50,20 @@ def copy_fields_to_builder(booking_builder, proto, metadata):
         "custody_status": CustodyStatus,
         "classification": Classification,
     }
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
+    proto_enum_mapper = IngestInfoProtoEnumMapper(
+        proto, enum_fields, metadata.enum_overrides
+    )
 
     # Enum mappings
-    new.admission_reason = enum_mappings.get(AdmissionReason)
+    new.admission_reason = proto_enum_mapper.get(AdmissionReason)
     new.admission_reason_raw_text = fn(normalize, "admission_reason", proto)
-    new.release_reason = enum_mappings.get(ReleaseReason)
+    new.release_reason = proto_enum_mapper.get(ReleaseReason)
     new.release_reason_raw_text = fn(normalize, "release_reason", proto)
-    new.custody_status = enum_mappings.get(
+    new.custody_status = proto_enum_mapper.get(
         CustodyStatus, default=CustodyStatus.PRESENT_WITHOUT_INFO
     )
     new.custody_status_raw_text = fn(normalize, "custody_status", proto)
-    new.classification = enum_mappings.get(Classification)
+    new.classification = proto_enum_mapper.get(Classification)
     new.classification_raw_text = fn(normalize, "classification", proto)
 
     # 1-to-1 mappings

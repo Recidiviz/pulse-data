@@ -15,18 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Converts an ingest_info proto Bond to a persistence entity."""
-from typing import cast, Optional
+from typing import Optional, cast
 
-from recidiviz.common.str_field_utils import normalize
 from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.str_field_utils import normalize
 from recidiviz.persistence.entity.county import entities
 from recidiviz.persistence.ingest_info_converter.utils import converter_utils
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn,
     parse_external_id,
 )
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
+from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
+    IngestInfoProtoEnumMapper,
+)
 
 
 def convert(proto, metadata: IngestMetadata) -> entities.Bond:
@@ -37,12 +39,14 @@ def convert(proto, metadata: IngestMetadata) -> entities.Bond:
         "status": BondStatus,
         "bond_type": BondType,
     }
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
+    proto_enum_mapper = IngestInfoProtoEnumMapper(
+        proto, enum_fields, metadata.enum_overrides
+    )
 
     # enum values
-    new.bond_type = enum_mappings.get(BondType)
+    new.bond_type = proto_enum_mapper.get(BondType)
     new.bond_type_raw_text = fn(normalize, "bond_type", proto)
-    new.status = enum_mappings.get(BondStatus)
+    new.status = proto_enum_mapper.get(BondStatus)
     new.status_raw_text = fn(normalize, "status", proto)
 
     # parsed values
