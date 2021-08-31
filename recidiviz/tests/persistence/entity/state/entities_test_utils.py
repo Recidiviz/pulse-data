@@ -18,17 +18,18 @@
 
 import datetime
 from collections import defaultdict
-from typing import Sequence, List, Dict, Type
+from typing import Dict, List, Sequence, Type
 
 from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.charge import ChargeStatus
-from recidiviz.common.constants.person_characteristics import Race, Ethnicity
+from recidiviz.common.constants.person_characteristics import Ethnicity, Race
 from recidiviz.common.constants.state.external_id_types import US_ND_ELITE
+from recidiviz.common.constants.state.shared_enums import StateActingBodyType
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
-    StateAssessmentType,
     StateAssessmentLevel,
+    StateAssessmentType,
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
@@ -39,55 +40,54 @@ from recidiviz.common.constants.state.state_court_case import (
 from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecision,
 )
-from recidiviz.common.constants.state.shared_enums import StateActingBodyType
 from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import (
-    StateIncarcerationIncidentType,
     StateIncarcerationIncidentOutcomeType,
+    StateIncarcerationIncidentType,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodStatus,
     StateIncarcerationFacilitySecurityLevel,
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
+    StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_parole_decision import (
     StateParoleDecisionOutcome,
 )
 from recidiviz.common.constants.state.state_program_assignment import (
-    StateProgramAssignmentParticipationStatus,
     StateProgramAssignmentDischargeReason,
+    StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_contact import (
-    StateSupervisionContactStatus,
     StateSupervisionContactLocation,
     StateSupervisionContactReason,
+    StateSupervisionContactStatus,
     StateSupervisionContactType,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
-    StateSupervisionPeriodAdmissionReason,
     StateSupervisionLevel,
+    StateSupervisionPeriodAdmissionReason,
+    StateSupervisionPeriodStatus,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseType,
-    StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseDecidingBodyType,
+    StateSupervisionViolationResponseDecision,
+    StateSupervisionViolationResponseType,
 )
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.entity_utils import (
-    get_set_entity_field_names,
     EntityFieldType,
     get_entities_by_type,
+    get_set_entity_field_names,
     is_standalone_class,
     print_entity_tree,
 )
@@ -620,8 +620,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         state_code="us_ca",
         decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
         decision_raw_text="CONTINUE",
-        revocation_type=None,
-        revocation_type_raw_text=None,
         deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
         decision_agents=[supervision_officer_agent],
     )

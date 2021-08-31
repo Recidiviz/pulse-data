@@ -77,7 +77,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType as ViolationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseRevocationType,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.persistence.database.schema.state import schema
@@ -683,7 +682,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             supervision_violation_response_id=fake_svr_id,
             state_code="US_XX",
             person_id=fake_person_id,
-            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
             supervision_violation_id=fake_violation_id,
         )
 

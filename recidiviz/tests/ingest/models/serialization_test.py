@@ -330,7 +330,6 @@ class TestSerialization(unittest.TestCase):
             "response_decision_id"
         )
         response_decision.decision = "REVOCATION"
-        response_decision.revocation_type = "REINCARCERATION"
 
         bond = charge1.create_state_bond()
         bond.state_bond_id = "bond1"
@@ -483,7 +482,6 @@ class TestSerialization(unittest.TestCase):
             "response_decision_id"
         )
         response_decision_pb.decision = "REVOCATION"
-        response_decision_pb.revocation_type = "REINCARCERATION"
         response_pb.state_supervision_violation_response_decision_entry_ids.append(
             "response_decision_id"
         )
