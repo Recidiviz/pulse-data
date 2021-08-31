@@ -20,11 +20,14 @@ import unittest
 from datetime import date
 
 from recidiviz.common.constants.state.state_program_assignment import (
-    StateProgramAssignmentParticipationStatus,
     StateProgramAssignmentDischargeReason,
+    StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StateProgramAssignmentFactory,
+)
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_program_assignment,
 )
@@ -36,7 +39,7 @@ _EMPTY_METADATA = FakeIngestMetadata.for_state("us_nd")
 class StateProgramAssignmentConverterTest(unittest.TestCase):
     """Tests for converting program assignments."""
 
-    def testParseProgramAssignment(self):
+    def testParseProgramAssignment(self) -> None:
         # Arrange
         ingest_program_assignment = ingest_info_pb2.StateProgramAssignment(
             participation_status="IN PROGRESS",
@@ -55,7 +58,9 @@ class StateProgramAssignmentConverterTest(unittest.TestCase):
         state_program_assignment.copy_fields_to_builder(
             program_assignment_builder, ingest_program_assignment, _EMPTY_METADATA
         )
-        result = program_assignment_builder.build()
+        result = program_assignment_builder.build(
+            StateProgramAssignmentFactory.deserialize
+        )
 
         # Assert
         expected_result = entities.StateProgramAssignment.new_with_defaults(

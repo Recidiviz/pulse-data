@@ -24,6 +24,9 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StateIncarcerationSentenceFactory,
+)
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_incarceration_sentence,
 )
@@ -35,7 +38,7 @@ METADATA = FakeIngestMetadata.for_state(region="us_nd")
 class StateIncarcerationSentenceConverterTest(unittest.TestCase):
     """Tests for converting state incarceration sentences."""
 
-    def testParseStateIncarcerationSentence(self):
+    def testParseStateIncarcerationSentence(self) -> None:
         # Arrange
         ingest_incarceration = ingest_info_pb2.StateIncarcerationSentence(
             status="SUSPENDED",
@@ -52,8 +55,8 @@ class StateIncarcerationSentenceConverterTest(unittest.TestCase):
             is_life="False",
             is_capital_punishment="False",
             parole_possible="true",
-            initial_time_served="60D",
-            good_time="365 days",
+            initial_time_served="60",  # Units in days
+            good_time="365",  # Units in days
             earned_time=None,
         )
 
@@ -62,7 +65,9 @@ class StateIncarcerationSentenceConverterTest(unittest.TestCase):
         state_incarceration_sentence.copy_fields_to_builder(
             incarceration_builder, ingest_incarceration, METADATA
         )
-        result = incarceration_builder.build()
+        result = incarceration_builder.build(
+            StateIncarcerationSentenceFactory.deserialize
+        )
 
         # Assert
         expected_result = entities.StateIncarcerationSentence(

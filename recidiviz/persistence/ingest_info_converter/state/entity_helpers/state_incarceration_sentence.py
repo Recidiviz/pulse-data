@@ -17,24 +17,13 @@
 
 """Converts an ingest_info proto StateIncarcerationSentence to a
 persistence entity."""
-
+from recidiviz.common import common_utils
+from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import (
-    normalize,
-    parse_bool,
-    parse_date,
-    parse_days,
-)
 from recidiviz.ingest.models.ingest_info_pb2 import StateIncarcerationSentence
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn,
-    parse_external_id,
-    parse_region_code_with_override,
-)
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
@@ -51,38 +40,40 @@ def copy_fields_to_builder(
     """
     new = incarceration_sentence_builder
 
-    enum_fields = {
-        "status": StateSentenceStatus,
-        "incarceration_type": StateIncarcerationType,
-    }
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
-
     # Enum mappings
-    new.status = enum_mappings.get(
-        StateSentenceStatus, default=StateSentenceStatus.PRESENT_WITHOUT_INFO
+    new.status = EnumParser(
+        getattr(proto, "status"), StateSentenceStatus, metadata.enum_overrides
     )
-    new.status_raw_text = fn(normalize, "status", proto)
+    new.status_raw_text = getattr(proto, "status")
 
-    new.incarceration_type = enum_mappings.get(
-        StateIncarcerationType, default=StateIncarcerationType.STATE_PRISON
+    new.incarceration_type = EnumParser(
+        getattr(proto, "incarceration_type"),
+        StateIncarcerationType,
+        metadata.enum_overrides,
     )
-    new.incarceration_type_raw_text = fn(normalize, "incarceration_type", proto)
+    new.incarceration_type_raw_text = getattr(proto, "incarceration_type")
 
     # 1-to-1 mappings
-    new.external_id = fn(parse_external_id, "state_incarceration_sentence_id", proto)
-    new.date_imposed = fn(parse_date, "date_imposed", proto)
-    new.start_date = fn(parse_date, "start_date", proto)
-    new.projected_min_release_date = fn(parse_date, "projected_min_release_date", proto)
-    new.projected_max_release_date = fn(parse_date, "projected_max_release_date", proto)
-    new.completion_date = fn(parse_date, "completion_date", proto)
-    new.parole_eligibility_date = fn(parse_date, "parole_eligibility_date", proto)
-    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
-    new.county_code = fn(normalize, "county_code", proto)
-    new.min_length_days = fn(parse_days, "min_length", proto)
-    new.max_length_days = fn(parse_days, "max_length", proto)
-    new.is_life = fn(parse_bool, "is_life", proto)
-    new.is_capital_punishment = fn(parse_bool, "is_capital_punishment", proto)
-    new.parole_possible = fn(parse_bool, "parole_possible", proto)
-    new.initial_time_served_days = fn(parse_days, "initial_time_served", proto)
-    new.good_time_days = fn(parse_days, "good_time", proto)
-    new.earned_time_days = fn(parse_days, "earned_time", proto)
+
+    state_incarceration_sentence_id = getattr(proto, "state_incarceration_sentence_id")
+    new.external_id = (
+        None
+        if common_utils.is_generated_id(state_incarceration_sentence_id)
+        else state_incarceration_sentence_id
+    )
+    new.date_imposed = getattr(proto, "date_imposed")
+    new.start_date = getattr(proto, "start_date")
+    new.projected_min_release_date = getattr(proto, "projected_min_release_date")
+    new.projected_max_release_date = getattr(proto, "projected_max_release_date")
+    new.completion_date = getattr(proto, "completion_date")
+    new.parole_eligibility_date = getattr(proto, "parole_eligibility_date")
+    new.state_code = metadata.region
+    new.county_code = getattr(proto, "county_code")
+    new.min_length_days = getattr(proto, "min_length")
+    new.max_length_days = getattr(proto, "max_length")
+    new.is_life = getattr(proto, "is_life")
+    new.is_capital_punishment = getattr(proto, "is_capital_punishment")
+    new.parole_possible = getattr(proto, "parole_possible")
+    new.initial_time_served_days = getattr(proto, "initial_time_served")
+    new.good_time_days = getattr(proto, "good_time")
+    new.earned_time_days = getattr(proto, "earned_time")

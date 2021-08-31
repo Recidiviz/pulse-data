@@ -17,20 +17,17 @@
 """Converts an ingest_info proto StateIncarcerationIncidentOutcome to a
 persistence entity.
 """
-
+from recidiviz.common import common_utils
+from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import normalize, parse_date, parse_int
 from recidiviz.ingest.models.ingest_info_pb2 import StateIncarcerationIncidentOutcome
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn,
-    parse_external_id,
-    parse_region_code_with_override,
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StateIncarcerationIncidentOutcomeFactory,
 )
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import EnumMappings
 
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
@@ -43,24 +40,28 @@ def convert(
     """
     new = entities.StateIncarcerationIncidentOutcome.builder()
 
-    enum_fields = {
-        "outcome_type": StateIncarcerationIncidentOutcomeType,
-    }
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
-
     # enum values
-    new.outcome_type = enum_mappings.get(StateIncarcerationIncidentOutcomeType)
-    new.outcome_type_raw_text = fn(normalize, "outcome_type", proto)
+    new.outcome_type = EnumParser(
+        getattr(proto, "outcome_type"),
+        StateIncarcerationIncidentOutcomeType,
+        metadata.enum_overrides,
+    )
+    new.outcome_type_raw_text = getattr(proto, "outcome_type")
 
     # 1-to-1 mappings
-    new.external_id = fn(
-        parse_external_id, "state_incarceration_incident_outcome_id", proto
+    state_incarceration_incident_outcome_id = getattr(
+        proto, "state_incarceration_incident_outcome_id"
     )
-    new.date_effective = fn(parse_date, "date_effective", proto)
-    new.hearing_date = fn(parse_date, "hearing_date", proto)
-    new.report_date = fn(parse_date, "report_date", proto)
-    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
-    new.outcome_description = fn(normalize, "outcome_description", proto)
-    new.punishment_length_days = fn(parse_int, "punishment_length_days", proto)
+    new.external_id = (
+        None
+        if common_utils.is_generated_id(state_incarceration_incident_outcome_id)
+        else state_incarceration_incident_outcome_id
+    )
+    new.date_effective = getattr(proto, "date_effective")
+    new.hearing_date = getattr(proto, "hearing_date")
+    new.report_date = getattr(proto, "report_date")
+    new.state_code = metadata.region
+    new.outcome_description = getattr(proto, "outcome_description")
+    new.punishment_length_days = getattr(proto, "punishment_length_days")
 
-    return new.build()
+    return new.build(StateIncarcerationIncidentOutcomeFactory.deserialize)

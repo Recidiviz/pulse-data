@@ -28,8 +28,12 @@ from recidiviz.common.constants.state.state_court_case import (
     StateCourtCaseStatus,
     StateCourtType,
 )
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_program_assignment import (
+    StateProgramAssignmentParticipationStatus,
+)
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.str_field_utils import normalize_flat_json
+from recidiviz.common.str_field_utils import normalize_flat_json, parse_days
 from recidiviz.persistence.entity.entity_deserialize import (
     EntityFactory,
     EntityFieldConverter,
@@ -186,6 +190,68 @@ class StateIncarcerationIncidentFactory(EntityFactory):
     ) -> entities.StateIncarcerationIncident:
         return entity_deserialize(
             cls=entities.StateIncarcerationIncident, converter_overrides={}, **kwargs
+        )
+
+
+class StateIncarcerationIncidentOutcomeFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: Union[str, EnumParser]
+    ) -> entities.StateIncarcerationIncidentOutcome:
+        return entity_deserialize(
+            cls=entities.StateIncarcerationIncidentOutcome,
+            converter_overrides={},
+            **kwargs
+        )
+
+
+class StateIncarcerationSentenceFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: Union[str, EnumParser]
+    ) -> entities.StateIncarcerationSentence:
+        return entity_deserialize(
+            cls=entities.StateIncarcerationSentence,
+            converter_overrides={
+                "status": EntityFieldConverter(
+                    EnumParser,
+                    get_parser_for_enum_with_default(
+                        StateSentenceStatus.PRESENT_WITHOUT_INFO
+                    ),
+                ),
+                "incarceration_type": EntityFieldConverter(
+                    EnumParser,
+                    get_parser_for_enum_with_default(
+                        StateIncarcerationType.STATE_PRISON
+                    ),
+                ),
+                "min_length_days": EntityFieldConverter(str, parse_days),
+                "max_length_days": EntityFieldConverter(str, parse_days),
+                # Note: other date fields on this class (initial_time_served_days,
+                # good_time_days, earned_time_days) should be formatted as integers
+                # (e.g. not 'xxY xxM xxD' format) in the ingest view and will be parsed
+                # normally as integers.
+            },
+            **kwargs
+        )
+
+
+class StateProgramAssignmentFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: Union[str, EnumParser]
+    ) -> entities.StateProgramAssignment:
+        return entity_deserialize(
+            cls=entities.StateProgramAssignment,
+            converter_overrides={
+                "participation_status": EntityFieldConverter(
+                    EnumParser,
+                    get_parser_for_enum_with_default(
+                        StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO
+                    ),
+                ),
+            },
+            **kwargs
         )
 
 
