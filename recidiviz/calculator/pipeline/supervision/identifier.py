@@ -1016,13 +1016,29 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
         supervision_period_to_judicial_district_associations: Dict[int, Dict[Any, Any]],
     ) -> Optional[ProjectedSupervisionCompletionEvent]:
-        """Returns a ProjectedSupervisionCompletionEvent for the given supervision sentence and its last terminated period,
-        if the sentence should be included in the success metric counts. If the sentence should not be included in success
+        """Returns a ProjectedSupervisionCompletionEvent for the given supervision
+        sentence and its last terminated period, if the sentence should be included
+        in the success metric counts. If the sentence should not be included in success
         metrics, then returns None."""
-        if not self._include_termination_in_success_metric(
-            supervision_period.termination_reason
-        ):
+        termination_reason = supervision_period.termination_reason
+
+        # TODO(#2596): Assert that the sentence status is COMPLETED or COMMUTED to
+        #  qualify as successful
+        (
+            include_termination_in_success_metric,
+            successful_completion,
+        ) = self._termination_is_successful_if_should_include_in_success_metric(
+            termination_reason
+        )
+
+        if not include_termination_in_success_metric:
             return None
+
+        if successful_completion is None:
+            raise ValueError(
+                "Expected set value for successful_completion if the "
+                "termination should be included in the metrics."
+            )
 
         start_date = sentence.start_date
         completion_date = sentence.completion_date
@@ -1055,12 +1071,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         )
 
         sentence_days_served = (completion_date - start_date).days
-
-        # TODO(#2596): Assert that the sentence status is COMPLETED or COMMUTED to qualify as successful
-        supervision_success = supervision_period.termination_reason in (
-            StateSupervisionPeriodTerminationReason.DISCHARGE,
-            StateSupervisionPeriodTerminationReason.EXPIRATION,
-        )
 
         incarcerated_during_sentence = (
             incarceration_period_index.incarceration_admissions_between_dates(
@@ -1102,7 +1112,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             supervision_level=supervision_period.supervision_level,
             supervision_level_raw_text=supervision_period.supervision_level_raw_text,
             case_type=case_type,
-            successful_completion=supervision_success,
+            successful_completion=successful_completion,
             incarcerated_during_sentence=incarcerated_during_sentence,
             sentence_days_served=sentence_days_served,
             supervising_officer_external_id=supervising_officer_external_id,
@@ -1113,34 +1123,45 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             custodial_authority=supervision_period.custodial_authority,
         )
 
-    def _include_termination_in_success_metric(
+    def _termination_is_successful_if_should_include_in_success_metric(
         self,
         termination_reason: Optional[StateSupervisionPeriodTerminationReason],
-    ) -> bool:
-        """Determines whether the given termination of supervision should be included in a supervision success metric."""
-        # If this is the last supervision period termination status, there is some kind of data error and we cannot
-        # determine whether this sentence ended successfully - exclude these entirely
+    ) -> Tuple[bool, Optional[bool]]:
+        """Determines whether the given termination of supervision should be included in
+        a supervision success metric and, if it should be included, determines whether a
+        termination of supervision with the given |termination_reason| should be
+        considered a successful termination.
+
+        Returns a tuple in the format [bool, Optional[bool]], representing
+        (should_include_in_success_metric, termination_was_successful).
+        """
+        # If this is the last supervision period termination status, there is some kind
+        # of data error and we cannot determine whether this sentence ended
+        # successfully - exclude these entirely
         if not termination_reason or termination_reason in (
             StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN,
             StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
             StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,
             StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
         ):
-            return False
+            return False, None
 
-        # If this is the last supervision period termination status, then the supervision sentence ended in some sort of
-        # truncated, not-necessarily successful manner unrelated to a failure on supervision - exclude these entirely
+        # If this is the last supervision period termination status, then the
+        # supervision sentence ended in some sort of truncated, not-necessarily
+        # successful manner unrelated to a failure on supervision - exclude these
+        # entirely
         if termination_reason in (
             StateSupervisionPeriodTerminationReason.DEATH,
             StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE,
             StateSupervisionPeriodTerminationReason.SUSPENSION,
         ):
-            return False
+            return False, None
 
-        # If the last period is an investigative period, then the person was never actually sentenced formally. In this case
-        # we should not include the period in our "success" metrics.
+        # If the last period is an investigative period, then the person was never
+        # actually sentenced formally. In this case we should not include the period
+        # in our "success" metrics.
         if termination_reason == StateSupervisionPeriodTerminationReason.INVESTIGATION:
-            return False
+            return False, None
 
         if termination_reason in (
             # Successful terminations
@@ -1149,12 +1170,16 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             StateSupervisionPeriodTerminationReason.DISMISSED,
             StateSupervisionPeriodTerminationReason.EXPIRATION,
             StateSupervisionPeriodTerminationReason.PARDONED,
+        ):
+            return True, True
+
+        if termination_reason in (
             # Unsuccessful terminations
             StateSupervisionPeriodTerminationReason.ABSCONSION,
             StateSupervisionPeriodTerminationReason.REVOCATION,
             StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
         ):
-            return True
+            return True, False
 
         raise ValueError(
             f"Unexpected StateSupervisionPeriodTerminationReason: {termination_reason}"

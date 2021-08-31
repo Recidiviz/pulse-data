@@ -8078,19 +8078,6 @@ class TestConvertEventsToDual(unittest.TestCase):
             )
 
 
-class TestIncludeTerminationInSuccessMetric(unittest.TestCase):
-    """Tests for _include_termination_in_success_metric function."""
-
-    def setUp(self) -> None:
-        self.identifier = identifier.SupervisionIdentifier()
-
-    def test_include_termination_in_success_metric(self) -> None:
-        for termination_reason in StateSupervisionPeriodTerminationReason:
-            _ = self.identifier._include_termination_in_success_metric(
-                termination_reason
-            )
-
-
 def expected_population_events(
     supervision_period: StateSupervisionPeriod,
     supervision_type: StateSupervisionPeriodSupervisionType,
@@ -8707,6 +8694,30 @@ class TestProjectedCompletionDate(unittest.TestCase):
             ),
             incarceration_sentence.projected_max_release_date,
         )
+
+
+class TestTerminationReasonFunctionCoverageCompleteness(unittest.TestCase):
+    """Tests that functions that classify all possible values of the
+    StateSupervisionPeriodTerminationReason enum have complete coverage."""
+
+    def setUp(self) -> None:
+        self.identifier = identifier.SupervisionIdentifier()
+
+    def test__termination_is_successful_if_should_include_in_success_metric(
+        self,
+    ) -> None:
+        for termination_reason in StateSupervisionPeriodTerminationReason:
+            (
+                include_in_metric,
+                is_successful_completion,
+            ) = self.identifier._termination_is_successful_if_should_include_in_success_metric(
+                termination_reason
+            )
+
+            if not include_in_metric:
+                self.assertIsNone(is_successful_completion)
+            else:
+                self.assertIsNotNone(include_in_metric)
 
 
 def create_start_event_from_period(
