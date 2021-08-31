@@ -107,7 +107,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
-    StateSupervisionViolationResponseRevocationType,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.date import last_day_of_month
@@ -7813,24 +7812,24 @@ class TestGetMostSevereResponseDecision(unittest.TestCase):
             violation_date=date(2009, 1, 3),
         )
 
-        supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
-            supervision_violation_response_id=_DEFAULT_SSVR_ID,
-            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            state_code="US_XX",
-            response_date=date(2009, 1, 7),
-            supervision_violation_response_decisions=[
-                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                    state_code="US_XX",
-                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
-                    revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-                ),
-                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                    state_code="US_XX",
-                    decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
-                    revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-                ),
-            ],
-            supervision_violation=supervision_violation,
+        supervision_violation_response = (
+            StateSupervisionViolationResponse.new_with_defaults(
+                supervision_violation_response_id=_DEFAULT_SSVR_ID,
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                state_code="US_XX",
+                response_date=date(2009, 1, 7),
+                supervision_violation_response_decisions=[
+                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code="US_XX",
+                        decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                    ),
+                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code="US_XX",
+                        decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+                    ),
+                ],
+                supervision_violation=supervision_violation,
+            )
         )
 
         most_severe_response_decision = recidiviz.calculator.pipeline.utils.violation_response_utils.get_most_severe_response_decision(

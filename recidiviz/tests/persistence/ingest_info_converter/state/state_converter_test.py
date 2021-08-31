@@ -22,7 +22,6 @@ from typing import List
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Ethnicity, Race
-from recidiviz.common.constants.state.external_id_types import US_ND_ELITE, US_ND_SID
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
@@ -99,6 +98,9 @@ from recidiviz.tests.persistence.database.database_test_utils import FakeIngestM
 _INGEST_TIME = datetime.datetime(year=2019, month=2, day=13, hour=12)
 _JURISDICTION_ID = "JURISDICTION_ID"
 
+US_XX_DOC_ID = "US_XX_DOC_ID"
+US_XX_SID = "US_XX_SID"
+
 
 class TestIngestInfoStateConverter(unittest.TestCase):
     """Test converting IngestInfo objects to Persistence layer objects."""
@@ -137,7 +139,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
 
     def testConvert_FullIngestInfo(self):
         # Arrange
-        metadata = FakeIngestMetadata.for_state(region="us_nd")
+        metadata = FakeIngestMetadata.for_state(region="US_XX")
 
         ingest_info = IngestInfo()
         ingest_info.state_agents.add(
@@ -168,8 +170,8 @@ class TestIngestInfoStateConverter(unittest.TestCase):
 
         # We expect the external_ids coming in to have the format
         # [type]:[external_id]
-        ii_person_external_id_1 = US_ND_ELITE + ":" + "EXTERNAL_ID1"
-        ii_person_external_id_2 = US_ND_SID + ":" + "EXTERNAL_ID2"
+        ii_person_external_id_1 = US_XX_DOC_ID + ":" + "EXTERNAL_ID1"
+        ii_person_external_id_2 = US_XX_SID + ":" + "EXTERNAL_ID2"
 
         ingest_info.state_people.add(
             state_person_id="PERSON_ID",
@@ -202,10 +204,10 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_alias_id="ALIAS_ID2", full_name="FRANK OCEAN"
         )
         ingest_info.state_person_external_ids.add(
-            state_person_external_id_id=ii_person_external_id_1, id_type=US_ND_ELITE
+            state_person_external_id_id=ii_person_external_id_1, id_type=US_XX_DOC_ID
         )
         ingest_info.state_person_external_ids.add(
-            state_person_external_id_id=ii_person_external_id_2, id_type=US_ND_SID
+            state_person_external_id_id=ii_person_external_id_2, id_type=US_XX_SID
         )
         ingest_info.state_assessments.add(
             state_assessment_id="ASSESSMENT_ID",
@@ -318,13 +320,13 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         ingest_info.state_supervision_violation_type_entries.add(
             state_supervision_violation_type_entry_id="VIOLATION_TYPE_ENTRY_ID",
             violation_type="FELONY",
-            state_code="US_ND",
+            state_code="US_XX",
         )
 
         ingest_info.state_supervision_violated_condition_entries.add(
             state_supervision_violated_condition_entry_id="VIOLATED_CONDITION_ENTRY_ID",
             condition="CURFEW",
-            state_code="US_ND",
+            state_code="US_XX",
         )
 
         ingest_info.state_supervision_violations.add(
@@ -339,14 +341,14 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         ingest_info.state_supervision_violated_condition_entries.add(
             state_supervision_violated_condition_entry_id="VIOLATED_CONDITION_ENTRY_ID",
             condition="CURFEW",
-            state_code="US_ND",
+            state_code="US_XX",
         )
 
         ingest_info.state_supervision_violation_response_decision_entries.add(
             state_supervision_violation_response_decision_entry_id="VIOLATION_RESPONSE_DECISION_ENTRY_ID",
             decision="REVOCATION",
             revocation_type="REINCARCERATION",
-            state_code="US_ND",
+            state_code="US_XX",
         )
 
         ingest_info.state_supervision_violation_responses.add(
@@ -370,7 +372,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             date_effective="2/10/2018",
             hearing_date="2/6/2018",
             report_date="2/8/2018",
-            state_code="US_ND",
+            state_code="US_XX",
             outcome_description="Good time",
             punishment_length_days="7",
         )
@@ -389,10 +391,10 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         # Assert
         supervision_contact = StateSupervisionContact.new_with_defaults(
             external_id="SUPERVISION_CONTACT_ID",
-            state_code="US_ND",
+            state_code="US_XX",
             contacted_agent=StateAgent.new_with_defaults(
                 external_id="AGENT_ID_PO",
-                state_code="US_ND",
+                state_code="US_XX",
                 agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
                 full_name='{"full_name": "AGENT PAROLEY"}',
             ),
@@ -405,19 +407,19 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             date_effective=datetime.date(year=2018, month=2, day=10),
             hearing_date=datetime.date(year=2018, month=2, day=6),
             report_date=datetime.date(year=2018, month=2, day=8),
-            state_code="US_ND",
+            state_code="US_XX",
             outcome_description="GOOD TIME",
             punishment_length_days=7,
         )
 
         incident = StateIncarcerationIncident.new_with_defaults(
             external_id="INCIDENT_ID",
-            state_code="US_ND",
+            state_code="US_XX",
             incident_type=StateIncarcerationIncidentType.CONTRABAND,
             incident_type_raw_text="CONTRABAND",
             responding_officer=StateAgent.new_with_defaults(
                 external_id="AGENT_ID2",
-                state_code="US_ND",
+                state_code="US_XX",
                 agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
                 full_name='{"full_name": "AGENT HERNANDEZ"}',
             ),
@@ -426,20 +428,20 @@ class TestIngestInfoStateConverter(unittest.TestCase):
 
         assessment = StateAssessment.new_with_defaults(
             external_id="ASSESSMENT_ID",
-            state_code="US_ND",
+            state_code="US_XX",
             assessment_class=StateAssessmentClass.MENTAL_HEALTH,
             assessment_class_raw_text="MENTAL_HEALTH",
             conducting_agent=StateAgent.new_with_defaults(
                 external_id="AGENT_ID1",
                 agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
-                state_code="US_ND",
+                state_code="US_XX",
                 full_name='{"full_name": "AGENT WILLIAMS"}',
             ),
         )
 
         program_assignment = StateProgramAssignment.new_with_defaults(
             external_id="PROGRAM_ASSIGNMENT_ID",
-            state_code="US_ND",
+            state_code="US_XX",
             participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
             participation_status_raw_text="DISCHARGED",
             referral_date=datetime.date(year=2019, month=2, day=10),
@@ -452,20 +454,20 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             referring_agent=StateAgent.new_with_defaults(
                 external_id="AGENT_ID4",
                 agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
-                state_code="US_ND",
+                state_code="US_XX",
                 full_name='{"full_name": "AGENT PO"}',
             ),
         )
 
         response = StateSupervisionViolationResponse.new_with_defaults(
             external_id="RESPONSE_ID",
-            state_code="US_ND",
+            state_code="US_XX",
             response_type=StateSupervisionViolationResponseType.CITATION,
             response_type_raw_text="CITATION",
             decision_agents=[
                 StateAgent.new_with_defaults(
                     external_id="AGENT_ID_TERM",
-                    state_code="US_ND",
+                    state_code="US_XX",
                     full_name='{"full_name": "AGENT TERMY"}',
                     agent_type=StateAgentType.SUPERVISION_OFFICER,
                     agent_type_raw_text="SUPERVISION_OFFICER",
@@ -473,7 +475,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             ],
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                    state_code="US_ND",
+                    state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     decision_raw_text="REVOCATION",
                     revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
@@ -484,18 +486,18 @@ class TestIngestInfoStateConverter(unittest.TestCase):
 
         violation = StateSupervisionViolation.new_with_defaults(
             external_id="VIOLATION_ID",
-            state_code="US_ND",
+            state_code="US_XX",
             supervision_violation_responses=[response],
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
-                    state_code="US_ND",
+                    state_code="US_XX",
                     violation_type=StateSupervisionViolationType.FELONY,
                     violation_type_raw_text="FELONY",
                 )
             ],
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
-                    state_code="US_ND",
+                    state_code="US_XX",
                     condition="CURFEW",
                 )
             ],
@@ -503,12 +505,12 @@ class TestIngestInfoStateConverter(unittest.TestCase):
 
         court_case = StateCourtCase.new_with_defaults(
             external_id="CASE_ID",
-            state_code="US_ND",
+            state_code="US_XX",
             status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
             court_type=StateCourtType.PRESENT_WITHOUT_INFO,
             judge=StateAgent.new_with_defaults(
                 external_id="JUDGE_AGENT_ID_1",
-                state_code="US_ND",
+                state_code="US_XX",
                 agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
                 full_name='{"full_name": "JUDGE JUDY"}',
             ),
@@ -520,12 +522,12 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             classification_type_raw_text="M",
             classification_subtype="1",
             ncic_code="5006",
-            state_code="US_ND",
+            state_code="US_XX",
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             court_case=court_case,
             bond=StateBond.new_with_defaults(
                 external_id="BOND_ID",
-                state_code="US_ND",
+                state_code="US_XX",
                 status=BondStatus.POSTED,
                 status_raw_text="POSTED",
             ),
@@ -536,14 +538,14 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             classification_type=StateChargeClassificationType.MISDEMEANOR,
             classification_type_raw_text="M",
             classification_subtype="2",
-            state_code="US_ND",
+            state_code="US_XX",
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             court_case=court_case,
         )
 
         charge_3 = StateCharge.new_with_defaults(
             external_id="CHARGE_ID3",
-            state_code="US_ND",
+            state_code="US_XX",
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text="F",
             classification_subtype="3",
@@ -555,7 +557,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
 
         incarceration_sentence_1 = StateIncarcerationSentence.new_with_defaults(
             external_id="INCARCERATION_SENTENCE_ID1",
-            state_code="US_ND",
+            state_code="US_XX",
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             charges=[charge_1],
@@ -564,23 +566,23 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                     external_id="I_PERIOD_ID",
                     status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
                     incarceration_type=StateIncarcerationType.STATE_PRISON,
-                    state_code="US_ND",
+                    state_code="US_XX",
                     incarceration_incidents=[incident],
                     program_assignments=[program_assignment],
                     parole_decisions=[
                         StateParoleDecision.new_with_defaults(
                             external_id="DECISION_ID",
-                            state_code="US_ND",
+                            state_code="US_XX",
                             decision_agents=[
                                 StateAgent.new_with_defaults(
                                     external_id="AGENT_ID2",
                                     agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
-                                    state_code="US_ND",
+                                    state_code="US_XX",
                                     full_name='{"full_name": "AGENT HERNANDEZ"}',
                                 ),
                                 StateAgent.new_with_defaults(
                                     external_id="AGENT_ID3",
-                                    state_code="US_ND",
+                                    state_code="US_XX",
                                     agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
                                     full_name='{"full_name": "AGENT SMITH"}',
                                 ),
@@ -594,7 +596,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
 
         incarceration_sentence_2 = StateIncarcerationSentence.new_with_defaults(
             external_id="INCARCERATION_SENTENCE_ID2",
-            state_code="US_ND",
+            state_code="US_XX",
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             charges=[charge_2, charge_3],
@@ -602,13 +604,13 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                 StateSupervisionPeriod.new_with_defaults(
                     external_id="S_PERIOD_ID3",
                     status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
-                    state_code="US_ND",
+                    state_code="US_XX",
                     supervision_type=StateSupervisionType.PROBATION,
                     supervision_type_raw_text="PROBATION",
                     assessments=[assessment],
                     supervising_officer=StateAgent.new_with_defaults(
                         external_id="AGENT_ID_PO",
-                        state_code="US_ND",
+                        state_code="US_XX",
                         agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
                         full_name='{"full_name": "AGENT PAROLEY"}',
                     ),
@@ -616,7 +618,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                         StateSupervisionCaseTypeEntry.new_with_defaults(
                             case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                             case_type_raw_text="DOMESTIC_VIOLENCE",
-                            state_code="US_ND",
+                            state_code="US_XX",
                             external_id="CASE_TYPE_ID",
                         )
                     ],
@@ -626,45 +628,45 @@ class TestIngestInfoStateConverter(unittest.TestCase):
 
         expected_result = [
             StatePerson.new_with_defaults(
-                state_code="US_ND",
+                state_code="US_XX",
                 external_ids=[
                     StatePersonExternalId.new_with_defaults(
                         external_id="EXTERNAL_ID1",
-                        state_code="US_ND",
-                        id_type=US_ND_ELITE,
+                        state_code="US_XX",
+                        id_type=US_XX_DOC_ID,
                     ),
                     StatePersonExternalId.new_with_defaults(
                         external_id="EXTERNAL_ID2",
-                        state_code="US_ND",
-                        id_type=US_ND_SID,
+                        state_code="US_XX",
+                        id_type=US_XX_SID,
                     ),
                 ],
                 races=[
                     StatePersonRace(
-                        race=Race.WHITE, race_raw_text="WHITE", state_code="US_ND"
+                        race=Race.WHITE, race_raw_text="WHITE", state_code="US_XX"
                     ),
                     StatePersonRace(
-                        race=Race.OTHER, race_raw_text="OTHER", state_code="US_ND"
+                        race=Race.OTHER, race_raw_text="OTHER", state_code="US_XX"
                     ),
                 ],
                 ethnicities=[
                     StatePersonEthnicity(
                         ethnicity=Ethnicity.HISPANIC,
                         ethnicity_raw_text="HISPANIC",
-                        state_code="US_ND",
+                        state_code="US_XX",
                     )
                 ],
                 aliases=[
                     StatePersonAlias.new_with_defaults(
-                        full_name='{"full_name": "LONNY BREAUX"}', state_code="US_ND"
+                        full_name='{"full_name": "LONNY BREAUX"}', state_code="US_XX"
                     ),
                     StatePersonAlias.new_with_defaults(
-                        full_name='{"full_name": "FRANK OCEAN"}', state_code="US_ND"
+                        full_name='{"full_name": "FRANK OCEAN"}', state_code="US_XX"
                     ),
                 ],
                 supervising_officer=StateAgent.new_with_defaults(
                     external_id="AGENT_ID_SUPERVISING",
-                    state_code="US_ND",
+                    state_code="US_XX",
                     agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
                     full_name='{"full_name": "SUPERVISING AGENT"}',
                 ),
@@ -674,11 +676,11 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                     StateSentenceGroup.new_with_defaults(
                         external_id="GROUP_ID1",
                         status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        state_code="US_ND",
+                        state_code="US_XX",
                         supervision_sentences=[
                             StateSupervisionSentence.new_with_defaults(
                                 external_id="SUPERVISION_SENTENCE_ID1",
-                                state_code="US_ND",
+                                state_code="US_XX",
                                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                                 charges=[charge_1, charge_2],
                                 supervision_periods=[
@@ -687,7 +689,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                         status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                                         supervision_level=StateSupervisionLevel.MEDIUM,
                                         supervision_level_raw_text="MED",
-                                        state_code="US_ND",
+                                        state_code="US_XX",
                                         supervision_type=StateSupervisionType.PAROLE,
                                         supervision_type_raw_text="PAROLE",
                                         supervision_violation_entries=[violation],
@@ -705,18 +707,18 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                     StateSentenceGroup.new_with_defaults(
                         external_id="GROUP_ID2",
                         status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                        state_code="US_ND",
+                        state_code="US_XX",
                         supervision_sentences=[
                             StateSupervisionSentence.new_with_defaults(
                                 external_id="SUPERVISION_SENTENCE_ID2",
-                                state_code="US_ND",
+                                state_code="US_XX",
                                 status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                                 charges=[charge_2],
                                 supervision_periods=[
                                     StateSupervisionPeriod.new_with_defaults(
                                         external_id="S_PERIOD_ID2",
                                         status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
-                                        state_code="US_ND",
+                                        state_code="US_XX",
                                         supervision_type=StateSupervisionType.PAROLE,
                                         supervision_type_raw_text="PAROLE",
                                     )
@@ -726,7 +728,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                         fines=[
                             StateFine.new_with_defaults(
                                 external_id="FINE_ID",
-                                state_code="US_ND",
+                                state_code="US_XX",
                                 status=StateFineStatus.PAID,
                                 status_raw_text="PAID",
                             )
