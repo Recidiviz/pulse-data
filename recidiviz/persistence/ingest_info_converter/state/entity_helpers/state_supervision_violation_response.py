@@ -21,7 +21,6 @@ persistence entity."""
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,
-    StateSupervisionViolationResponseRevocationType,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
@@ -50,7 +49,6 @@ def copy_fields_to_builder(
     enum_fields = {
         "response_type": StateSupervisionViolationResponseType,
         "decision": StateSupervisionViolationResponseDecision,
-        "revocation_type": StateSupervisionViolationResponseRevocationType,
         "deciding_body_type": StateSupervisionViolationResponseDecidingBodyType,
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
@@ -61,10 +59,6 @@ def copy_fields_to_builder(
     new.response_subtype = fn(normalize, "response_subtype", proto)
     new.decision = enum_mappings.get(StateSupervisionViolationResponseDecision)
     new.decision_raw_text = fn(normalize, "decision", proto)
-    new.revocation_type = enum_mappings.get(
-        StateSupervisionViolationResponseRevocationType
-    )
-    new.revocation_type_raw_text = fn(normalize, "revocation_type", proto)
     new.deciding_body_type = enum_mappings.get(
         StateSupervisionViolationResponseDecidingBodyType
     )

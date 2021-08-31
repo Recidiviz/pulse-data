@@ -22,7 +22,6 @@ from datetime import date
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,
-    StateSupervisionViolationResponseRevocationType,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.ingest.models import ingest_info_pb2
@@ -44,7 +43,6 @@ class StateSupervisionViolationResponseConverterTest(unittest.TestCase):
             response_type="PERMANENT_DECISION",
             response_subtype="SUBTYPE",
             decision="REVOCATION",
-            revocation_type="REINCARCERATION",
             deciding_body_type="PAROLE_BOARD",
             state_supervision_violation_response_id="RESPONSE_ID",
             response_date="1/2/2111",
@@ -66,8 +64,6 @@ class StateSupervisionViolationResponseConverterTest(unittest.TestCase):
             response_subtype="SUBTYPE",
             decision=StateSupervisionViolationResponseDecision.REVOCATION,
             decision_raw_text="REVOCATION",
-            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-            revocation_type_raw_text="REINCARCERATION",
             deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
             deciding_body_type_raw_text="PAROLE_BOARD",
             external_id="RESPONSE_ID",

@@ -2090,7 +2090,6 @@ class StateSupervisionViolationResponse(IngestObject):
         response_date=None,
         state_code=None,
         decision=None,
-        revocation_type=None,
         deciding_body_type=None,
         is_draft=None,
         supervision_violation_response_decisions=None,
@@ -2104,7 +2103,6 @@ class StateSupervisionViolationResponse(IngestObject):
         self.response_date: Optional[str] = response_date
         self.state_code: Optional[str] = state_code
         self.decision: Optional[str] = decision
-        self.revocation_type: Optional[str] = revocation_type
         self.deciding_body_type: Optional[str] = deciding_body_type
         self.is_draft: Optional[str] = is_draft
         self.state_supervision_violation_response_decisions: List[
