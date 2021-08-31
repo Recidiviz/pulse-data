@@ -71,7 +71,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,
-    StateSupervisionViolationResponseRevocationType,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.states import StateCode
@@ -105,7 +104,6 @@ from recidiviz.ingest.direct.regions.us_pa.us_pa_enum_helpers import (
     incarceration_period_admission_reason_mapper,
     incarceration_period_purpose_mapper,
     incarceration_period_release_reason_mapper,
-    revocation_type_mapper,
     supervision_contact_location_mapper,
     supervision_contact_type_mapper,
     supervision_period_supervision_type_mapper,
@@ -617,12 +615,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         StateSupervisionViolationResponseDecision.WARNING: [
             "WTWR",  # Written Warning
         ],
-        StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION: [
-            "RESCR",
-            "RESCR6",
-            "RESCR9",
-            "RESCR12",
-        ],
         StateCustodialAuthority.STATE_PRISON: [
             # SUPERVISION CUSTODIAL AUTHORITY CODES
             "09",  # Emergency Release - used for COVID releases
@@ -665,7 +657,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         StateIncarcerationPeriodAdmissionReason: incarceration_period_admission_reason_mapper,
         StateIncarcerationPeriodReleaseReason: incarceration_period_release_reason_mapper,
         StateSpecializedPurposeForIncarceration: incarceration_period_purpose_mapper,
-        StateSupervisionViolationResponseRevocationType: revocation_type_mapper,
         StateSupervisionPeriodSupervisionType: supervision_period_supervision_type_mapper,
         StateSupervisionContactLocation: supervision_contact_location_mapper,
         StateSupervisionContactType: supervision_contact_type_mapper,
@@ -1403,7 +1394,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                     obj.create_state_supervision_violation_response_decision_entry(
                         state_supervision_violation_response_decision_entry_id=entry_id,
                         decision=sanction_code,
-                        revocation_type=sanction_code,
                     )
 
     @staticmethod
@@ -1459,7 +1449,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 obj.create_state_supervision_violation_response_decision_entry(
                     state_supervision_violation_response_decision_entry_id=entry_id,
                     decision=condition_code,
-                    revocation_type=condition_code,
                 )
 
     @staticmethod
