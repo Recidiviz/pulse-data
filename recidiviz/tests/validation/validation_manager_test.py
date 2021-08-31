@@ -53,6 +53,7 @@ from recidiviz.validation.validation_models import (
     DataValidationJobResultDetails,
     ValidationCategory,
     ValidationCheckType,
+    ValidationResultStatus,
 )
 from recidiviz.validation.views import view_config as validation_view_config
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
@@ -114,16 +115,22 @@ def get_test_validations() -> List[DataValidationJob]:
 
 @attr.s(frozen=True, kw_only=True)
 class FakeValidationResultDetails(DataValidationJobResultDetails):
-    passed: bool = attr.ib()
+    validation_status: ValidationResultStatus = attr.ib()
 
-    def was_successful(self) -> bool:
-        return self.passed
+    def validation_result_status(self) -> ValidationResultStatus:
+        return self.validation_status
 
     def failure_description(self) -> Optional[str]:
-        return None if self.passed else "FAIL"
-
-
-_API_RESPONSE_IF_NO_FAILURES = "Failed validations:\n"
+        validation_result_status = self.validation_result_status()
+        if validation_result_status == ValidationResultStatus.SUCCESS:
+            return None
+        if validation_result_status == ValidationResultStatus.FAIL_SOFT:
+            return "FAIL SOFT"
+        if validation_result_status == ValidationResultStatus.FAIL_HARD:
+            return "FAIL HARD"
+        raise AttributeError(
+            f"failure_description for validation_result_status {validation_result_status} not set"
+        )
 
 
 class TestHandleRequest(TestCase):
@@ -164,14 +171,15 @@ class TestHandleRequest(TestCase):
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
         mock_run_job.return_value = DataValidationJobResult(
             validation_job=self._TEST_VALIDATIONS[0],
-            result_details=FakeValidationResultDetails(passed=True),
+            result_details=FakeValidationResultDetails(
+                validation_status=ValidationResultStatus.SUCCESS
+            ),
         )
 
         headers = {"X-Appengine-Cron": "test-cron"}
         response = self.client.get("/validate", headers=headers)
 
         self.assertEqual(200, response.status_code)
-        self.assertEqual(_API_RESPONSE_IF_NO_FAILURES, response.get_data().decode())
 
         self.assertEqual(4, mock_run_job.call_count)
         for job in self._TEST_VALIDATIONS:
@@ -201,16 +209,22 @@ class TestHandleRequest(TestCase):
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
         first_failure = DataValidationJobResult(
             validation_job=self._TEST_VALIDATIONS[1],
-            result_details=FakeValidationResultDetails(passed=False),
+            result_details=FakeValidationResultDetails(
+                validation_status=ValidationResultStatus.FAIL_HARD
+            ),
         )
         second_failure = DataValidationJobResult(
             validation_job=self._TEST_VALIDATIONS[2],
-            result_details=FakeValidationResultDetails(passed=False),
+            result_details=FakeValidationResultDetails(
+                validation_status=ValidationResultStatus.FAIL_HARD
+            ),
         )
         mock_run_job.side_effect = [
             DataValidationJobResult(
                 validation_job=self._TEST_VALIDATIONS[0],
-                result_details=FakeValidationResultDetails(passed=True),
+                result_details=FakeValidationResultDetails(
+                    validation_status=ValidationResultStatus.SUCCESS
+                ),
             ),
             first_failure,
             second_failure,
@@ -220,7 +234,6 @@ class TestHandleRequest(TestCase):
         response = self.client.get("/validate", headers=headers)
 
         self.assertEqual(200, response.status_code)
-        self.assertNotEqual(_API_RESPONSE_IF_NO_FAILURES, response.get_data().decode())
 
         self.assertEqual(4, mock_run_job.call_count)
         for job in self._TEST_VALIDATIONS:
@@ -254,22 +267,30 @@ class TestHandleRequest(TestCase):
 
         first_failure = DataValidationJobResult(
             validation_job=self._TEST_VALIDATIONS[1],
-            result_details=FakeValidationResultDetails(passed=False),
+            result_details=FakeValidationResultDetails(
+                validation_status=ValidationResultStatus.FAIL_HARD
+            ),
         )
         second_failure = DataValidationJobResult(
             validation_job=self._TEST_VALIDATIONS[2],
-            result_details=FakeValidationResultDetails(passed=False),
+            result_details=FakeValidationResultDetails(
+                validation_status=ValidationResultStatus.FAIL_HARD
+            ),
         )
         mock_run_job.side_effect = [
             DataValidationJobResult(
                 validation_job=self._TEST_VALIDATIONS[0],
-                result_details=FakeValidationResultDetails(passed=True),
+                result_details=FakeValidationResultDetails(
+                    validation_status=ValidationResultStatus.SUCCESS
+                ),
             ),
             first_failure,
             second_failure,
             DataValidationJobResult(
                 validation_job=self._TEST_VALIDATIONS[3],
-                result_details=FakeValidationResultDetails(passed=True),
+                result_details=FakeValidationResultDetails(
+                    validation_status=ValidationResultStatus.SUCCESS
+                ),
             ),
         ]
 
@@ -277,7 +298,6 @@ class TestHandleRequest(TestCase):
         response = self.client.get("/validate", headers=headers)
 
         self.assertEqual(200, response.status_code)
-        self.assertNotEqual(_API_RESPONSE_IF_NO_FAILURES, response.get_data().decode())
 
         self.assertEqual(4, mock_run_job.call_count)
         for job in self._TEST_VALIDATIONS:
@@ -313,7 +333,6 @@ class TestHandleRequest(TestCase):
         response = self.client.get("/validate", headers=headers)
 
         self.assertEqual(200, response.status_code)
-        self.assertEqual(_API_RESPONSE_IF_NO_FAILURES, response.get_data().decode())
 
         mock_rematerialize_views.assert_called()
         mock_run_job.assert_not_called()
@@ -343,7 +362,6 @@ class TestHandleRequest(TestCase):
         response = self.client.get("/validate", headers=headers)
 
         self.assertEqual(200, response.status_code)
-        self.assertEqual(_API_RESPONSE_IF_NO_FAILURES, response.get_data().decode())
 
         mock_run_job.assert_not_called()
         mock_emit_failures.assert_not_called()
@@ -467,7 +485,8 @@ class TestFetchValidations(TestCase):
                     existence_builder.view_id: ValidationNumAllowedRowsOverride(
                         region_code="US_XX",
                         validation_name=existence_builder.view_id,
-                        num_allowed_rows_override=10,
+                        hard_num_allowed_rows_override=10,
+                        soft_num_allowed_rows_override=10,
                         override_reason="This is broken",
                     )
                 },
@@ -475,7 +494,8 @@ class TestFetchValidations(TestCase):
                     sameness_builder.view_id: ValidationMaxAllowedErrorOverride(
                         region_code="US_XX",
                         validation_name=sameness_builder.view_id,
-                        max_allowed_error_override=0.3,
+                        hard_max_allowed_error_override=0.3,
+                        soft_max_allowed_error_override=0.3,
                         override_reason="This is also broken",
                     )
                 },
@@ -496,7 +516,8 @@ class TestFetchValidations(TestCase):
                     view_builder=existence_builder,
                     validation_name_suffix=None,
                     validation_type=ValidationCheckType.EXISTENCE,
-                    num_allowed_rows=10,
+                    hard_num_allowed_rows=10,
+                    soft_num_allowed_rows=10,
                 ),
                 region_code="US_XX",
             ),
@@ -506,7 +527,7 @@ class TestFetchValidations(TestCase):
                     view_builder=existence_builder,
                     validation_name_suffix=None,
                     validation_type=ValidationCheckType.EXISTENCE,
-                    num_allowed_rows=0,
+                    hard_num_allowed_rows=0,
                 ),  # No override
                 region_code="US_YY",
             ),
@@ -517,7 +538,8 @@ class TestFetchValidations(TestCase):
                     validation_name_suffix=None,
                     comparison_columns=["col1", "col2"],
                     sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-                    max_allowed_error=0.3,
+                    hard_max_allowed_error=0.3,
+                    soft_max_allowed_error=0.3,
                     validation_type=ValidationCheckType.SAMENESS,
                 ),
                 region_code="US_XX",
@@ -529,7 +551,8 @@ class TestFetchValidations(TestCase):
                     validation_name_suffix=None,
                     comparison_columns=["col1", "col2"],
                     sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
-                    max_allowed_error=0.0,
+                    hard_max_allowed_error=0.02,
+                    soft_max_allowed_error=0.02,
                     validation_type=ValidationCheckType.SAMENESS,
                 ),
                 region_code="US_YY",

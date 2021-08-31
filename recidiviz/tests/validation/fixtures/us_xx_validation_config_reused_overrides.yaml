@@ -4,9 +4,9 @@ region_code: US_XX
 exclusions: []
 max_allowed_error_overrides:
   - validation_name: my_view
-    max_allowed_error_override: 0.3
+    hard_max_allowed_error_override: 0.3
     override_reason: This is hard to get right
   - validation_name: my_view
-    max_allowed_error_override: 0.4
+    hard_max_allowed_error_override: 0.4
     override_reason: This got even harder
 num_allowed_rows_overrides: []

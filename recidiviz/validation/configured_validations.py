@@ -366,7 +366,7 @@ def get_all_validations() -> List[DataValidationCheck]:
             view_builder=CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER,
             validation_name_suffix="discharges",
             comparison_columns=["discharges_by_month", "discharges_from_po_report"],
-            max_allowed_error=0.02,
+            hard_max_allowed_error=0.02,
             validation_category=ValidationCategory.CONSISTENCY,
         ),
         SamenessDataValidationCheck(
@@ -652,7 +652,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "internal_data_person_id",
             ],
             partition_columns=["region_code", "admission_date"],
-            max_allowed_error=0.02,
+            hard_max_allowed_error=0.02,
             validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
         ),
         SamenessDataValidationCheck(
@@ -661,7 +661,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "external_population_count",
                 "internal_population_count",
             ],
-            max_allowed_error=0.02,
+            hard_max_allowed_error=0.02,
             validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
         ),
         SamenessDataValidationCheck(
@@ -672,7 +672,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "internal_data_person_id",
             ],
             partition_columns=["region_code", "date_of_stay"],
-            max_allowed_error=0.02,
+            hard_max_allowed_error=0.02,
             validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
         ),
         SamenessDataValidationCheck(
@@ -681,7 +681,7 @@ def get_all_validations() -> List[DataValidationCheck]:
             sameness_check_type=SamenessDataValidationCheckType.STRINGS,
             comparison_columns=["external_facility", "internal_facility"],
             partition_columns=["region_code", "date_of_stay"],
-            max_allowed_error=0.02,
+            hard_max_allowed_error=0.02,
             validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
         ),
         SamenessDataValidationCheck(
@@ -692,7 +692,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "internal_data_person_id",
             ],
             partition_columns=["region_code", "release_date"],
-            max_allowed_error=0.02,
+            hard_max_allowed_error=0.02,
             validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
         ),
         SamenessDataValidationCheck(
@@ -703,7 +703,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "internal_person_external_id",
             ],
             partition_columns=["region_code", "date_of_supervision"],
-            max_allowed_error=0.2,
+            hard_max_allowed_error=0.2,
             validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
         ),
         SamenessDataValidationCheck(
@@ -712,7 +712,8 @@ def get_all_validations() -> List[DataValidationCheck]:
             sameness_check_type=SamenessDataValidationCheckType.STRINGS,
             comparison_columns=["external_district", "internal_district"],
             partition_columns=["region_code", "date_of_supervision"],
-            max_allowed_error=0.01,
+            hard_max_allowed_error=0.01,
+            soft_max_allowed_error=0.01,
             validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
         ),
         SamenessDataValidationCheck(
@@ -724,7 +725,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "internal_supervision_level",
             ],
             partition_columns=["region_code", "date_of_supervision"],
-            max_allowed_error=0.02,
+            hard_max_allowed_error=0.02,
             validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
         ),
         SamenessDataValidationCheck(
@@ -736,7 +737,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "internal_supervising_officer",
             ],
             partition_columns=["region_code", "date_of_supervision"],
-            max_allowed_error=0.02,
+            hard_max_allowed_error=0.02,
             validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
         ),
         SamenessDataValidationCheck(
@@ -747,14 +748,14 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "internal_person_external_id",
             ],
             partition_columns=["region_code", "release_cohort", "follow_up_period"],
-            max_allowed_error=0.02,
+            hard_max_allowed_error=0.02,
             validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
         ),
         SamenessDataValidationCheck(
             view_builder=RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
             sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
             comparison_columns=["external_recidivated", "internal_recidivated"],
-            max_allowed_error=0.02,
+            hard_max_allowed_error=0.02,
             validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
         ),
         SamenessDataValidationCheck(
@@ -765,7 +766,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "internal_person_external_id",
             ],
             partition_columns=["region_code", "start_date"],
-            max_allowed_error=0.02,
+            hard_max_allowed_error=0.02,
             validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
         ),
         SamenessDataValidationCheck(
@@ -776,7 +777,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "internal_person_external_id",
             ],
             partition_columns=["region_code", "termination_date"],
-            max_allowed_error=0.02,
+            hard_max_allowed_error=0.02,
             validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
         ),
         SamenessDataValidationCheck(
@@ -787,7 +788,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "internal_person_external_id",
             ],
             partition_columns=["region_code", "date_of_stay"],
-            max_allowed_error=0.02,
+            hard_max_allowed_error=0.02,
             validation_category=ValidationCategory.EXTERNAL_INDIVIDUAL,
         ),
         SamenessDataValidationCheck(
@@ -813,7 +814,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "external_total_population",
                 "internal_total_population",
             ],
-            max_allowed_error=0.02,
+            hard_max_allowed_error=0.02,
             validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
         ),
         SamenessDataValidationCheck(
@@ -823,7 +824,7 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "justice_counts_total_population",
                 "internal_total_population",
             ],
-            max_allowed_error=0.06,
+            hard_max_allowed_error=0.06,
             validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
         ),
     ]

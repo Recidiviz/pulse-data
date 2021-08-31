@@ -39,6 +39,7 @@ from recidiviz.validation.configured_validations import (
 from recidiviz.validation.validation_models import (
     DataValidationJob,
     DataValidationJobResult,
+    ValidationResultStatus,
 )
 from recidiviz.validation.validation_result_storage import (
     ValidationResultForStorage,
@@ -94,9 +95,9 @@ validation_manager_blueprint = Blueprint("validation_manager", __name__)
 @requires_gae_auth
 def handle_validation_request() -> Tuple[str, HTTPStatus]:
     """API endpoint to service data validation requests."""
-    failed_validations = execute_validation(rematerialize_views=True)
+    execute_validation(rematerialize_views=True)
 
-    return _readable_response(failed_validations), HTTPStatus.OK
+    return "", HTTPStatus.OK
 
 
 def execute_validation(
@@ -104,7 +105,7 @@ def execute_validation(
     region_code_filter: Optional[str] = None,
     validation_name_filter: Optional[Pattern] = None,
     sandbox_dataset_prefix: Optional[str] = None,
-) -> List[DataValidationJobResult]:
+) -> None:
     """Executes all validation checks.
     If |region_code_filter| is supplied, limits validations to just that region.
     If |validation_name_filter| is supplied, only performs validations on those
@@ -151,7 +152,8 @@ def execute_validation(
 
     # Perform all validations and track failures
     failed_to_run_validations: List[DataValidationJob] = []
-    failed_validations: List[DataValidationJobResult] = []
+    failed_soft_validations: List[DataValidationJobResult] = []
+    failed_hard_validations: List[DataValidationJobResult] = []
     results_to_store: List[ValidationResultForStorage] = []
     with futures.ThreadPoolExecutor() as executor:
         future_to_jobs = {
@@ -170,8 +172,10 @@ def execute_validation(
                         result=result,
                     )
                 )
-                if not result.was_successful:
-                    failed_validations.append(result)
+                if result.validation_result_status == ValidationResultStatus.FAIL_HARD:
+                    failed_hard_validations.append(result)
+                if result.validation_result_status == ValidationResultStatus.FAIL_SOFT:
+                    failed_soft_validations.append(result)
                 logging.info(
                     "Finished job [%s] for region [%s]",
                     job.validation.validation_name,
@@ -194,21 +198,26 @@ def execute_validation(
 
     store_validation_results(results_to_store)
 
-    if failed_validations or failed_to_run_validations:
+    if failed_hard_validations or failed_soft_validations or failed_to_run_validations:
         logging.error(
-            "Found a total of [%s] failures, with [%s] failing to run entirely. Emitting results...",
-            len(failed_validations) + len(failed_to_run_validations),
+            "Found a total of [%s] failure(s). There were [%s] soft failure(s), [%s] hard failure(s), "
+            "and [%s] that failed to run entirely. Emitting results...",
+            len(failed_hard_validations)
+            + len(failed_to_run_validations)
+            + len(failed_soft_validations),
+            len(failed_soft_validations),
+            len(failed_hard_validations),
             len(failed_to_run_validations),
         )
-        # Emit metrics for all failures
-        _emit_failures(failed_to_run_validations, failed_validations)
+        # Emit metrics for all hard and total failures
+        if failed_hard_validations or failed_to_run_validations:
+            _emit_failures(failed_to_run_validations, failed_hard_validations)
     else:
         logging.info("Found no failed validations...")
 
     logging.info(
         "Validation run complete. Analyzed a total of %s jobs.", len(validation_jobs)
     )
-    return failed_validations
 
 
 def _run_job(job: DataValidationJob) -> DataValidationJobResult:

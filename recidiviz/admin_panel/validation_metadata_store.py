@@ -28,6 +28,7 @@ from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
 from recidiviz.big_query.big_query_view import BigQueryAddress
 from recidiviz.common import serialization
+from recidiviz.validation.validation_models import ValidationResultStatus
 from recidiviz.validation.validation_result_storage import (
     VALIDATION_RESULTS_BIGQUERY_ADDRESS,
 )
@@ -76,6 +77,7 @@ SELECT
     region_code,
     did_run,
     was_successful,
+    validation_result_status,
     result_details_type,
     -- TODO(#7810): Remove this logic and pull straight from BQ.
     case result_details_type
@@ -145,6 +147,8 @@ class ValidationStatusStore(AdminPanelStore):
             run_id = _set_if_new(run_id, row.get("run_id"))
             run_datetime = _set_if_new(run_datetime, row.get("run_datetime"))
             system_version = _set_if_new(system_version, row.get("system_version"))
+            validation_result_status = row.get("validation_result_status")
+            was_successful = row.get("was_successful")
 
             if row.get("validation_name") not in results:
                 validation_status_result = ValidationStatusResult(
@@ -156,7 +160,10 @@ class ValidationStatusStore(AdminPanelStore):
                 row.get("region_code")
             ] = ValidationStatusRecord(
                 didRun=row.get("did_run"),
-                wasSuccessful=row.get("was_successful"),
+                wasSuccessful=validation_result_status
+                != ValidationResultStatus.FAIL_HARD
+                if validation_result_status
+                else was_successful,
                 hasData=row.get("has_data"),
                 errorAmount=_format_error_amount(
                     row.get("error_amount"), row.get("result_details_type")
