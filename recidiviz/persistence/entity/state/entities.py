@@ -1588,13 +1588,13 @@ class StateSupervisionViolationResponseDecisionEntry(
         validate_deprecated_entity_field_for_states(
             entity=self,
             field_name="revocation_type",
-            deprecated_state_codes=["US_ID", "US_MO", "US_ND"],
+            deprecated_state_codes=["US_ID", "US_MO", "US_ND", "US_PA"],
         )
 
         validate_deprecated_entity_field_for_states(
             entity=self,
             field_name="revocation_type_raw_text",
-            deprecated_state_codes=["US_ID", "US_MO", "US_ND"],
+            deprecated_state_codes=["US_ID", "US_MO", "US_ND", "US_PA"],
         )
 
 

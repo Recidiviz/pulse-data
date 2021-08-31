@@ -49,7 +49,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,
-    StateSupervisionViolationResponseRevocationType,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.persistence.entity.state.entities import (
@@ -100,12 +99,12 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_pre_processed_incarceration_periods_shock_incarceration_RESCR(
         self,
     ) -> None:
-        parole_board_decision_entry = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=STATE_CODE,
-            decision_raw_text=SHOCK_INCARCERATION_UNDER_6_MONTHS,
-            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-            revocation_type_raw_text=SHOCK_INCARCERATION_UNDER_6_MONTHS,
+        parole_board_decision_entry = (
+            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=STATE_CODE,
+                decision_raw_text=SHOCK_INCARCERATION_UNDER_6_MONTHS,
+                decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            )
         )
 
         parole_board_permanent_decision = StateSupervisionViolationResponse.new_with_defaults(
@@ -157,12 +156,12 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_pre_processed_incarceration_periods_shock_incarceration_RESCR6(
         self,
     ) -> None:
-        parole_board_decision_entry = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=STATE_CODE,
-            decision_raw_text=SHOCK_INCARCERATION_6_MONTHS,
-            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-            revocation_type_raw_text=SHOCK_INCARCERATION_6_MONTHS,
+        parole_board_decision_entry = (
+            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=STATE_CODE,
+                decision_raw_text=SHOCK_INCARCERATION_6_MONTHS,
+                decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            )
         )
 
         parole_board_permanent_decision = StateSupervisionViolationResponse.new_with_defaults(
@@ -214,12 +213,12 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_pre_processed_incarceration_periods_shock_incarceration_RESCR9(
         self,
     ) -> None:
-        parole_board_decision_entry = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=STATE_CODE,
-            decision_raw_text=SHOCK_INCARCERATION_9_MONTHS,
-            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-            revocation_type_raw_text=SHOCK_INCARCERATION_9_MONTHS,
+        parole_board_decision_entry = (
+            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=STATE_CODE,
+                decision_raw_text=SHOCK_INCARCERATION_9_MONTHS,
+                decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            )
         )
 
         parole_board_permanent_decision = StateSupervisionViolationResponse.new_with_defaults(
@@ -271,12 +270,12 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_pre_processed_incarceration_periods_shock_incarceration_RESCR12(
         self,
     ) -> None:
-        parole_board_decision_entry = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=STATE_CODE,
-            decision_raw_text=SHOCK_INCARCERATION_12_MONTHS,
-            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-            revocation_type_raw_text=SHOCK_INCARCERATION_12_MONTHS,
+        parole_board_decision_entry = (
+            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=STATE_CODE,
+                decision_raw_text=SHOCK_INCARCERATION_12_MONTHS,
+                decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            )
         )
 
         parole_board_permanent_decision = StateSupervisionViolationResponse.new_with_defaults(
@@ -402,12 +401,12 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
     def test_pre_processed_incarceration_periods_shock_incarceration_sci_with_board_actions(
         self,
     ) -> None:
-        parole_board_decision_entry = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=STATE_CODE,
-            decision_raw_text=SHOCK_INCARCERATION_12_MONTHS,
-            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-            revocation_type_raw_text=SHOCK_INCARCERATION_12_MONTHS,
+        parole_board_decision_entry = (
+            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=STATE_CODE,
+                decision_raw_text=SHOCK_INCARCERATION_12_MONTHS,
+                decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            )
         )
 
         parole_board_permanent_decision = StateSupervisionViolationResponse.new_with_defaults(
@@ -689,12 +688,12 @@ class TestPurposeForIncarcerationTypeSubtypeFromParoleDecisions(unittest.TestCas
     """Tests the _purpose_for_incarceration_subtype function."""
 
     def test_purpose_for_incarceration_subtype(self) -> None:
-        parole_board_decision_entry_old = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=STATE_CODE,
-            decision_raw_text=SHOCK_INCARCERATION_UNDER_6_MONTHS,
-            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-            revocation_type_raw_text=SHOCK_INCARCERATION_UNDER_6_MONTHS,
+        parole_board_decision_entry_old = (
+            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=STATE_CODE,
+                decision_raw_text=SHOCK_INCARCERATION_UNDER_6_MONTHS,
+                decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            )
         )
 
         parole_board_permanent_decision_outside_window = StateSupervisionViolationResponse.new_with_defaults(
@@ -707,12 +706,12 @@ class TestPurposeForIncarcerationTypeSubtypeFromParoleDecisions(unittest.TestCas
             supervision_violation_response_decisions=[parole_board_decision_entry_old],
         )
 
-        parole_board_decision_entry_new = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=STATE_CODE,
-            decision_raw_text=SHOCK_INCARCERATION_12_MONTHS,
-            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-            revocation_type_raw_text=SHOCK_INCARCERATION_12_MONTHS,
+        parole_board_decision_entry_new = (
+            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=STATE_CODE,
+                decision_raw_text=SHOCK_INCARCERATION_12_MONTHS,
+                decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            )
         )
 
         parole_board_permanent_decision_in_window = StateSupervisionViolationResponse.new_with_defaults(
@@ -769,12 +768,12 @@ class TestPurposeForIncarcerationTypeSubtypeFromParoleDecisions(unittest.TestCas
         self.assertIsNone(purpose_for_incarceration_subtype)
 
     def test_purpose_for_incarceration_subtype_after_revocations(self) -> None:
-        parole_board_decision_entry = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=STATE_CODE,
-            decision_raw_text=SHOCK_INCARCERATION_UNDER_6_MONTHS,
-            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-            revocation_type_raw_text=SHOCK_INCARCERATION_UNDER_6_MONTHS,
+        parole_board_decision_entry = (
+            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=STATE_CODE,
+                decision_raw_text=SHOCK_INCARCERATION_UNDER_6_MONTHS,
+                decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            )
         )
 
         parole_board_permanent_decision_outside_window = StateSupervisionViolationResponse.new_with_defaults(
@@ -800,12 +799,12 @@ class TestPurposeForIncarcerationTypeSubtypeFromParoleDecisions(unittest.TestCas
     def test_purpose_for_incarceration_subtype_two_same_day(self) -> None:
         """Tests that the longer shock incarceration length is taken from two parole board actions that happened on
         the same day."""
-        parole_board_decision_entry_1 = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=STATE_CODE,
-            decision_raw_text=SHOCK_INCARCERATION_9_MONTHS,
-            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-            revocation_type_raw_text=SHOCK_INCARCERATION_9_MONTHS,
+        parole_board_decision_entry_1 = (
+            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=STATE_CODE,
+                decision_raw_text=SHOCK_INCARCERATION_9_MONTHS,
+                decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            )
         )
 
         parole_board_permanent_decision_1 = StateSupervisionViolationResponse.new_with_defaults(
@@ -818,12 +817,12 @@ class TestPurposeForIncarcerationTypeSubtypeFromParoleDecisions(unittest.TestCas
             supervision_violation_response_decisions=[parole_board_decision_entry_1],
         )
 
-        parole_board_decision_entry_2 = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=STATE_CODE,
-            decision_raw_text=SHOCK_INCARCERATION_6_MONTHS,
-            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-            revocation_type_raw_text=SHOCK_INCARCERATION_6_MONTHS,
+        parole_board_decision_entry_2 = (
+            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=STATE_CODE,
+                decision_raw_text=SHOCK_INCARCERATION_6_MONTHS,
+                decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            )
         )
 
         parole_board_permanent_decision_2 = StateSupervisionViolationResponse.new_with_defaults(
@@ -873,12 +872,12 @@ class TestMostSevereRevocationTypeSubtype(unittest.TestCase):
     """Tests the _most_severe_purpose_for_incarceration_subtype function."""
 
     def test_most_severe_purpose_for_incarceration_subtype(self) -> None:
-        parole_board_decision_entry_1 = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=STATE_CODE,
-            decision_raw_text=SHOCK_INCARCERATION_9_MONTHS,
-            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-            revocation_type_raw_text=SHOCK_INCARCERATION_9_MONTHS,
+        parole_board_decision_entry_1 = (
+            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=STATE_CODE,
+                decision_raw_text=SHOCK_INCARCERATION_9_MONTHS,
+                decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            )
         )
 
         parole_board_permanent_decision_1 = StateSupervisionViolationResponse.new_with_defaults(
@@ -891,12 +890,12 @@ class TestMostSevereRevocationTypeSubtype(unittest.TestCase):
             supervision_violation_response_decisions=[parole_board_decision_entry_1],
         )
 
-        parole_board_decision_entry_2 = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=STATE_CODE,
-            decision_raw_text=SHOCK_INCARCERATION_6_MONTHS,
-            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-            revocation_type_raw_text=SHOCK_INCARCERATION_6_MONTHS,
+        parole_board_decision_entry_2 = (
+            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=STATE_CODE,
+                decision_raw_text=SHOCK_INCARCERATION_6_MONTHS,
+                decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            )
         )
 
         parole_board_permanent_decision_2 = StateSupervisionViolationResponse.new_with_defaults(
@@ -920,12 +919,12 @@ class TestMostSevereRevocationTypeSubtype(unittest.TestCase):
         )
 
     def test_most_severe_purpose_for_incarceration_subtype_invalid_type(self) -> None:
-        parole_board_decision_entry_1 = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=STATE_CODE,
-            decision_raw_text="XXX",
-            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-            revocation_type_raw_text="XXX",
+        parole_board_decision_entry_1 = (
+            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=STATE_CODE,
+                decision_raw_text="XXX",
+                decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            )
         )
 
         parole_board_permanent_decision_1 = StateSupervisionViolationResponse.new_with_defaults(
@@ -938,12 +937,12 @@ class TestMostSevereRevocationTypeSubtype(unittest.TestCase):
             supervision_violation_response_decisions=[parole_board_decision_entry_1],
         )
 
-        parole_board_decision_entry_2 = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=STATE_CODE,
-            decision_raw_text=SHOCK_INCARCERATION_6_MONTHS,
-            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-            revocation_type_raw_text=SHOCK_INCARCERATION_6_MONTHS,
+        parole_board_decision_entry_2 = (
+            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=STATE_CODE,
+                decision_raw_text=SHOCK_INCARCERATION_6_MONTHS,
+                decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            )
         )
 
         parole_board_permanent_decision_2 = StateSupervisionViolationResponse.new_with_defaults(
