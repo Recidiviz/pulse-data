@@ -51,7 +51,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,
-    StateSupervisionViolationResponseRevocationType,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
@@ -1444,7 +1443,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                                         ),
                                         StateSupervisionViolationResponseDecisionEntry(
                                             decision="R",
-                                            revocation_type="REINCARCERATION",
                                         ),
                                     ],
                                 )
@@ -1556,7 +1554,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                                     supervision_violation_response_decisions=[
                                         StateSupervisionViolationResponseDecisionEntry(
                                             decision="CO",
-                                            revocation_type="SHOCK_INCARCERATION",
                                         ),
                                     ],
                                 )
@@ -1600,7 +1597,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                                     supervision_violation_response_decisions=[
                                         StateSupervisionViolationResponseDecisionEntry(
                                             decision="CO",
-                                            revocation_type="SHOCK_INCARCERATION",
                                         ),
                                     ],
                                 )
@@ -3485,14 +3481,14 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                 person=person_110035,
             )
         )
-        ssvrd_110035_20040712_r1_1_r = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            decision=StateSupervisionViolationResponseDecision.REVOCATION,
-            decision_raw_text="R",
-            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-            revocation_type_raw_text="REINCARCERATION",
-            supervision_violation_response=ssvr_110035_20040712_r1_1,
-            person=person_110035,
+        ssvrd_110035_20040712_r1_1_r = (
+            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                decision_raw_text="R",
+                supervision_violation_response=ssvr_110035_20040712_r1_1,
+                person=person_110035,
+            )
         )
         ssv_110035_20040712_r2 = entities.StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -3655,14 +3651,14 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             supervision_violation=ssv_910324_19890825_r1,
             person=person_910324,
         )
-        ssvrd_910324_19890825_r1_1_co = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-            decision_raw_text="CO",
-            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-            revocation_type_raw_text="SHOCK_INCARCERATION",
-            supervision_violation_response=ssvr_910324_19890825_r1_1,
-            person=person_910324,
+        ssvrd_910324_19890825_r1_1_co = (
+            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+                decision_raw_text="CO",
+                supervision_violation_response=ssvr_910324_19890825_r1_1,
+                person=person_910324,
+            )
         )
         ssv_910324_19890825_r1.supervision_violation_responses.append(
             ssvr_910324_19890825_r1_1

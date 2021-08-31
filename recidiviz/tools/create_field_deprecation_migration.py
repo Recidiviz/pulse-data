@@ -5,19 +5,24 @@ Usage:
 python -m recidiviz.tools.create_field_deprecation_migration \
     --primary-table <primary table name> --column <column name> \
     --state-code-to-deprecate <state code to deprecate> \
-     --migration-name <name for migration>
+    --migration-name <name for migration> \
 
 Example:
 python -m recidiviz.tools.create_field_deprecation_migration \
     --primary-table state_incarceration_period --column incarceration_type \
     --state-code-to-deprecate US_XX --state-code-to-deprecate US_YY \
     --migration-name drop_incarceration_type_us_xx_us_yy
+
 """
 import argparse
 import os
 from typing import List
 
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_utils import (
+    SchemaType,
+    get_table_class_by_name,
+    schema_type_to_schema_base,
+)
 from recidiviz.tools.utils.migration_script_helpers import (
     PATH_TO_MIGRATIONS_DIRECTORY,
     create_new_empty_migration_and_return_filename,
@@ -32,7 +37,7 @@ _PATH_TO_BODY_SECTION_TEMPLATE = os.path.join(
 
 def _get_migration_body_section(
     primary_table_name: str,
-    column_name: str,
+    columns_to_nullify: List[str],
     state_codes_to_deprecate: List[str],
 ) -> str:
     """Returns string of body section of field deprecation migration by interpolating
@@ -40,9 +45,10 @@ def _get_migration_body_section(
     """
     with open(_PATH_TO_BODY_SECTION_TEMPLATE, "r", encoding="utf-8") as template_file:
         template = template_file.read()
+
     return template.format(
         primary_table=primary_table_name,
-        column=column_name,
+        columns=", ".join([f"'{col}'" for col in columns_to_nullify]),
         state_codes_to_deprecate=", ".join(
             [f"'{state_code}'" for state_code in state_codes_to_deprecate]
         ),
@@ -87,6 +93,26 @@ def main() -> None:
     parser = _create_parser()
     args = parser.parse_args()
 
+    table_class = get_table_class_by_name(
+        args.primary_table,
+        tables=schema_type_to_schema_base(SchemaType.STATE).metadata.sorted_tables,
+    )
+
+    all_column_names = [col.name for col in table_class.columns]
+    if args.column not in all_column_names:
+        raise ValueError(
+            f"{args.column} is not a valid column name on table "
+            f"{args.primary_table}."
+        )
+
+    columns_to_nullify = [args.column]
+
+    raw_text_col = args.column + "_raw_text"
+    if raw_text_col in all_column_names:
+        # If this field has a corresponding _raw_text column in the table, deprecate that
+        # as well
+        columns_to_nullify.append(raw_text_col)
+
     # NOTE: We use prints instead of logging because the call out to alembic
     # does something to mess with our logging levels.
     migration_filename = create_new_empty_migration_and_return_filename(
@@ -98,7 +124,7 @@ def main() -> None:
     header_section = get_migration_header_section(migration_filepath)
     body_section = _get_migration_body_section(
         args.primary_table,
-        args.column,
+        columns_to_nullify,
         args.state_code_to_deprecate,
     )
     file_content = "{}\n{}".format(header_section, body_section)
