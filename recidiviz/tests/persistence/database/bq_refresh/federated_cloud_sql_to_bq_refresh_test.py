@@ -200,8 +200,6 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
                 "operations_v2_cloudsql_connection",
                 "us_xx_operations_regional",
                 "us_ww_operations_regional",
-                "operations_regional",
-                "operations",
             }
         },
     )
@@ -373,3 +371,99 @@ class TestFederatedBQSchemaRefresh(unittest.TestCase):
             federated_bq_schema_refresh(
                 SchemaType.STATE, direct_ingest_instance=DirectIngestInstance.SECONDARY
             )
+
+    @patch(f"{FEDERATED_REFRESH_PACKAGE_NAME}.get_existing_direct_ingest_states")
+    @patch(
+        f"{FEDERATED_REFRESH_COLLECTOR_PACKAGE_NAME}.get_existing_direct_ingest_states"
+    )
+    @patch(
+        f"{FEDERATED_REFRESH_PACKAGE_NAME}.CLOUDSQL_REFRESH_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED_BY_SCHEMA",
+        {
+            SchemaType.OPERATIONS: {
+                "operations_v2_cloudsql_connection",
+                "us_ww_operations_regional",
+                "us_xx_operations_regional",
+                # Dataset for region that is no longer managed, should be deleted
+                "us_zz_operations_regional",
+            }
+        },
+    )
+    def test_federated_cloud_sql_to_bq_refresh_excluded_region(
+        self,
+        mock_states_fn: mock.MagicMock,
+        mock_states_fn_other: mock.MagicMock,
+    ) -> None:
+        # Arrange
+        def mock_dataset_ref_for_id(dataset_id: str) -> bigquery.DatasetReference:
+            return bigquery.DatasetReference.from_string(
+                dataset_id, default_project=self.mock_project_id
+            )
+
+        yaml_contents = """
+region_codes_to_exclude:
+- US_WW
+state_history_tables_to_include:
+- state_person_history
+county_columns_to_exclude:
+person:
+- full_name
+- birthdate_inferred_from_age
+"""
+        path = GcsfsFilePath.from_absolute_path(
+            f"gs://{self.mock_project_id}-configs/cloud_sql_to_bq_config.yaml"
+        )
+        self.fake_gcs.upload_from_string(
+            path=path, contents=yaml_contents, content_type="text/yaml"
+        )
+
+        state_codes = [StateCode.US_XX, StateCode.US_WW]
+        mock_states_fn.return_value = state_codes
+        mock_states_fn_other.return_value = state_codes
+
+        self.mock_bq_client.dataset_ref_for_id = mock_dataset_ref_for_id
+        self.mock_bq_client.dataset_exists.return_value = True
+
+        # Act
+        federated_bq_schema_refresh(SchemaType.OPERATIONS)
+
+        # Assert
+        self.assertEqual(
+            self.mock_bq_client.create_dataset_if_necessary.mock_calls,
+            [
+                mock.call(
+                    DatasetReference(
+                        "recidiviz-staging", "operations_v2_cloudsql_connection"
+                    ),
+                    None,
+                ),
+                mock.call(
+                    DatasetReference("recidiviz-staging", "us_xx_operations_regional"),
+                    None,
+                ),
+                mock.call(
+                    DatasetReference("recidiviz-staging", "operations_regional"), None
+                ),
+                mock.call(
+                    DatasetReference("recidiviz-staging", "operations"),
+                    default_table_expiration_ms=None,
+                ),
+            ],
+        )
+
+        self.assertEqual(
+            self.mock_bq_client.delete_dataset.mock_calls,
+            [
+                mock.call(
+                    bigquery.DatasetReference.from_string(
+                        "us_zz_operations_regional",
+                        default_project=self.mock_project_id,
+                    ),
+                    delete_contents=True,
+                ),
+                mock.call(
+                    self.mock_bq_client.backup_dataset_tables_if_dataset_exists.return_value,
+                    delete_contents=True,
+                    not_found_ok=True,
+                ),
+            ],
+        )
