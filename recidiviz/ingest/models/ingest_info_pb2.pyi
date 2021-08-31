@@ -109,6 +109,8 @@ class IngestInfo(google.protobuf.message.Message):
     ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
         global___SentenceRelationship
     ]: ...
+    # TODO(#8905): Delete all references to state schema objects from this file once
+    #  ingest mappings overhaul is complete for all states.
     @property
     def state_people(
         self,
@@ -3349,7 +3351,6 @@ class StateSupervisionViolationResponse(google.protobuf.message.Message):
     RESPONSE_DATE_FIELD_NUMBER: builtins.int
     STATE_CODE_FIELD_NUMBER: builtins.int
     DECISION_FIELD_NUMBER: builtins.int
-    REVOCATION_TYPE_FIELD_NUMBER: builtins.int
     DECIDING_BODY_TYPE_FIELD_NUMBER: builtins.int
     IS_DRAFT_FIELD_NUMBER: builtins.int
     DECISION_AGENT_IDS_FIELD_NUMBER: builtins.int
@@ -3360,7 +3361,6 @@ class StateSupervisionViolationResponse(google.protobuf.message.Message):
     response_date: typing.Text = ...
     state_code: typing.Text = ...
     decision: typing.Text = ...
-    revocation_type: typing.Text = ...
     deciding_body_type: typing.Text = ...
     is_draft: typing.Text = ...
     @property
@@ -3384,7 +3384,6 @@ class StateSupervisionViolationResponse(google.protobuf.message.Message):
         response_date: typing.Optional[typing.Text] = ...,
         state_code: typing.Optional[typing.Text] = ...,
         decision: typing.Optional[typing.Text] = ...,
-        revocation_type: typing.Optional[typing.Text] = ...,
         deciding_body_type: typing.Optional[typing.Text] = ...,
         is_draft: typing.Optional[typing.Text] = ...,
         decision_agent_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
@@ -3407,8 +3406,6 @@ class StateSupervisionViolationResponse(google.protobuf.message.Message):
             b"response_subtype",
             "response_type",
             b"response_type",
-            "revocation_type",
-            b"revocation_type",
             "state_code",
             b"state_code",
             "state_supervision_violation_response_id",
@@ -3432,8 +3429,6 @@ class StateSupervisionViolationResponse(google.protobuf.message.Message):
             b"response_subtype",
             "response_type",
             b"response_type",
-            "revocation_type",
-            b"revocation_type",
             "state_code",
             b"state_code",
             "state_supervision_violation_response_decision_entry_ids",

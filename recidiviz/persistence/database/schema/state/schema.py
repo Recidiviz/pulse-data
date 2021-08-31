@@ -3839,14 +3839,6 @@ class _StateSupervisionViolationResponseSharedColumns(
         state_supervision_violation_response_decision, comment="DEPRECATED. See #2668."
     )
     decision_raw_text = Column(String(255), comment="DEPRECATED. See #2668.")
-    revocation_type = Column(
-        state_supervision_violation_response_revocation_type,
-        comment="If the violation resulted in a return to incarceration, this (poorly-named) field describes further "
-        "what type of return, e.g. whether it's a legal revocation, return for treatment, or something else.",
-    )
-    revocation_type_raw_text = Column(
-        String(255), comment="The raw text value of the revocation type."
-    )
     deciding_body_type = Column(
         state_supervision_violation_response_deciding_body_type,
         comment="The type of decision-making body who made the decision, such as a supervising "

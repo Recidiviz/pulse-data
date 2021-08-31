@@ -104,11 +104,11 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 from recidiviz.common.date import DateRange, DurationMixin
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 
-# **** Entity Types for convenience *****:
 from recidiviz.persistence.entity.state.entity_deprecation_utils import (
     validate_deprecated_entity_field_for_states,
 )
 
+# **** Entity Types for convenience *****:
 SentenceType = TypeVar(
     "SentenceType", "StateSupervisionSentence", "StateIncarcerationSentence"
 )
@@ -1624,19 +1624,6 @@ class StateSupervisionViolationResponse(
         default=None, validator=attr_validators.is_opt_str
     )
 
-    # Only nonnull if one of the decisions is REVOCATION
-    # TODO(#2668): DEPRECATED - DELETE IN FOLLOW-UP PR
-    revocation_type: Optional[
-        StateSupervisionViolationResponseRevocationType
-    ] = attr.ib(
-        default=None,
-        validator=attr_validators.is_opt(
-            StateSupervisionViolationResponseRevocationType
-        ),
-    )
-    revocation_type_raw_text: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
     is_draft: Optional[bool] = attr.ib(
         default=None, validator=attr_validators.is_opt_bool
     )
@@ -1673,18 +1660,6 @@ class StateSupervisionViolationResponse(
     )
 
     def __attrs_post_init__(self) -> None:
-        validate_deprecated_entity_field_for_states(
-            entity=self,
-            field_name="revocation_type",
-            deprecated_state_codes=["US_ID", "US_MO", "US_ND", "US_PA"],
-        )
-
-        validate_deprecated_entity_field_for_states(
-            entity=self,
-            field_name="revocation_type_raw_text",
-            deprecated_state_codes=["US_ID", "US_MO", "US_ND", "US_PA"],
-        )
-
         validate_deprecated_entity_field_for_states(
             entity=self,
             field_name="decision",

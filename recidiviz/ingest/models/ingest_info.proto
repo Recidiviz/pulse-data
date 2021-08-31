@@ -41,8 +41,7 @@ message IngestInfo {
     repeated Sentence sentences = 7;
     repeated SentenceRelationship sentence_relationships = 8;
 
-    // TODO(#8905
-): Delete all references to state schema objects from this file once
+    // TODO(#8905): Delete all references to state schema objects from this file once
     //  ingest mappings overhaul is complete for all states.
 
     repeated StatePerson state_people = 9;
@@ -499,7 +498,6 @@ message StateSupervisionViolationResponse {
     optional string response_date = 4;
     optional string state_code = 5;
     optional string decision = 6;
-    optional string revocation_type = 7;
     optional string deciding_body_type = 8;
     optional string is_draft = 9;
 
