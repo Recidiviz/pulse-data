@@ -126,6 +126,18 @@ def _federated_bq_regional_dataset_refresh(
         ]
     )
 
+    if config.region_codes_to_exclude is not None:
+        # Remove any datasets associated with region codes excluded from the current
+        # refresh from the list of managed datasets that should be cleaned. Datasets
+        # should not be cleaned up for any region that is still managed but is
+        # temporarily not included in the refresh.
+        historically_managed_datasets_for_schema = {
+            dataset
+            for dataset in historically_managed_datasets_for_schema
+            for region_code in config.region_codes_to_exclude
+            if region_code.lower() not in dataset
+        }
+
     dataset_overrides = None
     if dataset_override_prefix:
         dataset_overrides = dataset_overrides_for_view_builders(
