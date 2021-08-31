@@ -58,7 +58,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,
-    StateSupervisionViolationResponseRevocationType,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.states import StateCode
@@ -371,18 +370,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "DSO",  # Designated Sex Offenders
             "ISO",  # Interstate Sex Offenders
         ],
-        StateSupervisionViolationResponseRevocationType.REINCARCERATION: [
-            "S",  # Serve a Sentence
-        ],
-        StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION: [
-            "O",  # 120-Day Shock
-            "R",  # Regimented Disc Program
-        ],
-        StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON: [
-            "A",  # Assessment
-            "I",  # Inst Treatment Center
-            "L",  # Long Term Drug Treatment
-        ],
         StateSupervisionViolationResponseDecidingBodyType.COURT: [
             "CT",  # New Court Commitment
             "IS",  # Interstate Case
@@ -439,11 +426,6 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         ],
         StateSupervisionViolationResponseDecision: [
             "NOREC",  # No Recommendation
-        ],
-        StateSupervisionViolationResponseRevocationType: [
-            # In the incarceration_period files, we use F1_PFI (StateSpecializedPurposeForIncarceration) to derive the
-            # StateSupervisionViolationResponseRevocationType. The PFI field is occasionally X (unknown).
-            "X"
         ],
     }
 
@@ -849,55 +831,14 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             if isinstance(obj, StateSupervisionViolation):
                 for response in obj.state_supervision_violation_responses:
                     for recommendation in recommendations:
-                        revocation_type = self._revocation_type_str_from_recommendation(
-                            recommendation
-                        )
                         rec = StateSupervisionViolationResponseDecisionEntry(
-                            decision=recommendation, revocation_type=revocation_type
+                            decision=recommendation,
                         )
                         create_if_not_exists(
                             rec,
                             response,
                             "state_supervision_violation_response_decisions",
                         )
-
-    def _revocation_type_str_from_recommendation(
-        self, recommendation: str
-    ) -> Optional[str]:
-        """Returns a str value of a StateSupervisionViolationResponseRevocationType corresponding to the given
-        recommendation, or None if one does not apply.
-        """
-
-        revocation_type = None
-        if recommendation in ("I", "R"):
-            revocation_type = (
-                StateSupervisionViolationResponseRevocationType.REINCARCERATION.value
-            )
-        elif recommendation == "CO":
-            revocation_type = (
-                StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION.value
-            )
-
-        recommendation_is_revocation = self.enum_overrides.parse(
-            recommendation, StateSupervisionViolationResponseDecision
-        ) in (
-            StateSupervisionViolationResponseDecision.REVOCATION,
-            StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON,
-            StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-        )
-
-        if recommendation_is_revocation and not revocation_type:
-            raise ValueError(
-                f"Unclassified revocation type for REVOCATION recommendation [{recommendation}]"
-            )
-
-        if not recommendation_is_revocation and revocation_type:
-            raise ValueError(
-                f"Non-revocation recommendation [{recommendation}] should not have revocation type "
-                f"[{revocation_type}]"
-            )
-
-        return revocation_type
 
     @classmethod
     def _set_decision_agent(

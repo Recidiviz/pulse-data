@@ -1,16 +1,22 @@
 UPDATE_QUERY = (
-    "UPDATE {{table_name}} SET {column} = NULL"
-    " WHERE state_code IN ({state_codes_to_deprecate});"
+    "UPDATE {{table_name}} SET {{nullify_cols_statement}} WHERE state_code IN ({state_codes_to_deprecate});"
 )
+
+COLS_TO_NULLIFY = [
+    {columns}
+]
 
 TABLES_TO_UPDATE = ['{primary_table}', '{primary_table}_history']
 
 def upgrade() -> None:
     with op.get_context().autocommit_block():
         for table in TABLES_TO_UPDATE:
+            nullify_cols_statement = ", ".join(
+                [f"{{col}} = NULL" for col in COLS_TO_NULLIFY]
+            )
             op.execute(
                 UPDATE_QUERY.format(
-                    table_name=table
+                    table_name=table, nullify_cols_statement=nullify_cols_statement
                 )
             )
 
