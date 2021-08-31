@@ -459,6 +459,54 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             updateIngestQueuesState(stateCode, QueueState.RUNNING)
           }
         />
+        <StyledStep
+          title="Full Historical Refresh"
+          description={
+            <>
+              <p>
+                Trigger a BigQuery refresh and run all historical pipelines by
+                running:
+              </p>
+              <p>
+                <CodeBlock enabled={currentStep === 16}>
+                  ./recidiviz/tools/deploy/trigger_historical_data_refresh.sh{" "}
+                  {projectId}
+                </CodeBlock>
+              </p>
+              <p>
+                Visit{" "}
+                <a
+                  href={`http://go/airflow-${
+                    isProduction ? "prod" : "staging"
+                  }`}
+                >
+                  go/airflow-{isProduction ? "prod" : "staging"}
+                </a>{" "}
+                and wait for the historical pipelines to finish before
+                continuing. Note that the historical pipelines may not start for
+                ~10 minutes while the BigQuery refresh is still in progress.
+              </p>
+            </>
+          }
+        />
+        {/* TODO(#9010): This step won't be necessary once the historical and incremental DAG have a more unified structure */}
+        <StyledStep
+          title="Trigger Incremental Pipelines"
+          description={
+            <p>
+              Run all incremental pipelines by visiting{" "}
+              <a
+                href={`http://go/airflow-${isProduction ? "prod" : "staging"}`}
+              >
+                go/airflow-{isProduction ? "prod" : "staging"}
+              </a>
+              , and clicking on the &quot;Trigger DAG&quot; button for{" "}
+              <code>{projectId}_incremental_pipeline_calculations_dag</code>. It
+              looks like a play button and should be the left-most button under
+              the &quot;Links&quot; section.
+            </p>
+          }
+        />
       </Steps>
     );
 
