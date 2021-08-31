@@ -97,7 +97,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,
-    StateSupervisionViolationResponseRevocationType,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.persistence.entity.state.entities import (
@@ -2012,12 +2011,12 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             assessment_date=date(2018, 3, 1),
         )
 
-        parole_board_decision_entry = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=state_code,
-            decision_raw_text=SHOCK_INCARCERATION_9_MONTHS,
-            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-            revocation_type_raw_text=SHOCK_INCARCERATION_9_MONTHS,
+        parole_board_decision_entry = (
+            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=state_code,
+                decision_raw_text=SHOCK_INCARCERATION_9_MONTHS,
+                decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            )
         )
 
         parole_board_permanent_decision = StateSupervisionViolationResponse.new_with_defaults(
@@ -3316,7 +3315,6 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                     state_code="US_XX",
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
-                    revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
                 )
             ],
             supervision_violation=supervision_violation_2,
@@ -3438,19 +3436,20 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             ],
         )
 
-        supervision_violation_response_old = StateSupervisionViolationResponse.new_with_defaults(
-            state_code="US_XX",
-            supervision_violation_response_id=_DEFAULT_SSVR_ID,
-            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_date=date(2007, 12, 7),
-            supervision_violation_response_decisions=[
-                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                    state_code="US_XX",
-                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
-                    revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-                )
-            ],
-            supervision_violation=supervision_violation_old,
+        supervision_violation_response_old = (
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                supervision_violation_response_id=_DEFAULT_SSVR_ID,
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2007, 12, 7),
+                supervision_violation_response_decisions=[
+                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code="US_XX",
+                        decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                    )
+                ],
+                supervision_violation=supervision_violation_old,
+            )
         )
 
         supervision_violation = StateSupervisionViolation.new_with_defaults(
@@ -3465,24 +3464,24 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
             ],
         )
 
-        supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
-            state_code="US_XX",
-            supervision_violation_response_id=_DEFAULT_SSVR_ID,
-            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-            response_date=date(2009, 12, 1),
-            supervision_violation_response_decisions=[
-                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                    state_code="US_XX",
-                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
-                    revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-                ),
-                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                    state_code="US_XX",
-                    decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
-                    revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-                ),
-            ],
-            supervision_violation=supervision_violation,
+        supervision_violation_response = (
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code="US_XX",
+                supervision_violation_response_id=_DEFAULT_SSVR_ID,
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2009, 12, 1),
+                supervision_violation_response_decisions=[
+                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code="US_XX",
+                        decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                    ),
+                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code="US_XX",
+                        decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+                    ),
+                ],
+                supervision_violation=supervision_violation,
+            )
         )
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
