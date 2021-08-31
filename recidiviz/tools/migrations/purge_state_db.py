@@ -92,6 +92,7 @@ def get_hash_of_deployed_commit(project_id: str) -> str:
     get_tag_cmd = (
         f"gcloud app versions list --project={project_id} --hide-no-traffic "
         f"--service=default --format=yaml | yq .id | tr -d \\\" | tr '-' '.'"
+        ' | sed "s/.alpha/-alpha/"'
     )
 
     get_commit_cmd = f"git rev-list -n 1 $({get_tag_cmd})"
