@@ -25,6 +25,9 @@ from recidiviz.common.constants.state.state_court_case import (
 )
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StateCourtCaseFactory,
+)
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_court_case,
 )
@@ -36,7 +39,7 @@ _EMPTY_METADATA = FakeIngestMetadata.for_state("us_nd")
 class StateCourtCaseConverterTest(unittest.TestCase):
     """Tests for converting charges."""
 
-    def testParseStateCourtCase(self):
+    def testParseStateCourtCase(self) -> None:
         # Arrange
         ingest_case = ingest_info_pb2.StateCourtCase(
             status=None,
@@ -54,7 +57,7 @@ class StateCourtCaseConverterTest(unittest.TestCase):
         state_court_case.copy_fields_to_builder(
             court_case_builder, ingest_case, _EMPTY_METADATA
         )
-        result = court_case_builder.build()
+        result = court_case_builder.build(StateCourtCaseFactory.deserialize)
 
         # Assert
         expected_result = entities.StateCourtCase.new_with_defaults(

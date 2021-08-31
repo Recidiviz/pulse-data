@@ -40,6 +40,9 @@ from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.deserialize_entity_factories import (
     StateAssessmentFactory,
     StateChargeFactory,
+    StateCourtCaseFactory,
+    StateEarlyDischargeFactory,
+    StateIncarcerationIncidentFactory,
     StatePersonFactory,
     StateSentenceGroupFactory,
 )
@@ -332,7 +335,7 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             early_discharge_builder, ingest_early_discharge, self.metadata
         )
 
-        return early_discharge_builder.build()
+        return early_discharge_builder.build(StateEarlyDischargeFactory.deserialize)
 
     def _convert_fine(self, ingest_fine: StateFine) -> entities.StateFine:
         """Converts an ingest_info proto StateFine to a persistence entity."""
@@ -425,7 +428,7 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             ingest_court_case,
         )
 
-        return court_case_builder.build()
+        return court_case_builder.build(StateCourtCaseFactory.deserialize)
 
     def _convert_incarceration_period(
         self, ingest_incarceration_period: StateIncarcerationPeriod
@@ -657,7 +660,7 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         ]
 
         incident_builder.incarceration_incident_outcomes = converted_outcomes
-        return incident_builder.build()
+        return incident_builder.build(StateIncarcerationIncidentFactory.deserialize)
 
     def _convert_supervision_contact(
         self, ingest_contact: StateSupervisionContact
