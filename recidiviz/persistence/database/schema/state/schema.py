@@ -1294,7 +1294,7 @@ class _StatePersonSharedColumns:
         comment="Date the person was born. Use this when it is known. When a "
         "person’s age but not birthdate is reported, use age instead.",
     )
-    #  TODO(#7236): Remove this field.
+    # TODO(#7236): DEPRECATED - DO NOT ADD NEW USAGES
     birthdate_inferred_from_age = Column(
         Boolean,
         comment="Whether or not the person's birthdate was inferred from " "their age.",
@@ -1509,6 +1509,7 @@ class _StateCourtCaseSharedColumns(_ReferencesStatePersonSharedColumns):
         comment="The code of the judicial district under whose jurisdiction "
         "the case was tried.",
     )
+    # TODO(#9072): DEPRECATED - DO NOT ADD NEW USAGES
     court_fee_dollars = Column(
         Integer,
         comment="The amount of any court fees due for this case, in U.S. Dollars.",
@@ -2570,12 +2571,15 @@ class StateIncarcerationPeriod(StateBase, _StateIncarcerationPeriodSharedColumns
     incarceration_incidents = relationship(
         "StateIncarcerationIncident", backref="incarceration_period", lazy="selectin"
     )
+    # TODO(#5411): DEPRECATED - Relationship to be moved to the StatePerson
     parole_decisions = relationship(
         "StateParoleDecision", backref="incarceration_period", lazy="selectin"
     )
+    # TODO(#9071): DEPRECATED - DO NOT ADD NEW USAGES
     assessments = relationship(
         "StateAssessment", backref="incarceration_period", lazy="selectin"
     )
+    # TODO(#9068): DEPRECATED - DO NOT ADD NEW USAGES
     program_assignments = relationship(
         "StateProgramAssignment",
         secondary=state_incarceration_period_program_assignment_association_table,
@@ -2777,9 +2781,11 @@ class StateSupervisionPeriod(StateBase, _StateSupervisionPeriodSharedColumns):
         backref="supervision_periods",
         lazy="selectin",
     )
+    # TODO(#9070): DEPRECATED - DO NOT ADD NEW USAGES
     assessments = relationship(
         "StateAssessment", backref="supervision_period", lazy="selectin"
     )
+    # TODO(#9069): DEPRECATED - DO NOT ADD NEW USAGES
     program_assignments = relationship(
         "StateProgramAssignment",
         secondary=state_supervision_period_program_assignment_association_table,
@@ -3558,10 +3564,12 @@ class _StateSupervisionViolationSharedColumns(_ReferencesStatePersonSharedColumn
             object_name="StateSupervisionViolation"
         ),
     )
+    # TODO(#2668): DEPRECATED - DO NOT ADD NEW USAGES
     violation_type = Column(
         state_supervision_violation_type,
         comment="DEPRECATED. See #2668.",
     )
+    # TODO(#2668): DEPRECATED - DO NOT ADD NEW USAGES
     violation_type_raw_text = Column(String(255), comment="DEPRECATED. See #2668.")
     violation_date = Column(Date, comment="The date on which the violation took place.")
     state_code = Column(
@@ -3818,10 +3826,11 @@ class _StateSupervisionViolationResponseSharedColumns(
     state_code = Column(
         String(255), nullable=False, index=True, comment=STATE_CODE_COMMENT
     )
-    # TODO(#2668): DEPRECATED - DELETE IN FOLLOW-UP PR
+    # TODO(#2668): DEPRECATED - DO NOT ADD NEW USAGES
     decision = Column(
         state_supervision_violation_response_decision, comment="DEPRECATED. See #2668."
     )
+    # TODO(#2668): DEPRECATED - DO NOT ADD NEW USAGES
     decision_raw_text = Column(String(255), comment="DEPRECATED. See #2668.")
     deciding_body_type = Column(
         state_supervision_violation_response_deciding_body_type,
