@@ -71,7 +71,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseDecision,
-    StateSupervisionViolationResponseRevocationType,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
@@ -1792,12 +1791,10 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                         StateSupervisionViolationResponseDecisionEntry(
                             state_supervision_violation_response_decision_entry_id="456B-1-1-2",
                             decision="WTWR",
-                            revocation_type="WTWR",
                         ),
                         StateSupervisionViolationResponseDecisionEntry(
                             state_supervision_violation_response_decision_entry_id="456B-1-1-3",
                             decision="DJBS",
-                            revocation_type="DJBS",
                         ),
                     ],
                 )
@@ -1815,12 +1812,10 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                         StateSupervisionViolationResponseDecisionEntry(
                             state_supervision_violation_response_decision_entry_id="456B-2-1-12",
                             decision="VCCF",
-                            revocation_type="VCCF",
                         ),
                         StateSupervisionViolationResponseDecisionEntry(
                             state_supervision_violation_response_decision_entry_id="456B-2-1-13",
                             decision="ARR2",
-                            revocation_type="ARR2",
                         ),
                     ],
                 )
@@ -1838,12 +1833,10 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                         StateSupervisionViolationResponseDecisionEntry(
                             state_supervision_violation_response_decision_entry_id="789C-3-1-4",
                             decision="VCCF",
-                            revocation_type="VCCF",
                         ),
                         StateSupervisionViolationResponseDecisionEntry(
                             state_supervision_violation_response_decision_entry_id="789C-3-1-5",
                             decision="ARR2",
-                            revocation_type="ARR2",
                         ),
                     ],
                 )
@@ -1861,7 +1854,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                         StateSupervisionViolationResponseDecisionEntry(
                             state_supervision_violation_response_decision_entry_id="345E-1-1-2",
                             decision="WTWR",
-                            revocation_type="WTWR",
                         ),
                     ],
                 )
@@ -1879,12 +1871,10 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                         StateSupervisionViolationResponseDecisionEntry(
                             state_supervision_violation_response_decision_entry_id="345E-1-2-5",
                             decision="ARR2",
-                            revocation_type="ARR2",
                         ),
                         StateSupervisionViolationResponseDecisionEntry(
                             state_supervision_violation_response_decision_entry_id="345E-1-2-6",
                             decision="PV01",
-                            revocation_type="PV01",
                         ),
                     ],
                 )
@@ -1981,7 +1971,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                         StateSupervisionViolationResponseDecisionEntry(
                             state_supervision_violation_response_decision_entry_id="456B-0-04",
                             decision="RESCR9",
-                            revocation_type="RESCR9",
                         )
                     ],
                 )
@@ -1999,7 +1988,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                         StateSupervisionViolationResponseDecisionEntry(
                             state_supervision_violation_response_decision_entry_id="789C-0-02",
                             decision="RESCR9",
-                            revocation_type="RESCR9",
                         )
                     ],
                 )
@@ -2017,7 +2005,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                         StateSupervisionViolationResponseDecisionEntry(
                             state_supervision_violation_response_decision_entry_id="123A-1-09",
                             decision="RESCR",
-                            revocation_type="RESCR",
                         )
                     ],
                 )
@@ -2035,7 +2022,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                         StateSupervisionViolationResponseDecisionEntry(
                             state_supervision_violation_response_decision_entry_id="345E-3-11",
                             decision="RESCR",
-                            revocation_type="RESCR",
                         )
                     ],
                 )
@@ -4541,23 +4527,23 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             person=person_2,
             supervision_violation=p2_sv_1,
         )
-        p2_svr_1_d_2 = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            person=person_2,
-            supervision_violation_response=p2_svr_1,
-            decision=StateSupervisionViolationResponseDecision.WARNING,
-            decision_raw_text="WTWR",
-            revocation_type=StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
-            revocation_type_raw_text="WTWR",
+        p2_svr_1_d_2 = (
+            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                person=person_2,
+                supervision_violation_response=p2_svr_1,
+                decision=StateSupervisionViolationResponseDecision.WARNING,
+                decision_raw_text="WTWR",
+            )
         )
-        p2_svr_1_d_3 = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            person=person_2,
-            supervision_violation_response=p2_svr_1,
-            decision=StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
-            decision_raw_text="DJBS",
-            revocation_type=StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
-            revocation_type_raw_text="DJBS",
+        p2_svr_1_d_3 = (
+            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                person=person_2,
+                supervision_violation_response=p2_svr_1,
+                decision=StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
+                decision_raw_text="DJBS",
+            )
         )
         p2_svr_1.supervision_violation_response_decisions.extend(
             [p2_svr_1_d_2, p2_svr_1_d_3]
@@ -4573,23 +4559,23 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             person=person_2,
             supervision_violation=p2_sv_2,
         )
-        p2_svr_2_d_12 = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            person=person_2,
-            supervision_violation_response=p2_svr_2,
-            decision=StateSupervisionViolationResponseDecision.REVOCATION,
-            decision_raw_text="VCCF",
-            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-            revocation_type_raw_text="VCCF",
+        p2_svr_2_d_12 = (
+            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                person=person_2,
+                supervision_violation_response=p2_svr_2,
+                decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                decision_raw_text="VCCF",
+            )
         )
-        p2_svr_2_d_13 = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            person=person_2,
-            supervision_violation_response=p2_svr_2,
-            decision=StateSupervisionViolationResponseDecision.REVOCATION,
-            decision_raw_text="ARR2",
-            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-            revocation_type_raw_text="ARR2",
+        p2_svr_2_d_13 = (
+            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                person=person_2,
+                supervision_violation_response=p2_svr_2,
+                decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                decision_raw_text="ARR2",
+            )
         )
         p2_svr_2.supervision_violation_response_decisions.extend(
             [p2_svr_2_d_12, p2_svr_2_d_13]
@@ -4605,23 +4591,23 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             person=person_5,
             supervision_violation=p5_sv_3,
         )
-        p5_svr_3_d_4 = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            person=person_5,
-            supervision_violation_response=p5_svr_3,
-            decision=StateSupervisionViolationResponseDecision.REVOCATION,
-            decision_raw_text="VCCF",
-            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-            revocation_type_raw_text="VCCF",
+        p5_svr_3_d_4 = (
+            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                person=person_5,
+                supervision_violation_response=p5_svr_3,
+                decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                decision_raw_text="VCCF",
+            )
         )
-        p5_svr_3_d_5 = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            person=person_5,
-            supervision_violation_response=p5_svr_3,
-            decision=StateSupervisionViolationResponseDecision.REVOCATION,
-            decision_raw_text="ARR2",
-            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-            revocation_type_raw_text="ARR2",
+        p5_svr_3_d_5 = (
+            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                person=person_5,
+                supervision_violation_response=p5_svr_3,
+                decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                decision_raw_text="ARR2",
+            )
         )
         p5_svr_3.supervision_violation_response_decisions.extend(
             [p5_svr_3_d_4, p5_svr_3_d_5]
@@ -4637,14 +4623,14 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             person=person_4,
             supervision_violation=p4_sv_1,
         )
-        p4_svr_1_d_2 = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            person=person_4,
-            supervision_violation_response=p4_svr_1,
-            decision=StateSupervisionViolationResponseDecision.WARNING,
-            decision_raw_text="WTWR",
-            revocation_type=StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
-            revocation_type_raw_text="WTWR",
+        p4_svr_1_d_2 = (
+            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                person=person_4,
+                supervision_violation_response=p4_svr_1,
+                decision=StateSupervisionViolationResponseDecision.WARNING,
+                decision_raw_text="WTWR",
+            )
         )
         p4_svr_1.supervision_violation_response_decisions.append(p4_svr_1_d_2)
         p4_sv_1.supervision_violation_responses.append(p4_svr_1)
@@ -4658,23 +4644,23 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             person=person_4,
             supervision_violation=p4_sv_2,
         )
-        p4_svr_1_d_5 = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            person=person_4,
-            supervision_violation_response=p4_svr_2,
-            decision=StateSupervisionViolationResponseDecision.REVOCATION,
-            decision_raw_text="ARR2",
-            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-            revocation_type_raw_text="ARR2",
+        p4_svr_1_d_5 = (
+            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                person=person_4,
+                supervision_violation_response=p4_svr_2,
+                decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                decision_raw_text="ARR2",
+            )
         )
-        p4_svr_1_d_6 = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            person=person_4,
-            supervision_violation_response=p4_svr_2,
-            decision=StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN,
-            decision_raw_text="PV01",
-            revocation_type=StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION,
-            revocation_type_raw_text="PV01",
+        p4_svr_1_d_6 = (
+            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                person=person_4,
+                supervision_violation_response=p4_svr_2,
+                decision=StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN,
+                decision_raw_text="PV01",
+            )
         )
         p4_svr_2.supervision_violation_response_decisions.extend(
             [p4_svr_1_d_5, p4_svr_1_d_6]
@@ -4727,14 +4713,14 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
             deciding_body_type_raw_text="PAROLE_BOARD",
         )
-        p1_placeholder_de = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            person=person_1,
-            supervision_violation_response=p1_placeholder_vr,
-            state_code=_STATE_CODE_UPPER,
-            decision_raw_text="RESCR",
-            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-            revocation_type_raw_text="RESCR",
+        p1_placeholder_de = (
+            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                person=person_1,
+                supervision_violation_response=p1_placeholder_vr,
+                state_code=_STATE_CODE_UPPER,
+                decision_raw_text="RESCR",
+                decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            )
         )
 
         p1_placeholder_sg.supervision_sentences.append(p1_placeholder_ss)
@@ -4779,14 +4765,14 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
             deciding_body_type_raw_text="PAROLE_BOARD",
         )
-        p2_placeholder_de = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            person=person_2,
-            supervision_violation_response=p2_placeholder_vr,
-            state_code=_STATE_CODE_UPPER,
-            decision_raw_text="RESCR9",
-            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-            revocation_type_raw_text="RESCR9",
+        p2_placeholder_de = (
+            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                person=person_2,
+                supervision_violation_response=p2_placeholder_vr,
+                state_code=_STATE_CODE_UPPER,
+                decision_raw_text="RESCR9",
+                decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            )
         )
 
         p2_placeholder_sg.supervision_sentences.append(p2_placeholder_ss)
@@ -4833,14 +4819,14 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
             deciding_body_type_raw_text="PAROLE_BOARD",
         )
-        p5_placeholder_de = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            person=person_5,
-            supervision_violation_response=p5_placeholder_vr,
-            state_code=_STATE_CODE_UPPER,
-            decision_raw_text="RESCR9",
-            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-            revocation_type_raw_text="RESCR9",
+        p5_placeholder_de = (
+            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                person=person_5,
+                supervision_violation_response=p5_placeholder_vr,
+                state_code=_STATE_CODE_UPPER,
+                decision_raw_text="RESCR9",
+                decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            )
         )
 
         p5_placeholder_sg.supervision_sentences.append(p5)
@@ -4885,14 +4871,14 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
             deciding_body_type_raw_text="PAROLE_BOARD",
         )
-        p4_placeholder_de = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-            person=person_4,
-            supervision_violation_response=p4_placeholder_vr,
-            state_code=_STATE_CODE_UPPER,
-            decision_raw_text="RESCR",
-            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-            revocation_type_raw_text="RESCR",
+        p4_placeholder_de = (
+            entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                person=person_4,
+                supervision_violation_response=p4_placeholder_vr,
+                state_code=_STATE_CODE_UPPER,
+                decision_raw_text="RESCR",
+                decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            )
         )
 
         p4_placeholder_sg.supervision_sentences.append(p4_placeholder_ss)
