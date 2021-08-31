@@ -258,6 +258,7 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     birthdate: Optional[datetime.date] = attr.ib(
         default=None, validator=attr_validators.is_opt_date
     )
+    # TODO(#7236): DEPRECATED - DO NOT ADD NEW USAGES
     birthdate_inferred_from_age: Optional[bool] = attr.ib(
         default=None, validator=attr_validators.is_opt_bool
     )
@@ -408,6 +409,7 @@ class StateCourtCase(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     )
 
     #   - What
+    # TODO(#9072): DEPRECATED - DO NOT ADD NEW USAGES
     court_fee_dollars: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -1045,6 +1047,7 @@ class StateIncarcerationPeriod(
     assessments: List["StateAssessment"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
+    # TODO(#9068): DEPRECATED - DO NOT ADD NEW USAGES
     program_assignments: List["StateProgramAssignment"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
@@ -1185,6 +1188,7 @@ class StateSupervisionPeriod(
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
     supervising_officer: Optional["StateAgent"] = attr.ib(default=None)
+    # TODO(#9069): DEPRECATED - DO NOT ADD NEW USAGES
     program_assignments: List["StateProgramAssignment"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
@@ -1485,10 +1489,11 @@ class StateSupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr
     # N/A
 
     # Type
-    # TODO(#2668): DEPRECATED - DELETE IN FOLLOW-UP PR
+    # TODO(#2668): DEPRECATED - DO NOT ADD NEW USAGES
     violation_type: Optional[StateSupervisionViolationType] = attr.ib(
         default=None, validator=attr_validators.is_opt(StateSupervisionViolationType)
     )
+    # TODO(#2668): DEPRECATED - DO NOT ADD NEW USAGES
     violation_type_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
@@ -1508,7 +1513,7 @@ class StateSupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr
         default=None, validator=attr_validators.is_opt_bool
     )
 
-    # TODO(#2668): DEPRECATED - DELETE IN FOLLOW-UP PR
+    # TODO(#2668): DEPRECATED - DO NOT ADD NEW USAGES
     violated_conditions: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
@@ -1600,11 +1605,12 @@ class StateSupervisionViolationResponse(
     )
 
     #   - What
-    # TODO(#2668): DEPRECATED - DELETE IN FOLLOW-UP PR
+    # TODO(#2668): DEPRECATED - DO NOT ADD NEW USAGES
     decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib(
         default=None,
         validator=attr_validators.is_opt(StateSupervisionViolationResponseDecision),
     )
+    # TODO(#2668): DEPRECATED - DO NOT ADD NEW USAGES
     decision_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
