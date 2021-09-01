@@ -81,7 +81,7 @@ invalid_lines=$(${changed_files_cmd} \
 
 if [[ -n ${invalid_lines} ]]
 then
-    echo "TODOs must be of format TODO(#123), TODO(organization/repo#123), or TODO(https://issues.com/123"
+    echo "TODOs must be of format TODO(#123), TODO(organization/repo#123), or TODO(https://issues.com/123)"
     echo "${invalid_lines}" | indent_output
     exit_code=$((exit_code + 1))
 else

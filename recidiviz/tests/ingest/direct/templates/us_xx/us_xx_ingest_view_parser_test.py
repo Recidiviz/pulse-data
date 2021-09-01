@@ -15,13 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Ingest view parser tests for US_XX direct ingest."""
+import unittest
+
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
     StateIngestViewParserTestBase,
 )
 
 
-class UsXxIngestViewParserTest(StateIngestViewParserTestBase):
+class UsXxIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase):
     """Parser unit tests for each US_XX ingest view file to be ingested."""
 
     @classmethod
@@ -31,5 +33,9 @@ class UsXxIngestViewParserTest(StateIngestViewParserTestBase):
     @classmethod
     def region_code(cls) -> str:
         return "US_XX"
+
+    @property
+    def test(self) -> unittest.TestCase:
+        return self
 
     # Add parsing tests for new ingest view files here #

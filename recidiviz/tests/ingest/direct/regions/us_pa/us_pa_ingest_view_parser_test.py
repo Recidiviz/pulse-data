@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Ingest view parser tests for US_PA direct ingest."""
+import unittest
+
 from recidiviz.common.constants.state.external_id_types import (
     US_PA_CONTROL,
     US_PA_INMATE,
@@ -30,7 +32,7 @@ from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base im
 )
 
 
-class UsPaIngestViewParserTest(StateIngestViewParserTestBase):
+class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase):
     """Parser unit tests for each US_PA ingest view file to be ingested."""
 
     @classmethod
@@ -40,6 +42,10 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase):
     @classmethod
     def region_code(cls) -> str:
         return "US_PA"
+
+    @property
+    def test(self) -> unittest.TestCase:
+        return self
 
     def test_parse_person_external_ids(self) -> None:
         expected_output = [
