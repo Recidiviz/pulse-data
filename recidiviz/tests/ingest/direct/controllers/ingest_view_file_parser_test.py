@@ -19,20 +19,25 @@
 import datetime
 import os
 import unittest
+from enum import Enum
 from typing import Dict, List, Optional, Type, Union
 
 import attr
 
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.common import attr_validators
-from recidiviz.common.constants.enum_parser import EnumParser
+from recidiviz.common.constants.enum_parser import EnumParser, EnumParsingError
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.ingest_view_file_parser import (
     FileFormat,
     IngestViewFileParser,
     IngestViewFileParserDelegate,
 )
-from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
+from recidiviz.persistence.entity.base_entity import (
+    Entity,
+    EnumEntity,
+    ExternalIdEntity,
+)
 from recidiviz.persistence.entity.entity_deserialize import (
     EntityFactory,
     entity_deserialize,
@@ -45,6 +50,19 @@ from recidiviz.tests.ingest.direct.controllers.fixtures.ingest_view_file_parser 
 #### Start Fake Schema ####
 
 
+class FakeGender(Enum):
+    FEMALE = "FEMALE_ENUM_VALUE"
+    MALE = "MALE_ENUM_VALUE"
+    TRANS_FEMALE = "TRANS_FEMALE_ENUM_VALUE"
+    TRANS_MALE = "TRANS_MALE_ENUM_VALUE"
+
+
+class FakeRace(Enum):
+    ASIAN = "ASIAN_VALUE"
+    BLACK = "BLACK_VALUE"
+    WHITE = "WHITE_VALUE"
+
+
 @attr.s(eq=False)
 class FakePerson(Entity):
     fake_state_code: str = attr.ib(validator=attr_validators.is_str)
@@ -52,6 +70,12 @@ class FakePerson(Entity):
     name: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
     birthdate: Optional[datetime.date] = attr.ib(
         default=None, validator=attr_validators.is_opt_date
+    )
+    gender: Optional[FakeGender] = attr.ib(
+        default=None, validator=attr_validators.is_opt(FakeGender)
+    )
+    gender_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
     )
 
     # Fake primary key field
@@ -62,6 +86,9 @@ class FakePerson(Entity):
         factory=list, validator=attr_validators.is_list
     )
     aliases: List["FakePersonAlias"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
+    races: List["FakePersonRace"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
     current_officer: Optional["FakeAgent"] = attr.ib(default=None)
@@ -93,6 +120,27 @@ class FakePersonExternalId(Entity):
 
     # Fake primary key field
     person_external_id_pk: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
+    # Back edge relationship
+    person: Optional["FakePerson"] = attr.ib(default=None)
+
+
+@attr.s(eq=False)
+class FakePersonRace(EnumEntity):
+    fake_state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    # Attributes
+    race: Optional[FakeRace] = attr.ib(
+        default=None, validator=attr_validators.is_opt(FakeRace)
+    )
+    race_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    # Fake primary key field
+    person_race_pk: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
 
@@ -137,6 +185,12 @@ class FakePersonAliasFactory(EntityFactory):
         return entity_deserialize(cls=FakePersonAlias, converter_overrides={}, **kwargs)
 
 
+class FakePersonRaceFactory(EntityFactory):
+    @staticmethod
+    def deserialize(**kwargs: Union[str, EnumParser]) -> FakePersonRace:
+        return entity_deserialize(cls=FakePersonRace, converter_overrides={}, **kwargs)
+
+
 class FakeAgentFactory(EntityFactory):
     @staticmethod
     def deserialize(**kwargs: Union[str, EnumParser]) -> FakeAgent:
@@ -147,6 +201,8 @@ class FakeAgentFactory(EntityFactory):
 
 
 class FakeSchemaIngestViewFileParserDelegate(IngestViewFileParserDelegate):
+    """Fake implementation of IngestViewFileParserDelegate for parser unittests."""
+
     def get_ingest_view_manifest_path(self, file_tag: str) -> str:
         return os.path.join(os.path.dirname(manifests.__file__), f"{file_tag}.yaml")
 
@@ -160,6 +216,8 @@ class FakeSchemaIngestViewFileParserDelegate(IngestViewFileParserDelegate):
             return FakePersonExternalIdFactory
         if entity_cls_name == FakePersonAlias.__name__:
             return FakePersonAliasFactory
+        if entity_cls_name == FakePersonRace.__name__:
+            return FakePersonRaceFactory
         if entity_cls_name == FakeAgent.__name__:
             return FakeAgentFactory
         raise ValueError(f"Unexpected class name [{entity_cls_name}]")
@@ -171,6 +229,8 @@ class FakeSchemaIngestViewFileParserDelegate(IngestViewFileParserDelegate):
             return FakePersonExternalId
         if entity_cls_name == FakePersonAlias.__name__:
             return FakePersonAlias
+        if entity_cls_name == FakePersonRace.__name__:
+            return FakePersonRace
         if entity_cls_name == FakeAgent.__name__:
             return FakeAgent
         raise ValueError(f"Unexpected class name [{entity_cls_name}]")
@@ -418,7 +478,7 @@ class IngestViewFileParserTest(unittest.TestCase):
                 name="COSMOS KRAMER",
                 external_ids=[],
                 current_officer=FakeAgent(
-                    external_id=None,
+                    external_id="D000",
                     fake_state_code="US_XX",
                 ),
             ),
@@ -474,6 +534,263 @@ class IngestViewFileParserTest(unittest.TestCase):
 
         # Act
         parsed_output = self._run_parse_for_tag("reused_column")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_simple_enum_parsing(self) -> None:
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.FEMALE,
+                gender_raw_text="F",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="1", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.MALE,
+                gender_raw_text="M",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="2", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.MALE,
+                gender_raw_text="MA",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX",
+                        external_id="2",
+                        id_type="ID_TYPE",
+                    )
+                ],
+            ),
+            # No parsed gender for this person because the gender is in the ignores list.
+            # Gender raw text is still hydrated.
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=None,
+                gender_raw_text="U",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="3", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            # No gender for this person because they had a null gender in the input CSV.
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="4", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("simple_enums")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_enum_parsing_complex_capitalization(self) -> None:
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.FEMALE,
+                gender_raw_text="FEMALE",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="1", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.MALE,
+                gender_raw_text="MALE",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="2", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.TRANS_FEMALE,
+                gender_raw_text="TRANS-FEMALE",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="2", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                gender_raw_text="X",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="3", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=None,
+                gender_raw_text="!",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="4", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("enums_complex_capitalization")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_enum_parsing_ignores_caps_mismatch(self) -> None:
+        # Act
+        with self.assertRaisesRegex(
+            EnumParsingError, "Could not parse X when building <enum 'FakeGender'>"
+        ):
+            _ = self._run_parse_for_tag("enums_ignores_caps_mismatch")
+
+    def test_enum_parsing_mappings_caps_mismatch(self) -> None:
+        # Act
+        with self.assertRaisesRegex(
+            # The expected FakeGender value is 'Male' and case must match
+            EnumParsingError,
+            "Could not parse MALE when building <enum 'FakeGender'>",
+        ):
+            _ = self._run_parse_for_tag("enums_mappings_caps_mismatch")
+
+    def test_simple_enum_entity_parsing(self) -> None:
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="1", id_type="ID_TYPE"
+                    )
+                ],
+                races=[
+                    FakePersonRace(
+                        fake_state_code="US_XX", race=FakeRace.BLACK, race_raw_text="B"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="2", id_type="ID_TYPE"
+                    )
+                ],
+                races=[
+                    FakePersonRace(
+                        fake_state_code="US_XX", race=FakeRace.WHITE, race_raw_text="W"
+                    )
+                ],
+            ),
+            # This person had a race value in the ignores list so no FakePersonRace
+            # object is hydrated.
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="3", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            # This person had a null race value so no FakePersonRace object is hydrated.
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="4", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("simple_enum_entity")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_enum_entity_list_parsing(self) -> None:
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="1", id_type="ID_TYPE"
+                    )
+                ],
+                races=[
+                    FakePersonRace(
+                        fake_state_code="US_XX", race=FakeRace.ASIAN, race_raw_text="A"
+                    ),
+                    FakePersonRace(
+                        fake_state_code="US_XX", race=FakeRace.BLACK, race_raw_text="B"
+                    ),
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="2", id_type="ID_TYPE"
+                    )
+                ],
+                races=[
+                    FakePersonRace(
+                        fake_state_code="US_XX", race=FakeRace.WHITE, race_raw_text="W"
+                    )
+                ],
+            ),
+            # This person had one race value in the ignores list so no FakePersonRace
+            # object is hydrated for that value
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="3", id_type="ID_TYPE"
+                    )
+                ],
+                races=[
+                    FakePersonRace(
+                        fake_state_code="US_XX", race=FakeRace.BLACK, race_raw_text="B"
+                    )
+                ],
+            ),
+            # This person had a null races value so no FakePersonRace objects are
+            # hydrated.
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="4", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("enum_entity_list")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)

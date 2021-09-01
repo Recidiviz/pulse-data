@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Base class for all entity types"""
-from typing import Optional, Dict, Type, Callable, List
+from typing import Callable, Dict, List, Optional, Type
 
 import attr
 
@@ -41,7 +41,15 @@ class Entity(CoreEntity):
 class ExternalIdEntity(Entity):
     external_id: Optional[str] = attr.ib()
 
-    # Consider Entity abstract and only allow instantiating subclasses
+    # Consider ExternalIdEntity abstract and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        if cls is ExternalIdEntity:
+            raise Exception("Abstract class cannot be instantiated")
+        return super().__new__(cls)
+
+
+class EnumEntity(Entity):
+    # Consider EnumEntity abstract and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is ExternalIdEntity:
             raise Exception("Abstract class cannot be instantiated")

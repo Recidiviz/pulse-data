@@ -21,13 +21,17 @@ tree.
 
 import abc
 import re
-from typing import Dict, Generic, List, Type, TypeVar, Union
+from enum import Enum
+from typing import Callable, Dict, Generic, List, Optional, Type, TypeVar, Union
 
 import attr
 
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.enum_parser import EnumParser
+from recidiviz.common.constants.strict_enum_parser import StrictEnumParser
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_deserialize import EntityFactory, EntityT
+from recidiviz.utils.yaml_dict import YAMLDict
 
 ManifestNodeT = TypeVar("ManifestNodeT")
 
@@ -40,7 +44,7 @@ class ManifestNode(Generic[ManifestNodeT]):
     """
 
     @abc.abstractmethod
-    def build_from_row(self, row: Dict[str, str]) -> ManifestNodeT:
+    def build_from_row(self, row: Dict[str, str]) -> Optional[ManifestNodeT]:
         """Should be implemented by subclasses to return a recursively hydrated node
         in the entity tree, parsed out of the input row.
         """
@@ -66,17 +70,31 @@ class EntityTreeManifest(ManifestNode[EntityT]):
     # A map of arguments that should be applied to all parsed entities.
     common_args: Dict[str, Union[str, EnumParser]] = attr.ib()
 
-    def build_from_row(self, row: Dict[str, str]) -> EntityT:
+    # Optional predicate for filtering out hydrated entities. If returns True,
+    # build_for_row() will return null instead of this entity (and any children
+    # entities) will be excluded entirely from the result.
+    #
+    # Currently this is primarily used for enum entities. If the enum value is null or
+    # ignored by the mappings, the entire enum entity will be filtered out.
+    filter_predicate: Optional[Callable[[EntityT], bool]] = attr.ib(default=None)
+
+    def build_from_row(self, row: Dict[str, str]) -> Optional[EntityT]:
         """Builds a recursively hydrated entity from the given input row."""
         args = self.common_args.copy()
 
         for field_name, field_manifest in self.field_manifests.items():
-            args[field_name] = field_manifest.build_from_row(row)
+            field_value = field_manifest.build_from_row(row)
+            if field_value:
+                args[field_name] = field_value
 
         entity = self.entity_factory_cls.deserialize(**args)
 
         if not isinstance(entity, self.entity_cls):
             raise ValueError(f"Unexpected type for entity: [{type(entity)}]")
+
+        if self.filter_predicate and self.filter_predicate(entity):
+            return None
+
         return entity
 
 
@@ -121,7 +139,8 @@ class ExpandableListItemManifest:
             row[self.FOREACH_LOOP_VALUE_NAME] = value
             entity = self.child_entity_manifest.build_from_row(row)
             del row[self.FOREACH_LOOP_VALUE_NAME]
-            result.append(entity)
+            if entity:
+                result.append(entity)
         return result
 
 
@@ -142,7 +161,9 @@ class ListRelationshipFieldManifest(ManifestNode[List[Entity]]):
             if isinstance(child_manifest, ExpandableListItemManifest):
                 child_entities.extend(child_manifest.expand(row))
             elif isinstance(child_manifest, EntityTreeManifest):
-                child_entities.append(child_manifest.build_from_row(row))
+                child_entity = child_manifest.build_from_row(row)
+                if child_entity:
+                    child_entities.append(child_entity)
             else:
                 raise ValueError(
                     f"Unexpected type for child manifest: {type(child_manifest)}"
@@ -175,3 +196,116 @@ class StringLiteralFieldManifest(ManifestNode[str]):
 
     def build_from_row(self, row: Dict[str, str]) -> str:
         return self.literal_value
+
+
+@attr.s(kw_only=True)
+class EnumFieldManifest(ManifestNode[StrictEnumParser]):
+    """Manifest describing a flat field that will be hydrated into a parsed enum value."""
+
+    # Raw manifest key whose value describes where to look for the raw text value to
+    # parse this enum from.
+    RAW_TEXT_KEY = "$raw_text"
+
+    # Raw manifest key whose value describes the direct string mappings for this enum
+    # field.
+    MAPPINGS_KEY = "$mappings"
+
+    # Raw manifest key whose value describes the string raw text values that should
+    # be ignored when parsing this enum field.
+    IGNORES_KEY = "$ignore"
+
+    # Suffix to append to an enum field name to get the corresponding raw text field
+    # name.
+    RAW_TEXT_FIELD_SUFFIX = "_raw_text"
+
+    enum_cls: Type[Enum] = attr.ib()
+    mapped_raw_text_col: str = attr.ib()
+    enum_overrides: EnumOverrides = attr.ib()
+    raw_text_field_manifest: ManifestNode = attr.ib()
+
+    def build_from_row(self, row: Dict[str, str]) -> StrictEnumParser:
+        raw_text = row[self.mapped_raw_text_col]
+        return StrictEnumParser(
+            raw_text=raw_text,
+            enum_cls=self.enum_cls,
+            enum_overrides=self.enum_overrides,
+        )
+
+    @classmethod
+    def raw_text_field_name(cls, enum_field_name: str) -> str:
+        return f"{enum_field_name}{EnumFieldManifest.RAW_TEXT_FIELD_SUFFIX}"
+
+    @classmethod
+    def from_raw_manifest(
+        cls, *, enum_cls: Type[Enum], field_enum_mappings_manifest: YAMLDict
+    ) -> "EnumFieldManifest":
+        """Factory method for building an enum field manifest."""
+        mapped_raw_text_col = field_enum_mappings_manifest.pop(
+            EnumFieldManifest.RAW_TEXT_KEY, str
+        )
+
+        enum_overrides = cls._build_field_enum_overrides(
+            enum_cls,
+            ignores_list=field_enum_mappings_manifest.pop_list(
+                EnumFieldManifest.IGNORES_KEY, str
+            ),
+            raw_mappings_manifest=field_enum_mappings_manifest.pop_dict(
+                EnumFieldManifest.MAPPINGS_KEY
+            ),
+        )
+
+        if len(field_enum_mappings_manifest):
+            raise ValueError(
+                f"Found unused keys in field enum mappings manifest: "
+                f"{field_enum_mappings_manifest.keys()}"
+            )
+        return EnumFieldManifest(
+            enum_cls=enum_cls,
+            mapped_raw_text_col=mapped_raw_text_col,
+            enum_overrides=enum_overrides,
+            raw_text_field_manifest=DirectMappingFieldManifest(
+                mapped_column=mapped_raw_text_col,
+            ),
+        )
+
+    @staticmethod
+    def _build_field_enum_overrides(
+        enum_cls: Type[Enum], ignores_list: List[str], raw_mappings_manifest: YAMLDict
+    ) -> EnumOverrides:
+        """Builds the enum mappings object that should be used to parse the enum value."""
+
+        enum_overrides_builder = EnumOverrides.Builder()
+
+        for enum_value_str in raw_mappings_manifest.keys():
+            enum_cls_name, enum_name = enum_value_str.split(".")
+            if enum_cls_name != enum_cls.__name__:
+                raise ValueError(
+                    f"Declared enum class in manifest [{enum_cls_name}] does "
+                    f"not match expected enum class type [{enum_cls.__name__}]."
+                )
+            value_manifest_type = raw_mappings_manifest.peek_type(enum_value_str)
+            if value_manifest_type is str:
+                mappings_raw_text_list: List[str] = [
+                    raw_mappings_manifest.pop(enum_value_str, str)
+                ]
+            elif value_manifest_type is list:
+                mappings_raw_text_list = []
+                for raw_text in raw_mappings_manifest.pop(enum_value_str, list):
+                    if not isinstance(raw_text, str) or not raw_text:
+                        raise ValueError(f"Unexpected value for raw_text: {raw_text}")
+                    mappings_raw_text_list.append(raw_text)
+            else:
+                raise ValueError(
+                    f"Unexpected mapping values manifest type: {value_manifest_type}"
+                )
+            for raw_text in mappings_raw_text_list:
+                enum_overrides_builder.add(
+                    raw_text, enum_cls[enum_name], normalize_label=False
+                )
+
+        for raw_text_value in ignores_list:
+            enum_overrides_builder.ignore(
+                raw_text_value, enum_cls, normalize_label=False
+            )
+
+        return enum_overrides_builder.build()

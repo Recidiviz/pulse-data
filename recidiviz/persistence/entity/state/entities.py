@@ -101,7 +101,11 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.date import DateRange, DurationMixin
-from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
+from recidiviz.persistence.entity.base_entity import (
+    Entity,
+    EnumEntity,
+    ExternalIdEntity,
+)
 
 # **** Entity Types for convenience *****:
 SentenceType = TypeVar(
@@ -186,7 +190,7 @@ class StatePersonAlias(Entity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False)
-class StatePersonRace(Entity, BuildableAttr, DefaultableAttr):
+class StatePersonRace(EnumEntity, BuildableAttr, DefaultableAttr):
     """Models a race associated with a particular StatePerson."""
 
     # State Code
@@ -209,7 +213,7 @@ class StatePersonRace(Entity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False)
-class StatePersonEthnicity(Entity, BuildableAttr, DefaultableAttr):
+class StatePersonEthnicity(EnumEntity, BuildableAttr, DefaultableAttr):
     """Models an ethnicity associated with a particular StatePerson."""
 
     # State Code
@@ -1234,7 +1238,7 @@ class StateSupervisionPeriod(
 
 
 @attr.s(eq=False)
-class StateSupervisionCaseTypeEntry(Entity, BuildableAttr, DefaultableAttr):
+class StateSupervisionCaseTypeEntry(EnumEntity, BuildableAttr, DefaultableAttr):
     # State Code
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
@@ -1421,7 +1425,7 @@ class StateParoleDecision(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False)
-class StateSupervisionViolationTypeEntry(Entity, BuildableAttr, DefaultableAttr):
+class StateSupervisionViolationTypeEntry(EnumEntity, BuildableAttr, DefaultableAttr):
     """Models a violation type associated with a particular StateSupervisionViolation."""
 
     # State Code
@@ -1447,7 +1451,9 @@ class StateSupervisionViolationTypeEntry(Entity, BuildableAttr, DefaultableAttr)
 
 
 @attr.s(eq=False)
-class StateSupervisionViolatedConditionEntry(Entity, BuildableAttr, DefaultableAttr):
+class StateSupervisionViolatedConditionEntry(
+    EnumEntity, BuildableAttr, DefaultableAttr
+):
     """Models a condition applied to a supervision sentence, whose violation may be recorded in a
     StateSupervisionViolation.
     """

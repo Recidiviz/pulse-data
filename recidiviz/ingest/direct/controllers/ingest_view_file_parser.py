@@ -23,27 +23,29 @@ import os
 import re
 from enum import Enum, auto
 from types import ModuleType
-from typing import Dict, Iterator, List, Type, Union
+from typing import Callable, Dict, Iterator, List, Optional, Type, Union
 
 from more_itertools import one
 
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.common.attr_mixins import (
     BuildableAttrFieldType,
+    attr_field_enum_cls_for_field_name,
     attr_field_type_for_field_name,
 )
 from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.ingest.direct.controllers.ingest_view_manifest import (
     DirectMappingFieldManifest,
     EntityTreeManifest,
+    EnumFieldManifest,
     ExpandableListItemManifest,
     ListRelationshipFieldManifest,
     ManifestNode,
     StringLiteralFieldManifest,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_deserialize import EntityFactory
+from recidiviz.persistence.entity.base_entity import Entity, EnumEntity
+from recidiviz.persistence.entity.entity_deserialize import EntityFactory, EntityT
 from recidiviz.persistence.entity.entity_utils import (
     get_entity_class_in_module_with_name,
 )
@@ -191,7 +193,10 @@ class IngestViewFileParser:
         output_manifest = self.parse_manifest(manifest_path)
         result = []
         for row in self._row_iterator(contents_handle, file_format):
-            result.append(output_manifest.build_from_row(row))
+            output_tree = output_manifest.build_from_row(row)
+            if not output_tree:
+                raise ValueError("Unexpected null output tree for row.")
+            result.append(output_tree)
         return result
 
     def parse_manifest(self, manifest_path: str) -> EntityTreeManifest:
@@ -257,8 +262,14 @@ class IngestViewFileParser:
 
                 dict_field_type = attr_field_type_for_field_name(entity_cls, field_name)
                 if dict_field_type == BuildableAttrFieldType.ENUM:
-                    raise NotImplementedError("TODO(#8977): Add enum mappings support.")
-                if dict_field_type == BuildableAttrFieldType.FORWARD_REF:
+                    field_manifests.update(
+                        self._build_enum_field_manifests_dict(
+                            entity_cls=entity_cls,
+                            field_name=field_name,
+                            field_enum_mappings_manifest=dict_field_manifest,
+                        )
+                    )
+                elif dict_field_type == BuildableAttrFieldType.FORWARD_REF:
                     field_manifests[field_name] = self._build_entity_tree_manifest(
                         raw_entity_manifest=dict_field_manifest
                     )
@@ -284,7 +295,12 @@ class IngestViewFileParser:
                         literal_value=match.group(1)
                     )
                 else:
-                    # TODO(#8977): Assert that field is not an enum raw text field
+                    if field_name.endswith(EnumFieldManifest.RAW_TEXT_FIELD_SUFFIX):
+                        raise ValueError(
+                            f"Enum raw text fields should not be mapped independently "
+                            f"of their corresponding enum fields. Found direct mapping "
+                            f"for field [{field_name}]."
+                        )
                     field_manifests[field_name] = DirectMappingFieldManifest(
                         mapped_column=str_field_manifest
                     )
@@ -305,7 +321,61 @@ class IngestViewFileParser:
             entity_factory_cls=entity_factory_cls,
             common_args=self.delegate.get_common_args(),
             field_manifests=field_manifests,
+            filter_predicate=self._get_filter_predicate(entity_cls, field_manifests),
         )
+
+    # TODO(##9099): Make sure to add documentation about what gets filtered out.
+    # TODO(#8905): Consider using more general logic to build a filter predicate, like
+    #  building a @required field annotation for fields that must be hydrated, otherwise
+    #  the whole entity is filtered out.
+    @staticmethod
+    def _get_filter_predicate(
+        entity_cls: Type[EntityT], field_manifests: Dict[str, ManifestNode]
+    ) -> Optional[Callable[[EntityT], bool]]:
+        """Returns a predicate function which can be used to fully filter the evaluated
+        EntityTreeManifest from the result.
+        """
+        if issubclass(entity_cls, EnumEntity):
+            enum_field_name = one(
+                field_name
+                for field_name, manifest in field_manifests.items()
+                if isinstance(manifest, EnumFieldManifest)
+            )
+            enum_raw_field_name = EnumFieldManifest.raw_text_field_name(enum_field_name)
+
+            def enum_entity_filter_predicate(e: EntityT) -> bool:
+                return (
+                    getattr(e, enum_field_name) is None
+                    or getattr(e, enum_raw_field_name) is None
+                )
+
+            return enum_entity_filter_predicate
+        return None
+
+    @staticmethod
+    def _build_enum_field_manifests_dict(
+        entity_cls: Type[Entity],
+        field_name: str,
+        field_enum_mappings_manifest: YAMLDict,
+    ) -> Dict[str, ManifestNode]:
+        """Returns a dictionary (field_name -> FieldManifest) for this enum field and
+        its associated raw text field.
+        """
+        field_manifests: Dict[str, ManifestNode] = {}
+        enum_cls = attr_field_enum_cls_for_field_name(entity_cls, field_name)
+        if not enum_cls:
+            raise ValueError(
+                f"No enum class for field [{field_name}] in class " f"[{entity_cls}]."
+            )
+        enum_field_manifest = EnumFieldManifest.from_raw_manifest(
+            enum_cls=enum_cls,
+            field_enum_mappings_manifest=field_enum_mappings_manifest,
+        )
+        field_manifests[field_name] = enum_field_manifest
+        field_manifests[
+            EnumFieldManifest.raw_text_field_name(field_name)
+        ] = enum_field_manifest.raw_text_field_manifest
+        return field_manifests
 
     def _build_list_item_manifest(
         self,
@@ -316,6 +386,10 @@ class IngestViewFileParser:
             ExpandableListItemManifest.FOREACH_ITERATOR_KEY, str
         )
 
+        child_entity_manifest = self._build_entity_tree_manifest(
+            raw_entity_manifest=list_item_manifest_raw
+        )
+
         # Check for special $foreach keyword arg which tells us that we should expand
         # this list item into N entities.
         #
@@ -323,13 +397,9 @@ class IngestViewFileParser:
         # normal entity tree manifest, a dictionary with a single class name -> fields
         # manifest mapping.
         if not list_col_name:
-            return self._build_entity_tree_manifest(
-                raw_entity_manifest=list_item_manifest_raw
-            )
+            return child_entity_manifest
 
         return ExpandableListItemManifest(
             mapped_column=list_col_name,
-            child_entity_manifest=self._build_entity_tree_manifest(
-                raw_entity_manifest=list_item_manifest_raw
-            ),
+            child_entity_manifest=child_entity_manifest,
         )
