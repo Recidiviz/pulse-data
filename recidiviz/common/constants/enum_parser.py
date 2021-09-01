@@ -15,42 +15,65 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Class that parses an enum value from raw text, given a provided set of enum mappings."""
-
-from typing import Generic, Optional, Type, Callable
+import abc
+from enum import Enum
+from typing import Callable, Generic, Optional, Type
 
 import attr
 
-from recidiviz.common.constants.entity_enum import EntityEnumT
-from recidiviz.common.constants.enum_overrides import EnumOverrides
+from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumT
+
+
+class EnumParsingError(Exception):
+    """Raised if an enum can't be built from the provided string."""
+
+    def __init__(self, cls: type, string_to_parse: str):
+        msg = "Could not parse {0} when building {1}".format(string_to_parse, cls)
+        self.entity_type = cls
+        super().__init__(msg)
 
 
 @attr.s(frozen=True)
-class EnumParser(Generic[EntityEnumT]):
-    """Class that parses an enum value from raw text, given a provided set of enum mappings."""
+class EnumParser(Generic[EnumT]):
+    """Interface for a class that parses an enum value from raw text, given a provided
+    set of enum mappings.
+    """
 
-    raw_text: Optional[str] = attr.ib()
-    enum_cls: Type[EntityEnumT] = attr.ib()
-    enum_overrides: EnumOverrides = attr.ib()
+    @abc.abstractmethod
+    def parse(self) -> Optional[EnumT]:
+        """Should be overridden by implementing classes to return an enum value parsed
+        from raw text. Should throw an EnumParsingError on failure, or null if the
+        raw text is marked as "should ignore".
+        """
 
-    def parse(self) -> Optional[EntityEnumT]:
-        if not self.raw_text:
-            return None
-        parsed = self.enum_cls.parse(self.raw_text, self.enum_overrides)
 
-        if parsed is not None and not isinstance(parsed, self.enum_cls):
-            raise ValueError(
-                f"Unexpected type for parsed enum. Expected type [{self.enum_cls}], found [{type(parsed)}]. "
-                f"Parsed value: [{parsed}]."
-            )
-        return parsed
+def parse_to_enum(
+    enum_cls: Type[EnumT], label: str, enum_overrides: EnumOverrides
+) -> Optional[Enum]:
+    if enum_overrides.should_ignore(label, enum_cls):
+        return None
+
+    try:
+        overridden_value = enum_overrides.parse(label, enum_cls)
+    except Exception as e:
+        if isinstance(e, EnumParsingError):
+            raise e
+
+        # If a mapper function throws another type of error, convert it to an enum
+        # parsing error.
+        raise EnumParsingError(enum_cls, label) from e
+
+    return overridden_value
 
 
 def get_parser_for_enum_with_default(
-    default: EntityEnumT,
-) -> Callable[[EnumParser[EntityEnumT]], EntityEnumT]:
+    default: EnumT,
+) -> Callable[[EnumParser[EnumT]], EnumT]:
     """Returns a converter function that parses a particular enum, but returns the default if parsing returns None."""
 
-    def _parse_enum_with_default(enum_parser: EnumParser[EntityEnumT]) -> EntityEnumT:
+    def _parse_enum_with_default(
+        enum_parser: EnumParser[EnumT],
+    ) -> EnumT:
         return enum_parser.parse() or default
 
     return _parse_enum_with_default

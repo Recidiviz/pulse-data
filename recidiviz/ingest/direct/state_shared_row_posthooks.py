@@ -21,11 +21,11 @@ we might update our yaml mapping support to handle this case more generally.
 """
 import importlib
 import logging
-from typing import Dict, List, Callable, Type, Optional, Union
+from enum import Enum
+from typing import Callable, Dict, List, Optional, Type, Union
 
 import attr
 
-from recidiviz.common.constants.entity_enum import EntityEnum
 from recidiviz.common.constants.person_characteristics import Ethnicity
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
@@ -34,20 +34,20 @@ from recidiviz.ingest.direct.controllers.direct_ingest_instance import (
 )
 from recidiviz.ingest.direct.direct_ingest_controller_utils import create_if_not_exists
 from recidiviz.ingest.extractor.csv_data_extractor import (
-    RowPosthookCallable,
     FilePostprocessorCallable,
+    RowPosthookCallable,
 )
 from recidiviz.ingest.models.ingest_info import (
+    IngestInfo,
     IngestObject,
+    StateAgent,
     StateAlias,
+    StateIncarcerationSentence,
     StatePerson,
+    StatePersonEthnicity,
     StatePersonExternalId,
     StateSentenceGroup,
     StateSupervisionSentence,
-    StateIncarcerationSentence,
-    IngestInfo,
-    StatePersonEthnicity,
-    StateAgent,
 )
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
@@ -84,7 +84,7 @@ def copy_name_to_alias(
 
 
 def gen_rationalize_race_and_ethnicity(
-    enum_overrides: Dict[EntityEnum, List[str]]
+    enum_overrides: Dict[Enum, List[str]]
 ) -> RowPosthookCallable:
     """Generates a row post-hook that will identify provided races which are actually ethnicities, and record
     them as ethnicities instead of races."""

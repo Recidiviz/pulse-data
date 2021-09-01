@@ -15,9 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_TN specific enum helper methods."""
-from typing import Dict, List
+from enum import Enum
+from typing import Dict, List, Type
 
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import (
     EnumIgnorePredicate,
     EnumMapperFn,
@@ -39,16 +39,16 @@ def generate_enum_overrides() -> EnumOverrides:
     mapped to within our schema. The values are a list because a particular string may be used in multiple
     distinct columns in the source data.
     """
-    overrides: Dict[EntityEnum, List[str]] = {}
+    overrides: Dict[Enum, List[str]] = {}
     overrides.update(generate_race_enum_overrides())
     overrides.update(generate_ethnicity_enum_overrides())
     overrides.update(generate_gender_enum_overrides())
 
-    ignores: Dict[EntityEnumMeta, List[str]] = {}
+    ignores: Dict[Type[Enum], List[str]] = {}
 
-    override_mappers: Dict[EntityEnumMeta, EnumMapperFn] = {}
+    override_mappers: Dict[Type[Enum], EnumMapperFn] = {}
 
-    ignore_predicates: Dict[EntityEnumMeta, EnumIgnorePredicate] = {}
+    ignore_predicates: Dict[Type[Enum], EnumIgnorePredicate] = {}
 
     base_overrides = get_standard_enum_overrides()
 
@@ -57,9 +57,9 @@ def generate_enum_overrides() -> EnumOverrides:
     )
 
 
-def generate_race_enum_overrides() -> Dict[EntityEnum, List[str]]:
+def generate_race_enum_overrides() -> Dict[Enum, List[str]]:
     """Provides Race overrides for enum mappings."""
-    overrides: Dict[EntityEnum, List[str]] = {
+    overrides: Dict[Enum, List[str]] = {
         Race.ASIAN: [
             "A",  # Asian or Pacific Islander
         ],
@@ -76,9 +76,9 @@ def generate_race_enum_overrides() -> Dict[EntityEnum, List[str]]:
     return overrides
 
 
-def generate_ethnicity_enum_overrides() -> Dict[EntityEnum, List[str]]:
+def generate_ethnicity_enum_overrides() -> Dict[Enum, List[str]]:
     """Provides Ethnicity overrides for enum mappings."""
-    overrides: Dict[EntityEnum, List[str]] = {
+    overrides: Dict[Enum, List[str]] = {
         Ethnicity.HISPANIC: [
             "HISPANIC",  # Hispanic
         ],
@@ -89,9 +89,9 @@ def generate_ethnicity_enum_overrides() -> Dict[EntityEnum, List[str]]:
     return overrides
 
 
-def generate_gender_enum_overrides() -> Dict[EntityEnum, List[str]]:
+def generate_gender_enum_overrides() -> Dict[Enum, List[str]]:
     """Provides Gender overrides for enum mappings."""
-    overrides: Dict[EntityEnum, List[str]] = {
+    overrides: Dict[Enum, List[str]] = {
         Gender.MALE: [
             "M",  # Male
         ],

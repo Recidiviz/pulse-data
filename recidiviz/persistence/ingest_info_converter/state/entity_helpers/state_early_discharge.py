@@ -17,7 +17,9 @@
 
 """Converts an ingest_info proto StateEarlyDischarge to a persistence entity."""
 from recidiviz.common import common_utils
-from recidiviz.common.constants.enum_parser import EnumParser
+from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
+    DefaultingAndNormalizingEnumParser,
+)
 from recidiviz.common.constants.state.shared_enums import StateActingBodyType
 from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecision,
@@ -39,25 +41,25 @@ def copy_fields_to_builder(
     new = early_discharge_builder
 
     # enum values
-    new.decision = EnumParser(
+    new.decision = DefaultingAndNormalizingEnumParser(
         getattr(proto, "decision"),
         StateEarlyDischargeDecision,
         metadata.enum_overrides,
     )
     new.decision_raw_text = getattr(proto, "decision")
-    new.decision_status = EnumParser(
+    new.decision_status = DefaultingAndNormalizingEnumParser(
         getattr(proto, "decision_status"),
         StateEarlyDischargeDecisionStatus,
         metadata.enum_overrides,
     )
     new.decision_status_raw_text = getattr(proto, "decision_status")
-    new.deciding_body_type = EnumParser(
+    new.deciding_body_type = DefaultingAndNormalizingEnumParser(
         getattr(proto, "deciding_body_type"),
         StateActingBodyType,
         metadata.enum_overrides,
     )
     new.deciding_body_type_raw_text = getattr(proto, "deciding_body_type")
-    new.requesting_body_type = EnumParser(
+    new.requesting_body_type = DefaultingAndNormalizingEnumParser(
         getattr(proto, "requesting_body_type"),
         StateActingBodyType,
         metadata.enum_overrides,

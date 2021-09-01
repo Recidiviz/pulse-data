@@ -24,6 +24,8 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateIncarcerationPeriodStatus(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
@@ -36,6 +38,8 @@ class StateIncarcerationPeriodStatus(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_INCARCERATION_PERIOD_STATUS_MAP
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateIncarcerationFacilitySecurityLevel(EntityEnum, metaclass=EntityEnumMeta):
     MAXIMUM = state_enum_strings.state_incarceration_facility_security_level_maximum
@@ -47,6 +51,8 @@ class StateIncarcerationFacilitySecurityLevel(EntityEnum, metaclass=EntityEnumMe
         return _STATE_INCARCERATION_FACILITY_SECURITY_LEVEL_MAP
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateIncarcerationPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMeta):
     """Reasons for admission to a period of incarceration."""
@@ -98,6 +104,8 @@ class StateIncarcerationPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMe
         return _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateIncarcerationPeriodReleaseReason(EntityEnum, metaclass=EntityEnumMeta):
     """Reasons for release from a period of incarceration."""
@@ -152,6 +160,8 @@ class StateIncarcerationPeriodReleaseReason(EntityEnum, metaclass=EntityEnumMeta
         return _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 # TODO(#3275): Update enum name to `StatePurposeForIncarceration` now that there is a 'GENERAL' option
 @unique
 class StateSpecializedPurposeForIncarceration(EntityEnum, metaclass=EntityEnumMeta):

@@ -18,7 +18,9 @@
 """Converts an ingest_info proto StateIncarcerationIncident to a
 persistence entity."""
 from recidiviz.common import common_utils
-from recidiviz.common.constants.enum_parser import EnumParser
+from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
+    DefaultingAndNormalizingEnumParser,
+)
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentType,
 )
@@ -42,7 +44,7 @@ def copy_fields_to_builder(
     new = state_incarceration_incident_builder
 
     # enum values
-    new.incident_type = EnumParser(
+    new.incident_type = DefaultingAndNormalizingEnumParser(
         getattr(proto, "incident_type"),
         StateIncarcerationIncidentType,
         metadata.enum_overrides,

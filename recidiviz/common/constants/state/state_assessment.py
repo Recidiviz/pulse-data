@@ -24,6 +24,8 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateAssessmentClass(EntityEnum, metaclass=EntityEnumMeta):
     """An enumeration of assessment classifications tracked in our schema."""
@@ -42,6 +44,8 @@ class StateAssessmentClass(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_ASSESSMENT_CLASS_MAP
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateAssessmentType(EntityEnum, metaclass=EntityEnumMeta):
     """An enumeration of assessment types tracked in our schema."""
@@ -85,6 +89,8 @@ class StateAssessmentType(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_ASSESSMENT_TYPE_MAP
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateAssessmentLevel(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown

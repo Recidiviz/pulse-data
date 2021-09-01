@@ -24,6 +24,8 @@ from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateAgentType(EntityEnum, metaclass=EntityEnumMeta):
     PRESENT_WITHOUT_INFO = enum_canonical_strings.present_without_info

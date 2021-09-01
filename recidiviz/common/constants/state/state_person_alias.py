@@ -19,10 +19,12 @@
 from enum import unique
 from typing import Dict
 
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
+from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StatePersonAliasType(EntityEnum, metaclass=EntityEnumMeta):
     AFFILIATION_NAME = state_enum_strings.state_person_alias_alias_type_affiliation_name

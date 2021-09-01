@@ -18,7 +18,9 @@
 persistence entity.
 """
 from recidiviz.common import common_utils
-from recidiviz.common.constants.enum_parser import EnumParser
+from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
+    DefaultingAndNormalizingEnumParser,
+)
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
 )
@@ -41,7 +43,7 @@ def convert(
     new = entities.StateIncarcerationIncidentOutcome.builder()
 
     # enum values
-    new.outcome_type = EnumParser(
+    new.outcome_type = DefaultingAndNormalizingEnumParser(
         getattr(proto, "outcome_type"),
         StateIncarcerationIncidentOutcomeType,
         metadata.enum_overrides,
