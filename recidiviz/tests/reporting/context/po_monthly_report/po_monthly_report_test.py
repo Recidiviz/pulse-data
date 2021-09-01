@@ -326,7 +326,13 @@ class PoMonthlyReportContextTests(TestCase):
 
         expected["total_revocations"] = "2"
         expected["assessments_percent"] = "73"
+        expected["overdue_assessments_goal_percent"] = "81"
+        expected["assessments_goal_enabled"] = True
+        expected["assessments_goal_met"] = False
         expected["facetoface_percent"] = "N/A"
+        expected["overdue_facetoface_goal_percent"] = "N/A"
+        expected["facetoface_goal_enabled"] = False
+        expected["facetoface_goal_met"] = False
 
         expected["pos_discharges_label"] = "Successful&nbsp;Case Completions"
         expected["earned_discharges_label"] = "Early Discharge"
@@ -391,3 +397,51 @@ class PoMonthlyReportContextTests(TestCase):
 
         for key, value in actual.items():
             self.assertEqual(expected[key], value, f"key = {key}")
+
+    def test_compliance_goals_enabled(self) -> None:
+        """Test that compliance goals are enabled if below baseline threshold"""
+        recipient_data = {
+            "assessments_percent": 90,
+            "facetoface_percent": 85,
+        }
+        recipient = self.recipient.create_derived_recipient(recipient_data)
+        context = PoMonthlyReportContext(StateCode.US_ID, recipient)
+        actual = context.get_prepared_data()
+
+        self.assertTrue(actual["assessments_goal_enabled"])
+        self.assertTrue(actual["facetoface_goal_enabled"])
+
+        self.assertFalse(actual["assessments_goal_met"])
+        self.assertFalse(actual["facetoface_goal_met"])
+
+    def test_compliance_goals_disabled(self) -> None:
+        """Test that compliance goals are disabled if above baseline threshold"""
+        recipient_data = {
+            "assessments_percent": 95,
+            "facetoface_percent": 90,
+        }
+        recipient = self.recipient.create_derived_recipient(recipient_data)
+        context = PoMonthlyReportContext(StateCode.US_ID, recipient)
+        actual = context.get_prepared_data()
+
+        self.assertFalse(actual["assessments_goal_enabled"])
+        self.assertFalse(actual["facetoface_goal_enabled"])
+
+        self.assertTrue(actual["assessments_goal_met"])
+        self.assertTrue(actual["facetoface_goal_met"])
+
+    def test_compliance_goals_unavailable(self) -> None:
+        """Test that compliance goals are disabled if metrics are unavailable"""
+        recipient_data = {
+            "assessments_percent": "NaN",
+            "facetoface_percent": "NaN",
+        }
+        recipient = self.recipient.create_derived_recipient(recipient_data)
+        context = PoMonthlyReportContext(StateCode.US_ID, recipient)
+        actual = context.get_prepared_data()
+
+        self.assertFalse(actual["assessments_goal_enabled"])
+        self.assertFalse(actual["facetoface_goal_enabled"])
+
+        self.assertFalse(actual["assessments_goal_met"])
+        self.assertFalse(actual["facetoface_goal_met"])
