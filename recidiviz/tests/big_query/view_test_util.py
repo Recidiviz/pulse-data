@@ -510,7 +510,7 @@ class BaseViewTest(unittest.TestCase):
         # 'SUBSTRING() IS NOT NULL', which has the same behavior.
         query = _replace_iter(
             query,
-            r"REGEXP_CONTAINS\((?P<first>.+?), (?P<second>.+?)\)",
+            r"REGEXP_CONTAINS\((?P<first>.+?), r?(?P<second>.+?)\)",
             "SUBSTRING({first}, {second}) IS NOT NULL",
         )
 
@@ -568,7 +568,7 @@ class BaseViewTest(unittest.TestCase):
         # 'datetime' when used in a variable.
         query = _replace_iter(
             query,
-            r"(?P<first_char>[^_])datetime",
+            r"(?P<first_char>[^_A-Za-z])datetime",
             "{first_char}timestamp",
             flags=re.IGNORECASE,
         )
@@ -590,6 +590,18 @@ class BaseViewTest(unittest.TestCase):
             "{function}({column})",
             flags=re.IGNORECASE,
         )
+
+        # Remove the optional, additional `r` in REGEXP_REPLACE.
+        # Append the flag `g` when doing REGEXP_REPLACE, otherwise
+        # only the first match will be replaced.
+        query = _replace_iter(
+            query,
+            r"REGEXP_REPLACE\((?P<value>.+), r?\'(?P<regex>.+)\', \'(?P<replacement>.*)\'\)",
+            "REGEXP_REPLACE({value}, '{regex}', '{replacement}', 'g')",
+        )
+
+        # Allow trailing commas in SELECT.
+        query = _replace_iter(query, r",(?P<whitespace>\s+)FROM", "{whitespace}FROM")
 
         return query
 
