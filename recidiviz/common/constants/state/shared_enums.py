@@ -25,6 +25,8 @@ from recidiviz.common.constants.state import (
 )
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateActingBodyType(EntityEnum, metaclass=EntityEnumMeta):
     """Any person or persons who is taking an action."""
@@ -47,6 +49,8 @@ _STATE_ACTING_BODY_TYPE_MAP = {
 }
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateCustodialAuthority(EntityEnum, metaclass=EntityEnumMeta):
     """The type of government entity directly responsible for the person on a period of incarceration or supervision.

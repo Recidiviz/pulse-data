@@ -24,6 +24,8 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateSupervisionViolationResponseType(EntityEnum, metaclass=EntityEnumMeta):
     CITATION = state_enum_strings.state_supervision_violation_response_type_citation
@@ -39,6 +41,8 @@ class StateSupervisionViolationResponseType(EntityEnum, metaclass=EntityEnumMeta
         return _STATE_SUPERVISION_VIOLATION_RESPONSE_TYPE_MAP
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateSupervisionViolationResponseDecision(EntityEnum, metaclass=EntityEnumMeta):
     """Possible types of supervision violation responses."""
@@ -94,6 +98,8 @@ class StateSupervisionViolationResponseDecision(EntityEnum, metaclass=EntityEnum
         return _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_MAP
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 # TODO(#3108): Transition this enum to use StateActingBodyType
 @unique
 class StateSupervisionViolationResponseDecidingBodyType(

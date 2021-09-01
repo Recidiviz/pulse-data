@@ -31,12 +31,24 @@ class EnumOverridesTest(unittest.TestCase):
         overrides_builder = EnumOverrides.Builder()
         overrides_builder.add("A", Race.ASIAN)
         overrides_builder.add("A", ChargeDegree.FIRST)
+        overrides_builder.add("b", Race.BLACK, normalize_label=False)
+        overrides_builder.add("h", Ethnicity.HISPANIC)
 
         overrides = overrides_builder.build()
 
         self.assertIsNone(overrides.parse("A", ChargeClass))
+
         self.assertEqual(overrides.parse("A", Race), Race.ASIAN)
+        self.assertIsNone(overrides.parse("a", Race))
+
         self.assertEqual(overrides.parse("A", ChargeDegree), ChargeDegree.FIRST)
+        self.assertIsNone(overrides.parse("a", ChargeDegree))
+
+        self.assertIsNone(overrides.parse("B", Race))
+        self.assertEqual(overrides.parse("b", Race), Race.BLACK)
+
+        self.assertEqual(overrides.parse("H", Ethnicity), Ethnicity.HISPANIC)
+        self.assertIsNone(overrides.parse("h", Ethnicity))
 
     def test_add_fromDifferentEnum(self) -> None:
         overrides_builder = EnumOverrides.Builder()
@@ -63,11 +75,35 @@ class EnumOverridesTest(unittest.TestCase):
     def test_ignore(self) -> None:
         overrides_builder = EnumOverrides.Builder()
         overrides_builder.ignore("A", ChargeClass)
+        overrides_builder.ignore("u", Ethnicity, normalize_label=False)
+        overrides_builder.ignore("x", Ethnicity)
 
         overrides = overrides_builder.build()
 
         self.assertTrue(overrides.should_ignore("A", ChargeClass))
         self.assertFalse(overrides.should_ignore("A", BondType))
+
+        self.assertFalse(overrides.should_ignore("a", ChargeClass))
+        self.assertFalse(overrides.should_ignore("a", BondType))
+
+        self.assertFalse(overrides.should_ignore("U", Ethnicity))
+        self.assertTrue(overrides.should_ignore("u", Ethnicity))
+
+        self.assertTrue(overrides.should_ignore("X", Ethnicity))
+        self.assertFalse(overrides.should_ignore("x", Ethnicity))
+
+    def test_parse_ignored(self) -> None:
+        overrides_builder = EnumOverrides.Builder()
+        overrides_builder.add("U", Ethnicity.EXTERNAL_UNKNOWN)
+        overrides_builder.ignore("u", Ethnicity, normalize_label=False)
+        overrides_builder.ignore("x", Ethnicity)
+
+        overrides = overrides_builder.build()
+
+        self.assertEqual(overrides.parse("U", Ethnicity), Ethnicity.EXTERNAL_UNKNOWN)
+        self.assertIsNone(overrides.parse("u", Ethnicity))
+        self.assertIsNone(overrides.parse("x", Ethnicity))
+        self.assertIsNone(overrides.parse("X", Ethnicity))
 
     def test_ignoreWithPredicate(self) -> None:
         overrides_builder = EnumOverrides.Builder()
@@ -78,6 +114,7 @@ class EnumOverridesTest(unittest.TestCase):
         overrides = overrides_builder.build()
 
         self.assertTrue(overrides.should_ignore("NONE", ChargeClass))
+        self.assertFalse(overrides.should_ignore("None", ChargeClass))
 
     def test_double_add_fails(self) -> None:
         overrides_builder = EnumOverrides.Builder()
@@ -89,3 +126,14 @@ class EnumOverridesTest(unittest.TestCase):
         overrides_builder = EnumOverrides.Builder()
         overrides_builder.add("A", ChargeDegree.FIRST)
         overrides_builder.add("A", ChargeDegree.SECOND, force_overwrite=True)
+
+    def test_double_add_different_case(self) -> None:
+        overrides_builder = EnumOverrides.Builder()
+        overrides_builder.add("A", ChargeDegree.FIRST)
+        overrides_builder.add("a", ChargeDegree.FIRST, normalize_label=False)
+
+        overrides = overrides_builder.build()
+
+        self.assertEqual(
+            overrides.parse("A", ChargeDegree), overrides.parse("a", ChargeDegree)
+        )

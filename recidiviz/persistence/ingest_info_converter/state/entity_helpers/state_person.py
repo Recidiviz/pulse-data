@@ -16,7 +16,9 @@
 # ============================================================================
 """Converts an ingest_info proto StatePerson to a persistence entity."""
 
-from recidiviz.common.constants.enum_parser import EnumParser
+from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
+    DefaultingAndNormalizingEnumParser,
+)
 from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StatePerson
@@ -39,7 +41,9 @@ def copy_fields_to_builder(
     new = state_person_builder
 
     # Enum mappings
-    new.gender = EnumParser(getattr(proto, "gender"), Gender, metadata.enum_overrides)
+    new.gender = DefaultingAndNormalizingEnumParser(
+        getattr(proto, "gender"), Gender, metadata.enum_overrides
+    )
     new.gender_raw_text = getattr(proto, "gender")
 
     # 1-to-1 mappings

@@ -15,9 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_ND specific enum helper methods."""
-from typing import Dict, List
+from enum import Enum
+from typing import Dict, List, Type
 
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import (
     EnumIgnorePredicate,
     EnumMapperFn,
@@ -91,7 +91,7 @@ def generate_enum_overrides() -> EnumOverrides:
     mapped to within our schema. The values are a list because a particular string may be used in multiple
     distinct columns in the source data.
     """
-    overrides: Dict[EntityEnum, List[str]] = {
+    overrides: Dict[Enum, List[str]] = {
         Gender.FEMALE: ["2"],
         Gender.MALE: ["1"],
         Race.WHITE: ["1"],
@@ -349,7 +349,7 @@ def generate_enum_overrides() -> EnumOverrides:
         ],
     }
 
-    ignores: Dict[EntityEnumMeta, List[str]] = {
+    ignores: Dict[Type[Enum], List[str]] = {
         # TODO(#2305): What are the appropriate court case statuses?
         StateCourtCaseStatus: ["A", "STEP"],
         StateIncarcerationPeriodAdmissionReason: ["COM", "CONT", "CONV", "NTAD"],
@@ -362,11 +362,11 @@ def generate_enum_overrides() -> EnumOverrides:
         ],
     }
 
-    override_mappers: Dict[EntityEnumMeta, EnumMapperFn] = {
+    override_mappers: Dict[Type[Enum], EnumMapperFn] = {
         StateIncarcerationPeriodStatus: incarceration_period_status_mapper,
     }
 
-    ignore_predicates: Dict[EntityEnumMeta, EnumIgnorePredicate] = {}
+    ignore_predicates: Dict[Type[Enum], EnumIgnorePredicate] = {}
 
     base_overrides = get_standard_enum_overrides()
     return update_overrides_from_maps(

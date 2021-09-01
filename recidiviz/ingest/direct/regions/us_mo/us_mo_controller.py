@@ -18,11 +18,11 @@
 import datetime
 import logging
 import re
+from enum import Enum
 from typing import Callable, Dict, List, Optional, Type
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common import ncic
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import (
     EnumIgnorePredicate,
     EnumMapperFn,
@@ -203,16 +203,16 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     PERIOD_MAGICAL_DATES = ["0", "99999999"]
 
     # TODO(#2898): Complete transition to TAK026 for IncarcerationPeriod statuses
-    ENUM_MAPPER_FUNCTIONS: Dict[EntityEnumMeta, EnumMapperFn] = {
+    ENUM_MAPPER_FUNCTIONS: Dict[Type[Enum], EnumMapperFn] = {
         StateAgentType: supervising_officer_mapper,
         StateSupervisionPeriodAdmissionReason: supervision_period_admission_reason_mapper,
         StateSupervisionPeriodTerminationReason: supervision_period_termination_reason_mapper,
         StateIncarcerationPeriodAdmissionReason: incarceration_period_admission_reason_mapper,
     }
 
-    ENUM_IGNORE_PREDICATES: Dict[EntityEnumMeta, EnumIgnorePredicate] = {}
+    ENUM_IGNORE_PREDICATES: Dict[Type[Enum], EnumIgnorePredicate] = {}
 
-    ENUM_OVERRIDES: Dict[EntityEnum, List[str]] = {
+    ENUM_OVERRIDES: Dict[Enum, List[str]] = {
         StateSupervisionLevel.INTERNAL_UNKNOWN: [
             "CPP",  # Residential Community Placement (treatment)
             "EMP",  # Electronic Monitoring
@@ -419,7 +419,7 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         StateAssessmentLevel.VERY_HIGH: ["Very High"],
     }
 
-    ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {
+    ENUM_IGNORES: Dict[Type[Enum], List[str]] = {
         StateSupervisionType: ["INT"],  # Unknown meaning, rare
         StateSpecializedPurposeForIncarceration: [
             "X",  # Unknown

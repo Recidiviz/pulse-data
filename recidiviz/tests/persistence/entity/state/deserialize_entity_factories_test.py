@@ -17,20 +17,57 @@
 """Tests for deserialize_entity_factories.py."""
 import unittest
 from datetime import date
+from typing import Type, Union
 
+from parameterized import parameterized
+
+from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
+    DefaultingAndNormalizingEnumParser,
+)
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.person_characteristics import Gender, ResidencyStatus
+from recidiviz.common.constants.strict_enum_parser import StrictEnumParser
 from recidiviz.persistence.entity.state import deserialize_entity_factories, entities
 
 
 class TestDeserializeEntityFactories(unittest.TestCase):
     """Tests for deserialize_entity_factories.py."""
 
-    def test_deserialize_StatePerson(self) -> None:
+    @parameterized.expand(
+        [
+            (
+                "defaults",
+                EnumOverrides.empty(),
+                "male",
+                DefaultingAndNormalizingEnumParser,
+            ),
+            (
+                "strict",
+                EnumOverrides.Builder()
+                .add("Male", Gender.MALE, normalize_label=False)
+                .build(),
+                "Male",
+                StrictEnumParser,
+            ),
+        ]
+    )
+    def test_deserialize_StatePerson(
+        self,
+        _name: str,
+        enum_overrides: EnumOverrides,
+        gender_raw_text: str,
+        enum_parser_cls: Union[
+            Type[StrictEnumParser], Type[DefaultingAndNormalizingEnumParser]
+        ],
+    ) -> None:
+        enum_parser: EnumParser = enum_parser_cls(
+            gender_raw_text, Gender, enum_overrides
+        )
+        enum_parser.parse()
         result = deserialize_entity_factories.StatePersonFactory.deserialize(
             state_code="us_xx",
-            gender=EnumParser("MALE", Gender, EnumOverrides.empty()),
+            gender=enum_parser,
             gender_raw_text="MALE",
             full_name='{"full_name": "full NAME"}',
             birthdate="12-31-1999",

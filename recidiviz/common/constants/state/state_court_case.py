@@ -23,6 +23,8 @@ import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateCourtType(EntityEnum, metaclass=EntityEnumMeta):
     PRESENT_WITHOUT_INFO = enum_strings.present_without_info
@@ -34,6 +36,8 @@ class StateCourtType(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_COURT_TYPE_MAP
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateCourtCaseStatus(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
