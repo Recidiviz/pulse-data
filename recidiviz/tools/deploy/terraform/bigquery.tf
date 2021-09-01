@@ -87,6 +87,11 @@ resource "google_bigquery_table" "validation_results" {
         "mode": "NULLABLE"
     },
     {
+        "name": "validation_result_status",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
         "name": "result_details_type",
         "type": "STRING",
         "mode": "NULLABLE"
