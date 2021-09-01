@@ -24,6 +24,8 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateIncarcerationIncidentType(EntityEnum, metaclass=EntityEnumMeta):
     """Possible State Incarceration Incident types."""
@@ -44,6 +46,8 @@ class StateIncarcerationIncidentType(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_INCARCERATION_INCIDENT_OFFENSE_MAP
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateIncarcerationIncidentOutcomeType(EntityEnum, metaclass=EntityEnumMeta):
     """Possible State Incarceration Incident outcome types."""

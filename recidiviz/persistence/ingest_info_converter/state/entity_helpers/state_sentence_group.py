@@ -16,7 +16,9 @@
 # ============================================================================
 """Converts an ingest_info proto StateSentenceGroup to a persistence entity."""
 from recidiviz.common import common_utils
-from recidiviz.common.constants.enum_parser import EnumParser
+from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
+    DefaultingAndNormalizingEnumParser,
+)
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateSentenceGroup
@@ -38,7 +40,7 @@ def copy_fields_to_builder(
     new = sentence_group_builder
 
     # Enum mappings
-    new.status = EnumParser(
+    new.status = DefaultingAndNormalizingEnumParser(
         getattr(proto, "status"), StateSentenceStatus, metadata.enum_overrides
     )
     new.status_raw_text = getattr(proto, "status")

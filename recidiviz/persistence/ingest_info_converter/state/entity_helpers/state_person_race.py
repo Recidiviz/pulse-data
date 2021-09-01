@@ -16,7 +16,9 @@
 # ============================================================================
 
 """Converts an ingest_info proto StatePersonRace to a persistence entity."""
-from recidiviz.common.constants.enum_parser import EnumParser
+from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
+    DefaultingAndNormalizingEnumParser,
+)
 from recidiviz.common.constants.person_characteristics import Race
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StatePersonRace
@@ -35,7 +37,9 @@ def convert(
     new = entities.StatePersonRace.builder()
 
     # Enum mappings
-    new.race = EnumParser(getattr(proto, "race"), Race, metadata.enum_overrides)
+    new.race = DefaultingAndNormalizingEnumParser(
+        getattr(proto, "race"), Race, metadata.enum_overrides
+    )
     new.race_raw_text = getattr(proto, "race")
 
     # 1-to-1 mappings

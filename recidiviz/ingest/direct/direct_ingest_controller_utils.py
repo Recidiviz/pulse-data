@@ -17,28 +17,25 @@
 """Util functions shared across multiple types of hooks in the direct
 ingest controllers."""
 import logging
-from typing import Dict, List, TypeVar
+from enum import Enum
+from typing import Dict, List, Type
 
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import (
     EnumIgnorePredicate,
     EnumMapperFn,
     EnumOverrides,
+    EnumT,
 )
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
 from recidiviz.ingest.models.ingest_info import IngestObject
 from recidiviz.utils import environment
 from recidiviz.utils.regions import Region
 
-EnumType = TypeVar("EnumType", bound=EntityEnum)
 
-
-def invert_enum_to_str_mappings(
-    overrides: Dict[EnumType, List[str]]
-) -> Dict[str, EnumType]:
+def invert_enum_to_str_mappings(overrides: Dict[EnumT, List[str]]) -> Dict[str, EnumT]:
     """Inverts a given dictionary, that maps a target enum from a list of parseable strings, into another dictionary,
     that maps each parseable string to its target enum."""
-    inverted_overrides: Dict[str, EnumType] = {}
+    inverted_overrides: Dict[str, EnumT] = {}
     for mapped_enum, text_tokens in overrides.items():
         for text_token in text_tokens:
             if text_token in inverted_overrides:
@@ -68,10 +65,10 @@ def invert_str_to_str_mappings(overrides: Dict[str, List[str]]) -> Dict[str, str
 
 def update_overrides_from_maps(
     base_enum_overrides: EnumOverrides,
-    overrides: Dict[EntityEnum, List[str]],
-    ignores: Dict[EntityEnumMeta, List[str]],
-    enum_mapper_functions: Dict[EntityEnumMeta, EnumMapperFn],
-    ignore_predicates: Dict[EntityEnumMeta, EnumIgnorePredicate],
+    overrides: Dict[Enum, List[str]],
+    ignores: Dict[Type[Enum], List[str]],
+    enum_mapper_functions: Dict[Type[Enum], EnumMapperFn],
+    ignore_predicates: Dict[Type[Enum], EnumIgnorePredicate],
 ) -> EnumOverrides:
     overrides_builder = base_enum_overrides.to_builder()
 

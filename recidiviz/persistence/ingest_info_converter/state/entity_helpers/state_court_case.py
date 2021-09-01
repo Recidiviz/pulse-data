@@ -17,7 +17,9 @@
 
 """Converts an ingest_info proto StateCourtCase to a persistence entity."""
 from recidiviz.common import common_utils
-from recidiviz.common.constants.enum_parser import EnumParser
+from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
+    DefaultingAndNormalizingEnumParser,
+)
 from recidiviz.common.constants.state.state_court_case import (
     StateCourtCaseStatus,
     StateCourtType,
@@ -43,12 +45,12 @@ def copy_fields_to_builder(
     new = court_case_builder
 
     # enum values
-    new.status = EnumParser(
+    new.status = DefaultingAndNormalizingEnumParser(
         getattr(proto, "status"), StateCourtCaseStatus, metadata.enum_overrides
     )
     new.status_raw_text = getattr(proto, "status")
 
-    new.court_type = EnumParser(
+    new.court_type = DefaultingAndNormalizingEnumParser(
         getattr(proto, "court_type"), StateCourtType, metadata.enum_overrides
     )
     new.court_type_raw_text = getattr(proto, "court_type")

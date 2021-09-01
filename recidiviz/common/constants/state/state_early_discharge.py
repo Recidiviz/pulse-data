@@ -23,6 +23,8 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateEarlyDischargeDecision(EntityEnum, metaclass=EntityEnumMeta):
     REQUEST_DENIED = state_enum_strings.state_early_discharge_decision_request_denied
@@ -38,6 +40,8 @@ class StateEarlyDischargeDecision(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_EARLY_DISCHARGE_DECISION_MAP
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateEarlyDischargeDecisionStatus(EntityEnum, metaclass=EntityEnumMeta):
     PENDING = state_enum_strings.state_early_discharge_decision_status_pending

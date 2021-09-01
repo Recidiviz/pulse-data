@@ -23,6 +23,8 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateSupervisionViolationType(EntityEnum, metaclass=EntityEnumMeta):
     # A person has been written up for absconding (failing to appear for meetings or losing contact with PO)

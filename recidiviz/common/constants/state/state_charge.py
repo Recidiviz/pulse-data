@@ -24,6 +24,8 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateChargeClassificationType(EntityEnum, metaclass=EntityEnumMeta):
     CIVIL = state_enum_strings.state_charge_classification_type_civil

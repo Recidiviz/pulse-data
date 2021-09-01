@@ -17,10 +17,10 @@
 """Direct ingest controller implementation for US_PA."""
 import json
 import re
-from typing import Dict, List, Optional
+from enum import Enum
+from typing import Dict, List, Optional, Type
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import (
     EnumIgnorePredicate,
     EnumMapperFn,
@@ -300,7 +300,7 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "supervision_violation_response": _state_supervision_violation_response_ancestor_chain_overrides,
         }
 
-    ENUM_OVERRIDES: Dict[EntityEnum, List[str]] = {
+    ENUM_OVERRIDES: Dict[Enum, List[str]] = {
         Race.ASIAN: ["ASIAN", "A"],
         Race.BLACK: ["BLACK", "B"],
         Race.AMERICAN_INDIAN_ALASKAN_NATIVE: ["AMERICAN INDIAN", "I"],
@@ -652,7 +652,7 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         StateSupervisionContactStatus.COMPLETED: ["No"],
     }
 
-    ENUM_MAPPER_FUNCTIONS: Dict[EntityEnumMeta, EnumMapperFn] = {
+    ENUM_MAPPER_FUNCTIONS: Dict[Type[Enum], EnumMapperFn] = {
         StateAssessmentLevel: assessment_level_mapper,
         StateIncarcerationPeriodAdmissionReason: incarceration_period_admission_reason_mapper,
         StateIncarcerationPeriodReleaseReason: incarceration_period_release_reason_mapper,
@@ -662,7 +662,7 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         StateSupervisionContactType: supervision_contact_type_mapper,
     }
 
-    ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {
+    ENUM_IGNORES: Dict[Type[Enum], List[str]] = {
         Gender: ["W", "B", "U", "A", "1"],  # Unexplained rare values
         Race: [
             "M",
@@ -679,7 +679,7 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "'"  # The dbo_Senrec table has several rows where the value type_of_sent is a single quotation mark
         ],
     }
-    ENUM_IGNORE_PREDICATES: Dict[EntityEnumMeta, EnumIgnorePredicate] = {}
+    ENUM_IGNORE_PREDICATES: Dict[Type[Enum], EnumIgnorePredicate] = {}
 
     def get_file_tag_rank_list(self) -> List[str]:
         launched_file_tags = [

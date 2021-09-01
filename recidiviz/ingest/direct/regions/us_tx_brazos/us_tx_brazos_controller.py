@@ -15,11 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Direct ingest controller implementation for US_TX_BRAZOS."""
-
-from typing import Dict, List, Optional
+from enum import Enum
+from typing import Dict, List, Optional, Type
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import (
     EnumIgnorePredicate,
     EnumMapperFn,
@@ -72,10 +71,10 @@ class UsTxBrazosController(
             str, IngestAncestorChainOverridesCallable
         ] = {}
 
-    ENUM_OVERRIDES: Dict[EntityEnum, List[str]] = {}
-    ENUM_MAPPER_FUNCTIONS: Dict[EntityEnumMeta, EnumMapperFn] = {}
-    ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {}
-    ENUM_IGNORE_PREDICATES: Dict[EntityEnumMeta, EnumIgnorePredicate] = {}
+    ENUM_OVERRIDES: Dict[Enum, List[str]] = {}
+    ENUM_MAPPER_FUNCTIONS: Dict[Type[Enum], EnumMapperFn] = {}
+    ENUM_IGNORES: Dict[Type[Enum], List[str]] = {}
+    ENUM_IGNORE_PREDICATES: Dict[Type[Enum], EnumIgnorePredicate] = {}
 
     def get_file_tag_rank_list(self) -> List[str]:
         return []

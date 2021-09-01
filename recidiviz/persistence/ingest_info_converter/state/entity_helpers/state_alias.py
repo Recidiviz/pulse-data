@@ -16,7 +16,9 @@
 # ============================================================================
 
 """Converts an ingest_info proto StateAlias to a persistence entity."""
-from recidiviz.common.constants.enum_parser import EnumParser
+from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
+    DefaultingAndNormalizingEnumParser,
+)
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateAlias
@@ -34,7 +36,7 @@ def convert(proto: StateAlias, metadata: IngestMetadata) -> entities.StatePerson
     new = entities.StatePersonAlias.builder()
 
     # enum values
-    new.alias_type = EnumParser(
+    new.alias_type = DefaultingAndNormalizingEnumParser(
         getattr(proto, "alias_type"), StatePersonAliasType, metadata.enum_overrides
     )
     new.alias_type_raw_text = getattr(proto, "alias_type")

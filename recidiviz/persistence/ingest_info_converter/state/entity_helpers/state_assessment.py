@@ -17,7 +17,9 @@
 
 """Converts an ingest_info proto StateAssessment to a persistence entity."""
 from recidiviz.common import common_utils
-from recidiviz.common.constants.enum_parser import EnumParser
+from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
+    DefaultingAndNormalizingEnumParser,
+)
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentLevel,
@@ -44,19 +46,19 @@ def copy_fields_to_builder(
     new = state_assessment_builder
 
     # Enum mappings
-    new.assessment_class = EnumParser(
+    new.assessment_class = DefaultingAndNormalizingEnumParser(
         getattr(proto, "assessment_class"),
         StateAssessmentClass,
         metadata.enum_overrides,
     )
     new.assessment_class_raw_text = getattr(proto, "assessment_class")
 
-    new.assessment_type = EnumParser(
+    new.assessment_type = DefaultingAndNormalizingEnumParser(
         getattr(proto, "assessment_type"), StateAssessmentType, metadata.enum_overrides
     )
     new.assessment_type_raw_text = getattr(proto, "assessment_type")
 
-    new.assessment_level = EnumParser(
+    new.assessment_level = DefaultingAndNormalizingEnumParser(
         getattr(proto, "assessment_level"),
         StateAssessmentLevel,
         metadata.enum_overrides,

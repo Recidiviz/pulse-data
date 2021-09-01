@@ -19,10 +19,14 @@
 Constants related to a person's characteristics shared between county and state
 schemas.
 """
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
+
+# TODO(#8905): Determine strategy for removing _get_default_map() / EntityEnumMeta
+#   behavior for these shared enums once all states have fully migrated to v2 ingest
+#   view mappings.
 
 
 class Gender(EntityEnum, metaclass=EntityEnumMeta):

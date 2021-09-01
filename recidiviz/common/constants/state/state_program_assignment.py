@@ -24,6 +24,8 @@ from recidiviz.common.constants import enum_canonical_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateProgramAssignmentParticipationStatus(EntityEnum, metaclass=EntityEnumMeta):
     DENIED = state_enum_strings.state_program_assignment_participation_status_denied

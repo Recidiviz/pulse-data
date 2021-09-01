@@ -21,9 +21,13 @@ from unittest import TestCase
 import attr
 
 from recidiviz.common import attr_validators
+from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
+    DefaultingAndNormalizingEnumParser,
+)
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.enum_parser import EnumParser
+from recidiviz.common.constants.enum_parser import EnumParser, EnumParsingError
 from recidiviz.common.constants.person_characteristics import Race
+from recidiviz.common.constants.strict_enum_parser import StrictEnumParser
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_deserialize import (
     EntityFieldConverter,
@@ -100,7 +104,7 @@ class TestEntityDeserialize(TestCase):
 
         with self.assertRaises(TypeError):
             _ = MyEntity(
-                enum_with_default=EnumParser(  # type: ignore[arg-type]
+                enum_with_default=DefaultingAndNormalizingEnumParser(  # type: ignore[arg-type]
                     raw_text="BLACK",
                     enum_cls=Race,
                     enum_overrides=EnumOverrides.empty(),
@@ -108,7 +112,23 @@ class TestEntityDeserialize(TestCase):
             )
         with self.assertRaises(TypeError):
             _ = MyEntity(
-                opt_enum=EnumParser(  # type: ignore[arg-type]
+                enum_with_default=StrictEnumParser(  # type: ignore[arg-type]
+                    raw_text="BLACK",
+                    enum_cls=Race,
+                    enum_overrides=EnumOverrides.empty(),
+                )
+            )
+        with self.assertRaises(TypeError):
+            _ = MyEntity(
+                opt_enum=DefaultingAndNormalizingEnumParser(  # type: ignore[arg-type]
+                    raw_text="BLACK",
+                    enum_cls=Race,
+                    enum_overrides=EnumOverrides.empty(),
+                )
+            )
+        with self.assertRaises(TypeError):
+            _ = MyEntity(
+                opt_enum=StrictEnumParser(  # type: ignore[arg-type]
                     raw_text="BLACK",
                     enum_cls=Race,
                     enum_overrides=EnumOverrides.empty(),
@@ -170,7 +190,7 @@ class TestEntityDeserialize(TestCase):
             MyEntityFactory.deserialize(opt_bool="False"),
         )
 
-        enum_parser = EnumParser(
+        enum_parser = DefaultingAndNormalizingEnumParser(
             raw_text="BLACK", enum_cls=Race, enum_overrides=EnumOverrides.empty()
         )
         self.assertEqual(
@@ -181,6 +201,37 @@ class TestEntityDeserialize(TestCase):
             attr.evolve(expected_default_entity, opt_enum=Race.BLACK),
             MyEntityFactory.deserialize(opt_enum=enum_parser),
         )
+
+        enum_mappings = (
+            EnumOverrides.Builder()
+            .add("BLACK", Race.BLACK, normalize_label=False)
+            .add("Black", Race.BLACK, normalize_label=False)
+            .build()
+        )
+        strict_enum_parser = StrictEnumParser(
+            raw_text="BLACK",
+            enum_cls=Race,
+            enum_overrides=enum_mappings,
+        )
+        self.assertEqual(
+            attr.evolve(expected_default_entity, enum_with_default=Race.BLACK),
+            MyEntityFactory.deserialize(enum_with_default=strict_enum_parser),
+        )
+        self.assertEqual(
+            attr.evolve(expected_default_entity, opt_enum=Race.BLACK),
+            MyEntityFactory.deserialize(opt_enum=strict_enum_parser),
+        )
+
+        # Empty mappings throws
+        strict_enum_parser = StrictEnumParser(
+            raw_text="BLACK",
+            enum_cls=Race,
+            enum_overrides=EnumOverrides.empty(),
+        )
+        with self.assertRaises(EnumParsingError):
+            _ = MyEntityFactory.deserialize(enum_with_default=strict_enum_parser)
+        with self.assertRaises(EnumParsingError):
+            _ = MyEntityFactory.deserialize(opt_enum=strict_enum_parser)
 
     def test_entity_deserialize_with_converter_overrides(self) -> None:
         def parse_int_and_double(int_str: str) -> int:
@@ -224,12 +275,12 @@ class TestEntityDeserialize(TestCase):
         entity = MyEntityWithFieldOverridesFactory.deserialize(
             str_with_override="AbCd",
             int_with_override="3",
-            enum_with_override=EnumParser(
+            enum_with_override=DefaultingAndNormalizingEnumParser(
                 raw_text="BLACK", enum_cls=Race, enum_overrides=EnumOverrides.empty()
             ),
             str_no_override="AbCd",
             int_no_override="3",
-            enum_no_override=EnumParser(
+            enum_no_override=DefaultingAndNormalizingEnumParser(
                 raw_text="BLACK", enum_cls=Race, enum_overrides=EnumOverrides.empty()
             ),
         )

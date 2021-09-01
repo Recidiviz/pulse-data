@@ -24,6 +24,8 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 # TODO(#2891): Update supervision period objects in schema to use this type
 @unique
 class StateSupervisionPeriodSupervisionType(EntityEnum, metaclass=EntityEnumMeta):
@@ -51,6 +53,8 @@ class StateSupervisionPeriodSupervisionType(EntityEnum, metaclass=EntityEnumMeta
         return _STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_MAP
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateSupervisionPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMeta):
     """Admission reasons for StateSupervisionPeriod"""
@@ -89,6 +93,8 @@ class StateSupervisionPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMeta
         return _STATE_SUPERVISION_ADMISSION_TYPE_MAP
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateSupervisionPeriodStatus(EntityEnum, metaclass=EntityEnumMeta):
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
@@ -103,6 +109,8 @@ class StateSupervisionPeriodStatus(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_SUPERVISION_STATUS_MAP
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
     """Possible supervision levels that a person can be supervised at."""
@@ -183,6 +191,8 @@ class StateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_SUPERVISION_LEVEL_MAP
 
 
+# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
+#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
 class StateSupervisionPeriodTerminationReason(EntityEnum, metaclass=EntityEnumMeta):
     """Termination reasons for StateSupervisionPeriod"""

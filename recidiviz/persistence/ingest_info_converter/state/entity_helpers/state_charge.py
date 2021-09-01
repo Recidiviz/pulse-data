@@ -17,7 +17,9 @@
 """Converts an ingest_info proto StateCharge to a persistence entity."""
 from recidiviz.common import common_utils
 from recidiviz.common.constants.charge import ChargeStatus
-from recidiviz.common.constants.enum_parser import EnumParser
+from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
+    DefaultingAndNormalizingEnumParser,
+)
 from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateCharge
@@ -35,11 +37,11 @@ def copy_fields_to_builder(
     Note: This will not copy children into the Builder!
     """
     # Enum values
-    new.status = EnumParser(
+    new.status = DefaultingAndNormalizingEnumParser(
         getattr(proto, "status"), ChargeStatus, metadata.enum_overrides
     )
     new.status_raw_text = getattr(proto, "status")
-    new.classification_type = EnumParser(
+    new.classification_type = DefaultingAndNormalizingEnumParser(
         getattr(proto, "classification_type"),
         StateChargeClassificationType,
         metadata.enum_overrides,

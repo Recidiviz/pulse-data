@@ -19,7 +19,9 @@
 entity.
 """
 from recidiviz.common import common_utils
-from recidiviz.common.constants.enum_parser import EnumParser
+from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
+    DefaultingAndNormalizingEnumParser,
+)
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentDischargeReason,
     StateProgramAssignmentParticipationStatus,
@@ -45,13 +47,13 @@ def copy_fields_to_builder(
     new = state_program_assignment_builder
 
     # Enum mappings
-    new.participation_status = EnumParser(
+    new.participation_status = DefaultingAndNormalizingEnumParser(
         getattr(proto, "participation_status"),
         StateProgramAssignmentParticipationStatus,
         metadata.enum_overrides,
     )
     new.participation_status_raw_text = getattr(proto, "participation_status")
-    new.discharge_reason = EnumParser(
+    new.discharge_reason = DefaultingAndNormalizingEnumParser(
         getattr(proto, "discharge_reason"),
         StateProgramAssignmentDischargeReason,
         metadata.enum_overrides,

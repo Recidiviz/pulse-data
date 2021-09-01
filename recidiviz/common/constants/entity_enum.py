@@ -23,7 +23,10 @@ from typing import Dict, Optional, Type, TypeVar
 from aenum import Enum, EnumMeta
 from opencensus.stats import aggregation, measure, view
 
-from recidiviz.common.str_field_utils import normalize
+from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
+    DefaultingAndNormalizingEnumParser,
+)
+from recidiviz.common.constants.enum_parser import EnumParsingError
 from recidiviz.utils import monitoring
 from recidiviz.utils.types import ClsT
 
@@ -38,15 +41,6 @@ enum_errors_view = view.View(
     aggregation.SumAggregation(),
 )
 monitoring.register_views([enum_errors_view])
-
-
-class EnumParsingError(Exception):
-    """Raised if an MappableEnum can't be built from the provided string."""
-
-    def __init__(self, cls: type, string_to_parse: str):
-        msg = "Could not parse {0} when building {1}".format(string_to_parse, cls)
-        self.entity_type = cls
-        super().__init__(msg)
 
 
 class EntityEnumMeta(EnumMeta):
@@ -89,33 +83,17 @@ class EntityEnumMeta(EnumMeta):
         return None
 
     def _parse_to_enum(
-        cls: Type[ClsT], label: str, enum_overrides: "EnumOverrides"
+        cls: Type[ClsT],
+        label: str,
+        enum_overrides: "EnumOverrides",
     ) -> Optional["EntityEnum"]:
         """Attempts to parse |label| using the default map of |cls| and the
         provided |override_map|. Ignores punctuation by treating punctuation as
         a separator, e.g. `(N/A)` will map to the same value as `N A`."""
-        label = normalize(label, remove_punctuation=True)
-        if enum_overrides.should_ignore(label, cls):
-            return None
 
-        try:
-            overridden_value = enum_overrides.parse(label, cls)
-        except Exception as e:
-            if isinstance(e, EnumParsingError):
-                raise e
-
-            # If a mapper function throws another type of error, convert it to an enum
-            # parsing error.
-            raise EnumParsingError(cls, label) from e
-
-        if overridden_value is not None:
-            return overridden_value
-
-        complete_map = cls._get_default_map()
-        try:
-            return complete_map[label]
-        except KeyError as e:
-            raise EnumParsingError(cls, label) from e
+        return DefaultingAndNormalizingEnumParser(
+            raw_text=label, enum_cls=cls, enum_overrides=enum_overrides
+        ).parse()
 
     def parse_from_canonical_string(
         cls: Type[ClsT], label: Optional[str]
