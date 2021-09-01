@@ -15,27 +15,31 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Base test class for ingest view parser tests."""
+import os
 import unittest
 from abc import abstractmethod
 from typing import Sequence
 
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.ingest_view_file_parser import (
     FileFormat,
     IngestViewFileParser,
     IngestViewFileParserDelegateImpl,
+    ingest_view_manifest_dir,
 )
+from recidiviz.ingest.direct.controllers.ingest_view_manifest import EntityTreeManifest
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import print_entity_trees
 from recidiviz.tests.ingest.direct.fixture_util import direct_ingest_fixture_path
 from recidiviz.utils.environment import in_ci
-from recidiviz.utils.regions import get_region
+from recidiviz.utils.regions import Region, get_region
 
 
 # TODO(#9022): Enforce that every single ingest view manifest has an associated parser
 #  test.
-class StateIngestViewParserTestBase(unittest.TestCase):
+class StateIngestViewParserTestBase:
     """Base test class for ingest view parser tests."""
 
     @classmethod
@@ -48,15 +52,27 @@ class StateIngestViewParserTestBase(unittest.TestCase):
     def region_code(cls) -> str:
         pass
 
+    @property
+    @abstractmethod
+    def test(self) -> unittest.TestCase:
+        pass
+
+    def _region(self) -> Region:
+        return get_region(
+            self.region_code(),
+            is_direct_ingest=True,
+        )
+
+    def _build_parser(self) -> IngestViewFileParser:
+        region = self._region()
+        return IngestViewFileParser(
+            delegate=IngestViewFileParserDelegateImpl(region, self.schema_type())
+        )
+
     def _run_parse_ingest_view_test(
         self, file_tag: str, expected_output: Sequence[Entity], debug: bool = False
     ) -> None:
-        parser = IngestViewFileParser(
-            delegate=IngestViewFileParserDelegateImpl(
-                get_region(self.region_code(), is_direct_ingest=True),
-                self.schema_type(),
-            )
-        )
+        parser = self._build_parser()
         fixture_path = direct_ingest_fixture_path(
             region_code=self.region_code(),
             file_name=f"{file_tag}.csv",
@@ -69,11 +85,49 @@ class StateIngestViewParserTestBase(unittest.TestCase):
 
         if debug:
             if in_ci():
-                self.fail("The |debug| flag should only be used for local debugging.")
+                self.test.fail(
+                    "The |debug| flag should only be used for local debugging."
+                )
 
             print("============== EXPECTED ==============")
             print_entity_trees(expected_output)
             print("============== ACTUAL ==============")
             print_entity_trees(parsed_output)
 
-        self.assertEqual(expected_output, parsed_output)
+        self.test.assertEqual(expected_output, parsed_output)
+
+    def test_all_ingest_view_manifests_parse(self) -> None:
+        if self.region_code() == StateCode.US_XX.value:
+            # Skip template region
+            return
+
+        parser = self._build_parser()
+
+        region = self._region()
+        manifest_dir = ingest_view_manifest_dir(region)
+
+        for file in os.listdir(manifest_dir):
+            _name, ext = os.path.splitext(file)
+            manifest_path = os.path.join(manifest_dir, file)
+
+            # TODO(#9059): Remove these checks once PA is moved out of top-level region
+            #  dir.
+            if file == "manifest.yaml":
+                continue
+            if ext == ".py":
+                continue
+            if file.startswith("__"):
+                continue
+            if os.path.isdir(manifest_path):
+                continue
+            manifest_path = os.path.join(manifest_dir, file)
+            try:
+                manifest_ast = parser.parse_manifest(manifest_path)
+            except KeyError as e:
+                if "Expected manifest_language in input" in str(e):
+                    # TODO(#8905): Remove this check once all files have been migrated to
+                    #  v2 structure.
+                    continue
+                raise e
+
+            self.test.assertIsInstance(manifest_ast, EntityTreeManifest)

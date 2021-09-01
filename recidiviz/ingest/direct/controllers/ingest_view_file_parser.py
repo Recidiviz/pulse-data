@@ -23,18 +23,34 @@ import os
 import re
 from enum import Enum, auto
 from types import ModuleType
-from typing import Any, Dict, Iterator, List, Type, Union
+from typing import Dict, Iterator, List, Type, Union
 
 from more_itertools import one
 
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
+from recidiviz.common.attr_mixins import (
+    BuildableAttrFieldType,
+    attr_field_type_for_field_name,
+)
 from recidiviz.common.constants.enum_parser import EnumParser
+from recidiviz.ingest.direct.controllers.ingest_view_manifest import (
+    DirectMappingFieldManifest,
+    EntityTreeManifest,
+    ExpandableListItemManifest,
+    ListRelationshipFieldManifest,
+    ManifestNode,
+    StringLiteralFieldManifest,
+)
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_deserialize import EntityFactory
+from recidiviz.persistence.entity.entity_utils import (
+    get_entity_class_in_module_with_name,
+)
 from recidiviz.persistence.entity.state import (
     deserialize_entity_factories as state_deserialize_entity_factories,
 )
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.utils.regions import Region
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -43,10 +59,18 @@ class FileFormat(Enum):
     CSV = auto()
 
 
-def yaml_mappings_filepath(region: Region, file_tag: str) -> str:
+def ingest_view_manifest_dir(region: Region) -> str:
+    """Returns the directory where all ingest view manifests for a given region live."""
+    # TODO(#9059): Move ingest view manifests out of top level region dir
     return os.path.join(
         os.path.dirname(region.region_module.__file__),
         region.region_code.lower(),
+    )
+
+
+def yaml_mappings_filepath(region: Region, file_tag: str) -> str:
+    return os.path.join(
+        ingest_view_manifest_dir(region),
         f"{region.region_code.lower()}_{file_tag}.yaml",
     )
 
@@ -55,25 +79,11 @@ def yaml_mappings_filepath(region: Region, file_tag: str) -> str:
 # allowing us to gate any breaking changes in the file syntax etc.
 MANIFEST_LANGUAGE_VERSION_KEY = "manifest_language"
 
-# Key that denotes that a list item should be expanded into N values, one for each item
-# in the list column.
-FOREACH_ITERATOR_KEY = "$foreach"
-
-# Variable "column name" hydrated with a single list item value. Can only be used within
-# the context of a $foreach loop.
-FOREACH_LOOP_VALUE_NAME = "$iter"
-
-# Default delimiter used to split list column values
-DEFAULT_LIST_VALUE_DELIMITER = ","
-
 # Minimum supported value in MANIFEST_LANGUAGE_VERSION_KEY field
 MIN_LANGUAGE_VERSION = "1.0.0"
 
 # Maximum supported value in MANIFEST_LANGUAGE_VERSION_KEY field
 MAX_LANGUAGE_VERSION = "1.0.0"
-
-# String literals are denoted like \"MY_STR"
-STRING_LITERAL_VALUE_REGEX = re.compile(r"^\$literal\(\"(.+)\"\)$")
 
 
 class IngestViewFileParserDelegate:
@@ -93,6 +103,10 @@ class IngestViewFileParserDelegate:
         provided class name.
         """
 
+    @abc.abstractmethod
+    def get_entity_cls(self, entity_cls_name: str) -> Type[Entity]:
+        """Returns the class for a given entity name"""
+
 
 class IngestViewFileParserDelegateImpl(IngestViewFileParserDelegate):
     """Standard implementation of the IngestViewFileParserDelegate, for use in
@@ -102,6 +116,7 @@ class IngestViewFileParserDelegateImpl(IngestViewFileParserDelegate):
     def __init__(self, region: Region, schema_type: SchemaType) -> None:
         self.region = region
         self.schema_type = schema_type
+        self.entity_cls_cache: Dict[str, Type[Entity]] = {}
 
     def get_ingest_view_manifest_path(self, file_tag: str) -> str:
         return yaml_mappings_filepath(self.region, file_tag)
@@ -120,6 +135,11 @@ class IngestViewFileParserDelegateImpl(IngestViewFileParserDelegate):
             return state_deserialize_entity_factories
         raise ValueError(f"Unexpected schema type [{self.schema_type}]")
 
+    def _get_entities_module(self) -> ModuleType:
+        if self.schema_type == SchemaType.STATE:
+            return state_entities
+        raise ValueError(f"Unexpected schema type [{self.schema_type}]")
+
     def get_entity_factory_class(self, entity_cls_name: str) -> Type[EntityFactory]:
         factory_entity_name = f"{entity_cls_name}Factory"
         factory_cls = getattr(
@@ -127,8 +147,17 @@ class IngestViewFileParserDelegateImpl(IngestViewFileParserDelegate):
         )
         return factory_cls
 
+    def get_entity_cls(self, entity_cls_name: str) -> Type[Entity]:
+        if entity_cls_name in self.entity_cls_cache:
+            return self.entity_cls_cache[entity_cls_name]
 
-# TODO(#8977): Add enum mappings support.
+        entity_cls = get_entity_class_in_module_with_name(
+            self._get_entities_module(), entity_cls_name
+        )
+        self.entity_cls_cache[entity_cls_name] = entity_cls
+        return entity_cls
+
+
 # TODO(#8979): Add support for building fields from concatenated columns.
 # TODO(#8980): Add support for (limited) custom python.
 class IngestViewFileParser:
@@ -157,9 +186,16 @@ class IngestViewFileParser:
         """Parses ingest view file contents into entities based on the manifest file for
         this ingest view.
         """
-        manifest_dict = YAMLDict.from_path(
-            self.delegate.get_ingest_view_manifest_path(file_tag)
-        )
+
+        manifest_path = self.delegate.get_ingest_view_manifest_path(file_tag)
+        output_manifest = self.parse_manifest(manifest_path)
+        result = []
+        for row in self._row_iterator(contents_handle, file_format):
+            result.append(output_manifest.build_from_row(row))
+        return result
+
+    def parse_manifest(self, manifest_path: str) -> EntityTreeManifest:
+        manifest_dict = YAMLDict.from_path(manifest_path)
 
         version = manifest_dict.pop(MANIFEST_LANGUAGE_VERSION_KEY, str)
         if not MIN_LANGUAGE_VERSION <= version <= MAX_LANGUAGE_VERSION:
@@ -172,125 +208,128 @@ class IngestViewFileParser:
         # TODO(#8957): Check that input columns do not start with $ (protected char)
         _ = manifest_dict.pop("input_columns", list)
         _ = manifest_dict.pop("unused_columns", list)
-        row_output_manifest = manifest_dict.pop_dict("output")
-        result: List[Entity] = []
-        for row in self._row_iterator(contents_handle, file_format):
-            entity = self._parse_entity_tree(
-                entity_manifest=row_output_manifest.copy(),
-                row=row,
-            )
-            result.append(entity)
+
+        output_manifest = self._build_entity_tree_manifest(
+            raw_entity_manifest=manifest_dict.pop_dict("output")
+        )
 
         if len(manifest_dict):
             raise ValueError(
                 f"Found unused keys in ingest view manifest: {manifest_dict.keys()}"
             )
-        return result
 
-    def _parse_entity_tree(
-        self,
-        *,
-        entity_manifest: YAMLDict,
-        row: Dict[str, str],
-    ) -> Entity:
-        """Returns a single, recursively hydrated entity. The entity is hydrated
-        from the values in |row|, based on the provided entity class -> field manifest
-        mappings dict.
+        return output_manifest
+
+    def _build_entity_tree_manifest(
+        self, *, raw_entity_manifest: YAMLDict
+    ) -> EntityTreeManifest:
+        """Returns a single, recursively hydrated entity tree manifest, which can be
+        used to translate a single input row into an entity tree.
         """
-        entity_cls_name = one(entity_manifest.keys())
+        entity_cls_name = one(raw_entity_manifest.keys())
+        entity_cls = self.delegate.get_entity_cls(entity_cls_name)
 
-        fields_manifest = entity_manifest.pop_dict(entity_cls_name)
+        raw_fields_manifest = raw_entity_manifest.pop_dict(entity_cls_name)
 
-        if len(entity_manifest):
+        if len(raw_entity_manifest):
             raise ValueError(
-                f"Found unused keys in entity manifest: {entity_manifest.keys()}"
+                f"Found unused keys in entity manifest: {raw_entity_manifest.keys()}"
             )
 
-        args: Dict[str, Any] = self.delegate.get_common_args()
-        for field_name in fields_manifest.keys():
-            field_type = fields_manifest.peek_type(field_name)
-            field_value: Any
+        field_manifests: Dict[str, ManifestNode] = {}
+        for field_name in raw_fields_manifest.keys():
+            field_type = raw_fields_manifest.peek_type(field_name)
             if field_type is list:
-                field_value = []
-                for list_item_manifest in fields_manifest.pop_dicts(field_name):
-                    field_value.extend(
-                        self._parse_entities_list_from_dict(
-                            list_item_manifest=list_item_manifest,
-                            row=row,
+                child_manifests: List[
+                    Union[ExpandableListItemManifest, EntityTreeManifest]
+                ] = []
+                for raw_child_manifest in raw_fields_manifest.pop_dicts(field_name):
+                    child_manifests.append(
+                        self._build_list_item_manifest(
+                            list_item_manifest_raw=raw_child_manifest
                         )
                     )
-            elif field_type is dict:
-                dict_field_manifest = fields_manifest.pop_dict(field_name)
-                field_value = self._parse_entity_tree(
-                    entity_manifest=dict_field_manifest,
-                    row=row,
+                field_manifests[field_name] = ListRelationshipFieldManifest(
+                    child_manifests=child_manifests
                 )
+            elif field_type is dict:
+                dict_field_manifest = raw_fields_manifest.pop_dict(field_name)
+
+                dict_field_type = attr_field_type_for_field_name(entity_cls, field_name)
+                if dict_field_type == BuildableAttrFieldType.ENUM:
+                    raise NotImplementedError("TODO(#8977): Add enum mappings support.")
+                if dict_field_type == BuildableAttrFieldType.FORWARD_REF:
+                    field_manifests[field_name] = self._build_entity_tree_manifest(
+                        raw_entity_manifest=dict_field_manifest
+                    )
+                else:
+                    raise ValueError(f"Unexpected field type [{dict_field_type}]")
+                if len(dict_field_manifest):
+                    raise ValueError(
+                        f"Found unused keys in field manifest: "
+                        f"{dict_field_manifest.keys()}"
+                    )
+
             elif field_type is str:
-                str_field_manifest = fields_manifest.pop(field_name, str)
+                str_field_manifest = raw_fields_manifest.pop(field_name, str)
                 # If the value in the manifest for this field is a string, it is either
                 #  a) A literal string value to hydrate the field with, or
                 #  b) The name of a column whose value we should hydrate the field with
-                match = re.match(STRING_LITERAL_VALUE_REGEX, str_field_manifest)
+                match = re.match(
+                    StringLiteralFieldManifest.STRING_LITERAL_VALUE_REGEX,
+                    str_field_manifest,
+                )
                 if match:
-                    field_value = match.group(1)
+                    field_manifests[field_name] = StringLiteralFieldManifest(
+                        literal_value=match.group(1)
+                    )
                 else:
-                    field_value = row[str_field_manifest]
+                    # TODO(#8977): Assert that field is not an enum raw text field
+                    field_manifests[field_name] = DirectMappingFieldManifest(
+                        mapped_column=str_field_manifest
+                    )
             else:
                 raise ValueError(
                     f"Unexpected field manifest type [{field_type}] for "
                     f"field [{field_name}]."
                 )
-            args[field_name] = field_value
 
-        if len(fields_manifest):
+        if len(raw_fields_manifest):
             raise ValueError(
-                f"Found unused keys in fields manifest: {fields_manifest.keys()}"
+                f"Found unused keys in fields manifest: {raw_fields_manifest.keys()}"
             )
 
         entity_factory_cls = self.delegate.get_entity_factory_class(entity_cls_name)
-        return entity_factory_cls.deserialize(**args)
+        return EntityTreeManifest(
+            entity_cls=entity_cls,
+            entity_factory_cls=entity_factory_cls,
+            common_args=self.delegate.get_common_args(),
+            field_manifests=field_manifests,
+        )
 
-    def _parse_entities_list_from_dict(
-        self, list_item_manifest: YAMLDict, row: Dict[str, str]
-    ) -> List[Entity]:
+    def _build_list_item_manifest(
+        self,
+        list_item_manifest_raw: YAMLDict,
+    ) -> Union[EntityTreeManifest, ExpandableListItemManifest]:
         """Expands a list item into a list of entities based on the provided manifest."""
-        list_col_name = list_item_manifest.pop_optional(FOREACH_ITERATOR_KEY, str)
+        list_col_name = list_item_manifest_raw.pop_optional(
+            ExpandableListItemManifest.FOREACH_ITERATOR_KEY, str
+        )
 
         # Check for special $foreach keyword arg which tells us that we should expand
-        # this list item into N entities. If not present, just return a single item
-        # in a list.
+        # this list item into N entities.
         #
         # Aside from the special $foreach key, this manifest should be shaped like a
         # normal entity tree manifest, a dictionary with a single class name -> fields
         # manifest mapping.
         if not list_col_name:
-            return [
-                self._parse_entity_tree(
-                    entity_manifest=list_item_manifest,
-                    row=row,
-                )
-            ]
-
-        list_col_value = row[list_col_name]
-        if not list_col_value:
-            return []
-
-        # TODO(#8908): For now, we always split list column values on the default
-        #  delimiter. Revisit whether the parser language needs be changed to allow the
-        #  delimiter to be configurable.
-        values = list_col_value.split(DEFAULT_LIST_VALUE_DELIMITER)
-        result = []
-        if FOREACH_LOOP_VALUE_NAME in row:
-            raise ValueError(
-                f"Unexpected {FOREACH_LOOP_VALUE_NAME} key value in row: {row}. Nested "
-                f"loops not supported."
+            return self._build_entity_tree_manifest(
+                raw_entity_manifest=list_item_manifest_raw
             )
-        for value in values:
-            row[FOREACH_LOOP_VALUE_NAME] = value
-            entity = self._parse_entity_tree(
-                entity_manifest=list_item_manifest.copy(),
-                row=row,
-            )
-            del row[FOREACH_LOOP_VALUE_NAME]
-            result.append(entity)
-        return result
+
+        return ExpandableListItemManifest(
+            mapped_column=list_col_name,
+            child_entity_manifest=self._build_entity_tree_manifest(
+                raw_entity_manifest=list_item_manifest_raw
+            ),
+        )
