@@ -3826,12 +3826,6 @@ class _StateSupervisionViolationResponseSharedColumns(
     state_code = Column(
         String(255), nullable=False, index=True, comment=STATE_CODE_COMMENT
     )
-    # TODO(#2668): DEPRECATED - DO NOT ADD NEW USAGES
-    decision = Column(
-        state_supervision_violation_response_decision, comment="DEPRECATED. See #2668."
-    )
-    # TODO(#2668): DEPRECATED - DO NOT ADD NEW USAGES
-    decision_raw_text = Column(String(255), comment="DEPRECATED. See #2668.")
     deciding_body_type = Column(
         state_supervision_violation_response_deciding_body_type,
         comment="The type of decision-making body who made the decision, such as a supervising "

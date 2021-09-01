@@ -1766,7 +1766,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             person=db_person,
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
-            decision=StateSupervisionViolationResponseDecision.CONTINUANCE.value,
             supervision_violation_response_decisions=[
                 db_supervision_violation_response_decision
             ],
@@ -1939,7 +1938,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         supervision_violation_response = attr.evolve(
             entity_supervision_violation_response,
             supervision_violation_response_id=None,
-            decision=StateSupervisionViolationResponseDecision.EXTENSION,
             decision_agents=[agent_term],
             supervision_violation_response_decisions=[
                 supervision_violation_response_decision
