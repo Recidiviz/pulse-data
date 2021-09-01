@@ -18,7 +18,6 @@
 
 import datetime
 import os
-import re
 import unittest
 from typing import Dict, List, Optional, Type, Union
 
@@ -29,7 +28,6 @@ from recidiviz.common import attr_validators
 from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.ingest_view_file_parser import (
-    STRING_LITERAL_VALUE_REGEX,
     FileFormat,
     IngestViewFileParser,
     IngestViewFileParserDelegate,
@@ -164,6 +162,17 @@ class FakeSchemaIngestViewFileParserDelegate(IngestViewFileParserDelegate):
             return FakePersonAliasFactory
         if entity_cls_name == FakeAgent.__name__:
             return FakeAgentFactory
+        raise ValueError(f"Unexpected class name [{entity_cls_name}]")
+
+    def get_entity_cls(self, entity_cls_name: str) -> Type[Entity]:
+        if entity_cls_name == FakePerson.__name__:
+            return FakePerson
+        if entity_cls_name == FakePersonExternalId.__name__:
+            return FakePersonExternalId
+        if entity_cls_name == FakePersonAlias.__name__:
+            return FakePersonAlias
+        if entity_cls_name == FakeAgent.__name__:
+            return FakeAgent
         raise ValueError(f"Unexpected class name [{entity_cls_name}]")
 
 
@@ -505,34 +514,3 @@ class IngestViewFileParserTest(unittest.TestCase):
         # TODO(#8908): Fill this out - should pass,
         #  but not merge trees.
         pass
-
-    def test_string_literal_parsing_speed(self) -> None:
-        """Ensures that the regex parsing of string literals is sufficiently performant.
-        Sets a pretty generous upper bound expected speed and ensures that 10000
-        iterations can be completed within that bound.
-        """
-        loops = 10000
-        expected_loops_per_sec = 100000
-        expected_time = loops * (1 / expected_loops_per_sec)
-        string_literal_field_value = '$literal("MY_LITERAL_VALUE")'
-
-        start_regex = datetime.datetime.now()
-        for _ in range(loops):
-            match = re.match(STRING_LITERAL_VALUE_REGEX, string_literal_field_value)
-            if not match:
-                self.fail("Found no match")
-            _ = match.group(1)
-        end_regex = datetime.datetime.now()
-        regex_time = (end_regex - start_regex).total_seconds()
-        self.assertTrue(regex_time < expected_time)
-
-        # This is just here for comparison
-        start_naive = datetime.datetime.now()
-        for _ in range(loops):
-            if string_literal_field_value.startswith(
-                '\\"'
-            ) and string_literal_field_value.endswith('"'):
-                _ = string_literal_field_value[2 : len(string_literal_field_value) - 1]
-        end_naive = datetime.datetime.now()
-        naive_time = (end_naive - start_naive).total_seconds()
-        self.assertTrue(naive_time < expected_time)
