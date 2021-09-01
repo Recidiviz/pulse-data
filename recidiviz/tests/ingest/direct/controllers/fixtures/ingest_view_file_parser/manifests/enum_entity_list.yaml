@@ -1,0 +1,22 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONID
+  - RACES
+unused_columns: []
+output:
+  FakePerson:
+    external_ids:
+      - FakePersonExternalId:
+          external_id: PERSONID
+          id_type: $literal("ID_TYPE")
+    races:
+      - $foreach: RACES
+        FakePersonRace:
+          race:
+            $raw_text: $iter
+            $mappings:
+              FakeRace.ASIAN: A
+              FakeRace.BLACK: B
+              FakeRace.WHITE: W
+            $ignore:
+              - X

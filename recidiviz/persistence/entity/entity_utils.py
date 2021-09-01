@@ -21,19 +21,19 @@ import json
 import logging
 from collections import defaultdict
 from enum import Enum, auto
-from types import ModuleType
-from typing import Dict, List, Set, Type, Sequence, Optional, Union, cast, Iterable
 from functools import lru_cache
+from types import ModuleType
+from typing import Dict, Iterable, List, Optional, Sequence, Set, Type, Union, cast
 
 import attr
 
 from recidiviz.common.attr_utils import (
-    _is_list,
     _get_type_name_from_type,
-    _is_union,
     _is_forward_ref,
-    is_list,
+    _is_list,
+    _is_union,
     is_forward_ref,
+    is_list,
 )
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_court_case import StateCourtType
@@ -41,10 +41,15 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.ingest.aggregate.aggregate_ingest_utils import pairwise
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
+from recidiviz.persistence.entity.base_entity import (
+    Entity,
+    EnumEntity,
+    ExternalIdEntity,
+)
 from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.county import entities as county_entities
-from recidiviz.persistence.entity.state import entities as state_entities, entities
+from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import StatePersonExternalId
 from recidiviz.persistence.errors import PersistenceError
 
@@ -230,6 +235,7 @@ def get_all_entity_classes_in_module(entities_module: ModuleType) -> Set[Type[En
             if (
                 attribute is not Entity
                 and attribute is not ExternalIdEntity
+                and attribute is not EnumEntity
                 and issubclass(attribute, Entity)
             ):
                 expected_classes.add(attribute)

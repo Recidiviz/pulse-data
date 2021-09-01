@@ -55,6 +55,15 @@ class YAMLDict:
             )
         return value
 
+    @classmethod
+    def _assert_type_non_optional(
+        cls, field: str, value: Any, value_type: Type[T]
+    ) -> T:
+        value = cls._assert_type(field, value, value_type)
+        if value is None:
+            raise ValueError(f"Found unexpected None value in field [{field}].")
+        return value
+
     def pop_optional(self, field: str, value_type: Type[T]) -> Optional[T]:
         return self._assert_type(field, self.raw_yaml.pop(field, None), value_type)
 
@@ -91,6 +100,13 @@ class YAMLDict:
         if not raw_yamls:
             return None
         return self._transform_dicts(field, raw_yamls)
+
+    def pop_list(self, field: str, list_values_type: Type[T]) -> List[T]:
+        raw_yamls = self.pop(field, list)
+        return [
+            self._assert_type_non_optional(field, raw_val, list_values_type)
+            for raw_val in raw_yamls
+        ]
 
     def peek_optional(self, field: str, value_type: Type[T]) -> Optional[T]:
         return self._assert_type(field, self.raw_yaml.get(field, None), value_type)
