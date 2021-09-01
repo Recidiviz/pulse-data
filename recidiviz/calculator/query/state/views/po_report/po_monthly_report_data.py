@@ -104,6 +104,16 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       {district_dimension}
       GROUP BY state_code, year, month, district
     ),
+    goals AS (
+      SELECT 
+        state_code, 
+        officer_external_id,
+        year,
+        month,
+        LEAST(3, ARRAY_LENGTH(assessments_out_of_date_clients)) as overdue_assessments_goal,
+        LEAST(9, ARRAY_LENGTH(facetoface_out_of_date_clients)) as overdue_facetoface_goal,
+      FROM report_data_per_officer
+    ),
     agents AS (
       SELECT
         state_code,
@@ -149,6 +159,7 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       state_avg.avg_absconsions AS absconsions_state_average,
       report_month.assessments_out_of_date_clients,
       report_month.assessments,
+      # TODO(#9106): refactor to move these calcs into Python 
       IF(report_month.caseload_count = 0,
         1,
         IEEE_DIVIDE(report_month.assessments_up_to_date, report_month.caseload_count)) * 100 AS assessments_percent,
@@ -156,7 +167,15 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       report_month.facetoface,
       IF(report_month.caseload_count = 0,
         1,
-        IEEE_DIVIDE(report_month.facetoface_frequencies_sufficient, report_month.caseload_count)) * 100 as facetoface_percent
+        IEEE_DIVIDE(report_month.facetoface_frequencies_sufficient, report_month.caseload_count)) * 100 as facetoface_percent,
+      overdue_assessments_goal,
+      IF(report_month.caseload_count = 0,
+        1,
+        IEEE_DIVIDE(report_month.assessments_up_to_date + overdue_assessments_goal, report_month.caseload_count)) * 100 as overdue_assessments_goal_percent,
+      overdue_facetoface_goal,
+      IF(report_month.caseload_count = 0,
+        1,
+        IEEE_DIVIDE(report_month.facetoface_frequencies_sufficient + overdue_facetoface_goal, report_month.caseload_count)) * 100 as overdue_facetoface_goal_percent
     FROM `{project_id}.{static_reference_dataset}.po_report_recipients`
     LEFT JOIN report_data_per_officer report_month
       USING (state_code, officer_external_id)
@@ -181,6 +200,8 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       USING (state_code, year, month, officer_external_id)
     LEFT JOIN agents
       USING (state_code, officer_external_id)
+    LEFT JOIN goals
+        USING (state_code, officer_external_id, year, month)
     -- Only include output for the month before the current month
     WHERE DATE(year, month, 1) = DATE_SUB(DATE(EXTRACT(YEAR FROM CURRENT_DATE()), EXTRACT(MONTH FROM CURRENT_DATE()), 1), INTERVAL 1 MONTH)
     """

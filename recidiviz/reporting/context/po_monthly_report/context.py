@@ -134,6 +134,7 @@ class PoMonthlyReportContext(ReportContext):
             self.metrics_delegate.average_metrics_for_display,
             number_of_digits=_AVERAGE_VALUES_SIGNIFICANT_DIGITS,
         )
+        self._set_compliance_goals()
         self._prepare_attachment_content()
 
         return self.prepared_data
@@ -430,6 +431,29 @@ class PoMonthlyReportContext(ReportContext):
             self.prepared_data[color_key] = gray
             self.prepared_data[base_key] = self.properties["same"]
 
+    def _set_compliance_goals(self) -> None:
+        """Examines data to determine whether compliance goal prompts should be active
+        and sets data properties accordingly."""
+        for metric in self.metrics_delegate.compliance_action_metrics:
+            goal_key = f"{metric}_goal_enabled"
+            success_key = f"{metric}_goal_met"
+
+            threshold = self.metrics_delegate.compliance_action_metric_goal_thresholds[
+                metric
+            ]
+            compliance_pct = self.prepared_data[f"{metric}_percent"]
+
+            if compliance_pct == "N/A":
+                goal_active = False
+                goal_met = False
+            else:
+                pct_as_num = int(compliance_pct)
+                goal_active = pct_as_num < threshold
+                goal_met = not goal_active
+
+            self.prepared_data[goal_key] = goal_active
+            self.prepared_data[success_key] = goal_met
+
     def _should_generate_attachment_section(self, clients_key: str) -> bool:
         return clients_key in self.recipient_data and self.recipient_data[clients_key]
 
@@ -538,17 +562,21 @@ if __name__ == "__main__":
                 "technical_revocations_last_month": 0,
                 "crime_revocations_last_month": 0,
                 "absconsions_last_month": 0,
-                "pos_discharges_clients": 0,
-                "earned_discharges_clients": 0,
-                "supervision_downgrades_clients": 0,
-                "absconsions_clients": 0,
-                "assessments_out_of_date_clients": 0,
-                "facetoface_out_of_date_clients": 0,
-                "revocations_clients": 0,
-                "assessments": 0,
-                "assessments_percent": 0,
-                "facetoface": 0,
-                "facetoface_percent": 0,
+                "pos_discharges_clients": [],
+                "earned_discharges_clients": [],
+                "supervision_downgrades_clients": [],
+                "absconsions_clients": [],
+                "assessments_out_of_date_clients": [],
+                "facetoface_out_of_date_clients": [],
+                "revocations_clients": [],
+                "assessments": 7,
+                "assessments_percent": 75.432,
+                "overdue_assessments_goal": 3,
+                "overdue_assessments_goal_percent": 90.1456432,
+                "facetoface": 94,
+                "facetoface_percent": 45.268932,
+                "overdue_facetoface_goal": 9,
+                "overdue_facetoface_goal_percent": 58.732651,
                 "officer_external_id": 0,
                 "officer_given_name": "Clementine",
                 "review_month": 4,
