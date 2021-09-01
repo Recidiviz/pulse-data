@@ -99,7 +99,7 @@ function pre_deploy_configure_infrastructure {
     verify_hash $COMMIT_HASH
     # Terraform determines certain resources by looking at the directory structure,
     # so give our shell the ability to open plenty of file descriptors.
-    run_cmd ulimit -n 1024
+    ulimit -n 1024 || exit_on_fail
     deploy_terraform_infrastructure ${PROJECT} ${COMMIT_HASH} ${DOCKER_IMAGE_TAG} || exit_on_fail
 
     echo "Deploying cron.yaml"
