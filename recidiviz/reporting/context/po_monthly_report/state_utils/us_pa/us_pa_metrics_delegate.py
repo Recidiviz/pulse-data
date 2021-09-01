@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Metrics for US_PA that are to be displayed in the PO Monthly Report"""
-from typing import List
+from typing import Dict, List
 
 from recidiviz.reporting.context.po_monthly_report.constants import (
     ABSCONSIONS,
@@ -45,3 +45,10 @@ class UsPaMetricsDelegate(PoMonthlyReportMetricsDelegate):
     @property
     def compliance_action_metrics(self) -> List[str]:
         return [ASSESSMENTS, FACE_TO_FACE]
+
+    @property
+    def compliance_action_metric_goal_thresholds(self) -> Dict[str, float]:
+        return {
+            ASSESSMENTS: 95,
+            FACE_TO_FACE: 90,
+        }

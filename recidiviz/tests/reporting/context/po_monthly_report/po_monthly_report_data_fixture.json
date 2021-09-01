@@ -38,7 +38,11 @@
   "assessments_out_of_date_clients": null,
   "assessments": "15",
   "assessments_percent": "73.3",
+  "overdue_assessments_goal": "3",
+  "overdue_assessments_goal_percent": "81.32456",
   "facetoface_out_of_date_clients": null,
   "facetoface": "0",
-  "facetoface_percent": "NaN"
+  "facetoface_percent": "NaN",
+  "overdue_facetoface_goal": "9",
+  "overdue_facetoface_goal_percent": "NaN"
 }

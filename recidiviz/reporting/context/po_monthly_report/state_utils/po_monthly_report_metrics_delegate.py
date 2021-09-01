@@ -17,7 +17,7 @@
 """Delegate class for specifying certain metrics for the PO Monthly Report"""
 import abc
 import itertools
-from typing import List
+from typing import Dict, List
 
 from recidiviz.reporting.context.po_monthly_report.constants import (
     ABSCONSIONS,
@@ -60,6 +60,16 @@ class PoMonthlyReportMetricsDelegate(abc.ABC):
         """Denotes metrics in which we measure supervision actions (like assessments)."""
 
     @property
+    def compliance_action_metric_goals(self) -> List[str]:
+        """Denotes goals associated with the configured compliance metrics."""
+        return [f"overdue_{metric}_goal" for metric in self.compliance_action_metrics]
+
+    @property
+    @abc.abstractmethod
+    def compliance_action_metric_goal_thresholds(self) -> Dict[str, float]:
+        """Denotes percentage thresholds below which goal is active for the given metric."""
+
+    @property
     def revocation_metrics(self) -> List[str]:
         """Denotes metrics that measure revocation."""
         return [
@@ -79,7 +89,11 @@ class PoMonthlyReportMetricsDelegate(abc.ABC):
                 *[
                     [compliance_action_metric, f"{compliance_action_metric}_percent"]
                     for compliance_action_metric in self.compliance_action_metrics
-                ]
+                ],
+                *[
+                    [goal, f"{goal}_percent"]
+                    for goal in self.compliance_action_metric_goals
+                ],
             )
         )
 
@@ -138,8 +152,11 @@ class PoMonthlyReportMetricsDelegate(abc.ABC):
     def float_metrics_to_round_to_int(self) -> List[str]:
         """Denotes which metrics need rounding."""
         return [
-            f"{compliance_action_metric}_percent"
-            for compliance_action_metric in self.compliance_action_metrics
+            *[
+                f"{compliance_action_metric}_percent"
+                for compliance_action_metric in self.compliance_action_metrics
+            ],
+            *[f"{goal}_percent" for goal in self.compliance_action_metric_goals],
         ]
 
     @property
