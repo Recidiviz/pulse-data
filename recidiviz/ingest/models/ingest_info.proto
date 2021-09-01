@@ -496,7 +496,6 @@ message StateSupervisionViolationResponse {
     optional string response_subtype = 3;
     optional string response_date = 4;
     optional string state_code = 5;
-    optional string decision = 6;
     optional string deciding_body_type = 8;
     optional string is_draft = 9;
 

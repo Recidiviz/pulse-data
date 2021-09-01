@@ -77,7 +77,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecidingBodyType,
-    StateSupervisionViolationResponseDecision,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.persistence.database.database_entity import DatabaseEntity
@@ -165,38 +164,38 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
     Returns:
         A test instance of a StatePerson.
     """
-    person = entities.StatePerson.new_with_defaults(state_code="us_ca")
+    person = entities.StatePerson.new_with_defaults(state_code="US_XX")
 
     person.external_ids = [
         entities.StatePersonExternalId.new_with_defaults(
-            state_code="us_ca",
+            state_code="US_XX",
             external_id="ELITE_ID_123",
             id_type=US_ND_ELITE,
         )
     ]
     person.aliases = [
         entities.StatePersonAlias.new_with_defaults(
-            state_code="us_ca",
+            state_code="US_XX",
             full_name="Beyoncé Giselle Knowles",
         ),
         entities.StatePersonAlias.new_with_defaults(
-            state_code="us_ca",
+            state_code="US_XX",
             full_name="Beyoncé Giselle Knowles-Carter",
         ),
     ]
 
     person.races = [
         entities.StatePersonRace.new_with_defaults(
-            state_code="us_ca", race=Race.ASIAN, race_raw_text="ASIAN"
+            state_code="US_XX", race=Race.ASIAN, race_raw_text="ASIAN"
         ),
         entities.StatePersonRace.new_with_defaults(
-            state_code="us_ca", race=Race.BLACK, race_raw_text="BLACK"
+            state_code="US_XX", race=Race.BLACK, race_raw_text="BLACK"
         ),
     ]
 
     person.ethnicities = [
         entities.StatePersonEthnicity.new_with_defaults(
-            state_code="us_ca",
+            state_code="US_XX",
             ethnicity=Ethnicity.NOT_HISPANIC,
             ethnicity_raw_text="NOT HISPANIC",
         )
@@ -207,8 +206,8 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         status=StateSentenceStatus.SERVING,
         status_raw_text="SERVING",
         date_imposed=datetime.date(year=2016, month=10, day=14),
-        state_code="us_ca",
-        county_code="us_ca_san_francisco",
+        state_code="US_XX",
+        county_code="US_XX_COUNTY",
         min_length_days=90,
         max_length_days=120,
     )
@@ -216,7 +215,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
     person.sentence_groups = [sentence_group]
 
     person_supervising_officer = entities.StateAgent.new_with_defaults(
-        state_code="us_ca",
+        state_code="US_XX",
         external_id="SUPERVISING_OFFICER_ID",
         full_name="SUPERVISING OFFICER",
         agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
@@ -233,8 +232,8 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         projected_min_release_date=datetime.date(year=2017, month=5, day=14),
         projected_max_release_date=None,
         parole_eligibility_date=datetime.date(year=2018, month=5, day=14),
-        state_code="us_ca",
-        county_code="us_ca_san_francisco",
+        state_code="US_XX",
+        county_code="US_XX_COUNTY",
         #   - What
         # These will be None if is_life is true
         min_length_days=90,
@@ -255,7 +254,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         supervision_type_raw_text="PAROLE",
         projected_completion_date=datetime.date(year=2020, month=5, day=14),
         completion_date=None,
-        state_code="us_ca",
+        state_code="US_XX",
         min_length_days=None,
         max_length_days=200,
     )
@@ -265,7 +264,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         status=StateFineStatus.UNPAID,
         status_raw_text="UNPAID",
         date_paid=None,
-        state_code="us_ca",
+        state_code="US_XX",
         fine_dollars=15000,
     )
 
@@ -275,7 +274,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
     judge = entities.StateAgent.new_with_defaults(
         agent_type=StateAgentType.JUDGE,
-        state_code="us_ca",
+        state_code="US_XX",
         full_name="JUDGE JUDY",
     )
 
@@ -284,7 +283,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         status=StateCourtCaseStatus.EXTERNAL_UNKNOWN,
         date_convicted=datetime.date(year=2018, month=7, day=1),
         next_court_date=datetime.date(year=2019, month=7, day=1),
-        state_code="us_ca",
+        state_code="US_XX",
         court_type=StateCourtType.PRESENT_WITHOUT_INFO,
         court_type_raw_text=None,
         court_fee_dollars=150,
@@ -298,7 +297,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         bond_type=BondType.CASH,
         bond_type_raw_text="CASH",
         date_paid=datetime.date(year=2015, month=7, day=1),
-        state_code="us_ca",
+        state_code="US_XX",
         amount_dollars=45,
         bond_agent="CA BAILBONDSMEN",
     )
@@ -309,7 +308,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         status_raw_text="CONVICTED",
         offense_date=datetime.date(year=2003, month=7, day=1),
         date_charged=datetime.date(year=2003, month=8, day=1),
-        state_code="us_ca",
+        state_code="US_XX",
         statute="A102.3",
         description="DRUG POSSESSION",
         attempted=True,
@@ -328,7 +327,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         status_raw_text="CONVICTED",
         offense_date=datetime.date(year=2003, month=7, day=1),
         date_charged=datetime.date(year=2003, month=8, day=1),
-        state_code="us_ca",
+        state_code="US_XX",
         statute="A102.3",
         description="DRUG POSSESSION",
         attempted=True,
@@ -347,7 +346,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         status_raw_text="DROPPED",
         offense_date=datetime.date(year=2003, month=7, day=1),
         date_charged=datetime.date(year=2003, month=8, day=1),
-        state_code="us_ca",
+        state_code="US_XX",
         statute="A102.3",
         description="DRUG POSSESSION",
         attempted=True,
@@ -373,8 +372,8 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         deciding_body_type_raw_text="pb",
         requesting_body_type=StateActingBodyType.SENTENCED_PERSON,
         requesting_body_type_raw_text="sentenced_person",
-        state_code="us_ca",
-        county_code="san_francisco",
+        state_code="US_XX",
+        county_code="COUNTY",
     )
     early_discharge_2 = entities.StateEarlyDischarge.new_with_defaults(
         external_id="ed2",
@@ -386,8 +385,8 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         deciding_body_type_raw_text="c",
         requesting_body_type=StateActingBodyType.SENTENCED_PERSON,
         requesting_body_type_raw_text="sentenced_person",
-        state_code="us_ca",
-        county_code="san_francisco",
+        state_code="US_XX",
+        county_code="COUNTY",
     )
     early_discharge_3 = entities.StateEarlyDischarge.new_with_defaults(
         external_id="ed3",
@@ -399,8 +398,8 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         deciding_body_type_raw_text="pb",
         requesting_body_type=StateActingBodyType.SENTENCED_PERSON,
         requesting_body_type_raw_text="sentenced_person",
-        state_code="us_ca",
-        county_code="san_francisco",
+        state_code="US_XX",
+        county_code="COUNTY",
     )
     supervision_sentence.early_discharges = [early_discharge_1, early_discharge_2]
     incarceration_sentence.early_discharges = [early_discharge_3]
@@ -412,8 +411,8 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         incarceration_type_raw_text=None,
         admission_date=datetime.date(year=2003, month=8, day=1),
         release_date=datetime.date(year=2004, month=8, day=1),
-        state_code="us_ca",
-        county_code="us_ca_sf",
+        state_code="US_XX",
+        county_code="US_XX_COUNTY",
         facility="ALCATRAZ",
         housing_unit="BLOCK A",
         facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
@@ -431,7 +430,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
     incident_responding_officer = entities.StateAgent.new_with_defaults(
         agent_type=StateAgentType.CORRECTIONAL_OFFICER,
-        state_code="us_ca",
+        state_code="US_XX",
         full_name="MR SIR",
     )
 
@@ -439,7 +438,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         outcome_type=StateIncarcerationIncidentOutcomeType.WARNING,
         outcome_type_raw_text="WARNING",
         date_effective=datetime.date(year=2003, month=8, day=20),
-        state_code="us_ca",
+        state_code="US_XX",
         outcome_description="LOSS OF COMMISSARY",
         punishment_length_days=30,
     )
@@ -448,7 +447,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         incident_type=StateIncarcerationIncidentType.CONTRABAND,
         incident_type_raw_text="CONTRABAND",
         incident_date=datetime.date(year=2003, month=8, day=10),
-        state_code="us_ca",
+        state_code="US_XX",
         facility="ALCATRAZ",
         location_within_facility="13B",
         incident_details="Inmate was told to be quiet and would not comply",
@@ -461,7 +460,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
     parole_decision = entities.StateParoleDecision.new_with_defaults(
         decision_date=datetime.date(year=2004, month=7, day=1),
         corrective_action_deadline=None,
-        state_code="us_ca",
+        state_code="US_XX",
         decision_outcome=StateParoleDecisionOutcome.PAROLE_GRANTED,
         decision_reasoning="GOOD BEHAVIOR",
         corrective_action=None,
@@ -471,7 +470,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
     assessment_agent = entities.StateAgent.new_with_defaults(
         agent_type=StateAgentType.SUPERVISION_OFFICER,
-        state_code="us_ca",
+        state_code="US_XX",
         full_name="MR SIR",
     )
 
@@ -481,7 +480,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         assessment_type=StateAssessmentType.LSIR,
         assessment_type_raw_text="LSIR",
         assessment_date=datetime.date(2003, month=8, day=10),
-        state_code="us_ca",
+        state_code="US_XX",
         assessment_score=55,
         assessment_level=StateAssessmentLevel.MEDIUM,
         assessment_level_raw_text="MED",
@@ -494,13 +493,13 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
     program_assignment_agent = StateAgent.new_with_defaults(
         agent_type=StateAgentType.SUPERVISION_OFFICER,
-        state_code="us_ca",
+        state_code="US_XX",
         full_name='{"full_name": "AGENT PO"}',
     )
 
     program_assignment = StateProgramAssignment.new_with_defaults(
         external_id="program_assignment_external_id_1",
-        state_code="us_ca",
+        state_code="US_XX",
         participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
         participation_status_raw_text="IN_PROGRESS",
         referral_date=datetime.date(year=2019, month=2, day=10),
@@ -513,13 +512,13 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
     supervising_officer = entities.StateAgent.new_with_defaults(
         agent_type=StateAgentType.SUPERVISION_OFFICER,
-        state_code="us_ca",
+        state_code="US_XX",
         full_name="MS MADAM",
     )
 
     supervision_case_type_entry = (
         entities.StateSupervisionCaseTypeEntry.new_with_defaults(
-            state_code="us_ca",
+            state_code="US_XX",
             case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
             case_type_raw_text="DOMESTIC_VIOLENCE",
         )
@@ -532,7 +531,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         contact_type=StateSupervisionContactType.FACE_TO_FACE,
         contact_type_raw_text="FACE_TO_FACE",
         contact_date=datetime.date(year=1111, month=1, day=2),
-        state_code="us_ca",
+        state_code="US_XX",
         contact_reason=StateSupervisionContactReason.GENERAL_CONTACT,
         contact_reason_raw_text="GENERAL_CONTACT",
         location=StateSupervisionContactLocation.RESIDENCE,
@@ -549,7 +548,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         supervision_type_raw_text="PAROLE",
         start_date=datetime.date(year=2004, month=8, day=1),
         termination_date=None,
-        state_code="us_ca",
+        state_code="US_XX",
         admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
         admission_reason_raw_text="RELEASE",
         termination_reason=None,
@@ -571,7 +570,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         assessment_type=StateAssessmentType.LSIR,
         assessment_type_raw_text="LSIR",
         assessment_date=datetime.date(2004, month=9, day=10),
-        state_code="us_ca",
+        state_code="US_XX",
         assessment_score=10,
         assessment_level=StateAssessmentLevel.LOW,
         assessment_level_raw_text="LOW",
@@ -583,7 +582,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
     program_assignment2 = StateProgramAssignment.new_with_defaults(
         external_id="program_assignment_external_id_2",
-        state_code="us_ca",
+        state_code="US_XX",
         participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
         participation_status_raw_text="DISCHARGED",
         referral_date=datetime.date(year=2019, month=2, day=10),
@@ -601,7 +600,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         violation_type=StateSupervisionViolationType.TECHNICAL,
         violation_type_raw_text="TECHNICAL",
         violation_date=datetime.date(year=2004, month=9, day=1),
-        state_code="us_ca",
+        state_code="US_XX",
         is_violent=False,
         violated_conditions="MISSED CURFEW",
     )
@@ -610,16 +609,14 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
     supervision_officer_agent = entities.StateAgent.new_with_defaults(
         agent_type=StateAgentType.SUPERVISION_OFFICER,
-        state_code="us_ca",
+        state_code="US_XX",
         full_name="JOHN SMITH",
     )
 
     supervision_violation_response = entities.StateSupervisionViolationResponse.new_with_defaults(
         response_type=StateSupervisionViolationResponseType.CITATION,
         response_date=datetime.date(year=2004, month=9, day=2),
-        state_code="us_ca",
-        decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
-        decision_raw_text="CONTINUE",
+        state_code="US_XX",
         deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
         decision_agents=[supervision_officer_agent],
     )

@@ -3343,7 +3343,6 @@ class StateSupervisionViolationResponse(google.protobuf.message.Message):
     RESPONSE_SUBTYPE_FIELD_NUMBER: builtins.int
     RESPONSE_DATE_FIELD_NUMBER: builtins.int
     STATE_CODE_FIELD_NUMBER: builtins.int
-    DECISION_FIELD_NUMBER: builtins.int
     DECIDING_BODY_TYPE_FIELD_NUMBER: builtins.int
     IS_DRAFT_FIELD_NUMBER: builtins.int
     DECISION_AGENT_IDS_FIELD_NUMBER: builtins.int
@@ -3353,7 +3352,6 @@ class StateSupervisionViolationResponse(google.protobuf.message.Message):
     response_subtype: typing.Text = ...
     response_date: typing.Text = ...
     state_code: typing.Text = ...
-    decision: typing.Text = ...
     deciding_body_type: typing.Text = ...
     is_draft: typing.Text = ...
     @property
@@ -3376,7 +3374,6 @@ class StateSupervisionViolationResponse(google.protobuf.message.Message):
         response_subtype: typing.Optional[typing.Text] = ...,
         response_date: typing.Optional[typing.Text] = ...,
         state_code: typing.Optional[typing.Text] = ...,
-        decision: typing.Optional[typing.Text] = ...,
         deciding_body_type: typing.Optional[typing.Text] = ...,
         is_draft: typing.Optional[typing.Text] = ...,
         decision_agent_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
@@ -3389,8 +3386,6 @@ class StateSupervisionViolationResponse(google.protobuf.message.Message):
         field_name: typing_extensions.Literal[
             "deciding_body_type",
             b"deciding_body_type",
-            "decision",
-            b"decision",
             "is_draft",
             b"is_draft",
             "response_date",
@@ -3410,8 +3405,6 @@ class StateSupervisionViolationResponse(google.protobuf.message.Message):
         field_name: typing_extensions.Literal[
             "deciding_body_type",
             b"deciding_body_type",
-            "decision",
-            b"decision",
             "decision_agent_ids",
             b"decision_agent_ids",
             "is_draft",

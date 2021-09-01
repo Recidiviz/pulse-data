@@ -102,9 +102,6 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.date import DateRange, DurationMixin
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
-from recidiviz.persistence.entity.state.entity_deprecation_utils import (
-    validate_deprecated_entity_field_for_states,
-)
 
 # **** Entity Types for convenience *****:
 SentenceType = TypeVar(
@@ -1605,16 +1602,6 @@ class StateSupervisionViolationResponse(
     )
 
     #   - What
-    # TODO(#2668): DEPRECATED - DO NOT ADD NEW USAGES
-    decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib(
-        default=None,
-        validator=attr_validators.is_opt(StateSupervisionViolationResponseDecision),
-    )
-    # TODO(#2668): DEPRECATED - DO NOT ADD NEW USAGES
-    decision_raw_text: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
     is_draft: Optional[bool] = attr.ib(
         default=None, validator=attr_validators.is_opt_bool
     )
@@ -1649,19 +1636,6 @@ class StateSupervisionViolationResponse(
     decision_agents: List["StateAgent"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
-
-    def __attrs_post_init__(self) -> None:
-        validate_deprecated_entity_field_for_states(
-            entity=self,
-            field_name="decision",
-            deprecated_state_codes=["US_ID", "US_MO", "US_ND", "US_PA"],
-        )
-
-        validate_deprecated_entity_field_for_states(
-            entity=self,
-            field_name="decision_raw_text",
-            deprecated_state_codes=["US_ID", "US_MO", "US_ND", "US_PA"],
-        )
 
 
 @attr.s(eq=False)
