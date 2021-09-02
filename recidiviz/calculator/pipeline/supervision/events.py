@@ -185,6 +185,14 @@ class SupervisionPopulationEvent(
             return None
         return self.case_compliance.recommended_supervision_downgrade_level
 
+    @property
+    def is_out_of_state_custodial_authority(self) -> bool:
+        return self.custodial_authority is not None and self.custodial_authority in (
+            StateCustodialAuthority.FEDERAL,
+            StateCustodialAuthority.OTHER_COUNTRY,
+            StateCustodialAuthority.OTHER_STATE,
+        )
+
 
 @attr.s(frozen=True)
 class ProjectedSupervisionCompletionEvent(SupervisionEvent):
