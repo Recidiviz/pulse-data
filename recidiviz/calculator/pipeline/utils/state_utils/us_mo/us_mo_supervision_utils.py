@@ -46,27 +46,6 @@ from recidiviz.persistence.entity.state.entities import (
 POST_INCARCERATION_SUPERVISION_DAYS_LIMIT = 3
 
 
-def us_mo_get_pre_incarceration_supervision_type(
-    incarceration_sentences: List[StateIncarcerationSentence],
-    supervision_sentences: List[StateSupervisionSentence],
-    incarceration_period: StateIncarcerationPeriod,
-) -> Optional[StateSupervisionPeriodSupervisionType]:
-    """Calculates the pre-incarceration supervision type for US_MO people by calculating the most recent type of
-    supervision a given person was on.
-    """
-    if not incarceration_period.admission_date:
-        raise ValueError(
-            f"No admission date for incarceration period {incarceration_period.incarceration_period_id}"
-        )
-
-    return us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
-        upper_bound_exclusive_date=incarceration_period.admission_date,
-        lower_bound_inclusive_date=None,
-        incarceration_sentences=incarceration_sentences,
-        supervision_sentences=supervision_sentences,
-    )
-
-
 def us_mo_get_post_incarceration_supervision_type(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
@@ -164,24 +143,3 @@ def us_mo_get_month_supervision_type(
         return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
 
     return supervision_type
-
-
-def us_mo_get_supervision_period_supervision_type_on_date(
-    supervision_type_determination_date: datetime.date,
-    supervision_sentences: List[StateSupervisionSentence],
-    incarceration_sentences: List[StateIncarcerationSentence],
-) -> Optional[StateSupervisionPeriodSupervisionType]:
-    """Calculates the US_MO supervision period supervision type for any period overlapping with the provided
-    |supervision_type_determination_date|.
-    """
-
-    upper_bound_exclusive_date = (
-        supervision_type_determination_date + datetime.timedelta(days=1)
-    )
-
-    return us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
-        upper_bound_exclusive_date=upper_bound_exclusive_date,
-        lower_bound_inclusive_date=supervision_type_determination_date,
-        incarceration_sentences=incarceration_sentences,
-        supervision_sentences=supervision_sentences,
-    )
