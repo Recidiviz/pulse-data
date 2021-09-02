@@ -31,57 +31,25 @@ import enum
 import io
 import logging
 import os
-import pickle
 from typing import List, Optional
 
 import attr
 import gspread
 import pandas as pd
 from google.auth.credentials import Credentials
-from google.auth.transport.requests import Request
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import Resource, build
 from googleapiclient.http import MediaIoBaseDownload
 
 from recidiviz.common.constants import states
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.tools.justice_counts.manual_upload import csv_filename
+from recidiviz.utils.google_drive import get_credentials
 
 # If modifying these scopes, delete the file token.pickle from your credentials directory.
-SCOPES = [
+JUSTICE_COUNTS_SCOPES = [
     "https://www.googleapis.com/auth/drive",
     "https://www.googleapis.com/auth/spreadsheets",
 ]
-
-
-def get_credentials(directory: str, readonly: bool) -> Credentials:
-    creds = None
-
-    scopes = SCOPES
-    if readonly:
-        scopes = [f"{scope}.readonly" for scope in SCOPES]
-
-    token_path = os.path.join(directory, "token.pickle")
-    # The file token.pickle stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists(token_path):
-        with open(token_path, "rb") as token:
-            creds = pickle.load(token)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                os.path.join(directory, "credentials.json"), scopes
-            )
-            creds = flow.run_local_server(port=0)
-        # Save the credentials for the next run
-        with open(token_path, "wb") as token:
-            pickle.dump(creds, token)
-
-    return creds
 
 
 def get_drive_service(creds: Credentials) -> Resource:
@@ -113,7 +81,7 @@ class Drive:
     gc: gspread.Client
 
     def __init__(self, credentials_directory: str, readonly: bool = True) -> None:
-        creds = get_credentials(credentials_directory, readonly)
+        creds = get_credentials(credentials_directory, readonly, JUSTICE_COUNTS_SCOPES)
         self.drive = get_drive_service(creds)
         self.gc = gspread.authorize(creds)
 
