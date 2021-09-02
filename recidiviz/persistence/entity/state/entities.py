@@ -1552,7 +1552,7 @@ class StateSupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr
         validate_deprecated_entity_field_for_states(
             entity=self,
             field_name="violation_type",
-            deprecated_state_codes=["US_ID", "US_MO", "US_PA"],
+            deprecated_state_codes=["US_ID", "US_MO", "US_ND", "US_PA"],
         )
 
 
