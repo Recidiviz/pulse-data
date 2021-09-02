@@ -28,7 +28,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_uti
     SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT,
     us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day,
     us_id_get_post_incarceration_supervision_type,
-    us_id_get_pre_incarceration_supervision_type,
     us_id_get_supervision_period_admission_override,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -48,126 +47,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionPeriod,
     StateSupervisionSentence,
 )
-
-
-class UsIdGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
-    """Tests for us_id_get_pre_incarceration_supervision_type"""
-
-    def test_usId_getPreIncarcerationSupervisionType(self) -> None:
-        admission_date = date(2019, 9, 13)
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
-            external_id="ip1",
-            state_code="US_ID",
-            admission_date=admission_date,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        preceding_supervision_period = StateSupervisionPeriod.new_with_defaults(
-            state_code="US_ID",
-            supervision_period_id=1,
-            start_date=admission_date
-            - relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 100),
-            termination_date=admission_date
-            - relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT - 1),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code="US_ID",
-            supervision_sentence_id=1,
-            external_id="XXX",
-            supervision_periods=[preceding_supervision_period],
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        self.assertEqual(
-            StateSupervisionPeriodSupervisionType.PAROLE,
-            us_id_get_pre_incarceration_supervision_type(
-                incarceration_sentences=[],
-                supervision_sentences=[supervision_sentence],
-                incarceration_period=incarceration_period,
-            ),
-        )
-
-    def test_usId_getPreIncarcerationSupervisionType_ignoreOutOfDatePeriods_After(
-        self,
-    ) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
-            external_id="ip1",
-            state_code="US_ID",
-            admission_date=date(2019, 9, 13),
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        preceding_supervision_period = StateSupervisionPeriod.new_with_defaults(
-            state_code="US_ID",
-            supervision_period_id=1,
-            start_date=date(2020, 3, 3),
-            termination_date=date(2020, 10, 13),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code="US_ID",
-            supervision_sentence_id=1,
-            external_id="XXX",
-            supervision_periods=[preceding_supervision_period],
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        self.assertIsNone(
-            us_id_get_pre_incarceration_supervision_type(
-                incarceration_sentences=[],
-                supervision_sentences=[supervision_sentence],
-                incarceration_period=incarceration_period,
-            )
-        )
-
-    def test_usId_getPreIncarcerationSupervisionType_ignoreOutOfDatePeriods_Before(
-        self,
-    ) -> None:
-        admission_date = date(2019, 9, 13)
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=1,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
-            external_id="ip1",
-            state_code="US_ID",
-            admission_date=admission_date,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        preceding_supervision_period = StateSupervisionPeriod.new_with_defaults(
-            state_code="US_ID",
-            supervision_period_id=1,
-            start_date=admission_date
-            - relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 100),
-            termination_date=admission_date
-            - relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 10),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code="US_ID",
-            supervision_sentence_id=1,
-            external_id="XXX",
-            supervision_periods=[preceding_supervision_period],
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        )
-
-        self.assertIsNone(
-            us_id_get_pre_incarceration_supervision_type(
-                incarceration_sentences=[],
-                supervision_sentences=[supervision_sentence],
-                incarceration_period=incarceration_period,
-            )
-        )
 
 
 class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
