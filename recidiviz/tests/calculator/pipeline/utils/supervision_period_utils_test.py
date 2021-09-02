@@ -19,9 +19,11 @@
 """Tests for supervision_period_utils.py."""
 import unittest
 from datetime import date
+from typing import Optional
 
 import attr
 
+from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_delegate import (
     UsIdSupervisionDelegate,
 )
@@ -37,7 +39,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_del
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     identify_most_severe_case_type,
     supervising_officer_and_location_info,
+    supervision_period_is_out_of_state,
 )
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodStatus,
@@ -362,3 +366,62 @@ class TestSupervisingOfficerAndLocationInfo(unittest.TestCase):
         self.assertEqual("agent_external_id_1", supervising_officer_external_id)
         self.assertEqual(None, level_1_supervision_location)
         self.assertEqual(None, level_2_supervision_location)
+
+
+class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
+    """Tests the supervision_period_is_out_of_state function."""
+
+    def test_supervision_period_is_out_of_state_with_federal_authority(self) -> None:
+        self.assertTrue(
+            supervision_period_is_out_of_state(
+                self.create_population_event(StateCustodialAuthority.FEDERAL),
+                UsXxSupervisionDelegate(),
+            )
+        )
+
+    def test_supervision_period_is_out_of_state_with_other_country_authority(
+        self,
+    ) -> None:
+        self.assertTrue(
+            supervision_period_is_out_of_state(
+                self.create_population_event(StateCustodialAuthority.OTHER_COUNTRY),
+                UsXxSupervisionDelegate(),
+            )
+        )
+
+    def test_supervision_period_is_out_of_state_with_other_state_authority(
+        self,
+    ) -> None:
+        self.assertTrue(
+            supervision_period_is_out_of_state(
+                self.create_population_event(StateCustodialAuthority.OTHER_STATE),
+                UsXxSupervisionDelegate(),
+            )
+        )
+
+    def test_supervision_period_is_out_of_state_with_supervision_authority(
+        self,
+    ) -> None:
+        self.assertFalse(
+            supervision_period_is_out_of_state(
+                self.create_population_event(
+                    StateCustodialAuthority.SUPERVISION_AUTHORITY
+                ),
+                UsXxSupervisionDelegate(),
+            )
+        )
+
+    @staticmethod
+    def create_population_event(
+        custodial_authority: Optional[StateCustodialAuthority],
+    ) -> SupervisionPopulationEvent:
+        return SupervisionPopulationEvent(
+            state_code="US_XX",
+            year=2010,
+            month=1,
+            event_date=date(2010, 1, 1),
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervising_district_external_id="TEST",
+            custodial_authority=custodial_authority,
+            projected_end_date=None,
+        )

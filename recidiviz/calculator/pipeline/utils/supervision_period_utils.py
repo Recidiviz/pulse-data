@@ -18,6 +18,7 @@
 import itertools
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
 from recidiviz.calculator.pipeline.utils.period_utils import (
     sort_periods_by_set_dates_and_statuses,
 )
@@ -182,4 +183,17 @@ def supervising_officer_and_location_info(
         supervising_officer_external_id,
         level_1_supervision_location,
         level_2_supervision_location,
+    )
+
+
+def supervision_period_is_out_of_state(
+    supervision_population_event: SupervisionPopulationEvent,
+    supervision_delegate: StateSpecificSupervisionDelegate,
+) -> bool:
+    """Returns whether the given day on supervision was served out of state."""
+    return (
+        supervision_population_event.is_out_of_state_custodial_authority
+        or supervision_delegate.is_supervision_location_out_of_state(
+            supervision_population_event
+        )
     )

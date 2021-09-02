@@ -15,11 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_ID implementation of the supervision delegate"""
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
+from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
 )
+
+_OUT_OF_STATE_EXTERNAL_ID_IDENTIFIERS: List[str] = [
+    "INTERSTATE PROBATION",
+    "PAROLE COMMISSION OFFICE",
+]
 
 
 class UsIdSupervisionDelegate(StateSpecificSupervisionDelegate):
@@ -46,4 +52,15 @@ class UsIdSupervisionDelegate(StateSpecificSupervisionDelegate):
         return (
             level_1_supervision_location or None,
             level_2_supervision_location or None,
+        )
+
+    def is_supervision_location_out_of_state(
+        self, supervision_population_event: SupervisionPopulationEvent
+    ) -> bool:
+        """For Idaho, we look at the supervision district identifier to see if it's a non-Idaho
+        entity/jurisdiction."""
+        # TODO(#4713): Rely on level_2_supervising_district_external_id, once it is populated.
+        external_id = supervision_population_event.supervising_district_external_id
+        return external_id is not None and external_id.startswith(
+            tuple(_OUT_OF_STATE_EXTERNAL_ID_IDENTIFIERS)
         )

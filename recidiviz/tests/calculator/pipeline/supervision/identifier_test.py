@@ -8237,7 +8237,10 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             end_assessment_level,
             end_assessment_type,
         ) = self.identifier._find_assessment_score_change(
-            assessment_1.state_code, start_date, termination_date, assessments
+            start_date,
+            termination_date,
+            assessments,
+            UsXxSupervisionDelegate(),
         )
 
         self.assertEqual(-6, assessment_score_change)
@@ -8271,7 +8274,10 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             end_assessment_level,
             end_assessment_type,
         ) = self.identifier._find_assessment_score_change(
-            assessment_1.state_code, start_date, termination_date, assessments
+            start_date,
+            termination_date,
+            assessments,
+            UsXxSupervisionDelegate(),
         )
 
         self.assertIsNone(assessment_score_change)
@@ -8279,14 +8285,13 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         self.assertIsNone(end_assessment_level)
         self.assertIsNone(end_assessment_type)
 
-    #
-    @mock.patch(
-        "recidiviz.calculator.pipeline.supervision.identifier.second_assessment_on_supervision_is_more_reliable"
-    )
+    class SecondAssessmentDelegate(UsXxSupervisionDelegate):
+        def get_index_of_first_reliable_supervision_assessment(self) -> int:
+            return 0
+
     def test_find_assessment_score_change_first_reliable_assessment_is_first_assessment(
-        self, mock_reliable_assessment: mock.Mock
+        self,
     ) -> None:
-        mock_reliable_assessment.return_value = False
 
         assessment_1 = StateAssessment.new_with_defaults(
             state_code="US_XX",
@@ -8313,7 +8318,10 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             end_assessment_level,
             end_assessment_type,
         ) = self.identifier._find_assessment_score_change(
-            assessment_1.state_code, start_date, termination_date, assessments
+            start_date,
+            termination_date,
+            assessments,
+            self.SecondAssessmentDelegate(),
         )
 
         self.assertEqual(-4, assessment_score_change)
@@ -8354,7 +8362,10 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             end_assessment_level,
             end_assessment_type,
         ) = self.identifier._find_assessment_score_change(
-            assessment_1.state_code, start_date, termination_date, assessments
+            start_date,
+            termination_date,
+            assessments,
+            UsXxSupervisionDelegate(),
         )
 
         self.assertIsNone(assessment_score_change)
@@ -8395,7 +8406,10 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             end_assessment_level,
             end_assessment_type,
         ) = self.identifier._find_assessment_score_change(
-            assessment_1.state_code, start_date, termination_date, assessments
+            start_date,
+            termination_date,
+            assessments,
+            UsXxSupervisionDelegate(),
         )
 
         self.assertIsNone(assessment_score_change)
@@ -8415,7 +8429,10 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             end_assessment_level,
             end_assessment_type,
         ) = self.identifier._find_assessment_score_change(
-            "US_XX", start_date, termination_date, assessments
+            start_date,
+            termination_date,
+            assessments,
+            UsXxSupervisionDelegate(),
         )
 
         self.assertIsNone(assessment_score_change)
@@ -8456,7 +8473,10 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
             end_assessment_level,
             end_assessment_type,
         ) = self.identifier._find_assessment_score_change(
-            assessment_1.state_code, start_date, termination_date, assessments
+            start_date,
+            termination_date,
+            assessments,
+            UsXxSupervisionDelegate(),
         )
 
         self.assertIsNone(assessment_score_change)

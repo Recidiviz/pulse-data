@@ -21,7 +21,6 @@ from typing import Dict, List, Optional, Set
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
 from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
     PreProcessedSupervisionPeriodIndex,
 )
@@ -29,7 +28,6 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     get_supervision_periods_from_sentences,
 )
 from recidiviz.common.common_utils import date_spans_overlap_exclusive
-from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
 )
@@ -49,11 +47,6 @@ from recidiviz.persistence.entity.state.entities import (
 # limit the search for a pre or post-incarceration supervision type to 30 days prior to admission or 30 days following
 # release.
 SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT = 30
-
-_OUT_OF_STATE_EXTERNAL_ID_IDENTIFIERS: List[str] = [
-    "INTERSTATE PROBATION",
-    "PAROLE COMMISSION OFFICE",
-]
 
 
 def us_id_get_pre_incarceration_supervision_type(
@@ -177,35 +170,6 @@ def us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound
     return get_most_relevant_supervision_type(
         supervision_types_by_end_date[max_end_date]
     )
-
-
-def us_id_supervision_period_is_out_of_state(
-    supervision_population_event: SupervisionPopulationEvent,
-) -> bool:
-    """Returns whether the given day on supervision was served out of state.
-
-    This is true if either:
-    - The supervision district identifier indicates a non-Idaho entity/jurisdiction
-    - The supervision period custodial authority indicates a non-Idaho entity
-    """
-    # TODO(#4713): Rely on level_2_supervising_district_external_id, once it is populated.
-    external_id = supervision_population_event.supervising_district_external_id
-    out_of_state_identifier = external_id is not None and external_id.startswith(
-        tuple(_OUT_OF_STATE_EXTERNAL_ID_IDENTIFIERS)
-    )
-
-    custodial_authority = supervision_population_event.custodial_authority
-    out_of_state_authority = (
-        custodial_authority is not None
-        and custodial_authority
-        in (
-            StateCustodialAuthority.FEDERAL,
-            StateCustodialAuthority.OTHER_COUNTRY,
-            StateCustodialAuthority.OTHER_STATE,
-        )
-    )
-
-    return out_of_state_identifier or out_of_state_authority
 
 
 def us_id_get_supervision_period_admission_override(

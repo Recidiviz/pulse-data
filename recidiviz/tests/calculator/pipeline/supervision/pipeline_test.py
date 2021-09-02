@@ -167,18 +167,32 @@ class TestSupervisionPipeline(unittest.TestCase):
         self.mock_violation_pre_processing_delegate.return_value = (
             UsXxViolationResponsePreprocessingDelegate()
         )
-        self.supervision_delegate_patcher = mock.patch(
+        self.identifier_supervision_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.supervision.identifier.get_state_specific_supervision_delegate"
         )
-        self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
-        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
+        self.mock_identifier_supervision_delegate = (
+            self.identifier_supervision_delegate_patcher.start()
+        )
+        self.mock_identifier_supervision_delegate.return_value = (
+            UsXxSupervisionDelegate()
+        )
+        self.metric_producer_supervision_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.supervision.metric_producer.get_state_specific_supervision_delegate"
+        )
+        self.mock_metric_producer_supervision_delegate = (
+            self.metric_producer_supervision_delegate_patcher.start()
+        )
+        self.mock_metric_producer_supervision_delegate.return_value = (
+            UsXxSupervisionDelegate()
+        )
 
     def tearDown(self) -> None:
         self.assessment_types_patcher.stop()
         self.pre_processing_delegate_patcher.stop()
         self.violation_delegate_patcher.stop()
         self.violation_pre_processing_delegate_patcher.stop()
-        self.supervision_delegate_patcher.stop()
+        self.identifier_supervision_delegate_patcher.stop()
+        self.metric_producer_supervision_delegate_patcher.stop()
 
     @staticmethod
     def _default_data_dict() -> Dict[str, List]:
@@ -2052,8 +2066,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             metric_type: True for metric_type in SupervisionMetricType
         }
 
+        self.supervision_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.supervision.metric_producer.get_state_specific_supervision_delegate"
+        )
+        self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
+        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
+
         self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity="BLACK")
         self.pipeline_config = pipeline.SupervisionPipeline().pipeline_config
+
+    def tearDown(self) -> None:
+        self.supervision_delegate_patcher.stop()
 
     def testProduceSupervisionMetrics(self) -> None:
         """Tests the ProduceSupervisionMetrics DoFn."""

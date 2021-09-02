@@ -15,8 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """US_MO implementation of the supervision delegate"""
+from typing import List
+
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_utils import (
+    us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day,
+)
+from recidiviz.common.date import DateRange, DateRangeDiff
+from recidiviz.persistence.entity.state.entities import (
+    StateIncarcerationSentence,
+    StateSupervisionPeriod,
+    StateSupervisionSentence,
 )
 
 
@@ -27,3 +38,55 @@ class UsMoSupervisionDelegate(StateSpecificSupervisionDelegate):
         """In US_MO, people on DUAL supervision are tracked as mutually exclusive from groups of people
         on PAROLE or PROBATION."""
         return True
+
+    def supervision_period_in_supervision_population_in_non_excluded_date_range(
+        self,
+        date_range: DateRange,
+        supervision_sentences: List[StateSupervisionSentence],
+        incarceration_sentences: List[StateIncarcerationSentence],
+        supervision_period: StateSupervisionPeriod,
+    ) -> bool:
+        """In US_MO, first finds the overlapping date range between the supervision period
+        and the date range given. If no overlap, then it does not count towards the population.
+
+        Otherwise finds the most recent nonnull supervision period, supervision type associated to
+        the person with these sentences to indicate that the person should count towards the population.
+        """
+        overlapping_range = DateRangeDiff(
+            range_1=date_range, range_2=supervision_period.duration
+        ).overlapping_range
+
+        if not overlapping_range:
+            return False
+
+        return (
+            us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
+                upper_bound_exclusive_date=overlapping_range.upper_bound_exclusive_date,
+                lower_bound_inclusive_date=overlapping_range.lower_bound_inclusive_date,
+                incarceration_sentences=incarceration_sentences,
+                supervision_sentences=supervision_sentences,
+            )
+            is not None
+        )
+
+    def should_produce_supervision_event_for_period(
+        self,
+        supervision_period: StateSupervisionPeriod,
+        incarceration_sentences: List[StateIncarcerationSentence],
+        supervision_sentences: List[StateSupervisionSentence],
+    ) -> bool:
+        """For US_MO, we retrieve the most recent nonnull supervision period supervision type associated with these
+        sentences for the person in order to determine if an event should be produced. If no days of the supervision_period
+        count towards any metrics, the period can be dropped entirely.
+        """
+        sp_range = supervision_period.duration
+
+        return (
+            us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
+                upper_bound_exclusive_date=sp_range.upper_bound_exclusive_date,
+                lower_bound_inclusive_date=sp_range.lower_bound_inclusive_date,
+                incarceration_sentences=incarceration_sentences,
+                supervision_sentences=supervision_sentences,
+            )
+            is not None
+        )
