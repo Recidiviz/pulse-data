@@ -83,6 +83,16 @@ Defaults to direct-ingest-state-storage-secondary.
 EOT
 }
 
+variable "default_sql_tier" {
+  type        = string
+  default     = ""
+  description = <<EOT
+Default tier to apply to Cloud SQL instances, to enable dev projects to use custom values.
+This is useed in cases like the terraform sandbox project, where we want all databases to be as
+small as possible.
+EOT
+}
+
 locals {
   repo_url      = "https://source.developers.google.com/projects/${var.project_id}/repos/github_${var.github_username}_pulse-data/revisions/${var.git_hash}/paths/recidiviz/cloud_functions"
   is_production = var.project_id == "recidiviz-123"
