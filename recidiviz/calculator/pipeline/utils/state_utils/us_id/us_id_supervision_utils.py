@@ -49,34 +49,6 @@ from recidiviz.persistence.entity.state.entities import (
 SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT = 30
 
 
-def us_id_get_pre_incarceration_supervision_type(
-    incarceration_sentences: List[StateIncarcerationSentence],
-    supervision_sentences: List[StateSupervisionSentence],
-    incarceration_period: StateIncarcerationPeriod,
-) -> Optional[StateSupervisionPeriodSupervisionType]:
-    """Calculates the pre-incarceration supervision type for US_ID people by calculating the most recent type of
-    supervision a given person was on within INCARCERATION_SUPERVISION_TYPE_DAYS_LIMIT days of the
-    incarceration admission. If no supervision type is found, returns None.
-    """
-    admission_date = incarceration_period.admission_date
-
-    if not admission_date:
-        raise ValueError(
-            f"No admission date for incarceration period {incarceration_period.incarceration_period_id}"
-        )
-
-    supervision_periods = get_supervision_periods_from_sentences(
-        incarceration_sentences, supervision_sentences
-    )
-
-    return us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
-        upper_bound_exclusive_date=admission_date,
-        lower_bound_inclusive_date=admission_date
-        - relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT),
-        supervision_periods=supervision_periods,
-    )
-
-
 def us_id_get_post_incarceration_supervision_type(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],

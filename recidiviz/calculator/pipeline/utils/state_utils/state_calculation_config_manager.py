@@ -53,7 +53,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_del
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_utils import (
     us_id_get_post_incarceration_supervision_type,
-    us_id_get_pre_incarceration_supervision_type,
     us_id_get_supervision_period_admission_override,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_violation_response_preprocessing_delegate import (
@@ -75,7 +74,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_uti
     us_mo_get_month_supervision_type,
     us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day,
     us_mo_get_post_incarceration_supervision_type,
-    us_mo_get_pre_incarceration_supervision_type,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_response_preprocessing_delegate import (
     UsMoViolationResponsePreprocessingDelegate,
@@ -128,7 +126,6 @@ from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager imp
 )
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
     get_month_supervision_type_default,
-    get_pre_incarceration_supervision_type_from_ip_admission_reason,
 )
 from recidiviz.calculator.pipeline.utils.supervision_violation_responses_pre_processing_manager import (
     StateSpecificViolationResponsePreProcessingDelegate,
@@ -186,46 +183,6 @@ def get_month_supervision_type(
         supervision_sentences,
         incarceration_sentences,
         supervision_period,
-    )
-
-
-def get_pre_incarceration_supervision_type(
-    incarceration_sentences: List[StateIncarcerationSentence],
-    supervision_sentences: List[StateSupervisionSentence],
-    incarceration_period: StateIncarcerationPeriod,
-) -> Optional[StateSupervisionPeriodSupervisionType]:
-    """If the person was reincarcerated after a period of supervision, returns the type of supervision they were on
-    right before the reincarceration.
-
-    Args:
-        incarceration_sentences: (List[StateIncarcerationSentence]) All IncarcerationSentences associated with this
-            person.
-        supervision_sentences: (List[StateSupervisionSentence]) All SupervisionSentences associated with this person.
-        incarceration_period: (StateIncarcerationPeriod) The incarceration period where the person was first
-            reincarcerated.
-    """
-
-    state_code = incarceration_period.state_code
-
-    if state_code.upper() == "US_MO":
-        return us_mo_get_pre_incarceration_supervision_type(
-            incarceration_sentences, supervision_sentences, incarceration_period
-        )
-
-    if state_code.upper() == "US_ID":
-        return us_id_get_pre_incarceration_supervision_type(
-            incarceration_sentences, supervision_sentences, incarceration_period
-        )
-
-    if not incarceration_period.admission_reason:
-        raise ValueError(
-            "Unexpected missing admission_reason on incarceration period: "
-            f"[{incarceration_period}]"
-        )
-
-    # TODO(#2938): Decide if we want date matching/supervision period lookback logic for US_ND
-    return get_pre_incarceration_supervision_type_from_ip_admission_reason(
-        incarceration_period.admission_reason
     )
 
 

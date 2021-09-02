@@ -314,14 +314,6 @@ def _filter_sentences_with_missing_fields(
     return valid_sentences
 
 
-def _get_sentences_overlapping_with_date(
-    date_of_interest: datetime.date, sentences: List[SentenceType]
-) -> List[SentenceType]:
-    return _get_sentences_overlapping_with_dates(
-        date_of_interest, date_of_interest, sentences
-    )
-
-
 def _get_sentences_overlapping_with_dates(
     begin_date: datetime.date, end_date: datetime.date, sentences: List[SentenceType]
 ) -> List[SentenceType]:
