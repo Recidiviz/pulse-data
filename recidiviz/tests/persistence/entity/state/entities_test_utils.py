@@ -597,12 +597,22 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
     supervision_period.program_assignments = [program_assignment2]
 
     supervision_violation = entities.StateSupervisionViolation.new_with_defaults(
-        violation_type=StateSupervisionViolationType.TECHNICAL,
-        violation_type_raw_text="TECHNICAL",
         violation_date=datetime.date(year=2004, month=9, day=1),
         state_code="US_XX",
         is_violent=False,
-        violated_conditions="MISSED CURFEW",
+        supervision_violation_types=[
+            entities.StateSupervisionViolationTypeEntry.new_with_defaults(
+                state_code="US_XX",
+                violation_type=StateSupervisionViolationType.TECHNICAL,
+                violation_type_raw_text="TECHNICAL",
+            ),
+        ],
+        supervision_violated_conditions=[
+            entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
+                state_code="US_XX",
+                condition="MISSED CURFEW",
+            )
+        ],
     )
 
     supervision_period.supervision_violation_entries = [supervision_violation]
@@ -723,5 +733,14 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
         supervision_violation_response.supervision_violation = supervision_violation
         supervision_violation_response.person = person
+        supervision_violation.person = person
+
+        for violation_type in supervision_violation.supervision_violation_types:
+            violation_type.supervision_violation = supervision_violation
+            violation_type.person = person
+
+        for violated_condition in supervision_violation.supervision_violated_conditions:
+            violated_condition.supervision_violation = supervision_violation
+            violated_condition.person = person
 
     return person

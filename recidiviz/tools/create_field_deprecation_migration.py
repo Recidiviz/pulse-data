@@ -23,6 +23,7 @@ from recidiviz.persistence.database.schema_utils import (
     get_table_class_by_name,
     schema_type_to_schema_base,
 )
+from recidiviz.persistence.entity.base_entity import EnumEntity
 from recidiviz.tools.utils.migration_script_helpers import (
     PATH_TO_MIGRATIONS_DIRECTORY,
     create_new_empty_migration_and_return_filename,
@@ -107,7 +108,7 @@ def main() -> None:
 
     columns_to_nullify = [args.column]
 
-    raw_text_col = args.column + "_raw_text"
+    raw_text_col = args.column + EnumEntity.RAW_TEXT_FIELD_SUFFIX
     if raw_text_col in all_column_names:
         # If this field has a corresponding _raw_text column in the table, deprecate that
         # as well

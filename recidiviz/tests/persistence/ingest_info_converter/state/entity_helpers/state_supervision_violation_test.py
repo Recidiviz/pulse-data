@@ -19,9 +19,6 @@
 import unittest
 from datetime import date
 
-from recidiviz.common.constants.state.state_supervision_violation import (
-    StateSupervisionViolationType,
-)
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
@@ -38,7 +35,6 @@ class StateSupervisionViolationConverterTest(unittest.TestCase):
     def testParseStateSupervisionViolation(self):
         # Arrange
         ingest_violation = ingest_info_pb2.StateSupervisionViolation(
-            violation_type="TECHNICAL",
             state_supervision_violation_id="VIOLATION_ID",
             violation_date="1/2/2111",
             state_code="us_nd",
@@ -55,8 +51,6 @@ class StateSupervisionViolationConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateSupervisionViolation.new_with_defaults(
-            violation_type=StateSupervisionViolationType.TECHNICAL,
-            violation_type_raw_text="TECHNICAL",
             external_id="VIOLATION_ID",
             violation_date=date(year=2111, month=1, day=2),
             state_code="US_ND",

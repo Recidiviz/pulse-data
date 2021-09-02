@@ -49,6 +49,10 @@ class ExternalIdEntity(Entity):
 
 
 class EnumEntity(Entity):
+    # Suffix to append to an enum field name to get the corresponding raw text field
+    # name.
+    RAW_TEXT_FIELD_SUFFIX = "_raw_text"
+
     # Consider EnumEntity abstract and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is ExternalIdEntity:

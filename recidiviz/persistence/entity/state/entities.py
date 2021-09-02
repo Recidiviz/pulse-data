@@ -106,6 +106,9 @@ from recidiviz.persistence.entity.base_entity import (
     EnumEntity,
     ExternalIdEntity,
 )
+from recidiviz.persistence.entity.state.entity_deprecation_utils import (
+    validate_deprecated_entity_field_for_states,
+)
 
 # **** Entity Types for convenience *****:
 SentenceType = TypeVar(
@@ -1544,6 +1547,13 @@ class StateSupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr
     supervision_violation_responses: List[
         "StateSupervisionViolationResponse"
     ] = attr.ib(factory=list, validator=attr_validators.is_list)
+
+    def __attrs_post_init__(self) -> None:
+        validate_deprecated_entity_field_for_states(
+            entity=self,
+            field_name="violation_type",
+            deprecated_state_codes=["US_ID", "US_MO", "US_PA"],
+        )
 
 
 @attr.s(eq=False)
