@@ -22,7 +22,7 @@ module "case_triage_database" {
   base_secret_name       = "case_triage"
   region                 = var.region
   zone                   = var.zone
-  tier                   = "db-custom-1-3840" # 1 vCPU, 3.75GB Memory
+  tier                   = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
   has_readonly_user      = true
   require_ssl_connection = true
 }
@@ -37,7 +37,7 @@ module "jails_database" {
   region           = "us-east4"
   zone             = local.is_production ? "us-east4-b" : "us-east4-c"
   # 4 vCPU, 15GB Memory | 1 vCPU, 3.75GB Memory
-  tier              = local.is_production ? "db-custom-4-15360" : "db-custom-1-3840"
+  tier              = coalesce(var.default_sql_tier, local.is_production ? "db-custom-4-15360" : "db-custom-1-3840")
   has_readonly_user = local.is_production
 
   deprecated = true
@@ -51,7 +51,7 @@ module "jails_database_v2" {
   database_version  = "POSTGRES_13"
   region            = "us-east4"
   zone              = "us-east4-b"
-  tier              = "db-custom-4-15360" # 4 vCPU, 15GB Memory
+  tier              = coalesce(var.default_sql_tier, "db-custom-4-15360") # 4 vCPU, 15GB Memory
   has_readonly_user = true
 }
 
@@ -63,7 +63,7 @@ module "justice_counts_database" {
   base_secret_name  = "justice_counts"
   region            = "us-east1"
   zone              = "us-east1-c"
-  tier              = "db-custom-1-3840" # 1 vCPU, 3.75GB Memory
+  tier              = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
   has_readonly_user = local.is_production
 }
 
@@ -76,7 +76,7 @@ module "operations_database" {
   database_version  = "POSTGRES_11"
   region            = "us-east1"
   zone              = "us-east1-b"
-  tier              = "db-custom-1-3840" # 1 vCPU, 3.75GB Memory
+  tier              = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
   has_readonly_user = local.is_production
 
   deprecated = true
@@ -90,7 +90,7 @@ module "operations_database_v2" {
   database_version  = "POSTGRES_13"
   region            = "us-east1"
   zone              = "us-east1-b"
-  tier              = "db-custom-1-3840" # 1 vCPU, 3.75GB Memory
+  tier              = coalesce(var.default_sql_tier, "db-custom-1-3840") # 1 vCPU, 3.75GB Memory
   has_readonly_user = true
 }
 
@@ -103,7 +103,7 @@ module "state_database" {
   database_version  = "POSTGRES_9_6"
   region            = "us-east1"
   zone              = "us-east1-c"
-  tier              = "db-custom-4-16384" # 4 vCPUs, 16GB Memory
+  tier              = coalesce(var.default_sql_tier, "db-custom-4-16384") # 4 vCPUs, 16GB Memory
   has_readonly_user = local.is_production
 
   deprecated = true
@@ -117,7 +117,7 @@ module "state_database_v2" {
   database_version  = "POSTGRES_13"
   region            = "us-east1"
   zone              = "us-east1-c"
-  tier              = "db-custom-4-16384" # 4 vCPUs, 16GB Memory
+  tier              = coalesce(var.default_sql_tier, "db-custom-4-16384") # 4 vCPUs, 16GB Memory
   has_readonly_user = true
 }
 
