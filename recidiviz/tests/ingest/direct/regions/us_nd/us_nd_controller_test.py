@@ -1434,7 +1434,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         )
 
         violation_for_17111 = StateSupervisionViolation(
-            violation_type="ABSCONDED",
             state_supervision_violation_types=[
                 StateSupervisionViolationTypeEntry(violation_type="ABSCONDED")
             ],
@@ -1453,7 +1452,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         )
 
         violation_for_140408 = StateSupervisionViolation(
-            violation_type="TECHNICAL",
             state_supervision_violation_types=[
                 StateSupervisionViolationTypeEntry(violation_type="TECHNICAL")
             ],
@@ -1472,7 +1470,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         )
 
         violation_for_147777 = StateSupervisionViolation(
-            violation_type="LAW",
             state_supervision_violation_types=[
                 StateSupervisionViolationTypeEntry(violation_type="LAW")
             ],
@@ -3941,8 +3938,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         supervision_violation_117111 = (
             entities.StateSupervisionViolation.new_with_defaults(
                 state_code=_STATE_CODE,
-                violation_type=StateSupervisionViolationType.ABSCONDED,
-                violation_type_raw_text="ABSCONDED",
                 supervision_periods=[supervision_period_117111],
                 person=supervision_period_117111.person,
             )
@@ -4040,8 +4035,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         )
         supervision_violation_140408 = (
             entities.StateSupervisionViolation.new_with_defaults(
-                violation_type=StateSupervisionViolationType.TECHNICAL,
-                violation_type_raw_text="TECHNICAL",
                 state_code=_STATE_CODE,
                 supervision_periods=[supervision_period_140408],
                 person=supervision_period_140408.person,
@@ -4137,8 +4130,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         )
         supervision_violation_147777 = (
             entities.StateSupervisionViolation.new_with_defaults(
-                violation_type=StateSupervisionViolationType.LAW,
-                violation_type_raw_text="LAW",
                 is_violent=True,
                 state_code=_STATE_CODE,
                 supervision_periods=[supervision_period_147777],

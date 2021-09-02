@@ -1273,8 +1273,8 @@ def _record_revocation_on_violation(
     violation: StateSupervisionViolation, row: Dict[str, str]
 ) -> None:
     """Adds revocation information onto the provided |violation| as necessary."""
-    # These three flags are either '0' (False) or '-1' (True). That -1 may now be (1) after a recent Docstars
-    # change.
+    # These three flags are either '0' (False) or '-1' (True). That -1 may now be (1)
+    # after a recent Docstars change.
     revocation_for_new_offense = row.get("REV_NOFF_YN", None) in ["-1", "(1)"]
     revocation_for_absconsion = row.get("REV_ABSC_YN", None) in ["-1", "(1)"]
     revocation_for_technical = row.get("REV_TECH_YN", None) in ["-1", "(1)"]
@@ -1287,7 +1287,6 @@ def _record_revocation_on_violation(
         return [code for code in [first, second, third] if code]
 
     violation_types = []
-    violation_type = None
     if revocation_for_new_offense:
         violation_type = StateSupervisionViolationType.LAW.value
         violation_types.append(violation_type)
@@ -1301,10 +1300,6 @@ def _record_revocation_on_violation(
     elif revocation_for_technical:
         violation_type = StateSupervisionViolationType.TECHNICAL.value
         violation_types.append(violation_type)
-    # TODO(#2668): Once BQ dashboard for ND is using new pipeline calcs that reference
-    #  state_supervision_violation_types (2750), delete the flat violation_type field on
-    #  StateSupervisionViolation entirely.
-    violation.violation_type = violation_type
 
     for violation_type in violation_types:
         vt = StateSupervisionViolationTypeEntry(violation_type=violation_type)
