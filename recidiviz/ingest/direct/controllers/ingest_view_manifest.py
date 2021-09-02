@@ -29,7 +29,7 @@ import attr
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.strict_enum_parser import StrictEnumParser
-from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.base_entity import Entity, EnumEntity
 from recidiviz.persistence.entity.entity_deserialize import EntityFactory, EntityT
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -214,10 +214,6 @@ class EnumFieldManifest(ManifestNode[StrictEnumParser]):
     # be ignored when parsing this enum field.
     IGNORES_KEY = "$ignore"
 
-    # Suffix to append to an enum field name to get the corresponding raw text field
-    # name.
-    RAW_TEXT_FIELD_SUFFIX = "_raw_text"
-
     enum_cls: Type[Enum] = attr.ib()
     mapped_raw_text_col: str = attr.ib()
     enum_overrides: EnumOverrides = attr.ib()
@@ -233,7 +229,7 @@ class EnumFieldManifest(ManifestNode[StrictEnumParser]):
 
     @classmethod
     def raw_text_field_name(cls, enum_field_name: str) -> str:
-        return f"{enum_field_name}{EnumFieldManifest.RAW_TEXT_FIELD_SUFFIX}"
+        return f"{enum_field_name}{EnumEntity.RAW_TEXT_FIELD_SUFFIX}"
 
     @classmethod
     def from_raw_manifest(

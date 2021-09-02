@@ -21,7 +21,7 @@ from recidiviz.common.attr_mixins import (
     BuildableAttrFieldType,
     attr_field_type_for_field_name,
 )
-from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.base_entity import Entity, EnumEntity
 
 
 def _get_state_code_from_entity(entity: Entity) -> str:
@@ -50,6 +50,9 @@ def validate_deprecated_entity_field_for_states(
     Raises a ValueError if the field/relationship is deprecated for the state,
     and the value of the deprecated field is not None.
 
+    If there is a corresponding _raw_text field associated with the field, validates
+    that it is deprecated as well.
+
     This should only be called from __attrs_post_init__ functions.
     """
     state_code = _get_state_code_from_entity(entity)
@@ -57,20 +60,35 @@ def validate_deprecated_entity_field_for_states(
     if state_code not in deprecated_state_codes:
         return
 
-    if getattr(entity, field_name) is not None:
-        attr_field_type = attr_field_type_for_field_name(type(entity), field_name)
+    attr_field_type = attr_field_type_for_field_name(type(entity), field_name)
 
-        field_type_description = (
-            "relationship"
-            if attr_field_type == BuildableAttrFieldType.FORWARD_REF
-            else "field"
-        )
+    deprecated_field_names = [field_name]
 
-        raise ValueError(
-            f"The [{field_name}] {field_type_description} is deprecated for "
-            f"state_code: [{state_code}]. This {field_type_description} should not be "
-            f"populated."
-        )
+    if attr_field_type == BuildableAttrFieldType.ENUM:
+        raw_text_field_name = field_name + EnumEntity.RAW_TEXT_FIELD_SUFFIX
+        if not hasattr(entity, raw_text_field_name):
+            raise ValueError(
+                f"Entity class {entity} missing raw text field "
+                f"corresponding to enum field {field_name}."
+            )
+
+        # Validate that the associated raw text field for this entity is also
+        # deprecated
+        deprecated_field_names.append(raw_text_field_name)
+
+    field_type_description = (
+        "relationship"
+        if attr_field_type == BuildableAttrFieldType.FORWARD_REF
+        else "field"
+    )
+
+    for deprecated_field in deprecated_field_names:
+        if getattr(entity, deprecated_field) is not None:
+            raise ValueError(
+                f"The [{deprecated_field}] {field_type_description} is deprecated for "
+                f"state_code: [{state_code}]. This {field_type_description} should not "
+                "be populated."
+            )
 
 
 def validate_deprecated_entity_for_states(
