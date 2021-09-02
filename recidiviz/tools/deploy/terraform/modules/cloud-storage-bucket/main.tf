@@ -37,11 +37,18 @@ variable "storage_class" {
   default = "STANDARD"
 }
 
+# When true, access control to the bucket is controlled by IAM rather than
+# object-level ACLs.
+variable "uniform_bucket_level_access" {
+  type    = bool
+  default = true
+}
+
 resource "google_storage_bucket" "bucket" {
   name                        = "${var.project_id}-${var.name_suffix}"
   location                    = var.location
   storage_class               = var.storage_class
-  uniform_bucket_level_access = true
+  uniform_bucket_level_access = var.uniform_bucket_level_access
 
   lifecycle_rule {
     action {
