@@ -16,12 +16,18 @@
 # =============================================================================
 """Tests for the us_id_supervision_delegate.py file"""
 import unittest
+from datetime import date
 from typing import Optional
 
 from parameterized import parameterized
 
+from recidiviz.calculator.pipeline.supervision.events import SupervisionPopulationEvent
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_delegate import (
     UsIdSupervisionDelegate,
+)
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
 )
 
 
@@ -64,4 +70,85 @@ class TestUsIdSupervisionDelegate(unittest.TestCase):
         )
         self.assertEqual(
             level_2_supervision_location, expected_level_2_supervision_location
+        )
+
+    def test_supervision_period_is_out_of_state_with_identifier(self) -> None:
+        self.assertTrue(
+            self.supervision_delegate.is_supervision_location_out_of_state(
+                self.create_population_event(
+                    "INTERSTATE PROBATION - remainder of identifier", None
+                )
+            )
+        )
+
+    def test_supervision_period_is_out_of_state_with_incorrect_identifier(
+        self,
+    ) -> None:
+        self.assertFalse(
+            self.supervision_delegate.is_supervision_location_out_of_state(
+                self.create_population_event(
+                    "Incorrect - remainder of identifier", None
+                )
+            )
+        )
+
+    def test_supervision_period_is_out_of_state_with_empty_identifier(
+        self,
+    ) -> None:
+        self.assertFalse(
+            self.supervision_delegate.is_supervision_location_out_of_state(
+                self.create_population_event(None, None)
+            )
+        )
+
+    def test_supervision_period_is_out_of_state_with_identifier_interstate(
+        self,
+    ) -> None:
+        self.assertTrue(
+            self.supervision_delegate.is_supervision_location_out_of_state(
+                self.create_population_event(
+                    "INTERSTATE PROBATION - remainder of identifier", None
+                )
+            )
+        )
+
+    def test_supervision_period_is_out_of_state_with_identifier_parole(self) -> None:
+        self.assertTrue(
+            self.supervision_delegate.is_supervision_location_out_of_state(
+                self.create_population_event(
+                    "PAROLE COMMISSION OFFICE - remainder of identifier", None
+                )
+            )
+        )
+
+    def test_supervision_period_is_out_of_state_with_partial_identifier(self) -> None:
+        self.assertFalse(
+            self.supervision_delegate.is_supervision_location_out_of_state(
+                self.create_population_event(
+                    "INTERSTATE - remainder of identifier", None
+                )
+            )
+        )
+
+    def test_supervision_period_is_out_of_state_with_invalid_identifier(self) -> None:
+        self.assertFalse(
+            self.supervision_delegate.is_supervision_location_out_of_state(
+                self.create_population_event("Invalid", None)
+            )
+        )
+
+    @staticmethod
+    def create_population_event(
+        supervising_district_external_id: Optional[str],
+        custodial_authority: Optional[StateCustodialAuthority],
+    ) -> SupervisionPopulationEvent:
+        return SupervisionPopulationEvent(
+            state_code="US_ID",
+            year=2010,
+            month=1,
+            event_date=date(2010, 1, 1),
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervising_district_external_id=supervising_district_external_id,
+            custodial_authority=custodial_authority,
+            projected_end_date=None,
         )

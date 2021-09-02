@@ -58,10 +58,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     get_state_specific_case_compliance_manager,
     get_state_specific_supervision_delegate,
     get_state_specific_violation_delegate,
-    second_assessment_on_supervision_is_more_reliable,
-    should_produce_supervision_event_for_period,
     state_specific_supervision_admission_reason_override,
-    supervision_period_counts_towards_supervision_population_in_date_range_state_specific,
     terminating_supervision_period_supervision_type,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
@@ -222,7 +219,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         supervision_events.extend(projected_supervision_completion_events)
 
         for supervision_period in supervision_period_index.supervision_periods:
-            if should_produce_supervision_event_for_period(
+            if supervision_delegate.should_produce_supervision_event_for_period(
                 supervision_period, incarceration_sentences, supervision_sentences
             ):
                 judicial_district_code = self._get_judicial_district_code(
@@ -400,6 +397,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 incarceration_sentences,
                 supervision_period,
                 incarceration_period_index,
+                supervision_delegate,
             ):
 
                 supervision_type = get_month_supervision_type(
@@ -500,6 +498,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_period: StateSupervisionPeriod,
+        supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> bool:
         """Returns True if the existence of the |supervision_period| means a person can be counted towards the supervision
         population in the provided date range.
@@ -518,7 +517,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         if not supervision_overlapping_range:
             return False
 
-        return supervision_period_counts_towards_supervision_population_in_date_range_state_specific(
+        return supervision_delegate.supervision_period_in_supervision_population_in_non_excluded_date_range(
             date_range=date_range,
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
@@ -532,6 +531,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_period: StateSupervisionPeriod,
         incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
+        supervision_delegate: StateSpecificSupervisionDelegate,
         validate_duration: bool = True,
     ) -> bool:
         """Determines whether the person was on supervision on a given date."""
@@ -550,6 +550,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             incarceration_sentences=incarceration_sentences,
             supervision_period=supervision_period,
             incarceration_period_index=incarceration_period_index,
+            supervision_delegate=supervision_delegate,
         )
 
         return supervision_period_counts_towards_supervision_population_on_date
@@ -561,6 +562,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_period_index: PreProcessedSupervisionPeriodIndex,
         incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
+        supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> bool:
         """Determines whether the person was on supervision on a given date, across any and
         all of the supervision periods included in the given supervision period index.
@@ -577,6 +579,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 incarceration_sentences,
                 period,
                 incarceration_period_index,
+                supervision_delegate,
                 validate_duration=False,
             ):
                 return True
@@ -638,6 +641,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             incarceration_sentences,
             supervision_period_index,
             incarceration_period_index,
+            supervision_delegate,
         )
 
         return SupervisionStartEvent(
@@ -730,10 +734,10 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 end_assessment_level,
                 end_assessment_type,
             ) = self._find_assessment_score_change(
-                supervision_period.state_code,
                 assessment_start_date,
                 assessment_termination_date,
                 assessments,
+                supervision_delegate,
             )
 
             violation_history = get_violation_and_response_history(
@@ -779,6 +783,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 incarceration_sentences,
                 supervision_period_index,
                 incarceration_period_index,
+                supervision_delegate,
             )
 
             return SupervisionTerminationEvent(
@@ -1332,10 +1337,10 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
     def _find_assessment_score_change(
         self,
-        state_code: str,
         start_date: date,
         termination_date: date,
         assessments: List[StateAssessment],
+        supervision_delegate: StateSpecificSupervisionDelegate,
     ) -> Tuple[
         Optional[int],
         Optional[int],
@@ -1357,9 +1362,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             ]
 
             index_of_first_reliable_assessment = (
-                1
-                if second_assessment_on_supervision_is_more_reliable(state_code)
-                else 0
+                supervision_delegate.get_index_of_first_reliable_supervision_assessment()
             )
             min_assessments = 2 + index_of_first_reliable_assessment
 

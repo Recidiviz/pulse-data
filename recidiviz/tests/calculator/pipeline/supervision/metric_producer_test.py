@@ -64,6 +64,9 @@ from recidiviz.persistence.entity.state.entities import (
     StatePersonEthnicity,
     StatePersonRace,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_delegate import (
+    UsXxSupervisionDelegate,
+)
 
 ALL_METRICS_INCLUSIONS_DICT = {
     metric_type: True for metric_type in SupervisionMetricType
@@ -81,6 +84,17 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         self.metric_producer = metric_producer.SupervisionMetricProducer()
         self.identifier = identifier.SupervisionIdentifier()
         self.pipeline_config = pipeline.SupervisionPipeline().pipeline_config
+        self.supervision_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.supervision.metric_producer.get_state_specific_supervision_delegate"
+        )
+        self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
+        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
+
+    def tearDown(self) -> None:
+        self._stop_state_specific_delegate_patchers()
+
+    def _stop_state_specific_delegate_patchers(self) -> None:
+        self.supervision_delegate_patcher.stop()
 
     def test_produce_supervision_metrics(self) -> None:
         """Tests the produce_supervision_metrics function."""
@@ -1495,6 +1509,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_is_out_of_state(
         self,
     ) -> None:
+        self._stop_state_specific_delegate_patchers()
         person = StatePerson.new_with_defaults(
             state_code="US_ID",
             person_id=12345,
@@ -1558,6 +1573,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_is_out_of_state_by_authority(
         self,
     ) -> None:
+        self._stop_state_specific_delegate_patchers()
         person = StatePerson.new_with_defaults(
             state_code="US_ID",
             person_id=12345,
@@ -1621,6 +1637,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_not_out_of_state(
         self,
     ) -> None:
+        self._stop_state_specific_delegate_patchers()
         person = StatePerson.new_with_defaults(
             state_code="US_ID",
             person_id=12345,
@@ -1675,6 +1692,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_not_out_of_state_by_authority(
         self,
     ) -> None:
+        self._stop_state_specific_delegate_patchers()
         person = StatePerson.new_with_defaults(
             state_code="US_ID",
             person_id=12345,
@@ -1793,7 +1811,18 @@ class TestIncludeEventInMetric(unittest.TestCase):
     """Tests the include_event_in_metric function."""
 
     def setUp(self) -> None:
+        self.supervision_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.supervision.metric_producer.get_state_specific_supervision_delegate"
+        )
+        self.mock_supervision_delegate = self.supervision_delegate_patcher.start()
+        self.mock_supervision_delegate.return_value = UsXxSupervisionDelegate()
         self.metric_producer = metric_producer.SupervisionMetricProducer()
+
+    def tearDown(self) -> None:
+        self._stop_state_specific_delegate_patchers()
+
+    def _stop_state_specific_delegate_patchers(self) -> None:
+        self.supervision_delegate_patcher.stop()
 
     def test_include_event_in_metric_compliance_no_compliance(self) -> None:
         event = SupervisionPopulationEvent(
@@ -1878,13 +1907,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
             )
         )
 
-    @mock.patch(
-        "recidiviz.calculator.pipeline.supervision.metric_producer.supervision_period_is_out_of_state"
-    )
-    def test_include_event_in_metric_not_out_of_state(
-        self, mock_is_out_of_state: mock.Mock
-    ) -> None:
-        mock_is_out_of_state.return_value = False
+    def test_include_event_in_metric_not_out_of_state(self) -> None:
 
         event = SupervisionPopulationEvent(
             state_code="US_XX",
@@ -1904,13 +1927,16 @@ class TestIncludeEventInMetric(unittest.TestCase):
             )
         )
 
-    @mock.patch(
-        "recidiviz.calculator.pipeline.supervision.metric_producer.supervision_period_is_out_of_state"
-    )
-    def test_include_event_in_metric_out_of_state(
-        self, mock_is_out_of_state: mock.Mock
-    ) -> None:
-        mock_is_out_of_state.return_value = True
+    class OutOfStateDelegate(UsXxSupervisionDelegate):
+        def is_supervision_location_out_of_state(
+            self, _: SupervisionPopulationEvent
+        ) -> bool:
+            return True
+
+    def test_include_event_in_metric_out_of_state(self) -> None:
+        self._stop_state_specific_delegate_patchers()
+        mock_supervision_delegate = self.supervision_delegate_patcher.start()
+        mock_supervision_delegate.return_value = self.OutOfStateDelegate()
 
         event = SupervisionPopulationEvent(
             state_code="US_XX",
@@ -1931,13 +1957,10 @@ class TestIncludeEventInMetric(unittest.TestCase):
             )
         )
 
-    @mock.patch(
-        "recidiviz.calculator.pipeline.supervision.metric_producer.supervision_period_is_out_of_state"
-    )
-    def test_include_event_in_metric_not_in_state(
-        self, mock_is_out_of_state: mock.Mock
-    ) -> None:
-        mock_is_out_of_state.return_value = True
+    def test_include_event_in_metric_not_in_state(self) -> None:
+        self._stop_state_specific_delegate_patchers()
+        mock_supervision_delegate = self.supervision_delegate_patcher.start()
+        mock_supervision_delegate.return_value = self.OutOfStateDelegate()
 
         event = SupervisionPopulationEvent(
             state_code="US_XX",
@@ -1957,14 +1980,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
             )
         )
 
-    @mock.patch(
-        "recidiviz.calculator.pipeline.supervision.metric_producer.supervision_period_is_out_of_state"
-    )
-    def test_include_event_in_metric_in_state(
-        self, mock_is_out_of_state: mock.Mock
-    ) -> None:
-        mock_is_out_of_state.return_value = False
-
+    def test_include_event_in_metric_in_state(self) -> None:
         event = SupervisionPopulationEvent(
             state_code="US_XX",
             year=2018,
