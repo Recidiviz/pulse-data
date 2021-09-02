@@ -295,7 +295,7 @@ class IngestViewFileParser:
                         literal_value=match.group(1)
                     )
                 else:
-                    if field_name.endswith(EnumFieldManifest.RAW_TEXT_FIELD_SUFFIX):
+                    if field_name.endswith(EnumEntity.RAW_TEXT_FIELD_SUFFIX):
                         raise ValueError(
                             f"Enum raw text fields should not be mapped independently "
                             f"of their corresponding enum fields. Found direct mapping "
