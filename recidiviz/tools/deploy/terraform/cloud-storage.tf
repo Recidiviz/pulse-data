@@ -58,3 +58,11 @@ module "state-aggregate-reports" {
   project_id  = var.project_id
   name_suffix = "state-aggregate-reports"
 }
+
+module "case-triage-data" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id                  = var.project_id
+  name_suffix                 = "case-triage-data"
+  uniform_bucket_level_access = false
+}
