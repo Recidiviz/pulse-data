@@ -1,0 +1,26 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONID
+  - FIRSTNAME
+  - MIDDLE1
+  - MIDDLE2
+  - LASTNAME
+unused_columns: []
+output:
+  FakePerson:
+    external_ids:
+      - FakePersonExternalId:
+          external_id: PERSONID
+          id_type: $literal("ID_TYPE")
+    aliases:
+      - FakePersonAlias:
+          full_name:
+            $json_dict:
+              GIVEN_NAMES: FIRSTNAME
+              MIDDLE_NAMES:
+                $concat:
+                  $values:
+                    - MIDDLE1
+                    - MIDDLE2
+              SURNAME: LASTNAME
+              SUFFIX: $literal("SR")
