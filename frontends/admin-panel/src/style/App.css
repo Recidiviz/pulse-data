@@ -57,14 +57,28 @@ tr.metadata-table-row > td.ant-table-cell > div {
   background-color: #389e0d;
 }
 
-.failed {
+.failed-soft {
   color: #ffffff;
   background-color: #faad14;
 }
 
-.broken {
+.failed-hard {
   color: #ffffff;
   background-color: #f5222d;
+}
+
+.broken {
+  color: #ffffff;
+  animation: broken-animation 1s infinite alternate;
+}
+
+@keyframes broken-animation {
+  from {
+    background-color: #f5222d;
+  }
+  to {
+    background-color: black;
+  }
 }
 
 .ant-anchor-ink::before {
