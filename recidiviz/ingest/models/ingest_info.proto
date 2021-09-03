@@ -476,7 +476,6 @@ message StateSupervisionViolation {
     optional string state_code = 4;
     optional string is_violent = 5;
     optional string is_sex_offense = 6;
-    optional string violated_conditions = 7;
 
     repeated string state_supervision_violation_response_ids = 8;
     repeated string state_supervision_violated_condition_entry_ids = 9;

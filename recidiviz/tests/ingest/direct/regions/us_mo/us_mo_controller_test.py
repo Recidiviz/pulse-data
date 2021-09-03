@@ -3867,7 +3867,6 @@ class TestUsMoController(BaseDirectIngestControllerTests):
         ssv_910324_19890825_c1_1 = entities.StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="910324-19890825-C1",
-            violated_conditions=None,
             supervision_periods=[sp_910324_19890825_2_0],
             person=person_910324,
         )

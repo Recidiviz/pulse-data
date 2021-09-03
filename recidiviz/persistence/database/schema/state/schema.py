@@ -3575,7 +3575,6 @@ class _StateSupervisionViolationSharedColumns(_ReferencesStatePersonSharedColumn
     is_sex_offense = Column(
         Boolean, comment="Whether or not the violation involved a sex offense."
     )
-    violated_conditions = Column(String(255), comment="DEPRECATED. See #2668.")
 
     # TODO(#2668): Deprecated - remove this column from our schema.
     @declared_attr

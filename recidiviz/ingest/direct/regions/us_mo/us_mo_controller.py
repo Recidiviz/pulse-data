@@ -775,7 +775,11 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionViolation):
                 for condition in conditions:
-                    obj.violated_conditions = None
+                    # We assign the violated conditions to the is_violent field as a
+                    # hack in the ingest mappings to make sure that the
+                    # StateSupervisionViolation entity is processed by this post-hook,
+                    # but the is_violent field should always be unset
+                    obj.is_violent = None
                     vc = StateSupervisionViolatedConditionEntry(condition=condition)
                     create_if_not_exists(
                         vc, obj, "state_supervision_violated_conditions"
