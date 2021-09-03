@@ -69,6 +69,7 @@ class FakeBuildableAttrDeluxe(BuildableAttr):
     enum_nonnull_field: FakeEnum = attr.ib()
     enum_field: Optional[FakeEnum] = attr.ib(default=None)
     date_field: Optional[date] = attr.ib(default=None)
+    boolean_field: Optional[bool] = attr.ib(default=None)
     field_list: List[str] = attr.ib(factory=list)
     field_forward_ref: Optional["FakeBuildableAttr"] = attr.ib(default=None)
 
@@ -410,10 +411,28 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
                     BuildableAttrFieldType.DATE,
                     None,
                 )
+            elif "bool" in attribute.name:
+                expected_attr_field_type_ref[name] = CachedAttributeInfo(
+                    attribute,
+                    BuildableAttrFieldType.BOOLEAN,
+                    None,
+                )
             elif "forward_ref" in attribute.name:
                 expected_attr_field_type_ref[name] = CachedAttributeInfo(
                     attribute,
                     BuildableAttrFieldType.FORWARD_REF,
+                    None,
+                )
+            elif "list" in attribute.name:
+                expected_attr_field_type_ref[name] = CachedAttributeInfo(
+                    attribute,
+                    BuildableAttrFieldType.LIST,
+                    None,
+                )
+            elif "required" in attribute.name:
+                expected_attr_field_type_ref[name] = CachedAttributeInfo(
+                    attribute,
+                    BuildableAttrFieldType.STRING,
                     None,
                 )
             else:
@@ -452,8 +471,12 @@ class TestAttrFieldTypeForFieldName(unittest.TestCase):
         )
 
         self.assertEqual(
-            BuildableAttrFieldType.OTHER,
+            BuildableAttrFieldType.LIST,
             attr_field_type_for_field_name(FakeBuildableAttrDeluxe, "field_list"),
+        )
+        self.assertEqual(
+            BuildableAttrFieldType.BOOLEAN,
+            attr_field_type_for_field_name(FakeBuildableAttrDeluxe, "boolean_field"),
         )
 
 

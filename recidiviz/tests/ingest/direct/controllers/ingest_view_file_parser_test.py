@@ -795,6 +795,64 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
+    def test_serialize_json(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX",
+                        external_id="1",
+                        id_type="ID_TYPE",
+                    )
+                ],
+                aliases=[
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name='{"GIVEN_NAMES": "JERRY", "SURNAME": "SEINFELD"}',
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="2", id_type="ID_TYPE"
+                    )
+                ],
+                aliases=[
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name='{"GIVEN_NAMES": "ELAINE", "SURNAME": "BENES"}',
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="3", id_type="ID_TYPE"
+                    )
+                ],
+                aliases=[
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name='{"GIVEN_NAMES": "", "SURNAME": "KRAMER"}',
+                    )
+                ],
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("serialize_json")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    # TODO(#8979): Write a test for serializing complex JSON with a literal and
+    #  concatenated field.
+
     def test_nested_foreach(self) -> None:
         # TODO(#8958): Fill this out - should fail
         pass
