@@ -260,7 +260,11 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
         raise ValueError("Must be implemented for use in tests.")
 
     def create_table_with_schema(
-        self, dataset_id: str, table_id: str, schema_fields: List[bigquery.SchemaField]
+        self,
+        dataset_id: str,
+        table_id: str,
+        schema_fields: List[bigquery.SchemaField],
+        clustering_fields: List[bigquery.SchemaField] = None,
     ) -> bigquery.Table:
         raise ValueError("Must be implemented for use in tests.")
 
