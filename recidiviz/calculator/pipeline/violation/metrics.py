@@ -72,7 +72,23 @@ class ViolationWithResponseMetric(ViolationMetric, ViolationResponseMixin):
 
     @classmethod
     def get_description(cls) -> str:
-        return "TODO(#7563): Add ViolationWithResponseMetric description"
+        return """
+The `ViolationWithResponseMetric` stores information about when a report has been submitted about a person on supervision violating one or more conditions of their supervision. This metric tracks the date of the earliest response to a violation incident for each type of violation associated with the incident.
+
+With this metric, we can answer questions like:
+
+- Has Person X ever been written up for a substance use violation?
+- How has the number of reported technical violations changed over time?
+- Does the frequency of reported municipal violations vary by the age of the person on supervision?
+
+This metric is derived from the `StateSupervisionViolation` and `StateSupervisionViolationResponse` entities. The `StateSupervisionViolation` entities store information about the violation incident that occurred, and the `StateSupervisionViolationResponse` entities store information about how agents within the corrections system responded to the violation. There is one `ViolationWithResponseMetric` created for each of the violation types present on each `StateSupervisionViolation`, through the `supervision_violation_types` relationship to the `StateSupervisionViolationTypeEntry` entities. The date associated with each `ViolationWithResponseMetric` is the `response_date` of the earliest `StateSupervisionViolationResponse` associated with the violation. This is generally the date that the first violation report or citation was submitted describing the violating behavior. We track violations by the date of the first report since the date a report was submitted is required in most state databases, whereas the date of the violating behavior is not consistently reported. A violation must have a report with a set `response_date` to be included in the calculations.
+
+Some states have defined state-specific violation type subtypes. For example, in Pennsylvania the `TECHNICAL` violations are broken down into categories of `HIGH_TECH`, `MED_TECH` and `LOW_TECH`. In these states, one `ViolationWithResponseMetric` is produced for each violation type subtype present on the `StateSupervisionViolation`.
+
+If a parole officer submitted a violation report on 2018-09-07 describing violating behavior that occurred on 2018-09-01, where the behavior included both `TECHNICAL` and `MUNICIPAL` violations, then there will be two `ViolationWithResponseMetrics` produced for the date `2018-09-07`, one with `violation_type=TECHNICAL` and the other with `violation_type=MUNICIPAL`. Both metrics will also record the date of the violation, with `violation_date=2018-09-01`. 
+
+If a probation officer in US_PA submitted a violation report on 2019-11-19 describing violating behavior that fell into both the `LOW_TECH` and `MED_TECH` categories of violation subtypes for the state, then there will be two `ViolationWithResponseMetrics` produced for the date `2019-11-19` with `violation_type=TECHNICAL`. One will have `violation_type_subtype=LOW_TECH` and the other will have `violation_type_subtype=MED_TECH`. Neither metrics will have a set `violation_date` field, since the date of the violating behavior was not recorded on the violation report.
+"""
 
     metric_type: ViolationMetricType = attr.ib(
         init=False, default=ViolationMetricType.VIOLATION
