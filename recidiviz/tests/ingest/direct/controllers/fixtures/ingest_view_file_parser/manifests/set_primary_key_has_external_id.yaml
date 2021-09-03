@@ -1,0 +1,11 @@
+manifest_language: 1.0.0
+input_columns:
+  - AGENTID
+  - AGENTNAME
+unused_columns: []
+output:
+  FakePerson:
+    current_officer:
+      FakeAgent:
+        fake_agent_id: AGENTID
+        name: AGENTNAME
