@@ -642,8 +642,6 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt_int
     )
 
-    # TODO(#2668): Remove this column - can be derived from incarceration
-    #  sentences.
     is_life: Optional[bool] = attr.ib(
         default=None, validator=attr_validators.is_opt_bool
     )

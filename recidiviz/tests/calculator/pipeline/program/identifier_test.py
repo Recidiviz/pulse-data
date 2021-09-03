@@ -69,7 +69,9 @@ class TestFindProgramEvents(unittest.TestCase):
             "_assessment_types_of_class_for_state"
         )
         self.mock_assessment_types = self.assessment_types_patcher.start()
-        self.mock_assessment_types.return_value = [StateAssessmentType.ORAS]
+        self.mock_assessment_types.return_value = [
+            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION
+        ]
 
         self.pre_processing_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_incarceration_period_pre_processing_delegate"
@@ -103,7 +105,7 @@ class TestFindProgramEvents(unittest.TestCase):
 
         assessment = StateAssessment.new_with_defaults(
             state_code="US_XX",
-            assessment_type=StateAssessmentType.ORAS,
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2019, 7, 10),
         )
@@ -183,7 +185,9 @@ class TestFindProgramReferrals(unittest.TestCase):
             "_assessment_types_of_class_for_state"
         )
         self.mock_assessment_types = self.assessment_types_patcher.start()
-        self.mock_assessment_types.return_value = [StateAssessmentType.ORAS]
+        self.mock_assessment_types.return_value = [
+            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION
+        ]
         self.supervision_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.program.identifier.get_state_specific_supervision_delegate"
         )
@@ -205,7 +209,7 @@ class TestFindProgramReferrals(unittest.TestCase):
 
         assessment = StateAssessment.new_with_defaults(
             state_code="US_XX",
-            assessment_type=StateAssessmentType.ORAS,
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 7, 10),
         )
@@ -241,7 +245,7 @@ class TestFindProgramReferrals(unittest.TestCase):
                     event_date=program_assignment.referral_date,
                     participation_status=program_assignment.participation_status,
                     assessment_score=33,
-                    assessment_type=StateAssessmentType.ORAS,
+                    assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
                     supervision_type=supervision_period.supervision_type,
                     supervising_officer_external_id="XXX",
                     supervising_district_external_id="OFFICE_1",
@@ -280,14 +284,14 @@ class TestFindProgramReferrals(unittest.TestCase):
 
         assessment_1 = StateAssessment.new_with_defaults(
             state_code="US_XX",
-            assessment_type=StateAssessmentType.ORAS,
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 3, 10),
         )
 
         assessment_2 = StateAssessment.new_with_defaults(
             state_code="US_XX",
-            assessment_type=StateAssessmentType.ORAS,
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=29,
             assessment_date=date(2009, 9, 14),
         )
@@ -322,7 +326,7 @@ class TestFindProgramReferrals(unittest.TestCase):
                     event_date=program_assignment.referral_date,
                     participation_status=program_assignment.participation_status,
                     assessment_score=29,
-                    assessment_type=StateAssessmentType.ORAS,
+                    assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
                     supervision_type=supervision_period.supervision_type,
                 )
             ],
@@ -339,14 +343,14 @@ class TestFindProgramReferrals(unittest.TestCase):
 
         assessment_1 = StateAssessment.new_with_defaults(
             state_code="US_XX",
-            assessment_type=StateAssessmentType.ORAS,
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 3, 10),
         )
 
         assessment_2 = StateAssessment.new_with_defaults(
             state_code="US_XX",
-            assessment_type=StateAssessmentType.ORAS,
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=29,
             assessment_date=date(2009, 10, 4),
         )
@@ -371,7 +375,7 @@ class TestFindProgramReferrals(unittest.TestCase):
                     event_date=program_assignment.referral_date,
                     participation_status=program_assignment.participation_status,
                     assessment_score=33,
-                    assessment_type=StateAssessmentType.ORAS,
+                    assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
                 )
             ],
             program_referrals,
@@ -387,7 +391,7 @@ class TestFindProgramReferrals(unittest.TestCase):
 
         assessment = StateAssessment.new_with_defaults(
             state_code="US_XX",
-            assessment_type=StateAssessmentType.ORAS,
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 7, 10),
         )
@@ -432,7 +436,7 @@ class TestFindProgramReferrals(unittest.TestCase):
                     event_date=program_assignment.referral_date,
                     participation_status=program_assignment.participation_status,
                     assessment_score=33,
-                    assessment_type=StateAssessmentType.ORAS,
+                    assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
                     supervision_type=supervision_period_1.supervision_type,
                 ),
                 ProgramReferralEvent(
@@ -441,7 +445,7 @@ class TestFindProgramReferrals(unittest.TestCase):
                     event_date=program_assignment.referral_date,
                     participation_status=program_assignment.participation_status,
                     assessment_score=33,
-                    assessment_type=StateAssessmentType.ORAS,
+                    assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
                     supervision_type=supervision_period_2.supervision_type,
                 ),
             ],
@@ -458,7 +462,7 @@ class TestFindProgramReferrals(unittest.TestCase):
 
         assessment = StateAssessment.new_with_defaults(
             state_code="US_ND",
-            assessment_type=StateAssessmentType.ORAS,
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2009, 7, 10),
         )
@@ -503,7 +507,7 @@ class TestFindProgramReferrals(unittest.TestCase):
                     event_date=program_assignment.referral_date,
                     participation_status=program_assignment.participation_status,
                     assessment_score=33,
-                    assessment_type=StateAssessmentType.ORAS,
+                    assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
                     supervision_type=supervision_period.supervision_type,
                     supervising_officer_external_id="OFFICER10",
                     supervising_district_external_id="DISTRICT8",

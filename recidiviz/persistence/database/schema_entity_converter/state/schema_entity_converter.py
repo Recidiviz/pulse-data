@@ -25,17 +25,16 @@ from typing import Type, TypeVar
 import attr
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
+from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_entity_converter.base_schema_entity_converter import (
     BaseSchemaEntityConverter,
+    DstBaseType,
     FieldNameType,
     SrcBaseType,
-    DstBaseType,
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
-
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 StatePersonType = TypeVar("StatePersonType", entities.StatePerson, schema.StatePerson)
@@ -54,9 +53,7 @@ class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType, DstBase
         return entities
 
     # TODO(#2697): Remove these checks once these columns are removed from
-    # our schema.
-    # TODO(#2668): Remove these checks once these columns are removed from
-    # our schema.
+    #  our schema.
     def _should_skip_field(self, entity_cls: Type, field: FieldNameType) -> bool:
         if (
             entity_cls == entities.StateSupervisionPeriod

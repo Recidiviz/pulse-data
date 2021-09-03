@@ -876,7 +876,6 @@ class StateSentenceGroup(IngestObject):
         self.county_code: Optional[str] = county_code
         self.min_length: Optional[str] = min_length
         self.max_length: Optional[str] = max_length
-        # TODO(#2668): Delete this from SentenceGroup
         self.is_life: Optional[str] = is_life
 
         self.state_supervision_sentences: List[StateSupervisionSentence] = (

@@ -49,7 +49,7 @@ class TestProgramEvent(unittest.TestCase):
         event_date = date(2000, 11, 10)
         supervision_type = StateSupervisionType.PROBATION
         assessment_score = 5
-        assessment_type = StateAssessmentType.ORAS
+        assessment_type = StateAssessmentType.ORAS_COMMUNITY_SUPERVISION
         assessment_level = None
         participation_status = StateProgramAssignmentParticipationStatus.IN_PROGRESS
         supervising_officer_external_id = "OFFICER211"
