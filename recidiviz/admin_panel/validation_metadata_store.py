@@ -116,7 +116,7 @@ def _format_error_amount(
 ) -> Optional[str]:
     if error_amount is None:
         return None
-    if result_details_type == "SamenessStringsValidationResultDetails":
+    if result_details_type == "SamenessPerViewValidationResultDetails":
         return f"{(error_amount * 100):.1f}%"
     return f"{int(error_amount)}"
 
@@ -147,7 +147,11 @@ class ValidationStatusStore(AdminPanelStore):
             run_id = _set_if_new(run_id, row.get("run_id"))
             run_datetime = _set_if_new(run_datetime, row.get("run_datetime"))
             system_version = _set_if_new(system_version, row.get("system_version"))
-            validation_result_status = row.get("validation_result_status")
+            validation_result_status = (
+                ValidationResultStatus(row.get("validation_result_status"))
+                if row.get("validation_result_status")
+                else None
+            )
             was_successful = row.get("was_successful")
 
             if row.get("validation_name") not in results:
