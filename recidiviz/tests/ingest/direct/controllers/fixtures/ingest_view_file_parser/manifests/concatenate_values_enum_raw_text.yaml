@@ -1,0 +1,27 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONID
+  - GENDER
+  - GENDER_PT2
+unused_columns: []
+output:
+  FakePerson:
+    external_ids:
+      - FakePersonExternalId:
+          external_id: PERSONID
+          id_type: $literal("ID_TYPE")
+    gender:
+      $raw_text:
+        $concat:
+          $values:
+            - GENDER
+            - GENDER_PT2
+      $mappings:
+        FakeGender.MALE:
+          - M-0
+          - MA-0
+        FakeGender.FEMALE: F-1
+      $ignore:
+        - NONE-NONE
+        - U-NONE
+        - U-2
