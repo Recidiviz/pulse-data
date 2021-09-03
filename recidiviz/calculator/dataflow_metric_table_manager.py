@@ -21,14 +21,17 @@ See recidiviz.tools.create_or_update_dataflow_metrics_sandbox.py for running thi
 import argparse
 import logging
 import sys
-from typing import Tuple, List
+from typing import List, Tuple
+
+import attr
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
+    METRIC_CLUSTERING_FIELDS,
 )
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
-from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 
@@ -47,16 +50,36 @@ def update_dataflow_metric_tables_schemas(
 
     for metric_class, table_id in DATAFLOW_METRICS_TO_TABLES.items():
         schema_for_metric_class = metric_class.bq_schema_for_metric_table()
+        clustering_fields = None
+        if all(
+            cluster_field in attr.fields_dict(metric_class).keys()
+            for cluster_field in METRIC_CLUSTERING_FIELDS
+        ):
+            # Only apply clustering if the table has all of the metric clustering
+            # fields
+            clustering_fields = METRIC_CLUSTERING_FIELDS
 
         if bq_client.table_exists(dataflow_metrics_dataset_ref, table_id):
             # Compare schema derived from metric class to existing dataflow views and update if necessary.
+            current_table = bq_client.get_table(dataflow_metrics_dataset_ref, table_id)
+            if current_table.clustering_fields != clustering_fields:
+                raise ValueError(
+                    f"Existing table: {dataflow_metrics_dataset_id}.{table_id} "
+                    f"has clustering fields {current_table.clustering_fields} that do "
+                    f"not match {clustering_fields}"
+                )
+
             bq_client.update_schema(
-                dataflow_metrics_dataset_id, table_id, schema_for_metric_class
+                dataflow_metrics_dataset_id,
+                table_id,
+                schema_for_metric_class,
             )
         else:
-            # Create a table with this schema
             bq_client.create_table_with_schema(
-                dataflow_metrics_dataset_id, table_id, schema_for_metric_class
+                dataflow_metrics_dataset_id,
+                table_id,
+                schema_for_metric_class,
+                clustering_fields,
             )
 
 

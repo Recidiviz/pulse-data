@@ -126,3 +126,6 @@ DATAFLOW_TABLES_TO_METRIC_TYPES: Dict[str, RecidivizMetricType] = {
     # ViolationMetrics
     "violation_with_response_metrics": ViolationMetricType.VIOLATION,
 }
+
+# A list of fields on which to cluster the Dataflow metrics tables
+METRIC_CLUSTERING_FIELDS = ["state_code", "year"]

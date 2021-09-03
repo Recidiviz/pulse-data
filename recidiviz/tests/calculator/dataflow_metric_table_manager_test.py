@@ -18,14 +18,19 @@
 import unittest
 from typing import cast
 from unittest import mock
-from mock import patch
 
 from google.cloud import bigquery
+from mock import patch
+from mock.mock import Mock
 
 from recidiviz.calculator import dataflow_metric_table_manager
 from recidiviz.calculator.dataflow_config import (
-    DATAFLOW_TABLES_TO_METRIC_TYPES,
     DATAFLOW_METRICS_TO_TABLES,
+    DATAFLOW_TABLES_TO_METRIC_TYPES,
+    METRIC_CLUSTERING_FIELDS,
+)
+from recidiviz.calculator.pipeline.recidivism.metrics import (
+    ReincarcerationRecidivismRateMetric,
 )
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 
@@ -68,12 +73,32 @@ class DataflowMetricTableManagerTest(unittest.TestCase):
         self.project_id_patcher.stop()
         self.project_number_patcher.stop()
 
-    def test_update_dataflow_metric_tables_schemas(self) -> None:
+    def test_update_dataflow_metric_tables_schemas_with_clustering_set(self) -> None:
         """Test that update_dataflow_metric_tables_schemas calls the client to update the schemas of the metric
-        tables."""
-        dataflow_metric_table_manager.update_dataflow_metric_tables_schemas()
+        tables when the clustering fields are correct."""
 
+        def get_table(_dataset_id: str, table_id: str) -> Mock:
+            table = Mock()
+            # This table is special, it does not have year and month
+            if (
+                table_id
+                == DATAFLOW_METRICS_TO_TABLES[ReincarcerationRecidivismRateMetric]
+            ):
+                table.clustering_fields = None
+            else:
+                table.clustering_fields = METRIC_CLUSTERING_FIELDS
+            return table
+
+        self.mock_client.get_table.side_effect = get_table
+        dataflow_metric_table_manager.update_dataflow_metric_tables_schemas()
         self.mock_client.update_schema.assert_called()
+
+    def test_update_dataflow_metric_tables_schemas_without_clustering_set(self) -> None:
+        """Test that update_dataflow_metric_tables_schemas fails when the clustering fields are incorrect."""
+
+        self.mock_client.get_table.return_value.clustering_fields = None
+        with self.assertRaises(ValueError):
+            dataflow_metric_table_manager.update_dataflow_metric_tables_schemas()
 
     def test_update_dataflow_metric_tables_schemas_create_table(self) -> None:
         """Test that update_dataflow_metric_tables_schemas calls the client to create a new table when the table
