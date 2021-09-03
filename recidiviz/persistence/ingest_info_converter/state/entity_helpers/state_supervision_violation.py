@@ -17,9 +17,6 @@
 
 """Converts an ingest_info proto StateSupervisionViolation to a
 persistence entity."""
-from recidiviz.common.constants.state.state_supervision_violation import (
-    StateSupervisionViolationType,
-)
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.str_field_utils import normalize, parse_bool, parse_date
 from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionViolation
@@ -28,9 +25,6 @@ from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn,
     parse_external_id,
     parse_region_code_with_override,
-)
-from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
-    IngestInfoProtoEnumMapper,
 )
 
 
@@ -44,17 +38,6 @@ def copy_fields_to_builder(
     """Converts an ingest_info proto StateSupervisionViolation to a
     persistence entity."""
     new = supervision_violation_builder
-
-    enum_fields = {
-        "violation_type": StateSupervisionViolationType,
-    }
-    proto_enum_mapper = IngestInfoProtoEnumMapper(
-        proto, enum_fields, metadata.enum_overrides
-    )
-
-    # enum values
-    new.violation_type = proto_enum_mapper.get(StateSupervisionViolationType)
-    new.violation_type_raw_text = fn(normalize, "violation_type", proto)
 
     # 1-to-1 mappings
     new.external_id = fn(parse_external_id, "state_supervision_violation_id", proto)
