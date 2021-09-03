@@ -3564,13 +3564,7 @@ class _StateSupervisionViolationSharedColumns(_ReferencesStatePersonSharedColumn
             object_name="StateSupervisionViolation"
         ),
     )
-    # TODO(#2668): DEPRECATED - DO NOT ADD NEW USAGES
-    violation_type = Column(
-        state_supervision_violation_type,
-        comment="DEPRECATED. See #2668.",
-    )
-    # TODO(#2668): DEPRECATED - DO NOT ADD NEW USAGES
-    violation_type_raw_text = Column(String(255), comment="DEPRECATED. See #2668.")
+
     violation_date = Column(Date, comment="The date on which the violation took place.")
     state_code = Column(
         String(255), nullable=False, index=True, comment=STATE_CODE_COMMENT

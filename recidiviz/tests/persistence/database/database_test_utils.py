@@ -149,7 +149,6 @@ def generate_test_supervision_violation(
 
     instance = state_schema.StateSupervisionViolation(
         supervision_violation_id=321,
-        violation_type=StateSupervisionViolationType.TECHNICAL.value,
         state_code="US_XX",
         person_id=person_id,
         supervision_violated_conditions=[

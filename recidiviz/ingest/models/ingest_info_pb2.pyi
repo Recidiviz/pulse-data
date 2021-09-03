@@ -3191,7 +3191,6 @@ global___StateSupervisionViolationTypeEntry = StateSupervisionViolationTypeEntry
 class StateSupervisionViolation(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     STATE_SUPERVISION_VIOLATION_ID_FIELD_NUMBER: builtins.int
-    VIOLATION_TYPE_FIELD_NUMBER: builtins.int
     VIOLATION_DATE_FIELD_NUMBER: builtins.int
     STATE_CODE_FIELD_NUMBER: builtins.int
     IS_VIOLENT_FIELD_NUMBER: builtins.int
@@ -3201,7 +3200,6 @@ class StateSupervisionViolation(google.protobuf.message.Message):
     STATE_SUPERVISION_VIOLATED_CONDITION_ENTRY_IDS_FIELD_NUMBER: builtins.int
     STATE_SUPERVISION_VIOLATION_TYPE_ENTRY_IDS_FIELD_NUMBER: builtins.int
     state_supervision_violation_id: typing.Text = ...
-    violation_type: typing.Text = ...
     violation_date: typing.Text = ...
     state_code: typing.Text = ...
     is_violent: typing.Text = ...
@@ -3229,7 +3227,6 @@ class StateSupervisionViolation(google.protobuf.message.Message):
         self,
         *,
         state_supervision_violation_id: typing.Optional[typing.Text] = ...,
-        violation_type: typing.Optional[typing.Text] = ...,
         violation_date: typing.Optional[typing.Text] = ...,
         state_code: typing.Optional[typing.Text] = ...,
         is_violent: typing.Optional[typing.Text] = ...,
@@ -3260,8 +3257,6 @@ class StateSupervisionViolation(google.protobuf.message.Message):
             b"violated_conditions",
             "violation_date",
             b"violation_date",
-            "violation_type",
-            b"violation_type",
         ],
     ) -> builtins.bool: ...
     def ClearField(
@@ -3285,8 +3280,6 @@ class StateSupervisionViolation(google.protobuf.message.Message):
             b"violated_conditions",
             "violation_date",
             b"violation_date",
-            "violation_type",
-            b"violation_type",
         ],
     ) -> None: ...
 
