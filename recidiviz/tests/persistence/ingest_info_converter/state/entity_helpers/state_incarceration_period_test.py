@@ -30,6 +30,9 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StateIncarcerationPeriodFactory,
+)
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_incarceration_period,
 )
@@ -66,7 +69,9 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
         state_incarceration_period.copy_fields_to_builder(
             incarceration_builder, ingest_incarceration, _EMPTY_METADATA
         )
-        result = incarceration_builder.build()
+        result = incarceration_builder.build(
+            StateIncarcerationPeriodFactory.deserialize
+        )
 
         # Assert
         expected_result = entities.StateIncarcerationPeriod(
@@ -108,7 +113,9 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
         state_incarceration_period.copy_fields_to_builder(
             incarceration_builder, ingest_incarceration, _EMPTY_METADATA
         )
-        result = incarceration_builder.build()
+        result = incarceration_builder.build(
+            StateIncarcerationPeriodFactory.deserialize
+        )
 
         # Assert
         expected_result = entities.StateIncarcerationPeriod.new_with_defaults(
@@ -134,7 +141,9 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
         state_incarceration_period.copy_fields_to_builder(
             incarceration_builder, ingest_incarceration, _EMPTY_METADATA
         )
-        result = incarceration_builder.build()
+        result = incarceration_builder.build(
+            StateIncarcerationPeriodFactory.deserialize
+        )
 
         # Assert
         expected_result = entities.StateIncarcerationPeriod.new_with_defaults(
@@ -161,7 +170,9 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
         state_incarceration_period.copy_fields_to_builder(
             incarceration_builder, ingest_incarceration, _EMPTY_METADATA
         )
-        result = incarceration_builder.build()
+        result = incarceration_builder.build(
+            StateIncarcerationPeriodFactory.deserialize
+        )
 
         # Assert
         expected_result = entities.StateIncarcerationPeriod.new_with_defaults(

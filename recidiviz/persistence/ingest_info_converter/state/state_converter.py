@@ -43,6 +43,7 @@ from recidiviz.persistence.entity.state.deserialize_entity_factories import (
     StateCourtCaseFactory,
     StateEarlyDischargeFactory,
     StateIncarcerationIncidentFactory,
+    StateIncarcerationPeriodFactory,
     StateIncarcerationSentenceFactory,
     StatePersonFactory,
     StateProgramAssignmentFactory,
@@ -471,7 +472,9 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         ]
         incarceration_period_builder.program_assignments = converted_program_assignments
 
-        return incarceration_period_builder.build()
+        return incarceration_period_builder.build(
+            StateIncarcerationPeriodFactory.deserialize
+        )
 
     def _convert_supervision_period(
         self, ingest_supervision_period: StateSupervisionPeriod
