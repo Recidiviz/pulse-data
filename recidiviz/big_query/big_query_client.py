@@ -530,7 +530,11 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def create_table_with_schema(
-        self, dataset_id: str, table_id: str, schema_fields: List[bigquery.SchemaField]
+        self,
+        dataset_id: str,
+        table_id: str,
+        schema_fields: List[bigquery.SchemaField],
+        clustering_fields: List[str] = None,
     ) -> bigquery.Table:
         """Creates a table in the given dataset with the given schema fields. Raises an error if a table with the same
         table_id already exists in the dataset.
@@ -539,6 +543,9 @@ class BigQueryClient:
             dataset_id: The name of the dataset where the table should be created
             table_id: The name of the table to be created
             schema_fields: A list of fields defining the table's schema
+            clustering_fields: A list of fields to cluster the table by
+            The clustering columns that are specified are used to colocate related data
+            https://cloud.google.com/bigquery/docs/clustered-tables
 
         Returns:
             The bigquery.Table that is created.
@@ -1294,7 +1301,11 @@ class BigQueryClientImpl(BigQueryClient):
         )
 
     def create_table_with_schema(
-        self, dataset_id: str, table_id: str, schema_fields: List[bigquery.SchemaField]
+        self,
+        dataset_id: str,
+        table_id: str,
+        schema_fields: List[bigquery.SchemaField],
+        clustering_fields: List[str] = None,
     ) -> bigquery.Table:
         dataset_ref = self.dataset_ref_for_id(dataset_id)
 
@@ -1305,6 +1316,9 @@ class BigQueryClientImpl(BigQueryClient):
 
         table_ref = bigquery.TableReference(dataset_ref, table_id)
         table = bigquery.Table(table_ref, schema_fields)
+
+        if clustering_fields is not None:
+            table.clustering_fields = clustering_fields
 
         logging.info("Creating table %s.%s", dataset_id, table_id)
         return self.client.create_table(table)
@@ -1460,7 +1474,6 @@ class BigQueryClientImpl(BigQueryClient):
             )
 
         table = self.get_table(dataset_ref, table_id)
-
         existing_schema = table.schema
 
         desired_schema_map = {field.name: field for field in desired_schema_fields}
@@ -1661,7 +1674,9 @@ class BigQueryClientImpl(BigQueryClient):
             for table_id, reference_schema in reference_table_schemas.items():
                 if table_id not in stale_table_schemas:
                     self.create_table_with_schema(
-                        stale_schema_dataset_id, table_id, reference_schema
+                        stale_schema_dataset_id,
+                        table_id,
+                        reference_schema,
                     )
 
             for table_id, stale_table_schema in stale_table_schemas.items():
