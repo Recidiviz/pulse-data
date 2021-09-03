@@ -15,16 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Direct ingest controller implementation for US_TN."""
-from enum import Enum
-from typing import Dict, List, Optional, Type
+from typing import Dict, List, Optional
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
-from recidiviz.common.constants.enum_overrides import (
-    EnumIgnorePredicate,
-    EnumMapperFn,
-    EnumOverrides,
-)
-from recidiviz.common.constants.state.external_id_types import US_TN_DOC
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
@@ -40,9 +34,6 @@ from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
 from recidiviz.ingest.direct.regions.us_tn.us_tn_enum_helpers import (
     generate_enum_overrides,
 )
-from recidiviz.ingest.direct.state_shared_row_posthooks import IngestGatingContext
-from recidiviz.ingest.models.ingest_info import IngestObject, StatePersonExternalId
-from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
 # TODO(#8903): Delete LegacyIngestViewProcessorDelegate superclass when we have fully
@@ -58,11 +49,9 @@ class UsTnController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         super().__init__(ingest_bucket_path)
         self.enum_overrides = generate_enum_overrides()
 
-        self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
-            "OffenderName": [
-                self._normalize_external_id_type,
-            ],
-        }
+        self.row_post_processors_by_file: Dict[
+            str, List[IngestRowPosthookCallable]
+        ] = {}
 
         self.file_post_processors_by_file: Dict[
             str, List[IngestFilePostprocessorCallable]
@@ -75,11 +64,6 @@ class UsTnController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         self.ancestor_chain_overrides_callback_by_file: Dict[
             str, IngestAncestorChainOverridesCallable
         ] = {}
-
-    ENUM_OVERRIDES: Dict[Enum, List[str]] = {}
-    ENUM_MAPPER_FUNCTIONS: Dict[Type[Enum], EnumMapperFn] = {}
-    ENUM_IGNORES: Dict[Type[Enum], List[str]] = {}
-    ENUM_IGNORE_PREDICATES: Dict[Type[Enum], EnumIgnorePredicate] = {}
 
     def get_file_tag_rank_list(self) -> List[str]:
         return ["OffenderName"]
@@ -116,15 +100,3 @@ class UsTnController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
 
     def get_files_to_set_with_empty_values(self) -> List[str]:
         return []
-
-    @staticmethod
-    def _normalize_external_id_type(
-        _gating_context: IngestGatingContext,
-        _row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        """Set the external id type."""
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StatePersonExternalId):
-                extracted_object.__setattr__("id_type", US_TN_DOC)

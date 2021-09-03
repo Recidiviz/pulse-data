@@ -24,13 +24,6 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.regions.us_tn.us_tn_controller import UsTnController
-from recidiviz.ingest.models.ingest_info import (
-    IngestInfo,
-    StatePerson,
-    StatePersonEthnicity,
-    StatePersonExternalId,
-    StatePersonRace,
-)
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import (
@@ -55,81 +48,6 @@ class TestUsTnController(BaseDirectIngestControllerTests):
     def schema_type(cls) -> SchemaType:
         return SchemaType.STATE
 
-    def test_populate_data_OffenderName(self) -> None:
-        expected = IngestInfo(
-            state_people=[
-                StatePerson(
-                    state_person_id="00000001",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="00000001", id_type=US_TN_DOC
-                        )
-                    ],
-                    given_names="FIRST1",
-                    middle_names="MIDDLE1",
-                    surname="LAST1",
-                    state_person_races=[StatePersonRace(race="W")],
-                    state_person_ethnicities=[
-                        StatePersonEthnicity(ethnicity="NOT_HISPANIC")
-                    ],
-                    gender="F",
-                    birthdate="1985-03-07 00:00:00",
-                ),
-                StatePerson(
-                    state_person_id="00000002",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="00000002", id_type=US_TN_DOC
-                        )
-                    ],
-                    given_names="FIRST2",
-                    middle_names="MIDDLE2",
-                    surname="LAST2",
-                    state_person_races=[StatePersonRace(race="B")],
-                    state_person_ethnicities=[
-                        StatePersonEthnicity(ethnicity="NOT_HISPANIC")
-                    ],
-                    gender="M",
-                    birthdate="1969-02-01 00:00:00",
-                ),
-                StatePerson(
-                    state_person_id="00000003",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="00000003", id_type=US_TN_DOC
-                        )
-                    ],
-                    given_names="FIRST3",
-                    middle_names="MIDDLE3",
-                    surname="LAST3",
-                    state_person_races=[StatePersonRace(race="A")],
-                    state_person_ethnicities=[
-                        StatePersonEthnicity(ethnicity="NOT_HISPANIC")
-                    ],
-                    gender="F",
-                    birthdate="1947-01-11 00:00:00",
-                ),
-                StatePerson(
-                    state_person_id="00000004",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="00000004", id_type=US_TN_DOC
-                        )
-                    ],
-                    given_names="FIRST4",
-                    middle_names="MIDDLE4",
-                    surname="LAST4",
-                    state_person_ethnicities=[
-                        StatePersonEthnicity(ethnicity="HISPANIC")
-                    ],
-                    gender="M",
-                    birthdate="1994-03-12 00:00:00",
-                ),
-            ]
-        )
-
-        self.run_legacy_parse_file_test(expected, "OffenderName")
-
     def test_run_full_ingest_all_files_specific_order(self) -> None:
         self.maxDiff = None
         ######################################
@@ -142,7 +60,6 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             gender=Gender.FEMALE,
             gender_raw_text="F",
             birthdate=datetime.date(year=1985, month=3, day=7),
-            birthdate_inferred_from_age=False,
         )
         _add_external_id_to_person(person_1, "00000001")
         _add_race_to_person(person_1, race_raw_text="W", race=Race.WHITE)
@@ -158,7 +75,6 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             gender=Gender.MALE,
             gender_raw_text="M",
             birthdate=datetime.date(year=1969, month=2, day=1),
-            birthdate_inferred_from_age=False,
         )
         _add_external_id_to_person(person_2, "00000002")
         _add_race_to_person(person_2, race_raw_text="B", race=Race.BLACK)
@@ -174,7 +90,6 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             gender=Gender.FEMALE,
             gender_raw_text="F",
             birthdate=datetime.date(year=1947, month=1, day=11),
-            birthdate_inferred_from_age=False,
         )
         _add_external_id_to_person(person_3, "00000003")
         _add_race_to_person(person_3, race_raw_text="A", race=Race.ASIAN)
@@ -190,7 +105,6 @@ class TestUsTnController(BaseDirectIngestControllerTests):
             gender=Gender.MALE,
             gender_raw_text="M",
             birthdate=datetime.date(year=1994, month=3, day=12),
-            birthdate_inferred_from_age=False,
         )
         _add_external_id_to_person(person_4, "00000004")
         _add_ethnicity_to_person(

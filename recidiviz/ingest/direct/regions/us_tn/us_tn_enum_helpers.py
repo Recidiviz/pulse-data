@@ -23,7 +23,6 @@ from recidiviz.common.constants.enum_overrides import (
     EnumMapperFn,
     EnumOverrides,
 )
-from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.standard_enum_overrides import (
     get_standard_enum_overrides,
 )
@@ -40,9 +39,6 @@ def generate_enum_overrides() -> EnumOverrides:
     distinct columns in the source data.
     """
     overrides: Dict[Enum, List[str]] = {}
-    overrides.update(generate_race_enum_overrides())
-    overrides.update(generate_ethnicity_enum_overrides())
-    overrides.update(generate_gender_enum_overrides())
 
     ignores: Dict[Type[Enum], List[str]] = {}
 
@@ -55,48 +51,3 @@ def generate_enum_overrides() -> EnumOverrides:
     return update_overrides_from_maps(
         base_overrides, overrides, ignores, override_mappers, ignore_predicates
     )
-
-
-def generate_race_enum_overrides() -> Dict[Enum, List[str]]:
-    """Provides Race overrides for enum mappings."""
-    overrides: Dict[Enum, List[str]] = {
-        Race.ASIAN: [
-            "A",  # Asian or Pacific Islander
-        ],
-        Race.BLACK: [
-            "B",  # Black
-        ],
-        Race.AMERICAN_INDIAN_ALASKAN_NATIVE: [
-            "I",  # American Indian or Alaska Native
-        ],
-        Race.WHITE: [
-            "W",  # White
-        ],
-    }
-    return overrides
-
-
-def generate_ethnicity_enum_overrides() -> Dict[Enum, List[str]]:
-    """Provides Ethnicity overrides for enum mappings."""
-    overrides: Dict[Enum, List[str]] = {
-        Ethnicity.HISPANIC: [
-            "HISPANIC",  # Hispanic
-        ],
-        Ethnicity.NOT_HISPANIC: [
-            "NOT_HISPANIC",
-        ],
-    }
-    return overrides
-
-
-def generate_gender_enum_overrides() -> Dict[Enum, List[str]]:
-    """Provides Gender overrides for enum mappings."""
-    overrides: Dict[Enum, List[str]] = {
-        Gender.MALE: [
-            "M",  # Male
-        ],
-        Gender.FEMALE: [
-            "F",  # Female
-        ],
-    }
-    return overrides
