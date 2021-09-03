@@ -29,6 +29,9 @@ from recidiviz.common.constants.state.state_court_case import (
     StateCourtType,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodStatus,
+)
 from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
@@ -253,6 +256,50 @@ class StateProgramAssignmentFactory(EntityFactory):
             },
             **kwargs
         )
+
+
+class StateIncarcerationPeriodFactory(EntityFactory):
+    """Deserializing factory for StateIncarcerationPeriod."""
+
+    @staticmethod
+    def deserialize(
+        **kwargs: Union[str, EnumParser]
+    ) -> entities.StateIncarcerationPeriod:
+        ip = entity_deserialize(
+            cls=entities.StateIncarcerationPeriod,
+            converter_overrides={
+                "incarceration_type": EntityFieldConverter(
+                    EnumParser,
+                    get_parser_for_enum_with_default(
+                        StateIncarcerationType.STATE_PRISON
+                    ),
+                ),
+                # TODO(#9128): Delete this once we delete status entirely.
+                "status": EntityFieldConverter(
+                    EnumParser,
+                    get_parser_for_enum_with_default(
+                        StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
+                    ),
+                ),
+            },
+            **kwargs
+        )
+
+        # TODO(#9128): Deprecate and delete status entirely
+        # Status default based on presence of admission/release dates
+        if ip.release_date:
+            status_default = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
+        elif ip.admission_date and not ip.release_date:
+            status_default = StateIncarcerationPeriodStatus.IN_CUSTODY
+        else:
+            status_default = StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
+
+        ip.status = (
+            status_default
+            if ip.status == StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
+            else ip.status
+        )
+        return ip
 
 
 # TODO(#8909): Add factories for remainder of state schema here.
