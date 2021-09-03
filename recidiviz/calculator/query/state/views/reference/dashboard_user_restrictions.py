@@ -58,7 +58,7 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
         SELECT
             'US_ID' AS state_code,
             LOWER(IF(leadership.email_address IS NULL,
-                    case_triage.email_address,
+                    id_roster.email_address,
                     leadership.email_address)) AS restricted_user_email,
             '' AS allowed_supervision_location_ids,
             CAST(NULL AS STRING) as allowed_supervision_location_level,
@@ -69,9 +69,7 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
                 WHEN internal_role LIKE '%leadership_role%' THEN TRUE
                 ELSE FALSE
             END AS can_access_leadership_dashboard,
-            IF(received_access IS NULL,
-                FALSE,
-                received_access <= CURRENT_DATE) AS can_access_case_triage,
+            (id_roster.email_address IS NOT NULL) AS can_access_case_triage,
             CASE
                 WHEN internal_role LIKE '%leadership_role%'
                     THEN TO_JSON_STRING(STRUCT(
@@ -84,8 +82,8 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
         FROM
             `{project_id}.{static_reference_dataset_id}.us_id_leadership_users` leadership
         FULL OUTER JOIN
-            `{project_id}.{static_reference_dataset_id}.case_triage_users` case_triage
-        USING (state_code, email_address)
+            `{project_id}.{static_reference_dataset_id}.us_id_roster` id_roster
+        USING (email_address)
     ),
     nd_restricted_access AS (
         SELECT
