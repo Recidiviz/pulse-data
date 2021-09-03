@@ -1,0 +1,16 @@
+manifest_language: 1.0.0
+input_columns:
+  - PERSONID
+  - PERSONID_PT2
+unused_columns: []
+output:
+  FakePerson:
+    external_ids:
+      - FakePersonExternalId:
+          external_id:
+            $concat:
+              $separator: "@@"
+              $values:
+                - PERSONID
+                - PERSONID_PT2
+          id_type: $literal("ID_TYPE")

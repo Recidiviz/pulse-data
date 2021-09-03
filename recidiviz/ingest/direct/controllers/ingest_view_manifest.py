@@ -217,14 +217,12 @@ class EnumFieldManifest(ManifestNode[StrictEnumParser]):
     IGNORES_KEY = "$ignore"
 
     enum_cls: Type[Enum] = attr.ib()
-    mapped_raw_text_col: str = attr.ib()
     enum_overrides: EnumOverrides = attr.ib()
-    raw_text_field_manifest: ManifestNode = attr.ib()
+    raw_text_field_manifest: ManifestNode[str] = attr.ib()
 
     def build_from_row(self, row: Dict[str, str]) -> StrictEnumParser:
-        raw_text = row[self.mapped_raw_text_col]
         return StrictEnumParser(
-            raw_text=raw_text,
+            raw_text=self.raw_text_field_manifest.build_from_row(row),
             enum_cls=self.enum_cls,
             enum_overrides=self.enum_overrides,
         )
@@ -238,8 +236,11 @@ class EnumFieldManifest(ManifestNode[StrictEnumParser]):
         cls, *, enum_cls: Type[Enum], field_enum_mappings_manifest: YAMLDict
     ) -> "EnumFieldManifest":
         """Factory method for building an enum field manifest."""
-        mapped_raw_text_col = field_enum_mappings_manifest.pop(
-            EnumFieldManifest.RAW_TEXT_KEY, str
+
+        raw_text_field_manifest = build_manifest_from_raw(
+            pop_raw_flat_field_manifest(
+                EnumFieldManifest.RAW_TEXT_KEY, field_enum_mappings_manifest
+            )
         )
 
         enum_overrides = cls._build_field_enum_overrides(
@@ -259,11 +260,8 @@ class EnumFieldManifest(ManifestNode[StrictEnumParser]):
             )
         return EnumFieldManifest(
             enum_cls=enum_cls,
-            mapped_raw_text_col=mapped_raw_text_col,
             enum_overrides=enum_overrides,
-            raw_text_field_manifest=DirectMappingFieldManifest(
-                mapped_column=mapped_raw_text_col,
-            ),
+            raw_text_field_manifest=raw_text_field_manifest,
         )
 
     @staticmethod
@@ -315,6 +313,7 @@ class SerializedJSONDictFieldManifest(ManifestNode[str]):
     serialized JSON, derived from the values in 1 or more columns.
     """
 
+    # Function name used to identify raw manifests of this type.
     JSON_DICT_KEY = "$json_dict"
 
     # Maps JSON dict keys to values they should be hydrated wtih
@@ -328,6 +327,63 @@ class SerializedJSONDictFieldManifest(ManifestNode[str]):
         return json.dumps(result_dict, sort_keys=True)
 
 
+@attr.s(kw_only=True)
+class ConcatenatedStringsManifest(ManifestNode[str]):
+    """Manifest describing a value that is hydrated by concatenating 0-N values, with
+    a separator.
+    """
+
+    # Function name used to identify raw manifests of this type.
+    CONCATENATE_KEY = "$concat"
+
+    # Optional function argument key for string separator.
+    SEPARATOR_ARG_KEY = "$separator"
+
+    # Function argument key for the list of raw manifests for values to concatenate.
+    VALUES_ARG_KEY = "$values"
+
+    # Separator that will be used by default when concatenating values, if one is not
+    # specified.
+    DEFAULT_SEPARATOR = "-"
+
+    # List of manifest nodes that can be evaluated to get the list of values to
+    # concatenate.
+    value_manifests: List[ManifestNode[str]] = attr.ib()
+
+    # The string separator that will be inserted between concatenated values.
+    separator: str = attr.ib()
+
+    def build_from_row(self, row: Dict[str, str]) -> Optional[str]:
+        return self.separator.join(
+            value_manifest.build_from_row(row) or str(None).upper()
+            for value_manifest in self.value_manifests
+        )
+
+    @classmethod
+    def from_raw_manifest(
+        cls, *, raw_function_manifest: YAMLDict
+    ) -> "ConcatenatedStringsManifest":
+        concat_manifests: List[Union[str, YAMLDict]] = []
+        for raw_manifest in raw_function_manifest.pop(cls.VALUES_ARG_KEY, list):
+            if isinstance(raw_manifest, str):
+                concat_manifests.append(raw_manifest)
+            elif isinstance(raw_manifest, dict):
+                concat_manifests.append(YAMLDict(raw_manifest))
+            else:
+                raise ValueError(
+                    f"Unexpected raw manifest type in $concat list: [{type(raw_manifest)}]"
+                )
+
+        separator = raw_function_manifest.pop_optional(cls.SEPARATOR_ARG_KEY, str)
+        return ConcatenatedStringsManifest(
+            separator=(separator if separator is not None else cls.DEFAULT_SEPARATOR),
+            value_manifests=[
+                build_manifest_from_raw(raw_manifest)
+                for raw_manifest in concat_manifests
+            ],
+        )
+
+
 def _get_complex_flat_field_manifest(
     raw_field_manifest: YAMLDict,
 ) -> ManifestNode[str]:
@@ -339,16 +395,22 @@ def _get_complex_flat_field_manifest(
         <dict with function args>
     """
     function_name = one(raw_field_manifest.keys())
+    function_arguments = raw_field_manifest.pop_dict(function_name)
+    manifest: ManifestNode[str]
     if function_name == SerializedJSONDictFieldManifest.JSON_DICT_KEY:
-        json_key_to_manifest = raw_field_manifest.pop_dict(function_name)
         manifest = SerializedJSONDictFieldManifest(
             key_to_manifest_map={
-                key: get_flat_field_manifest(key, json_key_to_manifest)
-                for key in json_key_to_manifest.keys()
+                key: build_manifest_from_raw(
+                    pop_raw_flat_field_manifest(key, function_arguments)
+                )
+                for key in function_arguments.keys()
             }
         )
+    elif function_name == ConcatenatedStringsManifest.CONCATENATE_KEY:
+        manifest = ConcatenatedStringsManifest.from_raw_manifest(
+            raw_function_manifest=function_arguments,
+        )
     else:
-        # TODO(#8979): Add support for concatenating multiple column values / literals
         # TODO(#9086): Add support for building a string physical address from parts
         raise ValueError(
             f"Unexpected format for function field manifest: [{raw_field_manifest}]"
@@ -374,23 +436,23 @@ def _get_simple_flat_field_manifest(raw_field_manifest: str) -> ManifestNode[str
     return DirectMappingFieldManifest(mapped_column=raw_field_manifest)
 
 
-def get_flat_field_manifest(
+def pop_raw_flat_field_manifest(
     field_name: str, raw_parent_manifest: YAMLDict
-) -> ManifestNode[str]:
-    """Returns the ManifestNode for field in the parent manifest."""
-
+) -> Union[str, YAMLDict]:
     raw_field_manifest_type = raw_parent_manifest.peek_type(field_name)
-    raw_field_manifest: Union[str, YAMLDict]
     if raw_field_manifest_type is dict:
-        raw_field_manifest = raw_parent_manifest.pop_dict(field_name)
-    elif raw_field_manifest_type is str:
-        raw_field_manifest = raw_parent_manifest.pop(field_name, str)
-    else:
-        raise ValueError(
-            f"Unexpected field manifest type [{raw_field_manifest_type}] for "
-            f"field [{field_name}]."
-        )
+        return raw_parent_manifest.pop_dict(field_name)
+    if raw_field_manifest_type is str:
+        return raw_parent_manifest.pop(field_name, str)
+    raise ValueError(
+        f"Unexpected field manifest type [{raw_field_manifest_type}] for "
+        f"field [{field_name}]."
+    )
 
+
+def build_manifest_from_raw(
+    raw_field_manifest: Union[str, YAMLDict]
+) -> ManifestNode[str]:
     if isinstance(raw_field_manifest, str):
         return _get_simple_flat_field_manifest(raw_field_manifest)
     if isinstance(raw_field_manifest, YAMLDict):

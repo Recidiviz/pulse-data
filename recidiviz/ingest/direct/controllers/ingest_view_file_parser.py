@@ -40,7 +40,8 @@ from recidiviz.ingest.direct.controllers.ingest_view_manifest import (
     ExpandableListItemManifest,
     ListRelationshipFieldManifest,
     ManifestNode,
-    get_flat_field_manifest,
+    build_manifest_from_raw,
+    pop_raw_flat_field_manifest,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.base_entity import Entity, EnumEntity
@@ -159,7 +160,6 @@ class IngestViewFileParserDelegateImpl(IngestViewFileParserDelegate):
         return entity_cls
 
 
-# TODO(#8979): Add support for building fields from concatenated columns.
 # TODO(#8980): Add support for (limited) custom python.
 class IngestViewFileParser:
     """Class that parses ingest view file contents into entities based on the manifest
@@ -293,8 +293,8 @@ class IngestViewFileParser:
                         f"of their corresponding enum fields. Found direct mapping "
                         f"for field [{field_name}]."
                     )
-                field_manifests[field_name] = get_flat_field_manifest(
-                    field_name, raw_fields_manifest
+                field_manifests[field_name] = build_manifest_from_raw(
+                    pop_raw_flat_field_manifest(field_name, raw_fields_manifest)
                 )
             else:
                 raise ValueError(

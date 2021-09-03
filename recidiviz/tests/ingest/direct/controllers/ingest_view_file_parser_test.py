@@ -859,8 +859,243 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
-    # TODO(#8979): Write a test for serializing complex JSON with a literal and
-    #  concatenated field.
+    def test_serialize_json_complex(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX",
+                        external_id="1",
+                        id_type="ID_TYPE",
+                    )
+                ],
+                aliases=[
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name=(
+                            '{"GIVEN_NAMES": "JERRY", "MIDDLE_NAMES": "JIMMY-JOHN", '
+                            '"SUFFIX": "SR", "SURNAME": "SEINFELD"}'
+                        ),
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="2", id_type="ID_TYPE"
+                    )
+                ],
+                aliases=[
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name=(
+                            '{"GIVEN_NAMES": "ELAINE", "MIDDLE_NAMES": "SALLY-SUE", '
+                            '"SUFFIX": "SR", "SURNAME": "BENES"}'
+                        ),
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="3", id_type="ID_TYPE"
+                    )
+                ],
+                aliases=[
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name=(
+                            '{"GIVEN_NAMES": "", "MIDDLE_NAMES": "NONE-NONE", '
+                            '"SUFFIX": "SR", "SURNAME": "KRAMER"}'
+                        ),
+                    )
+                ],
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("serialize_json_complex")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_concatenate_values(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="1-A", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="2-B", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="3-C", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="4-NONE", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="NONE-E", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("concatenate_values")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_concatenate_values_custom_separator(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="1@@A", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="2@@B", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="3@@C", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX",
+                        external_id="4@@NONE",
+                        id_type="ID_TYPE",
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX",
+                        external_id="NONE@@E",
+                        id_type="ID_TYPE",
+                    )
+                ],
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("concatenate_values_custom_separator")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
+    def test_concatenate_values_enum_raw_text(self) -> None:
+        # Arrange
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.FEMALE,
+                gender_raw_text="F-1",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="1", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.MALE,
+                gender_raw_text="M-0",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="2", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.MALE,
+                gender_raw_text="MA-0",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="2", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                gender_raw_text="U-2",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="3", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                gender_raw_text="U-NONE",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="3", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                gender_raw_text="NONE-NONE",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="4", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("concatenate_values_enum_raw_text")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
 
     def test_nested_foreach(self) -> None:
         # TODO(#8958): Fill this out - should fail
