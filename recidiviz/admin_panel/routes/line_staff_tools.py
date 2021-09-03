@@ -18,6 +18,7 @@
 import csv
 import logging
 import os
+from datetime import date
 from http import HTTPStatus
 from json import JSONDecodeError
 from typing import Optional, Tuple
@@ -31,6 +32,7 @@ from recidiviz.admin_panel.case_triage_helpers import (
     get_importable_csvs,
 )
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.case_triage.user_context import UserContext
 from recidiviz.case_triage.views.view_config import (
     CASE_TRIAGE_EXPORTED_VIEW_BUILDERS,
     ETL_TABLES,
@@ -456,7 +458,38 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
 
         bq = BigQueryClientImpl()
 
+        # Because all POs in Idaho should have Case Triage access, this additional step
+        # adds anyone missing from the roster to case triage users with the date of roster
+        # access for analytics purposes.
         dataset_ref = bq.dataset_ref_for_id("static_reference_tables")
+        query_job = bq.run_query_async(
+            f"""
+            SELECT email_address FROM `{metadata.project_id()}.{dataset_ref.dataset_id}.case_triage_users`
+            WHERE state_code = 'US_ID'
+            """
+        )
+        res = query_job.result()
+        email_addresses = [row[0] for row in res]
+
+        rows_to_insert = [
+            {
+                "state_code": "US_ID",
+                "officer_external_id": row["external_id"],
+                "email_address": row["email_address"],
+                "segment_id": UserContext.segment_user_id_for_email(
+                    row["email_address"]
+                ),
+                "received_access": date.today().strftime("%Y-%m-%d"),
+            }
+            for row in rows
+            if row["email_address"] not in email_addresses
+        ]
+        insert_job = bq.load_into_table_async(
+            dataset_ref, "case_triage_users", rows_to_insert
+        )
+        insert_job.result()
+
+        # Update Idaho roster when access is fully granted.
         load_job = bq.load_into_table_async(
             dataset_ref,
             "us_id_roster",
