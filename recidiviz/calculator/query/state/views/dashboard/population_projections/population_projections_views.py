@@ -14,14 +14,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Dashboard views related to admissions."""
+"""Dashboard views related to population projections."""
 from typing import List
 
 from recidiviz.calculator.query.state.views.dashboard.population_projections.population_projection_timeseries import (
-    POPULATION_PROJECTION_TIMESERIES_VIEW_BUILDER,
+    POPULATION_PROJECTION_TIME_SERIES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.dashboard.population_projections.prison_population_projection_time_series import (
+    PRISON_POPULATION_PROJECTION_TIME_SERIES_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.dashboard.population_projections.supervision_population_projection_time_series import (
+    SUPERVISION_POPULATION_PROJECTION_TIME_SERIES_VIEW_BUILDER,
 )
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 
 POPULATION_PROJECTION_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = [
-    POPULATION_PROJECTION_TIMESERIES_VIEW_BUILDER,
+    # TODO(#9103): Delete population_projection_time_series view when FE is no longer using it.
+    POPULATION_PROJECTION_TIME_SERIES_VIEW_BUILDER,
+    PRISON_POPULATION_PROJECTION_TIME_SERIES_VIEW_BUILDER,
+    SUPERVISION_POPULATION_PROJECTION_TIME_SERIES_VIEW_BUILDER,
 ]

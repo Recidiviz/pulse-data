@@ -18,53 +18,31 @@
 from datetime import date
 
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.views.dashboard.population_projections.population_projection_time_series_query_template import (
+    population_projection_query,
+)
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#9103): Delete population_projection_time_series view when FE is no longer using it.
+SUPERVISION_POPULATION_PROJECTION_TIME_SERIES_VIEW_NAME = (
+    "supervision_population_projection_time_series"
+)
 
-POPULATION_PROJECTION_TIME_SERIES_VIEW_NAME = "population_projection_timeseries"
-
-POPULATION_PROJECTION_TIME_SERIES_DESCRIPTION = (
+SUPERVISION_POPULATION_PROJECTION_TIME_SERIES_DESCRIPTION = (
     "Projected incarcerated and supervised populations"
 )
 
-POPULATION_PROJECTION_TIME_SERIES_QUERY_TEMPLATE = """
-    /*{description}*/
-    WITH prepared_data AS (
-      SELECT
-        * EXCEPT (simulation_group),
-        simulation_group as gender,
-        ABS((year - {cur_year}) * 12 + (month - {cur_month})) as offset,
-      FROM `{project_id}.{population_projection_dataset}.microsim_projection`
-    )
-    
-    SELECT
-      year,
-      month,
-      compartment,
-      legal_status,
-      gender,
-      state_code,
-      simulation_tag,
-      total_population,
-      total_population_min,
-      total_population_max,
-    FROM prepared_data
-    WHERE offset <= 6
-      OR (MOD(offset, 2) = 0 and offset <= 12)
-      OR (MOD(offset, 4) = 0 and offset <= 24)
-      OR (MOD(offset, 10) = 0 and offset <= 60)
-    ORDER BY year, month
+SUPERVISION_POPULATION_PROJECTION_TIME_SERIES_QUERY_TEMPLATE = f"""
+    {population_projection_query(compartment='SUPERVISION')}
 """
 
-POPULATION_PROJECTION_TIME_SERIES_VIEW_BUILDER = MetricBigQueryViewBuilder(
+SUPERVISION_POPULATION_PROJECTION_TIME_SERIES_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
-    view_id=POPULATION_PROJECTION_TIME_SERIES_VIEW_NAME,
-    view_query_template=POPULATION_PROJECTION_TIME_SERIES_QUERY_TEMPLATE,
-    description=POPULATION_PROJECTION_TIME_SERIES_DESCRIPTION,
-    dimensions=("state_code", "gender", "legal_status", "compartment"),
+    view_id=SUPERVISION_POPULATION_PROJECTION_TIME_SERIES_VIEW_NAME,
+    view_query_template=SUPERVISION_POPULATION_PROJECTION_TIME_SERIES_QUERY_TEMPLATE,
+    description=SUPERVISION_POPULATION_PROJECTION_TIME_SERIES_DESCRIPTION,
+    dimensions=("state_code", "gender", "legal_status"),
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
     cur_year=str(date.today().year),
     cur_month=str(date.today().month),
@@ -72,4 +50,4 @@ POPULATION_PROJECTION_TIME_SERIES_VIEW_BUILDER = MetricBigQueryViewBuilder(
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        POPULATION_PROJECTION_TIME_SERIES_VIEW_BUILDER.build_and_print()
+        SUPERVISION_POPULATION_PROJECTION_TIME_SERIES_VIEW_BUILDER.build_and_print()
