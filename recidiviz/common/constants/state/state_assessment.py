@@ -55,7 +55,6 @@ class StateAssessmentType(EntityEnum, metaclass=EntityEnumMeta):
     CSSM = state_enum_strings.state_assessment_type_cssm
     HIQ = state_enum_strings.state_assessment_type_hiq
     LSIR = state_enum_strings.state_assessment_type_lsir
-    ORAS = state_enum_strings.state_assessment_type_oras
     ORAS_COMMUNITY_SUPERVISION = (
         state_enum_strings.state_assessment_type_oras_community_supervision
     )
@@ -124,7 +123,6 @@ _STATE_ASSESSMENT_TYPE_MAP = {
     "CSSM": StateAssessmentType.CSSM,
     "HIQ": StateAssessmentType.HIQ,
     "LSIR": StateAssessmentType.LSIR,
-    "ORAS": StateAssessmentType.ORAS,
     "ORAS COMMUNITY SUPERVISION": StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
     "ORAS COMMUNITY SUPERVISION SCREENING": StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
     "ORAS MISDEMEANOR ASSESSMENT": StateAssessmentType.ORAS_MISDEMEANOR_ASSESSMENT,

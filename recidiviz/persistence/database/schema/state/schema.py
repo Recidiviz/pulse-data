@@ -128,7 +128,6 @@ state_assessment_type = Enum(
     state_enum_strings.state_assessment_type_cssm,
     state_enum_strings.state_assessment_type_hiq,
     state_enum_strings.state_assessment_type_lsir,
-    state_enum_strings.state_assessment_type_oras,
     state_enum_strings.state_assessment_type_pa_rst,
     state_enum_strings.state_assessment_type_psa,
     state_enum_strings.state_assessment_type_sorac,

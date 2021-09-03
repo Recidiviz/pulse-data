@@ -47,8 +47,6 @@ state_assessment_type_asi = "ASI"
 state_assessment_type_cssm = "CSSM"
 state_assessment_type_hiq = "HIQ"
 state_assessment_type_lsir = "LSIR"
-# TODO(#2668): Deprecated - Delete this enum value from our schema.
-state_assessment_type_oras = "ORAS"
 state_assessment_type_oras_community_supervision = "ORAS_COMMUNITY_SUPERVISION"
 state_assessment_type_oras_community_supervision_screening = (
     "ORAS_COMMUNITY_SUPERVISION_SCREENING"

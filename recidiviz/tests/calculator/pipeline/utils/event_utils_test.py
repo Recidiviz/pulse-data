@@ -105,7 +105,7 @@ class TestAssessmentEventMixin(unittest.TestCase):
             program_id="xxx",
             assessment_score=10,
             assessment_level=StateAssessmentLevel.MEDIUM,
-            assessment_type=StateAssessmentType.ORAS,
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
         )
 
         self.assertEqual(
@@ -119,7 +119,7 @@ class TestAssessmentEventMixin(unittest.TestCase):
             program_id="xxx",
             assessment_score=10,
             assessment_level=None,
-            assessment_type=StateAssessmentType.ORAS,
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
         )
 
         self.assertEqual(
