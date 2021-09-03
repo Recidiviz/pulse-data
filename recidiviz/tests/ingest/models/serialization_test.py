@@ -302,7 +302,6 @@ class TestSerialization(unittest.TestCase):
 
         violation = supervision_period.create_state_supervision_violation()
         violation.state_supervision_violation_id = "violation1"
-        violation.violated_conditions = "cond"
         violation.is_violent = "false"
 
         violation_type = violation.create_state_supervision_violation_type_entry()
@@ -445,7 +444,6 @@ class TestSerialization(unittest.TestCase):
         violation_pb = expected_proto.state_supervision_violations.add()
         violation_pb.state_supervision_violation_id = "violation1"
         violation_pb.is_violent = "false"
-        violation_pb.violated_conditions = "cond"
         violation_pb.state_supervision_violation_type_entry_ids.append(
             "violation_type_id"
         )

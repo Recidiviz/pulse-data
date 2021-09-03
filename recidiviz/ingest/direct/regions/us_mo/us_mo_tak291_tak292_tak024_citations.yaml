@@ -1,8 +1,8 @@
 key_mappings:
-  # Violated conditions field is handled manually, only present to ensure we
-  # update the entity to make sure it gets processed by the manual post-hook
-  # for this file
-  VIOLATED_CONDITIONS: state_supervision_violation.violated_conditions
+  # Violated conditions field is handled manually, and is_violent is always set to
+  # None, this is a hack to ensure we update the entity to make sure it gets
+  # processed by the manual post-hook for this file
+  VIOLATED_CONDITIONS: state_supervision_violation.is_violent
 
 child_key_mappings:
   MAX_DATE: state_supervision_violation_response.response_date
