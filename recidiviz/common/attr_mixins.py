@@ -21,7 +21,15 @@ from typing import Any, Callable, Dict, Optional, Set, Type, TypeVar
 
 import attr
 
-from recidiviz.common.attr_utils import get_enum_cls, is_date, is_enum, is_forward_ref
+from recidiviz.common.attr_utils import (
+    get_enum_cls,
+    is_bool,
+    is_date,
+    is_enum,
+    is_forward_ref,
+    is_list,
+    is_str,
+)
 from recidiviz.common.str_field_utils import is_yyyymmdd_date, parse_yyyymmdd_date
 from recidiviz.utils import environment
 from recidiviz.utils.types import ClsT
@@ -34,8 +42,11 @@ class BuildableAttrFieldType(Enum):
     fields when building a BuildableAttr."""
 
     FORWARD_REF = "FORWARD_REF"
+    LIST = "LIST"
+    BOOLEAN = "BOOLEAN"
     ENUM = "ENUM"
     DATE = "DATE"
+    STRING = "STRING"
     OTHER = "OTHER"
 
 
@@ -134,6 +145,18 @@ def _map_attr_to_type_for_class(
         elif is_date(attribute):
             attr_field_types[field_name] = CachedAttributeInfo(
                 attribute, BuildableAttrFieldType.DATE, None
+            )
+        elif is_str(attribute):
+            attr_field_types[field_name] = CachedAttributeInfo(
+                attribute, BuildableAttrFieldType.STRING, None
+            )
+        elif is_bool(attribute):
+            attr_field_types[field_name] = CachedAttributeInfo(
+                attribute, BuildableAttrFieldType.BOOLEAN, None
+            )
+        elif is_list(attribute):
+            attr_field_types[field_name] = CachedAttributeInfo(
+                attribute, BuildableAttrFieldType.LIST, None
             )
         else:
             attr_field_types[field_name] = CachedAttributeInfo(

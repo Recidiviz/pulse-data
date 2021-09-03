@@ -20,7 +20,6 @@
 import abc
 import csv
 import os
-import re
 from enum import Enum, auto
 from types import ModuleType
 from typing import Callable, Dict, Iterator, List, Optional, Type, Union
@@ -35,13 +34,12 @@ from recidiviz.common.attr_mixins import (
 )
 from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.ingest.direct.controllers.ingest_view_manifest import (
-    DirectMappingFieldManifest,
     EntityTreeManifest,
     EnumFieldManifest,
     ExpandableListItemManifest,
     ListRelationshipFieldManifest,
     ManifestNode,
-    StringLiteralFieldManifest,
+    get_flat_field_manifest,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.base_entity import Entity, EnumEntity
@@ -243,8 +241,9 @@ class IngestViewFileParser:
 
         field_manifests: Dict[str, ManifestNode] = {}
         for field_name in raw_fields_manifest.keys():
-            field_type = raw_fields_manifest.peek_type(field_name)
-            if field_type is list:
+            field_type = attr_field_type_for_field_name(entity_cls, field_name)
+
+            if field_type is BuildableAttrFieldType.LIST:
                 child_manifests: List[
                     Union[ExpandableListItemManifest, EntityTreeManifest]
                 ] = []
@@ -257,57 +256,40 @@ class IngestViewFileParser:
                 field_manifests[field_name] = ListRelationshipFieldManifest(
                     child_manifests=child_manifests
                 )
-            elif field_type is dict:
-                dict_field_manifest = raw_fields_manifest.pop_dict(field_name)
-
-                dict_field_type = attr_field_type_for_field_name(entity_cls, field_name)
-                if dict_field_type == BuildableAttrFieldType.ENUM:
-                    field_manifests.update(
-                        self._build_enum_field_manifests_dict(
-                            entity_cls=entity_cls,
-                            field_name=field_name,
-                            field_enum_mappings_manifest=dict_field_manifest,
-                        )
-                    )
-                elif dict_field_type == BuildableAttrFieldType.FORWARD_REF:
-                    field_manifests[field_name] = self._build_entity_tree_manifest(
-                        raw_entity_manifest=dict_field_manifest
-                    )
-                else:
-                    raise ValueError(f"Unexpected field type [{dict_field_type}]")
-                if len(dict_field_manifest):
-                    raise ValueError(
-                        f"Found unused keys in field manifest: "
-                        f"{dict_field_manifest.keys()}"
-                    )
-
-            elif field_type is str:
-                str_field_manifest = raw_fields_manifest.pop(field_name, str)
-                # If the value in the manifest for this field is a string, it is either
-                #  a) A literal string value to hydrate the field with, or
-                #  b) The name of a column whose value we should hydrate the field with
-                match = re.match(
-                    StringLiteralFieldManifest.STRING_LITERAL_VALUE_REGEX,
-                    str_field_manifest,
+            elif field_type is BuildableAttrFieldType.FORWARD_REF:
+                field_manifests[field_name] = self._build_entity_tree_manifest(
+                    raw_entity_manifest=raw_fields_manifest.pop_dict(field_name)
                 )
-                if match:
-                    field_manifests[field_name] = StringLiteralFieldManifest(
-                        literal_value=match.group(1)
+            elif field_type is BuildableAttrFieldType.ENUM:
+                field_manifests.update(
+                    self._build_enum_field_manifests_dict(
+                        entity_cls=entity_cls,
+                        field_name=field_name,
+                        field_enum_mappings_manifest=raw_fields_manifest.pop_dict(
+                            field_name
+                        ),
                     )
-                else:
-                    if field_name.endswith(EnumEntity.RAW_TEXT_FIELD_SUFFIX):
-                        raise ValueError(
-                            f"Enum raw text fields should not be mapped independently "
-                            f"of their corresponding enum fields. Found direct mapping "
-                            f"for field [{field_name}]."
-                        )
-                    field_manifests[field_name] = DirectMappingFieldManifest(
-                        mapped_column=str_field_manifest
+                )
+            elif field_type in (
+                # These are flat fields and should be parsed into a ManifestNode[str],
+                # since all values will be converted from string -> real value in the
+                # deserializing entity factory.
+                BuildableAttrFieldType.BOOLEAN,
+                BuildableAttrFieldType.DATE,
+                BuildableAttrFieldType.STRING,
+            ):
+                if field_name.endswith(EnumEntity.RAW_TEXT_FIELD_SUFFIX):
+                    raise ValueError(
+                        f"Enum raw text fields should not be mapped independently "
+                        f"of their corresponding enum fields. Found direct mapping "
+                        f"for field [{field_name}]."
                     )
+                field_manifests[field_name] = get_flat_field_manifest(
+                    field_name, raw_fields_manifest
+                )
             else:
                 raise ValueError(
-                    f"Unexpected field manifest type [{field_type}] for "
-                    f"field [{field_name}]."
+                    f"Unexpected field type [{field_type}] for field [{field_name}]"
                 )
 
         if len(raw_fields_manifest):
