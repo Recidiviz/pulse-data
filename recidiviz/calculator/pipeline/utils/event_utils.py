@@ -189,7 +189,6 @@ class AssessmentEventMixin:
                         return "39+"
 
             elif self.assessment_type in [
-                StateAssessmentType.ORAS,
                 StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
                 StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
                 StateAssessmentType.ORAS_MISDEMEANOR_ASSESSMENT,

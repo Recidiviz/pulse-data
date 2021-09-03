@@ -140,7 +140,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         )
         self.mock_assessment_types = self.assessment_types_patcher.start()
         self.mock_assessment_types.return_value = [
-            StateAssessmentType.ORAS,
+            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             StateAssessmentType.LSIR,
         ]
 
@@ -1098,7 +1098,7 @@ class TestClassifyEvents(unittest.TestCase):
         )
         self.mock_assessment_types = self.assessment_types_patcher.start()
         self.mock_assessment_types.return_value = [
-            StateAssessmentType.ORAS,
+            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             StateAssessmentType.LSIR,
         ]
 
@@ -1245,7 +1245,7 @@ class TestClassifyEvents(unittest.TestCase):
 
         assessment = StateAssessment.new_with_defaults(
             state_code="US_XX",
-            assessment_type=StateAssessmentType.ORAS,
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2015, 3, 10),
         )
@@ -1812,7 +1812,7 @@ class TestClassifyEvents(unittest.TestCase):
 
         assessment = StateAssessment.new_with_defaults(
             state_code="US_XX",
-            assessment_type=StateAssessmentType.ORAS,
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2015, 3, 13),
         )
@@ -2021,7 +2021,7 @@ class TestClassifyEvents(unittest.TestCase):
 
         assessment = StateAssessment.new_with_defaults(
             state_code="US_XX",
-            assessment_type=StateAssessmentType.ORAS,
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2015, 3, 10),
         )
