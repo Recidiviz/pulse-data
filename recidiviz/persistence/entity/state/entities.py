@@ -1509,11 +1509,6 @@ class StateSupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr
         default=None, validator=attr_validators.is_opt_bool
     )
 
-    # TODO(#2668): DEPRECATED - DO NOT ADD NEW USAGES
-    violated_conditions: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
     #   - Who
     # See |person| in entity relationships below.
 

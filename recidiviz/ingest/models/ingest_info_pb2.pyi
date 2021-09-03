@@ -3195,7 +3195,6 @@ class StateSupervisionViolation(google.protobuf.message.Message):
     STATE_CODE_FIELD_NUMBER: builtins.int
     IS_VIOLENT_FIELD_NUMBER: builtins.int
     IS_SEX_OFFENSE_FIELD_NUMBER: builtins.int
-    VIOLATED_CONDITIONS_FIELD_NUMBER: builtins.int
     STATE_SUPERVISION_VIOLATION_RESPONSE_IDS_FIELD_NUMBER: builtins.int
     STATE_SUPERVISION_VIOLATED_CONDITION_ENTRY_IDS_FIELD_NUMBER: builtins.int
     STATE_SUPERVISION_VIOLATION_TYPE_ENTRY_IDS_FIELD_NUMBER: builtins.int
@@ -3204,7 +3203,6 @@ class StateSupervisionViolation(google.protobuf.message.Message):
     state_code: typing.Text = ...
     is_violent: typing.Text = ...
     is_sex_offense: typing.Text = ...
-    violated_conditions: typing.Text = ...
     @property
     def state_supervision_violation_response_ids(
         self,
@@ -3231,7 +3229,6 @@ class StateSupervisionViolation(google.protobuf.message.Message):
         state_code: typing.Optional[typing.Text] = ...,
         is_violent: typing.Optional[typing.Text] = ...,
         is_sex_offense: typing.Optional[typing.Text] = ...,
-        violated_conditions: typing.Optional[typing.Text] = ...,
         state_supervision_violation_response_ids: typing.Optional[
             typing.Iterable[typing.Text]
         ] = ...,
@@ -3253,8 +3250,6 @@ class StateSupervisionViolation(google.protobuf.message.Message):
             b"state_code",
             "state_supervision_violation_id",
             b"state_supervision_violation_id",
-            "violated_conditions",
-            b"violated_conditions",
             "violation_date",
             b"violation_date",
         ],
@@ -3276,8 +3271,6 @@ class StateSupervisionViolation(google.protobuf.message.Message):
             b"state_supervision_violation_response_ids",
             "state_supervision_violation_type_entry_ids",
             b"state_supervision_violation_type_entry_ids",
-            "violated_conditions",
-            b"violated_conditions",
             "violation_date",
             b"violation_date",
         ],

@@ -1953,7 +1953,6 @@ class StateSupervisionViolation(IngestObject):
         state_code=None,
         is_violent=None,
         is_sex_offense=None,
-        violated_conditions=None,
         state_supervision_violation_types=None,
         state_supervision_violated_conditions=None,
         state_supervision_violation_responses=None,
@@ -1967,8 +1966,6 @@ class StateSupervisionViolation(IngestObject):
         self.is_violent: Optional[str] = is_violent
         self.is_sex_offense: Optional[str] = is_sex_offense
 
-        # TODO(#2668): DEPRECATED - Delete this when we delete the column
-        self.violated_conditions: Optional[str] = violated_conditions
         self.state_supervision_violation_types: List[
             StateSupervisionViolationTypeEntry
         ] = (state_supervision_violation_types or [])

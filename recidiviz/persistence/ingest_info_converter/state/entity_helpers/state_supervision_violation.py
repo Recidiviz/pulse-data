@@ -18,7 +18,7 @@
 """Converts an ingest_info proto StateSupervisionViolation to a
 persistence entity."""
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import normalize, parse_bool, parse_date
+from recidiviz.common.str_field_utils import parse_bool, parse_date
 from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionViolation
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
@@ -45,4 +45,3 @@ def copy_fields_to_builder(
     new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
     new.is_violent = fn(parse_bool, "is_violent", proto)
     new.is_sex_offense = fn(parse_bool, "is_sex_offense", proto)
-    new.violated_conditions = fn(normalize, "violated_conditions", proto)
