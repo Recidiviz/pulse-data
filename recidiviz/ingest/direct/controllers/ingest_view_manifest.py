@@ -20,11 +20,13 @@ tree.
 """
 
 import abc
+import json
 import re
 from enum import Enum
 from typing import Callable, Dict, Generic, List, Optional, Type, TypeVar, Union
 
 import attr
+from more_itertools import one
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.enum_parser import EnumParser
@@ -305,3 +307,94 @@ class EnumFieldManifest(ManifestNode[StrictEnumParser]):
             )
 
         return enum_overrides_builder.build()
+
+
+@attr.s(kw_only=True)
+class SerializedJSONDictFieldManifest(ManifestNode[str]):
+    """Manifest describing the value for a flat field that will be hydrated with
+    serialized JSON, derived from the values in 1 or more columns.
+    """
+
+    JSON_DICT_KEY = "$json_dict"
+
+    # Maps JSON dict keys to values they should be hydrated wtih
+    key_to_manifest_map: Dict[str, ManifestNode[str]] = attr.ib()
+
+    def build_from_row(self, row: Dict[str, str]) -> str:
+        result_dict = {
+            key: manifest.build_from_row(row)
+            for key, manifest in self.key_to_manifest_map.items()
+        }
+        return json.dumps(result_dict, sort_keys=True)
+
+
+def _get_complex_flat_field_manifest(
+    raw_field_manifest: YAMLDict,
+) -> ManifestNode[str]:
+    """Returns the manifest node for a flat field that should be hydrated with
+    the result of some function.
+
+    The input raw manifest must follow this structure:
+    $<function_name>:
+        <dict with function args>
+    """
+    function_name = one(raw_field_manifest.keys())
+    if function_name == SerializedJSONDictFieldManifest.JSON_DICT_KEY:
+        json_key_to_manifest = raw_field_manifest.pop_dict(function_name)
+        manifest = SerializedJSONDictFieldManifest(
+            key_to_manifest_map={
+                key: get_flat_field_manifest(key, json_key_to_manifest)
+                for key in json_key_to_manifest.keys()
+            }
+        )
+    else:
+        # TODO(#8979): Add support for concatenating multiple column values / literals
+        # TODO(#9086): Add support for building a string physical address from parts
+        raise ValueError(
+            f"Unexpected format for function field manifest: [{raw_field_manifest}]"
+        )
+
+    if len(raw_field_manifest):
+        raise ValueError(
+            f"Found unused keys in field manifest: {raw_field_manifest.keys()}"
+        )
+    return manifest
+
+
+def _get_simple_flat_field_manifest(raw_field_manifest: str) -> ManifestNode[str]:
+    # If the value in the manifest for this field is a string, it is either
+    #  a) A literal string value to hydrate the field with, or
+    #  b) The name of a column whose value we should hydrate the field with
+    match = re.match(
+        StringLiteralFieldManifest.STRING_LITERAL_VALUE_REGEX,
+        raw_field_manifest,
+    )
+    if match:
+        return StringLiteralFieldManifest(literal_value=match.group(1))
+    return DirectMappingFieldManifest(mapped_column=raw_field_manifest)
+
+
+def get_flat_field_manifest(
+    field_name: str, raw_parent_manifest: YAMLDict
+) -> ManifestNode[str]:
+    """Returns the ManifestNode for field in the parent manifest."""
+
+    raw_field_manifest_type = raw_parent_manifest.peek_type(field_name)
+    raw_field_manifest: Union[str, YAMLDict]
+    if raw_field_manifest_type is dict:
+        raw_field_manifest = raw_parent_manifest.pop_dict(field_name)
+    elif raw_field_manifest_type is str:
+        raw_field_manifest = raw_parent_manifest.pop(field_name, str)
+    else:
+        raise ValueError(
+            f"Unexpected field manifest type [{raw_field_manifest_type}] for "
+            f"field [{field_name}]."
+        )
+
+    if isinstance(raw_field_manifest, str):
+        return _get_simple_flat_field_manifest(raw_field_manifest)
+    if isinstance(raw_field_manifest, YAMLDict):
+        return _get_complex_flat_field_manifest(raw_field_manifest)
+    raise ValueError(
+        f"Unexpected flat field manifest type: [{type(raw_field_manifest)}]"
+    )
