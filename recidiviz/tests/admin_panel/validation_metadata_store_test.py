@@ -108,13 +108,13 @@ class ValidationStatusStoreTest(unittest.TestCase):
                         resultsByState={
                             "US_XX": ValidationStatusRecord(
                                 didRun=True,
-                                wasSuccessful=True,
+                                validationResultStatus=ValidationResultStatus.SUCCESS,
                                 hasData=True,
                                 errorAmount="12.3%",
                             ),
                             "US_YY": ValidationStatusRecord(
                                 didRun=True,
-                                wasSuccessful=False,
+                                validationResultStatus=ValidationResultStatus.FAIL_HARD,
                                 hasData=True,
                                 errorAmount="99.9%",
                             ),
@@ -125,7 +125,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
                         resultsByState={
                             "US_XX": ValidationStatusRecord(
                                 didRun=False,
-                                wasSuccessful=None,
+                                validationResultStatus=None,
                                 hasData=None,
                                 errorAmount=None,
                             )

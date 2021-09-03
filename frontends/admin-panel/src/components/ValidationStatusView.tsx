@@ -20,6 +20,7 @@ import { ColumnsType, ColumnType } from "antd/es/table";
 import * as React from "react";
 import { fetchValidationStatus } from "../AdminPanelAPI";
 import useFetchedData from "../hooks";
+import { ValidationResultStatus } from "../models/ValidationModels";
 import uniqueStates from "./Utilities/UniqueStates";
 
 const { Title } = Typography;
@@ -158,10 +159,26 @@ const columnTypeForState = (
       if (status.hasData === false) {
         return <div>Need Data</div>;
       }
-      if (!status.wasSuccessful) {
-        return <div className="failed">Failed ({status.errorAmount})</div>;
+
+      switch (status.validationResultStatus) {
+        case ValidationResultStatus.FAIL_HARD:
+          return (
+            <div className="failed-hard">Hard Fail ({status.errorAmount})</div>
+          );
+        case ValidationResultStatus.FAIL_SOFT:
+          return (
+            <div className="failed-soft">Soft Fail ({status.errorAmount})</div>
+          );
+        case ValidationResultStatus.SUCCESS:
+          return <div className="success">Passed ({status.errorAmount})</div>;
+        default:
+          return (
+            <div className="broken">
+              Unkown Status Result &quot;{status.validationResultStatus}&quot; (
+              {status.errorAmount})
+            </div>
+          );
       }
-      return <div className="success">Passed ({status.errorAmount})</div>;
     },
   };
 };
