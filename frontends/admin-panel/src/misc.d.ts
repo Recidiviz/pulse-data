@@ -61,7 +61,8 @@ interface ValidationStatusResults {
 
 interface ValidationStatus {
   didRun: boolean;
-  wasSuccessful?: boolean;
+  validationResultStatus?: ValidationResultStatus;
+  failureDescription?: string;
   hasData?: boolean;
   errorAmount?: string;
 }

@@ -41,7 +41,7 @@ from recidiviz.validation.validation_result_storage import (
 @attr.s
 class ValidationStatusRecord:
     didRun: bool = attr.ib()
-    wasSuccessful: Optional[bool] = attr.ib()
+    validationResultStatus: Optional[ValidationResultStatus] = attr.ib()
     hasData: Optional[bool] = attr.ib()
     errorAmount: Optional[str] = attr.ib()
 
@@ -152,7 +152,16 @@ class ValidationStatusStore(AdminPanelStore):
                 if row.get("validation_result_status")
                 else None
             )
-            was_successful = row.get("was_successful")
+
+            # legacy support for rows before validation_result_status was introduced
+            if validation_result_status is None:
+                was_successful = row.get("was_successful")
+                if was_successful is not None:
+                    validation_result_status = (
+                        ValidationResultStatus.SUCCESS
+                        if was_successful
+                        else ValidationResultStatus.FAIL_HARD
+                    )
 
             if row.get("validation_name") not in results:
                 validation_status_result = ValidationStatusResult(
@@ -164,10 +173,7 @@ class ValidationStatusStore(AdminPanelStore):
                 row.get("region_code")
             ] = ValidationStatusRecord(
                 didRun=row.get("did_run"),
-                wasSuccessful=validation_result_status
-                != ValidationResultStatus.FAIL_HARD
-                if validation_result_status
-                else was_successful,
+                validationResultStatus=validation_result_status,
                 hasData=row.get("has_data"),
                 errorAmount=_format_error_amount(
                     row.get("error_amount"), row.get("result_details_type")
