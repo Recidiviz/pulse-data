@@ -34,7 +34,14 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_DESCRIPTION = (
 
 ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = """
     /*{description}*/
-     WITH participants_with_race_or_ethnicity AS (
+     WITH program_locations as (
+       SELECT
+        'US_ND' AS state_code,
+        LOCATION_ID AS program_location_id,
+        -- In the raw data the region is given as 'N.00' (e.g. '7.00' instead of '7')
+        SPLIT(region, ".")[OFFSET(0)] AS region_id
+        FROM `{project_id}.us_nd_raw_data_up_to_date_views.docstars_REF_PROVIDER_LOCATION_latest`
+     ), participants_with_race_or_ethnicity AS (
       SELECT
         state_code,
         supervision_type,
@@ -44,7 +51,7 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = """
       FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_single_day_program_participation_metrics_materialized`
       LEFT JOIN
-        `{project_id}.{static_reference_dataset}.program_locations`
+        program_locations
       USING (state_code, program_location_id)
       WHERE state_code = 'US_ND'
         AND supervision_type IN ('PAROLE', 'PROBATION')
@@ -71,7 +78,6 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE,
     dimensions=("state_code", "supervision_type", "race_or_ethnicity", "region_id"),
     description=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_DESCRIPTION,
-    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(
         "prioritized_race_or_ethnicity"
