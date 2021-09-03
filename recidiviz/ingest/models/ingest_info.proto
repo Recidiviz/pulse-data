@@ -472,7 +472,6 @@ message StateSupervisionViolationTypeEntry {
 
 message StateSupervisionViolation {
     optional string state_supervision_violation_id = 1;
-    optional string violation_type = 2;
     optional string violation_date = 3;
     optional string state_code = 4;
     optional string is_violent = 5;

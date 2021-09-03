@@ -1949,7 +1949,6 @@ class StateSupervisionViolation(IngestObject):
     def __init__(
         self,
         state_supervision_violation_id=None,
-        violation_type=None,
         violation_date=None,
         state_code=None,
         is_violent=None,
@@ -1963,8 +1962,6 @@ class StateSupervisionViolation(IngestObject):
             str
         ] = state_supervision_violation_id
 
-        # TODO(#2668): DEPRECATED - Delete this when we delete the column
-        self.violation_type: Optional[str] = violation_type
         self.violation_date: Optional[str] = violation_date
         self.state_code: Optional[str] = state_code
         self.is_violent: Optional[str] = is_violent

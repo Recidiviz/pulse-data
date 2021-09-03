@@ -106,7 +106,7 @@ from recidiviz.persistence.entity.base_entity import (
     EnumEntity,
     ExternalIdEntity,
 )
-from recidiviz.persistence.entity.state.entity_deprecation_utils import (
+from recidiviz.persistence.entity.state.entity_deprecation_utils import (  # pylint: disable=unused-import
     validate_deprecated_entity_field_for_states,
 )
 
@@ -1494,16 +1494,6 @@ class StateSupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr
     # Status
     # N/A
 
-    # Type
-    # TODO(#2668): DEPRECATED - DO NOT ADD NEW USAGES
-    violation_type: Optional[StateSupervisionViolationType] = attr.ib(
-        default=None, validator=attr_validators.is_opt(StateSupervisionViolationType)
-    )
-    # TODO(#2668): DEPRECATED - DO NOT ADD NEW USAGES
-    violation_type_raw_text: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
     # Attributes
     #   - When
     violation_date: Optional[datetime.date] = attr.ib(
@@ -1547,13 +1537,6 @@ class StateSupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr
     supervision_violation_responses: List[
         "StateSupervisionViolationResponse"
     ] = attr.ib(factory=list, validator=attr_validators.is_list)
-
-    def __attrs_post_init__(self) -> None:
-        validate_deprecated_entity_field_for_states(
-            entity=self,
-            field_name="violation_type",
-            deprecated_state_codes=["US_ID", "US_MO", "US_ND", "US_PA"],
-        )
 
 
 @attr.s(eq=False)
