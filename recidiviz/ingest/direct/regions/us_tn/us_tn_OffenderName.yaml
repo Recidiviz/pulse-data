@@ -1,21 +1,51 @@
 # This file associates the columns outputted from the query in `view_docstars_OffenderName` to corresponding
 # Ingest Object fields.
-
-key_mappings:
-  OffenderID: state_person.state_person_id
-  FirstName: state_person.given_names
-  MiddleName: state_person.middle_names
-  LastName: state_person.surname
-  Sex: state_person.gender
-  BirthDate: state_person.birthdate
-
-child_key_mappings:
-  Race: state_person_race.race
-  Ethnicity: state_person_ethnicity.ethnicity
-  OffenderID: state_person_external_id.state_person_external_id_id
-
-primary_key:
-  OffenderID: state_person.state_person_id
-
-keys_to_ignore:
-  - OffenderStatus #  Not used for now -- needs further investigation.
+manifest_language: 1.0.0
+input_columns:
+  - OffenderID
+  - FirstName
+  - MiddleName
+  - LastName
+  - Sex
+  - BirthDate
+  - Race
+  - Ethnicity
+  - OffenderStatus
+unused_columns:
+  - OffenderStatus  #  Not used for now -- needs further investigation.
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderID
+          id_type: $literal("US_TN_DOC")
+    birthdate: BirthDate
+    full_name:
+      $json_dict:
+        given_names: FirstName
+        middle_names: MiddleName
+        surname: LastName
+    gender:
+      $raw_text: Sex
+      $mappings:
+        Gender.MALE: M
+        Gender.FEMALE: F
+      $ignore: []
+    races:
+      - StatePersonRace:
+          race:
+            $raw_text: Race
+            $mappings:
+              Race.ASIAN: A
+              Race.BLACK: B
+              Race.AMERICAN_INDIAN_ALASKAN_NATIVE: I
+              Race.WHITE: W
+            $ignore: []
+    ethnicities:
+      - StatePersonEthnicity:
+          ethnicity:
+            $raw_text: Ethnicity
+            $mappings:
+              Ethnicity.HISPANIC: HISPANIC
+              Ethnicity.NOT_HISPANIC: NOT_HISPANIC
+            $ignore: []
