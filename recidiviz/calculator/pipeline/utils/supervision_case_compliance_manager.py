@@ -207,6 +207,9 @@ class StateSupervisionCaseComplianceManager:
             # These are the types of contacts that can satisfy the face-to-face contact requirement
             if contact.contact_type
             in (
+                StateSupervisionContactType.DIRECT,
+                StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT,
+                # TODO(#9159): Remove these once all of the supervision contacts are switched over.
                 StateSupervisionContactType.FACE_TO_FACE,
                 StateSupervisionContactType.TELEPHONE,
                 StateSupervisionContactType.VIRTUAL,
