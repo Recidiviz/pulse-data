@@ -1,0 +1,6 @@
+{% extends "common/card.html.jinja2" %}
+{% from "po_monthly_report/compliance/up_to_date.html.jinja2" import up_to_date with context %}
+
+{% block children %}
+  {{ up_to_date("assessments") }}
+{% endblock children %}

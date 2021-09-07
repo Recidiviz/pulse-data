@@ -348,24 +348,6 @@ class PoMonthlyReportContext(ReportContext):
             "Absconsions",
         )
 
-        singular_or_plural(
-            self.prepared_data,
-            allowed_metrics,
-            "assessments",
-            "assessments_label",
-            "Risk Assessment",
-            "Risk Assessments",
-        )
-
-        singular_or_plural(
-            self.prepared_data,
-            allowed_metrics,
-            "facetoface",
-            "facetoface_label",
-            "Face-to-Face Contact",
-            "Face-to-Face Contacts",
-        )
-
     def _convert_month_to_name(self, month_key: str) -> None:
         """Converts the number at the given key, representing a calendar month, into the name of that month."""
         month_number = self.recipient_data[month_key]
@@ -569,13 +551,13 @@ if __name__ == "__main__":
                 "assessments_out_of_date_clients": [],
                 "facetoface_out_of_date_clients": [],
                 "revocations_clients": [],
-                "assessments": 7,
-                "assessments_percent": 75.432,
-                "overdue_assessments_goal": 3,
-                "overdue_assessments_goal_percent": 90.1456432,
-                "facetoface": 94,
+                "assessments": "7",
+                "assessments_percent": 96,
+                "overdue_assessments_goal": "1",
+                "overdue_assessments_goal_percent": 100,
+                "facetoface": "94",
                 "facetoface_percent": 45.268932,
-                "overdue_facetoface_goal": 9,
+                "overdue_facetoface_goal": "9",
                 "overdue_facetoface_goal_percent": 58.732651,
                 "officer_external_id": 0,
                 "officer_given_name": "Clementine",
