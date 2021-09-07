@@ -24,7 +24,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
-    StateSupervisionContactType,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
@@ -39,7 +38,6 @@ from recidiviz.ingest.direct.regions.us_pa.us_pa_enum_helpers import (
     incarceration_period_purpose_mapper,
     incarceration_period_release_reason_mapper,
     supervision_contact_location_mapper,
-    supervision_contact_type_mapper,
 )
 from recidiviz.tests.ingest.direct.fixture_util import direct_ingest_fixture_path
 
@@ -164,17 +162,3 @@ class TestUsPaEnumMapperFunctions(unittest.TestCase):
                 )
                 self.assertIsNotNone(mapping)
                 self.assertIsInstance(mapping, StateSupervisionContactLocation)
-
-    def test_supervision_contact_typ_mapper(self) -> None:
-        fixture_path = direct_ingest_fixture_path(
-            region_code=self.region_code,
-            file_name="supervision_contacts_type_raw_text.csv",
-        )
-        with open(fixture_path, "r", encoding="utf-8") as f:
-            while True:
-                supervision_contact_type_str = f.readline().strip()
-                if not supervision_contact_type_str:
-                    break
-                mapping = supervision_contact_type_mapper(supervision_contact_type_str)
-                self.assertIsNotNone(mapping)
-                self.assertIsInstance(mapping, StateSupervisionContactType)

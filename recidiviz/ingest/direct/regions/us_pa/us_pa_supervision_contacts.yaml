@@ -1,6 +1,8 @@
 key_mappings:
   contact_start_date: state_supervision_contact.contact_date
   contact_attempt: state_supervision_contact.status
+  contact_type: state_supervision_contact.contact_type
+  method: state_supervision_contact.contact_method
   agent_number: state_supervision_contact.contacted_agent
 
 ancestor_keys:
@@ -16,8 +18,6 @@ keys_to_ignore:
   - contact_end_date        # Unused - generally the same as contact_start_date
   - created_date            # Describes when this contact was registered by the agent - Handled manually in controller as part of primary key
   - duration                # Describes how long the contact was - Handled manually in controller as part of primary key
-  - contact_type            # Either (Offender, Both, Collateral) - Handled manually in controller
-  - method                  # Along with collateral_type, determines how the contact was done - Handled manually in controller
   - collateral_type         # Along with method, determines how the contact was done - Handled manually in controller
   - assisted                # Unused - whether or not the agent was assisted by another agent for the contact
   - agent_first_name        # Unused - first name of the agent

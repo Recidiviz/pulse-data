@@ -56,6 +56,7 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
+    StateSupervisionContactMethod,
     StateSupervisionContactStatus,
     StateSupervisionContactType,
 )
@@ -105,7 +106,6 @@ from recidiviz.ingest.direct.regions.us_pa.us_pa_enum_helpers import (
     incarceration_period_purpose_mapper,
     incarceration_period_release_reason_mapper,
     supervision_contact_location_mapper,
-    supervision_contact_type_mapper,
     supervision_period_supervision_type_mapper,
 )
 from recidiviz.ingest.direct.regions.us_pa.us_pa_violation_type_reference import (
@@ -650,6 +650,22 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         ],
         StateSupervisionContactStatus.ATTEMPTED: ["Yes"],
         StateSupervisionContactStatus.COMPLETED: ["No"],
+        StateSupervisionContactType.DIRECT: ["Offender"],
+        StateSupervisionContactType.COLLATERAL: ["Collateral"],
+        StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT: ["Both"],
+        StateSupervisionContactMethod.TELEPHONE: ["Phone-Voicemail", "Phone-Voice"],
+        StateSupervisionContactMethod.WRITTEN_MESSAGE: [
+            "Email",
+            "Phone-Text",
+            "Mail",
+            "Facsimile",
+        ],
+        StateSupervisionContactMethod.IN_PERSON: [
+            "Home",
+            "Office",
+            "Field",
+            "Work",
+        ],
     }
 
     ENUM_MAPPER_FUNCTIONS: Dict[Type[Enum], EnumMapperFn] = {
@@ -659,7 +675,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         StateSpecializedPurposeForIncarceration: incarceration_period_purpose_mapper,
         StateSupervisionPeriodSupervisionType: supervision_period_supervision_type_mapper,
         StateSupervisionContactLocation: supervision_contact_location_mapper,
-        StateSupervisionContactType: supervision_contact_type_mapper,
     }
 
     ENUM_IGNORES: Dict[Type[Enum], List[str]] = {
@@ -1481,7 +1496,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         _cache: IngestObjectCache,
     ) -> None:
         """Sets the supervision contact fields accordingly so that they can be parsed by enum mappers."""
-        contact_type = row["contact_type"]
         method = row["method"].replace("-", "")
         collateral_type = row["collateral_type"].replace(" ", "").replace("/", "")
 
@@ -1491,7 +1505,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                     obj.location = f"None-{method}"
                 else:
                     obj.location = f"{collateral_type}-{method}"
-                obj.contact_type = f"{contact_type}-{method}"
 
 
 def _generate_sci_incarceration_period_primary_key(

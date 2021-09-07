@@ -55,6 +55,7 @@ from recidiviz.common.constants.state.state_person_alias import StatePersonAlias
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
+    StateSupervisionContactMethod,
     StateSupervisionContactStatus,
     StateSupervisionContactType,
 )
@@ -2147,7 +2148,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                                 StateSupervisionContact(
                                                     state_supervision_contact_id="456B-2014-09-15-Offender-30",
                                                     contact_date="2014-09-15",
-                                                    contact_type="Offender-Home",
+                                                    contact_type="Offender",
+                                                    contact_method="Home",
                                                     location="None-Home",
                                                     status="Yes",
                                                     contacted_agent=StateAgent(
@@ -2160,7 +2162,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                                 StateSupervisionContact(
                                                     state_supervision_contact_id="456B-2016-10-02-Both-50",
                                                     contact_date="2016-10-01",
-                                                    contact_type="Both-Email",
+                                                    contact_type="Both",
+                                                    contact_method="Email",
                                                     location="Employer-Email",
                                                     status="No",
                                                     contacted_agent=StateAgent(
@@ -2173,7 +2176,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                                 StateSupervisionContact(
                                                     state_supervision_contact_id="456B-2016-10-04-Collateral-50",
                                                     contact_date="2016-10-03",
-                                                    contact_type="Collateral-Home",
+                                                    contact_type="Collateral",
+                                                    contact_method="Home",
                                                     location="None-Home",
                                                     status="No",
                                                     contacted_agent=StateAgent(
@@ -2186,7 +2190,8 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                                 StateSupervisionContact(
                                                     state_supervision_contact_id="456B-2016-10-05-Collateral-30",
                                                     contact_date="2016-10-04",
-                                                    contact_type="Collateral-Field",
+                                                    contact_type="Collateral",
+                                                    contact_method="Field",
                                                     location="CourtProbationStaf-Field",
                                                     status="Yes",
                                                     contacted_agent=StateAgent(
@@ -4928,8 +4933,10 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             supervision_periods=[p2_placeholder_sp_for_contacts],
             state_code=_STATE_CODE_UPPER,
             contact_date=datetime.date(year=2014, month=9, day=15),
-            contact_type=StateSupervisionContactType.FACE_TO_FACE,
-            contact_type_raw_text="OFFENDER-HOME",
+            contact_type=StateSupervisionContactType.DIRECT,
+            contact_type_raw_text="OFFENDER",
+            contact_method=StateSupervisionContactMethod.IN_PERSON,
+            contact_method_raw_text="HOME",
             location=StateSupervisionContactLocation.RESIDENCE,
             location_raw_text="NONE-HOME",
             status=StateSupervisionContactStatus.ATTEMPTED,
@@ -4943,8 +4950,10 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             supervision_periods=[p2_placeholder_sp_for_contacts],
             state_code=_STATE_CODE_UPPER,
             contact_date=datetime.date(year=2016, month=10, day=1),
-            contact_type=StateSupervisionContactType.WRITTEN_MESSAGE,
-            contact_type_raw_text="BOTH-EMAIL",
+            contact_type=StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT,
+            contact_type_raw_text="BOTH",
+            contact_method=StateSupervisionContactMethod.WRITTEN_MESSAGE,
+            contact_method_raw_text="EMAIL",
             location=StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT,
             location_raw_text="EMPLOYER-EMAIL",
             status=StateSupervisionContactStatus.COMPLETED,
@@ -4958,8 +4967,10 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             supervision_periods=[p2_placeholder_sp_for_contacts],
             state_code=_STATE_CODE_UPPER,
             contact_date=datetime.date(year=2016, month=10, day=3),
-            contact_type=StateSupervisionContactType.INTERNAL_UNKNOWN,
-            contact_type_raw_text="COLLATERAL-HOME",
+            contact_type=StateSupervisionContactType.COLLATERAL,
+            contact_type_raw_text="COLLATERAL",
+            contact_method=StateSupervisionContactMethod.IN_PERSON,
+            contact_method_raw_text="HOME",
             location=StateSupervisionContactLocation.RESIDENCE,
             location_raw_text="NONE-HOME",
             status=StateSupervisionContactStatus.COMPLETED,
@@ -4973,9 +4984,11 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             supervision_periods=[p2_placeholder_sp_for_contacts],
             state_code=_STATE_CODE_UPPER,
             contact_date=datetime.date(year=2016, month=10, day=4),
-            contact_type=StateSupervisionContactType.INTERNAL_UNKNOWN,
-            contact_type_raw_text="COLLATERAL-FIELD",
-            location=StateSupervisionContactLocation.FIELD,
+            contact_type=StateSupervisionContactType.COLLATERAL,
+            contact_type_raw_text="COLLATERAL",
+            contact_method=StateSupervisionContactMethod.IN_PERSON,
+            contact_method_raw_text="FIELD",
+            location=StateSupervisionContactLocation.COURT,
             location_raw_text="COURTPROBATIONSTAF-FIELD",
             status=StateSupervisionContactStatus.ATTEMPTED,
             status_raw_text="YES",
