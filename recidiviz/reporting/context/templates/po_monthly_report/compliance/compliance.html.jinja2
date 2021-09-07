@@ -1,0 +1,47 @@
+{{ components.layout_table_start() }}
+  <tr>
+    {{ components.section_heading("Key Supervision Tasks")}}
+  </tr>
+  {# success card will only actually contain one of these goals. assessment takes priority #}
+  {% if assessments_goal_met or facetoface_goal_met %}
+  <tr>
+    <td>
+      {% include "po_monthly_report/compliance/success.html.jinja2" %}
+    </td>
+  </tr>
+  {# if both goals were met, render a second card in this group for contacts #}
+  {% if assessments_goal_met and facetoface_goal_met %}
+    {{ components.y_padding(2)}}
+    <tr>
+      <td>
+        {% include "po_monthly_report/compliance/facetoface_card.html.jinja2" %}
+      </td>
+    </tr>
+  {% endif %}
+  {{ components.y_padding(24) }}
+  {% endif %}
+  
+  {# non-success cards, if any, follow the success cards, if any #}
+  {% if not assessments_goal_met %}
+    <tr>
+      <td>
+        {% include "po_monthly_report/compliance/assessments_card.html.jinja2" %}
+      </td>
+    </tr>
+    {{ components.y_padding(2)}}
+  {% endif %}
+  {% if not facetoface_goal_met %}
+    <tr>
+      <td>
+        {% include "po_monthly_report/compliance/facetoface_card.html.jinja2" %}
+      </td>
+    </tr>
+    {{ components.y_padding(2)}}
+  {% endif %}
+  <tr>
+    <td>
+      {% include "po_monthly_report/compliance/link_card.html.jinja2" %}
+    </td>
+  </tr>
+  {{ components.y_padding(48)}}
+{{ components.layout_table_end() }}

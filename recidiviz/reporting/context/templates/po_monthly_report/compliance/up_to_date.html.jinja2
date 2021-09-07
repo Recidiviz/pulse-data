@@ -1,0 +1,112 @@
+{% import 'common/components.html.jinja2' as components %}
+
+{% macro up_to_date(metric) %}
+  {% if metric == "assessments" %}
+    {% set pct = assessments_percent %}
+    {% set num_completed = assessments %}
+    {% set goal = overdue_assessments_goal %}
+    {% set goal_pct = overdue_assessments_goal_percent %}
+    {% set show_goal = assessments_goal_enabled %}
+    {% set metric_label = "assessment" %}
+  {% else %}
+    {% set pct = facetoface_percent %}
+    {% set num_completed = facetoface %}
+    {% set goal = overdue_facetoface_goal %}
+    {% set goal_pct = overdue_facetoface_goal_percent %}
+    {% set show_goal = facetoface_goal_enabled %}
+    {% set metric_label = "contact" %}
+  {% endif %}
+  
+  {% set icon_image = "ic_{}.png".format(metric) %}
+
+  {# these come in as strings but we need to do some arithmetic for charts #}
+  {% set pct=pct|int %}
+  {% set pct=pct|int %}
+  {% set goal=goal|int %}
+  {% set goal_pct=goal_pct|int %}
+  {# may not have a valid goal to show even if we're under the threshold, e.g. if a null or zero crept in #}
+  {% set show_goal = show_goal and goal_pct %}
+
+
+  {{ components.layout_table_start() }}
+    <tr>
+      <td>
+        {{ components.layout_table_start() }}
+          <tr>
+            <td style="width: 40px; padding-right: 16px;">
+              <img src="{{ static_image_path }}/{{icon_image}}" alt="" width="40" height="40">
+            </td>
+            {{ components.card_heading("{}% {}s up to date".format(pct, metric_label|title), size="md", valign="center") }}
+          </tr>
+        {{ components.layout_table_end() }}
+      </td>
+    </tr>
+    {{
+      components.y_padding(16)
+    }}
+    <tr>
+      <td>
+        {{ components.layout_table_start() }}
+          <tr>
+            <td
+              style="
+                {# fallback to solid color for clients that can't display the gradient #}
+                background-color: #014C48;
+                background-image: linear-gradient(270deg, #26D5AA 0%, #25B894 8.22%, #178B75 22.95%, #0D6C5F 38.36%, #014C48 53.77%);
+                height: 56px;
+                width: {{ pct }}%;
+              "
+            ></td>
+            <td
+              style="background-color: #E9EDED; width: {{100 - pct}}%; height: 56px;"
+            ></td>
+          </tr>
+        {{ components.layout_table_end() }}
+      </td>
+    </tr>
+    {% if show_goal %}
+    <tr>
+      <td>
+        {{ components.layout_table_start() }}
+          {{ components.y_padding(1) }}
+          <tr>
+            <td 
+              width="{{ pct }}%"
+              style="width: {{ pct }}%; height: 6px;"></td>
+            <td
+              style="
+                width: {{ goal_pct - pct }}%;
+                height: 6px;
+                border: 1px solid #237CAF;
+                border-top: none;
+              "
+            ></td>
+            <td width="{{100 - goal_pct}}%" style="width: {{100 - goal_pct}}%"></td>
+          </tr>
+        {{ components.layout_table_end() }}
+      </td>
+    </tr>
+    {% endif %}
+    {{
+      components.y_padding(4)
+    }}
+    <tr>
+      <td
+        style="
+          font-family: Libre Franklin, sans-serif;
+          font-weight: 500;
+          font-size: 16px;
+          line-height: 1.5;
+          letter-spacing: -0.01em;
+          color: #237caf;
+        "
+      >
+        {{ num_completed }} completed.
+        {% if show_goal %}
+          Complete {{ goal }} overdue {{metric_label}}{% if goal != 1 %}s{% endif %}
+          to get to {{ goal_pct }}%.
+        {% endif %}
+      </td>
+    </tr>
+  {{ components.layout_table_end() }}
+{% endmacro %}

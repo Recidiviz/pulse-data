@@ -1,0 +1,15 @@
+{% extends "common/card.html.jinja2" %}
+
+{% block children %}
+{{ components.layout_table_start() }}
+  <tr>
+    {{ components.card_heading("Plan upcoming contacts<br />and assessments", align="center", size="md")}}
+  </tr>
+  {{ components.y_padding(24) }}
+  <tr>
+    <td align="center">
+      {{ components.button("Open Recidiviz", "https://app.recidiviz.org", size="md", width=222) }}
+    </td>
+  </tr>
+{{ components.layout_table_end() }}
+{% endblock children %}
