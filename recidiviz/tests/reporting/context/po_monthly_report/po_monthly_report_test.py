@@ -339,8 +339,6 @@ class PoMonthlyReportContextTests(TestCase):
         expected["supervision_downgrades_label"] = "Supervision Downgrades"
         expected["total_revocations_label"] = "Revocations"
         expected["absconsions_label"] = "Absconsions"
-        expected["assessments_label"] = "Risk Assessments"
-        expected["facetoface_label"] = "Face-to-Face Contacts"
 
         expected["display_congratulations"] = "inherit"
         expected["congratulations_text"] = (

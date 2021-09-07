@@ -1,70 +1,125 @@
-{% extends "common/card.html.jinja2" %}
+{% extends "common/card.html.jinja2" %} 
 
-{% block rows %}
-{{ components.y_padding(32) }}
-<tr>
-    <td>
-        <table align="center" border="0" cellspacing="0" cellpadding="0"
-            style="width:100%;" role="presentation">
-            <tr>
-                {{ components.x_padding(32) }}
-                <td>
-                    <table align="center" border="0" cellspacing="0" cellpadding="0"
-                        style="width:100%;" role="presentation">
-                        <tr>
-                            {{ components.card_heading("We found some supervision level mismatches.", align="center", colspan=3) }}
-                        </tr>
-                        <tr>
-                            <td class="em_h10" height="24" style="height: 24px;">&nbsp;</td>
-                        </tr>
-                        <tr>
-                            <td class="em_row_header em_dm_txt_white" height="24"
-                            style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 14px; line-height: 16px; font-weight: 500; padding: 8px 0px; color: #345261;">
-                            Name
-                            </td>
-                            <td class="em_row_header em_dm_txt_white" height="24" align="right"
-                            style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 14px; line-height: 16px; font-weight: 500; color: #345261;">
-                            Mismatch
-                            </td>
-                        </tr>
-                        {{ components.card_divider(static_image_path) }}
-                        {% for mismatch in mismatches -%}
-                        <tr>
-                            <td class="em_line em_dm_txt_white" height="24"
-                            style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 16px; line-height: 16px; font-weight: 500; padding: 8px 0px; color: #003331;">
-                            {{ mismatch['name'] }} ({{ mismatch['person_external_id'] }})
-                            </td>
-                            <td class="em_line em_dm_txt_white" height="24" align="right"
-                            style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 16px; line-height: 16px; font-weight: 500; color: #355362;">
-                            {{ mismatch['current_supervision_level'] }} &rarr; {{ mismatch['recommended_level'] }}
-                            </td>
-                        </tr>
-                        {{ components.card_divider(static_image_path) }}
-                        {% endfor -%}
-                        <tr>
-                            <td class="em_h10" height="24" style="height: 24px;">&nbsp;</td>
-                        </tr>
-                        <tr>
-                            <td class="em_font em_dm_txt_white" valign="top" align="center" colspan="3"
-                            style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 16px; line-height: 24px; font-weight: 500; color: #003331;">
-                                Update their supervision level in {% if oms_name %}{{oms_name}}{% else %}your OMS{% endif %}.
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="em_font em_dm_txt_white" valign="top" align="center" colspan="3"
-                            style="font-family: 'Libre Franklin', Arial, sans-serif; font-size: 16px; line-height: 24px;">
-                                <a href="https://forms.gle/KNzSpyi9sjYHtZFm8" style="color: #006C67;">Report incorrect data</a>
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-                {{ components.x_padding(32) }}
-            </tr>
-        </table>
+{% block children %}
+<table
+  align="center"
+  border="0"
+  cellspacing="0"
+  cellpadding="0"
+  style="width: 100%"
+  role="presentation"
+>
+  <tr>
+    {{ components.card_heading("We found some supervision level mismatches.", align="center", colspan=3) }}
+  </tr>
+  <tr>
+    <td class="em_h10" height="24" style="height: 24px">&nbsp;</td>
+  </tr>
+  <tr>
+    <td
+      class="em_row_header em_dm_txt_white"
+      height="24"
+      style="
+        font-family: 'Libre Franklin', Arial, sans-serif;
+        font-size: 14px;
+        line-height: 16px;
+        font-weight: 500;
+        padding: 8px 0px;
+        color: #345261;
+      "
+    >
+      Name
     </td>
-</tr>
-<tr>
-    
-</tr>
-{{ components.y_padding(32) }}
-{% endblock rows %}
+    <td
+      class="em_row_header em_dm_txt_white"
+      height="24"
+      align="right"
+      style="
+        font-family: 'Libre Franklin', Arial, sans-serif;
+        font-size: 14px;
+        line-height: 16px;
+        font-weight: 500;
+        color: #345261;
+      "
+    >
+      Mismatch
+    </td>
+  </tr>
+  {{
+    components.card_divider(static_image_path)
+  }}
+  {% for mismatch in mismatches -%}
+  <tr>
+    <td
+      class="em_line em_dm_txt_white"
+      height="24"
+      style="
+        font-family: 'Libre Franklin', Arial, sans-serif;
+        font-size: 16px;
+        line-height: 16px;
+        font-weight: 500;
+        padding: 8px 0px;
+        color: #003331;
+      "
+    >
+      {{ mismatch["name"] }} ({{ mismatch["person_external_id"] }})
+    </td>
+    <td
+      class="em_line em_dm_txt_white"
+      height="24"
+      align="right"
+      style="
+        font-family: 'Libre Franklin', Arial, sans-serif;
+        font-size: 16px;
+        line-height: 16px;
+        font-weight: 500;
+        color: #355362;
+      "
+    >
+      {{ mismatch["current_supervision_level"] }} &rarr;
+      {{ mismatch["recommended_level"] }}
+    </td>
+  </tr>
+  {{
+    components.card_divider(static_image_path)
+  }}
+  {% endfor -%}
+  <tr>
+    <td class="em_h10" height="24" style="height: 24px">&nbsp;</td>
+  </tr>
+  <tr>
+    <td
+      class="em_font em_dm_txt_white"
+      valign="top"
+      align="center"
+      colspan="3"
+      style="
+        font-family: 'Libre Franklin', Arial, sans-serif;
+        font-size: 16px;
+        line-height: 24px;
+        font-weight: 500;
+        color: #003331;
+      "
+    >
+      Update their supervision level in {% if oms_name %}{{ oms_name }}{% else %}your OMS{% endif %}.
+    </td>
+  </tr>
+  <tr>
+    <td
+      class="em_font em_dm_txt_white"
+      valign="top"
+      align="center"
+      colspan="3"
+      style="
+        font-family: 'Libre Franklin', Arial, sans-serif;
+        font-size: 16px;
+        line-height: 24px;
+      "
+    >
+      <a href="https://forms.gle/KNzSpyi9sjYHtZFm8" style="color: #006c67"
+        >Report incorrect data</a
+      >
+    </td>
+  </tr>
+</table>
+{% endblock children %}
