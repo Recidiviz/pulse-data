@@ -26,7 +26,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
-    StateSupervisionContactType,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
@@ -604,6 +603,10 @@ def supervision_contact_location_mapper(
             return StateSupervisionContactLocation.TREATMENT_PROVIDER
         if collateral_type == "EMPLOYER":
             return StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT
+        if collateral_type == "COURTPROBATIONSTAF":
+            return StateSupervisionContactLocation.COURT
+        if collateral_type == "LAWENFORCEMENT":
+            return StateSupervisionContactLocation.LAW_ENFORCEMENT_AGENCY
         if method == "FIELD":
             return StateSupervisionContactLocation.FIELD
         if method == "OFFICE":
@@ -613,19 +616,3 @@ def supervision_contact_location_mapper(
         if method == "WORK":
             return StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT
     return StateSupervisionContactLocation.INTERNAL_UNKNOWN
-
-
-def supervision_contact_type_mapper(
-    supervision_contact_type_raw_text: Optional[str],
-) -> StateSupervisionContactType:
-    """Maps a supervision_contact_type_raw_text to the corresponding StateSupervisionContactType, if applicable."""
-    if supervision_contact_type_raw_text:
-        contact_type, method = supervision_contact_type_raw_text.split(" ")
-        if contact_type in ["BOTH", "OFFENDER"]:
-            if method in ["EMAIL", "FACSIMILE", "MAIL", "PHONETEXT"]:
-                return StateSupervisionContactType.WRITTEN_MESSAGE
-            if method in ["PHONEVOICE", "PHONEVOICEMAIL"]:
-                return StateSupervisionContactType.TELEPHONE
-            if method in ["HOME", "OFFICE", "WORK", "FIELD"]:
-                return StateSupervisionContactType.FACE_TO_FACE
-    return StateSupervisionContactType.INTERNAL_UNKNOWN
