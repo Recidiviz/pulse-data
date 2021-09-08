@@ -17,7 +17,7 @@ columns:
       ID for the agency the employee belongs to
   - name: lan_id
     description: |-
-      Mostly null
+      Mostly null, TODO(#3506): Needs further clarification.
   - name: st_id_num
     description: |-
       State ID number (supposedly drivers license)
