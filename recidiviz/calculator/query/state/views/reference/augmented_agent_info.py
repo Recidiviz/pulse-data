@@ -81,9 +81,7 @@ AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = f"""
       USING (state_code, agent_type, external_id)
     )
     SELECT
-      *,
-      -- TODO(#8835): Deprecate this field for external_id.
-      agents.external_id AS agent_external_id
+      *
     FROM agents
 
 """

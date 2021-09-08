@@ -45,7 +45,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
             REPLACE(COALESCE(agent.full_name, 'UNKNOWN'), ',', '') AS officer_full_name,
             FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized` metric
         LEFT JOIN `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` agent
-        ON metric.state_code = agent.state_code AND metric.supervising_officer_external_id = agent.agent_external_id 
+        ON metric.state_code = agent.state_code AND metric.supervising_officer_external_id = agent.external_id 
     ), supervision_matrix AS (
         SELECT
             state_code,

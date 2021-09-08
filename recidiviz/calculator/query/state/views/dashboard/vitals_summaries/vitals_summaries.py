@@ -253,7 +253,7 @@ VITALS_SUMMARIES_QUERY_TEMPLATE = f"""
     FROM vitals_metrics
     LEFT JOIN `{{project_id}}.{{reference_views_dataset}}.agent_external_id_to_full_name` agent
         ON vitals_metrics.state_code = agent.state_code
-        AND vitals_metrics.supervising_officer_external_id = agent.agent_external_id
+        AND vitals_metrics.supervising_officer_external_id = agent.external_id
 """
 
 VITALS_SUMMARIES_VIEW_BUILDER = MetricBigQueryViewBuilder(
