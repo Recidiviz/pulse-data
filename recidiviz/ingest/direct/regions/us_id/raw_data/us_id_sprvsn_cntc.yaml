@@ -25,7 +25,7 @@ columns:
       Code for contact type
   - name: cntc_typ_subtyp_cd
     description: |-
-      Code for contact subtype (if present)
+      Code for contact subtype (if present) - Only relevant for administrative tasks.
   - name: cntc_title_cd
     description: |-
       Contact title code
@@ -41,7 +41,7 @@ columns:
       Username of the IDOC employee who was the primary contact
   - name: udc_agnt2_id
     description: |-
-      Username of the IDOC employee who was the secondary contact (if present)
+      Username of the IDOC employee who was the secondary contact (if present, although rarely set)
   - name: next_appt_dt
     description: |-
       Next appointment date (only present if decided during the previous contact)
@@ -53,13 +53,13 @@ columns:
       Duration of the next appointment
   - name: sbstnc_tst_flg
     description: |-
-      Whether a substance test should be administered
+      Whether a substance test should be administered in future
   - name: emplymt_vrfy_flg
     description: |-
       Whether employment was verified during this contact
   - name: drug_arrest_flg
     description: |-
-      Whether the person was arrested for drug possession
+      Whether the person was arrested for drug possession. TODO(#3506): Is this ever set without a result of 'ARREST'?
   - name: sbstnc_cd
     description: |-
       Code for substance seized from the client

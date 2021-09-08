@@ -142,7 +142,10 @@ SEX_CRIME_TYPES = (
 
 CONTACT_RESULT_ARREST = "ARREST"
 
+# TODO(#8999): Remove this once rerun is complete for new supervision contact
 CONTACT_TYPES_TO_BECOME_LOCATIONS = ("TELEPHONE", "FAX", "EMAIL", "MAIL")
+
+CONTACT_LOCATIONS_TO_BECOME_METHODS = ("TELEPHONE", "FAX", "EMAIL", "MAIL")
 
 # Recidiviz generated date used by Supervision/Incarceration periods query
 MAX_DATE_STR = "9999-12-31"
