@@ -55,7 +55,7 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_QUERY_TEMPLATE = """
             case_type,
             IFNULL(level_1_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_1_supervision_location,
             IFNULL(level_2_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_2_supervision_location,
-            supervising_officer_external_id AS agent_external_id,
+            supervising_officer_external_id AS external_id,
             {state_specific_most_recent_officer_recommendation},
             {state_specific_recommended_for_revocation},
             violation_history_description AS violation_record,
@@ -75,7 +75,7 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_QUERY_TEMPLATE = """
         metrics
     LEFT JOIN
         `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` agent
-    USING (state_code, agent_external_id)
+    USING (state_code, external_id)
     """
 
 EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_VIEW_BUILDER = SimpleBigQueryViewBuilder(

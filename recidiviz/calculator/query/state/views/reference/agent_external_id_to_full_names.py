@@ -29,7 +29,7 @@ AGENT_EXTERNAL_ID_TO_FULL_NAMES_QUERY_TEMPLATE = """
     WITH unique_agents AS (
         SELECT DISTINCT
             state_code,
-            agent_external_id,
+            external_id,
             full_name,
             given_names,
             surname
@@ -40,7 +40,7 @@ AGENT_EXTERNAL_ID_TO_FULL_NAMES_QUERY_TEMPLATE = """
         *,
         -- TODO(#8674): Remove the agent_external_id_with_full_name once the Lantern FE 
         -- is no longer relying on this value
-        CONCAT(agent_external_id, IFNULL(CONCAT(': ', NULLIF(TRIM(full_name), '')), '')) as agent_external_id_with_full_name
+        CONCAT(external_id, IFNULL(CONCAT(': ', NULLIF(TRIM(full_name), '')), '')) as agent_external_id_with_full_name
     FROM unique_agents
 """
 
