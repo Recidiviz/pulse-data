@@ -7,7 +7,7 @@ primary_key_cols:
 columns:
   - name: cntc_rslt_cd
     description: |-
-      ode for contact result
+      Code for contact result
   - name: cntc_rslt_desc
     description: |-
       Description for contact result

@@ -14,7 +14,7 @@ columns:
       Name of the contact type
   - name: cntc_cat_cd
     description: |-
-      Category of the contact type
+      Category of the contact type. TODO(#3506): Needs further clarification.
   - name: vld_flg
     description: |-
       Whether or not this contact type is currently valid
