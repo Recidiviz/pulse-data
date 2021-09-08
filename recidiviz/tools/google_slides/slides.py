@@ -210,10 +210,14 @@ https://drive.google.com/drive/folders/{parent_directory_id}
         else:
             print("Caution, still managing template Slides deck.")
 
-    def get_image_objects(self, slide_numbers: List[int]) -> Dict[int, List[str]]:
+    def get_image_objects(
+        self, slide_numbers: Optional[List[int]] = None
+    ) -> Dict[int, List[str]]:
         """
-        Returns a dict with a list of image object IDs in the specified slides. The
-        returned dict is of the form:
+        Returns a dict with a list of image object IDs in the specified slides, or all
+        slides in the presentation if slide_numbers is None.
+
+        The returned dict is of the form:
 
         {
             1: ['image_1_id', 'image_2_id'],
@@ -223,8 +227,9 @@ https://drive.google.com/drive/folders/{parent_directory_id}
 
         Params
         ------
-        slide_numbers : List[int]
-            The slides in which to look for image objects
+        slide_numbers : Optional[List[int]]
+            The slides in which to look for image objects. If None, defaults to all
+            slides in the presentation.
 
         """
         # set metadata for managed Slides deck
@@ -232,6 +237,10 @@ https://drive.google.com/drive/folders/{parent_directory_id}
 
         # initialize dict to be returned
         image_dict: Dict[int, list] = {}
+
+        # get slide numbers if not provided
+        if not slide_numbers:
+            slide_numbers = list(range(1, len(slides_info) + 1))
 
         # loop through slides in slide_numbers and get image objects
         for slide in slide_numbers:
