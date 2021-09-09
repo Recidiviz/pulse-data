@@ -1,10 +1,16 @@
 file_tag: ofndr_behavior_evaluation_response_dates
 file_description: |-
-  Not in use
+  Contains a record matching PO responses to behavior evaluations with dates
 primary_key_cols:
   - ofndr_behavior_evaluation_response_date_id
 columns:
   - name: ofndr_behavior_evaluation_response_id
+    description: ID for this response
   - name: ofndr_behavior_evaluation_response_date_id
+    description: ID for the date of this response
   - name: jail_start_dt
+    is_datetime: True
+    description: #TODO(#8453)
   - name: jail_end_dt
+    is_datetime: True
+    description: #TODO(#8453)

@@ -1,12 +1,18 @@
 file_tag: observed_behavior_response_cd
 file_description: |-
-  Not in use
+  Code table describing the types of responses POs have to behavior evaluations
 primary_key_cols:
   - observed_behavior_response_cd
 columns:
   - name: vld_flg
+    description: Flag that determines if this response is still valid
   - name: observed_behavior_typ
+    description: Code for category of observed behavior
   - name: observed_behavior_response_cd
+    description: Code for this response
   - name: observed_behavior_response_level
+    description: #TODO(#8453)
   - name: observed_behavior_response_rank
+    description: #TODO(#8453)
   - name: observed_behavior_response_desc
+    description: Description of this response

@@ -1,9 +1,17 @@
 file_tag: observed_behavior_response_exception_cd
 file_description: |-
-  Not in use
+  Code table describing the exceptions to behavior responses
 primary_key_cols:
   - observed_behavior_response_exception_cd
 columns:
   - name: vld_flg
+    description: Flag to determine if this code is still valid
+    known_values:
+      - value: T
+        description: "True"
+      - value: F
+        description: "False"
   - name: observed_behavior_response_exception_cd
+    description: Code for this exception
   - name: observed_behavior_response_exception_desc
+    description: Description of this exception

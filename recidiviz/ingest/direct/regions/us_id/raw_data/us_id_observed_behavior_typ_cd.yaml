@@ -1,9 +1,17 @@
 file_tag: observed_behavior_typ_cd
 file_description: |-
-  Not in use
+  Code table to describe the type of behavior observed by POs
 primary_key_cols:
   - observed_behavior_typ
 columns:
   - name: vld_flg
+    description: Flag to determine if code is still valid
+    known_values:
+      - value: T
+        description: "True"
+      - value: F
+        description: "False"
   - name: observed_behavior_typ
+    description: Code for this behavior type
   - name: observed_behavior_typ_desc
+    description: Description of this behavior type
