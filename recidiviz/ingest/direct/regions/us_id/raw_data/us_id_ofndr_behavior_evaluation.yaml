@@ -1,13 +1,21 @@
 file_tag: ofndr_behavior_evaluation
 file_description: |-
-  Not in use
+  Primary record table for behavior evaluation form. Contains one row for each
+  behavior evaluation.
 primary_key_cols:
   - ofndr_behavior_evaluation_id
 columns:
   - name: ofndr_behavior_evaluation_id
+    description: ID of evaluation
   - name: ofndr_num
+    description: ID of the person who was evaluated
   - name: curr_lgl_stat_cd
+    description: Code for current legal status of person being evaluated
   - name: curr_lsi_level
+    description: Current LSI level of person being evaluated
   - name: behavior_evaluation_source_cd
+    description: Code for source of evaluation
   - name: source_id
+    description: Code for source of evaluation
   - name: status
+    description: Code for status of evaluation

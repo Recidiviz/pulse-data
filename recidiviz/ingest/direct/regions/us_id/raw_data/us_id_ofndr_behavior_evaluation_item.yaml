@@ -1,11 +1,16 @@
 file_tag: ofndr_behavior_evaluation_item
 file_description: |-
-  Not in use
+  #TODO(#8453)
 primary_key_cols:
   - ofndr_behavior_evaluation_id
 columns:
   - name: ofndr_behavior_evaluation_id
+    description: #TODO(#8453)
   - name: ofndr_behavior_evaluation_item_id
+    description: #TODO(#8453)
   - name: observed_behavior_cd
+    description: #TODO(#8453)
   - name: is_scored
+    description: #TODO(#8453)
   - name: scored_val
+    description: #TODO(#8453)

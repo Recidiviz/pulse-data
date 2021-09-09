@@ -1,9 +1,22 @@
 file_tag: behavior_evaluation_source_cd
 file_description: |-
-  Not in use
+  Code table describing which form was used to document the behavior evaluation.
 primary_key_cols:
   - behavior_evaluation_source_cd
 columns:
   - name: behavior_evaluation_source_cd
+    description: Code for evaluation source
   - name: behavior_evaluation_source_desc
+    description: Description of evaluation source
+    known_values:
+      - value: agnt_case_update
+        description: agnt_case_update form
+      - value: sprvsn_cntc
+        description: sprvsn_cntc form
   - name: vld_flg
+    description: Flag to determine if this status is valid
+    known_values:
+      - value: T
+        description: "True"
+      - value: F
+        desciption: "False"

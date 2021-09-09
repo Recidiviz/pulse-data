@@ -1,10 +1,14 @@
 file_tag: ofndr_behavior_evaluation_response
 file_description: |-
-  Not in use
+  Contains a record for each PO response to observed behavior during evaluation.
 primary_key_cols:
   - ofndr_behavior_evaluation_response_id
 columns:
   - name: ofndr_behavior_evaluation_response_id
+    description: ID for this response
   - name: ofndr_behavior_evaluation_id
+    description: ID of evaluation associated with this response
   - name: observed_behavior_response_cd
+    description: Code for the response type
   - name: observed_behavior_response_exception_cd
+    description: Code for any exceptions associated with this response
