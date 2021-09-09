@@ -1,10 +1,13 @@
 file_tag: observed_behavior_enhance_values
 file_description: |-
-  Not in use
+  #TODO(#8453)
 primary_key_cols:
   - observed_behavior_enhance_typ
   - observed_behavior_cd
 columns:
   - name: observed_behavior_enhance_typ
+    description: #TODO(#8453)
   - name: observed_behavior_cd
+    description: #TODO(#8453)
   - name: enhance_value
+    description: #TODO(#8453)

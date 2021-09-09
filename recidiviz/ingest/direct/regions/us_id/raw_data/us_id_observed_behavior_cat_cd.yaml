@@ -1,10 +1,30 @@
 file_tag: observed_behavior_cat_cd
 file_description: |-
-  Not in use
+  Code table for categories of observed behavior
 primary_key_cols:
   - observed_behavior_cat_cd
 columns:
   - name: observed_behavior_cat_cd
+    description: Code for this category
   - name: observed_behavior_cat_sdesc
+    description: Short description of this category
+    known_values:
+      - value: Accommodation
+      - value: Alcohol/Drug Problems
+      - value: Attitudes/Orientation
+      - value: Companions
+      - value: Criminal History
+      - value: Education/Employment
+      - value: Emotional/Personal
+      - value: Family/Marital
+      - value: Financial
+      - value: Leisure/Recreation
   - name: observed_behavior_cat_ldesc
+    description: Long description of this category
   - name: vld_flg
+    description: Flag to determine if this category is still valid
+    known_values:
+      - value: T
+        description: "True"
+      - value: F
+        description: "False"

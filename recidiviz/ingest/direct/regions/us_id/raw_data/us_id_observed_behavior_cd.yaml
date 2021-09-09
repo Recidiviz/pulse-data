@@ -1,16 +1,36 @@
 file_tag: observed_behavior_cd
 file_description: |-
-  Not in use
+  Code table to describe the behavior observed by POs
 primary_key_cols:
   - observed_behavior_cd
 columns:
   - name: observed_behavior_cat_cd
+    description: Code for the category of behavior
   - name: vld_flg
+    description: Flag to determine if this code is still valid
+    known_values:
+      - value: T
+        description: "True"
+      - value: F
+        description: "False"
   - name: observed_behavior_cd
+    description: Code for the behavior
   - name: observed_behavior_typ
+    description: Code for the type of behavior (reward/sanction)
   - name: observed_behavior_desc
+    description: Description of behavior
   - name: low_score
+    description: #TODO(#8453)
   - name: moderate_score
+    description: #TODO(#8453)
   - name: high_score
+    description: #TODO(#8453)
   - name: prle_score
+    description: #TODO(#8453)
   - name: sex_offense
+    description: Flag to determine if this behavior is a sex offense #TODO(#8453)
+    known_values:
+      - value: T
+        description: "True"
+      - value: F
+        description: "False"

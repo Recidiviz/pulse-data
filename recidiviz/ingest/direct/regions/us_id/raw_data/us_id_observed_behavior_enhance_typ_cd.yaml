@@ -1,9 +1,24 @@
 file_tag: observed_behavior_enhance_typ_cd
 file_description: |-
-  Not in use
+  Code table containing descriptions of behavior observation enhancements
 primary_key_cols:
   - observed_behavior_enhance_typ
 columns:
   - name: vld_flg
+    description: Flag to determine if this enhancement is still valid
+    known_values:
+      - value: T
+        description: "True"
+      - value: F
+        description: "False"
   - name: observed_behavior_enhance_typ
+    description: Code for this enhancement
   - name: observed_behavior_enhance_typ_desc
+    description: Description of this enhancement
+    known_values:
+      - value: DOMESTIC VIOLENCE
+        description: Domestic Violence
+      - value: DUI
+        description: DUI
+      - value: SEX OFFENSE
+        description: Sex Offense

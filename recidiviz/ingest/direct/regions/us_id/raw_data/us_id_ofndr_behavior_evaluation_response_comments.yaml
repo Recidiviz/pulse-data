@@ -1,9 +1,12 @@
 file_tag: ofndr_behavior_evaluation_response_comments
 file_description: |-
-  Not in use
+  Contains a record for any comment associated with a PO behavior evaluation response.
 primary_key_cols:
   - ofndr_behavior_evaluation_response_comment_id
 columns:
   - name: ofndr_behavior_evaluation_response_comment_id
+    description: ID for this comment
   - name: ofndr_behavior_evaluation_response_id
+    description: ID of the associated behavior evaluation response
   - name: comment
+    description: Text of the comment
