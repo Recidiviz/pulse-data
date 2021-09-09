@@ -110,8 +110,8 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
         officer_external_id,
         year,
         month,
-        LEAST(3, ARRAY_LENGTH(assessments_out_of_date_clients)) as overdue_assessments_goal,
-        LEAST(9, ARRAY_LENGTH(facetoface_out_of_date_clients)) as overdue_facetoface_goal,
+        COALESCE(LEAST(3, ARRAY_LENGTH(assessments_out_of_date_clients)), 0) as overdue_assessments_goal,
+        COALESCE(LEAST(9, ARRAY_LENGTH(facetoface_out_of_date_clients)), 0) as overdue_facetoface_goal,
       FROM report_data_per_officer
     ),
     agents AS (
