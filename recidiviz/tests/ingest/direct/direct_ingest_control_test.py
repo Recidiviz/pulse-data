@@ -1415,7 +1415,7 @@ class TestDirectIngestControl(unittest.TestCase):
         )
         mock_upload_controller.do_upload().assert_not_called()
         mock_download_controller.clean_up().assert_not_called()
-        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+        self.assertEqual(HTTPStatus.OK, response.status_code)
 
     @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch(
