@@ -681,7 +681,7 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
             )
 
         if not download_result.successes and not download_result.skipped:
-            return f"No items to download for {region_code}", HTTPStatus.BAD_REQUEST
+            return f"No items to download for {region_code}", HTTPStatus.OK
 
         if not download_result.successes and download_result.skipped:
             return f"All files skipped. {skipped_download_text}", HTTPStatus.OK
