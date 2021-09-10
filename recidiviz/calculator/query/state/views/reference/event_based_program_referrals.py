@@ -39,7 +39,7 @@ EVENT_BASED_PROGRAM_REFERRALS_QUERY_TEMPLATE = """
       supervision_type, district,
       participation_status,
       prioritized_race_or_ethnicity as race_or_ethnicity,
-      gender, age_bucket, assessment_score_bucket
+      gender, {age_bucket}, assessment_score_bucket
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_program_referral_metrics_materialized`,
     {district_dimension},
     {supervision_type_dimension}
@@ -54,6 +54,7 @@ EVENT_BASED_PROGRAM_REFERRALS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=EVENT_BASED_PROGRAM_REFERRALS_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    age_bucket=bq_utils.age_bucket_grouping(),
     district_dimension=bq_utils.unnest_district(),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
     thirty_six_month_filter=bq_utils.thirty_six_month_filter(),

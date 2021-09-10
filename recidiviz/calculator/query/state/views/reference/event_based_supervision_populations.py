@@ -41,7 +41,7 @@ EVENT_BASED_SUPERVISION_QUERY_TEMPLATE = """
       district,
       supervising_officer_external_id AS officer_external_id,
       prioritized_race_or_ethnicity as race_or_ethnicity,
-      gender, age_bucket, assessment_score_bucket, judicial_district_code
+      gender, {age_bucket}, assessment_score_bucket, judicial_district_code
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`,
     {district_dimension},
     {supervision_type_dimension}
@@ -55,6 +55,7 @@ EVENT_BASED_SUPERVISION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=EVENT_BASED_SUPERVISION_QUERY_TEMPLATE,
     description=EVENT_BASED_SUPERVISION_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    age_bucket=bq_utils.age_bucket_grouping(),
     district_dimension=bq_utils.unnest_district(),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
     thirty_six_month_filter=bq_utils.thirty_six_month_filter(),

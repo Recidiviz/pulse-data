@@ -36,8 +36,9 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = """
     /*{description}*/
     WITH supervision_with_agent_info AS (
         SELECT
-            * EXCEPT(state_code),
+            * EXCEPT(state_code, age_bucket),
             metric.state_code,
+            {age_bucket},
             -- We drop commas in agent names since we use commas as the delimiters in the export
             -- TODO(#8674): Use agent_external_id instead of agent_external_id_with_full_name
             -- once the FE is using the officer_full_name field for names
@@ -219,6 +220,7 @@ SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     state_specific_dimension_filter=state_specific_query_strings.state_specific_dimension_filter(),
     state_specific_supervision_type_inclusion_filter=state_specific_query_strings.state_specific_supervision_type_inclusion_filter(),
     state_specific_recommended_for_revocation=state_specific_query_strings.state_specific_recommended_for_revocation(),
+    age_bucket=bq_utils.age_bucket_grouping(age_column="metric.age"),
 )
 
 if __name__ == "__main__":

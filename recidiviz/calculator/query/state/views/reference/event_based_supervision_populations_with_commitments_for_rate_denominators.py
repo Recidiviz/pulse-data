@@ -67,7 +67,7 @@ EVENT_BASED_SUPERVISION_POPULATIONS_WITH_COMMITMENTS_FOR_RATE_DENOMINATORS_QUERY
           supervising_district_external_id,
           supervising_officer_external_id AS officer_external_id,
           prioritized_race_or_ethnicity as race_or_ethnicity,
-          gender, age_bucket, assessment_score_bucket
+          gender, {age_bucket}, assessment_score_bucket
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
     ), commitments_from_supervision AS (
         SELECT
@@ -80,7 +80,7 @@ EVENT_BASED_SUPERVISION_POPULATIONS_WITH_COMMITMENTS_FOR_RATE_DENOMINATORS_QUERY
           supervising_district_external_id,
           supervising_officer_external_id AS officer_external_id,
           prioritized_race_or_ethnicity as race_or_ethnicity,
-          gender, age_bucket, assessment_score_bucket
+          gender, {age_bucket}, assessment_score_bucket
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_materialized`
     ), all_pop AS (
         SELECT * FROM supervision_pop
@@ -114,6 +114,7 @@ EVENT_BASED_SUPERVISION_POPULATIONS_WITH_COMMITMENTS_FOR_RATE_DENOMINATORS_VIEW_
     district_dimension=bq_utils.unnest_district(),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
     thirty_six_month_filter=bq_utils.thirty_six_month_filter(),
+    age_bucket=bq_utils.age_bucket_grouping(),
 )
 
 if __name__ == "__main__":
