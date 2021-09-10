@@ -81,14 +81,6 @@ def test_age_at_date_birthdate_unknown() -> None:
     )
 
 
-def test_age_bucket() -> None:
-    assert calculator_utils.age_bucket(24) == "<25"
-    assert calculator_utils.age_bucket(27) == "25-29"
-    assert calculator_utils.age_bucket(30) == "30-34"
-    assert calculator_utils.age_bucket(39) == "35-39"
-    assert calculator_utils.age_bucket(40) == "40<"
-
-
 INCLUDED_PIPELINES = ["incarceration", "supervision"]
 
 
@@ -219,7 +211,6 @@ class TestAddPersonCharacteristics(unittest.TestCase):
         expected_output = {
             "person_id": person.person_id,
             "age": 26,
-            "age_bucket": "25-29",
             "prioritized_race_or_ethnicity": "ASIAN",
             "gender": Gender.FEMALE,
         }
@@ -244,7 +235,6 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         expected_output = {
             "age": 26,
-            "age_bucket": "25-29",
             "gender": Gender.FEMALE,
             "person_id": person.person_id,
         }
@@ -316,7 +306,6 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         expected_output = {
             "age": 26,
-            "age_bucket": "25-29",
             "gender": Gender.FEMALE,
             "person_id": person.person_id,
             "person_external_id": "DOC1341",
@@ -391,7 +380,6 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         expected_output = {
             "age": 26,
-            "age_bucket": "25-29",
             "gender": Gender.FEMALE,
             "person_id": person.person_id,
             "person_external_id": "DOC1341",
