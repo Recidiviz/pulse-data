@@ -43,7 +43,7 @@ SUPERVISION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
         date_of_supervision as population_date,
         {state_specific_race_or_ethnicity_groupings},
         gender,
-        age_bucket,
+        {age_bucket},
       FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
       WHERE date_of_supervision = DATE(year, month, 1)
@@ -96,6 +96,7 @@ SUPERVISION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryVie
         "prioritized_race_or_ethnicity"
     ),
     state_specific_supervision_type_inclusion_filter=state_specific_query_strings.state_specific_supervision_type_inclusion_filter(),
+    age_bucket=bq_utils.age_bucket_grouping(),
 )
 
 if __name__ == "__main__":

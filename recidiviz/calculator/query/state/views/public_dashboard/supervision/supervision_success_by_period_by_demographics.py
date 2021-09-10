@@ -45,7 +45,9 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
         IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket,
         supervision_type,
         metric_period_months
-      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_success_metrics_materialized` success_metrics,
+      FROM (SELECT * EXCEPT (age_bucket), 
+        {age_bucket}
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_success_metrics_materialized` success_metrics),
       {gender_dimension},
       {age_dimension},
       UNNEST ([{grouped_districts}, 'ALL']) AS district,
@@ -113,6 +115,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewB
         "prioritized_race_or_ethnicity"
     ),
     state_specific_supervision_type_inclusion_filter=state_specific_query_strings.state_specific_supervision_type_inclusion_filter(),
+    age_bucket=bq_utils.age_bucket_grouping(),
 )
 
 if __name__ == "__main__":

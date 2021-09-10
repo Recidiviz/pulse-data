@@ -16,6 +16,7 @@
 # =============================================================================
 """Event based commitments from supervision to support various matrix views."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import age_bucket_grouping
 from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
@@ -47,7 +48,7 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_QUERY_TEMPLATE = """
             secondary_person_external_id AS person_external_id,
             gender,
             assessment_score_bucket,
-            age_bucket,
+            {age_bucket},
             prioritized_race_or_ethnicity,
             supervision_type,
             supervision_level,
@@ -92,6 +93,7 @@ EVENT_BASED_COMMITMENTS_FROM_SUPERVISION_FOR_MATRIX_VIEW_BUILDER = SimpleBigQuer
     state_specific_recommended_for_revocation=state_specific_query_strings.state_specific_recommended_for_revocation(),
     state_specific_admission_type_inclusion_filter=state_specific_query_strings.state_specific_admission_type_inclusion_filter(),
     state_specific_admission_type=state_specific_query_strings.state_specific_admission_type(),
+    age_bucket=age_bucket_grouping(),
 )
 
 if __name__ == "__main__":

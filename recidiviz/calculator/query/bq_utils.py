@@ -83,6 +83,23 @@ def period_to_sentence_group_joins(period_type: str, sentence_type: str) -> str:
       USING (sentence_group_id)"""
 
 
+def age_bucket_grouping(
+    age_column: str = "age", use_external_unknown_when_null: bool = False
+) -> str:
+    null_statement = (
+        f"WHEN {age_column} IS NULL THEN 'EXTERNAL_UNKNOWN'"
+        if use_external_unknown_when_null
+        else ""
+    )
+    return f"""CASE WHEN {age_column} <= 24 THEN '<25'
+                WHEN {age_column} <= 29 THEN '25-29'
+                WHEN {age_column} <= 34 THEN '30-34'
+                WHEN {age_column} <= 39 THEN '35-39'
+                WHEN {age_column} >= 40 THEN '40<'
+                {null_statement}
+            END AS age_bucket"""
+
+
 def most_severe_violation_type_subtype_grouping() -> str:
     return """CASE WHEN most_severe_violation_type = 'TECHNICAL' THEN
                 CASE WHEN most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' THEN most_severe_violation_type_subtype

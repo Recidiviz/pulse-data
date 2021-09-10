@@ -50,7 +50,7 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
           release_date,
           {state_specific_race_or_ethnicity_groupings},
           IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
-          IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket,
+          {age_bucket},
           IEEE_DIVIDE(total_days_incarcerated, 365.25) as years_incarcerated 
         FROM
           `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_materialized` releases
@@ -119,6 +119,7 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewBuilder(
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(
         "prioritized_race_or_ethnicity"
     ),
+    age_bucket=bq_utils.age_bucket_grouping(use_external_unknown_when_null=True),
 )
 
 if __name__ == "__main__":
