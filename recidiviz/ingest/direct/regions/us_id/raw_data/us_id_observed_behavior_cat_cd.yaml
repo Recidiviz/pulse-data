@@ -1,6 +1,6 @@
 file_tag: observed_behavior_cat_cd
 file_description: |-
-  Code table for categories of observed behavior
+  Code table for categories of observed behavior. Corresponds to the LSI-R category of the Idaho Response Matrix.
 primary_key_cols:
   - observed_behavior_cat_cd
 columns:

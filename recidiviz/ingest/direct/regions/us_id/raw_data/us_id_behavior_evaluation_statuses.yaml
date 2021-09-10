@@ -1,6 +1,6 @@
 file_tag: behavior_evaluation_statuses
 file_description: |-
-  #TODO(#8453)
+  #TODO(#9180)
 primary_key_cols:
   - behavior_evaluation_status_id
 columns:
@@ -9,7 +9,7 @@ columns:
   - name: status
     description: Description of this status
     known_values:
-    - value: ACTIVE
-      description: #TODO(#8453)
-    - value: HISTORY
-      description: #TODO(#8453)
+      - value: ACTIVE
+        description: #TODO(#9180)
+      - value: HISTORY
+        description: #TODO(#9180)

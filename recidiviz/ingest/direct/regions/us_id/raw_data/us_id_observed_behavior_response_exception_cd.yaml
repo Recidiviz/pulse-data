@@ -1,6 +1,6 @@
 file_tag: observed_behavior_response_exception_cd
 file_description: |-
-  Code table describing the exceptions to behavior responses
+  Code table describing types of exceptions that can be applied to the response (reward/sanction) indicated by the Idaho Response Matrix.
 primary_key_cols:
   - observed_behavior_response_exception_cd
 columns:
@@ -12,6 +12,11 @@ columns:
       - value: F
         description: "False"
   - name: observed_behavior_response_exception_cd
-    description: Code for this exception
+    description: Code for this exception. Exceptions are applied at the discretion of the PO in consultation with District Managers in cases where the PO believes extenuating circumstances warrant an increase or decrease in the reward/sanction.
+    known_values:
+      - value: 1
+        description: Escalation
+      - value: 2
+        description: Deescalation
   - name: observed_behavior_response_exception_desc
     description: Description of this exception
