@@ -1,6 +1,6 @@
 file_tag: behavior_evaluation_actions
 file_description: |-
-  Associates action taken, usually by supervisor, on behavior evaluation form.
+  Code table describing actions taken by POs and supervisors on behavior evaluation form
 primary_key_cols:
   - behavior_evaluation_action_id
 columns:
@@ -9,17 +9,11 @@ columns:
       ID column
   - name: action
     description: |-
-      Type of action taken on form.
+      Type of action taken on form. Not all of these are in use according to IDOC IT.
     known_values:
       - value: APPROVE
-        description: #TODO(#8453)
       - value: END
-        description: #TODO(#8453)
       - value: PREPARE
-        description: #TODO(#8453)
       - value: SUBMIT
-        description: #TODO(#8453)
       - value: UPDATE
-        description: #TODO(#8453)
       - value: future
-        description: Placeholder for future use

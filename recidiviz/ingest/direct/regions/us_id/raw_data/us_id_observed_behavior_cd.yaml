@@ -1,11 +1,11 @@
 file_tag: observed_behavior_cd
 file_description: |-
-  Code table to describe the behavior observed by POs
+  Code table to describe the behavior observed by POs. Corresponds to items listed in the "Desired Behaviors" (for rewards) and "Event" (for sanctions) columns of the Idaho Response Matrix.
 primary_key_cols:
   - observed_behavior_cd
 columns:
   - name: observed_behavior_cat_cd
-    description: Code for the category of behavior
+    description: Code for the category of behavior. Corresponds to the LSI-R category of the behavior.
   - name: vld_flg
     description: Flag to determine if this code is still valid
     known_values:
@@ -18,17 +18,33 @@ columns:
   - name: observed_behavior_typ
     description: Code for the type of behavior (reward/sanction)
   - name: observed_behavior_desc
-    description: Description of behavior
+    description: Description of behavior.
   - name: low_score
-    description: #TODO(#8453)
+    description: The level of reward/sanction for this behavior for someone on low supervision.
+    known_values:
+      - value: 1
+        description: Level 1
+      - value: 2
+        description: Level 2
+      - value: 3
+        description: Level 3
+      - value: 4
+        description: Violation
   - name: moderate_score
-    description: #TODO(#8453)
+    description: The level of reward/sanction for this behavior for someone on moderate supervision. Same values as low_score.
   - name: high_score
-    description: #TODO(#8453)
+    description: The level of reward/sanction for this behavior for someone on high supervision. Same values as low_score.
   - name: prle_score
-    description: #TODO(#8453)
+    description: Sanctions specific for those on parole.
+    known_values:
+      - value: 4
+        description: Violation
+      - value: 90
+        description: 90-day incarceration sanction. No longer used.
+      - value: 180
+        description: 180-day incarceration sanction. No longer used.
   - name: sex_offense
-    description: Flag to determine if this behavior is a sex offense #TODO(#8453)
+    description: Flag to determine if this behavior is a sex offense
     known_values:
       - value: T
         description: "True"

@@ -1,10 +1,10 @@
 file_tag: ofndr_behavior_evaluation_enhancements
 file_description: |-
-  #TODO(#8453)
+  Contains a record for each Idaho Respone Matrix entry that had an enhancement applied by the PO.
 primary_key_cols:
   - ofndr_behavior_evaluation_id
 columns:
   - name: ofndr_behavior_evaluation_id
-    description: #TODO(#8453)
+    description: The ID of the behavior evaluation to which this enhancement applies.
   - name: observed_behavior_enhance_typ
-    description: #TODO(#8453)
+    description: The code for the type of enhancement applied.

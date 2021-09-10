@@ -1,16 +1,21 @@
 file_tag: ofndr_behavior_evaluation_item
 file_description: |-
-  #TODO(#8453)
+  Contains a record for each behavior identified by a PO on the behavior response matrix form
 primary_key_cols:
-  - ofndr_behavior_evaluation_id
+  - ofndr_behavior_evaluation_item_id
 columns:
-  - name: ofndr_behavior_evaluation_id
-    description: #TODO(#8453)
   - name: ofndr_behavior_evaluation_item_id
-    description: #TODO(#8453)
+    description: ID for this behavior
+  - name: ofndr_behavior_evaluation_id
+    description: ID of the behavior evaluation response form
   - name: observed_behavior_cd
-    description: #TODO(#8453)
+    description: Code for the behavior that was identified
   - name: is_scored
-    description: #TODO(#8453)
+    description: Only the most "serious" behavior is scored for any given behavior evaluation. This flag determines which behavior's score is reported, even though a score is calculated for each behavior.
+    known_values:
+      - value: T
+        description: "True"
+      - value: F
+        description: "False"
   - name: scored_val
-    description: #TODO(#8453)
+    description: Number of points assigned to this behavior after any enhancements/exceptions are applied

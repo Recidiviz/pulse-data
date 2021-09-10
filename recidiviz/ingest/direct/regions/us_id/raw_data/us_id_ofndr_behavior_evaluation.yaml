@@ -1,21 +1,32 @@
 file_tag: ofndr_behavior_evaluation
 file_description: |-
-  Primary record table for behavior evaluation form. Contains one row for each
-  behavior evaluation.
+  Primary record table for behavior evaluation form (Idaho response matrix). Contains one row for each behavior evaluation, which can be associated with multiple observed behaviors and responses (rewards/sanctions).
 primary_key_cols:
   - ofndr_behavior_evaluation_id
 columns:
   - name: ofndr_behavior_evaluation_id
-    description: ID of evaluation
+    description: ID of this evaluation
   - name: ofndr_num
     description: ID of the person who was evaluated
   - name: curr_lgl_stat_cd
     description: Code for current legal status of person being evaluated
+    known_values:
+      - value: B
+        description: Probation
+      - value: P
+        description: Parole
   - name: curr_lsi_level
     description: Current LSI level of person being evaluated
+    known_values:
+      - value: 1
+        description: Low
+      - value: 2
+        description: Moderate
+      - value: 3
+        description: High
   - name: behavior_evaluation_source_cd
-    description: Code for source of evaluation
+    description: Code for form used to document the evaluation. The response matrix was originally intended to be used with both a "case update" and a "supervision contact" record but functionality was only implemented for supervision contacts, hence this value is always 1.
   - name: source_id
-    description: Code for source of evaluation
+    description: ID of the associated supervision contact form that documents the visit where this behavior evaluation was conducted. Can be joined to `sprvsn_cntc.sprvsn_cntc_id`.
   - name: status
-    description: Code for status of evaluation
+    description: Code for status of evaluation #TODO(#9180)
