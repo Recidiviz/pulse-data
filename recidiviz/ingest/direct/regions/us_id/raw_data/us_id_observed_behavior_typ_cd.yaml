@@ -1,6 +1,6 @@
 file_tag: observed_behavior_typ_cd
 file_description: |-
-  Code table to describe the type of behavior observed by POs
+  Code table to describe the type of behavior observed by POs.
 primary_key_cols:
   - observed_behavior_typ
 columns:
@@ -13,5 +13,10 @@ columns:
         description: "False"
   - name: observed_behavior_typ
     description: Code for this behavior type
+    known_values:
+      - value: 1
+        description: Sanction
+      - value: 2
+        description: Reward
   - name: observed_behavior_typ_desc
     description: Description of this behavior type

@@ -1,16 +1,16 @@
 file_tag: ofndr_behavior_evaluation_response_dates
 file_description: |-
-  Contains a record matching PO responses to behavior evaluations with dates
+  Contains a record that shows the duration of the reward/sanction applied by a PO to an observed behavior. This table only contains records for rewards/sanctions where a start date and end date are explicitly set.
 primary_key_cols:
   - ofndr_behavior_evaluation_response_date_id
 columns:
-  - name: ofndr_behavior_evaluation_response_id
-    description: ID for this response
   - name: ofndr_behavior_evaluation_response_date_id
-    description: ID for the date of this response
+    description: ID for this record
+  - name: ofndr_behavior_evaluation_response_id
+    description: ID for the reward/sanction associatied with this duration
   - name: jail_start_dt
     is_datetime: True
-    description: #TODO(#8453)
+    description: Start date for the duration of the reward/sanction
   - name: jail_end_dt
     is_datetime: True
-    description: #TODO(#8453)
+    description: End date for the duration of the reward/sanction

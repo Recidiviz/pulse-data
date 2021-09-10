@@ -1,6 +1,6 @@
 file_tag: observed_behavior_enhance_typ_cd
 file_description: |-
-  Code table containing descriptions of behavior observation enhancements
+  Code table containing descriptions of behavior observation enhancements. Enhancements are used when behavior violates special conditions of probation/parole.
 primary_key_cols:
   - observed_behavior_enhance_typ
 columns:

@@ -1,18 +1,27 @@
 file_tag: observed_behavior_response_cd
 file_description: |-
-  Code table describing the types of responses POs have to behavior evaluations
+  Code table describing the types of responses POs have to specific behaviors. Cooresponds to Response Chart of Idaho response matrix.
 primary_key_cols:
   - observed_behavior_response_cd
 columns:
   - name: vld_flg
     description: Flag that determines if this response is still valid
+    known_values:
+      - value: T
+        description: "True"
+      - value: F
+        description: "False"
   - name: observed_behavior_typ
-    description: Code for category of observed behavior
+    description: Code for type of observed behavior (reward/sanction)
   - name: observed_behavior_response_cd
     description: Code for this response
   - name: observed_behavior_response_level
-    description: #TODO(#8453)
+    description: Level of reward/sanction as indicated in Idaho Response Matrix.
+    known_values:
+      - value: 1
+      - value: 2
+      - value: 3
   - name: observed_behavior_response_rank
-    description: #TODO(#8453)
+    description: Rank of response within each type of behavior (reward/sanction) and response level. For rewards, a lower rank is a greater reward. For sanctions, a higher rank is a more serious sanction.
   - name: observed_behavior_response_desc
     description: Description of this response

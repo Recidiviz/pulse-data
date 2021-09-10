@@ -1,13 +1,13 @@
 file_tag: observed_behavior_enhance_values
 file_description: |-
-  #TODO(#8453)
+  Contains a record for each enhancement applied to a specific behavior observed during an Idaho Response Matrix behavior evaluation.
 primary_key_cols:
   - observed_behavior_enhance_typ
   - observed_behavior_cd
 columns:
   - name: observed_behavior_enhance_typ
-    description: #TODO(#8453)
+    description: Code for type of enhancement applied
   - name: observed_behavior_cd
-    description: #TODO(#8453)
+    description: Code for observed behavior to which this enhancement applies
   - name: enhance_value
-    description: #TODO(#8453)
+    description: Amount by which the sanction is increased due to the enhancement. Always equal to 1.
