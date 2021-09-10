@@ -42,7 +42,7 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = """
     /* Supervision case terminations. */
     WITH terminations_with_agent_info AS (
         SELECT
-            * EXCEPT(state_code, age_bucket),
+            * EXCEPT(state_code),
             metric.state_code,
             {age_bucket},
             -- We drop commas in agent names since we use commas as the delimiters in the export
