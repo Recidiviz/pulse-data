@@ -41,7 +41,7 @@ INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
         date_of_stay as population_date,
         {state_specific_race_or_ethnicity_groupings},
         gender,
-        age_bucket,
+        {age_bucket},
       FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_materialized`
       WHERE date_of_stay = DATE(year, month, 1)
@@ -98,6 +98,7 @@ INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryV
     facility_type_filter=state_specific_query_strings.spotlight_state_specific_facility_filter(
         facility_type=state_specific_query_strings.SpotlightFacilityType.PRISON
     ),
+    age_bucket=bq_utils.age_bucket_grouping(),
 )
 
 if __name__ == "__main__":

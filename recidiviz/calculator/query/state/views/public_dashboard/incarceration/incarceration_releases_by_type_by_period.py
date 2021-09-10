@@ -46,7 +46,7 @@ INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_QUERY_TEMPLATE = """
           supervision_type_at_release,
           {state_specific_race_or_ethnicity_groupings},
           IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
-          IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket
+          {age_bucket}
         FROM
           `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_materialized` releases
         WHERE release_reason in ('COMMUTED', 'COMPASSIONATE', 'CONDITIONAL_RELEASE', 'SENTENCE_SERVED', 'TRANSFER_OUT_OF_STATE', 'DEATH')
@@ -110,6 +110,7 @@ INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilde
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(
         "prioritized_race_or_ethnicity"
     ),
+    age_bucket=bq_utils.age_bucket_grouping(use_external_unknown_when_null=True),
 )
 
 if __name__ == "__main__":

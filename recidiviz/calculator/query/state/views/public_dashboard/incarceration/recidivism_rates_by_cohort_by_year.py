@@ -38,7 +38,7 @@ RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_QUERY_TEMPLATE = """
         release_cohort,
         follow_up_period,
         gender,
-        age_bucket,
+        {age_bucket},
         prioritized_race_or_ethnicity,
         did_recidivate,
         ROW_NUMBER() OVER (PARTITION BY state_code, release_cohort, follow_up_period, person_id
@@ -145,6 +145,7 @@ RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_BUILDER = MetricBigQueryViewBuilder(
     age_dimension=bq_utils.unnest_column("age_bucket", "age_bucket"),
     pa_recidivism_dataset=PA_RECIDIVISM_ADDRESS.dataset_id,
     pa_recidivism_table=PA_RECIDIVISM_ADDRESS.table_id,
+    age_bucket=bq_utils.age_bucket_grouping(),
 )
 
 if __name__ == "__main__":

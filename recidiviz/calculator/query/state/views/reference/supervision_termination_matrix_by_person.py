@@ -42,8 +42,9 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = """
     /* Supervision case terminations. */
     WITH terminations_with_agent_info AS (
         SELECT
-            * EXCEPT(state_code),
+            * EXCEPT(state_code, age_bucket),
             metric.state_code,
+            {age_bucket},
             -- We drop commas in agent names since we use commas as the delimiters in the export
             -- TODO(#8674): Use agent_external_id instead of agent_external_id_with_full_name
             -- once the FE is using the officer_full_name field for names
@@ -223,6 +224,7 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilde
     thirty_six_month_filter=bq_utils.thirty_six_month_filter(),
     state_specific_dimension_filter=state_specific_query_strings.state_specific_dimension_filter(),
     state_specific_supervision_type_inclusion_filter=state_specific_query_strings.state_specific_supervision_type_inclusion_filter(),
+    age_bucket=bq_utils.age_bucket_grouping(age_column="metric.age"),
 )
 
 if __name__ == "__main__":

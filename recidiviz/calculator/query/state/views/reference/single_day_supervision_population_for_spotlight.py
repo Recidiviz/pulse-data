@@ -16,6 +16,7 @@
 # =============================================================================
 """Event based supervision population for the most recent date of supervision."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import age_bucket_grouping
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -41,7 +42,7 @@ SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_QUERY_TEMPLATE = """
       prioritized_race_or_ethnicity,
       projected_end_date,
       IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
-      IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket,
+      {age_bucket},
       IFNULL(judicial_district_code, 'EXTERNAL_UNKNOWN') as judicial_district_code,
       IFNULL(supervising_district_external_id, 'EXTERNAL_UNKNOWN') as supervising_district_external_id,
       IFNULL(supervision_level, 'EXTERNAL_UNKNOWN') as supervision_level,
@@ -57,6 +58,7 @@ SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_VIEW_BUILDER = SimpleBigQueryVie
     view_query_template=SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_QUERY_TEMPLATE,
     description=SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    age_bucket=age_bucket_grouping(use_external_unknown_when_null=True),
 )
 
 if __name__ == "__main__":
