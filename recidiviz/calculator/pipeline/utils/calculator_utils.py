@@ -80,18 +80,14 @@ def person_characteristics(
     pipeline: str,
 ) -> Dict[str, Any]:
     """Adds the person's demographic characteristics to the given |characteristics|
-    dictionary. For the 'age_bucket' field, calculates the person's age on the
-    |event_date|. Adds the person's person_id and, if applicable,
+    dictionary. Adds the person's person_id and, if applicable,
     a person_external_id and potentially a secondary person_external_id.
     """
     characteristics: Dict[str, Any] = {}
 
     event_age = age_at_date(person, event_date)
-    event_age_bucket = age_bucket(event_age)
     if event_age is not None:
         characteristics["age"] = event_age
-    if event_age_bucket is not None:
-        characteristics["age_bucket"] = event_age_bucket
     if person.gender is not None:
         characteristics["gender"] = person.gender
     if person_metadata and person_metadata.prioritized_race_or_ethnicity:
@@ -137,31 +133,6 @@ def age_at_date(person: StatePerson, check_date: datetime.date) -> Optional[int]
         - birthdate.year
         - ((check_date.month, check_date.day) < (birthdate.month, birthdate.day))
     )
-
-
-def age_bucket(age: Optional[int]) -> Optional[str]:
-    """Calculates the age bucket that applies to measurement.
-
-    Age buckets for measurement: <25, 25-29, 30-34, 35-39, 40<
-
-    Args:
-        age: the person's age
-
-    Returns:
-        A string representation of the age bucket for the person. None if the
-            age is not known.
-    """
-    if age is None:
-        return None
-    if age < 25:
-        return "<25"
-    if age <= 29:
-        return "25-29"
-    if age <= 34:
-        return "30-34"
-    if age <= 39:
-        return "35-39"
-    return "40<"
 
 
 def person_external_id_to_include(

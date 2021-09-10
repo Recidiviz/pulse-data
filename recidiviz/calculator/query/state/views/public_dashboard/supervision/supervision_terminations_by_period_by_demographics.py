@@ -45,7 +45,7 @@ SUPERVISION_TERMINATIONS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
         IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket,
         supervision_type,
         metric_period_months
-      FROM (SELECT * EXCEPT(age_bucket), 
+      FROM (SELECT *, 
         {age_bucket}
       FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics_materialized` termination_metrics),
       {gender_dimension},

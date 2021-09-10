@@ -120,7 +120,6 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
             SchemaField("metric_type", bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField("job_id", bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField("state_code", bigquery.enums.SqlTypeNames.STRING.value),
-            SchemaField("age_bucket", bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField("age", bigquery.enums.SqlTypeNames.INTEGER.value),
             SchemaField(
                 "prioritized_race_or_ethnicity",

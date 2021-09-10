@@ -69,10 +69,6 @@ class RecidivizMetric(Generic[RecidivizMetricTypeT], BuildableAttr):
 
     # Optional characteristics
 
-    # The age bucket string of the persons the metric describes, e.g. '<25' or
-    # '35-39'
-    age_bucket: Optional[str] = attr.ib(default=None)
-
     # The age of the person the metric describes
     age: Optional[int] = attr.ib(default=None)
 

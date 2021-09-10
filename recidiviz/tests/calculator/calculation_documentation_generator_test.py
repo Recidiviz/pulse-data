@@ -430,7 +430,6 @@ Attributes on all metrics:
 |-----------------------------|--------|-------------------|
 |job_id                       |STRING  |                   |
 |state_code                   |STRING  |                   |
-|age_bucket                   |STRING  |                   |
 |age                          |INTEGER |                   |
 |prioritized_race_or_ethnicity|STRING  |                   |
 |gender                       |STRING  |Gender             |

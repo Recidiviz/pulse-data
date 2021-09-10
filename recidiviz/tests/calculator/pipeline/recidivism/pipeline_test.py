@@ -1257,7 +1257,7 @@ class MetricGroup:
         state_code="US_XX",
         release_cohort=2015,
         follow_up_period=1,
-        age_bucket="25-29",
+        age=26,
         did_recidivate=True,
     )
 
