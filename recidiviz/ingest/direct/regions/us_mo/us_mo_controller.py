@@ -88,6 +88,7 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import (
     CYCLE_ID,
     DOC_ID,
     FIELD_KEY_SEQ,
+    INCARCERATION_SENTENCE_DATE_IMPOSED,
     INCARCERATION_SENTENCE_LENGTH_DAYS,
     INCARCERATION_SENTENCE_LENGTH_MONTHS,
     INCARCERATION_SENTENCE_LENGTH_YEARS,
@@ -1036,6 +1037,21 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 if obj.release_date == "99999999":
                     obj.release_date = row.get(MOST_RECENT_SENTENCE_STATUS_DATE, None)
 
+    # TODO(#9185): [US_MO] Ensure correct handling of magic date in start_date of incarceration sentence
+    @classmethod
+    def _replace_invalid_sentence_start_date(
+        cls,
+        _gating_context: IngestGatingContext,
+        row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
+        """Replaces a 99999999 start date with the date the sentence was created."""
+        for obj in extracted_objects:
+            if isinstance(obj, StateIncarcerationSentence):
+                if obj.start_date == "99999999":
+                    obj.start_date = row.get(INCARCERATION_SENTENCE_DATE_IMPOSED, None)
+
     @classmethod
     def _gen_clear_magical_date_value(
         cls,
@@ -1516,6 +1532,7 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 "LIF",
                 StateIncarcerationSentence,
             ),
+            self._replace_invalid_sentence_start_date,
             self._gen_clear_magical_date_value(
                 "projected_max_release_date",
                 self.SENTENCE_MAGICAL_DATES,
