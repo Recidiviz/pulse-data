@@ -572,6 +572,44 @@ class TestUsMoController(BaseDirectIngestControllerTests):
                         )
                     ],
                 ),
+                StatePerson(
+                    state_person_id="1152016",
+                    state_person_external_ids=[
+                        StatePersonExternalId(
+                            state_person_external_id_id="1152016", id_type=US_MO_DOC
+                        ),
+                    ],
+                    state_sentence_groups=[
+                        StateSentenceGroup(
+                            state_sentence_group_id="1152016-20060920",
+                            state_incarceration_sentences=[
+                                StateIncarcerationSentence(
+                                    state_incarceration_sentence_id="1152016-20060920-5",
+                                    status="SERVING",
+                                    date_imposed="20180510",
+                                    start_date="20180510",
+                                    county_code="US_MO_CALLAWAY",
+                                    max_length="50Y 0M 0D",
+                                    is_life="False",
+                                    is_capital_punishment="N",
+                                    state_charges=[
+                                        StateCharge(
+                                            state_charge_id="1152016-20060920-5",
+                                            offense_date="20140219",
+                                            county_code="US_MO_CALLAWAY",
+                                            ncic_code="5299",
+                                            statute="31010990",
+                                            description="ARMED CRIMINAL ACTION",
+                                            is_violent="False",
+                                            classification_type="F",
+                                            classification_subtype="U",
+                                        )
+                                    ],
+                                )
+                            ],
+                        )
+                    ],
+                ),
             ]
         )
 
@@ -2338,6 +2376,66 @@ class TestUsMoController(BaseDirectIngestControllerTests):
             person=person_910324,
         )
         sis_910324_19890825_1.charges = [charge_910324]
+
+        sg_1152016_20060920 = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id="1152016-20060920",
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        person_1152016 = entities.StatePerson.new_with_defaults(
+            state_code="US_MO",
+            external_ids=[],
+            sentence_groups=[
+                sg_1152016_20060920,
+            ],
+        )
+
+        spei_1152016 = entities.StatePersonExternalId.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id="1152016",
+            id_type=US_MO_DOC,
+            person=person_1152016,
+        )
+        person_1152016.external_ids.append(spei_1152016)
+
+        sg_1152016_20060920.person = person_1152016
+        sis_1152016_20060920_5 = entities.StateIncarcerationSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id="1152016-20060920-5",
+            status=StateSentenceStatus.SERVING,
+            status_raw_text="SERVING",
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            date_imposed=datetime.date(year=2018, month=5, day=10),
+            start_date=datetime.date(year=2018, month=5, day=10),
+            county_code="US_MO_CALLAWAY",
+            max_length_days=18262,
+            is_life=False,
+            is_capital_punishment=False,
+            person=person_1152016,
+            sentence_group=sg_1152016_20060920,
+        )
+        sg_1152016_20060920.incarceration_sentences.append(sis_1152016_20060920_5)
+
+        charge_1152016 = entities.StateCharge.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
+            offense_date=datetime.date(2014, 2, 19),
+            county_code="US_MO_CALLAWAY",
+            external_id="1152016-20060920-5",
+            ncic_code="5299",
+            statute="31010990",
+            description="ARMED CRIMINAL ACTION",
+            is_violent=False,
+            classification_type=StateChargeClassificationType.FELONY,
+            classification_type_raw_text="F",
+            classification_subtype="U",
+            incarceration_sentences=[sis_1152016_20060920_5],
+            person=person_1152016,
+        )
+        sis_1152016_20060920_5.charges = [charge_1152016]
+
+        expected_people.append(person_1152016)
 
         # SQL Preprocessing View
         # Act
