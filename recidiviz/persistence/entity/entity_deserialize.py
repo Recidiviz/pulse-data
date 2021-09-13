@@ -16,7 +16,7 @@
 # =============================================================================
 """Provides a decorator for augmenting Entity classes with a deserialization constructor."""
 from abc import abstractmethod
-from typing import Any, Callable, Dict, Generic, Type, TypeVar, Union
+from typing import Any, Callable, Dict, Generic, Optional, Type, TypeVar, Union
 
 import attr
 
@@ -54,13 +54,19 @@ class EntityFieldConverter(Generic[T]):
 def entity_deserialize(
     cls: Type[EntityT],
     converter_overrides: Dict[str, EntityFieldConverter],
-    **kwargs: Union[str, EnumParser],
+    defaults: Dict[str, Any],
+    **kwargs: Optional[Union[str, EnumParser]],
 ) -> EntityT:
-    """Factory function that parses ingested versions of the Entity constructor args into database-ready, normalized
-    values and uses the normalized values to construct an instance of the object.
+    """Factory function that parses ingested versions of the Entity constructor args
+    into database-ready, normalized values and uses the normalized values to construct
+    an instance of the object.
 
-    Each field type is normalized in a standard way, but you can also pass in non-standard converters for any field via
-    the |converter_overrides_opt| param.
+    Each field type is normalized in a standard way, but you can also pass in
+    non-standard converters for any field via the |converter_overrides_opt| param.
+
+    Null values will never be passed to an EntityFieldConverter. If you want to add a
+    default value that will override any null field value, pass in the default via the
+    |defaults| map.
     """
 
     if not is_attr_decorated(cls):
@@ -74,7 +80,7 @@ def entity_deserialize(
         )
 
     def convert_field_value(
-        field: attr.Attribute, field_value: Union[str, EnumParser]
+        field: attr.Attribute, field_value: Optional[Union[str, EnumParser]]
     ) -> Any:
         if field_value is None:
             return None
@@ -119,6 +125,9 @@ def entity_deserialize(
     for field_name, field_ in attr.fields_dict(cls).items():
         if field_name in kwargs:
             converted_args[field_name] = convert_field_value(field_, kwargs[field_name])
+        if field_name in defaults:
+            if converted_args.get(field_name, None) is None:
+                converted_args[field_name] = defaults[field_name]
 
     return cls(**converted_args)  # type: ignore[call-arg]
 
@@ -126,5 +135,5 @@ def entity_deserialize(
 class EntityFactory(Generic[EntityT]):
     @staticmethod
     @abstractmethod
-    def deserialize(**kwargs: Union[str, EnumParser]) -> EntityT:
+    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> EntityT:
         """Instantiates an entity from the provided list of arguments."""

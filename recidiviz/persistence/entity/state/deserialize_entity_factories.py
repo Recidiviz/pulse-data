@@ -16,13 +16,10 @@
 # =============================================================================
 """Factories for deserializing entities in state/entities.py from ingested values."""
 
-from typing import Union
+from typing import Optional, Union
 
 from recidiviz.common.constants.charge import ChargeStatus
-from recidiviz.common.constants.enum_parser import (
-    EnumParser,
-    get_parser_for_enum_with_default,
-)
+from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_court_case import (
     StateCourtCaseStatus,
@@ -50,129 +47,127 @@ from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
 
 class StatePersonExternalIdFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StatePersonExternalId:
+    def deserialize(
+        **kwargs: Optional[Union[str, EnumParser]]
+    ) -> entities.StatePersonExternalId:
         return entity_deserialize(
-            cls=entities.StatePersonExternalId, converter_overrides={}, **kwargs
+            cls=entities.StatePersonExternalId,
+            converter_overrides={},
+            defaults={},
+            **kwargs
         )
 
 
 class StatePersonFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StatePerson:
+    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> entities.StatePerson:
         return entity_deserialize(
             cls=entities.StatePerson,
             converter_overrides={
                 "residency_status": EntityFieldConverter(str, parse_residency_status),
                 "full_name": EntityFieldConverter(str, normalize_flat_json),
             },
+            defaults={},
             **kwargs
         )
 
 
 class StatePersonRaceFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StatePersonRace:
+    def deserialize(
+        **kwargs: Optional[Union[str, EnumParser]]
+    ) -> entities.StatePersonRace:
         return entity_deserialize(
-            cls=entities.StatePersonRace, converter_overrides={}, **kwargs
+            cls=entities.StatePersonRace, converter_overrides={}, defaults={}, **kwargs
         )
 
 
 class StatePersonEthnicityFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StatePersonEthnicity:
+    def deserialize(
+        **kwargs: Optional[Union[str, EnumParser]]
+    ) -> entities.StatePersonEthnicity:
         return entity_deserialize(
-            cls=entities.StatePersonEthnicity, converter_overrides={}, **kwargs
+            cls=entities.StatePersonEthnicity,
+            converter_overrides={},
+            defaults={},
+            **kwargs
         )
 
 
 class StateSentenceGroupFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StateSentenceGroup:
+    def deserialize(
+        **kwargs: Optional[Union[str, EnumParser]]
+    ) -> entities.StateSentenceGroup:
         return entity_deserialize(
             cls=entities.StateSentenceGroup,
-            converter_overrides={
-                "status": EntityFieldConverter(
-                    EnumParser,
-                    get_parser_for_enum_with_default(
-                        StateSentenceStatus.PRESENT_WITHOUT_INFO
-                    ),
-                ),
-            },
+            converter_overrides={},
+            defaults={"status": StateSentenceStatus.PRESENT_WITHOUT_INFO},
             **kwargs
         )
 
 
 class StateAssessmentFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StateAssessment:
+    def deserialize(
+        **kwargs: Optional[Union[str, EnumParser]]
+    ) -> entities.StateAssessment:
         return entity_deserialize(
-            cls=entities.StateAssessment, converter_overrides={}, **kwargs
+            cls=entities.StateAssessment, converter_overrides={}, defaults={}, **kwargs
         )
 
 
 class StatePersonAliasFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StatePersonAlias:
+    def deserialize(
+        **kwargs: Optional[Union[str, EnumParser]]
+    ) -> entities.StatePersonAlias:
         return entity_deserialize(
             cls=entities.StatePersonAlias,
             converter_overrides={
                 "full_name": EntityFieldConverter(str, normalize_flat_json),
             },
+            defaults={},
             **kwargs
         )
 
 
 class StateAgentFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StateAgent:
+    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> entities.StateAgent:
         return entity_deserialize(
             cls=entities.StateAgent,
             converter_overrides={
                 "full_name": EntityFieldConverter(str, normalize_flat_json),
-                "agent_type": EntityFieldConverter(
-                    EnumParser,
-                    get_parser_for_enum_with_default(
-                        StateAgentType.PRESENT_WITHOUT_INFO
-                    ),
-                ),
             },
+            defaults={"agent_type": StateAgentType.PRESENT_WITHOUT_INFO},
             **kwargs
         )
 
 
 class StateChargeFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StateCharge:
+    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> entities.StateCharge:
         return entity_deserialize(
             cls=entities.StateCharge,
-            converter_overrides={
-                "status": EntityFieldConverter(
-                    EnumParser,
-                    get_parser_for_enum_with_default(ChargeStatus.PRESENT_WITHOUT_INFO),
-                ),
-            },
+            converter_overrides={},
+            defaults={"status": ChargeStatus.PRESENT_WITHOUT_INFO},
             **kwargs
         )
 
 
 class StateCourtCaseFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StateCourtCase:
+    def deserialize(
+        **kwargs: Optional[Union[str, EnumParser]]
+    ) -> entities.StateCourtCase:
         return entity_deserialize(
             cls=entities.StateCourtCase,
-            converter_overrides={
-                "status": EntityFieldConverter(
-                    EnumParser,
-                    get_parser_for_enum_with_default(
-                        StateCourtCaseStatus.PRESENT_WITHOUT_INFO
-                    ),
-                ),
-                "court_type": EntityFieldConverter(
-                    EnumParser,
-                    get_parser_for_enum_with_default(
-                        StateCourtType.PRESENT_WITHOUT_INFO
-                    ),
-                ),
+            converter_overrides={},
+            defaults={
+                "court_type": StateCourtType.PRESENT_WITHOUT_INFO,
+                "status": StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
             },
             **kwargs
         )
@@ -180,30 +175,39 @@ class StateCourtCaseFactory(EntityFactory):
 
 class StateEarlyDischargeFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StateEarlyDischarge:
+    def deserialize(
+        **kwargs: Optional[Union[str, EnumParser]]
+    ) -> entities.StateEarlyDischarge:
         return entity_deserialize(
-            cls=entities.StateEarlyDischarge, converter_overrides={}, **kwargs
+            cls=entities.StateEarlyDischarge,
+            converter_overrides={},
+            defaults={},
+            **kwargs
         )
 
 
 class StateIncarcerationIncidentFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Union[str, EnumParser]
+        **kwargs: Optional[Union[str, EnumParser]]
     ) -> entities.StateIncarcerationIncident:
         return entity_deserialize(
-            cls=entities.StateIncarcerationIncident, converter_overrides={}, **kwargs
+            cls=entities.StateIncarcerationIncident,
+            converter_overrides={},
+            defaults={},
+            **kwargs
         )
 
 
 class StateIncarcerationIncidentOutcomeFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Union[str, EnumParser]
+        **kwargs: Optional[Union[str, EnumParser]]
     ) -> entities.StateIncarcerationIncidentOutcome:
         return entity_deserialize(
             cls=entities.StateIncarcerationIncidentOutcome,
             converter_overrides={},
+            defaults={},
             **kwargs
         )
 
@@ -211,29 +215,21 @@ class StateIncarcerationIncidentOutcomeFactory(EntityFactory):
 class StateIncarcerationSentenceFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Union[str, EnumParser]
+        **kwargs: Optional[Union[str, EnumParser]]
     ) -> entities.StateIncarcerationSentence:
         return entity_deserialize(
             cls=entities.StateIncarcerationSentence,
             converter_overrides={
-                "status": EntityFieldConverter(
-                    EnumParser,
-                    get_parser_for_enum_with_default(
-                        StateSentenceStatus.PRESENT_WITHOUT_INFO
-                    ),
-                ),
-                "incarceration_type": EntityFieldConverter(
-                    EnumParser,
-                    get_parser_for_enum_with_default(
-                        StateIncarcerationType.STATE_PRISON
-                    ),
-                ),
                 "min_length_days": EntityFieldConverter(str, parse_days),
                 "max_length_days": EntityFieldConverter(str, parse_days),
                 # Note: other date fields on this class (initial_time_served_days,
                 # good_time_days, earned_time_days) should be formatted as integers
                 # (e.g. not 'xxY xxM xxD' format) in the ingest view and will be parsed
                 # normally as integers.
+            },
+            defaults={
+                "status": StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                "incarceration_type": StateIncarcerationType.STATE_PRISON,
             },
             **kwargs
         )
@@ -242,17 +238,13 @@ class StateIncarcerationSentenceFactory(EntityFactory):
 class StateProgramAssignmentFactory(EntityFactory):
     @staticmethod
     def deserialize(
-        **kwargs: Union[str, EnumParser]
+        **kwargs: Optional[Union[str, EnumParser]]
     ) -> entities.StateProgramAssignment:
         return entity_deserialize(
             cls=entities.StateProgramAssignment,
-            converter_overrides={
-                "participation_status": EntityFieldConverter(
-                    EnumParser,
-                    get_parser_for_enum_with_default(
-                        StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO
-                    ),
-                ),
+            converter_overrides={},
+            defaults={
+                "participation_status": StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO
             },
             **kwargs
         )
@@ -263,24 +255,15 @@ class StateIncarcerationPeriodFactory(EntityFactory):
 
     @staticmethod
     def deserialize(
-        **kwargs: Union[str, EnumParser]
+        **kwargs: Optional[Union[str, EnumParser]]
     ) -> entities.StateIncarcerationPeriod:
         ip = entity_deserialize(
             cls=entities.StateIncarcerationPeriod,
-            converter_overrides={
-                "incarceration_type": EntityFieldConverter(
-                    EnumParser,
-                    get_parser_for_enum_with_default(
-                        StateIncarcerationType.STATE_PRISON
-                    ),
-                ),
+            converter_overrides={},
+            defaults={
+                "incarceration_type": StateIncarcerationType.STATE_PRISON,
                 # TODO(#9128): Delete this once we delete status entirely.
-                "status": EntityFieldConverter(
-                    EnumParser,
-                    get_parser_for_enum_with_default(
-                        StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
-                    ),
-                ),
+                "status": StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
             },
             **kwargs
         )

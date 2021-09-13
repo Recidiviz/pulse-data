@@ -17,7 +17,7 @@
 """Class that parses an enum value from raw text, given a provided set of enum mappings."""
 import abc
 from enum import Enum
-from typing import Callable, Generic, Optional, Type
+from typing import Generic, Optional, Type
 
 import attr
 
@@ -64,16 +64,3 @@ def parse_to_enum(
         raise EnumParsingError(enum_cls, label) from e
 
     return overridden_value
-
-
-def get_parser_for_enum_with_default(
-    default: EnumT,
-) -> Callable[[EnumParser[EnumT]], EnumT]:
-    """Returns a converter function that parses a particular enum, but returns the default if parsing returns None."""
-
-    def _parse_enum_with_default(
-        enum_parser: EnumParser[EnumT],
-    ) -> EnumT:
-        return enum_parser.parse() or default
-
-    return _parse_enum_with_default
