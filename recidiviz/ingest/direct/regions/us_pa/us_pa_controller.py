@@ -129,7 +129,6 @@ from recidiviz.ingest.models.ingest_info import (
     StateIncarcerationSentence,
     StatePerson,
     StatePersonExternalId,
-    StatePersonRace,
     StateSentenceGroup,
     StateSupervisionContact,
     StateSupervisionPeriod,
@@ -193,12 +192,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             self._set_supervision_period_custodial_authority,
         ]
 
-        dbo_offender_postprocessors: List[IngestRowPosthookCallable] = [
-            gen_label_single_external_id_hook(US_PA_PBPP),
-            self._hydrate_races,
-            gen_rationalize_race_and_ethnicity(self.ENUM_OVERRIDES),
-        ]
-
         self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
             "doc_person_info": doc_person_info_postprocessors,
             "dbo_tblInmTestScore": [
@@ -220,7 +213,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 self._concatenate_incarceration_purpose_codes,
             ],
             "dbo_Miscon": dbo_Miscon_postprocessors,
-            "dbo_Offender": dbo_offender_postprocessors,
             "dbo_LSIHistory": [
                 gen_label_single_external_id_hook(US_PA_PBPP),
                 self._generate_pbpp_assessment_external_id,
@@ -261,7 +253,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "dbo_Miscon": [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
-            "dbo_Offender": [],
             "dbo_LSIR": [],
             "dbo_LSIHistory": [],
             "supervision_period_v3": [
@@ -301,16 +292,15 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         }
 
     ENUM_OVERRIDES: Dict[Enum, List[str]] = {
-        Race.ASIAN: ["ASIAN", "A"],
-        Race.BLACK: ["BLACK", "B"],
-        Race.AMERICAN_INDIAN_ALASKAN_NATIVE: ["AMERICAN INDIAN", "I"],
-        Race.OTHER: ["OTHER", "N"],
-        Race.WHITE: ["WHITE", "W", "WW"],
-        Ethnicity.HISPANIC: ["HISPANIC", "H"],
-        Gender.FEMALE: ["FEMALE", "F"],
-        Gender.MALE: ["MALE", "M", "MM"],
-        # NOTE: We've only seen one instance of this as of 10/12/2020 - it could just be a typo.
-        Gender.OTHER: ["OTHER", "N"],
+        Race.ASIAN: ["ASIAN"],
+        Race.BLACK: ["BLACK"],
+        Race.AMERICAN_INDIAN_ALASKAN_NATIVE: ["AMERICAN INDIAN"],
+        Race.OTHER: ["OTHER"],
+        Race.WHITE: ["WHITE"],
+        Ethnicity.HISPANIC: ["HISPANIC"],
+        Gender.FEMALE: ["FEMALE"],
+        Gender.MALE: ["MALE"],
+        Gender.OTHER: ["OTHER"],
         StateAssessmentType.CSSM: ["CSS-M"],
         StateAssessmentType.LSIR: ["LSI-R"],
         StateAssessmentType.PA_RST: ["RST"],
@@ -855,24 +845,6 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
 
                 for sg_to_create in sentence_groups_to_create:
                     create_if_not_exists(sg_to_create, obj, "state_sentence_groups")
-
-    @staticmethod
-    def _hydrate_races(
-        _gating_context: IngestGatingContext,
-        row: Dict[str, str],
-        extracted_objects: List[IngestObject],
-        _cache: IngestObjectCache,
-    ) -> None:
-        for obj in extracted_objects:
-            if isinstance(obj, StatePerson):
-                races = (
-                    row["races_ethnicities_list"].split(",")
-                    if row["races_ethnicities_list"]
-                    else []
-                )
-                for race in races:
-                    race_obj = StatePersonRace(race=race)
-                    create_if_not_exists(race_obj, obj, "state_person_external_ids")
 
     @staticmethod
     def _compose_current_address(
