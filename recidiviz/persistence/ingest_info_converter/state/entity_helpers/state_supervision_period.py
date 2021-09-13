@@ -65,7 +65,6 @@ def copy_fields_to_builder(
         new.conditions = create_comma_separated_list(proto, "conditions")
 
     enum_fields = {
-        "status": StateSupervisionPeriodStatus,
         "supervision_type": StateSupervisionType,
         "supervision_period_supervision_type": StateSupervisionPeriodSupervisionType,
         "admission_reason": StateSupervisionPeriodAdmissionReason,
@@ -85,11 +84,8 @@ def copy_fields_to_builder(
         status_default = StateSupervisionPeriodStatus.UNDER_SUPERVISION
     else:
         status_default = StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
-    new.status = proto_enum_mapper.get(
-        StateSupervisionPeriodStatus, default=status_default
-    )
+    new.status = status_default
 
-    new.status_raw_text = fn(normalize, "status", proto)
     new.supervision_type = proto_enum_mapper.get(StateSupervisionType)
     new.supervision_type_raw_text = fn(normalize, "supervision_type", proto)
     new.supervision_period_supervision_type = proto_enum_mapper.get(
