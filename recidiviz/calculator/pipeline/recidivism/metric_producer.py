@@ -60,7 +60,8 @@ class RecidivismMetricProducer(
     """Produces recidivism metrics from release events."""
 
     def __init__(self) -> None:
-        # TODO(python/mypy#5374): Remove the ignore type when abstract class assignments are supported.
+        # TODO(python/mypy#5374): Remove the ignore type when abstract class
+        #  assignments are supported.
         self.metric_class = ReincarcerationRecidivismMetric  # type: ignore
         self.event_to_metric_classes = {}
 
@@ -75,25 +76,11 @@ class RecidivismMetricProducer(
         calculation_end_month: Optional[str] = None,
         calculation_month_count: int = -1,
     ) -> List[ReincarcerationRecidivismMetric]:
-        """Transforms ReleaseEvents and a StatePerson into ReincarcerationRecidivismMetrics.
+        """Transforms ReleaseEvents and a StatePerson into
+        ReincarcerationRecidivismMetrics.
 
-        Takes in a StatePerson and all of her ReleaseEvents and returns a list of
-        ReincarcerationRecidivismMetrics
-
-        This translates a particular recidivism event into many different recidivism
-        metrics. Both count-based and rate-based metrics are generated.
-
-        Args:
-            person: the StatePerson
-            release_events: A dictionary mapping release cohorts to a list of
-                ReleaseEvents for the given StatePerson.
-            metric_inclusions: A dictionary where the keys are each ReincarcerationRecidivismMetricType, and the values
-                are boolean flags for whether or not to include that metric type in the calculations
-            person_metadata: Contains information about the StatePerson that is necessary for the metrics.
-            pipeline_job_id: The job_id of the pipeline that is currently running.
-
-        Returns:
-            A list of ReincarcerationRecidivismMetrics.
+        Takes in a StatePerson and all of their ReleaseEvents and returns a list of
+        ReincarcerationRecidivismMetrics.
         """
         metrics: List[ReincarcerationRecidivismMetric] = []
         all_reincarcerations = self.reincarcerations(identifier_events)
@@ -146,17 +133,20 @@ class RecidivismMetricProducer(
         release_date: date,
         all_reincarcerations: Dict[date, RecidivismReleaseEvent],
     ) -> Dict[int, List[RecidivismReleaseEvent]]:
-        """For all relevant follow-up periods following the release_date, determines the reincarcerations that occurred
-        between the release and the end of the follow-up period.
+        """For all relevant follow-up periods following the release_date, determines
+        the reincarcerations that occurred between the release and the end of the
+        follow-up period.
 
         Args:
             release_date: The date the person was released from prison
-            all_reincarcerations: dictionary where the keys are all dates of reincarceration for the person's ReleaseEvents,
-                and the values are the corresponding ReleaseEvents
+            all_reincarcerations: dictionary where the keys are all dates of
+                reincarceration for the person's ReleaseEvents, and the values are
+                the corresponding ReleaseEvents
 
         Returns:
-            A dictionary where the keys are all relevant follow-up periods for measurement, and the values are lists of
-            RecidivismReleaseEvents with reincarceration admissions during that period.
+            A dictionary where the keys are all relevant follow-up periods for
+            measurement, and the values are lists of RecidivismReleaseEvents with
+            reincarceration admissions during that period.
         """
         relevant_periods = self.relevant_follow_up_periods(
             release_date, date.today(), FOLLOW_UP_PERIODS
@@ -184,17 +174,19 @@ class RecidivismMetricProducer(
     ) -> Dict[date, RecidivismReleaseEvent]:
         """Finds the reincarcerations within the given ReleaseEvents.
 
-        Returns a dictionary where the keys are all dates of reincarceration for the person's ReleaseEvents, and the values
-        are RecidivismReleaseEvents corresponding to that reincarceration.
+        Returns a dictionary where the keys are all dates of reincarceration for the
+        person's ReleaseEvents, and the values are RecidivismReleaseEvents
+        corresponding to that reincarceration.
 
-        If one of the given events is not an instance of recidivism, i.e. it is not a RecidivismReleaseEvent, then it is not
-        represented in the output.
+        If one of the given events is not an instance of recidivism, i.e. it is not a
+        RecidivismReleaseEvent, then it is not represented in the output.
 
         Args:
             release_events: the list of ReleaseEvents.
 
         Returns:
-            A dictionary representing the dates of reincarceration and the RecidivismReleaseEvent for each reincarceration.
+            A dictionary representing the dates of reincarceration and the
+            RecidivismReleaseEvent for each reincarceration.
         """
         reincarcerations_dict: Dict[date, RecidivismReleaseEvent] = {}
 
@@ -202,8 +194,9 @@ class RecidivismMetricProducer(
             for event in events:
                 if isinstance(event, RecidivismReleaseEvent):
                     if event.reincarceration_date in reincarcerations_dict:
-                        # If two valid releases have identified the same admission date as the reincarceration, then
-                        # we want to prioritize the one with the fewer days between release and reincarceration
+                        # If two valid releases have identified the same admission
+                        # date as the reincarceration, then we want to prioritize the
+                        # one with the fewer days between release and reincarceration
                         release_event_same_reincarceration = reincarcerations_dict[
                             event.reincarceration_date
                         ]
@@ -236,8 +229,8 @@ class RecidivismMetricProducer(
             all_reincarcerations: the dictionary of reincarcerations to check
 
         Returns:
-            How many of the given reincarcerations are within the window specified by the given start date (inclusive)
-            and end date (exclusive).
+            How many of the given reincarcerations are within the window specified by
+            the given start date (inclusive) and end date (exclusive).
         """
         reincarcerations_in_window_dict = [
             reincarceration
@@ -314,8 +307,8 @@ class RecidivismMetricProducer(
             additional_attributes: Dict[str, Any] = {}
             additional_attributes["follow_up_period"] = period
 
-            # If they didn't recidivate at all or not yet for this period (or they didn't recidivate until 10 years had
-            # passed), assign a value of 0.
+            # If they didn't recidivate at all or not yet for this period (or they
+            # didn't recidivate until 10 years had passed), assign a value of 0.
             if (
                 isinstance(release_event, NonRecidivismReleaseEvent)
                 or not reincarceration_admissions
@@ -340,8 +333,9 @@ class RecidivismMetricProducer(
 
                 metrics.append(metric)
 
-            # If they recidivated, each unique release of a given person within a follow-up period after the year of release
-            # may be counted as an instance of recidivism for event-based measurement.
+            # If they recidivated, each unique reincarceration of a given person
+            # within a follow-up period after the year of release may be counted as an
+            # instance of recidivism for event-based measurement.
             elif isinstance(release_event, RecidivismReleaseEvent):
                 additional_attributes["did_recidivate"] = True
 
