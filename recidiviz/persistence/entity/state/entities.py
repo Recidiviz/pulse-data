@@ -1096,9 +1096,11 @@ class StateSupervisionPeriod(
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
+    # TODO(#9129): DEPRECATED - DO NOT ADD NEW USAGES
     status: StateSupervisionPeriodStatus = attr.ib(
         validator=attr.validators.instance_of(StateSupervisionPeriodStatus)
     )
+    # TODO(#9129): DEPRECATED - DO NOT ADD NEW USAGES
     status_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
@@ -1214,6 +1216,13 @@ class StateSupervisionPeriod(
     supervision_contacts: List["StateSupervisionContact"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
+
+    def __attrs_post_init__(self) -> None:
+        validate_deprecated_entity_field_for_states(
+            self,
+            "status_raw_text",
+            ["US_ID", "US_ME", "US_MO", "US_ND", "US_PA", "US_TN"],
+        )
 
     @property
     def duration(self) -> DateRange:

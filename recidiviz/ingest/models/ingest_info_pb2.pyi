@@ -2637,7 +2637,6 @@ global___StateIncarcerationPeriod = StateIncarcerationPeriod
 class StateSupervisionPeriod(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
     STATE_SUPERVISION_PERIOD_ID_FIELD_NUMBER: builtins.int
-    STATUS_FIELD_NUMBER: builtins.int
     SUPERVISION_TYPE_FIELD_NUMBER: builtins.int
     SUPERVISION_PERIOD_SUPERVISION_TYPE_FIELD_NUMBER: builtins.int
     START_DATE_FIELD_NUMBER: builtins.int
@@ -2657,7 +2656,6 @@ class StateSupervisionPeriod(google.protobuf.message.Message):
     STATE_SUPERVISION_CASE_TYPE_ENTRY_IDS_FIELD_NUMBER: builtins.int
     STATE_SUPERVISION_CONTACT_IDS_FIELD_NUMBER: builtins.int
     state_supervision_period_id: typing.Text = ...
-    status: typing.Text = ...
     supervision_type: typing.Text = ...
     supervision_period_supervision_type: typing.Text = ...
     start_date: typing.Text = ...
@@ -2710,7 +2708,6 @@ class StateSupervisionPeriod(google.protobuf.message.Message):
         self,
         *,
         state_supervision_period_id: typing.Optional[typing.Text] = ...,
-        status: typing.Optional[typing.Text] = ...,
         supervision_type: typing.Optional[typing.Text] = ...,
         supervision_period_supervision_type: typing.Optional[typing.Text] = ...,
         start_date: typing.Optional[typing.Text] = ...,
@@ -2753,8 +2750,6 @@ class StateSupervisionPeriod(google.protobuf.message.Message):
             b"state_code",
             "state_supervision_period_id",
             b"state_supervision_period_id",
-            "status",
-            b"status",
             "supervising_officer_id",
             b"supervising_officer_id",
             "supervision_level",
@@ -2798,8 +2793,6 @@ class StateSupervisionPeriod(google.protobuf.message.Message):
             b"state_supervision_period_id",
             "state_supervision_violation_entry_ids",
             b"state_supervision_violation_entry_ids",
-            "status",
-            b"status",
             "supervising_officer_id",
             b"supervising_officer_id",
             "supervision_level",

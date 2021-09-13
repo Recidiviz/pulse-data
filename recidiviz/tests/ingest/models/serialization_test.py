@@ -278,7 +278,6 @@ class TestSerialization(unittest.TestCase):
         charge2.classification_type = "M"
         supervision_period = supervision_sentence.create_state_supervision_period()
         supervision_period.state_supervision_period_id = "sp1"
-        supervision_period.status = "TERMINATED"
         supervision_period_agent = supervision_period.create_state_agent()
         supervision_period_agent.state_agent_id = "agentPO"
         supervision_period_agent.full_name = "Officer Paroley"
@@ -406,7 +405,6 @@ class TestSerialization(unittest.TestCase):
         supervision_sentence_pb.state_supervision_period_ids.append("sp1")
         supervision_period_pb = expected_proto.state_supervision_periods.add()
         supervision_period_pb.state_supervision_period_id = "sp1"
-        supervision_period_pb.status = "TERMINATED"
         supervision_period_pb.state_program_assignment_ids.append("assignment1")
 
         # An ordering requirement in the proto equality check at the end of this
