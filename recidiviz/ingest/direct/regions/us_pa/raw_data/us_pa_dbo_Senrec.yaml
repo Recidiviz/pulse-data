@@ -10,7 +10,7 @@ columns:
   - name: curr_inmate_num
     description: |-
       External ID for a for a single sentence of a given person into incarceration and the subsequent period of
-      incarceration served.
+      incarceration served. This type of this id is `US_PA_INMATE`.
   - name: type_number
     description: |-
       A type of sequence ID that is almost always 1 but is sometimes 2 to indicate a person serving multiple concurrent
