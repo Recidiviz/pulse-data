@@ -70,9 +70,9 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
     def find_events(
         self, _person: StatePerson, identifier_context: IdentifierContextT
     ) -> Dict[int, List[ReleaseEvent]]:
-        return self._find_release_events_by_cohort_year(**identifier_context)
+        return self._find_release_events(**identifier_context)
 
-    def _find_release_events_by_cohort_year(
+    def _find_release_events(
         self,
         incarceration_periods: List[StateIncarcerationPeriod],
         supervision_periods: List[StateSupervisionPeriod],
@@ -229,8 +229,9 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
         index: int,
         release_date: date,
     ) -> Optional[StateIncarcerationPeriod]:
-        """Finds a StateIncarcerationPeriod representing an instance of reincarceration following a release from prison,
-        where the admission_date on the incarceration period occurred on or after the release_date."""
+        """Finds a StateIncarcerationPeriod representing an instance of reincarceration
+        following a release from prison, where the admission_date on the
+        incarceration period occurred on or after the release_date."""
 
         for i in range(index + 1, len(incarceration_periods)):
             ip = incarceration_periods[i]
@@ -247,6 +248,14 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
                     " incarceration. Failure in IP pre-processing or should_include_in_release_cohort"
                     f" function: {incarceration_periods}"
                 )
+
+            if ip.specialized_purpose_for_incarceration in (
+                StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+                StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            ):
+                # Admissions to parole board holds or other form of temporary custody
+                # do not count as reincarceration admissions
+                continue
 
             if ip.admission_reason in (
                 AdmissionReason.ADMITTED_IN_ERROR,
@@ -265,12 +274,18 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
                 AdmissionReason.PROBATION_REVOCATION,
                 AdmissionReason.DUAL_REVOCATION,
                 AdmissionReason.SANCTION_ADMISSION,
-                AdmissionReason.ADMITTED_FROM_SUPERVISION,
-                # This should be a rare case, but we are considering this a valid reincarceration admission
-                # because this person became reincarcerated at some point after being released.
+                # This should be a rare case, but we are considering this a valid
+                # reincarceration admission because this person became reincarcerated
+                # at some point after being released.
                 AdmissionReason.TRANSFER,
             ):
                 return ip
+
+            if ip.admission_reason == AdmissionReason.ADMITTED_FROM_SUPERVISION:
+                raise ValueError(
+                    "ADMITTED_FROM_SUPERVISION is an ingest-only enum, and we should "
+                    "not see this value after IP pre-processing."
+                )
 
             raise ValueError(
                 "Enum case not handled for StateIncarcerationPeriodAdmissionReason of type:"
