@@ -1046,10 +1046,10 @@ class UsMoController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         extracted_objects: List[IngestObject],
         _cache: IngestObjectCache,
     ) -> None:
-        """Replaces a 99999999 start date with the date the sentence was created."""
+        """Replaces a magical start date with the date the sentence was created."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationSentence):
-                if obj.start_date == "99999999":
+                if obj.start_date in cls.SENTENCE_MAGICAL_DATES:
                     obj.start_date = row.get(INCARCERATION_SENTENCE_DATE_IMPOSED, None)
 
     @classmethod
