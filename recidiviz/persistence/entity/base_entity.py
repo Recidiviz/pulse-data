@@ -37,9 +37,9 @@ class Entity(CoreEntity):
         return entity_graph_eq(self, other)
 
 
-@attr.s(eq=False)
+@attr.s(eq=False, kw_only=True)
 class ExternalIdEntity(Entity):
-    external_id: Optional[str] = attr.ib()
+    external_id: Optional[str] = attr.ib(default=None)
 
     # Consider ExternalIdEntity abstract and only allow instantiating subclasses
     def __new__(cls, *_, **__):

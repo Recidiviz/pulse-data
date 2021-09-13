@@ -94,7 +94,7 @@ class IngestViewFileParserDelegate:
         """Returns the path to the ingest view manifest for a given file tag."""
 
     @abc.abstractmethod
-    def get_common_args(self) -> Dict[str, Union[str, EnumParser]]:
+    def get_common_args(self) -> Dict[str, Optional[Union[str, EnumParser]]]:
         """Returns a dictionary containing any fields, with their corresponding values,
         that should be set on every entity produced by the parser.
         """
@@ -123,7 +123,7 @@ class IngestViewFileParserDelegateImpl(IngestViewFileParserDelegate):
     def get_ingest_view_manifest_path(self, file_tag: str) -> str:
         return yaml_mappings_filepath(self.region, file_tag)
 
-    def get_common_args(self) -> Dict[str, Union[str, EnumParser]]:
+    def get_common_args(self) -> Dict[str, Optional[Union[str, EnumParser]]]:
         if self.schema_type == SchemaType.STATE:
             # All entities in the state schema have the state_code field - we add this
             # as a common argument so we don't have to specify it in the yaml mappings.

@@ -168,34 +168,42 @@ class FakeAgent(ExternalIdEntity):
 
 class FakePersonExternalIdFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Union[str, EnumParser]) -> FakePersonExternalId:
+    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> FakePersonExternalId:
         return entity_deserialize(
-            cls=FakePersonExternalId, converter_overrides={}, **kwargs
+            cls=FakePersonExternalId, converter_overrides={}, defaults={}, **kwargs
         )
 
 
 class FakePersonFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Union[str, EnumParser]) -> FakePerson:
-        return entity_deserialize(cls=FakePerson, converter_overrides={}, **kwargs)
+    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> FakePerson:
+        return entity_deserialize(
+            cls=FakePerson, converter_overrides={}, defaults={}, **kwargs
+        )
 
 
 class FakePersonAliasFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Union[str, EnumParser]) -> FakePersonAlias:
-        return entity_deserialize(cls=FakePersonAlias, converter_overrides={}, **kwargs)
+    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> FakePersonAlias:
+        return entity_deserialize(
+            cls=FakePersonAlias, converter_overrides={}, defaults={}, **kwargs
+        )
 
 
 class FakePersonRaceFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Union[str, EnumParser]) -> FakePersonRace:
-        return entity_deserialize(cls=FakePersonRace, converter_overrides={}, **kwargs)
+    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> FakePersonRace:
+        return entity_deserialize(
+            cls=FakePersonRace, converter_overrides={}, defaults={}, **kwargs
+        )
 
 
 class FakeAgentFactory(EntityFactory):
     @staticmethod
-    def deserialize(**kwargs: Union[str, EnumParser]) -> FakeAgent:
-        return entity_deserialize(cls=FakeAgent, converter_overrides={}, **kwargs)
+    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> FakeAgent:
+        return entity_deserialize(
+            cls=FakeAgent, converter_overrides={}, defaults={}, **kwargs
+        )
 
 
 #### End Fake Schema Factories ####
@@ -207,7 +215,7 @@ class FakeSchemaIngestViewFileParserDelegate(IngestViewFileParserDelegate):
     def get_ingest_view_manifest_path(self, file_tag: str) -> str:
         return os.path.join(os.path.dirname(manifests.__file__), f"{file_tag}.yaml")
 
-    def get_common_args(self) -> Dict[str, Union[str, EnumParser]]:
+    def get_common_args(self) -> Dict[str, Optional[Union[str, EnumParser]]]:
         return {"fake_state_code": StateCode.US_XX.value}
 
     def get_entity_factory_class(self, entity_cls_name: str) -> Type[EntityFactory]:
