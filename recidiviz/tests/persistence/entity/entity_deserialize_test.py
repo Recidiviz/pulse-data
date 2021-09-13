@@ -56,8 +56,10 @@ class MyEntity(Entity):
 
 class MyEntityFactory:
     @staticmethod
-    def deserialize(**kwargs: Union[str, EnumParser]) -> MyEntity:
-        return entity_deserialize(MyEntity, converter_overrides={}, **kwargs)
+    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> MyEntity:
+        return entity_deserialize(
+            MyEntity, converter_overrides={}, defaults={}, **kwargs
+        )
 
 
 class TestEntityDeserialize(TestCase):
@@ -74,7 +76,7 @@ class TestEntityDeserialize(TestCase):
                 an_int_field: int = attr.ib(default=1)
 
             _ = entity_deserialize(  # type: ignore[type-var]
-                _NotAnEntity, converter_overrides={}, an_int_field="1"
+                _NotAnEntity, converter_overrides={}, defaults={}, an_int_field="1"
             )
 
     def test_entity_deserialize_not_attr(self) -> None:
@@ -88,7 +90,7 @@ class TestEntityDeserialize(TestCase):
                     self.an_int_field = 1
 
             _ = entity_deserialize(  # type: ignore[type-var]
-                _NotAnAttr, converter_overrides={}, an_int_field="1"
+                _NotAnAttr, converter_overrides={}, defaults={}, an_int_field="1"
             )
 
     def test_entity_deserialize_use_normal_constructor(self) -> None:
@@ -269,7 +271,8 @@ class TestEntityDeserialize(TestCase):
                             EnumParser, set_race_to_white
                         ),
                     },
-                    **kwargs
+                    defaults={},
+                    **kwargs,
                 )
 
         entity = MyEntityWithFieldOverridesFactory.deserialize(
@@ -297,6 +300,50 @@ class TestEntityDeserialize(TestCase):
             ),
         )
 
+    def test_entity_deserialize_with_defaults(self) -> None:
+        @attr.s(eq=False)
+        class MyEntityWithFieldDefaults(Entity):
+            str_with_deserialize_default: str = attr.ib(
+                validator=attr_validators.is_str
+            )
+            enum_with_deserialize_default: Race = attr.ib(
+                validator=attr.validators.instance_of(Race)
+            )
+            int_with_deserialize_default: int = attr.ib(
+                validator=attr_validators.is_int,
+            )
+
+        class MyEntityWithFieldDefaultsFactory:
+            @staticmethod
+            def deserialize(
+                **kwargs: Optional[Union[str, EnumParser]]
+            ) -> MyEntityWithFieldDefaults:
+                return entity_deserialize(
+                    MyEntityWithFieldDefaults,
+                    converter_overrides={},
+                    defaults={
+                        "str_with_deserialize_default": "deserialize_default",
+                        "int_with_deserialize_default": 5,
+                        "enum_with_deserialize_default": Race.WHITE,
+                    },
+                    **kwargs,
+                )
+
+        entity = MyEntityWithFieldDefaultsFactory.deserialize(
+            str_with_deserialize_default=None,
+            int_with_deserialize_default=None,
+            enum_with_deserialize_default=None,
+        )
+
+        self.assertEqual(
+            entity,
+            MyEntityWithFieldDefaults(
+                str_with_deserialize_default="deserialize_default",
+                int_with_deserialize_default=5,
+                enum_with_deserialize_default=Race.WHITE,
+            ),
+        )
+
     def test_entity_deserialize_subclass(self) -> None:
         @attr.s(eq=False)
         class MyEntitySubclass(MyEntity):
@@ -304,9 +351,11 @@ class TestEntityDeserialize(TestCase):
 
         class MyEntitySubclassFactory:
             @staticmethod
-            def deserialize(**kwargs: Union[str, EnumParser]) -> MyEntitySubclass:
+            def deserialize(
+                **kwargs: Optional[Union[str, EnumParser]]
+            ) -> MyEntitySubclass:
                 return entity_deserialize(
-                    MyEntitySubclass, converter_overrides={}, **kwargs
+                    MyEntitySubclass, converter_overrides={}, defaults={}, **kwargs
                 )
 
         subclass_entity = MyEntitySubclassFactory.deserialize(subclass_field="1234")

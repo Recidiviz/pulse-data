@@ -70,7 +70,7 @@ class EntityTreeManifest(ManifestNode[EntityT]):
     field_manifests: Dict[str, ManifestNode] = attr.ib()
 
     # A map of arguments that should be applied to all parsed entities.
-    common_args: Dict[str, Union[str, EnumParser]] = attr.ib()
+    common_args: Dict[str, Optional[Union[str, EnumParser]]] = attr.ib()
 
     # Optional predicate for filtering out hydrated entities. If returns True,
     # build_for_row() will return null instead of this entity (and any children
@@ -82,7 +82,7 @@ class EntityTreeManifest(ManifestNode[EntityT]):
 
     def build_from_row(self, row: Dict[str, str]) -> Optional[EntityT]:
         """Builds a recursively hydrated entity from the given input row."""
-        args = self.common_args.copy()
+        args: Dict[str, Optional[Union[str, EnumParser]]] = self.common_args.copy()
 
         for field_name, field_manifest in self.field_manifests.items():
             field_value = field_manifest.build_from_row(row)
