@@ -39,7 +39,7 @@ SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_QUERY_TEMPLATE = """
         COUNT (DISTINCT(IF(supervision_type = 'PAROLE', person_id, NULL)))/COUNT(DISTINCT person_id) AS parole_population,
         COUNT (DISTINCT(IF(gender = 'MALE', person_id, NULL)))/COUNT(DISTINCT person_id) AS gender_male_population,
         COUNT (DISTINCT(IF(prioritized_race_or_ethnicity = 'WHITE', person_id, NULL)))/COUNT(DISTINCT person_id) AS race_white_population,
-        COUNT (DISTINCT(IF (age_bucket IN ('<25', '25-29'), person_id, NULL)))/COUNT(DISTINCT person_id) AS age_under_30_population,
+        COUNT (DISTINCT(IF(age < 30, person_id, NULL)))/COUNT(DISTINCT person_id) AS age_under_30_population,
         COUNT (DISTINCT(IF(supervision_level = 'MINIMUM', person_id, NULL)))/COUNT(DISTINCT person_id) AS supervision_level_minimum_population,
         COUNT (DISTINCT(IF(supervision_level = 'MEDIUM', person_id, NULL)))/COUNT(DISTINCT person_id) AS supervision_level_medium_population,
         COUNT (DISTINCT(IF(supervision_level = 'HIGH', person_id, NULL)))/COUNT(DISTINCT person_id) AS supervision_level_high_population,
