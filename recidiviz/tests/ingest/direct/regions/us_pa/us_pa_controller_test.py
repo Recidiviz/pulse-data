@@ -1189,65 +1189,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
 
         self.run_legacy_parse_file_test(expected, "dbo_Miscon")
 
-    def test_populate_data_dbo_Offender(self) -> None:
-        expected = IngestInfo(
-            state_people=[
-                StatePerson(
-                    state_person_id="123A",
-                    gender="M",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="123A", id_type=US_PA_PBPP
-                        ),
-                    ],
-                    state_person_races=[StatePersonRace(race="B")],
-                ),
-                StatePerson(
-                    state_person_id="456B",
-                    gender="M",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="456B", id_type=US_PA_PBPP
-                        ),
-                    ],
-                    state_person_races=[StatePersonRace(race="I")],
-                    state_person_ethnicities=[StatePersonEthnicity(ethnicity="H")],
-                ),
-                StatePerson(
-                    state_person_id="789C",
-                    gender="F",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="789C", id_type=US_PA_PBPP
-                        ),
-                    ],
-                    state_person_races=[StatePersonRace(race="N")],
-                ),
-                StatePerson(
-                    state_person_id="345E",
-                    gender="M",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="345E", id_type=US_PA_PBPP
-                        ),
-                    ],
-                    state_person_races=[StatePersonRace(race="W")],
-                ),
-                StatePerson(
-                    state_person_id="111A",
-                    gender="N",
-                    state_person_external_ids=[
-                        StatePersonExternalId(
-                            state_person_external_id_id="111A", id_type=US_PA_PBPP
-                        ),
-                    ],
-                    state_person_races=[StatePersonRace(race="W")],
-                ),
-            ]
-        )
-
-        self.run_legacy_parse_file_test(expected, "dbo_Offender")
-
     def test_populate_data_dbo_LSIHistory(self) -> None:
         expected = IngestInfo(
             state_people=[
@@ -3792,6 +3733,13 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         # Arrange
         person_1.gender_raw_text = "M"
         person_1.races[0].race_raw_text = "B"
+        person_1.races.append(
+            entities.StatePersonRace.new_with_defaults(
+                state_code=_STATE_CODE_UPPER,
+                race=Race.ASIAN,
+                race_raw_text="A",
+            )
+        )
 
         person_2.gender_raw_text = "M"
         person_2.races.append(
@@ -3826,8 +3774,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
 
         person_6 = entities.StatePerson.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            gender=Gender.OTHER,
-            gender_raw_text="N",
             external_ids=[
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER, external_id="111A", id_type=US_PA_PBPP

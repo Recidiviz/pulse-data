@@ -17,6 +17,7 @@
 """Ingest view parser tests for US_PA direct ingest."""
 import unittest
 
+from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.external_id_types import (
     US_PA_CONTROL,
     US_PA_INMATE,
@@ -25,7 +26,9 @@ from recidiviz.common.constants.state.external_id_types import (
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
+    StatePersonEthnicity,
     StatePersonExternalId,
+    StatePersonRace,
 )
 from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
     StateIngestViewParserTestBase,
@@ -166,3 +169,94 @@ class UsPaIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase)
         ]
 
         self._run_parse_ingest_view_test("person_external_ids", expected_output)
+
+    def test_parse_dbo_Offender(self) -> None:
+        expected_output = [
+            StatePerson(
+                state_code="US_PA",
+                gender=Gender.MALE,
+                gender_raw_text="M",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="123A", id_type="US_PA_PBPP"
+                    )
+                ],
+                races=[
+                    StatePersonRace(
+                        state_code="US_PA", race=Race.ASIAN, race_raw_text="A"
+                    ),
+                    StatePersonRace(
+                        state_code="US_PA", race=Race.BLACK, race_raw_text="B"
+                    ),
+                ],
+            ),
+            StatePerson(
+                state_code="US_PA",
+                gender=Gender.MALE,
+                gender_raw_text="M",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="456B", id_type="US_PA_PBPP"
+                    )
+                ],
+                races=[
+                    StatePersonRace(
+                        state_code="US_PA",
+                        race=Race.AMERICAN_INDIAN_ALASKAN_NATIVE,
+                        race_raw_text="I",
+                    )
+                ],
+                ethnicities=[
+                    StatePersonEthnicity(
+                        state_code="US_PA",
+                        ethnicity=Ethnicity.HISPANIC,
+                        ethnicity_raw_text="H",
+                    )
+                ],
+            ),
+            StatePerson(
+                state_code="US_PA",
+                gender=Gender.FEMALE,
+                gender_raw_text="F",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="789C", id_type="US_PA_PBPP"
+                    )
+                ],
+                races=[
+                    StatePersonRace(
+                        state_code="US_PA", race=Race.OTHER, race_raw_text="N"
+                    )
+                ],
+            ),
+            StatePerson(
+                state_code="US_PA",
+                gender=Gender.MALE,
+                gender_raw_text="M",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="345E", id_type="US_PA_PBPP"
+                    )
+                ],
+                races=[
+                    StatePersonRace(
+                        state_code="US_PA", race=Race.WHITE, race_raw_text="W"
+                    )
+                ],
+            ),
+            StatePerson(
+                state_code="US_PA",
+                external_ids=[
+                    StatePersonExternalId(
+                        state_code="US_PA", external_id="111A", id_type="US_PA_PBPP"
+                    )
+                ],
+                races=[
+                    StatePersonRace(
+                        state_code="US_PA", race=Race.WHITE, race_raw_text="W"
+                    )
+                ],
+            ),
+        ]
+
+        self._run_parse_ingest_view_test("dbo_Offender", expected_output)

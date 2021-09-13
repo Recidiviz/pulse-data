@@ -1,14 +1,47 @@
-key_mappings:
-  ParoleNumber: state_person.state_person_id
-  OffSex: state_person.gender
-
-child_key_mappings:
-  ParoleNumber: state_person_external_id.state_person_external_id_id
-
-primary_key:
-  ParoleNumber: state_person.state_person_id
-
-keys_to_ignore:
-  - recidiviz_master_person_id  # Internal Recidiviz person ID - Unused
-  - races_ethnicities_list  # Handled manually in controller
-  - OffRaceEthnicGroup  # Redundant of races_ethnicities_list - Unused
+manifest_language: 1.0.0
+input_columns:
+  - recidiviz_master_person_id
+  - ParoleNumber
+  - OffSex
+  - races_ethnicities_list
+  - OffRaceEthnicGroup
+unused_columns:
+  - recidiviz_master_person_id  # Internal Recidiviz person ID
+  - OffRaceEthnicGroup  # Redundant of races_ethnicities_list
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ParoleNumber
+          id_type: $literal("US_PA_PBPP")
+    gender:
+      $raw_text: OffSex
+      $mappings:
+        Gender.MALE: M
+        Gender.FEMALE: F
+      $ignore: []
+    races:
+      - $foreach: races_ethnicities_list
+        StatePersonRace:
+          race:
+            $raw_text: $iter
+            $mappings:
+              Race.ASIAN: A
+              Race.BLACK: B
+              Race.AMERICAN_INDIAN_ALASKAN_NATIVE: I
+              Race.OTHER: N
+              Race.WHITE: W
+            $ignore:
+              # This is an ethnicity value - ignore when mapping to race.
+              - H
+              # This is an erroneous value - ignore it.
+              - M
+    ethnicities:
+      - $foreach: races_ethnicities_list
+        StatePersonEthnicity:
+          ethnicity:
+            $raw_text: $iter
+            $mappings:
+              Ethnicity.HISPANIC: H
+            # These are race values - ignore when mapping to ethnicity.
+            $ignore: [A, B, I, N, W, M]
