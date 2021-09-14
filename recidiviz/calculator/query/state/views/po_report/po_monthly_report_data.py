@@ -84,20 +84,33 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
           IF(next_recommended_face_to_face_date <= LAST_DAY(DATE(year, month, 1), MONTH), STRUCT(person_external_id, full_name), NULL)
           IGNORE NULLS
         ) AS facetoface_out_of_date_clients,
-        COUNT(DISTINCT person_id) AS caseload_count
+        COUNT(DISTINCT person_id) AS caseload_count,
+        ARRAY_AGG(
+          IF(
+            DATE_DIFF(projected_end_date, LAST_DAY(DATE(year, month, 1), MONTH), DAY) BETWEEN 1 AND 30, 
+            STRUCT(person_external_id, full_name, projected_end_date), 
+            NULL
+          )
+          IGNORE NULLS
+          ORDER BY projected_end_date
+        ) AS upcoming_release_date_clients,
       FROM `{project_id}.{po_report_dataset}.report_data_by_person_by_month_materialized`
       GROUP BY state_code, year, month, officer_external_id
     ),
-    averages_by_state_and_district AS (
+    aggregates_by_state_and_district AS (
       SELECT
         state_code, year, month,
         district,
+        # TODO(#9186): remove unused averages for positive outcomes
         AVG(pos_discharges) AS avg_pos_discharges,
         AVG(earned_discharges) AS avg_earned_discharges,
         AVG(supervision_downgrades) AS avg_supervision_downgrades,
         AVG(technical_revocations) AS avg_technical_revocations,
         AVG(crime_revocations) AS avg_crime_revocations,
-        AVG(absconsions) AS avg_absconsions
+        AVG(absconsions) AS avg_absconsions,
+        SUM(pos_discharges) AS total_pos_discharges,
+        SUM(earned_discharges) AS total_earned_discharges,
+        SUM(supervision_downgrades) AS total_supervision_downgrades
       FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association_materialized`
       LEFT JOIN report_data_per_officer
         USING (state_code, year, month, officer_external_id),
@@ -131,32 +144,38 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       report_month.pos_discharges_clients,
       report_month.pos_discharges,
       IFNULL(last_month.pos_discharges, 0) AS pos_discharges_last_month,
-      district_avg.avg_pos_discharges AS pos_discharges_district_average,
-      state_avg.avg_pos_discharges AS pos_discharges_state_average,
+      district_agg.avg_pos_discharges AS pos_discharges_district_average,
+      district_agg.total_pos_discharges AS pos_discharges_district_total,
+      state_agg.avg_pos_discharges AS pos_discharges_state_average,
+      state_agg.total_pos_discharges AS pos_discharges_state_total,
       report_month.supervision_downgrades_clients,
       report_month.supervision_downgrades,
       IFNULL(last_month.supervision_downgrades, 0) AS supervision_downgrades_last_month,
-      district_avg.avg_supervision_downgrades AS supervision_downgrades_district_average,
-      state_avg.avg_supervision_downgrades AS supervision_downgrades_state_average,
+      district_agg.avg_supervision_downgrades AS supervision_downgrades_district_average,
+      district_agg.total_supervision_downgrades AS supervision_downgrades_district_total,
+      state_agg.avg_supervision_downgrades AS supervision_downgrades_state_average,
+      state_agg.total_supervision_downgrades AS supervision_downgrades_state_total,
       report_month.earned_discharges_clients,
       report_month.earned_discharges,
       IFNULL(last_month.earned_discharges, 0) AS earned_discharges_last_month,
-      district_avg.avg_earned_discharges AS earned_discharges_district_average,
-      state_avg.avg_earned_discharges AS earned_discharges_state_average,
+      district_agg.avg_earned_discharges AS earned_discharges_district_average,
+      district_agg.total_earned_discharges AS earned_discharges_district_total,
+      state_agg.avg_earned_discharges AS earned_discharges_state_average,
+      state_agg.total_earned_discharges AS earned_discharges_state_total,
       report_month.revocations_clients,
       report_month.technical_revocations,
       IFNULL(last_month.technical_revocations, 0) AS technical_revocations_last_month,
-      district_avg.avg_technical_revocations AS technical_revocations_district_average,
-      state_avg.avg_technical_revocations AS technical_revocations_state_average,
+      district_agg.avg_technical_revocations AS technical_revocations_district_average,
+      state_agg.avg_technical_revocations AS technical_revocations_state_average,
       report_month.crime_revocations,
       IFNULL(last_month.crime_revocations, 0) AS crime_revocations_last_month,
-      district_avg.avg_crime_revocations AS crime_revocations_district_average,
-      state_avg.avg_crime_revocations AS crime_revocations_state_average,
+      district_agg.avg_crime_revocations AS crime_revocations_district_average,
+      state_agg.avg_crime_revocations AS crime_revocations_state_average,
       report_month.absconsions_clients,
       report_month.absconsions,
       IFNULL(last_month.absconsions, 0) AS absconsions_last_month,
-      district_avg.avg_absconsions AS absconsions_district_average,
-      state_avg.avg_absconsions AS absconsions_state_average,
+      district_agg.avg_absconsions AS absconsions_district_average,
+      state_agg.avg_absconsions AS absconsions_state_average,
       report_month.assessments_out_of_date_clients,
       report_month.assessments,
       report_month.caseload_count,
@@ -166,6 +185,7 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       report_month.facetoface_frequencies_sufficient,
       overdue_assessments_goal,
       overdue_facetoface_goal,
+      report_month.upcoming_release_date_clients,
       # TODO(#9106): refactor to move these calcs into Python 
       IF(report_month.caseload_count = 0,
         1,
@@ -183,14 +203,14 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
     LEFT JOIN report_data_per_officer report_month
       USING (state_code, officer_external_id)
     LEFT JOIN (
-      SELECT * FROM averages_by_state_and_district
+      SELECT * FROM aggregates_by_state_and_district
       WHERE district != 'ALL'
-    ) district_avg
+    ) district_agg
       USING (state_code, year, month, district)
     LEFT JOIN (
-      SELECT * EXCEPT (district) FROM averages_by_state_and_district
+      SELECT * EXCEPT (district) FROM aggregates_by_state_and_district
       WHERE district = 'ALL'
-    ) state_avg
+    ) state_agg
       USING (state_code, year, month)
     LEFT JOIN (
       SELECT
