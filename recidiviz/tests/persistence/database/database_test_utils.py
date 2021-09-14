@@ -375,9 +375,7 @@ def generate_test_person(
     person_id,
     state_code,
     sentence_groups,
-    incarceration_period,
     agent,
-    supervision_period,
 ) -> state_schema.StatePerson:
     """Returns a StatePerson to be used for testing."""
     instance = state_schema.StatePerson(
@@ -427,14 +425,12 @@ def generate_test_person(
                 assessment_id=456,
                 person_id=person_id,
                 state_code="US_XX",
-                incarceration_period=incarceration_period,
                 conducting_agent=agent,
             ),
             state_schema.StateAssessment(
                 assessment_id=4567,
                 person_id=person_id,
                 state_code="US_XX",
-                supervision_period=supervision_period,
                 conducting_agent=agent,
             ),
         ],
@@ -532,9 +528,7 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
         test_person_id,
         test_state_code,
         [test_sentence_group],
-        test_incarceration_period,
         test_agent,
-        test_supervision_period,
     )
 
     test_sentence_group.person = test_person

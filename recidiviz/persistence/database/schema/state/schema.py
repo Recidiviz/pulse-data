@@ -1816,26 +1816,6 @@ class _StateAssessmentSharedColumns(_ReferencesStatePersonSharedColumns):
     )
 
     @declared_attr
-    def incarceration_period_id(self) -> Column:
-        return Column(
-            Integer,
-            ForeignKey("state_incarceration_period.incarceration_period_id"),
-            index=True,
-            nullable=True,
-            comment="The incarceration period id associated with this assessment.",
-        )
-
-    @declared_attr
-    def supervision_period_id(self) -> Column:
-        return Column(
-            Integer,
-            ForeignKey("state_supervision_period.supervision_period_id"),
-            index=True,
-            nullable=True,
-            comment="The supervision period id associated with this assessment.",
-        )
-
-    @declared_attr
     def conducting_agent_id(self) -> Column:
         return Column(
             Integer,
@@ -2574,10 +2554,6 @@ class StateIncarcerationPeriod(StateBase, _StateIncarcerationPeriodSharedColumns
     parole_decisions = relationship(
         "StateParoleDecision", backref="incarceration_period", lazy="selectin"
     )
-    # TODO(#9071): DEPRECATED - DO NOT ADD NEW USAGES
-    assessments = relationship(
-        "StateAssessment", backref="incarceration_period", lazy="selectin"
-    )
     # TODO(#9068): DEPRECATED - DO NOT ADD NEW USAGES
     program_assignments = relationship(
         "StateProgramAssignment",
@@ -2779,10 +2755,6 @@ class StateSupervisionPeriod(StateBase, _StateSupervisionPeriodSharedColumns):
         secondary=state_supervision_period_supervision_violation_association_table,
         backref="supervision_periods",
         lazy="selectin",
-    )
-    # TODO(#9070): DEPRECATED - DO NOT ADD NEW USAGES
-    assessments = relationship(
-        "StateAssessment", backref="supervision_period", lazy="selectin"
     )
     # TODO(#9069): DEPRECATED - DO NOT ADD NEW USAGES
     program_assignments = relationship(
