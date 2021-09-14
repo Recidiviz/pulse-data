@@ -14,7 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Person-level data to populate the monthly PO report email."""
+"""Person-level data to populate the monthly PO report email.
+
+To generate the BQ view, run:
+    python -m recidiviz.calculator.query.state.views.po_report.report_data_by_person_by_month
+"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import (
@@ -54,7 +58,8 @@ REPORT_DATA_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
       IFNULL(assessment_count, 0) AS assessment_count,
       next_recommended_assessment_date,
       IFNULL(face_to_face_count, 0) AS face_to_face_count,
-      next_recommended_face_to_face_date
+      next_recommended_face_to_face_date,
+      projected_end_date
 
     FROM `{project_id}.{po_report_dataset}.successful_supervision_completions_by_person_by_month_materialized` completions
 

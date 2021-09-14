@@ -14,7 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Supervision case compliance to state standards by person by month."""
+"""Supervision case compliance to state standards by person by month.
+
+To generate the BQ view, run:
+    python -m recidiviz.calculator.query.state.views.po_report.supervision_compliance_by_person_by_month
+"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
@@ -50,6 +54,7 @@ SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
         monthly_assessment_and_face_to_face_counts.month_face_to_face_count as face_to_face_count,
         next_recommended_assessment_date,
         next_recommended_face_to_face_date,
+        projected_end_date,
         -- There should only be one compliance metric output per month/supervising_officer_external_id/person_id,
         -- but we do this to ensure a person-based count, prioritizing a case being out of compliance.
         ROW_NUMBER() OVER (PARTITION BY state_code, year, month, supervising_officer_external_id, person_id
@@ -66,7 +71,8 @@ SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
       assessment_count,
       face_to_face_count,
       next_recommended_assessment_date,
-      next_recommended_face_to_face_date
+      next_recommended_face_to_face_date,
+      projected_end_date,
     FROM compliance
     WHERE inclusion_order = 1
     """
