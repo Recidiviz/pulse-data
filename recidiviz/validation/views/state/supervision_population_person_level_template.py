@@ -44,15 +44,23 @@ sanitized_internal_metrics AS (
                         ORDER BY supervising_officer_external_id DESC, supervision_level_raw_text DESC, supervising_district_external_id DESC)
                         AS inclusion_order
    FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_metrics_materialized`
-   WHERE (state_code != 'US_ID' OR 
+   WHERE CASE
+     WHEN state_code = 'US_ID' 
+     THEN
        # Idaho only gives us population numbers for folks explicitly on active probation, parole, or dual supervision.
        # The following groups are folks we consider a part of the SupervisionPopulation even though ID does not:
        #    - `INFORMAL_PROBATION` - although IDOC does not actively supervise these folks, they can be revoked 
        #       and otherwise punished as if they were actively on supervision. 
        #    - `INTERNAL_UNKNOWN` - vast majority of these people are folks with active bench warrants
-       (supervision_type IN ('PROBATION', 'PAROLE', 'DUAL') 
+       supervision_type IN ('PROBATION', 'PAROLE', 'DUAL') 
        # TODO(#3831): Add bit to SupervisionPopulation metric to describe absconsion instead of this filter. 
-       AND supervising_district_external_id IS NOT NULL))
+       AND supervising_district_external_id IS NOT NULL
+     WHEN state_code = 'US_ND'
+     THEN
+       # North Dakota only gives us supervision validation data for those on Parole (both regular and IC) currently.
+       supervision_type IN ('PAROLE', 'DUAL')
+     ELSE TRUE
+   END
 ),
 internal_metrics_for_valid_regions_and_dates AS (
   SELECT * FROM
