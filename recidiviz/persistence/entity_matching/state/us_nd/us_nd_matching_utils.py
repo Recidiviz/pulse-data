@@ -165,9 +165,12 @@ def _set_preceding_admission_reason(
         and beginning_ip.admission_reason
         == StateIncarcerationPeriodAdmissionReason.TRANSFER.value
     ):
-        beginning_ip.admission_reason = StateIncarcerationPeriodAdmissionReason.parse(
+
+        earliest_hold_admission_reason = StateIncarcerationPeriodAdmissionReason.parse(
             earliest_hold_admission_raw_text, overrides
-        ).value
+        )
+        if earliest_hold_admission_reason is not None:
+            beginning_ip.admission_reason = earliest_hold_admission_reason.value
 
 
 def _is_hold(ip: schema.StateIncarcerationPeriod) -> bool:
