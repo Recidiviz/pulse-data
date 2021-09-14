@@ -83,7 +83,15 @@ def validate_deprecated_entity_field_for_states(
     )
 
     for deprecated_field in deprecated_field_names:
-        if getattr(entity, deprecated_field) is not None:
+        field_value = getattr(entity, deprecated_field)
+
+        invalid_set_field = (
+            field_value is not None
+            if attr_field_type != BuildableAttrFieldType.LIST
+            else field_value != []
+        )
+
+        if invalid_set_field:
             raise ValueError(
                 f"The [{deprecated_field}] {field_type_description} is deprecated for "
                 f"state_code: [{state_code}]. This {field_type_description} should not "

@@ -256,28 +256,6 @@ def convert_ingest_info_to_proto(
                         proto_decision_agent.state_agent_id
                     )
 
-            for period_assessment in incarceration_period.state_assessments:
-                proto_period_assessment = _populate_proto(
-                    "state_assessments",
-                    period_assessment,
-                    "state_assessment_id",
-                    state_assessment_map,
-                )
-                proto_period.state_assessment_ids.append(
-                    proto_period_assessment.state_assessment_id
-                )
-
-                if period_assessment.conducting_agent:
-                    proto_conducting_agent = _populate_proto(
-                        "state_agents",
-                        period_assessment.conducting_agent,
-                        "state_agent_id",
-                        state_agent_map,
-                    )
-                    proto_period_assessment.conducting_agent_id = (
-                        proto_conducting_agent.state_agent_id
-                    )
-
             for (
                 period_program_assignment
             ) in incarceration_period.state_program_assignments:
@@ -429,28 +407,6 @@ def convert_ingest_info_to_proto(
                     )
                     proto_contact.contacted_agent_id = (
                         proto_contacted_agent.state_agent_id
-                    )
-
-            for period_assessment in supervision_period.state_assessments:
-                proto_period_assessment = _populate_proto(
-                    "state_assessments",
-                    period_assessment,
-                    "state_assessment_id",
-                    state_assessment_map,
-                )
-                proto_period.state_assessment_ids.append(
-                    proto_period_assessment.state_assessment_id
-                )
-
-                if period_assessment.conducting_agent:
-                    proto_conducting_agent = _populate_proto(
-                        "state_agents",
-                        period_assessment.conducting_agent,
-                        "state_agent_id",
-                        state_agent_map,
-                    )
-                    proto_period_assessment.conducting_agent_id = (
-                        proto_conducting_agent.state_agent_id
                     )
 
             for (
@@ -1090,10 +1046,6 @@ def convert_proto_to_ingest_info(
             state_supervision_violation_map[proto_id]
             for proto_id in proto_supervision_period.state_supervision_violation_entry_ids
         ]
-        supervision_period.state_assessments = [
-            state_assessment_map[proto_id]
-            for proto_id in proto_supervision_period.state_assessment_ids
-        ]
         supervision_period.state_program_assignments = [
             state_program_assignment_map[proto_id]
             for proto_id in proto_supervision_period.state_program_assignment_ids
@@ -1120,10 +1072,6 @@ def convert_proto_to_ingest_info(
         incarceration_period.state_parole_decisions = [
             state_parole_decision_map[proto_id]
             for proto_id in proto_incarceration_period.state_parole_decision_ids
-        ]
-        incarceration_period.state_assessments = [
-            state_assessment_map[proto_id]
-            for proto_id in proto_incarceration_period.state_assessment_ids
         ]
         incarceration_period.state_program_assignments = [
             state_program_assignment_map[proto_id]

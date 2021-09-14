@@ -884,7 +884,7 @@ class TestExtractEntity(unittest.TestCase):
 
     def testExtractEntity(self):
         person = remove_relationship_properties(
-            database_test_utils.generate_test_person(123, "US_XX", [], None, None, None)
+            database_test_utils.generate_test_person(123, "US_XX", [], None)
         )
 
         person_data = [normalized_database_base_dict(person)]
@@ -928,7 +928,7 @@ class TestExtractEntity(unittest.TestCase):
 
     def testExtractEntity_InvalidUnifyingIdField(self):
         person = remove_relationship_properties(
-            database_test_utils.generate_test_person(123, "US_XX", [], None, None, None)
+            database_test_utils.generate_test_person(123, "US_XX", [], None)
         )
 
         person_data = [normalized_database_base_dict(person)]
@@ -1018,27 +1018,21 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
     def testExtractRelationshipPropertyEntities_With1ToMany(self):
         """Tests the ExtractRelationshipPropertyEntities PTransform when there
         are 1-to-many relationships to be hydrated."""
-        supervision_period = database_test_utils.generate_test_supervision_period(
-            123, [], [], []
+        person = database_test_utils.generate_test_person(123, "US_XX", [], None)
+
+        assessment = database_test_utils.generate_test_assessment(
+            person_id=person.person_id
         )
 
-        assessment = database_test_utils.generate_test_assessment(123)
-
-        # 1-to-many relationship
-        assessment.supervision_period_id = supervision_period.supervision_period_id
-
         data_dict = {
-            supervision_period.__tablename__: normalized_database_base_dict_list(
-                [supervision_period]
-            ),
+            person.__tablename__: normalized_database_base_dict_list([person]),
             assessment.__tablename__: normalized_database_base_dict_list([assessment]),
-            schema.StateSupervisionViolation.__tablename__: [],
+            schema.StatePersonExternalId.__tablename__: [],
+            schema.StatePersonRace.__tablename__: [],
+            schema.StatePersonEthnicity.__tablename__: [],
             schema.StateProgramAssignment.__tablename__: [],
-            schema.StateSupervisionCaseTypeEntry.__tablename__: [],
-            schema.StateSupervisionContact.__tablename__: [],
-            schema.state_supervision_period_supervision_violation_association_table.name: [],
-            schema.state_supervision_period_program_assignment_association_table.name: [],
-            schema.state_supervision_period_supervision_contact_association_table.name: [],
+            schema.StateSentenceGroup.__tablename__: [],
+            schema.StatePersonAlias.__tablename__: [],
         }
         dataset = "recidiviz-123.state"
         with patch(
@@ -1051,14 +1045,14 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
 
             properties_dict = (
                 test_pipeline | "Extract relationship properties for the "
-                "StateSupervisionPeriod"
+                "StatePerson"
                 >> extractor_utils._ExtractRelationshipPropertyEntities(
                     dataset=dataset,
-                    parent_schema_class=schema.StateSupervisionPeriod,
-                    parent_id_field="supervision_period_id",
+                    parent_schema_class=schema.StatePerson,
+                    parent_id_field="person_id",
                     unifying_id_field=entities.StatePerson.get_class_id_name(),
                     unifying_id_field_filter_set=None,
-                    state_code=supervision_period.state_code,
+                    state_code=person.state_code,
                 )
             )
 
@@ -1066,13 +1060,14 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
             self.assertEqual(
                 properties_dict.keys(),
                 {
-                    "supervising_officer",
-                    "supervision_violations",
-                    "supervision_violation_entries",
+                    "aliases",
+                    "ethnicities",
+                    "external_ids",
+                    "races",
                     "assessments",
                     "program_assignments",
-                    "case_type_entries",
-                    "supervision_contacts",
+                    "sentence_groups",
+                    "supervising_officer",
                 },
             )
 
@@ -1081,8 +1076,8 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
             assert_that(
                 output_assessments,
                 ExtractAssertMatchers.validate_extract_relationship_property_entities(
-                    outer_connection_id=supervision_period.person_id,
-                    inner_connection_id=supervision_period.supervision_period_id,
+                    outer_connection_id=person.person_id,
+                    inner_connection_id=person.person_id,
                     class_type=entities.StateAssessment,
                 ),
                 label="Validate assessments output",

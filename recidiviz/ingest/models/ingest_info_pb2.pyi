@@ -2485,7 +2485,6 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
     CUSTODIAL_AUTHORITY_FIELD_NUMBER: builtins.int
     STATE_INCARCERATION_INCIDENT_IDS_FIELD_NUMBER: builtins.int
     STATE_PAROLE_DECISION_IDS_FIELD_NUMBER: builtins.int
-    STATE_ASSESSMENT_IDS_FIELD_NUMBER: builtins.int
     STATE_PROGRAM_ASSIGNMENT_IDS_FIELD_NUMBER: builtins.int
     state_incarceration_period_id: typing.Text = ...
     status: typing.Text = ...
@@ -2510,12 +2509,6 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
     ]: ...
     @property
     def state_parole_decision_ids(
-        self,
-    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
-        typing.Text
-    ]: ...
-    @property
-    def state_assessment_ids(
         self,
     ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
@@ -2548,7 +2541,6 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
             typing.Iterable[typing.Text]
         ] = ...,
         state_parole_decision_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
-        state_assessment_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
         state_program_assignment_ids: typing.Optional[
             typing.Iterable[typing.Text]
         ] = ...,
@@ -2615,8 +2607,6 @@ class StateIncarcerationPeriod(google.protobuf.message.Message):
             b"release_reason",
             "specialized_purpose_for_incarceration",
             b"specialized_purpose_for_incarceration",
-            "state_assessment_ids",
-            b"state_assessment_ids",
             "state_code",
             b"state_code",
             "state_incarceration_incident_ids",
@@ -2651,7 +2641,6 @@ class StateSupervisionPeriod(google.protobuf.message.Message):
     CUSTODIAL_AUTHORITY_FIELD_NUMBER: builtins.int
     CONDITIONS_FIELD_NUMBER: builtins.int
     STATE_SUPERVISION_VIOLATION_ENTRY_IDS_FIELD_NUMBER: builtins.int
-    STATE_ASSESSMENT_IDS_FIELD_NUMBER: builtins.int
     STATE_PROGRAM_ASSIGNMENT_IDS_FIELD_NUMBER: builtins.int
     STATE_SUPERVISION_CASE_TYPE_ENTRY_IDS_FIELD_NUMBER: builtins.int
     STATE_SUPERVISION_CONTACT_IDS_FIELD_NUMBER: builtins.int
@@ -2676,12 +2665,6 @@ class StateSupervisionPeriod(google.protobuf.message.Message):
     ]: ...
     @property
     def state_supervision_violation_entry_ids(
-        self,
-    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
-        typing.Text
-    ]: ...
-    @property
-    def state_assessment_ids(
         self,
     ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
@@ -2724,7 +2707,6 @@ class StateSupervisionPeriod(google.protobuf.message.Message):
         state_supervision_violation_entry_ids: typing.Optional[
             typing.Iterable[typing.Text]
         ] = ...,
-        state_assessment_ids: typing.Optional[typing.Iterable[typing.Text]] = ...,
         state_program_assignment_ids: typing.Optional[
             typing.Iterable[typing.Text]
         ] = ...,
@@ -2779,8 +2761,6 @@ class StateSupervisionPeriod(google.protobuf.message.Message):
             b"custodial_authority",
             "start_date",
             b"start_date",
-            "state_assessment_ids",
-            b"state_assessment_ids",
             "state_code",
             b"state_code",
             "state_program_assignment_ids",

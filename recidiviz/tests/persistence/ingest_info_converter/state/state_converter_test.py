@@ -298,7 +298,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         )
         ingest_info.state_supervision_periods.add(
             state_supervision_period_id="S_PERIOD_ID3",
-            state_assessment_ids=["ASSESSMENT_ID"],
             supervising_officer_id="AGENT_ID_PO",
             supervision_type="PROBATION",
             state_supervision_case_type_entry_ids=["CASE_TYPE_ID"],
@@ -312,7 +311,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_incarceration_period_id="I_PERIOD_ID",
             state_incarceration_incident_ids=["INCIDENT_ID"],
             state_parole_decision_ids=["DECISION_ID"],
-            state_assessment_ids=["ASSESSMENT_ID"],
             state_program_assignment_ids=["PROGRAM_ASSIGNMENT_ID"],
         )
 
@@ -585,7 +583,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                             ],
                         )
                     ],
-                    assessments=[assessment],
                 )
             ],
         )
@@ -603,7 +600,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                     state_code="US_XX",
                     supervision_type=StateSupervisionType.PROBATION,
                     supervision_type_raw_text="PROBATION",
-                    assessments=[assessment],
                     supervising_officer=StateAgent.new_with_defaults(
                         external_id="AGENT_ID_PO",
                         state_code="US_XX",

@@ -1740,7 +1740,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             facility="facility",
             incarceration_incidents=[db_incarceration_incident],
             parole_decisions=[db_parole_decision, db_parole_decision_2],
-            assessments=[db_assessment],
         )
         entity_incarceration_period = self.to_entity(db_incarceration_period)
         db_incarceration_sentence = generate_incarceration_sentence(
@@ -1812,7 +1811,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             status=StateSupervisionPeriodStatus.EXTERNAL_UNKNOWN.value,
             state_code=_STATE_CODE,
             county_code="county_code",
-            assessments=[db_assessment_2],
             supervision_violation_entries=[db_supervision_violation],
             case_type_entries=[db_case_type_dv],
             supervising_officer=db_agent_po,
@@ -1922,7 +1920,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             facility="facility-updated",
             incarceration_incidents=[incarceration_incident],
             parole_decisions=[parole_decision, parole_decision_2],
-            assessments=[assessment],
         )
         incarceration_sentence = attr.evolve(
             entity_incarceration_sentence,
@@ -1971,7 +1968,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             entity_supervision_period,
             supervision_period_id=None,
             county_code="county_code-updated",
-            assessments=[assessment_2],
             supervision_violation_entries=[supervision_violation],
             case_type_entries=[case_type_dv, case_type_so],
             supervising_officer=agent_po,
@@ -1996,7 +1992,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             person_id=None,
             external_ids=[external_id],
             sentence_groups=[sentence_group],
-            assessments=[],
+            assessments=[assessment, assessment_2],
         )
 
         expected_bond = attr.evolve(bond, bond_id=_ID)
@@ -2038,7 +2034,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             incarceration_period_id=_ID,
             incarceration_incidents=[expected_incarceration_incident],
             parole_decisions=[expected_parole_decision, expected_parole_decision_2],
-            assessments=[expected_assessment],
         )
         expected_incarceration_sentence = attr.evolve(
             incarceration_sentence,
@@ -2078,7 +2073,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         expected_supervision_period = attr.evolve(
             supervision_period,
             supervision_period_id=_ID,
-            assessments=[expected_assessment_2],
             supervision_violation_entries=[expected_supervision_violation],
             case_type_entries=[expected_case_type_dv, expected_case_type_so],
             supervising_officer=expected_agent_po,

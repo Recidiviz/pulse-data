@@ -460,12 +460,6 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         ]
         incarceration_period_builder.parole_decisions = converted_decisions
 
-        converted_assessments = [
-            self._convert_assessment(self.assessments[assessment_id])
-            for assessment_id in ingest_incarceration_period.state_assessment_ids
-        ]
-        incarceration_period_builder.assessments = converted_assessments
-
         converted_program_assignments = [
             self._convert_program_assignment(self.program_assignments[assignment_id])
             for assignment_id in ingest_incarceration_period.state_program_assignment_ids
@@ -500,12 +494,6 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             for violation_id in ingest_supervision_period.state_supervision_violation_entry_ids
         ]
         supervision_period_builder.supervision_violation_entries = converted_violations
-
-        converted_assessments = [
-            self._convert_assessment(self.assessments[assessment_id])
-            for assessment_id in ingest_supervision_period.state_assessment_ids
-        ]
-        supervision_period_builder.assessments = converted_assessments
 
         converted_program_assignments = [
             self._convert_program_assignment(self.program_assignments[assignment_id])
