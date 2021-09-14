@@ -172,6 +172,9 @@ from recidiviz.validation.views.state.incarceration_release_reason_no_release_da
 from recidiviz.validation.views.state.incarceration_releases_by_type_by_period_internal_consistency import (
     INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.invalid_admission_reason_and_pfi import (
+    INVALID_ADMISSION_REASON_AND_PFI_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.invalid_admission_reasons_for_temporary_custody import (
     INVALID_ADMISSION_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER,
 )
@@ -336,6 +339,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = (
         INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_BUILDER,
         INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_VIEW_BUILDER,
         INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER,
+        INVALID_ADMISSION_REASON_AND_PFI_VIEW_BUILDER,
         INVALID_ADMISSION_REASONS_FOR_TEMPORARY_CUSTODY_VIEW_BUILDER,
         INVALID_ADMITTED_FROM_SUPERVISION_ADMISSION_REASON_VIEW_BUILDER,
         INVALID_PFI_FOR_TEMPORARY_CUSTODY_ADMISSIONS_VIEW_BUILDER,
