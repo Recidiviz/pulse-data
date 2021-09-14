@@ -25,26 +25,26 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodTerminationReason,
     StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.str_field_utils import sorted_list_from_str
 from recidiviz.ingest.direct.regions.us_id.us_id_constants import (
-    JAIL_FACILITY_CODES,
-    DEPORTED_LOCATION_NAME,
-    INTERSTATE_FACILITY_CODE,
     COMMUTED_LOCATION_NAMES,
-    EARLY_DISCHARGE_LOCATION_NAME,
     DECEASED_LOCATION_NAMES,
+    DEPORTED_LOCATION_NAME,
     DISMISSED_LOCATION_NAME,
-    PARDONED_LOCATION_NAMES,
-    HISTORY_FACILITY_TYPE,
-    SUPERVISION_FACILITY_TYPE,
-    INCARCERATION_FACILITY_TYPE,
-    OTHER_FACILITY_TYPE,
-    FUGITIVE_FACILITY_TYPE,
-    PAROLE_COMMISSION_CODE,
+    EARLY_DISCHARGE_LOCATION_NAME,
     FEDERAL_CUSTODY_LOCATION_CODE,
+    FUGITIVE_FACILITY_TYPE,
+    HISTORY_FACILITY_TYPE,
+    INCARCERATION_FACILITY_TYPE,
+    INTERSTATE_FACILITY_CODE,
+    JAIL_FACILITY_CODES,
+    OTHER_FACILITY_TYPE,
+    PARDONED_LOCATION_NAMES,
+    PAROLE_COMMISSION_CODE,
+    SUPERVISION_FACILITY_TYPE,
 )
 
 
@@ -237,11 +237,15 @@ def supervision_period_supervision_type_mapper(
         return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
     if "CP" in statuses:  # Court Probation
         return StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION
-    if "TM" in statuses:  # Termer
-        # Note: This in general shouldn't be showing up since Termer is an
-        # incarceration type and not a supervision type. We have this as
-        # a fallback here to handle erroneous instances that we've seen.
+
+    # Note: These in general shouldn't be showing up since Termer and parole violators
+    # are more incarceration types and not supervision types. We have this as a
+    # fallback here to handle erroneous instances that we've seen.
+    if "PV" in statuses:  # Parole violator
         return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+    if "TM" in statuses:  # Termer
+        return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+
     return None
 
 
