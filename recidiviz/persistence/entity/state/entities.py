@@ -590,8 +590,6 @@ class StateAssessment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # Only optional when hydrated in the data converter, before we have written this entity to the persistence layer
     person: Optional["StatePerson"] = attr.ib(default=None)
-    incarceration_period: Optional["StateIncarcerationPeriod"] = attr.ib(default=None)
-    supervision_period: Optional["StateSupervisionPeriod"] = attr.ib(default=None)
     conducting_agent: Optional["StateAgent"] = attr.ib(default=None)
 
 
@@ -1046,9 +1044,6 @@ class StateIncarcerationPeriod(
     parole_decisions: List["StateParoleDecision"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
-    assessments: List["StateAssessment"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
     # TODO(#9068): DEPRECATED - DO NOT ADD NEW USAGES
     program_assignments: List["StateProgramAssignment"] = attr.ib(
         factory=list, validator=attr_validators.is_list
@@ -1205,9 +1200,6 @@ class StateSupervisionPeriod(
         factory=list, validator=attr_validators.is_list
     )
     supervision_violation_entries: List["StateSupervisionViolation"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
-    assessments: List["StateAssessment"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
     case_type_entries: List["StateSupervisionCaseTypeEntry"] = attr.ib(

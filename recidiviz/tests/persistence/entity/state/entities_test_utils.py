@@ -201,6 +201,42 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         )
     ]
 
+    assessment_agent = entities.StateAgent.new_with_defaults(
+        agent_type=StateAgentType.SUPERVISION_OFFICER,
+        state_code="US_XX",
+        full_name="MR SIR",
+    )
+
+    assessment1 = entities.StateAssessment.new_with_defaults(
+        assessment_class=StateAssessmentClass.RISK,
+        assessment_class_raw_text=None,
+        assessment_type=StateAssessmentType.LSIR,
+        assessment_type_raw_text="LSIR",
+        assessment_date=datetime.date(2003, month=8, day=10),
+        state_code="US_XX",
+        assessment_score=55,
+        assessment_level=StateAssessmentLevel.MEDIUM,
+        assessment_level_raw_text="MED",
+        assessment_metadata="assessment metadata",
+        conducting_agent=assessment_agent,
+    )
+
+    assessment2 = entities.StateAssessment.new_with_defaults(
+        assessment_class=StateAssessmentClass.RISK,
+        assessment_class_raw_text=None,
+        assessment_type=StateAssessmentType.LSIR,
+        assessment_type_raw_text="LSIR",
+        assessment_date=datetime.date(2004, month=9, day=10),
+        state_code="US_XX",
+        assessment_score=10,
+        assessment_level=StateAssessmentLevel.LOW,
+        assessment_level_raw_text="LOW",
+        assessment_metadata="more assessment metadata",
+        conducting_agent=assessment_agent,
+    )
+
+    person.assessments = [assessment1, assessment2]
+
     sentence_group = entities.StateSentenceGroup.new_with_defaults(
         external_id="BOOK_ID1234",
         status=StateSentenceStatus.SERVING,
@@ -468,29 +504,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
     incarceration_period.parole_decisions = [parole_decision]
 
-    assessment_agent = entities.StateAgent.new_with_defaults(
-        agent_type=StateAgentType.SUPERVISION_OFFICER,
-        state_code="US_XX",
-        full_name="MR SIR",
-    )
-
-    assessment1 = entities.StateAssessment.new_with_defaults(
-        assessment_class=StateAssessmentClass.RISK,
-        assessment_class_raw_text=None,
-        assessment_type=StateAssessmentType.LSIR,
-        assessment_type_raw_text="LSIR",
-        assessment_date=datetime.date(2003, month=8, day=10),
-        state_code="US_XX",
-        assessment_score=55,
-        assessment_level=StateAssessmentLevel.MEDIUM,
-        assessment_level_raw_text="MED",
-        assessment_metadata="assessment metadata",
-        supervision_period=None,
-        conducting_agent=assessment_agent,
-    )
-
-    incarceration_period.assessments = [assessment1]
-
     program_assignment_agent = StateAgent.new_with_defaults(
         agent_type=StateAgentType.SUPERVISION_OFFICER,
         state_code="US_XX",
@@ -564,22 +577,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
     incarceration_sentence.supervision_periods = [supervision_period]
     supervision_sentence.supervision_periods = [supervision_period]
 
-    assessment2 = entities.StateAssessment.new_with_defaults(
-        assessment_class=StateAssessmentClass.RISK,
-        assessment_class_raw_text=None,
-        assessment_type=StateAssessmentType.LSIR,
-        assessment_type_raw_text="LSIR",
-        assessment_date=datetime.date(2004, month=9, day=10),
-        state_code="US_XX",
-        assessment_score=10,
-        assessment_level=StateAssessmentLevel.LOW,
-        assessment_level_raw_text="LOW",
-        assessment_metadata="more assessment metadata",
-        incarceration_period=None,
-        conducting_agent=assessment_agent,
-    )
-    supervision_period.assessments = [assessment2]
-
     program_assignment2 = StateProgramAssignment.new_with_defaults(
         external_id="program_assignment_external_id_2",
         state_code="US_XX",
@@ -635,8 +632,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         supervision_violation_response
     ]
 
-    person.assessments.extend(incarceration_period.assessments)
-    person.assessments.extend(supervision_period.assessments)
     person.program_assignments.extend(incarceration_period.program_assignments)
     person.program_assignments.extend(supervision_period.program_assignments)
 
@@ -697,7 +692,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
         incarceration_period_children: Sequence[Entity] = (
             *incarceration_period.parole_decisions,
-            *incarceration_period.assessments,
             *incarceration_period.incarceration_incidents,
             *incarceration_period.program_assignments,
         )
@@ -719,7 +713,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
         supervision_period_children: Sequence[Entity] = (
             *supervision_period.supervision_violation_entries,
-            *supervision_period.assessments,
             *supervision_period.program_assignments,
             *supervision_period.case_type_entries,
             *supervision_period.supervision_contacts,

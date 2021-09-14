@@ -28,8 +28,8 @@ from unittest import TestCase
 
 import attr
 
-from recidiviz.persistence.entity.core_entity import primary_key_name_from_cls
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.core_entity import primary_key_name_from_cls
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
@@ -131,7 +131,7 @@ class TestStateEntities(TestCase):
         person1 = generate_full_graph_state_person(set_back_edges=True)
         person2 = generate_full_graph_state_person(set_back_edges=True)
 
-        next(iter(person1.assessments)).state_code = "us_ny"
+        next(iter(person1.assessments)).state_code = "US_YY"
 
         self.assertNotEqual(person1, person2)
 
