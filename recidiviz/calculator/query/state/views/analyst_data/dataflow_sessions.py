@@ -238,6 +238,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         supervising_officer_external_id,
         case_type,
         session_attributes,
+        session_attributes_json,
     FROM
         (
         SELECT 
@@ -247,7 +248,9 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
             ROW_NUMBER() OVER(PARTITION BY person_id, date, compartment_level_1, metric_source 
                 ORDER BY COALESCE(dedup.priority,999), supervising_officer_external_id, compartment_location) AS rn,
             ARRAY_AGG(STRUCT(compartment_level_2, supervising_officer_external_id, compartment_location)) 
-                OVER(PARTITION BY person_id, date, compartment_level_1, metric_source) AS session_attributes
+                OVER(PARTITION BY person_id, date, compartment_level_1, metric_source) AS session_attributes,
+            ARRAY_AGG(TO_JSON_STRING(STRUCT(compartment_level_2, supervising_officer_external_id, compartment_location)))
+                OVER(PARTITION BY person_id, date, compartment_level_1, metric_source) AS session_attributes_json,
         FROM dedup_step_2_cte
         LEFT JOIN dedup_correctional_level
             USING (person_id, date, state_code, metric_source, compartment_level_1)
@@ -278,6 +281,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         supervising_officer_external_id,
         case_type,
         session_attributes,
+        session_attributes_json,
     FROM 
         (
         SELECT 
@@ -321,8 +325,7 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = """
         */
         SELECT *,
             DATE_SUB(DATE, INTERVAL ROW_NUMBER() OVER(PARTITION BY person_id, metric_source, 
-                compartment_level_1, compartment_level_2, compartment_location, 
-                correctional_level, supervising_officer_external_id, case_type
+                compartment_level_1, correctional_level, case_type, ARRAY_TO_STRING(session_attributes_json, '|')
                 ORDER BY date ASC) DAY) AS group_continuous_dates_in_compartment
         FROM dedup_step_4_cte
         )
