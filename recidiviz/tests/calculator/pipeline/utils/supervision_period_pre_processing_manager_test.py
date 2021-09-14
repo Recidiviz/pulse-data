@@ -211,7 +211,9 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
                 termination_date=datetime.date(2001, 1, 30),
                 termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
-                status=StateSupervisionPeriodStatus.TERMINATED,
+                # TODO(#9129): This status is temporarily incorrect until we delete this
+                #  field entirely. This value is not actually referenced elsewhere.
+                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             ),
         ]
 
@@ -248,7 +250,9 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
                 termination_date=datetime.date(2020, 3, 1),
                 termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
-                status=StateSupervisionPeriodStatus.TERMINATED,
+                # TODO(#9129): This status is temporarily incorrect until we delete this
+                #  field entirely. This value is not actually referenced elsewhere.
+                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             ),
         ]
         updated_periods = self._pre_processed_supervision_periods_for_calculations(

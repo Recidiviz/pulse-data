@@ -46,7 +46,8 @@ def sort_period_by_external_id(p_a: PeriodType, p_b: PeriodType) -> int:
 
 def sort_periods_by_set_dates_and_statuses(
     periods: List[PeriodType],
-    is_active_period_function: Callable[[PeriodType], int],
+    # TODO(#9128): Remove this arg entirely once neither period type has a status field.
+    has_active_status_function: Optional[Callable[[PeriodType], int]],
     is_transfer_start_function: Callable[[PeriodType], int],
     is_transfer_end_function: Callable[[PeriodType], int],
 ) -> None:
@@ -120,8 +121,11 @@ def sort_periods_by_set_dates_and_statuses(
         return _sort_by_transfer_start(period_a, period_b)
 
     def _sort_by_active_status(period_a: PeriodType, period_b: PeriodType) -> int:
-        period_a_active = is_active_period_function(period_a)
-        period_b_active = is_active_period_function(period_b)
+        if has_active_status_function is None:
+            raise ValueError("Expected nonnull has_active_status_function.")
+
+        period_a_active = has_active_status_function(period_a)
+        period_b_active = has_active_status_function(period_b)
 
         if period_a_active == period_b_active:
             return sort_period_by_external_id(period_a, period_b)
@@ -147,6 +151,8 @@ def sort_periods_by_set_dates_and_statuses(
                 "period that has a null ending and null starting reason."
             )
         if period_a.end_date_exclusive is None and period_b.end_date_exclusive is None:
+            if has_active_status_function is None:
+                return sort_period_by_external_id(period_a, period_b)
             return _sort_by_active_status(period_a, period_b)
         # Sort by end dates, with unset end dates coming first if the following period is greater than 0 days
         # long (we assume in this case that we forgot to close this open period).
