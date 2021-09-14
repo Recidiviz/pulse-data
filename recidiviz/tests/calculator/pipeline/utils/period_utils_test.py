@@ -23,17 +23,18 @@ from itertools import permutations
 import attr
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.utils import (
-    incarceration_period_utils,
-    supervision_period_utils,
-)
 from recidiviz.calculator.pipeline.utils.commitment_from_supervision_utils import (
     SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT,
+)
+from recidiviz.calculator.pipeline.utils.incarceration_period_utils import (
+    standard_date_sort_for_incarceration_periods,
 )
 from recidiviz.calculator.pipeline.utils.period_utils import (
     find_earliest_date_of_period_ending_in_death,
     find_last_terminated_period_before_date,
-    sort_periods_by_set_dates_and_statuses,
+)
+from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
+    standard_date_sort_for_supervision_periods,
 )
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
@@ -540,7 +541,6 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
         self.assertIsNone(earliest_period_ending_in_death)
 
 
-# pylint: disable=protected-access
 class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
     """Tests the sort_periods_by_set_dates_and_statuses function."""
 
@@ -571,12 +571,7 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
         for sp_order_combo in permutations(periods):
             sps_for_test = [attr.evolve(sp) for sp in sp_order_combo]
 
-            sort_periods_by_set_dates_and_statuses(
-                sps_for_test,
-                supervision_period_utils._is_active_period,
-                supervision_period_utils._is_transfer_start,
-                supervision_period_utils._is_transfer_end,
-            )
+            standard_date_sort_for_supervision_periods(sps_for_test)
 
             self.assertEqual(
                 [supervision_period_1, supervision_period_2, supervision_period_3],
@@ -627,19 +622,13 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
         for ip_order_combo in permutations(incarceration_periods):
             ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
 
-            sort_periods_by_set_dates_and_statuses(
-                ips_for_test,
-                incarceration_period_utils._is_active_period,
-                incarceration_period_utils._is_transfer_start,
-                incarceration_period_utils._is_transfer_end,
-            )
+            standard_date_sort_for_incarceration_periods(ips_for_test)
 
-            self.assertEqual(
-                [ip_1, ip_2, ip_3],
-                ips_for_test,
-            )
+            self.assertEqual([ip_1, ip_2, ip_3], ips_for_test)
 
-    def test_sort_periods_by_set_dates_and_statuses_ips_empty_release_dates(self):
+    def test_sort_periods_by_set_dates_and_statuses_ips_empty_release_dates(
+        self,
+    ) -> None:
         state_code = "US_XX"
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -681,19 +670,13 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
         for ip_order_combo in permutations(incarceration_periods):
             ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
 
-            sort_periods_by_set_dates_and_statuses(
-                ips_for_test,
-                incarceration_period_utils._is_active_period,
-                incarceration_period_utils._is_transfer_start,
-                incarceration_period_utils._is_transfer_end,
-            )
+            standard_date_sort_for_incarceration_periods(ips_for_test)
 
-            self.assertEqual(
-                [ip_1, ip_2, ip_3],
-                ips_for_test,
-            )
+            self.assertEqual([ip_1, ip_2, ip_3], ips_for_test)
 
-    def test_sort_periods_by_set_dates_and_statuses_ips_two_admissions_same_day(self):
+    def test_sort_periods_by_set_dates_and_statuses_ips_two_admissions_same_day(
+        self,
+    ) -> None:
         state_code = "US_XX"
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -731,17 +714,9 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
         for ip_order_combo in permutations(incarceration_periods):
             ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
 
-            sort_periods_by_set_dates_and_statuses(
-                ips_for_test,
-                incarceration_period_utils._is_active_period,
-                incarceration_period_utils._is_transfer_start,
-                incarceration_period_utils._is_transfer_end,
-            )
+            standard_date_sort_for_incarceration_periods(ips_for_test)
 
-            self.assertEqual(
-                [ip_1, ip_2, ip_3],
-                ips_for_test,
-            )
+            self.assertEqual([ip_1, ip_2, ip_3], ips_for_test)
 
     def test_sort_periods_by_set_dates_and_statuses_ips_two_same_day_zero_day_periods(
         self,
@@ -788,17 +763,9 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
         for ip_order_combo in permutations(incarceration_periods):
             ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
 
-            sort_periods_by_set_dates_and_statuses(
-                ips_for_test,
-                incarceration_period_utils._is_active_period,
-                incarceration_period_utils._is_transfer_start,
-                incarceration_period_utils._is_transfer_end,
-            )
+            standard_date_sort_for_incarceration_periods(ips_for_test)
 
-            self.assertEqual(
-                [ip_1, ip_2, ip_3],
-                ips_for_test,
-            )
+            self.assertEqual([ip_1, ip_2, ip_3], ips_for_test)
 
     def test_sort_periods_by_set_dates_and_statuses_ips_two_same_day_zero_day_periods_release(
         self,
@@ -845,19 +812,13 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
         for ip_order_combo in permutations(incarceration_periods):
             ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
 
-            sort_periods_by_set_dates_and_statuses(
-                ips_for_test,
-                incarceration_period_utils._is_active_period,
-                incarceration_period_utils._is_transfer_start,
-                incarceration_period_utils._is_transfer_end,
-            )
+            standard_date_sort_for_incarceration_periods(ips_for_test)
 
-            self.assertEqual(
-                [ip_1, ip_2, ip_3],
-                ips_for_test,
-            )
+            self.assertEqual([ip_1, ip_2, ip_3], ips_for_test)
 
-    def test_sort_periods_by_set_dates_and_statuses_ips_sort_by_external_id(self):
+    def test_sort_periods_by_set_dates_and_statuses_ips_sort_by_external_id(
+        self,
+    ) -> None:
         state_code = "US_XX"
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             external_id="X",
@@ -900,14 +861,95 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
         for ip_order_combo in permutations(incarceration_periods):
             ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
 
-            sort_periods_by_set_dates_and_statuses(
-                ips_for_test,
-                incarceration_period_utils._is_active_period,
-                incarceration_period_utils._is_transfer_start,
-                incarceration_period_utils._is_transfer_end,
-            )
+            standard_date_sort_for_incarceration_periods(ips_for_test)
 
-            self.assertEqual(
-                [ip_1, ip_2, ip_3],
-                ips_for_test,
-            )
+            self.assertEqual([ip_1, ip_2, ip_3], ips_for_test)
+
+    def test_sort_open_incarceration_periods_all_equal_except_external_id(
+        self,
+    ) -> None:
+        state_code = "US_XX"
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="X-1",
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2009, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+        )
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="X-2",
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2009, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+        )
+
+        incarceration_periods = [ip_1, ip_2]
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+
+            standard_date_sort_for_incarceration_periods(ips_for_test)
+
+            self.assertEqual(incarceration_periods, ips_for_test)
+
+    def test_sort_open_incarceration_periods_all_equal_except_status(
+        self,
+    ) -> None:
+        state_code = "US_XX"
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="X-1",
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2009, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+        )
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            external_id="X-2",
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            state_code=state_code,
+            admission_date=date(2009, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+        )
+
+        incarceration_periods = [ip_1, ip_2]
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [attr.evolve(ip) for ip in ip_order_combo]
+
+            standard_date_sort_for_incarceration_periods(ips_for_test)
+
+            self.assertEqual(incarceration_periods, ips_for_test)
+
+    def test_sort_open_supervision_periods_all_equal_except_external_id(
+        self,
+    ) -> None:
+        sp_1 = StateSupervisionPeriod.new_with_defaults(
+            external_id="X-1",
+            state_code="US_XX",
+            start_date=date(2000, 1, 1),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+        sp_2 = StateSupervisionPeriod.new_with_defaults(
+            external_id="X-2",
+            state_code="US_XX",
+            start_date=date(2000, 1, 1),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        supervision_periods = [sp_1, sp_2]
+
+        for sp_order_combo in permutations(supervision_periods):
+            sps_for_test = [attr.evolve(ip) for ip in sp_order_combo]
+
+            standard_date_sort_for_supervision_periods(sps_for_test)
+
+            self.assertEqual(supervision_periods, sps_for_test)

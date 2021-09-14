@@ -83,7 +83,6 @@ from recidiviz.common.constants.state.state_assessment import (
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
@@ -332,17 +331,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 "Unexpected missing start_date. Inconsistent periods should have been fixed or dropped at "
                 "this point."
             )
-
-        if termination_date is None:
-            if (
-                supervision_period.status
-                != StateSupervisionPeriodStatus.UNDER_SUPERVISION
-            ):
-                # This should not happen after validation.
-                raise ValueError(
-                    "Unexpected missing termination_date. Inconsistent periods should have been fixed or "
-                    "dropped at this point."
-                )
 
         event_date = start_date
 

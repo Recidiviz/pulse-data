@@ -29,7 +29,6 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.entity_utils import is_placeholder
@@ -112,17 +111,10 @@ class SupervisionPreProcessingManager:
 
         for sp in supervision_periods:
             if sp.termination_date is None:
-                if sp.status != StateSupervisionPeriodStatus.UNDER_SUPERVISION:
-                    # If the person is not under supervision on this period, set the termination date to the start date.
-                    sp.termination_date = sp.start_date
-                    sp.termination_reason = (
-                        StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN
-                    )
-                elif sp.termination_reason or sp.termination_reason_raw_text:
+                if sp.termination_reason or sp.termination_reason_raw_text:
                     # There is no termination date on this period, but the set termination_reason indicates that the person
                     # is no longer in custody. Set the termination date to the start date.
                     sp.termination_date = sp.start_date
-                    sp.status = StateSupervisionPeriodStatus.TERMINATED
 
                     logging.warning(
                         "No termination_date for supervision period (%d) with nonnull termination_reason (%s) "
@@ -137,7 +129,6 @@ class SupervisionPreProcessingManager:
                 # termination_date and the termination_reason.
                 sp.termination_date = None
                 sp.termination_reason = None
-                sp.status = StateSupervisionPeriodStatus.UNDER_SUPERVISION
 
             if sp.start_date is None:
                 logging.info("Dropping supervision period without start_date: [%s]", sp)
@@ -206,7 +197,6 @@ class SupervisionPreProcessingManager:
                 # earliest_death_date and update the termination_reason and status
                 sp.termination_date = self.earliest_death_date
                 sp.termination_reason = StateSupervisionPeriodTerminationReason.DEATH
-                sp.status = StateSupervisionPeriodStatus.TERMINATED
 
             updated_periods.append(sp)
 
