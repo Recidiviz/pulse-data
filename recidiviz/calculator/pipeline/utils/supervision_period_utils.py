@@ -28,7 +28,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
@@ -53,10 +52,6 @@ CASE_TYPE_SEVERITY_ORDER = [
 ]
 
 
-def _is_active_period(period: StateSupervisionPeriod) -> bool:
-    return period.status == StateSupervisionPeriodStatus.UNDER_SUPERVISION
-
-
 def _is_transfer_start(period: StateSupervisionPeriod) -> bool:
     return (
         period.admission_reason
@@ -76,7 +71,10 @@ def standard_date_sort_for_supervision_periods(
 ) -> List[StateSupervisionPeriod]:
     """Sorts supervision periods chronologically by dates and statuses."""
     sort_periods_by_set_dates_and_statuses(
-        supervision_periods, _is_active_period, _is_transfer_start, _is_transfer_end
+        supervision_periods,
+        has_active_status_function=None,
+        is_transfer_start_function=_is_transfer_start,
+        is_transfer_end_function=_is_transfer_end,
     )
 
     return supervision_periods
