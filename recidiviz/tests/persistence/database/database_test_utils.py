@@ -5,7 +5,6 @@ from typing import Optional
 
 import attr
 
-from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.person_characteristics import Ethnicity, Race
@@ -33,7 +32,6 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactStatus,
 )
-
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -248,29 +246,10 @@ def generate_test_court_case(person_id) -> state_schema.StateCourtCase:
     return instance
 
 
-def generate_test_bond(person_id) -> state_schema.StateBond:
-    instance = state_schema.StateBond(
-        bond_id=9999,
-        person_id=person_id,
-        status=BondStatus.PENDING.value,
-        status_raw_text="PENDING",
-        bond_type=BondType.CASH.value,
-        bond_type_raw_text="CASH",
-        date_paid=None,
-        state_code="US_XX",
-        county_code="US_XX_COUNTY",
-        amount_dollars=1000,
-        bond_agent=None,
-    )
-
-    return instance
-
-
 def generate_test_charge(
     person_id: int,
     charge_id: int,
     court_case: Optional[state_schema.StateCourtCase] = None,
-    bond: Optional[state_schema.StateBond] = None,
     state_code: str = "US_XX",
 ) -> state_schema.StateCharge:
     instance = state_schema.StateCharge(
@@ -280,8 +259,6 @@ def generate_test_charge(
         status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
         court_case=court_case,
         court_case_id=(court_case.court_case_id if court_case else None),
-        bond=bond,
-        bond_id=(bond.bond_id if bond else None),
     )
 
     return instance
@@ -486,13 +463,15 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
 
     test_court_case = generate_test_court_case(test_person_id)
 
-    test_bond = generate_test_bond(test_person_id)
-
     test_charge_1 = generate_test_charge(
-        test_person_id, 6666, test_court_case, test_bond
+        test_person_id,
+        6666,
+        test_court_case,
     )
     test_charge_2 = generate_test_charge(
-        test_person_id, 7777, test_court_case, test_bond
+        test_person_id,
+        7777,
+        test_court_case,
     )
 
     test_early_discharge = generate_test_early_discharge(test_person_id)

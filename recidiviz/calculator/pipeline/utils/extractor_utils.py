@@ -690,8 +690,8 @@ class _HydrateEntity(beam.DoFn):
                 (incarceration_sentence_id,
                     (person_id, StateIncarcerationSentence))
 
-            - When hydrating a bond on a charge (1:1), this yields:
-                (bond_id, (person_id, StateBond))
+            - When hydrating a judge on a court case (1:1), this yields:
+                (agent_id, (person_id, StateAgent))
         """
         # Build the entity from the values in the element
         entity_class = kwargs.get("entity_class")
