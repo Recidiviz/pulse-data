@@ -261,7 +261,6 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
                 AdmissionReason.ADMITTED_IN_ERROR,
                 AdmissionReason.RETURN_FROM_ESCAPE,
                 AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
-                AdmissionReason.RETURN_FROM_TEMPORARY_RELEASE,
                 AdmissionReason.TEMPORARY_CUSTODY,
                 AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
                 AdmissionReason.STATUS_CHANGE,
@@ -466,10 +465,6 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
             ReleaseReason.VACATED,
         ):
             return True
-        if release_reason == ReleaseReason.TEMPORARY_RELEASE:
-            # If the person was released from this incarceration period temporarily, do not include them in the release
-            # cohort.
-            return False
 
         raise ValueError(
             "Enum case not handled for "
