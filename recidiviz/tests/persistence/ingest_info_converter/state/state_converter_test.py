@@ -19,7 +19,6 @@ import datetime
 import unittest
 from typing import List
 
-from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Ethnicity, Race
 from recidiviz.common.constants.state.state_agent import StateAgentType
@@ -30,7 +29,6 @@ from recidiviz.common.constants.state.state_court_case import (
     StateCourtCaseStatus,
     StateCourtType,
 )
-from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
@@ -61,10 +59,8 @@ from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import (
     StateAgent,
     StateAssessment,
-    StateBond,
     StateCharge,
     StateCourtCase,
-    StateFine,
     StateIncarcerationIncident,
     StateIncarcerationIncidentOutcome,
     StateIncarcerationPeriod,
@@ -103,7 +99,7 @@ US_XX_SID = "US_XX_SID"
 class TestIngestInfoStateConverter(unittest.TestCase):
     """Test converting IngestInfo objects to Persistence layer objects."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.maxDiff = None
 
     @staticmethod
@@ -135,7 +131,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             )
         return conversion_result.people
 
-    def testConvert_FullIngestInfo(self):
+    def testConvert_FullIngestInfo(self) -> None:
         # Arrange
         metadata = FakeIngestMetadata.for_state(region="US_XX")
 
@@ -234,9 +230,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         ingest_info.state_sentence_groups.add(
             state_sentence_group_id="GROUP_ID2",
             state_supervision_sentence_ids=["SUPERVISION_SENTENCE_ID2"],
-            state_fine_ids=["FINE_ID"],
         )
-        ingest_info.state_fines.add(state_fine_id="FINE_ID", status="PAID")
         ingest_info.state_supervision_sentences.add(
             state_supervision_sentence_id="SUPERVISION_SENTENCE_ID1",
             state_charge_ids=["CHARGE_ID1", "CHARGE_ID2"],
@@ -260,7 +254,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         ingest_info.state_charges.add(
             state_charge_id="CHARGE_ID1",
             state_court_case_id="CASE_ID",
-            state_bond_id="BOND_ID",
             classification_type="M",
             classification_subtype="1",
             ncic_code="5006",
@@ -283,7 +276,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_court_case_id="CASE_ID",
             judge_id="JUDGE_AGENT_ID_1",
         )
-        ingest_info.state_bonds.add(state_bond_id="BOND_ID", status="POSTED")
         ingest_info.state_supervision_periods.add(
             state_supervision_period_id="S_PERIOD_ID1",
             state_supervision_violation_entry_ids=["VIOLATION_ID"],
@@ -516,12 +508,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_code="US_XX",
             status=ChargeStatus.PRESENT_WITHOUT_INFO,
             court_case=court_case,
-            bond=StateBond.new_with_defaults(
-                external_id="BOND_ID",
-                state_code="US_XX",
-                status=BondStatus.POSTED,
-                status_raw_text="POSTED",
-            ),
         )
 
         charge_2 = StateCharge.new_with_defaults(
@@ -709,14 +695,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                 ],
                             )
                         ],
-                        fines=[
-                            StateFine.new_with_defaults(
-                                external_id="FINE_ID",
-                                state_code="US_XX",
-                                status=StateFineStatus.PAID,
-                                status_raw_text="PAID",
-                            )
-                        ],
                     ),
                 ],
             )
@@ -726,7 +704,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
 
         self.assertCountEqual(expected_result, result)
 
-    def testConvert_CannotConvertField_RaisesValueError(self):
+    def testConvert_CannotConvertField_RaisesValueError(self) -> None:
         # Arrange
         metadata = metadata = FakeIngestMetadata.for_state(region="us_xx")
 

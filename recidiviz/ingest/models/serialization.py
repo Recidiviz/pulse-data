@@ -69,11 +69,9 @@ def convert_ingest_info_to_proto(
     state_incarceration_sentence_map: Dict[
         str, ingest_info.StateIncarcerationSentence
     ] = {}
-    state_fine_map: Dict[str, ingest_info.StateFine] = {}
     state_early_discharge_map: Dict[str, ingest_info.StateEarlyDischarge] = {}
     state_charge_map: Dict[str, ingest_info.StateCharge] = {}
     state_court_case_map: Dict[str, ingest_info.StateCourtCase] = {}
-    state_bond_map: Dict[str, ingest_info.StateBond] = {}
     state_incarceration_period_map: Dict[str, ingest_info.StateIncarcerationPeriod] = {}
     state_supervision_period_map: Dict[str, ingest_info.StateSupervisionPeriod] = {}
     state_case_type_map: Dict[str, ingest_info.StateSupervisionCaseTypeEntry] = {}
@@ -178,15 +176,6 @@ def convert_ingest_info_to_proto(
                         state_agent_map,
                     )
                     proto_court_case.judge_id = proto_judge.state_agent_id
-
-            if state_charge.state_bond:
-                proto_state_bond = _populate_proto(
-                    "state_bonds",
-                    state_charge.state_bond,
-                    "state_bond_id",
-                    state_bond_map,
-                )
-                proto_state_charge.state_bond_id = proto_state_bond.state_bond_id
 
     def _populate_incarceration_period_protos(parent_ingest_object, parent_proto):
         """Populates IncarcerationPeriod proto fields for some parent object,
@@ -595,14 +584,6 @@ def convert_ingest_info_to_proto(
                         proto_early_discharge.state_early_discharge_id
                     )
 
-            for fine in sentence_group.state_fines:
-                proto_fine = _populate_proto(
-                    "state_fines", fine, "state_fine_id", state_fine_map
-                )
-                proto_sentence_group.state_fine_ids.append(proto_fine.state_fine_id)
-
-                _populate_state_charge_protos(fine, proto_fine)
-
     return proto
 
 
@@ -701,10 +682,6 @@ def convert_proto_to_ingest_info(
         )
         for incarceration_sentence in proto.state_incarceration_sentences
     )
-    state_fine_map: Dict[str, ingest_info.StateFine] = dict(
-        _proto_to_py(fine, ingest_info.StateFine, "state_fine_id")
-        for fine in proto.state_fines
-    )
     state_early_discharge_map: Dict[str, ingest_info.StateEarlyDischarge] = dict(
         _proto_to_py(
             early_discharge, ingest_info.StateEarlyDischarge, "state_early_discharge_id"
@@ -718,10 +695,6 @@ def convert_proto_to_ingest_info(
     state_court_case_map: Dict[str, ingest_info.StateCourtCase] = dict(
         _proto_to_py(court_case, ingest_info.StateCourtCase, "state_court_case_id")
         for court_case in proto.state_court_cases
-    )
-    state_bond_map: Dict[str, ingest_info.StateBond] = dict(
-        _proto_to_py(state_bond, ingest_info.StateBond, "state_bond_id")
-        for state_bond in proto.state_bonds
     )
     state_incarceration_period_map: Dict[
         str, ingest_info.StateIncarcerationPeriod
@@ -1040,16 +1013,7 @@ def convert_proto_to_ingest_info(
                 proto_state_charge.state_court_case_id
             ]
 
-        if proto_state_charge.state_bond_id:
-            state_charge.state_bond = state_bond_map[proto_state_charge.state_bond_id]
-
     # Wire all state charges and period types to respective sentence types
-    for proto_fine in proto.state_fines:
-        fine = state_fine_map[proto_fine.state_fine_id]
-        fine.state_charges = [
-            state_charge_map[proto_id] for proto_id in proto_fine.state_charge_ids
-        ]
-
     for proto_incarceration_sentence in proto.state_incarceration_sentences:
         _wire_sentence_proto(
             proto_incarceration_sentence,
@@ -1068,10 +1032,6 @@ def convert_proto_to_ingest_info(
     for proto_sentence_group in proto.state_sentence_groups:
         sentence_group = state_sentence_group_map[
             proto_sentence_group.state_sentence_group_id
-        ]
-
-        sentence_group.state_fines = [
-            state_fine_map[proto_id] for proto_id in proto_sentence_group.state_fine_ids
         ]
 
         sentence_group.state_incarceration_sentences = [

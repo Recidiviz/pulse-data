@@ -33,11 +33,9 @@ from recidiviz.ingest.models.ingest_info_pb2 import (
     Person,
     Sentence,
     StateAssessment,
-    StateBond,
     StateCharge,
     StateCourtCase,
     StateEarlyDischarge,
-    StateFine,
     StateIncarcerationIncident,
     StateIncarcerationIncidentOutcome,
     StateIncarcerationPeriod,
@@ -124,8 +122,6 @@ class TestIngestInfo(unittest.TestCase):
             "state_supervision_sentences",
             "state_incarceration_sentence_ids",
             "state_incarceration_sentences",
-            "state_fine_ids",
-            "state_fines",
         ]
         supervision_sentence_fields_ignore = [
             "state_charge_ids",
@@ -147,12 +143,9 @@ class TestIngestInfo(unittest.TestCase):
             "state_early_discharge_ids",
             "state_early_discharges",
         ]
-        fine_fields_ignore = ["state_charge_ids", "state_charges"]
         state_charge_fields_ignore = [
             "state_court_case_id",
             "state_court_case",
-            "state_bond_id",
-            "state_bond",
         ]
         state_court_case_fields_ignore = ["judge_id", "judge"]
         incarceration_period_fields_ignore = [
@@ -233,14 +226,12 @@ class TestIngestInfo(unittest.TestCase):
             incarceration_sentence_fields_ignore,
         )
         _verify_fields(StateEarlyDischarge, ingest_info.StateEarlyDischarge())
-        _verify_fields(StateFine, ingest_info.StateFine(), fine_fields_ignore)
         _verify_fields(
             StateCharge, ingest_info.StateCharge(), state_charge_fields_ignore
         )
         _verify_fields(
             StateCourtCase, ingest_info.StateCourtCase(), state_court_case_fields_ignore
         )
-        _verify_fields(StateBond, ingest_info.StateBond())
         _verify_fields(
             StateIncarcerationPeriod,
             ingest_info.StateIncarcerationPeriod(),

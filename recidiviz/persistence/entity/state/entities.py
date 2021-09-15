@@ -312,6 +312,7 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     # encounters with the justice system that don't result in sentences.
 
 
+# TODO(#9200): DEPRECATED - DO NOT ADD NEW USAGES
 @attr.s(eq=False, kw_only=True)
 class StateBond(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a StateBond associated with a particular StateCharge."""
@@ -864,6 +865,7 @@ class StateIncarcerationSentence(ExternalIdEntity, BuildableAttr, DefaultableAtt
     )
 
 
+# TODO(#9199): DEPRECATED - DO NOT ADD NEW USAGES
 @attr.s(eq=False, kw_only=True)
 class StateFine(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a fine that a StatePerson is sentenced to pay in association with a StateCharge."""

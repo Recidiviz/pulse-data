@@ -22,7 +22,6 @@ from recidiviz.ingest.models.ingest_info_pb2 import (
     StateCharge,
     StateCourtCase,
     StateEarlyDischarge,
-    StateFine,
     StateIncarcerationIncident,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
@@ -59,11 +58,9 @@ from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_agent,
     state_alias,
     state_assessment,
-    state_bond,
     state_charge,
     state_court_case,
     state_early_discharge,
-    state_fine,
     state_incarceration_incident,
     state_incarceration_incident_outcome,
     state_incarceration_period,
@@ -131,9 +128,7 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         self.early_discharges = {
             ed.state_early_discharge_id: ed for ed in ingest_info.state_early_discharges
         }
-        self.fines = {f.state_fine_id: f for f in ingest_info.state_fines}
         self.charges = {sc.state_charge_id: sc for sc in ingest_info.state_charges}
-        self.bonds = {b.state_bond_id: b for b in ingest_info.state_bonds}
         self.court_cases = {
             cc.state_court_case_id: cc for cc in ingest_info.state_court_cases
         }
@@ -291,12 +286,6 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             converted_incarceration_sentences
         )
 
-        converted_fines = [
-            self._convert_fine(self.fines[fine_id])
-            for fine_id in ingest_sentence_group.state_fine_ids
-        ]
-        sentence_group_builder.fines = converted_fines
-
         return sentence_group_builder.build(StateSentenceGroupFactory.deserialize)
 
     def _convert_supervision_sentence(
@@ -347,23 +336,6 @@ class StateConverter(BaseConverter[entities.StatePerson]):
 
         return early_discharge_builder.build(StateEarlyDischargeFactory.deserialize)
 
-    def _convert_fine(self, ingest_fine: StateFine) -> entities.StateFine:
-        """Converts an ingest_info proto StateFine to a persistence entity."""
-        state_fine_builder = entities.StateFine.builder()
-
-        state_fine.copy_fields_to_builder(
-            state_fine_builder, ingest_fine, self.metadata
-        )
-
-        self._copy_children_to_sentence(
-            state_fine_builder,
-            ingest_fine,
-            copy_periods=False,
-            copy_early_discharges=False,
-        )
-
-        return state_fine_builder.build()
-
     def _copy_children_to_sentence(
         self,
         sentence_builder,
@@ -409,12 +381,6 @@ class StateConverter(BaseConverter[entities.StatePerson]):
 
         state_charge.copy_fields_to_builder(
             charge_builder, ingest_charge, self.metadata
-        )
-
-        charge_builder.bond = fn(
-            lambda i: state_bond.convert(self.bonds[i], self.metadata),
-            "state_bond_id",
-            ingest_charge,
         )
 
         charge_builder.court_case = fn(

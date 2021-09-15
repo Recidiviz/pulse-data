@@ -314,8 +314,8 @@ If a file contains information for some entity and includes an `ancestor_keys`
 for an ancestor that's not the direct parent, and the entity being extracted has
 multiple potential parent types between itself and the noted ancestor (e.g. if
 the entity is a `state_charge` and the `ancestor_keys` points to `state_sentence_group`
-then in between the two could be any of `state_incarceration_sentence`,
-`state_supervision_sentence` or `state_fine`). `enforced_ancestor_types` can be
+then in between the two could be either `state_incarceration_sentence` or
+`state_supervision_sentence`). `enforced_ancestor_types` can be
 used in these situations to explicitly declare what the parent should be, from
 context.
 
