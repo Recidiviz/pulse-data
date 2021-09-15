@@ -232,9 +232,6 @@ class TestSerialization(unittest.TestCase):
         group = person.create_state_sentence_group()
         group.state_sentence_group_id = "group1"
 
-        fine = group.create_state_fine()
-        fine.state_fine_id = "fine1"
-
         incarceration_sentence = group.create_state_incarceration_sentence()
         incarceration_sentence.state_incarceration_sentence_id = "is1"
         early_discharge1 = incarceration_sentence.create_state_early_discharge()
@@ -327,9 +324,6 @@ class TestSerialization(unittest.TestCase):
         )
         response_decision.decision = "REVOCATION"
 
-        bond = charge1.create_state_bond()
-        bond.state_bond_id = "bond1"
-
         court_case = charge2.create_state_court_case()
         court_case.state_court_case_id = "case1"
 
@@ -385,10 +379,6 @@ class TestSerialization(unittest.TestCase):
         person_pb.state_sentence_group_ids.append("group1")
         group_pb = expected_proto.state_sentence_groups.add()
         group_pb.state_sentence_group_id = "group1"
-
-        group_pb.state_fine_ids.append("fine1")
-        fine_pb = expected_proto.state_fines.add()
-        fine_pb.state_fine_id = "fine1"
 
         group_pb.state_supervision_sentence_ids.append("ss1")
         supervision_sentence_pb = expected_proto.state_supervision_sentences.add()
@@ -519,10 +509,6 @@ class TestSerialization(unittest.TestCase):
         decision_agent_pb = expected_proto.state_agents.add()
         decision_agent_pb.state_agent_id = "agent3"
         decision_agent_pb.full_name = "Officer Barkley"
-
-        charge1_pb.state_bond_id = "bond1"
-        bond_pb = expected_proto.state_bonds.add()
-        bond_pb.state_bond_id = "bond1"
 
         charge2_pb.state_court_case_id = "case1"
         court_case_pb = expected_proto.state_court_cases.add()

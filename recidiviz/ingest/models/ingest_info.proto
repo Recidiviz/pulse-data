@@ -53,10 +53,8 @@ message IngestInfo {
     repeated StateSentenceGroup state_sentence_groups = 15;
     repeated StateSupervisionSentence state_supervision_sentences = 16;
     repeated StateIncarcerationSentence state_incarceration_sentences = 17;
-    repeated StateFine state_fines = 18;
     repeated StateCharge state_charges = 19;
     repeated StateCourtCase state_court_cases = 20;
-    repeated StateBond state_bonds = 21;
     repeated StateIncarcerationPeriod state_incarceration_periods = 22;
     repeated StateSupervisionPeriod state_supervision_periods = 23;
     repeated StateSupervisionCaseTypeEntry state_supervision_case_type_entries = 24;
@@ -258,7 +256,6 @@ message StateSentenceGroup {
 
     repeated string state_supervision_sentence_ids = 9;
     repeated string state_incarceration_sentence_ids = 10;
-    repeated string state_fine_ids = 11;
 }
 
 message StateSupervisionSentence {
@@ -307,17 +304,6 @@ message StateIncarcerationSentence {
     repeated string state_early_discharge_ids = 23;
 }
 
-message StateFine {
-    optional string state_fine_id = 1;
-    optional string status = 2;
-    optional string date_paid = 3;
-    optional string state_code = 4;
-    optional string county_code = 5;
-    optional string fine_dollars = 6;
-
-    repeated string state_charge_ids = 7;
-}
-
 message StateCharge {
     optional string state_charge_id = 1;
     optional string status = 2;
@@ -340,7 +326,6 @@ message StateCharge {
     optional string charging_entity = 16;
 
     optional string state_court_case_id = 17;
-    optional string state_bond_id = 18;
 }
 
 message StateCourtCase {
@@ -355,17 +340,6 @@ message StateCourtCase {
     optional string court_fee_dollars = 9;
 
     optional string judge_id = 10;
-}
-
-message StateBond {
-    optional string state_bond_id = 1;
-    optional string status = 2;
-    optional string bond_type = 3;
-    optional string date_paid = 4;
-    optional string state_code = 5;
-    optional string county_code = 6;
-    optional string amount = 7;
-    optional string bond_agent = 8;
 }
 
 message StateIncarcerationPeriod {
