@@ -285,4 +285,17 @@ class StateIncarcerationPeriodFactory(EntityFactory):
         return ip
 
 
+class StateSupervisionPeriodFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: Optional[Union[str, EnumParser]]
+    ) -> entities.StateSupervisionPeriod:
+        return entity_deserialize(
+            cls=entities.StateSupervisionPeriod,
+            converter_overrides={},
+            defaults={},
+            **kwargs
+        )
+
+
 # TODO(#8909): Add factories for remainder of state schema here.

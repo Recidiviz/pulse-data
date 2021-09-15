@@ -48,6 +48,7 @@ from recidiviz.persistence.entity.state.deserialize_entity_factories import (
     StatePersonFactory,
     StateProgramAssignmentFactory,
     StateSentenceGroupFactory,
+    StateSupervisionPeriodFactory,
 )
 from recidiviz.persistence.ingest_info_converter.base_converter import BaseConverter
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
@@ -514,7 +515,9 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         ]
         supervision_period_builder.supervision_contacts = converted_contacts
 
-        return supervision_period_builder.build()
+        return supervision_period_builder.build(
+            StateSupervisionPeriodFactory.deserialize
+        )
 
     def _convert_supervision_violation(
         self, ingest_supervision_violation: StateSupervisionViolation
