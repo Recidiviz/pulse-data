@@ -83,10 +83,6 @@ state_charge_classification_type_other = "OTHER"
 # state_court_case.py
 # TODO(#1697): Add enum strings here
 
-# state_fine.py
-state_fine_status_paid = "PAID"
-state_fine_status_unpaid = "UNPAID"
-
 # state_incarceration.py
 state_incarceration_type_county_jail = "COUNTY_JAIL"
 state_incarceration_type_federal_prison = "FEDERAL_PRISON"

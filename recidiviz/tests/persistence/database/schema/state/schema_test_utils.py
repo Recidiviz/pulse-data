@@ -20,7 +20,6 @@ prepopulated.
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_court_case import StateCourtCaseStatus
-from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
@@ -193,15 +192,6 @@ def generate_supervision_sentence(person, **kwargs) -> schema.StateSupervisionSe
     }
     args.update(kwargs)
     return schema.StateSupervisionSentence(person=person, **args)
-
-
-def generate_fine(person, **kwargs) -> schema.StateFine:
-    args = {
-        "status": StateFineStatus.PRESENT_WITHOUT_INFO.value,
-        "state_code": _STATE_CODE,
-    }
-    args.update(kwargs)
-    return schema.StateFine(person=person, **args)
 
 
 def generate_charge(person, **kwargs) -> schema.StateCharge:

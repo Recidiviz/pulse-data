@@ -60,7 +60,6 @@ _STATE_CLASS_HIERARCHY = [
     state_entities.StatePersonRace.__name__,
     state_entities.StatePersonEthnicity.__name__,
     state_entities.StateSentenceGroup.__name__,
-    state_entities.StateFine.__name__,
     state_entities.StateIncarcerationSentence.__name__,
     state_entities.StateSupervisionSentence.__name__,
     state_entities.StateCharge.__name__,

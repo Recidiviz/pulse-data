@@ -1754,12 +1754,12 @@ class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):
     """Tests the HydrateRootEntitiesWithRelationshipPropertyEntities DoFn."""
 
     def testHydrateRelationshipsOnEntities(self):
-        # fine is the root entity
-        fine = remove_relationship_properties(
-            database_test_utils.generate_test_fine(123)
+        # incarceration sentence is the root entity
+        incarceration_sentence = remove_relationship_properties(
+            database_test_utils.generate_test_incarceration_sentence(123)
         )
         sentence_group = remove_relationship_properties(
-            database_test_utils.generate_test_sentence_group(123, [], [], [])
+            database_test_utils.generate_test_sentence_group(123, [], [])
         )
         charge1 = remove_relationship_properties(
             database_test_utils.generate_test_charge(123, 6666, None)
@@ -1768,33 +1768,53 @@ class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):
             database_test_utils.generate_test_charge(123, 7777, None)
         )
 
-        fine_entity = StateSchemaToEntityConverter().convert(fine)
+        incarceration_sentence_entity = StateSchemaToEntityConverter().convert(
+            incarceration_sentence
+        )
         sentence_group_entity = StateSchemaToEntityConverter().convert(sentence_group)
         charge1_entity = StateSchemaToEntityConverter().convert(charge1)
         charge2_entity = StateSchemaToEntityConverter().convert(charge2)
 
         element = [
             (
-                fine.person_id,
+                incarceration_sentence.person_id,
                 {
-                    fine.__tablename__: [fine_entity],
-                    "sentence_group": [(fine.fine_id, sentence_group_entity)],
+                    incarceration_sentence.__tablename__: [
+                        incarceration_sentence_entity
+                    ],
+                    "sentence_group": [
+                        (
+                            incarceration_sentence.incarceration_sentence_id,
+                            sentence_group_entity,
+                        )
+                    ],
                     "charges": [
-                        (fine.fine_id, charge1_entity),
-                        (fine.fine_id, charge2_entity),
+                        (
+                            incarceration_sentence.incarceration_sentence_id,
+                            charge1_entity,
+                        ),
+                        (
+                            incarceration_sentence.incarceration_sentence_id,
+                            charge2_entity,
+                        ),
                     ],
                 },
             )
         ]
 
-        output_fine = entities.StateFine.new_with_defaults(
-            fine_id=3333, status=entities.StateFineStatus.PAID, state_code="US_XX"
+        output_incarceration_sentence = (
+            entities.StateIncarcerationSentence.new_with_defaults(
+                incarceration_sentence_id=2222,
+                status=entities.StateSentenceStatus.SUSPENDED,
+                state_code="US_XX",
+                is_capital_punishment=False,
+            )
         )
 
-        output_fine.sentence_group = sentence_group_entity
-        output_fine.charges = [charge1_entity, charge2_entity]
+        output_incarceration_sentence.sentence_group = sentence_group_entity
+        output_incarceration_sentence.charges = [charge1_entity, charge2_entity]
 
-        schema_class = schema.StateFine
+        schema_class = schema.StateIncarcerationSentence
 
         hydrate_kwargs = {"schema_class": schema_class}
 
@@ -1803,26 +1823,31 @@ class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):
         output = (
             test_pipeline
             | "Convert to PCollection" >> beam.Create(element)
-            | "Hydrate fine with relationship property entities"
+            | "Hydrate incarceration sentence with relationship property entities"
             >> beam.ParDo(
                 extractor_utils._HydrateRootEntitiesWithRelationshipPropertyEntities(),
                 **hydrate_kwargs,
             )
         )
 
-        assert_that(output, equal_to([(fine.person_id, output_fine)]))
+        assert_that(
+            output,
+            equal_to(
+                [(incarceration_sentence.person_id, output_incarceration_sentence)]
+            ),
+        )
 
         test_pipeline.run()
 
     def testHydrateRelationshipsOnEntities_MultipleRoots(self):
         person_id = 143
 
-        # fine is the root entity
-        fine_1 = remove_relationship_properties(
-            database_test_utils.generate_test_fine(person_id)
+        # incarceration_sentence is the root entity
+        incarceration_sentence_1 = remove_relationship_properties(
+            database_test_utils.generate_test_incarceration_sentence(person_id)
         )
         sentence_group_1 = remove_relationship_properties(
-            database_test_utils.generate_test_sentence_group(person_id, [], [], [])
+            database_test_utils.generate_test_sentence_group(person_id, [], [])
         )
         charge_1_1 = remove_relationship_properties(
             database_test_utils.generate_test_charge(person_id, 6666, None)
@@ -1831,9 +1856,9 @@ class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):
             database_test_utils.generate_test_charge(person_id, 7777, None)
         )
 
-        fine_2 = schema.StateFine(
-            fine_id=9999,
-            status=entities.StateFineStatus.PAID,
+        incarceration_sentence_2 = schema.StateIncarcerationSentence(
+            incarceration_sentence_id=9999,
+            status=entities.StateSentenceStatus.COMPLETED,
             state_code="US_XX",
             person_id=person_id,
         )
@@ -1852,14 +1877,18 @@ class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):
             state_code="US_XX",
         )
 
-        fine_entity_1 = StateSchemaToEntityConverter().convert(fine_1)
+        incarceration_sentence_entity_1 = StateSchemaToEntityConverter().convert(
+            incarceration_sentence_1
+        )
         sentence_group_entity_1 = StateSchemaToEntityConverter().convert(
             sentence_group_1
         )
         charge_1_1_entity = StateSchemaToEntityConverter().convert(charge_1_1)
         charge_1_2_entity = StateSchemaToEntityConverter().convert(charge_1_2)
 
-        fine_entity_2 = StateSchemaToEntityConverter().convert(fine_2)
+        incarceration_sentence_entity_2 = StateSchemaToEntityConverter().convert(
+            incarceration_sentence_2
+        )
         sentence_group_entity_2 = StateSchemaToEntityConverter().convert(
             sentence_group_2
         )
@@ -1869,41 +1898,71 @@ class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):
             (
                 person_id,
                 {
-                    fine_1.__tablename__: [fine_entity_1],
-                    "sentence_group": [(fine_1.fine_id, sentence_group_entity_1)],
+                    incarceration_sentence_1.__tablename__: [
+                        incarceration_sentence_entity_1
+                    ],
+                    "sentence_group": [
+                        (
+                            incarceration_sentence_1.incarceration_sentence_id,
+                            sentence_group_entity_1,
+                        )
+                    ],
                     "charges": [
-                        (fine_1.fine_id, charge_1_1_entity),
-                        (fine_1.fine_id, charge_1_2_entity),
+                        (
+                            incarceration_sentence_1.incarceration_sentence_id,
+                            charge_1_1_entity,
+                        ),
+                        (
+                            incarceration_sentence_1.incarceration_sentence_id,
+                            charge_1_2_entity,
+                        ),
                     ],
                 },
             ),
             (
                 person_id,
                 {
-                    fine_2.__tablename__: [fine_entity_2],
-                    "sentence_group": [(fine_2.fine_id, sentence_group_entity_2)],
-                    "charges": [(fine_2.fine_id, charge_2_1_entity)],
+                    incarceration_sentence_2.__tablename__: [
+                        incarceration_sentence_entity_2
+                    ],
+                    "sentence_group": [
+                        (
+                            incarceration_sentence_2.incarceration_sentence_id,
+                            sentence_group_entity_2,
+                        )
+                    ],
+                    "charges": [
+                        (
+                            incarceration_sentence_2.incarceration_sentence_id,
+                            charge_2_1_entity,
+                        )
+                    ],
                 },
             ),
         ]
 
-        output_fine_1 = entities.StateFine.new_with_defaults(
-            fine_id=3333, status=entities.StateFineStatus.PAID, state_code="US_XX"
+        output_incarceration_sentence_1 = (
+            entities.StateIncarcerationSentence.new_with_defaults(
+                incarceration_sentence_id=2222,
+                status=entities.StateSentenceStatus.SUSPENDED,
+                state_code="US_XX",
+                is_capital_punishment=False,
+            )
         )
 
-        output_fine_1.sentence_group = sentence_group_entity_1
-        output_fine_1.charges = [charge_1_1_entity, charge_1_2_entity]
+        output_incarceration_sentence_1.sentence_group = sentence_group_entity_1
+        output_incarceration_sentence_1.charges = [charge_1_1_entity, charge_1_2_entity]
 
-        output_fine_2 = entities.StateFine.new_with_defaults(
-            fine_id=fine_2.fine_id,
-            status=entities.StateFineStatus.PAID,
+        output_incarceration_sentence_2 = entities.StateIncarcerationSentence.new_with_defaults(
+            incarceration_sentence_id=incarceration_sentence_2.incarceration_sentence_id,
+            status=entities.StateSentenceStatus.COMPLETED,
             state_code="US_XX",
         )
 
-        output_fine_2.sentence_group = sentence_group_entity_2
-        output_fine_2.charges = [charge_2_1_entity]
+        output_incarceration_sentence_2.sentence_group = sentence_group_entity_2
+        output_incarceration_sentence_2.charges = [charge_2_1_entity]
 
-        schema_class = schema.StateFine
+        schema_class = schema.StateIncarcerationSentence
 
         hydrate_kwargs = {"schema_class": schema_class}
 
@@ -1912,7 +1971,7 @@ class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):
         output = (
             test_pipeline
             | "Convert to PCollection" >> beam.Create(element)
-            | "Hydrate fine with relationship property entities"
+            | "Hydrate incarceration_sentence with relationship property entities"
             >> beam.ParDo(
                 extractor_utils._HydrateRootEntitiesWithRelationshipPropertyEntities(),
                 **hydrate_kwargs,
@@ -1922,7 +1981,16 @@ class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):
         assert_that(
             output,
             equal_to(
-                [(fine_1.person_id, output_fine_1), (fine_2.person_id, output_fine_2)]
+                [
+                    (
+                        incarceration_sentence_1.person_id,
+                        output_incarceration_sentence_1,
+                    ),
+                    (
+                        incarceration_sentence_2.person_id,
+                        output_incarceration_sentence_2,
+                    ),
+                ]
             ),
         )
 
