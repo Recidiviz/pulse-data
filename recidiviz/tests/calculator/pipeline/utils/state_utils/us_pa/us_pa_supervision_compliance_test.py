@@ -38,7 +38,6 @@ from recidiviz.common.constants.state.state_supervision_contact import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
@@ -95,7 +94,6 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         assessments = [
             assessment_out_of_range,
@@ -177,7 +175,6 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         contacts = [
@@ -224,7 +221,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_level=StateSupervisionLevel.MEDIUM,
         )
 
@@ -273,7 +269,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_level=StateSupervisionLevel.MEDIUM,
         )
 
@@ -320,7 +315,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_level=StateSupervisionLevel.MEDIUM,
         )
 
@@ -369,7 +363,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_level=StateSupervisionLevel.MEDIUM,
         )
 
@@ -419,7 +412,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             supervision_level=StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -465,7 +457,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             supervision_level=StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         evaluation_date = start_of_supervision + relativedelta(
@@ -504,7 +495,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             supervision_level=StateSupervisionLevel.LIMITED,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -550,7 +540,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             supervision_level=StateSupervisionLevel.LIMITED,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         evaluation_date = start_of_supervision + relativedelta(
@@ -589,7 +578,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             supervision_level=StateSupervisionLevel.LIMITED,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -635,7 +623,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             supervision_level=StateSupervisionLevel.MINIMUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -681,7 +668,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             supervision_level=StateSupervisionLevel.MINIMUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         evaluation_date = start_of_supervision + relativedelta(
@@ -720,7 +706,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             supervision_level=StateSupervisionLevel.MINIMUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -766,7 +751,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -812,7 +796,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         evaluation_date = start_of_supervision + relativedelta(
@@ -851,7 +834,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -897,7 +879,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             supervision_level=StateSupervisionLevel.MAXIMUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -949,7 +930,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             supervision_level=StateSupervisionLevel.MAXIMUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         evaluation_date = start_of_supervision + relativedelta(
@@ -988,7 +968,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             supervision_level=StateSupervisionLevel.MAXIMUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -1042,7 +1021,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             supervision_level=StateSupervisionLevel.HIGH,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -1106,7 +1084,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             supervision_level=StateSupervisionLevel.HIGH,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         evaluation_date = start_of_supervision + relativedelta(
@@ -1145,7 +1122,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             supervision_level=StateSupervisionLevel.HIGH,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -1197,7 +1173,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_period_supervision_type=None,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts: List[StateSupervisionContact] = []
@@ -1243,7 +1218,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
@@ -1274,7 +1248,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             supervision_level=None,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
@@ -1305,7 +1278,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             supervision_level=StateSupervisionLevel.EXTERNAL_UNKNOWN,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         us_pa_supervision_compliance = UsPaSupervisionCaseCompliance(
@@ -1342,7 +1314,6 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
             supervision_level=StateSupervisionLevel.MINIMUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment_date = date(2018, 4, 2)
@@ -1380,7 +1351,6 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=None,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment_date = date(2010, 4, 2)
@@ -1431,7 +1401,6 @@ class TestSupervisionDowngrades(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=supervision_level,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
     def _assessment_with_score(self, score: int) -> StateAssessment:

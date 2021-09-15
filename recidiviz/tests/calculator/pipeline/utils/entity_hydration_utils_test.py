@@ -38,9 +38,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
-)
+
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -867,7 +865,6 @@ class TestSetSupervisionPeriodsOnSentences(unittest.TestCase):
             supervision_periods=[
                 StateSupervisionPeriod.new_with_defaults(
                     state_code=state_code,
-                    status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                     supervision_period_id=supervision_period_id_1,
                 )
             ],
@@ -881,7 +878,6 @@ class TestSetSupervisionPeriodsOnSentences(unittest.TestCase):
             supervision_periods=[
                 StateSupervisionPeriod.new_with_defaults(
                     state_code=state_code,
-                    status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                     supervision_period_id=supervision_period_id_2,
                 )
             ],
@@ -889,7 +885,6 @@ class TestSetSupervisionPeriodsOnSentences(unittest.TestCase):
 
         sp_1 = StateSupervisionPeriod.new_with_defaults(
             state_code=state_code,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_period_id=supervision_period_id_1,
             case_type_entries=[
                 StateSupervisionCaseTypeEntry.new_with_defaults(
@@ -901,7 +896,6 @@ class TestSetSupervisionPeriodsOnSentences(unittest.TestCase):
 
         sp_2 = StateSupervisionPeriod.new_with_defaults(
             state_code=state_code,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_period_id=supervision_period_id_2,
             case_type_entries=[
                 StateSupervisionCaseTypeEntry.new_with_defaults(
@@ -955,7 +949,6 @@ class TestSetSupervisionPeriodsOnSentences(unittest.TestCase):
             supervision_periods=[
                 StateSupervisionPeriod.new_with_defaults(
                     state_code=state_code,
-                    status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                     supervision_period_id=supervision_period_id_1,
                 )
             ],
@@ -969,7 +962,6 @@ class TestSetSupervisionPeriodsOnSentences(unittest.TestCase):
             supervision_periods=[
                 StateSupervisionPeriod.new_with_defaults(
                     state_code=state_code,
-                    status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                     supervision_period_id=supervision_period_id_2,
                 )
             ],
@@ -977,7 +969,6 @@ class TestSetSupervisionPeriodsOnSentences(unittest.TestCase):
 
         sp_1 = StateSupervisionPeriod.new_with_defaults(
             state_code=state_code,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_period_id=supervision_period_id_1,
             case_type_entries=[
                 StateSupervisionCaseTypeEntry.new_with_defaults(
@@ -989,7 +980,6 @@ class TestSetSupervisionPeriodsOnSentences(unittest.TestCase):
 
         sp_2 = StateSupervisionPeriod.new_with_defaults(
             state_code=state_code,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_period_id=supervision_period_id_2,
             case_type_entries=[
                 StateSupervisionCaseTypeEntry.new_with_defaults(
@@ -1037,7 +1027,6 @@ class TestSetSupervisionPeriodsOnSentences(unittest.TestCase):
 
         sp_1 = StateSupervisionPeriod.new_with_defaults(
             state_code=state_code,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_period_id=supervision_period_id_1,
             case_type_entries=[
                 StateSupervisionCaseTypeEntry.new_with_defaults(
@@ -1049,7 +1038,6 @@ class TestSetSupervisionPeriodsOnSentences(unittest.TestCase):
 
         sp_2 = StateSupervisionPeriod.new_with_defaults(
             state_code=state_code,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_period_id=supervision_period_id_2,
             case_type_entries=[
                 StateSupervisionCaseTypeEntry.new_with_defaults(

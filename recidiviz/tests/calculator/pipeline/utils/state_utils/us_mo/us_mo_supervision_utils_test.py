@@ -33,7 +33,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.persistence.entity.state.entities import (
@@ -176,7 +175,6 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             external_id="sp1",
             state_code="US_MO",
             start_date=(self.end_of_month_date - datetime.timedelta(days=60)),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         # Act
@@ -201,7 +199,6 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             external_id="sp1",
             state_code="US_MO",
             start_date=supervision_start,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
@@ -242,7 +239,6 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             external_id="sp1",
             state_code="US_MO",
             start_date=supervision_start,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
@@ -289,7 +285,6 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             external_id="sp1",
             state_code="US_MO",
             start_date=supervision_start,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_end_date_middle_of_month = (
@@ -339,7 +334,6 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             external_id="sp1",
             state_code="US_MO",
             start_date=start_date,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         parole_end_date_middle_of_month = self.start_of_month_date + datetime.timedelta(
@@ -406,7 +400,6 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             external_id="sp1",
             state_code="US_MO",
             start_date=supervision_start,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         incarceration_sentence = (
@@ -475,7 +468,6 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             external_id="sp1",
             state_code="US_MO",
             start_date=supervision_start,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         second_to_last_month_date = self.end_of_month_date - datetime.timedelta(days=1)
@@ -550,7 +542,6 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             external_id="sp1",
             state_code="US_MO",
             start_date=supervision_start,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         mid_month_date = self.end_of_month_date - datetime.timedelta(days=10)

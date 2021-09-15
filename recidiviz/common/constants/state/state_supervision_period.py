@@ -96,22 +96,6 @@ class StateSupervisionPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMeta
 # TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
 #  _get_default_map() once all state ingest views have been migrated to v2 mappings.
 @unique
-class StateSupervisionPeriodStatus(EntityEnum, metaclass=EntityEnumMeta):
-    EXTERNAL_UNKNOWN = enum_strings.external_unknown
-    PRESENT_WITHOUT_INFO = enum_strings.present_without_info
-    TERMINATED = state_enum_strings.state_supervision_period_status_terminated
-    UNDER_SUPERVISION = (
-        state_enum_strings.state_supervision_period_status_under_supervision
-    )
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateSupervisionPeriodStatus"]:
-        return _STATE_SUPERVISION_STATUS_MAP
-
-
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass, and delete
-#  _get_default_map() once all state ingest views have been migrated to v2 mappings.
-@unique
 class StateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
     """Possible supervision levels that a person can be supervised at."""
 
@@ -270,15 +254,6 @@ _STATE_SUPERVISION_ADMISSION_TYPE_MAP = {
     "RETURN FROM ABSCONSION": StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
     "RETURN FROM SUSPENSION": StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
     "SUSPENDED": StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
-}
-
-_STATE_SUPERVISION_STATUS_MAP = {
-    "EXTERNAL UNKNOWN": StateSupervisionPeriodStatus.EXTERNAL_UNKNOWN,
-    "PRESENT WITHOUT INFO": StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
-    "TERMINATED": StateSupervisionPeriodStatus.TERMINATED,
-    "RELEASED": StateSupervisionPeriodStatus.TERMINATED,
-    "UNDER SUPERVISION": StateSupervisionPeriodStatus.UNDER_SUPERVISION,
-    "SUPERVISED": StateSupervisionPeriodStatus.UNDER_SUPERVISION,
 }
 
 _STATE_SUPERVISION_LEVEL_MAP: Dict[str, StateSupervisionLevel] = {

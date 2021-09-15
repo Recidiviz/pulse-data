@@ -50,7 +50,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import (
@@ -321,7 +320,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
@@ -363,7 +361,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
@@ -405,7 +402,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
@@ -445,7 +441,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
@@ -487,7 +482,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         earlier_probation_supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 5, 4),
@@ -498,7 +492,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         later_parole_supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
@@ -543,7 +536,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(1996, 3, 5),
             termination_date=date(2000, 1, 9),
@@ -612,7 +604,6 @@ class TestPreProcessedIncarcerationPeriodsForCalculations(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(1996, 3, 5),
             termination_date=date(2000, 1, 9),

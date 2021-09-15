@@ -21,9 +21,7 @@ import attr
 
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
-)
+
 from recidiviz.persistence.entity.state.entities import (
     StateAgent,
     StatePerson,
@@ -186,7 +184,6 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         )
         placeholder_supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code=_US_MO,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_violation_entries=[supervision_violation],
         )
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -268,7 +265,6 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             person=db_person,
             external_id=_EXTERNAL_ID,
             start_date=_DATE_1,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_US_MO,
             supervising_officer=db_supervising_officer,
         )
@@ -276,7 +272,6 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             person=db_person,
             external_id=_EXTERNAL_ID_2,
             start_date=_DATE_2,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_US_MO,
             supervising_officer=db_supervising_officer,
         )
@@ -285,7 +280,6 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             external_id=_EXTERNAL_ID_3,
             start_date=_DATE_3,
             termination_date=_DATE_4,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_US_MO,
             supervising_officer=db_supervising_officer,
         )
@@ -355,7 +349,6 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             external_id=_EXTERNAL_ID,
             start_date=_DATE_1,
             termination_date=_DATE_2,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_US_MO,
             supervising_officer=db_supervising_officer,
         )
@@ -364,7 +357,6 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             person=db_person,
             external_id=_EXTERNAL_ID_2,
             start_date=_DATE_2,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_US_MO,
             supervising_officer=db_supervising_officer,
         )
@@ -398,14 +390,12 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             external_id=_EXTERNAL_ID_3,
             state_code=_US_MO,
             start_date=_DATE_3,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervising_officer=new_supervising_officer,
         )
         supervision_period_update = StateSupervisionPeriod.new_with_defaults(
             external_id=entity_supervision_period_open.external_id,
             state_code=_US_MO,
             termination_date=_DATE_3,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
             external_id=entity_supervision_sentence.external_id,
@@ -488,7 +478,6 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             person=db_person,
             external_id=_EXTERNAL_ID_2,
             start_date=_DATE_2,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_US_MO,
             supervising_officer=db_supervising_officer,
             supervision_violation_entries=[db_supervision_violation],
@@ -515,7 +504,6 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         supervsion_period_updated = StateSupervisionPeriod.new_with_defaults(
             state_code=_US_MO,
             external_id=entity_supervision_period_open.external_id,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             start_date=_DATE_2,
             termination_date=_DATE_3,
         )
@@ -554,7 +542,6 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         expected_new_placeholder_supervision_period = (
             StateSupervisionPeriod.new_with_defaults(
                 state_code=_US_MO,
-                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                 supervision_violation_entries=[entity_supervision_violation],
             )
         )

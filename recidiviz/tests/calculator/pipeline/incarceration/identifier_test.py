@@ -87,7 +87,6 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
@@ -631,7 +630,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             start_date=date(2018, 11, 1),
             termination_date=date(2018, 11, 19),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -913,7 +911,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SP_ID,
             state_code="US_XX",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=_DEFAULT_IP_ID,
@@ -1029,7 +1026,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         revoked_supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SP_ID,
             external_id="XY2",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2001, 3, 13),
             termination_date=date(2008, 12, 20),
@@ -1162,7 +1158,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SP_ID,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2008, 3, 5),
             termination_date=date(2009, 12, 19),
@@ -1303,7 +1298,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SP_ID,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2008, 3, 5),
             termination_date=date(2009, 12, 19),
@@ -1460,7 +1454,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             supervision_period_id=1313,
             external_id="3",
             start_date=date(2008, 1, 1),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_level=StateSupervisionLevel.MEDIUM,
         )
 
@@ -1768,7 +1761,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SP_ID,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ID",
             custodial_authority_raw_text="US_ID_DOC",
             start_date=date(2017, 3, 5),
@@ -1987,7 +1979,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SP_ID,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             case_type_entries=[
                 StateSupervisionCaseTypeEntry.new_with_defaults(
                     state_code=state_code, case_type=StateSupervisionCaseType.GENERAL
@@ -2234,7 +2225,6 @@ class TestFindIncarcerationStays(unittest.TestCase):
             state_code="US_MO",
             start_date=date(2010, 1, 1),
             termination_date=date(2010, 2, 15),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
@@ -2998,7 +2988,6 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             state_code="US_MO",
             start_date=date(2010, 1, 1),
             termination_date=date(2010, 2, 15),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
             StateSupervisionSentence.new_with_defaults(
@@ -3351,7 +3340,6 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SP_ID,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2009, 12, 19),
@@ -3487,7 +3475,6 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SP_ID,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2009, 12, 19),
@@ -3623,7 +3610,6 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SP_ID,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code=state_code,
             start_date=date(2008, 3, 5),
             termination_date=date(2012, 12, 19),
@@ -3743,7 +3729,6 @@ class TestCommitmentFromSupervisionEventForPeriod(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SP_ID,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -3984,7 +3969,6 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             supervision_period_id=111,
             start_date=incarceration_period.release_date,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_sentences = [
@@ -4052,7 +4036,6 @@ class TestReleaseEventForPeriod(unittest.TestCase):
             supervision_period_id=1111,
             state_code="US_MO",
             start_date=date(2019, 12, 4),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
             StateSupervisionSentence.new_with_defaults(
@@ -4166,7 +4149,6 @@ class TestGetUniquePeriodsFromSentenceGroupAndAddBackedges(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2008, 11, 20),
             termination_date=date(2010, 12, 4),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(

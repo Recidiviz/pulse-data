@@ -20,9 +20,7 @@ import datetime
 import attr
 
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
-)
+
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
@@ -90,7 +88,6 @@ class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
         sp = schema.StateSupervisionPeriod(
             state_code=_STATE_CODE,
             supervision_violation_entries=[sv, sv_2],
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         ss = schema.StateSupervisionSentence(
             state_code=_STATE_CODE,
@@ -119,7 +116,6 @@ class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
         expected_sp = StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             supervision_violation_entries=[expected_sv, expected_sv_2],
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         expected_ss = StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE,
@@ -146,7 +142,6 @@ class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
             sv = schema.StateSupervisionViolation(external_id="bad_id")
             sp = schema.StateSupervisionPeriod(
                 supervision_violation_entries=[sv],
-                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             )
             ss = schema.StateSupervisionSentence(supervision_periods=[sp])
             sg = schema.StateSentenceGroup(supervision_sentences=[ss])
@@ -175,14 +170,12 @@ class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
             supervision_period_id=_ID,
             external_id=_EXTERNAL_ID,
             start_date=_DATE,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
             supervising_officer=supervising_officer_2,
         )
         placeholder_supervision_period = generate_supervision_period(
             person=person,
             supervision_period_id=_ID_2,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
         )
         closed_supervision_period = generate_supervision_period(
@@ -191,7 +184,6 @@ class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
             external_id=_EXTERNAL_ID_3,
             start_date=_DATE_3,
             termination_date=_DATE_4,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
             supervising_officer=supervising_officer,
         )

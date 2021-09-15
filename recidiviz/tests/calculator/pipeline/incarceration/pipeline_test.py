@@ -60,7 +60,6 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
@@ -290,7 +289,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
             person_id=fake_person_id,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         first_reincarceration = schema.StateIncarcerationPeriod(
@@ -831,7 +829,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1111,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code=state_code,
             county_code="124",
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,

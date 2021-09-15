@@ -36,7 +36,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.persistence.entity.state.entities import (
@@ -85,7 +84,6 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         supervision_period_set = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ID",
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
@@ -95,7 +93,6 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         supervision_period_unset = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ID",
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
@@ -119,7 +116,6 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         supervision_period_set = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ID",
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
@@ -129,7 +125,6 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         supervision_period_unset = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ID",
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),

@@ -23,7 +23,6 @@ from recidiviz.common.constants.state.shared_enums import StateCustodialAuthorit
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
@@ -67,7 +66,6 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateSupervisionPeriod(
-            status=StateSupervisionPeriodStatus.TERMINATED,
             supervision_type=StateSupervisionType.PAROLE,
             supervision_type_raw_text="PAROLE",
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -104,7 +102,7 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateSupervisionPeriod.new_with_defaults(
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO, state_code="US_ND"
+            state_code="US_ND"
         )
 
         self.assertEqual(expected_result, result)
@@ -126,7 +124,6 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateSupervisionPeriod.new_with_defaults(
-            status=StateSupervisionPeriodStatus.TERMINATED,
             start_date=date(year=2111, month=1, day=2),
             termination_date=date(year=2112, month=1, day=2),
             state_code="US_ND",
@@ -150,7 +147,6 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateSupervisionPeriod.new_with_defaults(
-            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             start_date=date(year=2111, month=1, day=2),
             state_code="US_ND",
         )

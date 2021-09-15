@@ -30,9 +30,7 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
-)
+
 from recidiviz.persistence.database.schema.state import schema
 
 _ID_TYPE = "ID_TYPE"
@@ -184,7 +182,6 @@ def generate_supervision_case_type_entry(
 def generate_supervision_period(person, **kwargs) -> schema.StateSupervisionPeriod:
     args = {
         "state_code": _STATE_CODE,
-        "status": StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
     }
     args.update(kwargs)
     return schema.StateSupervisionPeriod(person=person, **args)

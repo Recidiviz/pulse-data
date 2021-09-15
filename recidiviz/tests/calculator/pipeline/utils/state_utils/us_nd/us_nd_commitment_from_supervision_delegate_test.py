@@ -39,7 +39,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
@@ -119,7 +118,6 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         parole_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
@@ -131,7 +129,6 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         probation_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=222,
             external_id="sp2",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
@@ -161,7 +158,6 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         overlapping_parole_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
@@ -173,7 +169,6 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         terminated_parole_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=222,
             external_id="sp2",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 5, 1),
@@ -206,7 +201,6 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         revoked_parole_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
@@ -218,7 +212,6 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         expired_parole_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=222,
             external_id="sp2",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
@@ -248,7 +241,6 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         revoked_parole_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
@@ -260,7 +252,6 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         closer_revoked_parole_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=222,
             external_id="sp2",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 5, 26),
@@ -293,7 +284,6 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         parole_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
@@ -305,7 +295,6 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         probation_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=222,
             external_id="sp2",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
@@ -335,7 +324,6 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         overlapping_probation_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
@@ -347,7 +335,6 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         terminated_probation_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=222,
             external_id="sp2",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 5, 1),
@@ -380,7 +367,6 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         revoked_probation_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 5, 9),
@@ -392,7 +378,6 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         expired_probation_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=222,
             external_id="sp2",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 5, 9),
@@ -425,7 +410,6 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         revoked_probation_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 6, 9),
@@ -437,7 +421,6 @@ class TestPreCommitmentSupervisionPeriod(unittest.TestCase):
         closer_revoked_probation_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=222,
             external_id="sp2",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2019, 3, 5),
             termination_date=date(2019, 5, 26),
@@ -529,7 +512,6 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2008, 3, 5),
             termination_date=date(2008, 12, 16),
@@ -569,7 +551,6 @@ class TestPreCommitmentSupervisionTypeIdentification(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2008, 3, 5),
             termination_date=date(2008, 12, 16),

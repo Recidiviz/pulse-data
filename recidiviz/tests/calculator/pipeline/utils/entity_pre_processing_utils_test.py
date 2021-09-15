@@ -32,7 +32,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import (
@@ -73,7 +72,6 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=datetime.date(2017, 3, 5),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -216,7 +214,6 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=datetime.date(2017, 3, 5),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,

@@ -27,9 +27,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
-)
+
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
@@ -1198,7 +1196,6 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         )
         db_supervision_period = generate_supervision_period(
             person=db_person,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_US_ND,
             case_type_entries=[db_supervision_case_type_entry],
         )
