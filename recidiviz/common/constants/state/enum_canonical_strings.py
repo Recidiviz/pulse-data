@@ -139,9 +139,6 @@ state_incarceration_period_admission_reason_return_from_erroneous_release = (
     "RETURN_FROM_ERRONEOUS_RELEASE"
 )
 state_incarceration_period_admission_reason_return_from_escape = "RETURN_FROM_ESCAPE"
-state_incarceration_period_admission_reason_return_from_temporary_release = (
-    "RETURN_FROM_TEMPORARY_RELEASE"
-)
 state_incarceration_period_admission_reason_sanction_admission = "SANCTION_ADMISSION"
 state_incarceration_period_admission_reason_status_change = "STATUS_CHANGE"
 state_incarceration_period_admission_reason_temporary_custody = "TEMPORARY_CUSTODY"
@@ -168,7 +165,6 @@ state_incarceration_period_release_reason_released_in_error = "RELEASED_IN_ERROR
 state_incarceration_period_release_reason_released_to_supervision = (
     "RELEASED_TO_SUPERVISION"
 )
-state_incarceration_period_release_reason_temporary_release = "TEMPORARY_RELEASE"
 state_incarceration_period_release_reason_sentence_served = "SENTENCE_SERVED"
 state_incarceration_period_release_reason_status_change = "STATUS_CHANGE"
 state_incarceration_period_release_reason_transfer = "TRANSFER"

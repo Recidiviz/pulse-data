@@ -1086,7 +1086,6 @@ RELEASE_REASON_INCLUSION: Dict[StateIncarcerationPeriodReleaseReason, bool] = {
     StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION: True,
     StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR: False,
     StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED: True,
-    StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE: False,
     StateIncarcerationPeriodReleaseReason.TRANSFER: False,
     StateIncarcerationPeriodReleaseReason.TRANSFER_OUT_OF_STATE: False,
     StateIncarcerationPeriodReleaseReason.STATUS_CHANGE: False,
