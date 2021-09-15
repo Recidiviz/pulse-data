@@ -21,6 +21,9 @@ from datetime import date
 
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StateSupervisionViolationFactory,
+)
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_supervision_violation,
 )
@@ -46,7 +49,7 @@ class StateSupervisionViolationConverterTest(unittest.TestCase):
         state_supervision_violation.copy_fields_to_builder(
             violation_builder, ingest_violation, _EMPTY_METADATA
         )
-        result = violation_builder.build()
+        result = violation_builder.build(StateSupervisionViolationFactory.deserialize)
 
         # Assert
         expected_result = entities.StateSupervisionViolation.new_with_defaults(

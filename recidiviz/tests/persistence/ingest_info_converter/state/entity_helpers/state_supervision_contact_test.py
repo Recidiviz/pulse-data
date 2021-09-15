@@ -20,13 +20,16 @@ import unittest
 from datetime import date
 
 from recidiviz.common.constants.state.state_supervision_contact import (
-    StateSupervisionContactType,
-    StateSupervisionContactReason,
     StateSupervisionContactLocation,
+    StateSupervisionContactReason,
     StateSupervisionContactStatus,
+    StateSupervisionContactType,
 )
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StateSupervisionContactFactory,
+)
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_supervision_contact,
 )
@@ -57,7 +60,7 @@ class StateSupervisionContactConverterTest(unittest.TestCase):
         state_supervision_contact.copy_fields_to_builder(
             contact_builder, ingest_contact, _EMPTY_METADATA
         )
-        result = contact_builder.build()
+        result = contact_builder.build(StateSupervisionContactFactory.deserialize)
 
         # Assert
         expected_result = entities.StateSupervisionContact(

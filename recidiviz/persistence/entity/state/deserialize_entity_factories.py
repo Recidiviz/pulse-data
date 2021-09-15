@@ -298,4 +298,69 @@ class StateSupervisionPeriodFactory(EntityFactory):
         )
 
 
+class StateParoleDecisionFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: Optional[Union[str, EnumParser]]
+    ) -> entities.StateParoleDecision:
+        return entity_deserialize(
+            cls=entities.StateParoleDecision,
+            converter_overrides={},
+            defaults={},
+            **kwargs
+        )
+
+
+class StateSupervisionCaseTypeEntryFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: Optional[Union[str, EnumParser]]
+    ) -> entities.StateSupervisionCaseTypeEntry:
+        return entity_deserialize(
+            cls=entities.StateSupervisionCaseTypeEntry,
+            converter_overrides={},
+            defaults={},
+            **kwargs
+        )
+
+
+class StateSupervisionContactFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: Optional[Union[str, EnumParser]]
+    ) -> entities.StateSupervisionContact:
+        return entity_deserialize(
+            cls=entities.StateSupervisionContact,
+            converter_overrides={},
+            defaults={},
+            **kwargs
+        )
+
+
+class StateSupervisionViolationFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: Optional[Union[str, EnumParser]]
+    ) -> entities.StateSupervisionViolation:
+        return entity_deserialize(
+            cls=entities.StateSupervisionViolation,
+            converter_overrides={},
+            defaults={},
+            **kwargs
+        )
+
+
+class StateSupervisionViolationResponseFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: Optional[Union[str, EnumParser]]
+    ) -> entities.StateSupervisionViolationResponse:
+        return entity_deserialize(
+            cls=entities.StateSupervisionViolationResponse,
+            converter_overrides={},
+            defaults={},
+            **kwargs
+        )
+
+
 # TODO(#8909): Add factories for remainder of state schema here.
