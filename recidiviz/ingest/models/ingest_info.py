@@ -1453,7 +1453,6 @@ class StateIncarcerationPeriod(IngestObject):
         specialized_purpose_for_incarceration=None,
         state_incarceration_incidents=None,
         state_parole_decisions=None,
-        state_program_assignments=None,
         custodial_authority=None,
     ):
         self.state_incarceration_period_id: Optional[
@@ -1482,12 +1481,9 @@ class StateIncarcerationPeriod(IngestObject):
         self.state_parole_decisions: List[StateParoleDecision] = (
             state_parole_decisions or []
         )
-        self.state_program_assignments: List[StateProgramAssignment] = (
-            state_program_assignments or []
-        )
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, "state_program_assignments", name, value)
+        restricted_setattr(self, "state_parole_decisions", name, value)
 
     def create_state_incarceration_incident(
         self, **kwargs
@@ -1500,11 +1496,6 @@ class StateIncarcerationPeriod(IngestObject):
         parole_decision = StateParoleDecision(**kwargs)
         self.state_parole_decisions.append(parole_decision)
         return parole_decision
-
-    def create_state_program_assignment(self, **kwargs) -> "StateProgramAssignment":
-        program_assignment = StateProgramAssignment(**kwargs)
-        self.state_program_assignments.append(program_assignment)
-        return program_assignment
 
     def get_state_incarceration_incident_by_id(
         self, state_incarceration_incident_id
@@ -1523,16 +1514,11 @@ class StateIncarcerationPeriod(IngestObject):
             ii for ii in self.state_incarceration_incidents if ii
         ]
         self.state_parole_decisions = [pd for pd in self.state_parole_decisions if pd]
-        self.state_program_assignments = [
-            p.prune() for p in self.state_program_assignments if p
-        ]
-
         return self
 
     def sort(self):
         self.state_incarceration_incidents.sort()
         self.state_parole_decisions.sort()
-        self.state_program_assignments.sort()
 
 
 class StateSupervisionPeriod(IngestObject):
@@ -1555,7 +1541,6 @@ class StateSupervisionPeriod(IngestObject):
         conditions=None,
         supervising_officer=None,
         state_supervision_violation_entries=None,
-        state_program_assignments=None,
         state_supervision_case_type_entries=None,
         supervision_period_supervision_type=None,
         custodial_authority=None,
@@ -1581,9 +1566,6 @@ class StateSupervisionPeriod(IngestObject):
         self.state_supervision_violation_entries: List[StateSupervisionViolation] = (
             state_supervision_violation_entries or []
         )
-        self.state_program_assignments: List[StateProgramAssignment] = (
-            state_program_assignments or []
-        )
         self.state_supervision_case_type_entries: List[
             StateSupervisionCaseTypeEntry
         ] = (state_supervision_case_type_entries or [])
@@ -1592,7 +1574,7 @@ class StateSupervisionPeriod(IngestObject):
         )
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, "state_case_type_entries", name, value)
+        restricted_setattr(self, "state_supervision_contacts", name, value)
 
     def create_state_agent(self, **kwargs) -> "StateAgent":
         self.supervising_officer = StateAgent(**kwargs)
@@ -1604,11 +1586,6 @@ class StateSupervisionPeriod(IngestObject):
         supervision_violation = StateSupervisionViolation(**kwargs)
         self.state_supervision_violation_entries.append(supervision_violation)
         return supervision_violation
-
-    def create_state_program_assignment(self, **kwargs) -> "StateProgramAssignment":
-        program_assignment = StateProgramAssignment(**kwargs)
-        self.state_program_assignments.append(program_assignment)
-        return program_assignment
 
     def create_state_supervision_case_type_entry(
         self, **kwargs
@@ -1666,9 +1643,6 @@ class StateSupervisionPeriod(IngestObject):
         self.state_supervision_violation_entries = [
             sv for sv in self.state_supervision_violation_entries if sv
         ]
-        self.state_program_assignments = [
-            p.prune() for p in self.state_program_assignments if p
-        ]
         self.state_supervision_case_type_entries = [
             c for c in self.state_supervision_case_type_entries if c
         ]
@@ -1680,7 +1654,6 @@ class StateSupervisionPeriod(IngestObject):
 
     def sort(self):
         self.state_supervision_violation_entries.sort()
-        self.state_program_assignments.sort()
         self.state_supervision_case_type_entries.sort()
         self.state_supervision_contacts.sort()
 
