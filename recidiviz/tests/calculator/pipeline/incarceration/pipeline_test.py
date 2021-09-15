@@ -198,7 +198,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             schema.StatePersonAlias.__tablename__: [],
             schema.StateAssessment.__tablename__: [],
             schema.StateProgramAssignment.__tablename__: [],
-            schema.StateFine.__tablename__: [],
             schema.StateCharge.__tablename__: [],
             schema.StateSupervisionPeriod.__tablename__: [],
             schema.StateEarlyDischarge.__tablename__: [],

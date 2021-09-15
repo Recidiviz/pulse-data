@@ -39,7 +39,6 @@ from recidiviz.common.constants.state.state_court_case import (
 from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecision,
 )
-from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
@@ -328,18 +327,8 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         max_length_days=200,
     )
 
-    fine = entities.StateFine.new_with_defaults(
-        external_id="BOOK_ID1234-3",
-        status=StateFineStatus.UNPAID,
-        status_raw_text="UNPAID",
-        date_paid=None,
-        state_code="US_XX",
-        fine_dollars=15000,
-    )
-
     sentence_group.incarceration_sentences = [incarceration_sentence]
     sentence_group.supervision_sentences = [supervision_sentence]
-    sentence_group.fines = [fine]
 
     judge = entities.StateAgent.new_with_defaults(
         agent_type=StateAgentType.JUDGE,
@@ -629,7 +618,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         sentence_group_children: Sequence[Entity] = (
             *sentence_group.incarceration_sentences,
             *sentence_group.supervision_sentences,
-            *sentence_group.fines,
         )
         for child in sentence_group_children:
             child.sentence_group = sentence_group  # type: ignore[attr-defined]

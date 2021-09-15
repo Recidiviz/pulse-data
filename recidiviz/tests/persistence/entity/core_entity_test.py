@@ -18,7 +18,6 @@
 
 import unittest
 
-from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_entity_converter import (
@@ -101,7 +100,10 @@ class TestCoreEntity(unittest.TestCase):
 
     def test_get_class_id_name_state_entity_sample(self) -> None:
         self.assertEqual("person_id", entities.StatePerson.get_class_id_name())
-        self.assertEqual("fine_id", entities.StateFine.get_class_id_name())
+        self.assertEqual(
+            "supervision_contact_id",
+            entities.StateSupervisionContact.get_class_id_name(),
+        )
         self.assertEqual("court_case_id", entities.StateCourtCase.get_class_id_name())
         self.assertEqual(
             "supervision_violation_response_id",
@@ -114,96 +116,91 @@ class TestCoreEntity(unittest.TestCase):
         self.assertEqual("hold_id", Hold.get_class_id_name())
 
     def test_getField(self) -> None:
-        entity = entities.StateSentenceGroup.new_with_defaults(
-            state_code="us_nc",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            county_code=None,
+        entity = entities.StatePerson.new_with_defaults(
+            state_code="US_XX",
+            current_address=None,
         )
         db_entity = converter.convert_entity_to_schema_object(entity)
 
-        self.assertEqual("us_nc", entity.get_field("state_code"))
-        self.assertEqual("us_nc", db_entity.get_field("state_code"))
+        self.assertEqual("US_XX", entity.get_field("state_code"))
+        self.assertEqual("US_XX", db_entity.get_field("state_code"))
 
         with self.assertRaises(ValueError):
-            entity.get_field("country_code")
+            entity.get_field("bad_current_address")
 
         with self.assertRaises(ValueError):
-            db_entity.get_field("country_code")
+            db_entity.get_field("bad_current_address")
 
     def test_getFieldAsList(self) -> None:
-        fine = entities.StateFine.new_with_defaults(
-            state_code="us_nc",
+        assessment = entities.StateAssessment.new_with_defaults(
+            state_code="US_XX",
             external_id="ex1",
-            status=StateFineStatus.PRESENT_WITHOUT_INFO,
         )
-        fine_2 = entities.StateFine.new_with_defaults(
-            state_code="us_nc",
+        assessment_2 = entities.StateAssessment.new_with_defaults(
+            state_code="US_XX",
             external_id="ex2",
-            status=StateFineStatus.PRESENT_WITHOUT_INFO,
         )
-        entity = entities.StateSentenceGroup.new_with_defaults(
-            state_code="us_nc",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            fines=[fine, fine_2],
+        entity = entities.StatePerson.new_with_defaults(
+            state_code="US_XX",
+            assessments=[assessment, assessment_2],
         )
         db_entity = converter.convert_entity_to_schema_object(entity)
 
-        self.assertCountEqual(["us_nc"], entity.get_field_as_list("state_code"))
-        self.assertCountEqual([fine, fine_2], entity.get_field_as_list("fines"))
-        self.assertCountEqual([], entity.get_field_as_list("supervision_sentences"))
-
-        self.assertCountEqual(["us_nc"], db_entity.get_field_as_list("state_code"))
+        self.assertCountEqual(["US_XX"], entity.get_field_as_list("state_code"))
         self.assertCountEqual(
-            [fine, fine_2],
+            [assessment, assessment_2], entity.get_field_as_list("assessments")
+        )
+        self.assertCountEqual([], entity.get_field_as_list("races"))
+
+        self.assertCountEqual(["US_XX"], db_entity.get_field_as_list("state_code"))
+        self.assertCountEqual(
+            [assessment, assessment_2],
             converter.convert_schema_objects_to_entity(
-                db_entity.get_field_as_list("fines"), populate_back_edges=False
+                db_entity.get_field_as_list("assessments"), populate_back_edges=False
             ),
         )
-        self.assertCountEqual([], db_entity.get_field_as_list("supervision_sentences"))
+        self.assertCountEqual([], db_entity.get_field_as_list("races"))
 
     def test_clearField(self) -> None:
-        fine = entities.StateFine.new_with_defaults(
-            state_code="us_nc",
+        assessment = entities.StateAssessment.new_with_defaults(
+            state_code="US_XX",
             external_id="ex1",
-            status=StateFineStatus.PRESENT_WITHOUT_INFO,
         )
-        fine_2 = entities.StateFine.new_with_defaults(
-            state_code="us_nc",
+        assessment_2 = entities.StateAssessment.new_with_defaults(
+            state_code="US_XX",
             external_id="ex2",
-            status=StateFineStatus.PRESENT_WITHOUT_INFO,
         )
-        entity = entities.StateSentenceGroup.new_with_defaults(
-            state_code="us_nc",
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            fines=[fine, fine_2],
+        entity = entities.StatePerson.new_with_defaults(
+            state_code="US_XX",
+            assessments=[assessment, assessment_2],
         )
         db_entity = converter.convert_entity_to_schema_object(entity)
-        if not isinstance(db_entity, schema.StateSentenceGroup):
+        if not isinstance(db_entity, schema.StatePerson):
             self.fail(f"Unexpected type for db_entity: {[db_entity]}.")
 
         entity.clear_field("state_code")
-        entity.clear_field("fines")
+        entity.clear_field("assessments")
         self.assertIsNone(entity.state_code)
-        self.assertCountEqual([], entity.fines)
+        self.assertCountEqual([], entity.assessments)
 
         db_entity.clear_field("state_code")
-        db_entity.clear_field("fines")
+        db_entity.clear_field("assessments")
         self.assertIsNone(db_entity.state_code)
-        self.assertCountEqual([], db_entity.fines)
+        self.assertCountEqual([], db_entity.assessments)
 
     def test_setField(self) -> None:
-        entity = entities.StateSentenceGroup.new_with_defaults(
-            state_code="US_XX", status=StateSentenceStatus.PRESENT_WITHOUT_INFO
+        entity = entities.StatePerson.new_with_defaults(
+            state_code="US_XX",
         )
         db_entity = converter.convert_entity_to_schema_object(entity)
-        if not isinstance(db_entity, schema.StateSentenceGroup):
+        if not isinstance(db_entity, schema.StatePerson):
             self.fail(f"Unexpected type for db_entity: {[db_entity]}.")
 
-        entity.set_field("state_code", "us_nc")
-        db_entity.set_field("state_code", "us_nc")
+        entity.set_field("state_code", "US_XX")
+        db_entity.set_field("state_code", "US_XX")
 
-        self.assertEqual("us_nc", entity.state_code)
-        self.assertEqual("us_nc", db_entity.state_code)
+        self.assertEqual("US_XX", entity.state_code)
+        self.assertEqual("US_XX", db_entity.state_code)
 
         with self.assertRaises(ValueError):
             entity.set_field("country_code", "us")
@@ -212,70 +209,68 @@ class TestCoreEntity(unittest.TestCase):
             db_entity.set_field("country_code", "us")
 
     def test_setFieldFromList(self) -> None:
-        entity = entities.StateSentenceGroup.new_with_defaults(
-            state_code="US_XX", status=StateSentenceStatus.PRESENT_WITHOUT_INFO
+        entity = entities.StatePerson.new_with_defaults(
+            state_code="US_XX",
         )
-        fine = entities.StateFine.new_with_defaults(
+        assessment = entities.StateAssessment.new_with_defaults(
             state_code="US_XX",
             external_id="ex1",
-            status=StateFineStatus.PRESENT_WITHOUT_INFO,
         )
-        fine_2 = entities.StateFine.new_with_defaults(
+        assessment_2 = entities.StateAssessment.new_with_defaults(
             state_code="US_XX",
             external_id="ex2",
-            status=StateFineStatus.PRESENT_WITHOUT_INFO,
         )
 
         db_entity = converter.convert_entity_to_schema_object(entity)
-        if not isinstance(db_entity, schema.StateSentenceGroup):
+        if not isinstance(db_entity, schema.StatePerson):
             self.fail(f"Unexpected type for db_entity: {[db_entity]}.")
 
-        db_fine = converter.convert_entity_to_schema_object(fine)
-        db_fine_2 = converter.convert_entity_to_schema_object(fine_2)
+        db_assessment = converter.convert_entity_to_schema_object(assessment)
+        db_assessment_2 = converter.convert_entity_to_schema_object(assessment_2)
 
-        entity.set_field_from_list("state_code", ["us_nc"])
-        self.assertEqual("us_nc", entity.state_code)
+        entity.set_field_from_list("state_code", ["US_YY"])
+        self.assertEqual("US_YY", entity.state_code)
 
-        db_entity.set_field_from_list("state_code", ["us_nc"])
-        self.assertEqual("us_nc", db_entity.state_code)
+        db_entity.set_field_from_list("state_code", ["US_YY"])
+        self.assertEqual("US_YY", db_entity.state_code)
 
-        entity.set_field_from_list("fines", [fine, fine_2])
-        self.assertCountEqual([fine, fine_2], entity.fines)
+        entity.set_field_from_list("assessments", [assessment, assessment_2])
+        self.assertCountEqual([assessment, assessment_2], entity.assessments)
 
-        db_entity.set_field_from_list("fines", [db_fine, db_fine_2])
+        db_entity.set_field_from_list("assessments", [db_assessment, db_assessment_2])
         self.assertCountEqual(
-            [fine, fine_2],
+            [assessment, assessment_2],
             converter.convert_schema_objects_to_entity(
-                db_entity.fines, populate_back_edges=False
+                db_entity.assessments, populate_back_edges=False
             ),
         )
 
     def test_setFieldFromList_raises(self) -> None:
-        entity = entities.StateSentenceGroup.new_with_defaults(
-            state_code="US_XX", status=StateSentenceStatus.PRESENT_WITHOUT_INFO
+        entity = entities.StatePerson.new_with_defaults(
+            state_code="US_XX",
         )
         db_entity = converter.convert_entity_to_schema_object(entity)
 
         with self.assertRaises(ValueError):
-            entity.set_field_from_list("state_code", ["us_nc", "us_sc"])
+            entity.set_field_from_list("state_code", ["US_XX", "US_YY"])
 
         with self.assertRaises(ValueError):
-            db_entity.set_field_from_list("state_code", ["us_nc", "us_sc"])
+            db_entity.set_field_from_list("state_code", ["US_XX", "US_YY"])
 
     def test_hasDefaultStatus(self) -> None:
-        entity = entities.StateSentenceGroup.new_with_defaults(
-            state_code="US_XX", status=entities.StateSentenceStatus.PRESENT_WITHOUT_INFO
+        entity = entities.StateCharge.new_with_defaults(
+            state_code="US_XX", status=entities.ChargeStatus.PRESENT_WITHOUT_INFO
         )
         db_entity = converter.convert_entity_to_schema_object(entity)
-        if not isinstance(db_entity, schema.StateSentenceGroup):
+        if not isinstance(db_entity, schema.StateCharge):
             self.fail(f"Unexpected type for db_entity: {[db_entity]}.")
 
         self.assertTrue(entity.has_default_status())
-        entity.status = entities.StateSentenceStatus.SERVING
+        entity.status = entities.ChargeStatus.CONVICTED
         self.assertFalse(entity.has_default_status())
 
         self.assertTrue(db_entity.has_default_status())
-        db_entity.status = entities.StateSentenceStatus.SERVING.value
+        db_entity.status = entities.ChargeStatus.CONVICTED.value
         self.assertFalse(db_entity.has_default_status())
 
     def test_hasDefaultEnum(self) -> None:

@@ -54,7 +54,6 @@ from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecision,
     StateEarlyDischargeDecisionStatus,
 )
-from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
@@ -472,7 +471,6 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     supervision_sentences: List["StateSupervisionSentence"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
-    fines: List["StateFine"] = attr.ib(factory=list, validator=attr_validators.is_list)
 
 
 @attr.s(eq=False, kw_only=True)
@@ -603,7 +601,6 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     incarceration_sentences: List["StateIncarcerationSentence"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
-    fines: List["StateFine"] = attr.ib(factory=list, validator=attr_validators.is_list)
     # TODO(#1698): Add information about the time relationship between individual
     #  sentences (i.e. consecutive vs concurrent).
 
@@ -803,57 +800,6 @@ class StateIncarcerationSentence(ExternalIdEntity, BuildableAttr, DefaultableAtt
         factory=list, validator=attr_validators.is_list
     )
     early_discharges: List["StateEarlyDischarge"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
-
-
-# TODO(#9199): DEPRECATED - DO NOT ADD NEW USAGES
-@attr.s(eq=False, kw_only=True)
-class StateFine(ExternalIdEntity, BuildableAttr, DefaultableAttr):
-    """Models a fine that a StatePerson is sentenced to pay in association with a StateCharge."""
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
-    # Status
-    status: StateFineStatus = attr.ib(
-        validator=attr.validators.instance_of(StateFineStatus)
-    )  # non-nullable
-    status_raw_text: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
-    # Type
-    # N/A
-
-    # Attributes
-    #   - When
-    date_paid: Optional[datetime.date] = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
-    )
-
-    #   - Where
-    # The county where this fine was issued
-    county_code: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
-    #   - What
-    fine_dollars: Optional[int] = attr.ib(
-        default=None, validator=attr_validators.is_opt_int
-    )
-
-    #   - Who
-    # See |person| in entity relationships below.
-
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
-    fine_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
-
-    # Cross-entity relationships
-    person: Optional["StatePerson"] = attr.ib(default=None)
-    sentence_group: Optional["StateSentenceGroup"] = attr.ib(default=None)
-    charges: List["StateCharge"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
 
