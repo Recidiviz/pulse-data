@@ -24,6 +24,9 @@ from recidiviz.common.constants.state.state_parole_decision import (
 )
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StateParoleDecisionFactory,
+)
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_parole_decision,
 )
@@ -53,7 +56,7 @@ class StateParoleDecisionConverterTest(unittest.TestCase):
         state_parole_decision.copy_fields_to_builder(
             decision_builder, ingest_parole_decision, _EMPTY_METADATA
         )
-        result = decision_builder.build()
+        result = decision_builder.build(StateParoleDecisionFactory.deserialize)
 
         # Assert
         expected_result = entities.StateParoleDecision(

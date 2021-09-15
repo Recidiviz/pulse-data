@@ -45,10 +45,14 @@ from recidiviz.persistence.entity.state.deserialize_entity_factories import (
     StateIncarcerationIncidentFactory,
     StateIncarcerationPeriodFactory,
     StateIncarcerationSentenceFactory,
+    StateParoleDecisionFactory,
     StatePersonFactory,
     StateProgramAssignmentFactory,
     StateSentenceGroupFactory,
+    StateSupervisionContactFactory,
     StateSupervisionPeriodFactory,
+    StateSupervisionViolationFactory,
+    StateSupervisionViolationResponseFactory,
 )
 from recidiviz.persistence.ingest_info_converter.base_converter import BaseConverter
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
@@ -560,7 +564,9 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             converted_violated_condition_entries
         )
 
-        return supervision_violation_builder.build()
+        return supervision_violation_builder.build(
+            StateSupervisionViolationFactory.deserialize
+        )
 
     def _convert_supervision_violation_response(
         self, ingest_supervision_violation_response: StateSupervisionViolationResponse
@@ -595,7 +601,9 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             converted_decisions
         )
 
-        return supervision_violation_response_builder.build()
+        return supervision_violation_response_builder.build(
+            StateSupervisionViolationResponseFactory.deserialize
+        )
 
     def _convert_assessment(
         self, ingest_assessment: StateAssessment
@@ -678,7 +686,7 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             ingest_contact,
         )
 
-        return contact_builder.build()
+        return contact_builder.build(StateSupervisionContactFactory.deserialize)
 
     def _convert_parole_decision(
         self, ingest_parole_decision: StateParoleDecision
@@ -697,4 +705,4 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         ]
         parole_decision_builder.decision_agents = converted_agents
 
-        return parole_decision_builder.build()
+        return parole_decision_builder.build(StateParoleDecisionFactory.deserialize)

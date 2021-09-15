@@ -25,6 +25,9 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StateSupervisionViolationResponseFactory,
+)
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_supervision_violation_response,
 )
@@ -53,7 +56,9 @@ class StateSupervisionViolationResponseConverterTest(unittest.TestCase):
         state_supervision_violation_response.copy_fields_to_builder(
             response_builder, ingest_response, _EMPTY_METADATA
         )
-        result = response_builder.build()
+        result = response_builder.build(
+            StateSupervisionViolationResponseFactory.deserialize
+        )
 
         # Assert
         expected_result = entities.StateSupervisionViolationResponse.new_with_defaults(

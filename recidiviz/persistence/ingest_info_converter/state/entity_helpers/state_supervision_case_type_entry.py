@@ -17,18 +17,16 @@
 
 """Converts an ingest_info proto StateSupervisionCaseTypeEntry to a
 persistence entity."""
+from recidiviz.common import common_utils
+from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
+    DefaultingAndNormalizingEnumParser,
+)
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import normalize
 from recidiviz.ingest.models.ingest_info import StateSupervisionCaseTypeEntry
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn,
-    parse_external_id,
-    parse_region_code_with_override,
-)
-from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
-    IngestInfoProtoEnumMapper,
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StateSupervisionCaseTypeEntryFactory,
 )
 
 
@@ -42,21 +40,24 @@ def convert(
     """
     new = entities.StateSupervisionCaseTypeEntry.builder()
 
-    enum_fields = {
-        "case_type": StateSupervisionCaseType,
-    }
-    proto_enum_mapper = IngestInfoProtoEnumMapper(
-        proto, enum_fields, metadata.enum_overrides
-    )
-
     # enum values
-    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
-    new.case_type = proto_enum_mapper.get(StateSupervisionCaseType)
-    new.case_type_raw_text = fn(normalize, "case_type", proto)
+    new.state_code = metadata.region
+    new.case_type = DefaultingAndNormalizingEnumParser(
+        getattr(proto, "case_type"),
+        StateSupervisionCaseType,
+        metadata.enum_overrides,
+    )
+    new.case_type_raw_text = getattr(proto, "case_type")
 
     # 1-to-1 mappings
-    new.external_id = fn(
-        parse_external_id, "state_supervision_case_type_entry_id", proto
+
+    state_supervision_case_type_entry_id = getattr(
+        proto, "state_supervision_case_type_entry_id"
+    )
+    new.external_id = (
+        None
+        if common_utils.is_generated_id(state_supervision_case_type_entry_id)
+        else state_supervision_case_type_entry_id
     )
 
-    return new.build()
+    return new.build(StateSupervisionCaseTypeEntryFactory.deserialize)

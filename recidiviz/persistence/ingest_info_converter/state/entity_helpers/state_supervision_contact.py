@@ -16,7 +16,10 @@
 # =============================================================================
 
 """Converts an ingest_info proto StateSupervisionContact to a persistence entity."""
-
+from recidiviz.common import common_utils
+from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
+    DefaultingAndNormalizingEnumParser,
+)
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactMethod,
@@ -25,17 +28,8 @@ from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactType,
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import normalize, parse_bool, parse_date
 from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionContact
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn,
-    parse_external_id,
-    parse_region_code_with_override,
-)
-from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
-    IngestInfoProtoEnumMapper,
-)
 
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
@@ -52,33 +46,47 @@ def copy_fields_to_builder(
     new = supervision_contact_builder
 
     # 1-to-1 mappings
-    new.external_id = fn(parse_external_id, "state_supervision_contact_id", proto)
 
-    new.contact_date = fn(parse_date, "contact_date", proto)
-    new.resulted_in_arrest = fn(parse_bool, "resulted_in_arrest", proto)
-    new.verified_employment = fn(parse_bool, "verified_employment", proto)
-    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
-
-    enum_fields = {
-        "status": StateSupervisionContactStatus,
-        "contact_reason": StateSupervisionContactReason,
-        "contact_type": StateSupervisionContactType,
-        "location": StateSupervisionContactLocation,
-        "contact_method": StateSupervisionContactMethod,
-    }
-
-    proto_enum_mapper = IngestInfoProtoEnumMapper(
-        proto, enum_fields, metadata.enum_overrides
+    state_supervision_contact_id = getattr(proto, "state_supervision_contact_id")
+    new.external_id = (
+        None
+        if common_utils.is_generated_id(state_supervision_contact_id)
+        else state_supervision_contact_id
     )
 
+    new.contact_date = getattr(proto, "contact_date")
+    new.resulted_in_arrest = getattr(proto, "resulted_in_arrest")
+    new.verified_employment = getattr(proto, "verified_employment")
+    new.state_code = metadata.region
+
     # enum values
-    new.status = proto_enum_mapper.get(StateSupervisionContactStatus)
-    new.status_raw_text = fn(normalize, "status", proto)
-    new.contact_type = proto_enum_mapper.get(StateSupervisionContactType)
-    new.contact_type_raw_text = fn(normalize, "contact_type", proto)
-    new.contact_reason = proto_enum_mapper.get(StateSupervisionContactReason)
-    new.contact_reason_raw_text = fn(normalize, "contact_reason", proto)
-    new.location = proto_enum_mapper.get(StateSupervisionContactLocation)
-    new.location_raw_text = fn(normalize, "location", proto)
-    new.contact_method = proto_enum_mapper.get(StateSupervisionContactMethod)
-    new.contact_method_raw_text = fn(normalize, "contact_method", proto)
+    new.status = DefaultingAndNormalizingEnumParser(
+        getattr(proto, "status"),
+        StateSupervisionContactStatus,
+        metadata.enum_overrides,
+    )
+    new.status_raw_text = getattr(proto, "status")
+    new.contact_type = DefaultingAndNormalizingEnumParser(
+        getattr(proto, "contact_type"),
+        StateSupervisionContactType,
+        metadata.enum_overrides,
+    )
+    new.contact_type_raw_text = getattr(proto, "contact_type")
+    new.contact_reason = DefaultingAndNormalizingEnumParser(
+        getattr(proto, "contact_reason"),
+        StateSupervisionContactReason,
+        metadata.enum_overrides,
+    )
+    new.contact_reason_raw_text = getattr(proto, "contact_reason")
+    new.location = DefaultingAndNormalizingEnumParser(
+        getattr(proto, "location"),
+        StateSupervisionContactLocation,
+        metadata.enum_overrides,
+    )
+    new.location_raw_text = getattr(proto, "location")
+    new.contact_method = DefaultingAndNormalizingEnumParser(
+        getattr(proto, "contact_method"),
+        StateSupervisionContactMethod,
+        metadata.enum_overrides,
+    )
+    new.contact_method_raw_text = getattr(proto, "contact_method")

@@ -16,21 +16,16 @@
 # =============================================================================
 
 """Converts an ingest_info proto StateParoleDecision to a persistence entity."""
+from recidiviz.common import common_utils
+from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
+    DefaultingAndNormalizingEnumParser,
+)
 from recidiviz.common.constants.state.state_parole_decision import (
     StateParoleDecisionOutcome,
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import normalize, parse_date
 from recidiviz.ingest.models.ingest_info_pb2 import StateParoleDecision
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn,
-    parse_external_id,
-    parse_region_code_with_override,
-)
-from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
-    IngestInfoProtoEnumMapper,
-)
 
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
@@ -47,21 +42,23 @@ def copy_fields_to_builder(
     """
     new = state_parole_decision_builder
 
-    enum_fields = {
-        "decision_outcome": StateParoleDecisionOutcome,
-    }
-    proto_enum_mapper = IngestInfoProtoEnumMapper(
-        proto, enum_fields, metadata.enum_overrides
-    )
-
     # Enum mappings
-    new.decision_outcome = proto_enum_mapper.get(StateParoleDecisionOutcome)
-    new.decision_outcome_raw_text = fn(normalize, "decision_outcome", proto)
+    new.decision_outcome = DefaultingAndNormalizingEnumParser(
+        getattr(proto, "decision_outcome"),
+        StateParoleDecisionOutcome,
+        metadata.enum_overrides,
+    )
+    new.decision_outcome_raw_text = getattr(proto, "decision_outcome")
 
-    new.external_id = fn(parse_external_id, "state_parole_decision_id", proto)
-    new.decision_date = fn(parse_date, "decision_date", proto)
-    new.corrective_action_deadline = fn(parse_date, "corrective_action_deadline", proto)
-    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
-    new.county_code = fn(normalize, "county_code", proto)
-    new.decision_reasoning = fn(normalize, "decision_reasoning", proto)
-    new.corrective_action = fn(normalize, "corrective_action", proto)
+    state_parole_decision_id = getattr(proto, "state_parole_decision_id")
+    new.external_id = (
+        None
+        if common_utils.is_generated_id(state_parole_decision_id)
+        else state_parole_decision_id
+    )
+    new.decision_date = getattr(proto, "decision_date")
+    new.corrective_action_deadline = getattr(proto, "corrective_action_deadline")
+    new.state_code = metadata.region
+    new.county_code = getattr(proto, "county_code")
+    new.decision_reasoning = getattr(proto, "decision_reasoning")
+    new.corrective_action = getattr(proto, "corrective_action")
