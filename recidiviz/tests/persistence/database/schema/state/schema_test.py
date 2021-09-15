@@ -66,7 +66,6 @@ from recidiviz.tests.persistence.database.schema.schema_test import (
 )
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
     generate_agent,
-    generate_bond,
     generate_charge,
     generate_court_case,
     generate_early_discharge,
@@ -384,7 +383,6 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
         (generate_supervision_case_type_entry,),
         (generate_incarceration_period,),
         (generate_supervision_violation_response,),
-        (generate_bond,),
         (generate_parole_decision,),
         (generate_early_discharge,),
         (generate_program_assignment,),

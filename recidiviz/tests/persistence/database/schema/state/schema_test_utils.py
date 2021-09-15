@@ -17,7 +17,6 @@
 """Helper methods to generate schema objects with required fields
 prepopulated.
 """
-from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_court_case import StateCourtCaseStatus
@@ -221,16 +220,6 @@ def generate_court_case(person, **kwargs) -> schema.StateCourtCase:
     }
     args.update(kwargs)
     return schema.StateCourtCase(person=person, **args)
-
-
-def generate_bond(person, **kwargs) -> schema.StateBond:
-    args = {
-        "status": BondStatus.PRESENT_WITHOUT_INFO.value,
-        "state_code": _STATE_CODE,
-        "bond_type": BondType.CASH.value,
-    }
-    args.update(kwargs)
-    return schema.StateBond(person=person, **args)
 
 
 def generate_assessment(person, **kwargs) -> schema.StateAssessment:

@@ -123,7 +123,7 @@ county_columns_to_exclude:
                         }
                     ),
                 },
-                "state_bond": {},
+                "state_court_case": {},
                 "state_charge": {
                     "US_XX": DatasetMetadataCounts.from_json(
                         {
@@ -143,7 +143,7 @@ county_columns_to_exclude:
 
     def test_empty_table(self) -> None:
         """Tests that empty tables report empty values but still show up in the main set of results."""
-        empty_table = "state_bond"
+        empty_table = "state_court_case"
 
         # check that dataset-wide aggregation finds no results for table
         self.assertEqual(0, len(self.store.fetch_object_counts_by_table()[empty_table]))

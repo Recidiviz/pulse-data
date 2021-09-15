@@ -61,8 +61,6 @@ from recidiviz.persistence.database.schema.history_table_shared_columns_mixin im
     HistoryTableSharedColumns,
 )
 from recidiviz.persistence.database.schema.shared_enums import (
-    bond_status,
-    bond_type,
     charge_status,
     ethnicity,
     gender,
@@ -1324,88 +1322,6 @@ class StatePersonHistory(
     )
 
 
-# StateBond
-
-
-class _StateBondSharedColumns(_ReferencesStatePersonSharedColumns):
-    """A mixin which defines all columns common to StateBond and
-    StateBond"""
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_StateBondSharedColumns":
-        if cls is _StateBondSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
-
-    external_id = Column(
-        String(255),
-        index=True,
-        comment="DEPRECATED. See #2891.",
-    )
-    status = Column(bond_status, nullable=False, comment="DEPRECATED. See #2891.")
-    status_raw_text = Column(String(255), comment="DEPRECATED. See #2891.")
-    bond_type = Column(bond_type, nullable=False, comment="DEPRECATED. See #2891.")
-    bond_type_raw_text = Column(String(255), comment="DEPRECATED. See #2891.")
-    date_paid = Column(Date, comment="DEPRECATED. See #2891.")
-    state_code = Column(
-        String(255),
-        nullable=False,
-        index=True,
-        comment="DEPRECATED. See #2891.",
-    )
-    county_code = Column(
-        String(255),
-        index=True,
-        comment="DEPRECATED. See #2891.",
-    )
-    amount_dollars = Column(Integer, comment="DEPRECATED. See #2891.")
-    bond_agent = Column(String(255), comment="DEPRECATED. See #2891.")
-
-
-# TODO(#9200): DEPRECATED - DO NOT ADD NEW USAGES
-class StateBond(StateBase, _StateBondSharedColumns):
-    """Represents a StateBond in the SQL schema"""
-
-    __tablename__ = "state_bond"
-    __table_args__ = (
-        UniqueConstraint(
-            "state_code",
-            "external_id",
-            name="bond_external_ids_unique_within_state",
-            deferrable=True,
-            initially="DEFERRED",
-        ),
-        {"comment": "DEPRECATED. See #2891."},
-    )
-    bond_id = Column(Integer, primary_key=True, comment="DEPRECATED. See #2891.")
-
-    person = relationship("StatePerson", uselist=False)
-
-
-# TODO(#9200): DEPRECATED - DO NOT ADD NEW USAGES
-class StateBondHistory(StateBase, _StateBondSharedColumns, HistoryTableSharedColumns):
-    """Represents the historical state of a StateBond"""
-
-    __tablename__ = "state_bond_history"
-    __table_args__ = {"comment": "DEPRECATED. See #2891."}
-
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    bond_history_id = Column(
-        Integer,
-        primary_key=True,
-        comment=HISTORICAL_ID_COMMENT,
-    )
-
-    bond_id = Column(
-        Integer,
-        ForeignKey("state_bond.bond_id"),
-        nullable=False,
-        index=True,
-        comment="DEPRECATED. See #2891.",
-    )
-
-
 # StateCourtCase
 
 
@@ -1636,15 +1552,6 @@ class _StateChargeSharedColumns(_ReferencesStatePersonSharedColumns):
             comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="court case"),
         )
 
-    @declared_attr
-    def bond_id(self) -> Column:
-        return Column(
-            Integer,
-            ForeignKey("state_bond.bond_id"),
-            index=True,
-            comment="DEPRECATED. See #2891.",
-        )
-
 
 class StateCharge(StateBase, _StateChargeSharedColumns):
     """Represents a StateCharge in the SQL schema"""
@@ -1680,7 +1587,6 @@ class StateCharge(StateBase, _StateChargeSharedColumns):
     court_case = relationship(
         "StateCourtCase", uselist=False, backref="charges", lazy="selectin"
     )
-    bond = relationship("StateBond", uselist=False, backref="charges", lazy="selectin")
 
 
 class StateChargeHistory(

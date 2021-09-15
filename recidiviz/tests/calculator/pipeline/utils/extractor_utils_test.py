@@ -1179,7 +1179,6 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
         data_dict = {
             charge.__tablename__: normalized_database_base_dict_list([charge]),
             court_case.__tablename__: normalized_database_base_dict_list([court_case]),
-            schema.StateBond.__tablename__: [],
         }
         dataset = "recidiviz-123.state"
         with patch(
@@ -1204,7 +1203,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
             )
 
             # Assert it has the property fields we expect
-            self.assertEqual(properties_dict.keys(), {"court_case", "bond"})
+            self.assertEqual(properties_dict.keys(), {"court_case"})
 
             output_court_case = properties_dict.get("court_case")
 
@@ -1307,7 +1306,6 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
             schema.StateCharge.__tablename__: normalized_database_base_dict_list(
                 [charge_1, charge_2]
             ),
-            schema.StateBond.__tablename__: [],
         }
 
         dataset = "recidiviz-123.state"
@@ -1764,10 +1762,10 @@ class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):
             database_test_utils.generate_test_sentence_group(123, [], [], [])
         )
         charge1 = remove_relationship_properties(
-            database_test_utils.generate_test_charge(123, 6666, None, None)
+            database_test_utils.generate_test_charge(123, 6666, None)
         )
         charge2 = remove_relationship_properties(
-            database_test_utils.generate_test_charge(123, 7777, None, None)
+            database_test_utils.generate_test_charge(123, 7777, None)
         )
 
         fine_entity = StateSchemaToEntityConverter().convert(fine)
@@ -1827,10 +1825,10 @@ class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):
             database_test_utils.generate_test_sentence_group(person_id, [], [], [])
         )
         charge_1_1 = remove_relationship_properties(
-            database_test_utils.generate_test_charge(person_id, 6666, None, None)
+            database_test_utils.generate_test_charge(person_id, 6666, None)
         )
         charge_1_2 = remove_relationship_properties(
-            database_test_utils.generate_test_charge(person_id, 7777, None, None)
+            database_test_utils.generate_test_charge(person_id, 7777, None)
         )
 
         fine_2 = schema.StateFine(
