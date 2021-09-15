@@ -61,11 +61,11 @@ INCARCERATION_START_REASON_ORDERED_PRIORITY = [
     StateIncarcerationPeriodAdmissionReason.TRANSFER,
     StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
     StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
+    StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE,
     StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
     StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
     StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
 ]
-
 
 ADMISSION_START_REASON_DEDUP_PRIORITY_QUERY_TEMPLATE = """
     /*{description}*/
@@ -74,9 +74,9 @@ ADMISSION_START_REASON_DEDUP_PRIORITY_QUERY_TEMPLATE = """
         * 
     FROM UNNEST([{prioritized_supervision_start_reasons}]) AS start_reason
     WITH OFFSET AS priority
-    
+
     UNION ALL
-    
+
     SELECT 
         'INCARCERATION_ADMISSION' AS metric_source,
         *
