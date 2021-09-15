@@ -36,7 +36,6 @@ from recidiviz.common.constants.state.state_program_assignment import (
 )
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import (
@@ -112,7 +111,6 @@ class TestFindProgramEvents(unittest.TestCase):
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=999,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2019, 3, 5),
             termination_date=date(2020, 10, 1),
@@ -216,7 +214,6 @@ class TestFindProgramReferrals(unittest.TestCase):
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=999,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
@@ -298,7 +295,6 @@ class TestFindProgramReferrals(unittest.TestCase):
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
@@ -398,7 +394,6 @@ class TestFindProgramReferrals(unittest.TestCase):
 
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
@@ -408,7 +403,6 @@ class TestFindProgramReferrals(unittest.TestCase):
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2006, 12, 1),
             termination_date=date(2013, 1, 4),
@@ -469,7 +463,6 @@ class TestFindProgramReferrals(unittest.TestCase):
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
@@ -538,7 +531,6 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
-            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             state_code="US_XX",
             start_date=date(1990, 3, 5),
             supervision_type=StateSupervisionType.PAROLE,
@@ -585,7 +577,6 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
-            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             state_code="US_XX",
             start_date=date(1990, 3, 5),
             supervision_type=StateSupervisionType.PAROLE,
@@ -677,7 +668,6 @@ class TestFindSupervisionPeriodsOverlappingWithDate(unittest.TestCase):
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2015, 5, 19),
@@ -702,7 +692,6 @@ class TestFindSupervisionPeriodsOverlappingWithDate(unittest.TestCase):
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2002, 11, 5),
             supervision_type=StateSupervisionType.PAROLE,
@@ -723,7 +712,6 @@ class TestFindSupervisionPeriodsOverlappingWithDate(unittest.TestCase):
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2015, 5, 19),
@@ -759,7 +747,6 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
     def test_referrals_for_supervision_periods(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
@@ -796,7 +783,6 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
     def test_referrals_for_supervision_periods_same_type(self) -> None:
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
@@ -806,7 +792,6 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
@@ -854,7 +839,6 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
     def test_referrals_for_supervision_periods_different_types(self) -> None:
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
@@ -864,7 +848,6 @@ class TestReferralsForSupervisionPeriods(unittest.TestCase):
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),

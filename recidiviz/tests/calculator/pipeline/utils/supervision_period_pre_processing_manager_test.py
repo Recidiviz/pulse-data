@@ -29,7 +29,6 @@ from recidiviz.calculator.pipeline.utils.supervision_period_pre_processing_manag
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
@@ -58,7 +57,6 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
             state_code="US_XX",
             start_date=datetime.date(2006, 1, 1),
             termination_date=datetime.date(2007, 12, 31),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         expected_period = attr.evolve(
@@ -82,7 +80,6 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
             state_code="US_XX",
             start_date=datetime.date(2006, 1, 1),
             termination_date=datetime.date(2007, 12, 31),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         updated_periods = self._pre_processed_supervision_periods_for_calculations(
@@ -97,7 +94,6 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
     ) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1,
-            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             state_code="US_XX",
             start_date=datetime.date(1990, 1, 1),
             termination_date=datetime.date(2007, 12, 31),
@@ -110,7 +106,6 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
 
         updated_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1,
-            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             state_code="US_XX",
             start_date=datetime.date(1990, 1, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
@@ -124,7 +119,6 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             state_code="US_XX",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         updated_periods = self._pre_processed_supervision_periods_for_calculations(
@@ -142,7 +136,6 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
             start_date=datetime.date(2000, 12, 29),
             termination_date=datetime.date(2001, 1, 1),
             termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
-            status=StateSupervisionPeriodStatus.TERMINATED,
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -152,14 +145,12 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
             termination_date=datetime.date(2001, 1, 6),
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE,
-            status=StateSupervisionPeriodStatus.TERMINATED,
         )
 
         supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=3,
             state_code="US_XX",
             start_date=datetime.date(2001, 1, 6),
-            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
         )
 
         expected_period = attr.evolve(
@@ -186,14 +177,12 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
             start_date=datetime.date(2001, 1, 1),
             termination_date=datetime.date(2001, 1, 30),
             termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
-            status=StateSupervisionPeriodStatus.TERMINATED,
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=2,
             state_code="US_XX",
             start_date=datetime.date(2001, 1, 15),
-            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
         )
 
         updated_periods = self._pre_processed_supervision_periods_for_calculations(
@@ -211,9 +200,6 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
                 termination_date=datetime.date(2001, 1, 30),
                 termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
-                # TODO(#9129): This status is temporarily incorrect until we delete this
-                #  field entirely. This value is not actually referenced elsewhere.
-                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             ),
         ]
 
@@ -229,14 +215,12 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
             state_code="US_XX",
             start_date=datetime.date(2020, 1, 1),
             termination_date=datetime.date(2020, 1, 31),
-            status=StateSupervisionPeriodStatus.TERMINATED,
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=2,
             state_code="US_XX",
             start_date=datetime.date(2020, 1, 15),
-            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
         )
 
         expected_periods = [
@@ -250,9 +234,6 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
                 admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
                 termination_date=datetime.date(2020, 3, 1),
                 termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
-                # TODO(#9129): This status is temporarily incorrect until we delete this
-                #  field entirely. This value is not actually referenced elsewhere.
-                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             ),
         ]
         updated_periods = self._pre_processed_supervision_periods_for_calculations(
@@ -269,7 +250,6 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
             start_date=datetime.date(2000, 1, 1),
             termination_date=datetime.date(2000, 10, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
         )
 
@@ -279,7 +259,6 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
             start_date=datetime.date(2000, 10, 1),
             termination_date=datetime.date(2003, 3, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
         )
 
@@ -302,7 +281,6 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
             start_date=datetime.date(2000, 1, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_date=datetime.date(2000, 1, 1),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
         )
 
@@ -310,7 +288,6 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
             state_code="US_XX",
             supervision_period_id=222,
             start_date=datetime.date(2000, 1, 1),
-            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
         )
 
@@ -333,7 +310,6 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
             start_date=datetime.date(2000, 1, 1),
             termination_date=datetime.date(2000, 1, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
         )
 
@@ -343,7 +319,6 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
             start_date=datetime.date(2000, 1, 1),
             termination_date=datetime.date(2000, 1, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
         )
 
@@ -366,7 +341,6 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
             start_date=datetime.date(2000, 1, 1),
             termination_date=datetime.date(2000, 1, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
         )
 
@@ -376,7 +350,6 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
             start_date=datetime.date(2000, 1, 1),
             termination_date=datetime.date(2000, 1, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
         )
 

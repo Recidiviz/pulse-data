@@ -44,7 +44,6 @@ from recidiviz.common.constants.state.state_supervision_contact import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
@@ -129,7 +128,6 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         assessments = [
             assessment_out_of_range,
@@ -212,7 +210,6 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         contacts = [
@@ -261,7 +258,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_level_raw_text="MODERATE",
             supervision_level=StateSupervisionLevel.MEDIUM,
         )
@@ -310,7 +306,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="LEVEL 3",
         )
@@ -360,7 +355,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="LEVEL 3",
         )
@@ -410,7 +404,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="LEVEL 3",
         )
@@ -462,7 +455,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
             supervision_level_raw_text="LOW",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -511,7 +503,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
             supervision_level_raw_text="LEVEL 1",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -560,7 +551,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
             supervision_level_raw_text="LEVEL 4",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -611,7 +601,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
             supervision_level_raw_text="LEVEL 4",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -664,7 +653,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="HIGH",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -725,7 +713,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="LEVEL 3",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -788,7 +775,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
             supervision_level_raw_text="LEVEL 4",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -841,7 +827,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="HIGH",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -890,7 +875,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="LEVEL 3",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -939,7 +923,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="HIGH",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         # One contact within the time window, one outside.
@@ -998,7 +981,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="LEVEL 3",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -1047,7 +1029,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -1096,7 +1077,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="LEVEL 2",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -1147,7 +1127,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         # One contact within the time window, one outside.
@@ -1206,7 +1185,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="LEVEL 2",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -1255,7 +1233,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts: List[StateSupervisionContact] = []
@@ -1295,7 +1272,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="LEVEL 2",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts: List[StateSupervisionContact] = []
@@ -1337,7 +1313,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
             supervision_level_raw_text="SO LOW",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -1386,7 +1361,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
             supervision_level_raw_text="SO LOW",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -1435,7 +1409,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="SO MODERATE",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -1484,7 +1457,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="SO MODERATE",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -1533,7 +1505,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="SO HIGH",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_contacts = [
@@ -1594,7 +1565,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="SO HIGH",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         # One contact within in time period, and one after.
@@ -1654,7 +1624,6 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="SO HIGH",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
             self.person,
@@ -1688,7 +1657,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="LEVEL 2",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
@@ -1719,7 +1687,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=None,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
@@ -1753,7 +1720,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="LEVEL 3",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
@@ -1785,7 +1751,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text="LEVEL 3",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         case_type = StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS
@@ -1817,7 +1782,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="SO MODERATE",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         case_type = StateSupervisionCaseType.SEX_OFFENSE
@@ -1851,7 +1815,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
             supervision_level_raw_text="SO MAXIMUM",  # Fake string, not actually possible to have max sex offense.
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         case_type = StateSupervisionCaseType.SEX_OFFENSE
@@ -1887,7 +1850,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
             supervision_level_raw_text="SO MAXIMUM",  # Fake string, not actually possible to have max sex offense.
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         case_type = StateSupervisionCaseType.SEX_OFFENSE
@@ -1919,7 +1881,6 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
             supervision_level_raw_text="LEVEL 2",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(
@@ -1963,7 +1924,6 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment_date = date(2018, 4, 2)
@@ -2002,7 +1962,6 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment_date = date(2018, 4, 2)
@@ -2040,7 +1999,6 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment_date = date(2010, 4, 2)
@@ -2090,7 +2048,6 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment_date = date(2010, 4, 2)
@@ -2168,7 +2125,6 @@ class TestSupervisionDowngrades(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=supervision_level,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
     def _assessment_with_score(self, score: int) -> StateAssessment:

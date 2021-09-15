@@ -43,7 +43,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import (
@@ -60,14 +59,12 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2000, 1, 1),
             termination_date=date(2010, 8, 30),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             start_date=date(2006, 3, 1),
             termination_date=date(2010, 9, 1),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         most_recently_terminated_period = find_last_terminated_period_before_date(
@@ -86,14 +83,12 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2000, 1, 1),
             termination_date=date(2005, 1, 1),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             start_date=date(2006, 3, 1),
             termination_date=date(2010, 1, 1),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         most_recently_terminated_period = find_last_terminated_period_before_date(
@@ -112,14 +107,12 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2000, 1, 1),
             termination_date=date(2005, 1, 1),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             start_date=date(2006, 3, 1),
             termination_date=date(2010, 1, 1),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         # Set the admission date to be 1 day after the cut-off for how close a supervision period termination has to be
@@ -146,14 +139,12 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2000, 1, 1),
             termination_date=date(2005, 1, 1),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             start_date=date(2006, 3, 1),
             termination_date=date(2010, 1, 1),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         # Set the admission date to be on the last day of the cut-off for how close a supervision period termination
@@ -178,7 +169,6 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2000, 1, 1),
             termination_date=date(2007, 9, 20),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         # Overlapping supervision period should not be returned
@@ -186,7 +176,6 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2006, 3, 1),
             termination_date=date(2010, 1, 1),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         most_recently_terminated_period = find_last_terminated_period_before_date(
@@ -207,14 +196,12 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2000, 1, 1),
             termination_date=date(2007, 9, 20),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         # Overlapping supervision period that should have been found in the other identifier code
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             start_date=date(2006, 3, 1),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         most_recently_terminated_period = find_last_terminated_period_before_date(
@@ -242,7 +229,6 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2000, 1, 1),
             termination_date=date(2005, 3, 31),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         most_recently_terminated_period = find_last_terminated_period_before_date(
@@ -260,7 +246,6 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2006, 3, 1),
             termination_date=date(2007, 12, 31),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         most_recently_terminated_period = find_last_terminated_period_before_date(
@@ -278,7 +263,6 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2006, 1, 1),
             termination_date=date(2007, 12, 31),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         most_recently_terminated_period = find_last_terminated_period_before_date(
@@ -297,7 +281,6 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2006, 1, 1),
             termination_date=date(2007, 12, 31),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_period_b = StateSupervisionPeriod.new_with_defaults(
@@ -305,7 +288,6 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2006, 1, 1),
             termination_date=date(2007, 12, 31),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         most_recently_terminated_period = find_last_terminated_period_before_date(
@@ -327,7 +309,6 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2006, 1, 1),
             termination_date=date(2007, 12, 31),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
         )
 
@@ -336,7 +317,6 @@ class TestLastTerminatedPeriodBeforeDate(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2006, 1, 1),
             termination_date=date(2007, 12, 31),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
         )
 
@@ -377,7 +357,6 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
             start_date=date(2000, 1, 1),
             termination_date=date(2005, 1, 2),
             termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -405,7 +384,6 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2000, 1, 1),
             termination_date=date(2005, 1, 2),
-            status=StateSupervisionPeriodStatus.TERMINATED,
         )
 
         later_death_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -446,7 +424,6 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2000, 1, 1),
             termination_date=date(2005, 1, 2),
-            status=StateSupervisionPeriodStatus.TERMINATED,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -473,7 +450,6 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
             start_date=date(2000, 1, 1),
             termination_date=date(2005, 1, 4),
             termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
-            status=StateSupervisionPeriodStatus.TERMINATED,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -512,7 +488,6 @@ class TestEarliestPeriodEndingInDeath(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2000, 1, 1),
             termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
-            status=StateSupervisionPeriodStatus.TERMINATED,
         )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -549,21 +524,18 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
             state_code="US_XX",
             start_date=date(2000, 1, 1),
             termination_date=date(2010, 8, 30),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             start_date=date(2006, 3, 1),
             termination_date=date(2010, 9, 1),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             start_date=date(2012, 12, 1),
             termination_date=date(2018, 2, 4),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         periods = [supervision_period_1, supervision_period_2, supervision_period_3]
@@ -936,13 +908,11 @@ class TestSortPeriodsBySetDatesAndStatuses(unittest.TestCase):
             external_id="X-1",
             state_code="US_XX",
             start_date=date(2000, 1, 1),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         sp_2 = StateSupervisionPeriod.new_with_defaults(
             external_id="X-2",
             state_code="US_XX",
             start_date=date(2000, 1, 1),
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_periods = [sp_1, sp_2]

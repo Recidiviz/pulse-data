@@ -62,7 +62,6 @@ from recidiviz.common.constants.state.state_supervision_contact import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
@@ -2107,7 +2106,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_site="DISTRICT 1|OFFICE 1",
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             custodial_authority_raw_text="D1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             admission_reason_raw_text="COURT_SENTENCE",
             start_date=datetime.date(year=2007, month=10, day=1),
@@ -2135,7 +2133,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_site="DISTRICT 1|OFFICE 1",
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             custodial_authority_raw_text="D1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             admission_reason_raw_text="H",
             start_date=datetime.date(year=2017, month=10, day=1),
@@ -2154,7 +2151,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_site="DISTRICT 0|LIMITED SUPERVISION UNIT",
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             custodial_authority_raw_text="D0",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             admission_reason_raw_text="P",
             start_date=datetime.date(year=2018, month=1, day=1),
@@ -2174,7 +2170,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_site="DISTRICT 1|OFFICE 2",
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             custodial_authority_raw_text="D1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             admission_reason_raw_text="I",
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE,
@@ -2195,7 +2190,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_site="DISTRICT 1|OFFICE 2",
             custodial_authority=StateCustodialAuthority.OTHER_COUNTRY,
             custodial_authority_raw_text="DEPORTED",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE,
             admission_reason_raw_text="DEPORTED",
             start_date=datetime.date(year=2020, month=6, day=1),
@@ -2226,7 +2220,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_site="DISTRICT 2|UNKNOWN",
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             custodial_authority_raw_text="D2",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             admission_reason_raw_text="COURT_SENTENCE",
             supervision_level=StateSupervisionLevel.UNSUPERVISED,
@@ -2243,7 +2236,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         sp_2222_2 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="2222-2",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             admission_reason=StateSupervisionPeriodAdmissionReason.ABSCONSION,
             admission_reason_raw_text="ABSCONSION",
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
@@ -2272,7 +2264,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_site="DISTRICT 2|OFFICE 3",
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             custodial_authority_raw_text="D2",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
             admission_reason_raw_text="F",
             start_date=datetime.date(year=2009, month=12, day=1),
@@ -2300,7 +2291,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_site="PAROLE COMMISSION OFFICE|U.S. IMMIGRATION NATURALIZATION DETAINER",
             custodial_authority=StateCustodialAuthority.FEDERAL,
             custodial_authority_raw_text="FED",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             admission_reason_raw_text="I",
             start_date=datetime.date(year=2012, month=6, day=6),
@@ -2331,7 +2321,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
             supervision_site="DISTRICT 4|UNKNOWN",
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             custodial_authority_raw_text="D4",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             admission_reason_raw_text="COURT_SENTENCE",
             start_date=datetime.date(year=2015, month=1, day=1),
@@ -2355,7 +2344,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         sp_3333_2 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             external_id="3333-2",
-            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             supervision_site="INTERSTATE PROBATION|WASHINGTON",
             custodial_authority=StateCustodialAuthority.OTHER_STATE,
             custodial_authority_raw_text="IS",
@@ -2400,7 +2388,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         )
         sp_1111_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[ss_1111_placeholder],
             person=ss_1111_placeholder.person,
         )
@@ -2465,7 +2452,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         )
         sp_2222_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[ss_2222_placeholder],
             person=ss_2222_placeholder.person,
         )
@@ -2520,7 +2506,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         )
         sp_3333_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[ss_3333_placeholder],
             person=ss_3333_placeholder.person,
         )
@@ -2603,7 +2588,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         )
         sp_2222_placeholder_2 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[ss_2222_placeholder_2],
             person=ss_2222_placeholder_2.person,
         )
@@ -2683,7 +2667,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         )
         sp_1111_placeholder_2 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[ss_1111_placeholder_2],
             person=ss_1111_placeholder_2.person,
         )
@@ -2751,7 +2734,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         )
         sp_3333_placeholder_2 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[ss_3333_placeholder_2],
             person=ss_3333_placeholder_2.person,
         )
@@ -2821,7 +2803,6 @@ class TestUsIdController(BaseDirectIngestControllerTests):
         )
         sp_4444_placeholder_1 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[ss_4444_placeholder_1],
             person=ss_4444_placeholder_1.person,
         )

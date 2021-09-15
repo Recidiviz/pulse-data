@@ -17,9 +17,7 @@
 """Tests for state_period_matching_utils.py"""
 import datetime
 
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
-)
+
 from recidiviz.persistence.entity_matching.state.state_period_matching_utils import (
     add_supervising_officer_to_open_supervision_periods,
 )
@@ -70,13 +68,11 @@ class TestStatePeriodMatchingUtils(BaseStateMatchingUtilsTest):
             supervision_period_id=_ID,
             external_id=_EXTERNAL_ID,
             start_date=_DATE_1,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
         )
         placeholder_supervision_period = generate_supervision_period(
             person=person,
             supervision_period_id=_ID_2,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
         )
         closed_supervision_period = generate_supervision_period(
@@ -85,7 +81,6 @@ class TestStatePeriodMatchingUtils(BaseStateMatchingUtilsTest):
             external_id=_EXTERNAL_ID_3,
             start_date=_DATE_3,
             termination_date=_DATE_4,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
             state_code=_STATE_CODE,
         )
         supervision_sentence = generate_supervision_sentence(

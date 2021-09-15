@@ -66,7 +66,6 @@ from recidiviz.common.constants.state.state_supervision import StateSupervisionT
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
@@ -309,7 +308,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
             person_id=fake_person_id,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_sentence = schema.StateSupervisionSentence(
@@ -653,7 +651,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             person_id=fake_person_id,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_sentence = schema.StateSupervisionSentence(
@@ -906,7 +903,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             person_id=fake_person_id_1,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_sentence = schema.StateSupervisionSentence(
@@ -1208,7 +1204,6 @@ class TestClassifyEvents(unittest.TestCase):
         supervision_period_termination_date = date(2015, 5, 29)
         supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1111,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             county_code="124",
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -1397,7 +1392,6 @@ class TestClassifyEvents(unittest.TestCase):
                 termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
                 supervision_type=StateSupervisionType.PROBATION,
                 person=fake_person,
-                status=StateSupervisionPeriodStatus.TERMINATED,
             )
         )
 
@@ -1411,7 +1405,6 @@ class TestClassifyEvents(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
             supervision_type=StateSupervisionType.PROBATION,
             person=fake_person,
-            status=StateSupervisionPeriodStatus.TERMINATED,
         )
 
         open_post_mortem_supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
@@ -1422,7 +1415,6 @@ class TestClassifyEvents(unittest.TestCase):
             start_date=date(2017, 1, 6),
             supervision_type=StateSupervisionType.PROBATION,
             person=fake_person,
-            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -1594,7 +1586,6 @@ class TestClassifyEvents(unittest.TestCase):
             start_date=date(2017, 1, 4),
             supervision_type=StateSupervisionType.PROBATION,
             person=fake_person,
-            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
         )
 
         # This probation supervision period ended in a death
@@ -1610,7 +1601,6 @@ class TestClassifyEvents(unittest.TestCase):
                 termination_reason=StateSupervisionPeriodTerminationReason.DEATH,
                 supervision_type=StateSupervisionType.PROBATION,
                 person=fake_person,
-                status=StateSupervisionPeriodStatus.TERMINATED,
             )
         )
 
@@ -1786,7 +1776,6 @@ class TestClassifyEvents(unittest.TestCase):
         supervision_period_termination = date(2015, 5, 29)
         supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1111,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             county_code="124",
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -1904,7 +1893,6 @@ class TestClassifyEvents(unittest.TestCase):
         termination_date = date(2015, 5, 29)
         supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1111,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             county_code="124",
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,

@@ -62,7 +62,6 @@ from recidiviz.common.constants.state.state_supervision_contact import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
@@ -3934,7 +3933,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p2_sp_1_1 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id="456B-1",
             state_code=_STATE_CODE_UPPER,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_period_supervision_type_raw_text="C2",
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
@@ -3963,7 +3961,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p2_sp_1_2 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id="456B-2",
             state_code=_STATE_CODE_UPPER,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
             supervision_period_supervision_type_raw_text="04,C2",
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -3985,7 +3982,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p2_sp_2_1 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id="456B-3",
             state_code=_STATE_CODE_UPPER,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_period_supervision_type_raw_text="04",
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -4031,7 +4027,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p5_sp_1_1 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id="789C-1",
             state_code=_STATE_CODE_UPPER,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_period_supervision_type_raw_text="05",
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -4059,7 +4054,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p5_sp_2_1 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id="789C-2",
             state_code=_STATE_CODE_UPPER,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_period_supervision_type_raw_text="05",
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -4086,7 +4080,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p5_sp_3_1 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id="789C-3",
             state_code=_STATE_CODE_UPPER,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_period_supervision_type_raw_text="04",
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -4129,7 +4122,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p4_sp_1_1 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id="345E-1",
             state_code=_STATE_CODE_UPPER,
-            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_period_supervision_type_raw_text="03",
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
@@ -4304,7 +4296,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p2_sg_placeholder.supervision_sentences.append(p2_ss_placeholder)
         p2_sp_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[p2_ss_placeholder],
             person=person_2,
         )
@@ -4365,7 +4356,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p5_sg_placeholder.supervision_sentences.append(p5_ss_placeholder)
         p5_sp_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[p5_ss_placeholder],
             person=person_5,
         )
@@ -4450,7 +4440,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p4_sg_placeholder_2.supervision_sentences.append(p4_ss_placeholder)
         p4_sp_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[p4_ss_placeholder],
             person=person_4,
         )
@@ -4646,7 +4635,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             person=person_1,
             supervision_sentences=p1_placeholder_sg.supervision_sentences,
             state_code=_STATE_CODE_UPPER,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         p1_placeholder_sv = entities.StateSupervisionViolation.new_with_defaults(
             person=person_1,
@@ -4698,7 +4686,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             person=person_2,
             supervision_sentences=p2_placeholder_sg.supervision_sentences,
             state_code=_STATE_CODE_UPPER,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         p2_placeholder_sv = entities.StateSupervisionViolation.new_with_defaults(
             person=person_2,
@@ -4752,7 +4739,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             person=person_5,
             supervision_sentences=p5_placeholder_sg.supervision_sentences,
             state_code=_STATE_CODE_UPPER,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         p5_placeholder_sv = entities.StateSupervisionViolation.new_with_defaults(
             person=person_5,
@@ -4804,7 +4790,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             person=person_4,
             supervision_sentences=p4_placeholder_sg.supervision_sentences,
             state_code=_STATE_CODE_UPPER,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         p4_placeholder_sv = entities.StateSupervisionViolation.new_with_defaults(
             person=person_4,
@@ -4869,7 +4854,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                 person=person_2,
                 supervision_sentences=[p2_placeholder_ss_for_contacts],
                 state_code=_STATE_CODE_UPPER,
-                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             )
         )
 
@@ -4970,7 +4954,6 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             person=person_4,
             supervision_sentences=person_4.sentence_groups[3].supervision_sentences,
             state_code="US_PA",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         p4_placeholder_sv.supervision_periods = [new_placeholder_sp]
         new_placeholder_sp.supervision_violation_entries.append(p4_placeholder_sv)

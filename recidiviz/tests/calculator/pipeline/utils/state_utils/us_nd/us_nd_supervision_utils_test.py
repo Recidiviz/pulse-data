@@ -38,7 +38,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
@@ -173,7 +172,6 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 external_id="sp1",
-                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
                 state_code="US_XX",
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 5, 19),
@@ -210,7 +208,6 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 external_id="sp1",
-                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
                 state_code="US_XX",
                 start_date=date(2018, 2, 20),
                 termination_date=date(2018, 2, 22),
@@ -222,7 +219,6 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 external_id="sp1",
-                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
                 state_code="US_XX",
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 5, 19),
@@ -263,7 +259,6 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 external_id="sp1",
-                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
                 state_code="US_XX",
                 start_date=date(2018, 2, 20),
                 termination_date=date(2018, 2, 22),
@@ -275,7 +270,6 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 external_id="sp1",
-                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
                 state_code="US_XX",
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 5, 19),
@@ -316,7 +310,6 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 external_id="sp1",
-                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
                 state_code="US_XX",
                 start_date=date(2018, 2, 20),
                 termination_date=date(2018, 2, 22),
@@ -328,7 +321,6 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 external_id="sp1",
-                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
                 state_code="US_XX",
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 5, 19),
@@ -369,7 +361,6 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 external_id="sp1",
-                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
                 state_code="US_XX",
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 5, 19),
@@ -409,7 +400,6 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 external_id="sp1",
-                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
                 state_code="US_XX",
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 5, 19),
@@ -449,7 +439,6 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 external_id="sp1",
-                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
                 state_code="US_XX",
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 5, 19),
@@ -489,7 +478,6 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 external_id="sp1",
-                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
                 state_code="US_XX",
                 supervising_officer="AGENTX",
                 start_date=date(2018, 2, 20),
@@ -502,7 +490,6 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 external_id="sp1",
-                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
                 state_code="US_XX",
                 supervising_officer="AGENTY",
                 start_date=date(2018, 3, 5),
@@ -544,7 +531,6 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 external_id="sp1",
-                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
                 state_code="US_XX",
                 supervising_officer="AGENTX",
                 start_date=date(2018, 2, 20),
@@ -557,7 +543,6 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 external_id="sp1",
-                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
                 state_code="US_XX",
                 supervising_officer="AGENTY",
                 start_date=date(2018, 3, 5),
@@ -599,7 +584,6 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 external_id="sp1",
-                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
                 state_code="US_XX",
                 supervising_officer="AGENTX",
                 start_date=date(2018, 2, 20),
@@ -612,7 +596,6 @@ class TestUsNdInferSupervisionPeriodAdmission(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 external_id="sp1",
-                status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
                 state_code="US_XX",
                 supervising_officer="AGENTY",
                 start_date=date(2018, 3, 5),

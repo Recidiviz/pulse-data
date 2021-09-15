@@ -225,9 +225,6 @@ state_supervision_period_admission_reason_return_from_suspension = (
     "RETURN_FROM_SUSPENSION"
 )
 
-state_supervision_period_status_terminated = "TERMINATED"
-state_supervision_period_status_under_supervision = "UNDER_SUPERVISION"
-
 state_supervision_period_supervision_level_minimum = "MINIMUM"
 state_supervision_period_supervision_level_medium = "MEDIUM"
 state_supervision_period_supervision_level_high = "HIGH"

@@ -62,7 +62,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
@@ -148,7 +147,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
     def test_get_commitment_from_supervision_details(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -193,7 +191,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
     def test_get_commitment_from_supervision_details_us_nd(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -273,7 +270,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=_DEFAULT_SUPERVISION_PERIOD_ID,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             case_type_entries=[
                 StateSupervisionCaseTypeEntry.new_with_defaults(
                     state_code=state_code, case_type=StateSupervisionCaseType.GENERAL
@@ -361,7 +357,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             start_date=date(2010, 12, 1),
             termination_date=incarceration_period.admission_date,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_period_while_in_prison = StateSupervisionPeriod.new_with_defaults(
@@ -369,7 +364,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
             state_code="US_XX",
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             start_date=incarceration_period.admission_date,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         commitment_details = self._test_get_commitment_from_supervision_details(

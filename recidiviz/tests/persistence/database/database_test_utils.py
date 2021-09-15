@@ -33,9 +33,7 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactStatus,
 )
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
-)
+
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -179,7 +177,6 @@ def generate_test_supervision_period(
 ) -> state_schema.StateSupervisionPeriod:
     instance = state_schema.StateSupervisionPeriod(
         supervision_period_id=4444,
-        status=StateSupervisionPeriodStatus.EXTERNAL_UNKNOWN.value,
         state_code="US_XX",
         person_id=person_id,
         case_type_entries=case_types,

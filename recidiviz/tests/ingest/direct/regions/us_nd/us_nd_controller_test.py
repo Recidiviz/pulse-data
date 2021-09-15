@@ -67,7 +67,6 @@ from recidiviz.common.constants.state.state_supervision_contact import (
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
@@ -3487,7 +3486,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         person_1_supervision_period_placeholder = (
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE,
-                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                 supervision_sentences=[person_1_supervision_sentence_placeholder],
                 person=person_1,
             )
@@ -3563,7 +3561,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         person_2_supervision_period_placeholder = (
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE,
-                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                 supervision_sentences=[person_2_supervision_sentence_placeholder],
                 person=person_2,
             )
@@ -3642,7 +3639,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         person_6_supervision_period_placeholder = (
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE,
-                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                 supervision_sentences=[person_6_supervision_sentence_placeholder],
                 person=person_6,
             )
@@ -3717,7 +3713,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         person_7_supervision_period_placeholder = (
             entities.StateSupervisionPeriod.new_with_defaults(
                 state_code=_STATE_CODE,
-                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                 supervision_sentences=[person_7_supervision_sentence_placeholder],
                 person=person_7,
             )
@@ -3815,7 +3810,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             supervising_officer=agent_63,
             supervision_type=StateSupervisionType.PRE_CONFINEMENT,
             supervision_type_raw_text="PRE-TRIAL",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code=_STATE_CODE,
             county_code="US_ND_CASS",
             supervision_site="4",
@@ -3849,7 +3843,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             supervision_type_raw_text="PAROLE",
             supervision_level=StateSupervisionLevel.EXTERNAL_UNKNOWN,
             supervision_level_raw_text="5",
-            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             state_code=_STATE_CODE,
             county_code="US_ND_CASS",
             supervision_site="4",
@@ -3927,7 +3920,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             termination_reason_raw_text="9",
             supervision_type=StateSupervisionType.PAROLE,
             supervision_type_raw_text="PAROLE",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code=_STATE_CODE,
             county_code="INVALID",
             supervision_site="4",
@@ -4025,7 +4017,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             termination_date=datetime.date(year=2018, month=2, day=27),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
             termination_reason_raw_text="9",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code=_STATE_CODE,
             county_code="US_ND_GRIGGS",
             supervision_site="2",
@@ -4120,7 +4111,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             supervision_type_raw_text="SUSPENDED",
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
             termination_reason_raw_text="9",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code=_STATE_CODE,
             county_code="US_ND_GRIGGS",
             supervision_site="2",
@@ -4589,7 +4579,6 @@ class TestUsNdController(BaseDirectIngestControllerTests):
         supervision_period_1231 = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             person=person_7,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         person_7.supervising_officer.full_name = '{"full_name": "FIRSTNAME LASTNAME"}'
