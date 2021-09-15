@@ -1362,6 +1362,7 @@ class _StateBondSharedColumns(_ReferencesStatePersonSharedColumns):
     bond_agent = Column(String(255), comment="DEPRECATED. See #2891.")
 
 
+# TODO(#9200): DEPRECATED - DO NOT ADD NEW USAGES
 class StateBond(StateBase, _StateBondSharedColumns):
     """Represents a StateBond in the SQL schema"""
 
@@ -1381,6 +1382,7 @@ class StateBond(StateBase, _StateBondSharedColumns):
     person = relationship("StatePerson", uselist=False)
 
 
+# TODO(#9200): DEPRECATED - DO NOT ADD NEW USAGES
 class StateBondHistory(StateBase, _StateBondSharedColumns, HistoryTableSharedColumns):
     """Represents the historical state of a StateBond"""
 
@@ -2287,6 +2289,7 @@ class _StateFineSharedColumns(
     fine_dollars = Column(Integer, comment="The amount of the fine, in U.S. Dollars.")
 
 
+# TODO(#9199): DEPRECATED - DO NOT ADD NEW USAGES
 class StateFine(StateBase, _StateFineSharedColumns):
     """Represents a StateFine in the SQL schema"""
 
@@ -2320,6 +2323,7 @@ class StateFine(StateBase, _StateFineSharedColumns):
     )
 
 
+# TODO(#9199): DEPRECATED - DO NOT ADD NEW USAGES
 class StateFineHistory(StateBase, _StateFineSharedColumns, HistoryTableSharedColumns):
     """Represents the historical state of a StateFine"""
 

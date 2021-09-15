@@ -38,7 +38,6 @@ PLURALS = {
     "state_sentence_group": "state_sentence_groups",
     "state_supervision_sentence": "state_supervision_sentences",
     "state_incarceration_sentence": "state_incarceration_sentences",
-    "state_fine": "state_fines",
     "state_supervision_period": "state_supervision_periods",
     "state_incarceration_period": "state_incarceration_periods",
     "state_charge": "state_charges",
@@ -867,7 +866,6 @@ class StateSentenceGroup(IngestObject):
         is_life=None,
         state_supervision_sentences=None,
         state_incarceration_sentences=None,
-        state_fines=None,
     ):
         self.state_sentence_group_id: Optional[str] = state_sentence_group_id
         self.status: Optional[str] = status
@@ -884,10 +882,9 @@ class StateSentenceGroup(IngestObject):
         self.state_incarceration_sentences: List[StateIncarcerationSentence] = (
             state_incarceration_sentences or []
         )
-        self.state_fines: List[StateFine] = state_fines or []
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, "state_fines", name, value)
+        restricted_setattr(self, "state_incarceration_sentences", name, value)
 
     def create_state_supervision_sentence(self, **kwargs) -> "StateSupervisionSentence":
         supervision_sentence = StateSupervisionSentence(**kwargs)
@@ -900,11 +897,6 @@ class StateSentenceGroup(IngestObject):
         incarceration_sentence = StateIncarcerationSentence(**kwargs)
         self.state_incarceration_sentences.append(incarceration_sentence)
         return incarceration_sentence
-
-    def create_state_fine(self, **kwargs) -> "StateFine":
-        fine = StateFine(**kwargs)
-        self.state_fines.append(fine)
-        return fine
 
     def get_state_supervision_sentence_by_id(
         self, supervision_sentence_id
@@ -939,8 +931,6 @@ class StateSentenceGroup(IngestObject):
             ins.prune() for ins in self.state_incarceration_sentences if ins
         ]
 
-        self.state_fines = [fine.prune() for fine in self.state_fines if fine]
-
         return self
 
     def sort(self):
@@ -951,8 +941,6 @@ class StateSentenceGroup(IngestObject):
         for incarceration_sentence in self.state_incarceration_sentences:
             incarceration_sentence.sort()
         self.state_incarceration_sentences.sort()
-
-        self.state_fines.sort()
 
 
 class StateSupervisionSentence(IngestObject):
@@ -1243,44 +1231,6 @@ class StateIncarcerationSentence(IngestObject):
         self.state_supervision_periods.sort()
 
 
-class StateFine(IngestObject):
-    """Class for information about a fine associated with a sentence. Referenced from SentenceGroup."""
-
-    def __init__(
-        self,
-        state_fine_id=None,
-        status=None,
-        date_paid=None,
-        state_code=None,
-        county_code=None,
-        fine_dollars=None,
-        state_charges=None,
-    ):
-        self.state_fine_id: Optional[str] = state_fine_id
-        self.status: Optional[str] = status
-        self.date_paid: Optional[str] = date_paid
-        self.state_code: Optional[str] = state_code
-        self.county_code: Optional[str] = county_code
-        self.fine_dollars: Optional[str] = fine_dollars
-
-        self.state_charges: List[StateCharge] = state_charges or []
-
-    def __setattr__(self, name, value):
-        restricted_setattr(self, "state_charges", name, value)
-
-    def create_state_charge(self, **kwargs) -> "StateCharge":
-        charge = StateCharge(**kwargs)
-        self.state_charges.append(charge)
-        return charge
-
-    def prune(self) -> "StateFine":
-        self.state_charges = [sc.prune() for sc in self.state_charges if sc]
-        return self
-
-    def sort(self):
-        self.state_charges.sort()
-
-
 class StateCharge(IngestObject):
     """Class for information about a charge. Referenced from IncarcerationSentence, SupervisionSentence, and Fine."""
 
@@ -1306,7 +1256,6 @@ class StateCharge(IngestObject):
         is_controlling=None,
         charging_entity=None,
         state_court_case=None,
-        state_bond=None,
     ):
         self.state_charge_id: Optional[str] = state_charge_id
         self.status: Optional[str] = status
@@ -1329,20 +1278,14 @@ class StateCharge(IngestObject):
         self.charging_entity: Optional[str] = charging_entity
 
         self.state_court_case: Optional[StateCourtCase] = state_court_case
-        self.state_bond: Optional[StateBond] = state_bond
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, "state_bond", name, value)
+        restricted_setattr(self, "state_court_case", name, value)
 
     def create_state_court_case(self, **kwargs) -> "StateCourtCase":
         court_case = StateCourtCase(**kwargs)
         self.state_court_case = court_case
         return self.state_court_case
-
-    def create_state_bond(self, **kwargs) -> "StateBond":
-        bond = StateBond(**kwargs)
-        self.state_bond = bond
-        return self.state_bond
 
     def get_state_court_case_by_id(self, court_case_id) -> Optional["StateCourtCase"]:
         if (
@@ -1355,8 +1298,6 @@ class StateCharge(IngestObject):
     def prune(self) -> "StateCharge":
         if not self.state_court_case:
             self.state_court_case = None
-        if not self.state_bond:
-            self.state_bond = None
         return self
 
 
@@ -1399,35 +1340,6 @@ class StateCourtCase(IngestObject):
 
     def __setattr__(self, name, value):
         restricted_setattr(self, "judge", name, value)
-
-
-class StateBond(IngestObject):
-    """Class for information about a bond.
-    Referenced from StateCharge.
-    """
-
-    def __init__(
-        self,
-        state_bond_id=None,
-        status=None,
-        bond_type=None,
-        date_paid=None,
-        state_code=None,
-        county_code=None,
-        amount=None,
-        bond_agent=None,
-    ):
-        self.state_bond_id: Optional[str] = state_bond_id
-        self.status: Optional[str] = status
-        self.bond_type: Optional[str] = bond_type
-        self.date_paid: Optional[str] = date_paid
-        self.state_code: Optional[str] = state_code
-        self.county_code: Optional[str] = county_code
-        self.amount: Optional[str] = amount
-        self.bond_agent: Optional[str] = bond_agent
-
-    def __setattr__(self, name, value):
-        restricted_setattr(self, "bond_agent", name, value)
 
 
 class StateIncarcerationPeriod(IngestObject):

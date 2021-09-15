@@ -63,10 +63,6 @@ _HIERARCHY_MAP: Dict[
         "state_person",
         "state_sentence_group",
     ),
-    "state_fine": (
-        "state_person",
-        "state_sentence_group",
-    ),
     "state_early_discharge": (
         "state_person",
         "state_sentence_group",
