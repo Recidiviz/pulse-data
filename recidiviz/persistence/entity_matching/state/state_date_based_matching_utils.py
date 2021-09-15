@@ -20,9 +20,7 @@ from typing import List, Optional, Type
 
 from recidiviz.common.common_utils import date_spans_overlap_exclusive
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
-)
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
@@ -243,7 +241,6 @@ def move_violations_onto_supervision_periods_for_sentence(
                     schema.StateSupervisionPeriod,
                     person=person,
                     state_code=sentence.state_code,
-                    status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
                 )
                 placeholder_sp.supervision_violation_entries = unmatched_svs
 
@@ -293,7 +290,6 @@ def _move_events_onto_supervision_periods_for_person(
             schema.StateSupervisionPeriod,
             person=person,
             state_code=state_code,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
         )
         placeholder_sp.set_field_from_list(event_field_name, unmatched_events)
 

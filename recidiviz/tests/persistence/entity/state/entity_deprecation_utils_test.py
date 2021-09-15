@@ -21,9 +21,7 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodStatus,
 )
-from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
-)
+
 from recidiviz.persistence.entity.state import entities, entity_deprecation_utils
 
 
@@ -148,7 +146,6 @@ class TestValidateDeprecatedEntityForStates(unittest.TestCase):
         the given state."""
         sp = entities.StateSupervisionPeriod.new_with_defaults(
             state_code="US_ZZ",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         # Assert no error raised

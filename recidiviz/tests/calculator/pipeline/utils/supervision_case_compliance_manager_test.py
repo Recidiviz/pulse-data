@@ -50,7 +50,6 @@ from recidiviz.common.constants.state.state_supervision_contact import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
@@ -86,7 +85,6 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         case_type = StateSupervisionCaseType.GENERAL
@@ -125,7 +123,6 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         case_type = StateSupervisionCaseType.GENERAL
@@ -161,7 +158,6 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         case_type = StateSupervisionCaseType.GENERAL
@@ -206,7 +202,6 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         case_type = StateSupervisionCaseType.GENERAL
@@ -262,7 +257,6 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         case_type = StateSupervisionCaseType.GENERAL
@@ -318,7 +312,6 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         case_type = StateSupervisionCaseType.GENERAL
@@ -373,7 +366,6 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         case_type = StateSupervisionCaseType.GENERAL
@@ -445,7 +437,6 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         case_type = StateSupervisionCaseType.GENERAL
@@ -516,7 +507,6 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MEDIUM",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         case_type = StateSupervisionCaseType.GENERAL
@@ -559,7 +549,6 @@ class TestCaseCompliance(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=None,  # Must have a supervision level to be evaluated
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessments = [
@@ -625,7 +614,6 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         case_type = StateSupervisionCaseType.GENERAL
@@ -673,7 +661,6 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         case_type = StateSupervisionCaseType.GENERAL
@@ -736,7 +723,6 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         case_type = StateSupervisionCaseType.GENERAL
@@ -799,7 +785,6 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         case_type = StateSupervisionCaseType.GENERAL
@@ -864,7 +849,6 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -879,7 +863,6 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         case_type = StateSupervisionCaseType.GENERAL
@@ -991,7 +974,6 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -1006,7 +988,6 @@ class TestCaseCompliance(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text="MODERATE",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         case_type = StateSupervisionCaseType.GENERAL
@@ -1120,7 +1101,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -1158,7 +1138,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         start_of_supervision = start_date
@@ -1189,7 +1168,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         # This person started on probation more than NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS ago, and they do not have
@@ -1224,7 +1202,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -1267,7 +1244,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -1309,7 +1285,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -1354,7 +1329,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
             supervision_level_raw_text="LEVEL 1",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -1399,7 +1373,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
             supervision_level_raw_text="LOW",
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -1443,7 +1416,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -1486,7 +1458,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -1525,7 +1496,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         start_of_supervision = start_date
@@ -1556,7 +1526,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         # This person started on probation more than SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION
@@ -1591,7 +1560,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         # This person started on parole more than SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE ago,
@@ -1626,7 +1594,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -1669,7 +1636,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_date=start_date,
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -1712,7 +1678,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             start_date=date(2018, 3, 5),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -1756,7 +1721,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -1800,7 +1764,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -1844,7 +1807,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         # This person started on probation more than SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION
@@ -1880,7 +1842,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         # This person started on probation more than LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE
@@ -1915,7 +1876,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -1955,7 +1915,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -1995,7 +1954,6 @@ class TestNumDaysAssessmentOverdue(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         assessment = StateAssessment.new_with_defaults(

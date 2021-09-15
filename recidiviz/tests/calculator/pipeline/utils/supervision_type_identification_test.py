@@ -37,7 +37,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
@@ -58,7 +57,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -106,7 +104,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -146,7 +143,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -184,7 +180,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -231,7 +226,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -270,7 +264,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -310,7 +303,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -338,7 +330,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -387,7 +378,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -427,7 +417,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -466,7 +455,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -505,7 +493,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -541,7 +528,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -581,7 +567,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -620,7 +605,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -658,7 +642,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -696,7 +679,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -734,7 +716,6 @@ class TestGetMonthSupervisionType(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id="sp1",
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -817,7 +798,6 @@ class TestGetPreIncarcerationSupervisionType(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             supervision_period_id=1,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
         valid_incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code="US_XX",

@@ -47,7 +47,6 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
-    StateSupervisionPeriodStatus,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -596,7 +595,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             supervision_periods=[
                 StateSupervisionPeriod.new_with_defaults(
                     external_id="S_PERIOD_ID3",
-                    status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                     state_code="US_XX",
                     supervision_type=StateSupervisionType.PROBATION,
                     supervision_type_raw_text="PROBATION",
@@ -678,7 +676,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                 supervision_periods=[
                                     StateSupervisionPeriod.new_with_defaults(
                                         external_id="S_PERIOD_ID1",
-                                        status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                                         supervision_level=StateSupervisionLevel.MEDIUM,
                                         supervision_level_raw_text="MED",
                                         state_code="US_XX",
@@ -709,7 +706,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                                 supervision_periods=[
                                     StateSupervisionPeriod.new_with_defaults(
                                         external_id="S_PERIOD_ID2",
-                                        status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                                         state_code="US_XX",
                                         supervision_type=StateSupervisionType.PAROLE,
                                         supervision_type_raw_text="PAROLE",

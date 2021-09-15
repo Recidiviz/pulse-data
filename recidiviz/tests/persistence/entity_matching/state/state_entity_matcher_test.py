@@ -39,7 +39,6 @@ from recidiviz.common.constants.state.state_parole_decision import (
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodStatus,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -1808,7 +1807,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         db_supervision_period = generate_supervision_period(
             person=db_person,
             external_id=_EXTERNAL_ID,
-            status=StateSupervisionPeriodStatus.EXTERNAL_UNKNOWN.value,
             state_code=_STATE_CODE,
             county_code="county_code",
             supervision_violation_entries=[db_supervision_violation],
@@ -4458,7 +4456,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             supervision_violation_responses=[supervision_violation_response],
         )
         supervision_period_is = StateSupervisionPeriod.new_with_defaults(
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             state_code=_STATE_CODE,
             supervision_violation_entries=[supervision_violation],
         )

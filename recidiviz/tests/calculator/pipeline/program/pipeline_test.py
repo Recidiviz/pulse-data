@@ -49,7 +49,6 @@ from recidiviz.common.constants.state.state_program_assignment import (
 )
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.database.schema.state import schema
@@ -183,7 +182,6 @@ class TestProgramPipeline(unittest.TestCase):
             termination_date=date(2016, 12, 29),
             supervision_type=StateSupervisionType.PROBATION,
             person_id=fake_person_id,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         program_assignment_data = [normalized_database_base_dict(program_assignment)]
@@ -370,7 +368,6 @@ class TestProgramPipeline(unittest.TestCase):
             termination_date=date(2016, 12, 29),
             supervision_type=StateSupervisionType.PROBATION,
             person_id=fake_person_id,
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         program_assignment_data = [normalized_database_base_dict(program_assignment)]
@@ -491,7 +488,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 2, 19),
@@ -586,7 +582,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_ND",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 3, 1),
@@ -671,7 +666,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
@@ -729,7 +723,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
-            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code="US_XX",
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),

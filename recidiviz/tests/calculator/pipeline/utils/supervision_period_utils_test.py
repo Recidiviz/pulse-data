@@ -44,7 +44,6 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.persistence.entity.state.entities import (
@@ -71,7 +70,6 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
                     state_code="US_XX", case_type=StateSupervisionCaseType.SEX_OFFENSE
                 ),
             ],
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         most_severe_case_type = identify_most_severe_case_type(supervision_period)
@@ -87,7 +85,6 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
                         state_code="US_XX", case_type=case_type
                     ),
                 ],
-                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
             )
 
             most_severe_case_type = identify_most_severe_case_type(supervision_period)
@@ -98,7 +95,6 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code="US_XX",
             case_type_entries=[],
-            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         most_severe_case_type = identify_most_severe_case_type(supervision_period)
@@ -109,7 +105,6 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
 DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE: StateSupervisionPeriod = StateSupervisionPeriod.new_with_defaults(
     supervision_period_id=111,
     external_id="sp1",
-    status=StateSupervisionPeriodStatus.TERMINATED,
     state_code="US_XX",
     start_date=date(2017, 3, 5),
     termination_date=date(2017, 5, 9),

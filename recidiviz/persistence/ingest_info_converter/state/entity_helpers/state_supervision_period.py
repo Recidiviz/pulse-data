@@ -21,7 +21,6 @@ from recidiviz.common.constants.state.state_supervision import StateSupervisionT
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodAdmissionReason,
-    StateSupervisionPeriodStatus,
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
@@ -77,15 +76,6 @@ def copy_fields_to_builder(
     )
 
     # enum values
-    # Status default based on presence of admission/release dates
-    if new.termination_date:
-        status_default = StateSupervisionPeriodStatus.TERMINATED
-    elif new.start_date and not new.termination_date:
-        status_default = StateSupervisionPeriodStatus.UNDER_SUPERVISION
-    else:
-        status_default = StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
-    new.status = status_default
-
     new.supervision_type = proto_enum_mapper.get(StateSupervisionType)
     new.supervision_type_raw_text = fn(normalize, "supervision_type", proto)
     new.supervision_period_supervision_type = proto_enum_mapper.get(

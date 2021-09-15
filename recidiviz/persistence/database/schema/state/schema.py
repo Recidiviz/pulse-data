@@ -314,14 +314,6 @@ state_incarceration_period_release_reason = Enum(
     name="state_incarceration_period_release_reason",
 )
 
-state_supervision_period_status = Enum(
-    enum_strings.external_unknown,
-    state_enum_strings.state_supervision_period_status_terminated,
-    state_enum_strings.state_supervision_period_status_under_supervision,
-    enum_strings.present_without_info,
-    name="state_supervision_period_status",
-)
-
 state_supervision_period_admission_reason = Enum(
     enum_strings.external_unknown,
     enum_strings.internal_unknown,
@@ -2609,14 +2601,6 @@ class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
         comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(
             object_name="StateSupervisionPeriod"
         ),
-    )
-    status = Column(
-        state_supervision_period_status,
-        nullable=False,
-        comment="The current status of this period.",
-    )
-    status_raw_text = Column(
-        String(255), comment="The raw text value of the current status."
     )
     supervision_type = Column(
         state_supervision_type,
