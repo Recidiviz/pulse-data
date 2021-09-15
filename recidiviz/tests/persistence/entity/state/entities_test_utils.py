@@ -20,7 +20,6 @@ import datetime
 from collections import defaultdict
 from typing import Dict, List, Sequence, Type
 
-from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Ethnicity, Race
 from recidiviz.common.constants.state.external_id_types import US_ND_ELITE
@@ -360,18 +359,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         judge=judge,
     )
 
-    bond = entities.StateBond.new_with_defaults(
-        external_id="BONDID1456",
-        status=BondStatus.POSTED,
-        status_raw_text="POSTED",
-        bond_type=BondType.CASH,
-        bond_type_raw_text="CASH",
-        date_paid=datetime.date(year=2015, month=7, day=1),
-        state_code="US_XX",
-        amount_dollars=45,
-        bond_agent="CA BAILBONDSMEN",
-    )
-
     charge = entities.StateCharge.new_with_defaults(
         external_id="CHARGE1_EXTERNAL_ID",
         status=ChargeStatus.CONVICTED,
@@ -388,7 +375,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         counts=1,
         charge_notes=None,
         court_case=court_case,
-        bond=None,
     )
 
     charge2 = entities.StateCharge.new_with_defaults(
@@ -407,7 +393,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         counts=1,
         charge_notes=None,
         court_case=court_case,
-        bond=None,
     )
 
     charge3 = entities.StateCharge.new_with_defaults(
@@ -426,7 +411,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         counts=1,
         charge_notes=None,
         court_case=court_case,
-        bond=None,
     )
 
     supervision_sentence.charges = [charge, charge2, charge3]
@@ -681,8 +665,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
         court_case.charges = [charge, charge2, charge3]
         court_case.person = person
-        bond.charges = [charge, charge2, charge3]
-        bond.person = person
 
         incarceration_period_children: Sequence[Entity] = (
             *incarceration_period.parole_decisions,

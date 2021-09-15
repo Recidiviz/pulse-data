@@ -62,8 +62,6 @@ from recidiviz.persistence.database.schema.shared_enums import (
     race,
     ethnicity,
     residency_status,
-    bond_status,
-    bond_type,
     charge_status,
 )
 
@@ -169,6 +167,29 @@ degree = Enum(
     county_enum_strings.degree_second,
     county_enum_strings.degree_third,
     name="degree",
+)
+
+# Bond
+
+bond_type = Enum(
+    enum_strings.bond_type_cash,
+    enum_strings.external_unknown,
+    enum_strings.bond_type_denied,
+    enum_strings.bond_type_not_required,
+    enum_strings.bond_type_partial_cash,
+    enum_strings.bond_type_secured,
+    enum_strings.bond_type_unsecured,
+    name="bond_type",
+)
+
+bond_status = Enum(
+    enum_strings.bond_status_pending,
+    enum_strings.bond_status_posted,
+    enum_strings.present_without_info,
+    enum_strings.removed_without_info,
+    enum_strings.bond_status_revoked,
+    enum_strings.bond_status_set,
+    name="bond_status",
 )
 
 

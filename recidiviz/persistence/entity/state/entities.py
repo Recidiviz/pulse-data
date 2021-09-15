@@ -27,7 +27,6 @@ import attr
 
 from recidiviz.common import attr_validators
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
-from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import (
     Ethnicity,
@@ -312,62 +311,6 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     # encounters with the justice system that don't result in sentences.
 
 
-# TODO(#9200): DEPRECATED - DO NOT ADD NEW USAGES
-@attr.s(eq=False, kw_only=True)
-class StateBond(ExternalIdEntity, BuildableAttr, DefaultableAttr):
-    """Models a StateBond associated with a particular StateCharge."""
-
-    # State Code
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-
-    # Status
-    status: BondStatus = attr.ib(
-        validator=attr.validators.instance_of(BondStatus)
-    )  # non-nullable
-    status_raw_text: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
-    # Type
-    bond_type: Optional[BondType] = attr.ib(
-        default=None, validator=attr_validators.is_opt(BondType)
-    )
-    bond_type_raw_text: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
-    # Attributes
-    #   - When
-    date_paid: Optional[datetime.date] = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
-    )
-
-    #   - Where
-    county_code: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
-    #   - What
-    amount_dollars: Optional[int] = attr.ib(
-        default=None, validator=attr_validators.is_opt_int
-    )
-
-    #   - Who
-    bond_agent: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
-    bond_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
-
-    # Cross-entity relationships
-    person: Optional["StatePerson"] = attr.ib(default=None)
-    charges: List["StateCharge"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
-
-
 @attr.s(eq=False, kw_only=True)
 class StateCourtCase(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a StateCourtCase associated with some set of StateCharges"""
@@ -522,7 +465,6 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
     court_case: Optional["StateCourtCase"] = attr.ib(default=None)
-    bond: Optional["StateBond"] = attr.ib(default=None)
 
     incarceration_sentences: List["StateIncarcerationSentence"] = attr.ib(
         factory=list, validator=attr_validators.is_list

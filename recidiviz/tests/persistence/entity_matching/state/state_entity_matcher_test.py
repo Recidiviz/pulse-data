@@ -22,7 +22,6 @@ from typing import Any, List, Tuple
 import attr
 from mock import patch
 
-from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Ethnicity, Gender, Race
 from recidiviz.common.constants.state.state_agent import StateAgentType
@@ -84,7 +83,6 @@ from recidiviz.tests.persistence.database.schema.state.schema_test_utils import 
     generate_agent,
     generate_alias,
     generate_assessment,
-    generate_bond,
     generate_charge,
     generate_court_case,
     generate_ethnicity,
@@ -1463,15 +1461,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             county_code="county_code",
         )
         entity_court_case = self.to_entity(db_court_case)
-        db_bond = generate_bond(
-            person=db_person,
-            bond_id=_ID,
-            state_code=_STATE_CODE,
-            external_id=_EXTERNAL_ID,
-            status=BondStatus.PRESENT_WITHOUT_INFO.value,
-            bond_agent="agent",
-        )
-        entity_bond = self.to_entity(db_bond)
         db_charge_1 = generate_charge(
             person=db_person,
             charge_id=_ID,
@@ -1479,7 +1468,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             external_id=_EXTERNAL_ID,
             description="charge_1",
             status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
-            bond=db_bond,
         )
         entity_charge_1 = self.to_entity(db_charge_1)
         db_charge_2 = generate_charge(
@@ -1540,12 +1528,10 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             state_code=_STATE_CODE,
             county_code="county_code",
         )
-        bond = attr.evolve(entity_bond, bond_id=None, bond_agent="agent-updated")
         charge_1 = attr.evolve(
             entity_charge_1,
             charge_id=None,
             description="charge_1-updated",
-            bond=bond,
             court_case=new_court_case,
         )
         charge_2 = attr.evolve(
@@ -1578,12 +1564,10 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         expected_unchanged_court_case = attr.evolve(entity_court_case)
         expected_new_court_case = attr.evolve(new_court_case)
-        expected_bond = attr.evolve(bond, bond_id=_ID)
         expected_charge1 = attr.evolve(
             charge_1,
             charge_id=_ID,
             court_case=expected_new_court_case,
-            bond=expected_bond,
         )
         expected_charge2 = attr.evolve(
             charge_2, charge_id=_ID_2, court_case=expected_unchanged_court_case
@@ -1624,14 +1608,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
     def test_matchPersons_noPlaceholders_completeTreeUpdate(self) -> None:
         # Arrange 1 - Match
         db_person = generate_person(full_name=_FULL_NAME, state_code=_STATE_CODE)
-        db_bond = generate_bond(
-            person=db_person,
-            state_code=_STATE_CODE,
-            external_id=_EXTERNAL_ID,
-            status=BondStatus.PRESENT_WITHOUT_INFO.value,
-            bond_agent="agent",
-        )
-        entity_bond = self.to_entity(db_bond)
         db_court_case = generate_court_case(
             person=db_person,
             external_id=_EXTERNAL_ID,
@@ -1645,7 +1621,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             external_id=_EXTERNAL_ID,
             description="charge_1",
             status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
-            bond=db_bond,
             court_case=db_court_case,
         )
         entity_charge_1 = self.to_entity(db_charge_1)
@@ -1655,7 +1630,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             external_id=_EXTERNAL_ID_2,
             description="charge_2",
             status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
-            bond=db_bond,
             court_case=db_court_case,
         )
         entity_charge_2 = self.to_entity(db_charge_2)
@@ -1843,7 +1817,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         self._commit_to_db(db_person)
 
-        bond = attr.evolve(entity_bond, bond_id=None, bond_agent="agent-updated")
         court_case = attr.evolve(
             entity_court_case,
             court_case_id=None,
@@ -1853,14 +1826,12 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             entity_charge_1,
             charge_id=None,
             description="charge_1-updated",
-            bond=bond,
             court_case=court_case,
         )
         charge_2 = attr.evolve(
             entity_charge_2,
             charge_id=None,
             description="charge_2-updated",
-            bond=bond,
             court_case=court_case,
         )
         charge_3 = attr.evolve(
@@ -1993,15 +1964,13 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             assessments=[assessment, assessment_2],
         )
 
-        expected_bond = attr.evolve(bond, bond_id=_ID)
         expected_court_case = attr.evolve(court_case, court_case_id=_ID)
         expected_charge_1 = attr.evolve(
-            charge_1, charge_id=_ID, bond=expected_bond, court_case=expected_court_case
+            charge_1, charge_id=_ID, court_case=expected_court_case
         )
         expected_charge_2 = attr.evolve(
             charge_2,
             charge_id=_ID_2,
-            bond=expected_bond,
             court_case=expected_court_case,
         )
         expected_charge_3 = attr.evolve(charge_3, charge_id=_ID_3)
