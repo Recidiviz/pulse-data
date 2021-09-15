@@ -212,7 +212,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             schema.state_incarceration_sentence_supervision_period_association_table.name: [],
             schema.state_supervision_sentence_supervision_period_association_table.name: [],
             schema.state_supervision_period_supervision_violation_association_table.name: [],
-            schema.state_supervision_period_program_assignment_association_table.name: [],
             schema.state_supervision_period_supervision_contact_association_table.name: [],
         }
 

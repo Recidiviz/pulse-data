@@ -250,7 +250,6 @@ class TestSerialization(unittest.TestCase):
         incarceration_period.specialized_purpose_for_incarceration = (
             "SHOCK INCARCERATION"
         )
-        incarceration_period.state_program_assignments = [program_assignment]
         incident = incarceration_period.create_state_incarceration_incident()
         incident.state_incarceration_incident_id = "incident1"
         incident.incident_type = "FISTICUFFS"
@@ -281,7 +280,6 @@ class TestSerialization(unittest.TestCase):
         supervision_period_agent = supervision_period.create_state_agent()
         supervision_period_agent.state_agent_id = "agentPO"
         supervision_period_agent.full_name = "Officer Paroley"
-        supervision_period.state_program_assignments = [program_assignment]
 
         supervision_case_type_entry = (
             supervision_period.create_state_supervision_case_type_entry()
@@ -405,7 +403,6 @@ class TestSerialization(unittest.TestCase):
         supervision_sentence_pb.state_supervision_period_ids.append("sp1")
         supervision_period_pb = expected_proto.state_supervision_periods.add()
         supervision_period_pb.state_supervision_period_id = "sp1"
-        supervision_period_pb.state_program_assignment_ids.append("assignment1")
 
         # An ordering requirement in the proto equality check at the end of this
         # test requires that this agent be added after agent1 and before agentPO
@@ -503,7 +500,6 @@ class TestSerialization(unittest.TestCase):
         incident_pb = expected_proto.state_incarceration_incidents.add()
         incident_pb.state_incarceration_incident_id = "incident1"
         incident_pb.incident_type = "FISTICUFFS"
-        incarceration_period_pb.state_program_assignment_ids.append("assignment1")
 
         incident_pb.responding_officer_id = "agent2"
         incident_agent_pb = expected_proto.state_agents.add()

@@ -256,30 +256,6 @@ def convert_ingest_info_to_proto(
                         proto_decision_agent.state_agent_id
                     )
 
-            for (
-                period_program_assignment
-            ) in incarceration_period.state_program_assignments:
-                proto_period_program_assignment = _populate_proto(
-                    "state_program_assignments",
-                    period_program_assignment,
-                    "state_program_assignment_id",
-                    state_program_assignment_map,
-                )
-                proto_period.state_program_assignment_ids.append(
-                    proto_period_program_assignment.state_program_assignment_id
-                )
-
-                if period_program_assignment.referring_agent:
-                    proto_referring_agent = _populate_proto(
-                        "state_agents",
-                        period_program_assignment.referring_agent,
-                        "state_agent_id",
-                        state_agent_map,
-                    )
-                    proto_period_program_assignment.referring_agent_id = (
-                        proto_referring_agent.state_agent_id
-                    )
-
     def _populate_supervision_period_protos(parent_ingest_object, parent_proto):
         """Populates SupervisionPeriod proto fields for some parent object,
         e.g. SupervisionSentence and IncarcerationSentence, which both
@@ -407,30 +383,6 @@ def convert_ingest_info_to_proto(
                     )
                     proto_contact.contacted_agent_id = (
                         proto_contacted_agent.state_agent_id
-                    )
-
-            for (
-                period_program_assignment
-            ) in supervision_period.state_program_assignments:
-                proto_period_program_assignment = _populate_proto(
-                    "state_program_assignments",
-                    period_program_assignment,
-                    "state_program_assignment_id",
-                    state_program_assignment_map,
-                )
-                proto_period.state_program_assignment_ids.append(
-                    proto_period_program_assignment.state_program_assignment_id
-                )
-
-                if period_program_assignment.referring_agent:
-                    proto_referring_agent = _populate_proto(
-                        "state_agents",
-                        period_program_assignment.referring_agent,
-                        "state_agent_id",
-                        state_agent_map,
-                    )
-                    proto_period_program_assignment.referring_agent_id = (
-                        proto_referring_agent.state_agent_id
                     )
 
     for person in ingest_info_py.people:
@@ -1046,10 +998,6 @@ def convert_proto_to_ingest_info(
             state_supervision_violation_map[proto_id]
             for proto_id in proto_supervision_period.state_supervision_violation_entry_ids
         ]
-        supervision_period.state_program_assignments = [
-            state_program_assignment_map[proto_id]
-            for proto_id in proto_supervision_period.state_program_assignment_ids
-        ]
         supervision_period.state_supervision_case_type_entries = [
             state_supervision_case_type_entry_map[proto_id]
             for proto_id in proto_supervision_period.state_supervision_case_type_entry_ids
@@ -1072,10 +1020,6 @@ def convert_proto_to_ingest_info(
         incarceration_period.state_parole_decisions = [
             state_parole_decision_map[proto_id]
             for proto_id in proto_incarceration_period.state_parole_decision_ids
-        ]
-        incarceration_period.state_program_assignments = [
-            state_program_assignment_map[proto_id]
-            for proto_id in proto_incarceration_period.state_program_assignment_ids
         ]
 
     # Wire child entities to respective incarceration incidents

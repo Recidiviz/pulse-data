@@ -236,6 +236,41 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
     person.assessments = [assessment1, assessment2]
 
+    program_assignment_agent = StateAgent.new_with_defaults(
+        agent_type=StateAgentType.SUPERVISION_OFFICER,
+        state_code="US_XX",
+        full_name='{"full_name": "AGENT PO"}',
+    )
+
+    program_assignment = StateProgramAssignment.new_with_defaults(
+        external_id="program_assignment_external_id_1",
+        state_code="US_XX",
+        participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+        participation_status_raw_text="IN_PROGRESS",
+        referral_date=datetime.date(year=2019, month=2, day=10),
+        start_date=datetime.date(year=2019, month=2, day=11),
+        program_id="program_id",
+        program_location_id="program_location_id",
+        referring_agent=program_assignment_agent,
+    )
+
+    program_assignment2 = StateProgramAssignment.new_with_defaults(
+        external_id="program_assignment_external_id_2",
+        state_code="US_XX",
+        participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
+        participation_status_raw_text="DISCHARGED",
+        referral_date=datetime.date(year=2019, month=2, day=10),
+        start_date=datetime.date(year=2019, month=2, day=11),
+        discharge_date=datetime.date(year=2019, month=2, day=12),
+        program_id="program_id",
+        program_location_id="program_location_id",
+        discharge_reason=StateProgramAssignmentDischargeReason.COMPLETED,
+        discharge_reason_raw_text="COMPLETED",
+        referring_agent=program_assignment_agent,
+    )
+
+    person.program_assignments = [program_assignment, program_assignment2]
+
     sentence_group = entities.StateSentenceGroup.new_with_defaults(
         external_id="BOOK_ID1234",
         status=StateSentenceStatus.SERVING,
@@ -503,25 +538,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
     incarceration_period.parole_decisions = [parole_decision]
 
-    program_assignment_agent = StateAgent.new_with_defaults(
-        agent_type=StateAgentType.SUPERVISION_OFFICER,
-        state_code="US_XX",
-        full_name='{"full_name": "AGENT PO"}',
-    )
-
-    program_assignment = StateProgramAssignment.new_with_defaults(
-        external_id="program_assignment_external_id_1",
-        state_code="US_XX",
-        participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
-        participation_status_raw_text="IN_PROGRESS",
-        referral_date=datetime.date(year=2019, month=2, day=10),
-        start_date=datetime.date(year=2019, month=2, day=11),
-        program_id="program_id",
-        program_location_id="program_location_id",
-        referring_agent=program_assignment_agent,
-    )
-    incarceration_period.program_assignments = [program_assignment]
-
     supervising_officer = entities.StateAgent.new_with_defaults(
         agent_type=StateAgentType.SUPERVISION_OFFICER,
         state_code="US_XX",
@@ -574,22 +590,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
     incarceration_sentence.supervision_periods = [supervision_period]
     supervision_sentence.supervision_periods = [supervision_period]
 
-    program_assignment2 = StateProgramAssignment.new_with_defaults(
-        external_id="program_assignment_external_id_2",
-        state_code="US_XX",
-        participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
-        participation_status_raw_text="DISCHARGED",
-        referral_date=datetime.date(year=2019, month=2, day=10),
-        start_date=datetime.date(year=2019, month=2, day=11),
-        discharge_date=datetime.date(year=2019, month=2, day=12),
-        program_id="program_id",
-        program_location_id="program_location_id",
-        discharge_reason=StateProgramAssignmentDischargeReason.COMPLETED,
-        discharge_reason_raw_text="COMPLETED",
-        referring_agent=program_assignment_agent,
-    )
-    supervision_period.program_assignments = [program_assignment2]
-
     supervision_violation = entities.StateSupervisionViolation.new_with_defaults(
         violation_date=datetime.date(year=2004, month=9, day=1),
         state_code="US_XX",
@@ -628,9 +628,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
     supervision_violation.supervision_violation_responses = [
         supervision_violation_response
     ]
-
-    person.program_assignments.extend(incarceration_period.program_assignments)
-    person.program_assignments.extend(supervision_period.program_assignments)
 
     if set_back_edges:
         person_children: Sequence[Entity] = (
@@ -690,7 +687,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
         incarceration_period_children: Sequence[Entity] = (
             *incarceration_period.parole_decisions,
             *incarceration_period.incarceration_incidents,
-            *incarceration_period.program_assignments,
         )
 
         for child in incarceration_period_children:
@@ -710,7 +706,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
         supervision_period_children: Sequence[Entity] = (
             *supervision_period.supervision_violation_entries,
-            *supervision_period.program_assignments,
             *supervision_period.case_type_entries,
             *supervision_period.supervision_contacts,
         )

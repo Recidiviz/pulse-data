@@ -703,29 +703,6 @@ state_supervision_period_supervision_violation_association_table = Table(
     ),
 )
 
-state_supervision_period_program_assignment_association_table = Table(
-    "state_supervision_period_program_assignment_association",
-    StateBase.metadata,
-    Column(
-        "supervision_period_id",
-        Integer,
-        ForeignKey("state_supervision_period.supervision_period_id"),
-        index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="supervision period"),
-    ),
-    Column(
-        "program_assignment_id",
-        Integer,
-        ForeignKey("state_program_assignment.program_assignment_id"),
-        index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="program assignment"),
-    ),
-    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
-        first_object_name_plural="supervision periods",
-        second_object_name_plural="program assignments",
-    ),
-)
-
 state_supervision_period_supervision_contact_association_table = Table(
     "state_supervision_period_supervision_contact_association",
     StateBase.metadata,
@@ -746,29 +723,6 @@ state_supervision_period_supervision_contact_association_table = Table(
     comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
         first_object_name_plural="supervision periods",
         second_object_name_plural="supervision contacts",
-    ),
-)
-
-state_incarceration_period_program_assignment_association_table = Table(
-    "state_incarceration_period_program_assignment_association",
-    StateBase.metadata,
-    Column(
-        "incarceration_period_id",
-        Integer,
-        ForeignKey("state_incarceration_period.incarceration_period_id"),
-        index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="incarceration period"),
-    ),
-    Column(
-        "program_assignment_id",
-        Integer,
-        ForeignKey("state_program_assignment.program_assignment_id"),
-        index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="program assignment"),
-    ),
-    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
-        first_object_name_plural="incarceration periods",
-        second_object_name_plural="program assignments",
     ),
 )
 
@@ -2546,13 +2500,6 @@ class StateIncarcerationPeriod(StateBase, _StateIncarcerationPeriodSharedColumns
     parole_decisions = relationship(
         "StateParoleDecision", backref="incarceration_period", lazy="selectin"
     )
-    # TODO(#9068): DEPRECATED - DO NOT ADD NEW USAGES
-    program_assignments = relationship(
-        "StateProgramAssignment",
-        secondary=state_incarceration_period_program_assignment_association_table,
-        backref="incarceration_periods",
-        lazy="selectin",
-    )
 
 
 class StateIncarcerationPeriodHistory(
@@ -2737,13 +2684,6 @@ class StateSupervisionPeriod(StateBase, _StateSupervisionPeriodSharedColumns):
     supervision_violation_entries = relationship(
         "StateSupervisionViolation",
         secondary=state_supervision_period_supervision_violation_association_table,
-        backref="supervision_periods",
-        lazy="selectin",
-    )
-    # TODO(#9069): DEPRECATED - DO NOT ADD NEW USAGES
-    program_assignments = relationship(
-        "StateProgramAssignment",
-        secondary=state_supervision_period_program_assignment_association_table,
         backref="supervision_periods",
         lazy="selectin",
     )

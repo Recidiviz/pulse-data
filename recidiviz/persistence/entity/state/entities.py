@@ -1043,10 +1043,6 @@ class StateIncarcerationPeriod(
     parole_decisions: List["StateParoleDecision"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
-    # TODO(#9068): DEPRECATED - DO NOT ADD NEW USAGES
-    program_assignments: List["StateProgramAssignment"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
 
     @property
     def duration(self) -> DateRange:
@@ -1176,10 +1172,6 @@ class StateSupervisionPeriod(
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
     supervising_officer: Optional["StateAgent"] = attr.ib(default=None)
-    # TODO(#9069): DEPRECATED - DO NOT ADD NEW USAGES
-    program_assignments: List["StateProgramAssignment"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
 
     # NOTE: A supervision period might count towards multiple sentences
     incarceration_sentences: List["StateIncarcerationSentence"] = attr.ib(
@@ -1698,12 +1690,6 @@ class StateProgramAssignment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
     referring_agent: Optional["StateAgent"] = attr.ib(default=None)
-    incarceration_periods: List["StateIncarcerationPeriod"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
-    supervision_periods: List["StateSupervisionPeriod"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
 
 
 @attr.s(eq=False, kw_only=True)

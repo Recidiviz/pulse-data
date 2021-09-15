@@ -65,7 +65,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateIncarcerationPeriodStatus,
 )
-
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.calculator.calculator_test_utils import (
@@ -244,7 +243,6 @@ class TestRecidivismPipeline(unittest.TestCase):
             schema.StateFine.__tablename__: [],
             schema.StateIncarcerationIncident.__tablename__: [],
             schema.StateParoleDecision.__tablename__: [],
-            schema.state_incarceration_period_program_assignment_association_table.name: [],
             "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
         }
@@ -465,7 +463,6 @@ class TestRecidivismPipeline(unittest.TestCase):
             schema.StateSupervisionViolationTypeEntry.__tablename__: [],
             schema.StateSupervisionViolatedConditionEntry.__tablename__: [],
             schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: [],
-            schema.state_incarceration_period_program_assignment_association_table.name: [],
             "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
         }
