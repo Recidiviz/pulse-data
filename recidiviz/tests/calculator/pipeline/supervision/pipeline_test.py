@@ -223,11 +223,9 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateSupervisionViolationTypeEntry.__tablename__: [],
             schema.StateSupervisionViolatedConditionEntry.__tablename__: [],
             schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: [],
-            schema.state_incarceration_period_program_assignment_association_table.name: [],
             schema.StateEarlyDischarge.__tablename__: [],
             schema.StateSupervisionContact.__tablename__: [],
             schema.state_supervision_period_supervision_violation_association_table.name: [],
-            schema.state_supervision_period_program_assignment_association_table.name: [],
             schema.StateSupervisionCaseTypeEntry.__tablename__: [],
             schema.state_supervision_period_supervision_contact_association_table.name: [],
         }
