@@ -205,14 +205,6 @@ state_charge_classification_type = Enum(
     name="state_charge_classification_type",
 )
 
-state_fine_status = Enum(
-    enum_strings.external_unknown,
-    state_enum_strings.state_fine_status_paid,
-    enum_strings.present_without_info,
-    state_enum_strings.state_fine_status_unpaid,
-    name="state_fine_status",
-)
-
 state_incarceration_type = Enum(
     enum_strings.external_unknown,
     state_enum_strings.state_incarceration_type_county_jail,
@@ -771,28 +763,6 @@ state_charge_supervision_sentence_association_table = Table(
     comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
         first_object_name_plural="charges",
         second_object_name_plural="supervision sentences",
-    ),
-)
-
-state_charge_fine_association_table = Table(
-    "state_charge_fine_association",
-    StateBase.metadata,
-    Column(
-        "charge_id",
-        Integer,
-        ForeignKey("state_charge.charge_id"),
-        index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="charge"),
-    ),
-    Column(
-        "fine_id",
-        Integer,
-        ForeignKey("state_fine.fine_id"),
-        index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="fine"),
-    ),
-    comment=ASSOCIATON_TABLE_COMMENT_TEMPLATE.format(
-        first_object_name_plural="charges", second_object_name_plural="fines"
     ),
 )
 
@@ -1787,7 +1757,6 @@ class StateSentenceGroup(StateBase, _StateSentenceGroupSharedColumns):
     incarceration_sentences = relationship(
         "StateIncarcerationSentence", backref="sentence_group", lazy="selectin"
     )
-    fines = relationship("StateFine", backref="sentence_group", lazy="selectin")
 
 
 class StateSentenceGroupHistory(
@@ -2149,104 +2118,6 @@ class StateIncarcerationSentenceHistory(
         comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
             object_name="incarceration sentence"
         ),
-    )
-
-
-# StateFine
-
-
-class _StateFineSharedColumns(
-    _ReferencesStatePersonSharedColumns, _ReferencesStateSentenceGroupSharedColumns
-):
-    """A mixin which defines all columns common to StateFine and
-    StateFineHistory
-    """
-
-    # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_: Any, **__: Any) -> "_StateFineSharedColumns":
-        if cls is _StateFineSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
-        return super().__new__(cls)  # type: ignore
-
-    external_id = Column(
-        String(255),
-        index=True,
-        comment=EXTERNAL_ID_COMMENT_TEMPLATE.format(object_name="StateFine"),
-    )
-    status = Column(
-        state_fine_status, nullable=False, comment="The current status of this fine."
-    )
-    status_raw_text = Column(
-        String(255), comment="The raw text value of the fine status."
-    )
-    date_paid = Column(Date, comment="The date on which the fine was paid.")
-    state_code = Column(
-        String(255),
-        nullable=False,
-        index=True,
-        comment=STATE_CODE_COMMENT,
-    )
-    county_code = Column(
-        String(255),
-        index=True,
-        comment="The code of the county under whose jurisdiction the fine "
-        "was imposed.",
-    )
-    fine_dollars = Column(Integer, comment="The amount of the fine, in U.S. Dollars.")
-
-
-# TODO(#9199): DEPRECATED - DO NOT ADD NEW USAGES
-class StateFine(StateBase, _StateFineSharedColumns):
-    """Represents a StateFine in the SQL schema"""
-
-    __tablename__ = "state_fine"
-    __table_args__ = (
-        UniqueConstraint(
-            "state_code",
-            "external_id",
-            name="fine_external_ids_unique_within_state",
-            deferrable=True,
-            initially="DEFERRED",
-        ),
-        {
-            "comment": "The StateFine object represents information about a single fine imposed as part of a group of "
-            "related sentences. Multiple distinct fines should ideally be reported as separate fine records, "
-            "but if they have been pre-aggregated then they will be recorded as a single StateFine object."
-        },
-    )
-    fine_id = Column(
-        Integer,
-        primary_key=True,
-        comment=PRIMARY_KEY_COMMENT_TEMPLATE.format(object_name="fine"),
-    )
-
-    person = relationship("StatePerson", uselist=False)
-    charges = relationship(
-        "StateCharge",
-        secondary=state_charge_fine_association_table,
-        backref="fines",
-        lazy="selectin",
-    )
-
-
-# TODO(#9199): DEPRECATED - DO NOT ADD NEW USAGES
-class StateFineHistory(StateBase, _StateFineSharedColumns, HistoryTableSharedColumns):
-    """Represents the historical state of a StateFine"""
-
-    __tablename__ = "state_fine_history"
-    __table_args__ = {
-        "comment": HISTORICAL_TABLE_COMMENT_TEMPLATE.format(object_name="StateFine")
-    }
-    # This primary key should NOT be used. It only exists because SQLAlchemy
-    # requires every table to have a unique primary key.
-    fine_history_id = Column(Integer, primary_key=True, comment=HISTORICAL_ID_COMMENT)
-
-    fine_id = Column(
-        Integer,
-        ForeignKey("state_fine.fine_id"),
-        nullable=False,
-        index=True,
-        comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(object_name="fine"),
     )
 
 

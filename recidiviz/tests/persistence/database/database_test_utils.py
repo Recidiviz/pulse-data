@@ -15,7 +15,6 @@ from recidiviz.common.constants.state.state_court_case import StateCourtType
 from recidiviz.common.constants.state.state_early_discharge import (
     StateEarlyDischargeDecision,
 )
-from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
 )
@@ -308,19 +307,10 @@ def generate_test_early_discharge(person_id) -> state_schema.StateEarlyDischarge
     return instance
 
 
-def generate_test_fine(person_id) -> state_schema.StateFine:
-    instance = state_schema.StateFine(
-        fine_id=3333,
-        status=StateFineStatus.PAID.value,
-        state_code="US_XX",
-        person_id=person_id,
-    )
-
-    return instance
-
-
 def generate_test_sentence_group(
-    person_id, supervision_sentences, incarceration_sentences, fines
+    person_id,
+    supervision_sentences,
+    incarceration_sentences,
 ) -> state_schema.StateSentenceGroup:
     instance = state_schema.StateSentenceGroup(
         sentence_group_id=567,
@@ -328,7 +318,6 @@ def generate_test_sentence_group(
         state_code="US_XX",
         supervision_sentences=supervision_sentences,
         incarceration_sentences=incarceration_sentences,
-        fines=fines,
         person_id=person_id,
     )
     return instance
@@ -487,13 +476,10 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
         test_person_id, [test_charge_1, test_charge_2], [test_incarceration_period]
     )
 
-    test_fine = generate_test_fine(test_person_id)
-
     test_sentence_group = generate_test_sentence_group(
         test_person_id,
         [test_supervision_sentence],
         [test_incarceration_sentence],
-        [test_fine],
     )
 
     test_agent = generate_test_assessment_agent()

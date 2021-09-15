@@ -19,7 +19,7 @@ from unittest import TestCase
 
 import attr
 
-from recidiviz.common.constants.state.state_fine import StateFineStatus
+from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.schema.state import schema
@@ -32,9 +32,10 @@ from recidiviz.persistence.entity.entity_utils import (
 )
 from recidiviz.persistence.entity.state.entities import (
     StateSentenceGroup,
-    StateFine,
     StatePerson,
     StateSupervisionViolation,
+    StateSupervisionSentence,
+    StateCharge,
 )
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
     generate_person,
@@ -60,65 +61,67 @@ class TestEntityUtils(TestCase):
         )
 
     def test_getEntityRelationshipFieldNames_children(self) -> None:
-        entity = StateSentenceGroup.new_with_defaults(
+        entity = StateSupervisionSentence.new_with_defaults(
             state_code="US_XX",
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            fines=[
-                StateFine.new_with_defaults(
-                    state_code="US_XX", status=StateFineStatus.PRESENT_WITHOUT_INFO
+            charges=[
+                StateCharge.new_with_defaults(
+                    state_code="US_XX", status=ChargeStatus.PRESENT_WITHOUT_INFO
                 )
             ],
             person=[StatePerson.new_with_defaults(state_code="US_XX")],
-            sentence_group_id=_ID,
+            supervision_sentence_id=_ID,
         )
         self.assertEqual(
-            {"fines"}, get_set_entity_field_names(entity, EntityFieldType.FORWARD_EDGE)
+            {"charges"},
+            get_set_entity_field_names(entity, EntityFieldType.FORWARD_EDGE),
         )
 
     def test_getDbEntityRelationshipFieldNames_children(self) -> None:
-        entity = schema.StateSentenceGroup(
+        entity = schema.StateSupervisionSentence(
             state_code="US_XX",
-            fines=[schema.StateFine()],
+            charges=[schema.StateCharge()],
             person=schema.StatePerson(),
             person_id=_ID,
-            sentence_group_id=_ID,
+            supervision_sentence_id=_ID,
         )
         self.assertEqual(
-            {"fines"}, get_set_entity_field_names(entity, EntityFieldType.FORWARD_EDGE)
+            {"charges"},
+            get_set_entity_field_names(entity, EntityFieldType.FORWARD_EDGE),
         )
 
     def test_getEntityRelationshipFieldNames_backedges(self) -> None:
-        entity = schema.StateSentenceGroup(
+        entity = schema.StateSupervisionSentence(
             state_code="US_XX",
-            fines=[schema.StateFine()],
+            charges=[schema.StateCharge()],
             person=schema.StatePerson(),
             person_id=_ID,
-            sentence_group_id=_ID,
+            supervision_sentence_id=_ID,
         )
         self.assertEqual(
             {"person"}, get_set_entity_field_names(entity, EntityFieldType.BACK_EDGE)
         )
 
     def test_getEntityRelationshipFieldNames_flatFields(self) -> None:
-        entity = schema.StateSentenceGroup(
+        entity = schema.StateSupervisionSentence(
             state_code="US_XX",
-            fines=[schema.StateFine(state_code="US_XX")],
-            person=schema.StatePerson(state_code="US_XX"),
+            charges=[schema.StateCharge()],
+            person=schema.StatePerson(),
             person_id=_ID,
-            sentence_group_id=_ID,
+            supervision_sentence_id=_ID,
         )
         self.assertEqual(
-            {"state_code", "sentence_group_id"},
+            {"state_code", "supervision_sentence_id"},
             get_set_entity_field_names(entity, EntityFieldType.FLAT_FIELD),
         )
 
     def test_getEntityRelationshipFieldNames_foreignKeys(self) -> None:
-        entity = schema.StateSentenceGroup(
+        entity = schema.StateSupervisionSentence(
             state_code="US_XX",
-            fines=[schema.StateFine()],
+            charges=[schema.StateCharge()],
             person=schema.StatePerson(),
             person_id=_ID,
-            sentence_group_id=_ID,
+            supervision_sentence_id=_ID,
         )
         self.assertEqual(
             {"person_id"},
@@ -126,15 +129,15 @@ class TestEntityUtils(TestCase):
         )
 
     def test_getEntityRelationshipFieldNames_all(self) -> None:
-        entity = schema.StateSentenceGroup(
+        entity = schema.StateSupervisionSentence(
             state_code="US_XX",
-            fines=[schema.StateFine()],
+            charges=[schema.StateCharge()],
             person=schema.StatePerson(),
             person_id=_ID,
-            sentence_group_id=_ID,
+            supervision_sentence_id=_ID,
         )
         self.assertEqual(
-            {"state_code", "fines", "person", "person_id", "sentence_group_id"},
+            {"state_code", "charges", "person", "person_id", "supervision_sentence_id"},
             get_set_entity_field_names(entity, EntityFieldType.ALL),
         )
 

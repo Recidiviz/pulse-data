@@ -217,7 +217,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StatePersonEthnicity.__tablename__: [],
             schema.StateSentenceGroup.__tablename__: [],
             schema.StateProgramAssignment.__tablename__: [],
-            schema.StateFine.__tablename__: [],
             schema.StateIncarcerationIncident.__tablename__: [],
             schema.StateParoleDecision.__tablename__: [],
             schema.StateSupervisionViolationTypeEntry.__tablename__: [],
