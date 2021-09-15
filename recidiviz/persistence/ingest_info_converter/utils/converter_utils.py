@@ -30,11 +30,11 @@ from recidiviz.common.constants.bond import (
     BondType,
 )
 from recidiviz.common.constants.person_characteristics import (
-    ResidencyStatus,
     RESIDENCY_STATUS_SUBSTRING_MAP,
+    ResidencyStatus,
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import parse_dollars, normalize, parse_date
+from recidiviz.common.str_field_utils import normalize, parse_date, parse_dollars
 
 locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
 
@@ -189,9 +189,3 @@ def parse_region_code_with_override(
     if proto.HasField(region_field_name):
         return normalize(getattr(proto, region_field_name))
     return None
-
-
-def create_comma_separated_list(proto, field_name: str):
-    """Returns a normalized, comma-separated string for the list field with the
-    given |field_name| on the given |proto|."""
-    return ", ".join([normalize(value) for value in getattr(proto, field_name)])

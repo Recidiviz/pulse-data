@@ -28,6 +28,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
 )
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StateSupervisionPeriodFactory,
+)
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_supervision_period,
 )
@@ -54,7 +57,7 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
             county_code="bis",
             custodial_authority="SUPERVISION AUTHORITY",
             supervision_site="07-CENTRAL",
-            conditions=["CURFEW", "DRINKING"],
+            conditions="CURFEW, DRINKING",
         )
 
         # Act
@@ -62,7 +65,7 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
         state_supervision_period.copy_fields_to_builder(
             supervision_builder, ingest_supervision, _EMPTY_METADATA
         )
-        result = supervision_builder.build()
+        result = supervision_builder.build(StateSupervisionPeriodFactory.deserialize)
 
         # Assert
         expected_result = entities.StateSupervisionPeriod(
@@ -98,7 +101,7 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
         state_supervision_period.copy_fields_to_builder(
             supervision_builder, ingest_supervision, _EMPTY_METADATA
         )
-        result = supervision_builder.build()
+        result = supervision_builder.build(StateSupervisionPeriodFactory.deserialize)
 
         # Assert
         expected_result = entities.StateSupervisionPeriod.new_with_defaults(
@@ -120,7 +123,7 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
         state_supervision_period.copy_fields_to_builder(
             supervision_builder, ingest_supervision, _EMPTY_METADATA
         )
-        result = supervision_builder.build()
+        result = supervision_builder.build(StateSupervisionPeriodFactory.deserialize)
 
         # Assert
         expected_result = entities.StateSupervisionPeriod.new_with_defaults(
@@ -143,7 +146,7 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
         state_supervision_period.copy_fields_to_builder(
             supervision_builder, ingest_supervision, _EMPTY_METADATA
         )
-        result = supervision_builder.build()
+        result = supervision_builder.build(StateSupervisionPeriodFactory.deserialize)
 
         # Assert
         expected_result = entities.StateSupervisionPeriod.new_with_defaults(

@@ -1221,7 +1221,7 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                     row["condition_codes"].split(",") if row["condition_codes"] else []
                 )
                 if conditions:
-                    obj.conditions = conditions
+                    obj.conditions = ", ".join(conditions)
 
     @staticmethod
     def _set_supervising_officer(
