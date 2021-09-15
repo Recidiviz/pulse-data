@@ -17,15 +17,10 @@
 
 """Converts an ingest_info proto StateSupervisionViolation to a
 persistence entity."""
+from recidiviz.common import common_utils
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import parse_bool, parse_date
 from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionViolation
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn,
-    parse_external_id,
-    parse_region_code_with_override,
-)
 
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
@@ -40,8 +35,14 @@ def copy_fields_to_builder(
     new = supervision_violation_builder
 
     # 1-to-1 mappings
-    new.external_id = fn(parse_external_id, "state_supervision_violation_id", proto)
-    new.violation_date = fn(parse_date, "violation_date", proto)
-    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
-    new.is_violent = fn(parse_bool, "is_violent", proto)
-    new.is_sex_offense = fn(parse_bool, "is_sex_offense", proto)
+
+    state_supervision_violation_id = getattr(proto, "state_supervision_violation_id")
+    new.external_id = (
+        None
+        if common_utils.is_generated_id(state_supervision_violation_id)
+        else state_supervision_violation_id
+    )
+    new.violation_date = getattr(proto, "violation_date")
+    new.state_code = metadata.region
+    new.is_violent = getattr(proto, "is_violent")
+    new.is_sex_offense = getattr(proto, "is_sex_offense")

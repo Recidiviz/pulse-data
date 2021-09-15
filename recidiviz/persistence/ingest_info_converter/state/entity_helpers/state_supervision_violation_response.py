@@ -17,23 +17,17 @@
 
 """Converts an ingest_info proto StateSupervisionViolationResponse to a
 persistence entity."""
-
+from recidiviz.common import common_utils
+from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
+    DefaultingAndNormalizingEnumParser,
+)
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import normalize, parse_bool, parse_date
 from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionViolationResponse
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn,
-    parse_external_id,
-    parse_region_code_with_override,
-)
-from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
-    IngestInfoProtoEnumMapper,
-)
 
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
@@ -47,27 +41,31 @@ def copy_fields_to_builder(
     persistence entity."""
     new = supervision_violation_response_builder
 
-    enum_fields = {
-        "response_type": StateSupervisionViolationResponseType,
-        "deciding_body_type": StateSupervisionViolationResponseDecidingBodyType,
-    }
-    proto_enum_mapper = IngestInfoProtoEnumMapper(
-        proto, enum_fields, metadata.enum_overrides
-    )
-
     # enum values
-    new.response_type = proto_enum_mapper.get(StateSupervisionViolationResponseType)
-    new.response_type_raw_text = fn(normalize, "response_type", proto)
-    new.response_subtype = fn(normalize, "response_subtype", proto)
-    new.deciding_body_type = proto_enum_mapper.get(
-        StateSupervisionViolationResponseDecidingBodyType
+    new.response_type = DefaultingAndNormalizingEnumParser(
+        getattr(proto, "response_type"),
+        StateSupervisionViolationResponseType,
+        metadata.enum_overrides,
     )
-    new.deciding_body_type_raw_text = fn(normalize, "deciding_body_type", proto)
+    new.response_type_raw_text = getattr(proto, "response_type")
+    new.response_subtype = getattr(proto, "response_subtype")
+    new.deciding_body_type = DefaultingAndNormalizingEnumParser(
+        getattr(proto, "deciding_body_type"),
+        StateSupervisionViolationResponseDecidingBodyType,
+        metadata.enum_overrides,
+    )
+    new.deciding_body_type_raw_text = getattr(proto, "deciding_body_type")
 
     # 1-to-1 mappings
-    new.external_id = fn(
-        parse_external_id, "state_supervision_violation_response_id", proto
+
+    state_supervision_violation_response_id = getattr(
+        proto, "state_supervision_violation_response_id"
     )
-    new.response_date = fn(parse_date, "response_date", proto)
-    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
-    new.is_draft = fn(parse_bool, "is_draft", proto)
+    new.external_id = (
+        None
+        if common_utils.is_generated_id(state_supervision_violation_response_id)
+        else state_supervision_violation_response_id
+    )
+    new.response_date = getattr(proto, "response_date")
+    new.state_code = metadata.region
+    new.is_draft = getattr(proto, "is_draft")
