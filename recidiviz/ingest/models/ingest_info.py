@@ -1575,7 +1575,7 @@ class StateSupervisionPeriod(IngestObject):
         self.termination_reason: Optional[str] = termination_reason
         self.supervision_level: Optional[str] = supervision_level
         self.custodial_authority: Optional[str] = custodial_authority
-        self.conditions: List[str] = conditions or []
+        self.conditions: str = conditions
 
         self.supervising_officer: Optional[StateAgent] = supervising_officer
         self.state_supervision_violation_entries: List[StateSupervisionViolation] = (

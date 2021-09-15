@@ -2657,12 +2657,7 @@ class StateSupervisionPeriod(google.protobuf.message.Message):
     supervision_level: typing.Text = ...
     supervising_officer_id: typing.Text = ...
     custodial_authority: typing.Text = ...
-    @property
-    def conditions(
-        self,
-    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
-        typing.Text
-    ]: ...
+    conditions: typing.Text = ...
     @property
     def state_supervision_violation_entry_ids(
         self,
@@ -2703,7 +2698,7 @@ class StateSupervisionPeriod(google.protobuf.message.Message):
         supervision_level: typing.Optional[typing.Text] = ...,
         supervising_officer_id: typing.Optional[typing.Text] = ...,
         custodial_authority: typing.Optional[typing.Text] = ...,
-        conditions: typing.Optional[typing.Iterable[typing.Text]] = ...,
+        conditions: typing.Optional[typing.Text] = ...,
         state_supervision_violation_entry_ids: typing.Optional[
             typing.Iterable[typing.Text]
         ] = ...,
@@ -2722,6 +2717,8 @@ class StateSupervisionPeriod(google.protobuf.message.Message):
         field_name: typing_extensions.Literal[
             "admission_reason",
             b"admission_reason",
+            "conditions",
+            b"conditions",
             "county_code",
             b"county_code",
             "custodial_authority",
