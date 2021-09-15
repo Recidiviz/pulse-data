@@ -82,6 +82,10 @@ class StateIncarcerationPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMe
     RETURN_FROM_ERRONEOUS_RELEASE = (
         state_enum_strings.state_incarceration_period_admission_reason_return_from_erroneous_release
     )
+    # This admission type corresponds to returns from any temporary release (example: work release, furlough, etc).
+    RETURN_FROM_TEMPORARY_RELEASE = (
+        state_enum_strings.state_incarceration_period_admission_reason_return_from_temporary_release
+    )
     RETURN_FROM_ESCAPE = (
         state_enum_strings.state_incarceration_period_admission_reason_return_from_escape
     )
@@ -148,6 +152,10 @@ class StateIncarcerationPeriodReleaseReason(EntityEnum, metaclass=EntityEnumMeta
     )
     STATUS_CHANGE = (
         state_enum_strings.state_incarceration_period_release_reason_status_change
+    )
+    # This release type corresponds to any temporary release (example: work release, furlough, etc).
+    TEMPORARY_RELEASE = (
+        state_enum_strings.state_incarceration_period_release_reason_temporary_release
     )
     TRANSFER = state_enum_strings.state_incarceration_period_release_reason_transfer
     TRANSFER_OUT_OF_STATE = (
@@ -217,6 +225,7 @@ def is_commitment_from_supervision(
         StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
         StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
+        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE,
         StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
         StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
         StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -279,6 +288,7 @@ def is_official_admission(
         StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
         StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
         StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
+        StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE,
         StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
         StateIncarcerationPeriodAdmissionReason.TRANSFER,
         StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
@@ -342,6 +352,7 @@ def is_official_release(
         StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR,
         StateIncarcerationPeriodReleaseReason.TRANSFER,
         StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
+        StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
     ]
 
     if release_reason in official_release_types:
@@ -391,6 +402,7 @@ def release_reason_overrides_released_from_temporary_custody(
         StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
         StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
         StateIncarcerationPeriodReleaseReason.TRANSFER,
+        StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
     ]
 
     if release_reason in prioritized_release_types:
@@ -440,6 +452,7 @@ _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {
     "PROBATION REVOCATION": StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
     "RETURN FROM ESCAPE": StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
     "RETURN FROM ERRONEOUS RELEASE": StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
+    "RETURN FROM TEMPORARY RELEASE": StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE,
     "COURT": StateIncarcerationPeriodAdmissionReason.TRANSFER,
     "HOSPITAL": StateIncarcerationPeriodAdmissionReason.TRANSFER,
     "MEDICAL": StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -479,6 +492,7 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
     "RELEASED TO SUPERVISION": StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
     "RELEASED": StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     "SERVED": StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
+    "TEMPORARY RELEASE": StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
     "TIME EARNED": StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     "TIME SERVED": StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
     "SENTENCE SERVED": StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
