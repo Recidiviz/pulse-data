@@ -27,8 +27,9 @@ shared module instead of importing persistence logic into this server.
 """
 import sys
 from importlib.util import find_spec
-from typing import Dict, Iterable, List, Optional, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Set
 
+import attr
 import pygtrie
 
 from recidiviz.calculator.pipeline.incarceration import (
@@ -71,11 +72,20 @@ def is_invalid_dependency(
     )
 
 
+@attr.s(frozen=True, kw_only=True)
+class DependencyAnalysisResult:
+    invalid_modules: Dict[str, List[str]] = attr.ib()
+    missing_modules: Dict[str, List[str]] = attr.ib()
+
+    unused_valid_module_prefixes: Set[str] = attr.ib()
+    unused_allowed_missing_module_prefixes: Set[str] = attr.ib()
+
+
 def get_invalid_dependencies_for_entrypoint(
     entrypoint_file: str,
     valid_module_prefixes: pygtrie.PrefixSet,
     allowed_missing_module_prefixes: Optional[pygtrie.PrefixSet] = None,
-) -> Tuple[Dict[str, List[str]], Set[str]]:
+) -> DependencyAnalysisResult:
     """Gets the transitive dependencies for the entrypoints and checks their validity.
 
     Returns two elements. The first is a dictionary of invalid dependency names to the
@@ -90,6 +100,7 @@ def get_invalid_dependencies_for_entrypoint(
 
     valid_dependencies: Set[str] = set()
     invalid_dependencies: Dict[str, List[str]] = {}
+    missing_dependencies: Dict[str, List[str]] = {}
 
     name: str
     for name in m.modules:
@@ -101,17 +112,24 @@ def get_invalid_dependencies_for_entrypoint(
             valid_dependencies.add(name)
 
     for name in m.badmodules:
+        # All non-recidiviz dependencies will be missing, we ignore these for now. In
+        # the future we could attempt to check if they are actually in the dependency
+        # file for the given endpoint (Pipfile, setup.py, Airflow dependencies, etc.).
         if name.startswith("recidiviz") and name not in allowed_missing_module_prefixes:
-            invalid_dependencies[name] = m.call_chain_for_name(name)
+            missing_dependencies[name] = m.call_chain_for_name(name)
         else:
             valid_dependencies.add(name)
 
     unused_valid = valid_module_prefixes - valid_dependencies
     unused_allowed_missing = allowed_missing_module_prefixes - valid_dependencies
 
-    return (
-        invalid_dependencies,
-        {"".join(entry) for entry in unused_valid | unused_allowed_missing},
+    return DependencyAnalysisResult(
+        invalid_modules=invalid_dependencies,
+        missing_modules=missing_dependencies,
+        unused_valid_module_prefixes={"".join(entry) for entry in unused_valid},
+        unused_allowed_missing_module_prefixes={
+            "".join(entry) for entry in unused_allowed_missing
+        },
     )
 
 
@@ -120,26 +138,50 @@ def check_dependencies_for_entrypoint(
     valid_module_prefixes: pygtrie.PrefixSet,
     allowed_missing_module_prefixes: Optional[pygtrie.PrefixSet] = None,
 ) -> bool:
-    invalid_dependencies, unused_valid = get_invalid_dependencies_for_entrypoint(
+    """Analyzes dependencies for a given entrypoint prints information about failures.
+
+    Returns True for success and False for failure.
+    """
+    dependency_result = get_invalid_dependencies_for_entrypoint(
         entrypoint_file,
         valid_module_prefixes=valid_module_prefixes,
         allowed_missing_module_prefixes=allowed_missing_module_prefixes,
     )
 
-    if invalid_dependencies:
+    result = True
+
+    if dependency_result.invalid_modules:
         print(f"Invalid dependencies for {entrypoint_file}:")
-        for dependency, call_chain in sorted(invalid_dependencies.items()):
+        for dependency, call_chain in sorted(dependency_result.invalid_modules.items()):
             print(f"\t{dependency}")
             for caller in call_chain:
                 print(f"\t\t{caller}")
-        return False
+        result = False
 
-    if unused_valid:
-        print(f"Unused valid dependencies for {entrypoint_file}:")
-        for dependency in sorted(unused_valid):
+    if dependency_result.missing_modules:
+        print(f"Missing internal dependencies for {entrypoint_file}:")
+        print("Is this missing an __init__.py file to make it a valid module?")
+        for dependency, call_chain in sorted(dependency_result.missing_modules.items()):
             print(f"\t{dependency}")
+            for caller in call_chain:
+                print(f"\t\t{caller}")
+        result = False
 
-    return True
+    if dependency_result.unused_valid_module_prefixes:
+        print(f"Unused valid dependency prefixes for {entrypoint_file}:")
+        for dependency in sorted(dependency_result.unused_valid_module_prefixes):
+            print(f"\t{dependency}")
+        result = False
+
+    if dependency_result.unused_allowed_missing_module_prefixes:
+        print(
+            f"Dependencies allowed to be missing but are found or not imported for {entrypoint_file}:"
+        )
+        for dependency in sorted(dependency_result.unused_valid_module_prefixes):
+            print(f"\t{dependency}")
+        result = False
+
+    return result
 
 
 def main() -> int:
