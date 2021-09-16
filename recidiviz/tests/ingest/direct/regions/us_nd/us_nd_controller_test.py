@@ -61,6 +61,7 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
+    StateSupervisionContactMethod,
     StateSupervisionContactReason,
     StateSupervisionContactStatus,
     StateSupervisionContactType,
@@ -2028,14 +2029,35 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             full_name="FIRSTNAME LASTNAME",
         )
 
-        state_supervision_contact = StateSupervisionContact(
+        state_supervision_contact_1 = StateSupervisionContact(
             state_supervision_contact_id="1231",
             contact_date="4/15/2020 12:00:00AM",
             contact_type="OO",
-            location="PLACE_OF_EMPLOYMENT",
+            location="OO",
             contacted_agent=agent_22,
             contact_reason="Supervision",
-            status="COMPLETED",
+            status="OO",
+            contact_method="OO",
+        )
+        state_supervision_contact_2 = StateSupervisionContact(
+            state_supervision_contact_id="1232",
+            contact_date="4/16/2020 12:00:00AM",
+            contact_type="OV-UA-FF",
+            location="OV-UA-FF",
+            contacted_agent=agent_22,
+            contact_reason="Supervision",
+            status="OV-UA-FF",
+            contact_method="OV-UA-FF",
+        )
+        state_supervision_contact_3 = StateSupervisionContact(
+            state_supervision_contact_id="1233",
+            contact_date="4/17/2020 12:00:00AM",
+            contact_type="HV-CC-AC-NS",
+            location="HV-CC-AC-NS",
+            contacted_agent=agent_22,
+            contact_reason="Supervision",
+            status="HV-CC-AC-NS",
+            contact_method="HV-CC-AC-NS",
         )
 
         expected = IngestInfo(
@@ -2054,7 +2076,9 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                                     state_supervision_periods=[
                                         StateSupervisionPeriod(
                                             state_supervision_contacts=[
-                                                state_supervision_contact
+                                                state_supervision_contact_1,
+                                                state_supervision_contact_2,
+                                                state_supervision_contact_3,
                                             ]
                                         )
                                     ],
@@ -2066,7 +2090,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             ]
         )
 
-        self.run_legacy_parse_file_test(expected, "docstars_contacts")
+        self.run_legacy_parse_file_test(expected, "docstars_contacts_v2")
 
     # TODO(#2157): Move into integration specific file
     def test_run_full_ingest_all_files_specific_order(self) -> None:
@@ -4588,16 +4612,54 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             state_code=_STATE_CODE,
             contact_date=datetime.date(year=2020, month=4, day=15),
             contacted_agent=person_7_supervising_officer,
-            contact_type=StateSupervisionContactType.FACE_TO_FACE,
-            location=StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT,
-            location_raw_text="PLACE_OF_EMPLOYMENT",
+            contact_type=StateSupervisionContactType.DIRECT,
             contact_type_raw_text="OO",
+            contact_method=StateSupervisionContactMethod.IN_PERSON,
+            contact_method_raw_text="OO",
+            location=StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT,
+            location_raw_text="OO",
             contact_reason=StateSupervisionContactReason.GENERAL_CONTACT,
             contact_reason_raw_text="SUPERVISION",
             person=person_7,
             supervision_periods=[supervision_period_1231],
             status=StateSupervisionContactStatus.COMPLETED,
-            status_raw_text="COMPLETED",
+            status_raw_text="OO",
+        )
+        supervision_contact_1232 = entities.StateSupervisionContact.new_with_defaults(
+            external_id="1232",
+            state_code=_STATE_CODE,
+            contact_date=datetime.date(year=2020, month=4, day=16),
+            contacted_agent=person_7_supervising_officer,
+            contact_type=StateSupervisionContactType.DIRECT,
+            contact_type_raw_text="OV-UA-FF",
+            contact_method=StateSupervisionContactMethod.IN_PERSON,
+            contact_method_raw_text="OV-UA-FF",
+            location=StateSupervisionContactLocation.SUPERVISION_OFFICE,
+            location_raw_text="OV-UA-FF",
+            contact_reason=StateSupervisionContactReason.GENERAL_CONTACT,
+            contact_reason_raw_text="SUPERVISION",
+            person=person_7,
+            supervision_periods=[supervision_period_1231],
+            status=StateSupervisionContactStatus.COMPLETED,
+            status_raw_text="OV-UA-FF",
+        )
+        supervision_contact_1233 = entities.StateSupervisionContact.new_with_defaults(
+            external_id="1233",
+            state_code=_STATE_CODE,
+            contact_date=datetime.date(year=2020, month=4, day=17),
+            contacted_agent=person_7_supervising_officer,
+            contact_type=StateSupervisionContactType.COLLATERAL,
+            contact_type_raw_text="HV-CC-AC-NS",
+            contact_method=StateSupervisionContactMethod.IN_PERSON,
+            contact_method_raw_text="HV-CC-AC-NS",
+            location=StateSupervisionContactLocation.RESIDENCE,
+            location_raw_text="HV-CC-AC-NS",
+            contact_reason=StateSupervisionContactReason.GENERAL_CONTACT,
+            contact_reason_raw_text="SUPERVISION",
+            person=person_7,
+            supervision_periods=[supervision_period_1231],
+            status=StateSupervisionContactStatus.ATTEMPTED,
+            status_raw_text="HV-CC-AC-NS",
         )
 
         sentence_group_1231 = entities.StateSentenceGroup.new_with_defaults(
@@ -4615,13 +4677,17 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             charges=[],
         )
 
-        supervision_period_1231.supervision_contacts = [supervision_contact_1231]
+        supervision_period_1231.supervision_contacts = [
+            supervision_contact_1231,
+            supervision_contact_1232,
+            supervision_contact_1233,
+        ]
         supervision_period_1231.supervision_sentences = [supervision_sentence_1231]
         sentence_group_1231.supervision_sentences.append(supervision_sentence_1231)
         person_7.sentence_groups.append(sentence_group_1231)
 
         # Act
-        self._run_ingest_job_for_filename("docstars_contacts.csv")
+        self._run_ingest_job_for_filename("docstars_contacts_v2.csv")
 
         # Assert
         self.assert_expected_db_people(expected_people)
