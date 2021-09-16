@@ -245,6 +245,7 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         self,
         most_recent_assessment_date: date,
         most_recent_assessment_score: int,
+        compliance_evaluation_date: Optional[date] = None,
     ) -> Optional[date]:
         """Returns the next recommended reassessment date or None if no further reassessments are needed."""
         if self.case_type == StateSupervisionCaseType.GENERAL and (
