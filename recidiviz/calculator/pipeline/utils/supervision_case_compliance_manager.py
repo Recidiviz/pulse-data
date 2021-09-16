@@ -118,7 +118,7 @@ class StateSupervisionCaseComplianceManager:
 
         if self._guidelines_applicable_for_case(compliance_evaluation_date):
             next_recommended_assessment_date = self._next_recommended_assessment_date(
-                most_recent_assessment
+                most_recent_assessment, compliance_evaluation_date
             )
 
             next_recommended_face_to_face_date = (
@@ -150,7 +150,9 @@ class StateSupervisionCaseComplianceManager:
         )
 
     def _next_recommended_assessment_date(
-        self, most_recent_assessment: Optional[StateAssessment]
+        self,
+        most_recent_assessment: Optional[StateAssessment],
+        compliance_evaluation_date: Optional[date] = None,
     ) -> Optional[date]:
         """Outputs what the next assessment date is for the person under supervision."""
         if (
@@ -167,6 +169,7 @@ class StateSupervisionCaseComplianceManager:
         return self._next_recommended_reassessment(
             most_recent_assessment.assessment_date,
             most_recent_assessment.assessment_score,
+            compliance_evaluation_date,
         )
 
     def _most_recent_face_to_face_contact(
@@ -251,6 +254,13 @@ class StateSupervisionCaseComplianceManager:
             for contact in self.supervision_contacts
             # These are the types of contacts that can satisfy the home visit requirement
             if contact.location == StateSupervisionContactLocation.RESIDENCE
+            and contact.contact_type
+            in (
+                StateSupervisionContactType.DIRECT,
+                StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT,
+                # TODO(#9159): Remove this once all of the supervision contacts are switched over.
+                StateSupervisionContactType.FACE_TO_FACE,
+            )
             # Contact must be marked as completed
             and contact.status == StateSupervisionContactStatus.COMPLETED
             and contact.contact_date is not None
@@ -374,6 +384,7 @@ class StateSupervisionCaseComplianceManager:
         self,
         most_recent_assessment_date: date,
         most_recent_assessment_score: int,
+        compliance_evaluation_date: date = None,
     ) -> Optional[date]:
         """Returns the next recommended reassessment date or None if no further reassessments are needed."""
 
@@ -384,6 +395,7 @@ class StateSupervisionCaseComplianceManager:
         """Returns when the next face-to-face contact should be. Returns None if compliance standards are
         unknown or no subsequent face-to-face contacts are required."""
 
+    # TODO(#9159): Replace this with _next_recommended_home_visit_date
     @abc.abstractmethod
     def _home_visit_frequency_is_sufficient(
         self, compliance_evaluation_date: date

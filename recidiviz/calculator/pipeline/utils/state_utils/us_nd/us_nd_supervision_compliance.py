@@ -103,6 +103,7 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         self,
         most_recent_assessment_date: date,
         most_recent_assessment_score: int,
+        compliance_evaluation_date: Optional[date] = None,
     ) -> Optional[date]:
         """Returns the next recommended reassessment date or None if no further reassessments are needed."""
         reassessment_deadline = most_recent_assessment_date + relativedelta(

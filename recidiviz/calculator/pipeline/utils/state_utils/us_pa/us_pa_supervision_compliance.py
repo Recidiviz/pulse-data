@@ -42,7 +42,6 @@ SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS: Dict[
     StateSupervisionCaseType, Dict[StateSupervisionLevel, Tuple[int, int]]
 ] = {
     StateSupervisionCaseType.GENERAL: {
-        StateSupervisionLevel.LIMITED: (1, 365),
         StateSupervisionLevel.MINIMUM: (1, 90),
         StateSupervisionLevel.MEDIUM: (1, 30),
         StateSupervisionLevel.MAXIMUM: (2, 30),
@@ -54,7 +53,6 @@ SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS: Dict[
 SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS: Dict[
     StateSupervisionLevel, Tuple[int, int]
 ] = {
-    StateSupervisionLevel.MINIMUM: (1, 180),
     StateSupervisionLevel.MEDIUM: (1, 60),
     StateSupervisionLevel.MAXIMUM: (1, 30),
     StateSupervisionLevel.HIGH: (1, 30),
@@ -103,8 +101,17 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         self,
         most_recent_assessment_date: date,
         most_recent_assessment_score: int,
+        compliance_evaluation_date: Optional[date] = None,
     ) -> Optional[date]:
         """Returns the next recommended reassessment date or None if no further reassessments are needed."""
+        if not compliance_evaluation_date:
+            raise ValueError("PA supervision compliance requires an evaluation date")
+        if self._can_skip_reassessment(
+            most_recent_assessment_score, compliance_evaluation_date
+        ):
+            # No reassessment is needed if criteria is met
+            return None
+
         reassessment_deadline = most_recent_assessment_date + relativedelta(
             days=REASSESSMENT_DEADLINE_DAYS
         )
@@ -115,15 +122,42 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         )
         return reassessment_deadline
 
+    def _can_skip_reassessment(
+        self,
+        most_recent_assessment_score: int,
+        compliance_evaluation_date: date,
+    ) -> bool:
+        """Determines whether regular reassessment is needed.
+        According to PA policy documents, this includes:
+            - Attained a low risk score (0-19) on their most recent LSI-R assessment, and
+            - Were supervised on minimum supervision for a year or more, and
+            - Have not incurred any medium or high level sanctions since the administration of their last LSI-R.
+        """
+        most_recent_score_is_low = most_recent_assessment_score < 20
+        days_since_start = (compliance_evaluation_date - self.start_of_supervision).days
+        supervised_on_minimum_year_plus = (
+            self.supervision_period.supervision_level == StateSupervisionLevel.MINIMUM
+            and days_since_start >= 365
+        )
+        incurred_medium_to_high_sanctions = (
+            False  # TODO(#9105): Bring in violations to further calculate
+        )
+        return (
+            most_recent_score_is_low
+            and supervised_on_minimum_year_plus
+            and not incurred_medium_to_high_sanctions
+        )
+
     def _next_recommended_face_to_face_date(
         self, compliance_evaluation_date: date
     ) -> Optional[date]:
         """Returns when the next face-to-face contact should be. Returns None if compliance standards are
         unknown or no subsequent face-to-face contacts are required."""
         # No contacts required for monitored supervision
-        if (
-            self.supervision_period.supervision_level
-            == StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY
+        # As of June 28, 2021, contacts are no longer needed for administrative supervision.
+        if self.supervision_period.supervision_level in (
+            StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY,
+            StateSupervisionLevel.LIMITED,
         ):
             return None
 
@@ -157,8 +191,73 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
     def _home_visit_frequency_is_sufficient(
         self, compliance_evaluation_date: date
     ) -> Optional[bool]:
-        # TODO(#7052) Update with appropriate policies
-        return None
+        """Calculates whether the frequency of home visits between the officer and the person on supervision
+        is sufficient with respect to the state standards for the level of supervision of the case.
+        """
+        # No home visits are required for these supervision levels
+        if self.supervision_period.supervision_level in (
+            StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY,
+            StateSupervisionLevel.LIMITED,
+            StateSupervisionLevel.MINIMUM,
+        ):
+            return True
+
+        days_since_start = (compliance_evaluation_date - self.start_of_supervision).days
+
+        if days_since_start <= NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS:
+            # This is a recently started supervision period, and the person has not yet hit the number of days
+            # from the start of their supervision at which the officer is required to have made a home visit.
+            logging.debug(
+                "Supervision period %d started %d business days before the compliance date %s. Home visit is not "
+                "overdue.",
+                self.supervision_period.supervision_period_id,
+                days_since_start,
+                compliance_evaluation_date,
+            )
+            return True
+
+        # Get applicable home visits that occurred between the start of supervision and the
+        # compliance_evaluation_date (inclusive)
+        applicable_visits = self._get_applicable_home_visits_between_dates(
+            self.start_of_supervision, compliance_evaluation_date
+        )
+
+        if not applicable_visits:
+            # This person has been on supervision for longer than the allowed number of days without an initial
+            # home visit. The initial home visit standard is not in compliance.
+            return False
+
+        (
+            required_contacts,
+            period_days,
+        ) = self._get_required_home_visits_and_period_days()
+
+        if days_since_start < period_days:
+            # If they've had a visit since the start of their supervision, and they have been on supervision for less
+            # than the number of days in which they would need another contact, then the case is in compliance
+            return True
+
+        visits_within_period = [
+            visit
+            for visit in applicable_visits
+            if visit.contact_date is not None
+            and (compliance_evaluation_date - visit.contact_date).days < period_days
+        ]
+
+        return len(visits_within_period) >= required_contacts
+
+    def _get_required_home_visits_and_period_days(self) -> Tuple[int, int]:
+        """Returns the number of home visits that are required within time period (in days) for a supervision case"""
+        supervision_level: Optional[
+            StateSupervisionLevel
+        ] = self.supervision_period.supervision_level
+
+        if supervision_level is None:
+            raise ValueError(
+                "Supervision level not provided and so cannot calculate required home visit frequency."
+            )
+
+        return SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS[supervision_level]
 
     def _get_supervision_level_policy(
         self, evaluation_date: date
