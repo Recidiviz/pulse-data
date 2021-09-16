@@ -229,6 +229,17 @@ class TestSerialization(unittest.TestCase):
         program_assignment_agent.state_agent_id = "program_agent1"
         program_assignment_agent.full_name = "Officer Program"
 
+        incident = person.create_state_incarceration_incident()
+        incident.state_incarceration_incident_id = "incident1"
+        incident.incident_type = "FISTICUFFS"
+        incident_outcome = incident.create_state_incarceration_incident_outcome()
+        incident_outcome.state_incarceration_incident_outcome_id = "incident1-1"
+        incident_outcome.outcome_type = "FINE"
+
+        incident_agent = incident.create_state_agent()
+        incident_agent.state_agent_id = "agent2"
+        incident_agent.full_name = "Officer Thompson"
+
         group = person.create_state_sentence_group()
         group.state_sentence_group_id = "group1"
 
@@ -247,16 +258,6 @@ class TestSerialization(unittest.TestCase):
         incarceration_period.specialized_purpose_for_incarceration = (
             "SHOCK INCARCERATION"
         )
-        incident = incarceration_period.create_state_incarceration_incident()
-        incident.state_incarceration_incident_id = "incident1"
-        incident.incident_type = "FISTICUFFS"
-        incident_outcome = incident.create_state_incarceration_incident_outcome()
-        incident_outcome.state_incarceration_incident_outcome_id = "incident1-1"
-        incident_outcome.outcome_type = "FINE"
-
-        incident_agent = incident.create_state_agent()
-        incident_agent.state_agent_id = "agent2"
-        incident_agent.full_name = "Officer Thompson"
 
         decision = incarceration_period.create_state_parole_decision()
         decision.state_parole_decision_id = "decision1"
@@ -376,6 +377,21 @@ class TestSerialization(unittest.TestCase):
         program_assignment_agent_pb.state_agent_id = "program_agent1"
         program_assignment_agent_pb.full_name = "Officer Program"
 
+        person_pb.state_incarceration_incident_ids.append("incident1")
+        incident_pb = expected_proto.state_incarceration_incidents.add()
+        incident_pb.state_incarceration_incident_id = "incident1"
+        incident_pb.incident_type = "FISTICUFFS"
+
+        incident_pb.responding_officer_id = "agent2"
+        incident_agent_pb = expected_proto.state_agents.add()
+        incident_agent_pb.state_agent_id = "agent2"
+        incident_agent_pb.full_name = "Officer Thompson"
+
+        incident_pb.state_incarceration_incident_outcome_ids.append("incident1-1")
+        incident_outcome_pb = expected_proto.state_incarceration_incident_outcomes.add()
+        incident_outcome_pb.state_incarceration_incident_outcome_id = "incident1-1"
+        incident_outcome_pb.outcome_type = "FINE"
+
         person_pb.state_sentence_group_ids.append("group1")
         group_pb = expected_proto.state_sentence_groups.add()
         group_pb.state_sentence_group_id = "group1"
@@ -486,20 +502,6 @@ class TestSerialization(unittest.TestCase):
         incarceration_period_pb.specialized_purpose_for_incarceration = (
             "SHOCK INCARCERATION"
         )
-        incarceration_period_pb.state_incarceration_incident_ids.append("incident1")
-        incident_pb = expected_proto.state_incarceration_incidents.add()
-        incident_pb.state_incarceration_incident_id = "incident1"
-        incident_pb.incident_type = "FISTICUFFS"
-
-        incident_pb.responding_officer_id = "agent2"
-        incident_agent_pb = expected_proto.state_agents.add()
-        incident_agent_pb.state_agent_id = "agent2"
-        incident_agent_pb.full_name = "Officer Thompson"
-
-        incident_pb.state_incarceration_incident_outcome_ids.append("incident1-1")
-        incident_outcome_pb = expected_proto.state_incarceration_incident_outcomes.add()
-        incident_outcome_pb.state_incarceration_incident_outcome_id = "incident1-1"
-        incident_outcome_pb.outcome_type = "FINE"
 
         incarceration_period_pb.state_parole_decision_ids.append("decision1")
         decision_pb = expected_proto.state_parole_decisions.add()

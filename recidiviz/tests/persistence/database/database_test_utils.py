@@ -1,7 +1,7 @@
 """Utils for testing the database."""
 
 import datetime
-from typing import Optional
+from typing import List, Optional
 
 import attr
 
@@ -220,14 +220,13 @@ def generate_test_parole_decision(person_id) -> state_schema.StateParoleDecision
 
 
 def generate_test_incarceration_period(
-    person_id, incarceration_incidents, parole_decisions
+    person_id, parole_decisions
 ) -> state_schema.StateIncarcerationPeriod:
     instance = state_schema.StateIncarcerationPeriod(
         incarceration_period_id=5555,
         status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY.value,
         state_code="US_XX",
         person_id=person_id,
-        incarceration_incidents=incarceration_incidents,
         parole_decisions=parole_decisions,
     )
     return instance
@@ -335,10 +334,11 @@ def generate_test_assessment_agent() -> state_schema.StateAgent:
 
 
 def generate_test_person(
-    person_id,
-    state_code,
-    sentence_groups,
-    agent,
+    person_id: int,
+    state_code: str,
+    sentence_groups: List[state_schema.StateSentenceGroup],
+    agent: Optional[state_schema.StateAgent],
+    incarceration_incidents: List[state_schema.StateIncarcerationIncident],
 ) -> state_schema.StatePerson:
     """Returns a StatePerson to be used for testing."""
     instance = state_schema.StatePerson(
@@ -383,6 +383,7 @@ def generate_test_person(
             )
         ],
         sentence_groups=sentence_groups,
+        incarceration_incidents=incarceration_incidents,
         assessments=[
             state_schema.StateAssessment(
                 assessment_id=456,
@@ -436,18 +437,10 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
         [test_contact],
     )
 
-    test_incarceration_incident_outcome = generate_test_incarceration_incident_outcome(
-        test_person_id
-    )
-
-    test_incarceration_incident = generate_test_incarceration_incident(
-        test_person_id, [test_incarceration_incident_outcome]
-    )
-
     test_parole_decision = generate_test_parole_decision(test_person_id)
 
     test_incarceration_period = generate_test_incarceration_period(
-        test_person_id, [test_incarceration_incident], [test_parole_decision]
+        test_person_id, [test_parole_decision]
     )
 
     test_court_case = generate_test_court_case(test_person_id)
@@ -486,11 +479,20 @@ def generate_schema_state_person_obj_tree() -> state_schema.StatePerson:
 
     test_state_code = "US_XX"
 
+    test_incarceration_incident_outcome = generate_test_incarceration_incident_outcome(
+        test_person_id
+    )
+
+    test_incarceration_incident = generate_test_incarceration_incident(
+        test_person_id, [test_incarceration_incident_outcome]
+    )
+
     test_person = generate_test_person(
         test_person_id,
         test_state_code,
         [test_sentence_group],
         test_agent,
+        [test_incarceration_incident],
     )
 
     test_sentence_group.person = test_person

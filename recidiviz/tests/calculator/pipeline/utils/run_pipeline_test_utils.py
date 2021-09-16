@@ -16,13 +16,15 @@
 # =============================================================================
 """Helper that runs a test version of the pipeline in the provided module."""
 import datetime
-from typing import Any, Callable, Dict, Optional, Set
+from typing import Any, Callable, Dict, List, Optional, Set, Type
 
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.testing.test_pipeline import TestPipeline
 from mock import patch
 
 from recidiviz.calculator.pipeline.base_pipeline import BasePipeline
+from recidiviz.persistence.database import schema_utils
+from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.tests.calculator.pipeline.fake_bigquery import (
     FakeReadFromBigQuery,
     FakeWriteToBigQuery,
@@ -111,3 +113,43 @@ def run_test_pipeline(
                         person_filter_ids=person_filter_ids,
                         **calculation_limit_args,
                     )
+
+
+def default_data_dict_for_root_schema_classes(
+    root_schema_classes: List[Type[StateBase]],
+) -> Dict[str, List]:
+    """Helper function for running test pipelines that determines the set of tables
+    required for hydrating the list of root schema classes and their related classes.
+
+    Returns a dictionary where the keys are the required tables, and the values are
+    empty lists.
+    """
+    root_table_names = {
+        schema_class.__tablename__ for schema_class in root_schema_classes
+    }
+
+    relationship_properties = {
+        property_object
+        for schema_class in root_schema_classes
+        for property_object in schema_class.get_relationship_property_names_and_properties().values()
+    }
+
+    related_class_tables = {
+        schema_utils.get_state_database_entity_with_name(
+            property_object.mapper.class_.__name__
+        ).__tablename__
+        for property_object in relationship_properties
+    }
+
+    association_tables = {
+        property_object.secondary.name
+        for property_object in relationship_properties
+        if property_object.secondary is not None
+    }
+
+    return {
+        table: []
+        for table in root_table_names.union(
+            related_class_tables.union(association_tables)
+        )
+    }

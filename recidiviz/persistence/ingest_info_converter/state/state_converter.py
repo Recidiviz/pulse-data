@@ -237,6 +237,14 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         ]
         state_person_builder.program_assignments = converted_program_assignments
 
+        converted_incidents = [
+            self._convert_incarceration_incident(
+                self.incarceration_incidents[incident_id]
+            )
+            for incident_id in ingest_person.state_incarceration_incident_ids
+        ]
+        state_person_builder.incarceration_incidents = converted_incidents
+
         converted_external_ids = [
             state_person_external_id.convert(
                 self.person_external_ids[external_id], self.metadata
@@ -416,14 +424,6 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         state_incarceration_period.copy_fields_to_builder(
             incarceration_period_builder, ingest_incarceration_period, self.metadata
         )
-
-        converted_incidents = [
-            self._convert_incarceration_incident(
-                self.incarceration_incidents[incident_id]
-            )
-            for incident_id in ingest_incarceration_period.state_incarceration_incident_ids
-        ]
-        incarceration_period_builder.incarceration_incidents = converted_incidents
 
         converted_decisions = [
             self._convert_parole_decision(self.parole_decisions[decision_id])

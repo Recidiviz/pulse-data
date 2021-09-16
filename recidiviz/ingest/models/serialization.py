@@ -193,39 +193,6 @@ def convert_ingest_info_to_proto(
                 proto_period.state_incarceration_period_id
             )
 
-            for incident in incarceration_period.state_incarceration_incidents:
-                proto_incident = _populate_proto(
-                    "state_incarceration_incidents",
-                    incident,
-                    "state_incarceration_incident_id",
-                    state_incarceration_incident_map,
-                )
-                proto_period.state_incarceration_incident_ids.append(
-                    proto_incident.state_incarceration_incident_id
-                )
-
-                if incident.responding_officer:
-                    proto_responding_officer = _populate_proto(
-                        "state_agents",
-                        incident.responding_officer,
-                        "state_agent_id",
-                        state_agent_map,
-                    )
-                    proto_incident.responding_officer_id = (
-                        proto_responding_officer.state_agent_id
-                    )
-
-                for incident_outcome in incident.state_incarceration_incident_outcomes:
-                    proto_incident_outcome = _populate_proto(
-                        "state_incarceration_incident_outcomes",
-                        incident_outcome,
-                        "state_incarceration_incident_outcome_id",
-                        state_incarceration_incident_outcome_map,
-                    )
-                    proto_incident.state_incarceration_incident_outcome_ids.append(
-                        proto_incident_outcome.state_incarceration_incident_outcome_id
-                    )
-
             for decision in incarceration_period.state_parole_decisions:
                 proto_decision = _populate_proto(
                     "state_parole_decisions",
@@ -505,6 +472,39 @@ def convert_ingest_info_to_proto(
                     state_agent_map,
                 )
                 proto_program_assignment.referring_agent_id = proto_agent.state_agent_id
+
+        for incident in state_person.state_incarceration_incidents:
+            proto_incident = _populate_proto(
+                "state_incarceration_incidents",
+                incident,
+                "state_incarceration_incident_id",
+                state_incarceration_incident_map,
+            )
+            proto_state_person.state_incarceration_incident_ids.append(
+                proto_incident.state_incarceration_incident_id
+            )
+
+            if incident.responding_officer:
+                proto_responding_officer = _populate_proto(
+                    "state_agents",
+                    incident.responding_officer,
+                    "state_agent_id",
+                    state_agent_map,
+                )
+                proto_incident.responding_officer_id = (
+                    proto_responding_officer.state_agent_id
+                )
+
+            for incident_outcome in incident.state_incarceration_incident_outcomes:
+                proto_incident_outcome = _populate_proto(
+                    "state_incarceration_incident_outcomes",
+                    incident_outcome,
+                    "state_incarceration_incident_outcome_id",
+                    state_incarceration_incident_outcome_map,
+                )
+                proto_incident.state_incarceration_incident_outcome_ids.append(
+                    proto_incident_outcome.state_incarceration_incident_outcome_id
+                )
 
         for sentence_group in state_person.state_sentence_groups:
             proto_sentence_group = _populate_proto(
@@ -986,10 +986,6 @@ def convert_proto_to_ingest_info(
             proto_incarceration_period.state_incarceration_period_id
         ]
 
-        incarceration_period.state_incarceration_incidents = [
-            state_incarceration_incident_map[proto_id]
-            for proto_id in proto_incarceration_period.state_incarceration_incident_ids
-        ]
         incarceration_period.state_parole_decisions = [
             state_parole_decision_map[proto_id]
             for proto_id in proto_incarceration_period.state_parole_decision_ids
@@ -1075,6 +1071,11 @@ def convert_proto_to_ingest_info(
         state_person.state_program_assignments = [
             state_program_assignment_map[proto_id]
             for proto_id in proto_state_person.state_program_assignment_ids
+        ]
+
+        state_person.state_incarceration_incidents = [
+            state_incarceration_incident_map[proto_id]
+            for proto_id in proto_state_person.state_incarceration_incident_ids
         ]
 
         state_person.state_sentence_groups = [

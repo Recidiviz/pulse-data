@@ -1027,43 +1027,31 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="445566", id_type=US_PA_CONTROL
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_periods=[
-                                        StateIncarcerationPeriod(
-                                            state_incarceration_incidents=[
-                                                StateIncarcerationIncident(
-                                                    state_incarceration_incident_id="A123456",
-                                                    incident_type="REPORT",
-                                                    incident_date="20180510",
-                                                    facility="WAM",
-                                                    incident_details=json.dumps(
-                                                        {
-                                                            "category_1": "",
-                                                            "category_2": "",
-                                                            "category_3": "",
-                                                            "category_4": "",
-                                                            "category_5": "",
-                                                        }
-                                                    ),
-                                                    state_incarceration_incident_outcomes=[
-                                                        StateIncarcerationIncidentOutcome(
-                                                            state_incarceration_incident_outcome_id="A123456",
-                                                            outcome_type="Y",
-                                                            date_effective="20180517",
-                                                            report_date="20180516",
-                                                            hearing_date="00000000",
-                                                        )
-                                                    ],
-                                                )
-                                            ]
-                                        )
-                                    ]
+                    state_incarceration_incidents=[
+                        StateIncarcerationIncident(
+                            state_incarceration_incident_id="A123456",
+                            incident_type="REPORT",
+                            incident_date="20180510",
+                            facility="WAM",
+                            incident_details=json.dumps(
+                                {
+                                    "category_1": "",
+                                    "category_2": "",
+                                    "category_3": "",
+                                    "category_4": "",
+                                    "category_5": "",
+                                }
+                            ),
+                            state_incarceration_incident_outcomes=[
+                                StateIncarcerationIncidentOutcome(
+                                    state_incarceration_incident_outcome_id="A123456",
+                                    outcome_type="Y",
+                                    date_effective="20180517",
+                                    report_date="20180516",
+                                    hearing_date="00000000",
                                 )
-                            ]
-                        ),
+                            ],
+                        )
                     ],
                 ),
                 StatePerson(
@@ -1073,113 +1061,101 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                             state_person_external_id_id="778899", id_type=US_PA_CONTROL
                         ),
                     ],
-                    state_sentence_groups=[
-                        StateSentenceGroup(
-                            state_incarceration_sentences=[
-                                StateIncarcerationSentence(
-                                    state_incarceration_periods=[
-                                        StateIncarcerationPeriod(
-                                            state_incarceration_incidents=[
-                                                StateIncarcerationIncident(
-                                                    state_incarceration_incident_id="A234567",
-                                                    incident_type="REPORT",
-                                                    incident_date="19910306",
-                                                    facility="GRA",
-                                                    location_within_facility="CELL-AA UNIT",
-                                                    incident_details=json.dumps(
-                                                        {
-                                                            "category_1": "",
-                                                            "category_2": "X",
-                                                            "category_3": "X",
-                                                            "category_4": "",
-                                                            "category_5": "",
-                                                        }
-                                                    ),
-                                                    state_incarceration_incident_outcomes=[
-                                                        StateIncarcerationIncidentOutcome(
-                                                            state_incarceration_incident_outcome_id="A234567",
-                                                            outcome_type="C",
-                                                            date_effective="19910308",
-                                                            report_date="19910307",
-                                                            hearing_date="19910306",
-                                                        )
-                                                    ],
-                                                ),
-                                                StateIncarcerationIncident(
-                                                    state_incarceration_incident_id="B222333",
-                                                    incident_type="REPORT",
-                                                    incident_date="19930706",
-                                                    facility="SMI",
-                                                    incident_details=json.dumps(
-                                                        {
-                                                            "category_1": "",
-                                                            "category_2": "",
-                                                            "category_3": "",
-                                                            "category_4": "",
-                                                            "category_5": "",
-                                                        }
-                                                    ),
-                                                    state_incarceration_incident_outcomes=[
-                                                        StateIncarcerationIncidentOutcome(
-                                                            state_incarceration_incident_outcome_id="B222333",
-                                                            outcome_type="Y",
-                                                            date_effective="19930706",
-                                                            report_date="19930706",
-                                                            hearing_date="00000000",
-                                                        )
-                                                    ],
-                                                ),
-                                                StateIncarcerationIncident(
-                                                    state_incarceration_incident_id="B444555",
-                                                    incident_type="CONTRABAND",
-                                                    incident_date="19931217",
-                                                    facility="SMI",
-                                                    location_within_facility="RHU-A 200",
-                                                    incident_details=json.dumps(
-                                                        {
-                                                            "category_1": "",
-                                                            "category_2": "X",
-                                                            "category_3": "",
-                                                            "category_4": "",
-                                                            "category_5": "",
-                                                        }
-                                                    ),
-                                                    state_incarceration_incident_outcomes=[
-                                                        StateIncarcerationIncidentOutcome(
-                                                            state_incarceration_incident_outcome_id="B444555",
-                                                            report_date="19931217",
-                                                            hearing_date="19931218",
-                                                        )
-                                                    ],
-                                                ),
-                                                StateIncarcerationIncident(
-                                                    state_incarceration_incident_id="B444556",
-                                                    incident_type="CONTRABAND",
-                                                    incident_date="19931217",
-                                                    facility="SMI",
-                                                    location_within_facility="RHU-A 200",
-                                                    incident_details=json.dumps(
-                                                        {
-                                                            "category_1": "",
-                                                            "category_2": "X",
-                                                            "category_3": "",
-                                                            "category_4": "",
-                                                            "category_5": "",
-                                                        }
-                                                    ),
-                                                    state_incarceration_incident_outcomes=[
-                                                        StateIncarcerationIncidentOutcome(
-                                                            state_incarceration_incident_outcome_id="B444556",
-                                                            report_date="0 0 0",
-                                                            hearing_date="0 0 0",
-                                                        )
-                                                    ],
-                                                ),
-                                            ]
-                                        )
-                                    ],
+                    state_incarceration_incidents=[
+                        StateIncarcerationIncident(
+                            state_incarceration_incident_id="A234567",
+                            incident_type="REPORT",
+                            incident_date="19910306",
+                            facility="GRA",
+                            location_within_facility="CELL-AA UNIT",
+                            incident_details=json.dumps(
+                                {
+                                    "category_1": "",
+                                    "category_2": "X",
+                                    "category_3": "X",
+                                    "category_4": "",
+                                    "category_5": "",
+                                }
+                            ),
+                            state_incarceration_incident_outcomes=[
+                                StateIncarcerationIncidentOutcome(
+                                    state_incarceration_incident_outcome_id="A234567",
+                                    outcome_type="C",
+                                    date_effective="19910308",
+                                    report_date="19910307",
+                                    hearing_date="19910306",
                                 )
-                            ]
+                            ],
+                        ),
+                        StateIncarcerationIncident(
+                            state_incarceration_incident_id="B222333",
+                            incident_type="REPORT",
+                            incident_date="19930706",
+                            facility="SMI",
+                            incident_details=json.dumps(
+                                {
+                                    "category_1": "",
+                                    "category_2": "",
+                                    "category_3": "",
+                                    "category_4": "",
+                                    "category_5": "",
+                                }
+                            ),
+                            state_incarceration_incident_outcomes=[
+                                StateIncarcerationIncidentOutcome(
+                                    state_incarceration_incident_outcome_id="B222333",
+                                    outcome_type="Y",
+                                    date_effective="19930706",
+                                    report_date="19930706",
+                                    hearing_date="00000000",
+                                )
+                            ],
+                        ),
+                        StateIncarcerationIncident(
+                            state_incarceration_incident_id="B444555",
+                            incident_type="CONTRABAND",
+                            incident_date="19931217",
+                            facility="SMI",
+                            location_within_facility="RHU-A 200",
+                            incident_details=json.dumps(
+                                {
+                                    "category_1": "",
+                                    "category_2": "X",
+                                    "category_3": "",
+                                    "category_4": "",
+                                    "category_5": "",
+                                }
+                            ),
+                            state_incarceration_incident_outcomes=[
+                                StateIncarcerationIncidentOutcome(
+                                    state_incarceration_incident_outcome_id="B444555",
+                                    report_date="19931217",
+                                    hearing_date="19931218",
+                                )
+                            ],
+                        ),
+                        StateIncarcerationIncident(
+                            state_incarceration_incident_id="B444556",
+                            incident_type="CONTRABAND",
+                            incident_date="19931217",
+                            facility="SMI",
+                            location_within_facility="RHU-A 200",
+                            incident_details=json.dumps(
+                                {
+                                    "category_1": "",
+                                    "category_2": "X",
+                                    "category_3": "",
+                                    "category_4": "",
+                                    "category_5": "",
+                                }
+                            ),
+                            state_incarceration_incident_outcomes=[
+                                StateIncarcerationIncidentOutcome(
+                                    state_incarceration_incident_outcome_id="B444556",
+                                    report_date="0 0 0",
+                                    hearing_date="0 0 0",
+                                )
+                            ],
                         ),
                     ],
                 ),
@@ -3459,35 +3435,10 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         ######################################
 
         # Arrange
-        p3_sg_placeholder = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_3,
-        )
-        person_3.sentence_groups.append(p3_sg_placeholder)
-        p3_is_placeholder = entities.StateIncarcerationSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            person=person_3,
-            sentence_group=p3_sg_placeholder,
-        )
-        p3_sg_placeholder.incarceration_sentences.append(p3_is_placeholder)
-
-        p3_ip_placeholder = entities.StateIncarcerationPeriod.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            person=person_3,
-            incarceration_sentences=[p3_is_placeholder],
-        )
-        p3_is_placeholder.incarceration_periods.append(p3_ip_placeholder)
-
         p3_ii = entities.StateIncarcerationIncident.new_with_defaults(
             external_id="A123456",
             state_code=_STATE_CODE_UPPER,
             person=person_3,
-            incarceration_period=p3_ip_placeholder,
             incident_type=StateIncarcerationIncidentType.REPORT,
             incident_type_raw_text="REPORT",
             incident_date=datetime.date(year=2018, month=5, day=10),
@@ -3513,38 +3464,12 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             report_date=datetime.date(year=2018, month=5, day=16),
         )
         p3_ii.incarceration_incident_outcomes.append(p3_ii_outcome)
-        p3_ip_placeholder.incarceration_incidents.append(p3_ii)
-
-        p4_sg_placeholder = entities.StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_4,
-        )
-        person_4.sentence_groups.append(p4_sg_placeholder)
-
-        p4_is_placeholder = entities.StateIncarcerationSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            person=person_4,
-            sentence_group=p4_sg_placeholder,
-        )
-        p4_sg_placeholder.incarceration_sentences.append(p4_is_placeholder)
-
-        p4_ip_placeholder = entities.StateIncarcerationPeriod.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-            incarceration_type=StateIncarcerationType.STATE_PRISON,
-            person=person_4,
-            incarceration_sentences=[p4_is_placeholder],
-        )
-        p4_is_placeholder.incarceration_periods.append(p4_ip_placeholder)
+        person_3.incarceration_incidents.append(p3_ii)
 
         p4_ii_1 = entities.StateIncarcerationIncident.new_with_defaults(
             external_id="A234567",
             state_code=_STATE_CODE_UPPER,
             person=person_4,
-            incarceration_period=p4_ip_placeholder,
             incident_type=StateIncarcerationIncidentType.REPORT,
             incident_type_raw_text="REPORT",
             incident_date=datetime.date(year=1991, month=3, day=6),
@@ -3572,13 +3497,12 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             hearing_date=datetime.date(year=1991, month=3, day=6),
         )
         p4_ii_1.incarceration_incident_outcomes.append(p4_ii_1_outcome)
-        p4_ip_placeholder.incarceration_incidents.append(p4_ii_1)
+        person_4.incarceration_incidents.append(p4_ii_1)
 
         p4_ii_2 = entities.StateIncarcerationIncident.new_with_defaults(
             external_id="B222333",
             state_code=_STATE_CODE_UPPER,
             person=person_4,
-            incarceration_period=p4_ip_placeholder,
             incident_type=StateIncarcerationIncidentType.REPORT,
             incident_type_raw_text="REPORT",
             incident_date=datetime.date(year=1993, month=7, day=6),
@@ -3604,13 +3528,12 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             report_date=datetime.date(year=1993, month=7, day=6),
         )
         p4_ii_2.incarceration_incident_outcomes.append(p4_ii_2_outcome)
-        p4_ip_placeholder.incarceration_incidents.append(p4_ii_2)
+        person_4.incarceration_incidents.append(p4_ii_2)
 
         p4_ii_3 = entities.StateIncarcerationIncident.new_with_defaults(
             external_id="B444555",
             state_code=_STATE_CODE_UPPER,
             person=person_4,
-            incarceration_period=p4_ip_placeholder,
             incident_type=StateIncarcerationIncidentType.CONTRABAND,
             incident_type_raw_text="CONTRABAND",
             incident_date=datetime.date(year=1993, month=12, day=17),
@@ -3635,13 +3558,12 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             hearing_date=datetime.date(year=1993, month=12, day=18),
         )
         p4_ii_3.incarceration_incident_outcomes.append(p4_ii_3_outcome)
-        p4_ip_placeholder.incarceration_incidents.append(p4_ii_3)
+        person_4.incarceration_incidents.append(p4_ii_3)
 
         p4_ii_4 = entities.StateIncarcerationIncident.new_with_defaults(
             external_id="B444556",
             state_code=_STATE_CODE_UPPER,
             person=person_4,
-            incarceration_period=p4_ip_placeholder,
             incident_type=StateIncarcerationIncidentType.CONTRABAND,
             incident_type_raw_text="CONTRABAND",
             incident_date=datetime.date(year=1993, month=12, day=17),
@@ -3664,7 +3586,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             incarceration_incident=p4_ii_4,
         )
         p4_ii_4.incarceration_incident_outcomes.append(p4_ii_4_outcome)
-        p4_ip_placeholder.incarceration_incidents.append(p4_ii_4)
+        person_4.incarceration_incidents.append(p4_ii_4)
 
         populate_person_backedges(expected_people)
 
@@ -4372,20 +4294,20 @@ class TestUsPaController(BaseDirectIngestControllerTests):
 
         p4_sp_1_1.supervision_violation_entries.extend([p4_sv_1, p4_sv_2])
 
-        p4_sg_placeholder_2 = entities.StateSentenceGroup.new_with_defaults(
+        p4_sg_placeholder = entities.StateSentenceGroup.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             person=person_4,
         )
-        person_4.sentence_groups.append(p4_sg_placeholder_2)
+        person_4.sentence_groups.append(p4_sg_placeholder)
 
         p4_ss_placeholder = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            sentence_group=p4_sg_placeholder_2,
+            sentence_group=p4_sg_placeholder,
             person=person_4,
         )
-        p4_sg_placeholder_2.supervision_sentences.append(p4_ss_placeholder)
+        p4_sg_placeholder.supervision_sentences.append(p4_ss_placeholder)
         p4_sp_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             supervision_sentences=[p4_ss_placeholder],
@@ -4900,16 +4822,16 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         # TODO(#5292): The following changes account for entity matching behavior we're seeing on rerun.
         new_placeholder_sp = entities.StateSupervisionPeriod.new_with_defaults(
             person=person_4,
-            supervision_sentences=person_4.sentence_groups[3].supervision_sentences,
+            supervision_sentences=person_4.sentence_groups[2].supervision_sentences,
             state_code="US_PA",
         )
         p4_placeholder_sv.supervision_periods = [new_placeholder_sp]
         new_placeholder_sp.supervision_violation_entries.append(p4_placeholder_sv)
 
-        person_4.sentence_groups[3].supervision_sentences[0].supervision_periods.append(
+        person_4.sentence_groups[2].supervision_sentences[0].supervision_periods.append(
             new_placeholder_sp
         )
-        person_4.sentence_groups[5].supervision_sentences[0].supervision_periods[
+        person_4.sentence_groups[4].supervision_sentences[0].supervision_periods[
             0
         ].supervision_violation_entries = []
 

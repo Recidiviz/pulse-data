@@ -111,6 +111,8 @@ class TestIngestInfo(unittest.TestCase):
             "state_assessments",
             "state_program_assignment_ids",
             "state_program_assignments",
+            "state_incarceration_incident_ids",
+            "state_incarceration_incidents",
             "supervising_officer_id",
             "supervising_officer",
             "state_sentence_group_ids",
