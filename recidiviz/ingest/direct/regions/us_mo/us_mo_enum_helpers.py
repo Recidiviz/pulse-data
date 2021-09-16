@@ -576,7 +576,7 @@ SUPERVISION_PERIOD_TERMINATION_REASON_TO_STR_MAPPINGS: Dict[
         "65O2015",  # Court Probation Suspension
         "65O3015",  # Court Parole Suspension
     ],
-    StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE: [
+    StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION: [
         "75O3000",  # MO Field-Interstate Transfer
         "75O3010",  # MO Board-Interstate Transfer
     ],
@@ -684,7 +684,7 @@ SUPERVISION_PERIOD_ADMISSION_REASON_TO_STR_MAPPINGS: Dict[
         # person transferred POs and we want to still count that as a transfer.
         *INVESTIGATION_START_STATUSES
     ],
-    StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE: [
+    StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION: [
         "75I3000",  # MO Field-Interstate Returned
         "75I3010",  # MO Board-Interstate Returned
     ],
@@ -840,7 +840,7 @@ INCARCERATION_PERIOD_ADMISSION_REASON_TO_STR_MAPPINGS: Dict[
     StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE: [
         *RETURN_FROM_ERRONEOUS_RELEASE_STATUS_CODES
     ],
-    StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE: [
+    StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION: [
         *INSTITUTIONAL_TRANSFER_FROM_OUT_OF_STATE_STATUS_CODES
     ],
     StateIncarcerationPeriodAdmissionReason.TRANSFER: [

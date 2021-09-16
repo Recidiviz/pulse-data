@@ -109,7 +109,7 @@ INCARCERATION_PERIOD_ADMISSION_REASON_TO_MOVEMENT_CODE_MAPPINGS: Dict[
         # incarceration to another, either between facilities or within the same facility
         "SC",  # Status Change
     ],
-    StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE: [
+    StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION: [
         # SCI CODES
         # TODO(#3312): I think this is a person from another state who PA is holding for some short-ish
         #  period of time until they are sent back to that state - need to confirm. They are not being tried by the
@@ -252,7 +252,7 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[
         "TC",  # Transfer to County
         "WT",  # WRIT/ATA
     ],
-    StateIncarcerationPeriodReleaseReason.TRANSFER_OUT_OF_STATE: [
+    StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION: [
         # SCI CODES
         "IC",  # In Custody Elsewhere
         "TS",  # Transfer to Other State

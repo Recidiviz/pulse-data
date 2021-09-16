@@ -1065,7 +1065,7 @@ _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_ADMISSION: List[
     StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
     StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
     StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-    StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
+    StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
     StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
 ]
 
@@ -1088,7 +1088,7 @@ RELEASE_REASON_INCLUSION: Dict[StateIncarcerationPeriodReleaseReason, bool] = {
     StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED: True,
     StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE: False,
     StateIncarcerationPeriodReleaseReason.TRANSFER: False,
-    StateIncarcerationPeriodReleaseReason.TRANSFER_OUT_OF_STATE: False,
+    StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION: False,
     StateIncarcerationPeriodReleaseReason.STATUS_CHANGE: False,
     StateIncarcerationPeriodReleaseReason.VACATED: True,
 }

@@ -50,7 +50,7 @@ SUPERVISION_TERMINATIONS_BY_MONTH_VIEW_QUERY_TEMPLATE = """
         'RETURN_FROM_ABSCONSION',
         'SUSPENSION',
         'TRANSFER_WITHIN_STATE',
-        'TRANSFER_OUT_OF_STATE')
+        'TRANSFER_TO_OTHER_JURISDICTION')
       GROUP BY state_code, year, month, district, supervision_type, person_id
     ), supervision_termination_counts AS (
       SELECT

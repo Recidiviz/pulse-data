@@ -43,7 +43,7 @@ SUPERVISION_START_REASON_ORDERED_PRIORITY = [
     StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
     StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
     StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-    StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE,
+    StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
     StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
     StateSupervisionPeriodAdmissionReason.EXTERNAL_UNKNOWN,
 ]
@@ -59,7 +59,7 @@ INCARCERATION_START_REASON_ORDERED_PRIORITY = [
     StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
     StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
     StateIncarcerationPeriodAdmissionReason.TRANSFER,
-    StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
+    StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
     StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
     StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE,
     StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,

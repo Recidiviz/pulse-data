@@ -68,7 +68,7 @@ def supervision_admission_reason_mapper(
     if label == FUGITIVE_FACILITY_TYPE:  # Coming from absconsion.
         return StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION
     if label in (DEPORTED_LOCATION_NAME, INTERSTATE_FACILITY_CODE):
-        return StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE
+        return StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION
     return None
 
 
@@ -91,7 +91,7 @@ def supervision_termination_reason_mapper(
     if label == FUGITIVE_FACILITY_TYPE:  # End of absconsion period
         return StateSupervisionPeriodTerminationReason.ABSCONSION
     if label in (DEPORTED_LOCATION_NAME, INTERSTATE_FACILITY_CODE):
-        return StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE
+        return StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION
 
     return None
 

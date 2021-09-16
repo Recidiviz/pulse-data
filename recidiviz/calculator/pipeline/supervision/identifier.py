@@ -1145,7 +1145,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         # entirely
         if termination_reason in (
             StateSupervisionPeriodTerminationReason.DEATH,
-            StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE,
+            StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION,
             StateSupervisionPeriodTerminationReason.SUSPENSION,
         ):
             return False, None
