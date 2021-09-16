@@ -54,6 +54,6 @@ class UsIdSftpDownloadDelegate(BaseSftpDownloadDelegate):
 
     def post_process_downloads(
         self, downloaded_path: GcsfsFilePath, _: GCSFileSystem
-    ) -> str:
+    ) -> List[str]:
         """The US_ID server doesn't require any post-processing."""
-        return downloaded_path.abs_path()
+        return [downloaded_path.abs_path()]

@@ -52,4 +52,4 @@ class UsIdSftpDownloadDelegateTest(unittest.TestCase):
             GcsfsFilePath.from_absolute_path("test_bucket/test.txt"),
             FakeGCSFileSystem(),
         )
-        self.assertEqual(result, "test_bucket/test.txt")
+        self.assertEqual(result, ["test_bucket/test.txt"])
