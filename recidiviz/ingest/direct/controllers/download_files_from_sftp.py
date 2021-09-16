@@ -16,11 +16,14 @@
 # =============================================================================
 """Class for interacting with and downloading files from SFTP servers"""
 import datetime
+import io
 import logging
 import os
+from contextlib import contextmanager
 from functools import partial
-from typing import List, Optional, Tuple
+from typing import Iterator, List, Optional, Tuple
 
+import paramiko
 import pysftp
 import pytz
 from paramiko import SFTPAttributes, SSHException
@@ -64,11 +67,15 @@ class SftpAuth:
         hostname: str,
         username: Optional[str],
         password: Optional[str],
+        client_private_key: Optional[paramiko.AgentKey],
         connection_options: Optional[CnOpts],
     ):
         self.hostname = hostname
         self.username = username
         self.password = password
+        # If we need a client key, this variable contains the private part of the private/public
+        # key pair.
+        self.client_private_key = client_private_key
         # connection_options hold advanced options that help when creating a pysftp Connection
         # such as overriding where to check for hosts or enabling compression.
         self.connection_options = connection_options if connection_options else CnOpts()
@@ -104,9 +111,18 @@ class SftpAuth:
         username = secrets.get_secret(f"{prefix}_username")
         password = secrets.get_secret(f"{prefix}_password")
 
+        raw_client_private_key = secrets.get_secret(f"{prefix}_sftp_client_private_key")
+        client_private_key = (
+            None
+            if not raw_client_private_key
+            else paramiko.AgentKey.from_private_key(io.StringIO(raw_client_private_key))
+        )
+
         connection_options = SftpAuth.set_up_connection_options(prefix, host)
 
-        return SftpAuth(host, username, password, connection_options)
+        return SftpAuth(
+            host, username, password, client_private_key, connection_options
+        )
 
 
 class DownloadFilesFromSftpController:
@@ -150,6 +166,17 @@ class DownloadFilesFromSftpController:
                 ).db_name,
             )
         )
+
+    @contextmanager
+    def using_sftp_connection(self) -> Iterator[pysftp.Connection]:
+        with pysftp.Connection(
+            host=self.auth.hostname,
+            username=self.auth.username,
+            password=self.auth.password,
+            private_key=self.auth.client_private_key,
+            cnopts=self.auth.connection_options,
+        ) as conn:
+            yield conn
 
     def _is_after_update_bound(self, sftp_attr: SFTPAttributes) -> bool:
         if self.lower_bound_update_datetime is None:
@@ -227,12 +254,7 @@ class DownloadFilesFromSftpController:
         """Opens a connection to SFTP and based on the delegate, find and recursively list items
         that are after the update bound and match the delegate's criteria, returning items and
         corresponding timestamps that are to be downloaded."""
-        with pysftp.Connection(
-            host=self.auth.hostname,
-            username=self.auth.username,
-            password=self.auth.password,
-            cnopts=self.auth.connection_options,
-        ) as connection:
+        with self.using_sftp_connection() as connection:
             remote_dirs = connection.listdir()
             root = self.delegate.root_directory(remote_dirs)
             dirs_with_attributes = connection.listdir_attr(root)
@@ -300,12 +322,7 @@ class DownloadFilesFromSftpController:
     ) -> None:
         """Opens up one connection and loops through all of the files with timestamps to upload
         to the GCS bucket."""
-        with pysftp.Connection(
-            host=self.auth.hostname,
-            username=self.auth.username,
-            password=self.auth.password,
-            cnopts=self.auth.connection_options,
-        ) as connection:
+        with self.using_sftp_connection() as connection:
             for file_path, file_timestamp in files_to_download_with_timestamps:
                 self._fetch(connection, file_path, file_timestamp)
 

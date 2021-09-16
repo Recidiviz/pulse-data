@@ -265,7 +265,7 @@ class TestSftpAuth(unittest.TestCase):
 @patch.object(
     SftpAuth,
     "for_region",
-    return_value=SftpAuth("testhost.ftp", "username", "password", CnOpts()),
+    return_value=SftpAuth("testhost.ftp", "username", "password", None, CnOpts()),
 )
 @patch("recidiviz.ingest.direct.direct_ingest_control.GcsfsFactory.build")
 @patch.object(
