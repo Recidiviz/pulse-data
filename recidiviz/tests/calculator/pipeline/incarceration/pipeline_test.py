@@ -87,6 +87,7 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
     FakeWriteToBigQueryFactory,
 )
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
+    default_data_dict_for_root_schema_classes,
     run_test_pipeline,
     test_pipeline_options,
 )
@@ -125,6 +126,17 @@ ALL_METRIC_TYPES_SET = {
 }
 
 INCARCERATION_PIPELINE_PACKAGE_NAME = pipeline.__name__
+
+ROOT_SCHEMA_CLASSES_FOR_PIPELINE = [
+    schema.StatePerson,
+    schema.StateSentenceGroup,
+    schema.StateSupervisionPeriod,
+    schema.StateSupervisionViolation,
+    schema.StateSupervisionViolationResponse,
+    schema.StateSupervisionSentence,
+    schema.StateIncarcerationSentence,
+    schema.StateAssessment,
+]
 
 
 class TestIncarcerationPipeline(unittest.TestCase):
@@ -181,41 +193,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
         self.supervision_delegate_patcher.stop()
 
     @staticmethod
-    def _default_data_dict() -> Dict[str, List]:
-        return {
-            schema.StatePerson.__tablename__: [],
-            schema.StatePersonRace.__tablename__: [],
-            schema.StatePersonEthnicity.__tablename__: [],
-            schema.StateSentenceGroup.__tablename__: [],
-            schema.StateIncarcerationSentence.__tablename__: [],
-            schema.StateSupervisionSentence.__tablename__: [],
-            schema.StateIncarcerationPeriod.__tablename__: [],
-            schema.StateSupervisionViolationResponse.__tablename__: [],
-            schema.StateSupervisionViolation.__tablename__: [],
-            schema.state_incarceration_sentence_incarceration_period_association_table.name: [],
-            schema.state_supervision_sentence_incarceration_period_association_table.name: [],
-            schema.StatePersonExternalId.__tablename__: [],
-            schema.StatePersonAlias.__tablename__: [],
-            schema.StateAssessment.__tablename__: [],
-            schema.StateProgramAssignment.__tablename__: [],
-            schema.StateCharge.__tablename__: [],
-            schema.StateSupervisionPeriod.__tablename__: [],
-            schema.StateEarlyDischarge.__tablename__: [],
-            schema.StateSupervisionViolationTypeEntry.__tablename__: [],
-            schema.StateSupervisionViolatedConditionEntry.__tablename__: [],
-            schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: [],
-            schema.StateSupervisionContact.__tablename__: [],
-            schema.StateSupervisionCaseTypeEntry.__tablename__: [],
-            schema.state_charge_incarceration_sentence_association_table.name: [],
-            schema.state_charge_supervision_sentence_association_table.name: [],
-            schema.state_incarceration_sentence_supervision_period_association_table.name: [],
-            schema.state_supervision_sentence_supervision_period_association_table.name: [],
-            schema.state_supervision_period_supervision_violation_association_table.name: [],
-            schema.state_supervision_period_supervision_contact_association_table.name: [],
-        }
-
     def build_incarceration_pipeline_data_dict(
-        self, fake_person_id: int, state_code: str = "US_XX"
+        fake_person_id: int, state_code: str = "US_XX"
     ) -> Dict[str, List]:
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
@@ -466,7 +445,9 @@ class TestIncarcerationPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict = self._default_data_dict()
+        data_dict = default_data_dict_for_root_schema_classes(
+            ROOT_SCHEMA_CLASSES_FOR_PIPELINE
+        )
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
@@ -707,7 +688,9 @@ class TestIncarcerationPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict = self._default_data_dict()
+        data_dict = default_data_dict_for_root_schema_classes(
+            ROOT_SCHEMA_CLASSES_FOR_PIPELINE
+        )
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StateSentenceGroup.__tablename__: sentence_group_data,

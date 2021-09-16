@@ -53,6 +53,9 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
     FakeReadFromBigQuery,
     FakeReadFromBigQueryFactory,
 )
+from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
+    default_data_dict_for_root_schema_classes,
+)
 from recidiviz.tests.persistence.database import database_test_utils
 
 
@@ -184,8 +187,9 @@ class TestBuildRootEntity(unittest.TestCase):
         )
 
         assessment_data = [normalized_database_base_dict(assessment_1)]
+        data_dict = default_data_dict_for_root_schema_classes([schema.StatePerson])
 
-        data_dict = {
+        data_dict_overrides = {
             schema.StatePerson.__tablename__: fake_person_data,
             schema.StatePersonEthnicity.__tablename__: ethnicities_data,
             schema.StatePersonAlias.__tablename__: alias_data,
@@ -193,8 +197,8 @@ class TestBuildRootEntity(unittest.TestCase):
             schema.StateSentenceGroup.__tablename__: sentence_group_data,
             schema.StateAssessment.__tablename__: assessment_data,
             schema.StatePersonRace.__tablename__: races_data,
-            schema.StateProgramAssignment.__tablename__: [],
         }
+        data_dict.update(data_dict_overrides)
 
         fake_person_entity = StateSchemaToEntityConverter().convert(fake_person)
 
@@ -662,7 +666,9 @@ class TestBuildRootEntity(unittest.TestCase):
 
         assessment_data = [normalized_database_base_dict(assessment_1)]
 
-        data_dict = {
+        data_dict = default_data_dict_for_root_schema_classes([schema.StatePerson])
+
+        data_dict_overrides = {
             schema.StatePerson.__tablename__: fake_person_data,
             schema.StatePersonEthnicity.__tablename__: ethnicities_data,
             schema.StatePersonAlias.__tablename__: alias_data,
@@ -672,6 +678,7 @@ class TestBuildRootEntity(unittest.TestCase):
             schema.StatePersonRace.__tablename__: races_data,
             schema.StateProgramAssignment.__tablename__: [],
         }
+        data_dict.update(data_dict_overrides)
 
         fake_person_entity = StateSchemaToEntityConverter().convert(fake_person)
 
@@ -816,7 +823,9 @@ class TestBuildRootEntity(unittest.TestCase):
 
         assessment_data = [normalized_database_base_dict(assessment_1)]
 
-        data_dict = {
+        data_dict = default_data_dict_for_root_schema_classes([schema.StatePerson])
+
+        data_dict_overrides = {
             schema.StatePerson.__tablename__: fake_person_data,
             schema.StatePersonEthnicity.__tablename__: ethnicities_data,
             schema.StatePersonAlias.__tablename__: alias_data,
@@ -824,8 +833,8 @@ class TestBuildRootEntity(unittest.TestCase):
             schema.StateSentenceGroup.__tablename__: sentence_group_data,
             schema.StateAssessment.__tablename__: assessment_data,
             schema.StatePersonRace.__tablename__: races_data,
-            schema.StateProgramAssignment.__tablename__: [],
         }
+        data_dict.update(data_dict_overrides)
 
         fake_person_entity = StateSchemaToEntityConverter().convert(fake_person)
 
@@ -884,7 +893,7 @@ class TestExtractEntity(unittest.TestCase):
 
     def testExtractEntity(self):
         person = remove_relationship_properties(
-            database_test_utils.generate_test_person(123, "US_XX", [], None)
+            database_test_utils.generate_test_person(123, "US_XX", [], None, [])
         )
 
         person_data = [normalized_database_base_dict(person)]
@@ -928,7 +937,7 @@ class TestExtractEntity(unittest.TestCase):
 
     def testExtractEntity_InvalidUnifyingIdField(self):
         person = remove_relationship_properties(
-            database_test_utils.generate_test_person(123, "US_XX", [], None)
+            database_test_utils.generate_test_person(123, "US_XX", [], None, [])
         )
 
         person_data = [normalized_database_base_dict(person)]
@@ -970,7 +979,7 @@ class TestExtractEntity(unittest.TestCase):
 
     def testExtractEntity_InvalidRootIdField(self):
         incarceration_period = remove_relationship_properties(
-            database_test_utils.generate_test_incarceration_period(123, [], [])
+            database_test_utils.generate_test_incarceration_period(123, [])
         )
 
         incarceration_period_data = [
@@ -1018,22 +1027,20 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
     def testExtractRelationshipPropertyEntities_With1ToMany(self):
         """Tests the ExtractRelationshipPropertyEntities PTransform when there
         are 1-to-many relationships to be hydrated."""
-        person = database_test_utils.generate_test_person(123, "US_XX", [], None)
+        person = database_test_utils.generate_test_person(123, "US_XX", [], None, [])
 
         assessment = database_test_utils.generate_test_assessment(
             person_id=person.person_id
         )
 
-        data_dict = {
+        data_dict = default_data_dict_for_root_schema_classes([schema.StatePerson])
+
+        data_dict_overrides = {
             person.__tablename__: normalized_database_base_dict_list([person]),
             assessment.__tablename__: normalized_database_base_dict_list([assessment]),
-            schema.StatePersonExternalId.__tablename__: [],
-            schema.StatePersonRace.__tablename__: [],
-            schema.StatePersonEthnicity.__tablename__: [],
-            schema.StateProgramAssignment.__tablename__: [],
-            schema.StateSentenceGroup.__tablename__: [],
-            schema.StatePersonAlias.__tablename__: [],
         }
+        data_dict.update(data_dict_overrides)
+
         dataset = "recidiviz-123.state"
         with patch(
             "recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery",
@@ -1066,6 +1073,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                     "races",
                     "assessments",
                     "program_assignments",
+                    "incarceration_incidents",
                     "sentence_groups",
                     "supervising_officer",
                 },

@@ -575,6 +575,7 @@ class StatePerson(IngestObject):
         state_assessments=None,
         state_sentence_groups=None,
         state_program_assignments=None,
+        state_incarceration_incidents=None,
         supervising_officer=None,
         state_code=None,
     ):
@@ -605,6 +606,9 @@ class StatePerson(IngestObject):
         )
         self.state_program_assignments: List[StateProgramAssignment] = (
             state_program_assignments or []
+        )
+        self.state_incarceration_incidents: List[StateIncarcerationIncident] = (
+            state_incarceration_incidents or []
         )
         self.supervising_officer: Optional[StateAgent] = supervising_officer
 
@@ -645,6 +649,13 @@ class StatePerson(IngestObject):
         program_assignment = StateProgramAssignment(**kwargs)
         self.state_program_assignments.append(program_assignment)
         return program_assignment
+
+    def create_state_incarceration_incident(
+        self, **kwargs
+    ) -> "StateIncarcerationIncident":
+        incarceration_incident = StateIncarcerationIncident(**kwargs)
+        self.state_incarceration_incidents.append(incarceration_incident)
+        return incarceration_incident
 
     def create_state_agent(self, **kwargs) -> "StateAgent":
         self.supervising_officer = StateAgent(**kwargs)
@@ -716,6 +727,18 @@ class StatePerson(IngestObject):
             None,
         )
 
+    def get_state_incarceration_incident_by_id(
+        self, state_incarceration_incident_id
+    ) -> Optional["StateIncarcerationIncident"]:
+        return next(
+            (
+                ii
+                for ii in self.state_incarceration_incidents
+                if ii.state_incarceration_incident_id == state_incarceration_incident_id
+            ),
+            None,
+        )
+
     def get_state_sentence_group_by_id(
         self, sentence_group_id
     ) -> Optional["StateSentenceGroup"]:
@@ -732,6 +755,13 @@ class StatePerson(IngestObject):
         self.state_sentence_groups = [
             sg.prune() for sg in self.state_sentence_groups if sg
         ]
+        self.state_assessments = [a.prune() for a in self.state_assessments if a]
+        self.state_program_assignments = [
+            p for p in self.state_program_assignments if p
+        ]
+        self.state_incarceration_incidents = [
+            ii.prune() for ii in self.state_incarceration_incidents if ii
+        ]
         if not self.supervising_officer:
             self.supervising_officer = None
         return self
@@ -743,6 +773,7 @@ class StatePerson(IngestObject):
         self.state_person_external_ids.sort()
         self.state_assessments.sort()
         self.state_program_assignments.sort()
+        self.state_incarceration_incidents.sort()
 
         for sentence_group in self.state_sentence_groups:
             sentence_group.sort()
@@ -1363,7 +1394,6 @@ class StateIncarcerationPeriod(IngestObject):
         projected_release_reason=None,
         release_reason=None,
         specialized_purpose_for_incarceration=None,
-        state_incarceration_incidents=None,
         state_parole_decisions=None,
         custodial_authority=None,
     ):
@@ -1387,9 +1417,6 @@ class StateIncarcerationPeriod(IngestObject):
         ] = specialized_purpose_for_incarceration
         self.custodial_authority = custodial_authority
 
-        self.state_incarceration_incidents: List[StateIncarcerationIncident] = (
-            state_incarceration_incidents or []
-        )
         self.state_parole_decisions: List[StateParoleDecision] = (
             state_parole_decisions or []
         )
@@ -1397,39 +1424,16 @@ class StateIncarcerationPeriod(IngestObject):
     def __setattr__(self, name, value):
         restricted_setattr(self, "state_parole_decisions", name, value)
 
-    def create_state_incarceration_incident(
-        self, **kwargs
-    ) -> "StateIncarcerationIncident":
-        incarceration_incident = StateIncarcerationIncident(**kwargs)
-        self.state_incarceration_incidents.append(incarceration_incident)
-        return incarceration_incident
-
     def create_state_parole_decision(self, **kwargs) -> "StateParoleDecision":
         parole_decision = StateParoleDecision(**kwargs)
         self.state_parole_decisions.append(parole_decision)
         return parole_decision
 
-    def get_state_incarceration_incident_by_id(
-        self, state_incarceration_incident_id
-    ) -> Optional["StateIncarcerationIncident"]:
-        return next(
-            (
-                ii
-                for ii in self.state_incarceration_incidents
-                if ii.state_incarceration_incident_id == state_incarceration_incident_id
-            ),
-            None,
-        )
-
     def prune(self) -> "StateIncarcerationPeriod":
-        self.state_incarceration_incidents = [
-            ii for ii in self.state_incarceration_incidents if ii
-        ]
         self.state_parole_decisions = [pd for pd in self.state_parole_decisions if pd]
         return self
 
     def sort(self):
-        self.state_incarceration_incidents.sort()
         self.state_parole_decisions.sort()
 
 

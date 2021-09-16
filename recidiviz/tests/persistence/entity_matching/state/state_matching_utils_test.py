@@ -308,18 +308,16 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
 
     def test_getRootEntity(self) -> None:
         # Arrange
-        incarceration_incident = schema.StateIncarcerationIncident(
-            external_id=_EXTERNAL_ID
+        violation = schema.StateSupervisionViolation(external_id=_EXTERNAL_ID)
+        placeholder_supervision_period = schema.StateSupervisionPeriod(
+            supervision_violations=[violation]
         )
-        placeholder_incarceration_period = schema.StateIncarcerationPeriod(
-            incarceration_incidents=[incarceration_incident]
-        )
-        placeholder_incarceration_sentence = schema.StateIncarcerationSentence(
-            incarceration_periods=[placeholder_incarceration_period]
+        placeholder_supervision_sentence = schema.StateSupervisionSentence(
+            supervision_periods=[placeholder_supervision_period]
         )
         placeholder_sentence_group = schema.StateSentenceGroup(
             sentence_group_id=None,
-            incarceration_sentences=[placeholder_incarceration_sentence],
+            supervision_sentences=[placeholder_supervision_sentence],
         )
         person = schema.StatePerson(sentence_groups=[placeholder_sentence_group])
 
@@ -327,7 +325,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         root_entity_cls = get_root_entity_cls([person])
 
         # Assert
-        self.assertEqual(schema.StateIncarcerationIncident, root_entity_cls)
+        self.assertEqual(schema.StateSupervisionViolation, root_entity_cls)
 
     def test_getRootEntity_emptyList_raises(self) -> None:
         with self.assertRaises(EntityMatchingError):

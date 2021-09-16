@@ -78,6 +78,7 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
     FakeWriteToBigQueryFactory,
 )
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
+    default_data_dict_for_root_schema_classes,
     run_test_pipeline,
     test_pipeline_options,
 )
@@ -92,6 +93,12 @@ ALL_METRIC_INCLUSIONS_DICT = {
     MetricType.REINCARCERATION_COUNT: True,
     MetricType.REINCARCERATION_RATE: True,
 }
+
+ROOT_SCHEMA_CLASSES_FOR_PIPELINE = [
+    schema.StatePerson,
+    schema.StateIncarcerationPeriod,
+    schema.StateSupervisionPeriod,
+]
 
 
 class TestRecidivismPipeline(unittest.TestCase):
@@ -229,22 +236,19 @@ class TestRecidivismPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict: Dict[str, List[Dict[str, Any]]] = {
+        data_dict = default_data_dict_for_root_schema_classes(
+            ROOT_SCHEMA_CLASSES_FOR_PIPELINE
+        )
+        data_dict_overrides: Dict[str, List[Dict[str, Any]]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
             schema.StatePersonEthnicity.__tablename__: ethnicity_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
-            schema.StateAssessment.__tablename__: [],
-            schema.StatePersonExternalId.__tablename__: [],
-            schema.StatePersonAlias.__tablename__: [],
-            schema.StateSentenceGroup.__tablename__: [],
-            schema.StateProgramAssignment.__tablename__: [],
-            schema.StateIncarcerationIncident.__tablename__: [],
-            schema.StateParoleDecision.__tablename__: [],
             "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
         }
+        data_dict.update(data_dict_overrides)
 
         return data_dict
 

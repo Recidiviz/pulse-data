@@ -302,6 +302,9 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     program_assignments: List["StateProgramAssignment"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
+    incarceration_incidents: List["StateIncarcerationIncident"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
     sentence_groups: List["StateSentenceGroup"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
@@ -929,9 +932,6 @@ class StateIncarcerationPeriod(
         factory=list, validator=attr_validators.is_list
     )
 
-    incarceration_incidents: List["StateIncarcerationIncident"] = attr.ib(
-        factory=list, validator=attr_validators.is_list
-    )
     parole_decisions: List["StateParoleDecision"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
@@ -1185,7 +1185,6 @@ class StateIncarcerationIncident(ExternalIdEntity, BuildableAttr, DefaultableAtt
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
     responding_officer: Optional["StateAgent"] = attr.ib(default=None)
-    incarceration_period: Optional["StateIncarcerationPeriod"] = attr.ib(default=None)
 
     incarceration_incident_outcomes: List[
         "StateIncarcerationIncidentOutcome"

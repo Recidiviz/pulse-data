@@ -26,9 +26,6 @@ from recidiviz.persistence.entity_matching.entity_matching_types import EntityTr
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
     BaseStateMatchingDelegate,
 )
-from recidiviz.persistence.entity_matching.state.state_incarceration_incident_matching_utils import (
-    move_incidents_onto_periods,
-)
 from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     nonnull_fields_entity_match,
 )
@@ -49,8 +46,6 @@ class UsNdMatchingDelegate(BaseStateMatchingDelegate):
     def perform_match_postprocessing(self, matched_persons: List[schema.StatePerson]):
         """Performs the following ND specific postprocessing on the provided
         |matched_persons| directly after they have been entity matched:
-            - Move IncarcerationIncidents onto IncarcerationPeriods based on
-              date.
             - Transform IncarcerationPeriods periods of temporary custody
               (holds), when appropriate.
             - Associates SupervisionViolationResponses with IncarcerationPeriods
@@ -58,9 +53,6 @@ class UsNdMatchingDelegate(BaseStateMatchingDelegate):
             - Moves supervising_officer from StatePerson onto open
               SupervisionPeriods.
         """
-        logging.info("[Entity matching] Move incidents into periods")
-        move_incidents_onto_periods(matched_persons)
-
         logging.info("[Entity matching] Transform incarceration periods into holds")
         update_temporary_holds(matched_persons)
 
