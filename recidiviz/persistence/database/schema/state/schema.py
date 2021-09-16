@@ -1657,11 +1657,11 @@ class StateAssessment(StateBase, _StateAssessmentSharedColumns):
 
     __tablename__ = "state_assessment"
     __table_args__ = {
-        "comment": "The StateAssessment object represents information about an assessment conducted for some person. "
-        "Assessments are used in various stages of the justice system to assess a person's risk, or a "
-        "person's needs, or to determine what course of action to take, such as pretrial sentencing or "
-        "program reference. A StateAssessment is always about a particular person, but it may also be "
-        "optionally linked to a particular StateIncarcerationPeriod or StateSupervisionPeriod."
+        "comment": "The StateAssessment object represents information about an "
+        "assessment conducted for some person. Assessments are used in various stages "
+        "of the justice system to assess a person's risk, or a person's needs, or to "
+        "determine what course of action to take, such as pretrial sentencing or "
+        "program reference."
     }
 
     assessment_id = Column(
@@ -2250,23 +2250,25 @@ class StateIncarcerationPeriod(StateBase, _StateIncarcerationPeriodSharedColumns
             initially="DEFERRED",
         ),
         {
-            "comment": "The StateIncarcerationPeriod object represents information about a single period of "
-            "incarceration, defined as a contiguous stay by a particular person in a particular facility. "
-            "As a person transfers from facility to facility, these are modeled as multiple abutting "
-            "incarceration periods. This also extends to temporary transfers to, say, hospitals or court "
-            "appearances. The sequence of incarceration periods can be squashed into longer conceptual "
-            "periods (e.g. from the first admission to the final release for a particular sentence) for "
-            "analytical purposes, such as measuring recidivism and revocation -- this is done with a "
-            "fine-grained examination of the admission dates, admission reasons, release dates, and "
-            "release reasons of consecutive incarceration periods.<br /><br />Handling of incarceration periods is "
-            "a crucial aspect of our platform and involves work in jurisdictional ingest mappings, "
-            "entity matching, and calculation. Fortunately, this means that we have practice working with "
-            "varied representations of this information.<br /><br />Incarceration Periods can be children of either "
-            "Incarceration Sentences or Supervision Sentences, for reasons established in the descriptions "
-            "of those objects. Incarceration periods have zero to many Incarceration Incidents as children, "
-            "and zero to many Parole Decisions. They also may have Assessments or Program Assignments as "
-            "children, if any of those objects are explicitly related to this particular period of "
-            "incarceration."
+            "comment": "The StateIncarcerationPeriod object represents information "
+            "about a single period of incarceration, defined as a contiguous stay by a "
+            "particular person in a particular facility. As a person transfers from "
+            "facility to facility, these are modeled as multiple abutting "
+            "incarceration periods. This also extends to temporary transfers to, say, "
+            "hospitals or court appearances. The sequence of incarceration periods can "
+            "be squashed into longer conceptual periods (e.g. from the first admission "
+            "to the final release for a particular sentence) for analytical purposes, "
+            "such as measuring recidivism and revocation -- this is done with a "
+            "fine-grained examination of the admission dates, admission reasons, "
+            "release dates, and release reasons of consecutive incarceration periods."
+            "<br /><br />Handling of incarceration periods is a crucial aspect of our "
+            "platform and involves work in jurisdictional ingest mappings, entity "
+            "matching, and calculation. Fortunately, this means that we have practice "
+            "working with varied representations of this information."
+            "<br /><br />Incarceration Periods can be children of either Incarceration "
+            "Sentences or Supervision Sentences, for reasons established in the "
+            "descriptions of those objects. Incarceration periods have zero to many "
+            "Parole Decisions as children."
         },
     )
     incarceration_period_id = Column(
@@ -2434,19 +2436,19 @@ class StateSupervisionPeriod(StateBase, _StateSupervisionPeriodSharedColumns):
 
     __tablename__ = "state_supervision_period"
     __table_args__ = {
-        "comment": "The StateSupervisionPeriod object represents information about a single period of "
-        "supervision, defined as a contiguous period of custody for a particular person "
-        "under a particular jurisdiction. As a person transfers from jurisdiction to "
-        "jurisdiction, these are modeled as multiple abutting supervision periods. Multiple "
-        "periods of supervision for a particular person may be overlapping, due to extended "
-        "periods of supervision that are temporarily interrupted by, say, periods of "
-        "incarceration, or periods of supervision stemming from charges in different "
-        "jurisdictions.<br /><br />StateSupervisionPeriods can be children of either "
-        "StateIncarcerationSentences or StateSupervisionSentences, for reasons established "
-        "in the descriptions of those objects.<br /><br />StateSupervisionPeriods have zero"
-        " to many StateSupervisionViolations as children. They also may have StateAssessments "
-        "or StateProgramAssignments as children, if any of those objects are explicitly "
-        "related to this particular period of supervision."
+        "comment": "The StateSupervisionPeriod object represents information about a "
+        "single period of supervision, defined as a contiguous period of custody for a "
+        "particular person under a particular jurisdiction. As a person transfers "
+        "between supervising locations, these are modeled as multiple abutting "
+        "supervision periods. Multiple periods of supervision for a particular person "
+        "may be overlapping, due to extended periods of supervision that are "
+        "temporarily interrupted by, say, periods of incarceration, or periods of "
+        "supervision stemming from different charges."
+        "<br/><br />StateSupervisionPeriods can be children of either "
+        "StateIncarcerationSentences or StateSupervisionSentences, for reasons "
+        "established in the descriptions of those objects."
+        "<br /><br />StateSupervisionPeriods have zero to many "
+        "StateSupervisionViolations as children."
     }
 
     supervision_period_id = Column(
@@ -3776,16 +3778,16 @@ class StateProgramAssignment(StateBase, _StateProgramAssignmentSharedColumns):
             initially="DEFERRED",
         ),
         {
-            "comment": "The StateProgramAssignment object represents information about the assignment of a person to "
-            "some form of rehabilitative programming -- and their participation in the program -- intended "
-            "to address specific needs of the person. People can be assigned to programs while under various "
-            "forms of custody, principally while incarcerated or under supervision. These programs can be "
-            "administered by the agency/government, by a quasi-governmental organization, by a private third "
-            "party, or any other number of service providers. A StateProgramAssignment is always for a "
-            "particular person, but it may also be optionally linked to a particular StateIncarcerationPeriod "
-            "or StateSupervisionPeriod if the program is explicitly within the bounds of that period of "
-            "custody. The programming-related portion of our schema is still being constructed and will be "
-            "added to in the near future."
+            "comment": "The StateProgramAssignment object represents information about "
+            "the assignment of a person to some form of rehabilitative programming -- "
+            "and their participation in the program -- intended to address specific "
+            "needs of the person. People can be assigned to programs while under "
+            "various forms of custody, principally while incarcerated or under "
+            "supervision. These programs can be administered by the "
+            "agency/government, by a quasi-governmental organization, by a private "
+            "third party, or any other number of service providers. The "
+            "programming-related portion of our schema is still being constructed and "
+            "will be added to in the near future."
         },
     )
 
