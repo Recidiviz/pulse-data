@@ -16,8 +16,9 @@
 # ============================================================================
 """Domain logic entities used in the persistence layer for state data.
 
-Note: These classes mirror the SQL Alchemy ORM objects but are kept separate. This allows these persistence layer
-objects additional flexibility that the SQL Alchemy ORM objects can't provide.
+Note: These classes mirror the SQL Alchemy ORM objects but are kept separate. This
+allows these persistence layer objects additional flexibility that the SQL Alchemy
+ORM objects can't provide.
 """
 
 import datetime
@@ -150,8 +151,8 @@ class StatePersonExternalId(Entity, BuildableAttr, DefaultableAttr):
     #   - What
     id_type: str = attr.ib(validator=attr_validators.is_str)
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     person_external_id_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -179,8 +180,8 @@ class StatePersonAlias(Entity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt_str
     )
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     person_alias_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -202,8 +203,8 @@ class StatePersonRace(EnumEntity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt_str
     )
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     person_race_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -227,8 +228,8 @@ class StatePersonEthnicity(EnumEntity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt_str
     )
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     person_ethnicity_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -276,8 +277,8 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt(ResidencyStatus)
     )
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     person_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -305,9 +306,6 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
         factory=list, validator=attr_validators.is_list
     )
     supervising_officer: Optional["StateAgent"] = attr.ib(default=None)
-
-    # NOTE: Eventually we might have a relationship to objects holding pre-sentence information so we can track
-    # encounters with the justice system that don't result in sentences.
 
 
 @attr.s(eq=False, kw_only=True)
@@ -348,8 +346,8 @@ class StateCourtCase(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     county_code: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
-    # Area of jurisdictional coverage of the court which tried the case, may be the same as the county, the entire
-    # state, or some jurisdiction out of the state.
+    # Area of jurisdictional coverage of the court which tried the case, may be the
+    # same as the county, the entire state, or some jurisdiction out of the state.
     judicial_district_code: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
@@ -363,8 +361,8 @@ class StateCourtCase(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - Who
     # See |judge| below
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     court_case_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -455,8 +453,8 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt_str
     )
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     charge_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -520,22 +518,24 @@ class StateAssessment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - Who
     # See |conducting_agent| below
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     assessment_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
 
     # Cross-entity relationships
 
-    # Only optional when hydrated in the data converter, before we have written this entity to the persistence layer
+    # Only optional when hydrated in the data converter, before we have written this
+    # entity to the persistence layer
     person: Optional["StatePerson"] = attr.ib(default=None)
     conducting_agent: Optional["StateAgent"] = attr.ib(default=None)
 
 
 @attr.s(eq=False, kw_only=True)
 class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
-    """Models a group of related sentences, which may be served consecutively or concurrently."""
+    """Models a group of related sentences, which may be served consecutively or
+    concurrently."""
 
     # State Code
     state_code: str = attr.ib(validator=attr_validators.is_str)
@@ -547,8 +547,8 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     )
 
     # Status
-    # TODO(#1698): Look at Measures for Justice doc for methodology on how to calculate an aggregate sentence status
-    #  from multiple sentence statuses.
+    # TODO(#1698): Look at Measures for Justice doc for methodology on how to calculate
+    #  an aggregate sentence status from multiple sentence statuses.
     # This will be a composite of all the linked individual statuses
     status: StateSentenceStatus = attr.ib(
         default=None, validator=attr.validators.instance_of(StateSentenceStatus)
@@ -568,11 +568,11 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # TODO(#1698): Consider including rollup projected completion dates?
 
     #   - What
-    # See |supervision_sentences|, |incarceration_sentences|, and |fines| in entity relationships below for more of the
-    # What.
+    # See |supervision_sentences| and |incarceration_sentences| in entity
+    # relationships below for more of the What.
 
-    # Total length periods, either rolled up from individual sentences or directly reported from the ingested
-    # source data
+    # Total length periods, either rolled up from individual sentences or directly
+    # reported from the ingested source data
     min_length_days: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -587,8 +587,8 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - Who
     # See |person| in entity relationships below.
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     sentence_group_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -607,7 +607,8 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 @attr.s(eq=False, kw_only=True)
 class StateSupervisionSentence(ExternalIdEntity, BuildableAttr, DefaultableAttr):
-    """Models a sentence for a supervisory period associated with one or more Charges against a StatePerson."""
+    """Models a sentence for a supervisory period associated with one or more Charges
+    against a StatePerson."""
 
     # State Code
     state_code: str = attr.ib(validator=attr_validators.is_str)
@@ -666,8 +667,8 @@ class StateSupervisionSentence(ExternalIdEntity, BuildableAttr, DefaultableAttr)
 
     #   - Who
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     supervision_sentence_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -679,8 +680,8 @@ class StateSupervisionSentence(ExternalIdEntity, BuildableAttr, DefaultableAttr)
         factory=list, validator=attr_validators.is_list
     )
 
-    # NOTE: A person might have an incarceration period associated with a supervision sentence if they violate the
-    # terms of the sentence and are sent back to prison.
+    # NOTE: A person might have an incarceration period associated with a supervision
+    # sentence if they violate the terms of the sentence and are sent back to prison.
     incarceration_periods: List["StateIncarcerationPeriod"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
@@ -694,7 +695,8 @@ class StateSupervisionSentence(ExternalIdEntity, BuildableAttr, DefaultableAttr)
 
 @attr.s(eq=False, kw_only=True)
 class StateIncarcerationSentence(ExternalIdEntity, BuildableAttr, DefaultableAttr):
-    """Models a sentence for prison/jail time associated with one or more Charges against a StatePerson."""
+    """Models a sentence for prison/jail time associated with one or more Charges
+    against a StatePerson."""
 
     # State Code
     state_code: str = attr.ib(validator=attr_validators.is_str)
@@ -780,8 +782,8 @@ class StateIncarcerationSentence(ExternalIdEntity, BuildableAttr, DefaultableAtt
     #   - Who
     # See |person| in entity relationships below.
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     incarceration_sentence_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -808,8 +810,8 @@ class StateIncarcerationSentence(ExternalIdEntity, BuildableAttr, DefaultableAtt
 class StateIncarcerationPeriod(
     ExternalIdEntity, BuildableAttr, DefaultableAttr, DurationMixin
 ):
-    """Models an uninterrupted period of time that a StatePerson is incarcerated at a single facility as a result of a
-    particular sentence.
+    """Models an uninterrupted period of time that a StatePerson is incarcerated at a
+    single facility as a result of a particular sentence.
     """
 
     # State Code
@@ -898,8 +900,8 @@ class StateIncarcerationPeriod(
         default=None, validator=attr_validators.is_opt_str
     )
 
-    # The type of government entity directly responsible for the person in this period of incarceration.
-    # Not necessarily the decision making authority.
+    # The type of government entity directly responsible for the person in this period
+    # of incarceration. Not necessarily the decision making authority.
     custodial_authority: Optional[StateCustodialAuthority] = attr.ib(
         default=None, validator=attr_validators.is_opt(StateCustodialAuthority)
     )
@@ -910,8 +912,8 @@ class StateIncarcerationPeriod(
     #   - Who
     # See |person| in entity relationships below.
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     incarceration_period_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -936,12 +938,14 @@ class StateIncarcerationPeriod(
 
     @property
     def duration(self) -> DateRange:
-        """Generates a DateRange for the days covered by the incarceration period.  Since DateRange is never open,
-        if the incarceration period is still active, then the exclusive upper bound of the range is set to tomorrow.
+        """Generates a DateRange for the days covered by the incarceration period. Since
+        DateRange is never open, if the incarceration period is still active,
+        then the exclusive upper bound of the range is set to tomorrow.
         """
         if not self.admission_date:
             raise ValueError(
-                f"Expected start date for period {self.incarceration_period_id}, found None"
+                f"Expected start date for period {self.incarceration_period_id}, "
+                "found None"
             )
 
         if (
@@ -970,14 +974,15 @@ class StateIncarcerationPeriod(
 class StateSupervisionPeriod(
     ExternalIdEntity, BuildableAttr, DefaultableAttr, DurationMixin
 ):
-    """Models a distinct period of time that a StatePerson is under supervision as a result of a particular sentence."""
+    """Models a distinct period of time that a StatePerson is under supervision as a
+    result of a particular sentence."""
 
     # State Code
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Type
-    # TODO(#2891): DEPRECATED - use supervision_period_supervision_type instead. Delete this field once all existing
-    #  users have migrated to the new field.
+    # TODO(#2891): DEPRECATED - use supervision_period_supervision_type instead. Delete
+    #  this field once all existing users have migrated to the new field.
     supervision_type: Optional[StateSupervisionType] = attr.ib(
         default=None, validator=attr_validators.is_opt(StateSupervisionType)
     )
@@ -1037,8 +1042,8 @@ class StateSupervisionPeriod(
         default=None, validator=attr_validators.is_opt_str
     )
 
-    # The type of government entity directly responsible for the person on this period of supervision.
-    # Not necessarily the decision making authority.
+    # The type of government entity directly responsible for the person on this period
+    # of supervision. Not necessarily the decision making authority.
     custodial_authority: Optional[StateCustodialAuthority] = attr.ib(
         default=None, validator=attr_validators.is_opt(StateCustodialAuthority)
     )
@@ -1053,8 +1058,8 @@ class StateSupervisionPeriod(
     #   - Who
     # See |person| in entity relationships below.
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     supervision_period_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -1082,12 +1087,14 @@ class StateSupervisionPeriod(
 
     @property
     def duration(self) -> DateRange:
-        """Generates a DateRange for the days covered by the supervision period.  Since DateRange is never open,
-        if the supervision period is still active, then the exclusive upper bound of the range is set to tomorrow.
+        """Generates a DateRange for the days covered by the supervision period. Since
+        DateRange is never open, if the supervision period is still active, then the
+        exclusive upper bound of the range is set to tomorrow.
         """
         if not self.start_date:
             raise ValueError(
-                f"Expected start date for period {self.supervision_period_id}, found None"
+                f"Expected start date for period {self.supervision_period_id}, "
+                "found None"
             )
 
         return DateRange.from_maybe_open_range(
@@ -1117,8 +1124,8 @@ class StateSupervisionCaseTypeEntry(EnumEntity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt_str
     )
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     supervision_case_type_entry_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -1169,8 +1176,8 @@ class StateIncarcerationIncident(ExternalIdEntity, BuildableAttr, DefaultableAtt
     #   - Who
     # See |responding_officer| below
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     incarceration_incident_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -1226,8 +1233,8 @@ class StateIncarcerationIncidentOutcome(
     #   - Who
     # See |person| below
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     incarceration_incident_outcome_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -1256,7 +1263,8 @@ class StateParoleDecision(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     )
 
     #   - Where
-    # The county where the decision was made, if different from the county where this person is incarcerated.
+    # The county where the decision was made, if different from the county where this
+    # person is incarcerated.
     county_code: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
@@ -1278,8 +1286,8 @@ class StateParoleDecision(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - Who
     # See |decision_agents| below
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     parole_decision_id: Optional[int] = attr.ib(default=None)
 
     # Cross-entity relationships
@@ -1292,7 +1300,8 @@ class StateParoleDecision(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 @attr.s(eq=False, kw_only=True)
 class StateSupervisionViolationTypeEntry(EnumEntity, BuildableAttr, DefaultableAttr):
-    """Models a violation type associated with a particular StateSupervisionViolation."""
+    """Models a violation type associated with a particular
+    StateSupervisionViolation."""
 
     # State Code
     state_code: str = attr.ib(validator=attr_validators.is_str)
@@ -1305,8 +1314,8 @@ class StateSupervisionViolationTypeEntry(EnumEntity, BuildableAttr, DefaultableA
         default=None, validator=attr_validators.is_opt_str
     )
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     supervision_violation_type_entry_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -1320,8 +1329,8 @@ class StateSupervisionViolationTypeEntry(EnumEntity, BuildableAttr, DefaultableA
 class StateSupervisionViolatedConditionEntry(
     EnumEntity, BuildableAttr, DefaultableAttr
 ):
-    """Models a condition applied to a supervision sentence, whose violation may be recorded in a
-    StateSupervisionViolation.
+    """Models a condition applied to a supervision sentence, whose violation may be
+    recorded in a StateSupervisionViolation.
     """
 
     # State Code
@@ -1331,8 +1340,8 @@ class StateSupervisionViolatedConditionEntry(
     # A string code corresponding to the condition - region specific.
     condition: str = attr.ib(validator=attr_validators.is_str)  # non-nullable
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     supervision_violated_condition_entry_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -1346,8 +1355,8 @@ class StateSupervisionViolatedConditionEntry(
 @attr.s(eq=False, kw_only=True)
 class StateSupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """
-    Models a recorded instance where a StatePerson has violated one or more of the conditions of their
-    StateSupervisionSentence.
+    Models a recorded instance where a StatePerson has violated one or more of the
+    conditions of their StateSupervisionSentence.
     """
 
     # State Code
@@ -1375,8 +1384,8 @@ class StateSupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr
     #   - Who
     # See |person| in entity relationships below.
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     supervision_violation_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -1401,7 +1410,8 @@ class StateSupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr
 class StateSupervisionViolationResponseDecisionEntry(
     Entity, BuildableAttr, DefaultableAttr
 ):
-    """Models the type of decision resulting from a response to a StateSupervisionViolation."""
+    """Models the type of decision resulting from a response to a
+    StateSupervisionViolation."""
 
     # State Code
     state_code: str = attr.ib(validator=attr_validators.is_str)
@@ -1415,8 +1425,8 @@ class StateSupervisionViolationResponseDecisionEntry(
         default=None, validator=attr_validators.is_opt_str
     )
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     supervision_violation_response_decision_entry_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -1478,8 +1488,8 @@ class StateSupervisionViolationResponse(
     )
     # See also |decision_agents| below
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     supervision_violation_response_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -1516,8 +1526,8 @@ class StateAgent(ExternalIdEntity, BuildableAttr, DefaultableAttr):
         default=None, validator=attr_validators.is_opt_str
     )
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     agent_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -1571,8 +1581,8 @@ class StateProgramAssignment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - Who
     # See |person| in entity relationships below.
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     program_assignment_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -1633,8 +1643,8 @@ class StateEarlyDischarge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - Who
     # See |person| in entity relationships below.
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     early_discharge_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
@@ -1710,8 +1720,8 @@ class StateSupervisionContact(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #   - Who
     # See |person| in entity relationships below.
 
-    # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
-    # persistence layer
+    # Primary key - Only optional when hydrated in the data converter, before we have
+    # written this entity to the persistence layer
     supervision_contact_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
