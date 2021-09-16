@@ -49,7 +49,7 @@ INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_QUERY_TEMPLATE = """
           {age_bucket}
         FROM
           `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_materialized` releases
-        WHERE release_reason in ('COMMUTED', 'COMPASSIONATE', 'CONDITIONAL_RELEASE', 'SENTENCE_SERVED', 'TRANSFER_OUT_OF_STATE', 'DEATH')
+        WHERE release_reason in ('COMMUTED', 'COMPASSIONATE', 'CONDITIONAL_RELEASE', 'SENTENCE_SERVED', 'TRANSFER_TO_OTHER_JURISDICTION', 'DEATH')
     ), ranked_releases_by_period AS (
         SELECT
           *,
@@ -67,7 +67,7 @@ INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_QUERY_TEMPLATE = """
       race_or_ethnicity,
       gender,
       age_bucket,
-      COUNT(DISTINCT IF(release_reason = 'TRANSFER_OUT_OF_STATE', person_id, NULL)) as external_transfer_count,
+      COUNT(DISTINCT IF(release_reason = 'TRANSFER_TO_OTHER_JURISDICTION', person_id, NULL)) as external_transfer_count,
       COUNT(DISTINCT IF(release_reason IN ('SENTENCE_SERVED', 'COMPASSIONATE', 'COMMUTED'), person_id, NULL)) as sentence_completion_count,
       COUNT(DISTINCT IF(release_reason = 'CONDITIONAL_RELEASE' AND supervision_type_at_release = 'PAROLE', person_id, NULL)) as parole_count,
       COUNT(DISTINCT IF(release_reason = 'CONDITIONAL_RELEASE' AND supervision_type_at_release = 'PROBATION', person_id, NULL)) as probation_count,

@@ -406,7 +406,7 @@ class UsPaController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "08",  # Other States' Deferred Sentence
             "09",  # Emergency Release - used for COVID releases
         ],
-        StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE: [
+        StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION: [
             "06",  # Paroled/Reparoled by other state and transferred to PA
             "07",  # Sentenced to Probation by other state and transferred to PA
         ],

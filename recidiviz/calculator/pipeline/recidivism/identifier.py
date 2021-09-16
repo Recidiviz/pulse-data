@@ -263,7 +263,7 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
                 AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
                 AdmissionReason.RETURN_FROM_TEMPORARY_RELEASE,
                 AdmissionReason.TEMPORARY_CUSTODY,
-                AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
+                AdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
                 AdmissionReason.STATUS_CHANGE,
             ):
                 continue
@@ -436,7 +436,7 @@ class RecidivismIdentifier(BaseIdentifier[Dict[int, List[ReleaseEvent]]]):
             # If the person was released from this incarceration period because they
             # were transferred elsewhere, do not include them in the release cohort.
             return False
-        if release_reason == ReleaseReason.TRANSFER_OUT_OF_STATE:
+        if release_reason == ReleaseReason.TRANSFER_TO_OTHER_JURISDICTION:
             # Releases where the person has been transferred out of state don't really
             # count as true releases.
             return False

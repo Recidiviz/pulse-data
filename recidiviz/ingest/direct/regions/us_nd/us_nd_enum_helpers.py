@@ -203,7 +203,7 @@ SHARED_OVERRIDES: Dict[Enum, List[str]] = {
         "RB",
         "SUPL",
     ],
-    StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE: ["OOS"],
+    StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION: ["OOS"],
     StateIncarcerationPeriodReleaseReason.ESCAPE: ["ESC", "ESCP", "ABSC"],
     StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR: ["ERR"],
     StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN: ["OTHER"],
@@ -233,7 +233,7 @@ SHARED_OVERRIDES: Dict[Enum, List[str]] = {
         "RB",
         "SUPL",
     ],
-    StateIncarcerationPeriodReleaseReason.TRANSFER_OUT_OF_STATE: ["TRN"],
+    StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION: ["TRN"],
     StateSupervisionType.HALFWAY_HOUSE: ["COMMUNITY PLACEMENT PGRM"],
     StateSupervisionType.PAROLE: ["SSOP"],
     # TODO(#2891): Ensure that this gets mapped down to a supervision_period_supervision_type of INVESTIGATION

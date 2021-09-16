@@ -142,8 +142,8 @@ state_incarceration_period_admission_reason_sanction_admission = "SANCTION_ADMIS
 state_incarceration_period_admission_reason_status_change = "STATUS_CHANGE"
 state_incarceration_period_admission_reason_temporary_custody = "TEMPORARY_CUSTODY"
 state_incarceration_period_admission_reason_transfer = "TRANSFER"
-state_incarceration_period_admission_reason_transferred_from_out_of_state = (
-    "TRANSFERRED_FROM_OUT_OF_STATE"
+state_incarceration_period_admission_reason_transfer_from_other_jurisdiction = (
+    "TRANSFER_FROM_OTHER_JURISDICTION"
 )
 
 state_incarceration_period_release_reason_commuted = "COMMUTED"
@@ -168,8 +168,8 @@ state_incarceration_period_release_reason_temporary_release = "TEMPORARY_RELEASE
 state_incarceration_period_release_reason_sentence_served = "SENTENCE_SERVED"
 state_incarceration_period_release_reason_status_change = "STATUS_CHANGE"
 state_incarceration_period_release_reason_transfer = "TRANSFER"
-state_incarceration_period_release_reason_transfer_out_of_state = (
-    "TRANSFER_OUT_OF_STATE"
+state_incarceration_period_release_reason_transfer_to_other_jurisdiction = (
+    "TRANSFER_TO_OTHER_JURISDICTION"
 )
 state_incarceration_period_release_reason_vacated = "VACATED"
 
@@ -212,8 +212,8 @@ state_supervision_period_admission_reason_absconsion = "ABSCONSION"
 state_supervision_period_admission_reason_conditional_release = "CONDITIONAL_RELEASE"
 state_supervision_period_admission_reason_court_sentence = "COURT_SENTENCE"
 state_supervision_period_admission_reason_investigation = "INVESTIGATION"
-state_supervision_period_admission_reason_transfer_out_of_state = (
-    "TRANSFER_OUT_OF_STATE"
+state_supervision_period_admission_reason_transfer_from_other_jurisdiction = (
+    "TRANSFER_FROM_OTHER_JURISDICTION"
 )
 state_supervision_period_admission_reason_transfer_within_state = (
     "TRANSFER_WITHIN_STATE"
@@ -251,8 +251,8 @@ state_supervision_period_termination_reason_dismissed = "DISMISSED"
 state_supervision_period_termination_reason_expiration = "EXPIRATION"
 state_supervision_period_termination_reason_investigation = "INVESTIGATION"
 state_supervision_period_termination_reason_pardoned = "PARDONED"
-state_supervision_period_termination_reason_transfer_out_of_state = (
-    "TRANSFER_OUT_OF_STATE"
+state_supervision_period_termination_reason_transfer_to_other_jurisdiction = (
+    "TRANSFER_TO_OTHER_JURISDICTION"
 )
 state_supervision_period_termination_reason_transfer_within_state = (
     "TRANSFER_WITHIN_STATE"

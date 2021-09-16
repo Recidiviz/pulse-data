@@ -59,7 +59,7 @@ class TestUsIdEnumMapperFunctions(unittest.TestCase):
             StateSupervisionPeriodTerminationReason.PARDONED,
             StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,
             StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
-            StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE,
+            StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION,
             StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
         }
 

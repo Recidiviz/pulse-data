@@ -2966,7 +2966,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
             status_raw_text="OUT-Y",
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             facility="NDSP",
-            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
             admission_reason_raw_text="OOS",
             admission_date=datetime.date(year=2018, month=2, day=28),
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,

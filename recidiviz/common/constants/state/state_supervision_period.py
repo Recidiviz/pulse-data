@@ -75,8 +75,8 @@ class StateSupervisionPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMeta
     INVESTIGATION = (
         state_enum_strings.state_supervision_period_admission_reason_investigation
     )
-    TRANSFER_OUT_OF_STATE = (
-        state_enum_strings.state_supervision_period_admission_reason_transfer_out_of_state
+    TRANSFER_FROM_OTHER_JURISDICTION = (
+        state_enum_strings.state_supervision_period_admission_reason_transfer_from_other_jurisdiction
     )
     TRANSFER_WITHIN_STATE = (
         state_enum_strings.state_supervision_period_admission_reason_transfer_within_state
@@ -204,8 +204,8 @@ class StateSupervisionPeriodTerminationReason(EntityEnum, metaclass=EntityEnumMe
     )
     # Used to denote supervision ended due to the sentence being officially pardoned (usually by governor).
     PARDONED = state_enum_strings.state_supervision_period_termination_reason_pardoned
-    TRANSFER_OUT_OF_STATE = (
-        state_enum_strings.state_supervision_period_termination_reason_transfer_out_of_state
+    TRANSFER_TO_OTHER_JURISDICTION = (
+        state_enum_strings.state_supervision_period_termination_reason_transfer_to_other_jurisdiction
     )
     TRANSFER_WITHIN_STATE = (
         state_enum_strings.state_supervision_period_termination_reason_transfer_within_state
@@ -249,7 +249,7 @@ _STATE_SUPERVISION_ADMISSION_TYPE_MAP = {
     "INTERNAL UNKNOWN": StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
     "INVESTIGATION": StateSupervisionPeriodAdmissionReason.INVESTIGATION,
     "TRANSFER WITHIN STATE": StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-    "TRANSFER OUT OF STATE": StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE,
+    "TRANSFER FROM OTHER JURISDICTION": StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
     "RETURN FROM ABSCOND": StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
     "RETURN FROM ABSCONSION": StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
     "RETURN FROM SUSPENSION": StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
@@ -295,7 +295,7 @@ _STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP = {
     "INVESTIGATION": StateSupervisionPeriodTerminationReason.INVESTIGATION,
     "PARDONED": StateSupervisionPeriodTerminationReason.PARDONED,
     "TRANSFER WITHIN STATE": StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-    "TRANSFER OUT OF STATE": StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE,
+    "TRANSFER TO OTHER JURISDICTION": StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION,
     "RETURN FROM ABSCONSION": StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,
     "RETURN TO INCARCERATION": StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
     "REVOCATION": StateSupervisionPeriodTerminationReason.REVOCATION,
@@ -355,7 +355,7 @@ def is_official_supervision_admission(
         StateSupervisionPeriodAdmissionReason.EXTERNAL_UNKNOWN,
         StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
         StateSupervisionPeriodAdmissionReason.INVESTIGATION,
-        StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE,
+        StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
         StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
         StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
         StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
