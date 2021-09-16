@@ -144,7 +144,7 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
             start_date=datetime.date(2001, 1, 5),
             admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
             termination_date=datetime.date(2001, 1, 6),
-            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE,
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION,
         )
 
         supervision_period_3 = StateSupervisionPeriod.new_with_defaults(

@@ -99,8 +99,8 @@ class StateIncarcerationPeriodAdmissionReason(EntityEnum, metaclass=EntityEnumMe
         state_enum_strings.state_incarceration_period_admission_reason_temporary_custody
     )
     TRANSFER = state_enum_strings.state_incarceration_period_admission_reason_transfer
-    TRANSFERRED_FROM_OUT_OF_STATE = (
-        state_enum_strings.state_incarceration_period_admission_reason_transferred_from_out_of_state
+    TRANSFER_FROM_OTHER_JURISDICTION = (
+        state_enum_strings.state_incarceration_period_admission_reason_transfer_from_other_jurisdiction
     )
 
     @staticmethod
@@ -158,8 +158,8 @@ class StateIncarcerationPeriodReleaseReason(EntityEnum, metaclass=EntityEnumMeta
         state_enum_strings.state_incarceration_period_release_reason_temporary_release
     )
     TRANSFER = state_enum_strings.state_incarceration_period_release_reason_transfer
-    TRANSFER_OUT_OF_STATE = (
-        state_enum_strings.state_incarceration_period_release_reason_transfer_out_of_state
+    TRANSFER_TO_OTHER_JURISDICTION = (
+        state_enum_strings.state_incarceration_period_release_reason_transfer_to_other_jurisdiction
     )
     VACATED = state_enum_strings.state_incarceration_period_release_reason_vacated
 
@@ -229,7 +229,7 @@ def is_commitment_from_supervision(
         StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
         StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
         StateIncarcerationPeriodAdmissionReason.TRANSFER,
-        StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
+        StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
         StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
     ]
     if admission_reason in commitment_admissions:
@@ -280,7 +280,7 @@ def is_official_admission(
         StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
         StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
         StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-        StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
+        StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
     ]
 
     non_official_admission_types = [
@@ -339,8 +339,8 @@ def is_official_release(
         # an official release because it is an end to the period of temporary custody.
         StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
         StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-        # Transfers out of state are classified as official releases because the custodial authority is changing.
-        StateIncarcerationPeriodReleaseReason.TRANSFER_OUT_OF_STATE,
+        # Transfers to other jurisdictions are classified as official releases because the custodial authority is changing.
+        StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION,
         StateIncarcerationPeriodReleaseReason.VACATED,
     ]
 
@@ -385,7 +385,7 @@ def release_reason_overrides_released_from_temporary_custody(
         StateIncarcerationPeriodReleaseReason.EXECUTION,
         StateIncarcerationPeriodReleaseReason.PARDONED,
         StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-        StateIncarcerationPeriodReleaseReason.TRANSFER_OUT_OF_STATE,
+        StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION,
         StateIncarcerationPeriodReleaseReason.VACATED,
     ]
 
@@ -459,7 +459,7 @@ _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {
     "RETURN FROM MEDICAL": StateIncarcerationPeriodAdmissionReason.TRANSFER,
     "TEMPORARY CUSTODY": StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
     "TRANSFER": StateIncarcerationPeriodAdmissionReason.TRANSFER,
-    "TRANSFERRED FROM OUT OF STATE": StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE,
+    "TRANSFER FROM OTHER JURISDICTION": StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
     "SANCTION ADMISSION": StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
     "STATUS CHANGE": StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
 }
@@ -500,7 +500,7 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
     "HOSPITAL": StateIncarcerationPeriodReleaseReason.TRANSFER,
     "MEDICAL": StateIncarcerationPeriodReleaseReason.TRANSFER,
     "TRANSFER": StateIncarcerationPeriodReleaseReason.TRANSFER,
-    "TRANSFER OUT OF STATE": StateIncarcerationPeriodReleaseReason.TRANSFER_OUT_OF_STATE,
+    "TRANSFER TO OTHER JURISDICTION": StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION,
     "VACATED": StateIncarcerationPeriodReleaseReason.VACATED,
     "STATUS CHANGE": StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
 }

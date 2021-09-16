@@ -60,7 +60,7 @@ SUPERVISION_TERMINATIONS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
         'RETURN_FROM_ABSCONSION',
         'SUSPENSION',
         'TRANSFER_WITHIN_STATE',
-        'TRANSFER_OUT_OF_STATE')
+        'TRANSFER_TO_OTHER_JURISDICTION')
       GROUP BY state_code, person_id, metric_period_months, district, gender, race_or_ethnicity, age_bucket, supervision_type
     ), successful_termination_counts AS (
       SELECT

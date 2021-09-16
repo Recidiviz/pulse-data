@@ -14,13 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-from statsmodels.tsa.arima_model import ARIMA
-from sklearn.metrics import mean_squared_error
-from typing import Tuple, Optional, Any
-import pandas as pd
+from typing import Any, Optional, Tuple
+
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import seaborn as sns
+from sklearn.metrics import mean_squared_error
+from statsmodels.tsa.arima_model import ARIMA
 
 # pylint: skip-file
 
@@ -327,10 +328,10 @@ def nj_data() -> pd.DataFrame:
 def nd_data(time_agg: str = "year") -> pd.DataFrame:
     ignored_subgroups = [
         "TRANSFER",
-        "TRANSFERRED_FROM_OUT_OF_STATE",
+        "TRANSFER_FROM_OTHER_JURISDICTION",
         "TEMPORARY_CUSTODY",
         "EXTERNAL_UNKNOWN",
-        "INTERNAL_UNKNOWN" "TRANSFERRED_FROM_OUT_OF_STATE",
+        "INTERNAL_UNKNOWN" "TRANSFER_FROM_OTHER_JURISDICTION",
         "ADMITTED_IN_ERROR",
         "RETURN_FROM_ERRONEOUS_RELEASE",
         "RETURN_FROM_ESCAPE",
