@@ -298,11 +298,11 @@ state_incarceration_period_release_reason = Enum(
     state_enum_strings.state_incarceration_period_release_reason_released_in_error,
     state_enum_strings.state_incarceration_period_release_reason_released_to_supervision,
     state_enum_strings.state_incarceration_period_release_reason_sentence_served,
+    state_enum_strings.state_incarceration_period_release_reason_temporary_release,
     state_enum_strings.state_incarceration_period_release_reason_transfer,
     state_enum_strings.state_incarceration_period_release_reason_transfer_to_other_jurisdiction,
     state_enum_strings.state_incarceration_period_release_reason_vacated,
     state_enum_strings.state_incarceration_period_release_reason_status_change,
-    state_enum_strings.state_incarceration_period_release_reason_temporary_release,
     name="state_incarceration_period_release_reason",
 )
 
@@ -1262,6 +1262,9 @@ class StatePerson(StateBase, _StatePersonSharedColumns):
     assessments = relationship("StateAssessment", backref="person", lazy="selectin")
     program_assignments = relationship(
         "StateProgramAssignment", backref="person", lazy="selectin"
+    )
+    incarceration_incidents = relationship(
+        "StateIncarcerationIncident", backref="person", lazy="selectin"
     )
     sentence_groups = relationship(
         "StateSentenceGroup", backref="person", lazy="selectin"
@@ -2278,9 +2281,6 @@ class StateIncarcerationPeriod(StateBase, _StateIncarcerationPeriodSharedColumns
     )
 
     person = relationship("StatePerson", uselist=False)
-    incarceration_incidents = relationship(
-        "StateIncarcerationIncident", backref="incarceration_period", lazy="selectin"
-    )
     # TODO(#5411): DEPRECATED - Relationship to be moved to the StatePerson
     parole_decisions = relationship(
         "StateParoleDecision", backref="incarceration_period", lazy="selectin"
@@ -2673,18 +2673,6 @@ class _StateIncarcerationIncidentSharedColumns(_ReferencesStatePersonSharedColum
     )
 
     @declared_attr
-    def incarceration_period_id(self) -> Column:
-        return Column(
-            Integer,
-            ForeignKey("state_incarceration_period.incarceration_period_id"),
-            index=True,
-            nullable=True,
-            comment=FOREIGN_KEY_COMMENT_TEMPLATE.format(
-                object_name="incarceration period"
-            ),
-        )
-
-    @declared_attr
     def responding_officer_id(self) -> Column:
         return Column(
             Integer,
@@ -2724,7 +2712,6 @@ class StateIncarcerationIncident(StateBase, _StateIncarcerationIncidentSharedCol
         ),
     )
 
-    person = relationship("StatePerson", uselist=False)
     responding_officer = relationship("StateAgent", uselist=False, lazy="selectin")
 
     incarceration_incident_outcomes = relationship(

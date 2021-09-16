@@ -56,6 +56,7 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
     FakeWriteToBigQueryFactory,
 )
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
+    default_data_dict_for_root_schema_classes,
     run_test_pipeline,
     test_pipeline_options,
 )
@@ -67,6 +68,12 @@ from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violation
 )
 
 ALL_METRIC_INCLUSIONS_DICT = {metric_type: True for metric_type in ViolationMetricType}
+
+ROOT_SCHEMA_CLASSES_FOR_PIPELINE = [
+    schema.StatePerson,
+    schema.StateSupervisionViolation,
+    schema.StateSupervisionViolationResponse,
+]
 
 
 class TestViolationPipeline(unittest.TestCase):
@@ -193,22 +200,22 @@ class TestViolationPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict: Dict[str, List[Any]] = {
+        data_dict = default_data_dict_for_root_schema_classes(
+            ROOT_SCHEMA_CLASSES_FOR_PIPELINE
+        )
+
+        data_dict_overrides: Dict[str, List[Any]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
             schema.StatePersonEthnicity.__tablename__: ethnicity_data,
             schema.StateSupervisionViolation.__tablename__: violations_data,
             schema.StateSupervisionViolationResponse.__tablename__: violation_responses_data,
             schema.StateSupervisionViolationTypeEntry.__tablename__: violation_types_data,
-            schema.StateSupervisionViolatedConditionEntry.__tablename__: [],
             schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: violation_decisions_data,
-            schema.StatePersonExternalId.__tablename__: [],
-            schema.StatePersonAlias.__tablename__: [],
-            schema.StateAssessment.__tablename__: [],
-            schema.StateProgramAssignment.__tablename__: [],
-            schema.StateSentenceGroup.__tablename__: [],
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
         }
+        data_dict.update(data_dict_overrides)
+
         return data_dict
 
     def run_test_pipeline(

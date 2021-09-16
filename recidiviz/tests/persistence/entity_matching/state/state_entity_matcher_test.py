@@ -1705,7 +1705,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             status=StateIncarcerationPeriodStatus.IN_CUSTODY.value,
             state_code=_STATE_CODE,
             facility="facility",
-            incarceration_incidents=[db_incarceration_incident],
             parole_decisions=[db_parole_decision, db_parole_decision_2],
         )
         entity_incarceration_period = self.to_entity(db_incarceration_period)
@@ -1868,7 +1867,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             entity_incarceration_period,
             incarceration_period_id=None,
             facility="facility-updated",
-            incarceration_incidents=[incarceration_incident],
             parole_decisions=[parole_decision, parole_decision_2],
         )
         incarceration_sentence = attr.evolve(
@@ -1942,6 +1940,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             external_ids=[external_id],
             sentence_groups=[sentence_group],
             assessments=[assessment, assessment_2],
+            incarceration_incidents=[incarceration_incident],
         )
 
         expected_court_case = attr.evolve(court_case, court_case_id=_ID)
@@ -1973,7 +1972,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         expected_incarceration_period = attr.evolve(
             incarceration_period,
             incarceration_period_id=_ID,
-            incarceration_incidents=[expected_incarceration_incident],
             parole_decisions=[expected_parole_decision, expected_parole_decision_2],
         )
         expected_incarceration_sentence = attr.evolve(
@@ -2036,6 +2034,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             external_ids=[expected_external_id],
             sentence_groups=[expected_sentence_group],
             assessments=[expected_assessment, expected_assessment_2],
+            incarceration_incidents=[expected_incarceration_incident],
         )
 
         # Act 1 - Match
@@ -3134,7 +3133,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         db_sentence_group = generate_sentence_group(
             external_id=_EXTERNAL_ID, sentence_group_id=_ID
         )
-        entity_sentence_group = self.to_entity(db_sentence_group)
         db_external_id = generate_external_id(
             person_external_id_id=_ID,
             state_code=_STATE_CODE,
@@ -3155,49 +3153,20 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         incarceration_incident = StateIncarcerationIncident.new_with_defaults(
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID
         )
-        placeholder_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-            state_code=_STATE_CODE,
-            incarceration_incidents=[incarceration_incident],
-        )
-        placeholder_incarceration_sentence = (
-            StateIncarcerationSentence.new_with_defaults(
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-                state_code=_STATE_CODE,
-                incarceration_periods=[placeholder_incarceration_period],
-            )
-        )
-        sentence_group = attr.evolve(
-            entity_sentence_group,
-            sentence_group_id=None,
-            incarceration_sentences=[placeholder_incarceration_sentence],
-        )
         external_id = attr.evolve(entity_external_id, person_external_id_id=None)
         person = StatePerson.new_with_defaults(
-            sentence_groups=[sentence_group],
+            incarceration_incidents=[incarceration_incident],
             external_ids=[external_id],
             state_code=_STATE_CODE,
         )
 
         expected_incarceration_incident = attr.evolve(incarceration_incident)
 
-        expected_incarceration_period = attr.evolve(
-            placeholder_incarceration_period,
-            incarceration_incidents=[expected_incarceration_incident],
-        )
-        expected_incarceration_sentence = attr.evolve(
-            placeholder_incarceration_sentence,
-            incarceration_periods=[expected_incarceration_period],
-        )
-        expected_sentence_group = attr.evolve(
-            entity_sentence_group,
-            incarceration_sentences=[expected_incarceration_sentence],
-        )
         expected_external_id = attr.evolve(entity_external_id)
         expected_person = attr.evolve(
             entity_person,
             external_ids=[expected_external_id],
-            sentence_groups=[expected_sentence_group],
+            incarceration_incidents=[expected_incarceration_incident],
         )
 
         # Act 1 - Match

@@ -71,6 +71,7 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
     FakeWriteToBigQueryFactory,
 )
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
+    default_data_dict_for_root_schema_classes,
     run_test_pipeline,
     test_pipeline_options,
 )
@@ -83,6 +84,13 @@ from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervisi
 from recidiviz.tests.persistence.database import database_test_utils
 
 ALL_METRIC_INCLUSIONS_DICT = {metric_type: True for metric_type in ProgramMetricType}
+
+ROOT_SCHEMA_CLASSES_FOR_PIPELINE = [
+    schema.StatePerson,
+    schema.StateSupervisionPeriod,
+    schema.StateProgramAssignment,
+    schema.StateAssessment,
+]
 
 
 class TestProgramPipeline(unittest.TestCase):
@@ -219,7 +227,11 @@ class TestProgramPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict: Dict[str, List[Any]] = {
+        data_dict = default_data_dict_for_root_schema_classes(
+            ROOT_SCHEMA_CLASSES_FOR_PIPELINE
+        )
+
+        data_dict_overrides: Dict[str, List[Any]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
             schema.StatePersonEthnicity.__tablename__: ethnicity_data,
@@ -227,12 +239,10 @@ class TestProgramPipeline(unittest.TestCase):
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
             schema.StateProgramAssignment.__tablename__: program_assignment_data,
             schema.StateAssessment.__tablename__: assessment_data,
-            schema.StatePersonExternalId.__tablename__: [],
-            schema.StatePersonAlias.__tablename__: [],
-            schema.StateSentenceGroup.__tablename__: [],
             "supervision_period_to_agent_association": supervision_period_to_agent_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
         }
+        data_dict.update(data_dict_overrides)
 
         return data_dict
 
@@ -405,7 +415,11 @@ class TestProgramPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict: Dict[str, List[Dict[str, Any]]] = {
+        data_dict = default_data_dict_for_root_schema_classes(
+            ROOT_SCHEMA_CLASSES_FOR_PIPELINE
+        )
+
+        data_dict_overrides: Dict[str, List[Dict[str, Any]]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
             schema.StatePersonEthnicity.__tablename__: ethnicity_data,
@@ -413,12 +427,11 @@ class TestProgramPipeline(unittest.TestCase):
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
             schema.StateProgramAssignment.__tablename__: program_assignment_data,
             schema.StateAssessment.__tablename__: assessment_data,
-            schema.StatePersonExternalId.__tablename__: [],
-            schema.StatePersonAlias.__tablename__: [],
-            schema.StateSentenceGroup.__tablename__: [],
             "supervision_period_to_agent_association": supervision_period_to_agent_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
         }
+
+        data_dict.update(data_dict_overrides)
 
         dataset = "recidiviz-123.state"
 

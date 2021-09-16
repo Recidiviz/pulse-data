@@ -269,6 +269,35 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
     person.program_assignments = [program_assignment, program_assignment2]
 
+    incident_responding_officer = entities.StateAgent.new_with_defaults(
+        agent_type=StateAgentType.CORRECTIONAL_OFFICER,
+        state_code="US_XX",
+        full_name="MR SIR",
+    )
+
+    incident_outcome = entities.StateIncarcerationIncidentOutcome.new_with_defaults(
+        outcome_type=StateIncarcerationIncidentOutcomeType.WARNING,
+        outcome_type_raw_text="WARNING",
+        date_effective=datetime.date(year=2003, month=8, day=20),
+        state_code="US_XX",
+        outcome_description="LOSS OF COMMISSARY",
+        punishment_length_days=30,
+    )
+
+    incarceration_incident = entities.StateIncarcerationIncident.new_with_defaults(
+        incident_type=StateIncarcerationIncidentType.CONTRABAND,
+        incident_type_raw_text="CONTRABAND",
+        incident_date=datetime.date(year=2003, month=8, day=10),
+        state_code="US_XX",
+        facility="ALCATRAZ",
+        location_within_facility="13B",
+        incident_details="Found contraband cell phone.",
+        responding_officer=incident_responding_officer,
+        incarceration_incident_outcomes=[incident_outcome],
+    )
+
+    person.incarceration_incidents = [incarceration_incident]
+
     sentence_group = entities.StateSentenceGroup.new_with_defaults(
         external_id="BOOK_ID1234",
         status=StateSentenceStatus.SERVING,
@@ -471,35 +500,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
     incarceration_sentence.incarceration_periods = [incarceration_period]
     supervision_sentence.incarceration_periods = [incarceration_period]
 
-    incident_responding_officer = entities.StateAgent.new_with_defaults(
-        agent_type=StateAgentType.CORRECTIONAL_OFFICER,
-        state_code="US_XX",
-        full_name="MR SIR",
-    )
-
-    incident_outcome = entities.StateIncarcerationIncidentOutcome.new_with_defaults(
-        outcome_type=StateIncarcerationIncidentOutcomeType.WARNING,
-        outcome_type_raw_text="WARNING",
-        date_effective=datetime.date(year=2003, month=8, day=20),
-        state_code="US_XX",
-        outcome_description="LOSS OF COMMISSARY",
-        punishment_length_days=30,
-    )
-
-    incarceration_incident = entities.StateIncarcerationIncident.new_with_defaults(
-        incident_type=StateIncarcerationIncidentType.CONTRABAND,
-        incident_type_raw_text="CONTRABAND",
-        incident_date=datetime.date(year=2003, month=8, day=10),
-        state_code="US_XX",
-        facility="ALCATRAZ",
-        location_within_facility="13B",
-        incident_details="Inmate was told to be quiet and would not comply",
-        responding_officer=incident_responding_officer,
-        incarceration_incident_outcomes=[incident_outcome],
-    )
-
-    incarceration_period.incarceration_incidents = [incarceration_incident]
-
     parole_decision = entities.StateParoleDecision.new_with_defaults(
         decision_date=datetime.date(year=2004, month=7, day=1),
         corrective_action_deadline=None,
@@ -611,6 +611,7 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
             *person.sentence_groups,
             *person.assessments,
             *person.program_assignments,
+            *person.incarceration_incidents,
         )
         for child in person_children:
             child.person = person  # type: ignore[attr-defined]
@@ -656,7 +657,6 @@ def generate_full_graph_state_person(set_back_edges: bool) -> entities.StatePers
 
         incarceration_period_children: Sequence[Entity] = (
             *incarceration_period.parole_decisions,
-            *incarceration_period.incarceration_incidents,
         )
 
         for child in incarceration_period_children:

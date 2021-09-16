@@ -53,6 +53,11 @@ _HIERARCHY_MAP: Dict[
     "state_alias": ("state_person",),
     "state_person_external_id": ("state_person",),
     "state_assessment": ("state_person",),
+    "state_incarceration_incident": ("state_person",),
+    "state_incarceration_incident_outcome": (
+        "state_person",
+        "state_incarceration_incident",
+    ),
     "state_sentence_group": ("state_person",),
     "state_program_assignment": ("state_person",),
     "state_supervision_sentence": (
@@ -100,19 +105,6 @@ _HIERARCHY_MAP: Dict[
     #  state_incarceration_period is an state_incarceration_sentence
     #  here. In theory parent could be state_supervision_sentence that
     #  has a revocation edge into a state_incarceration_period.
-    "state_incarceration_incident": (
-        "state_person",
-        "state_sentence_group",
-        "state_incarceration_sentence",
-        "state_incarceration_period",
-    ),
-    "state_incarceration_incident_outcome": (
-        "state_person",
-        "state_sentence_group",
-        "state_incarceration_sentence",
-        "state_incarceration_period",
-        "state_incarceration_incident",
-    ),
     "state_charge": (
         "state_person",
         "state_sentence_group",
