@@ -164,8 +164,8 @@ class _TestSftpDownloadDelegate(BaseSftpDownloadDelegate):
 
     def post_process_downloads(
         self, downloaded_path: GcsfsFilePath, _: GCSFileSystem
-    ) -> str:
-        return downloaded_path.abs_path()
+    ) -> List[str]:
+        return [downloaded_path.abs_path()]
 
 
 class BrokenGCSFSFakeSystem(FakeGCSFileSystem):

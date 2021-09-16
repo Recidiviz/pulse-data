@@ -67,7 +67,7 @@ class SftpAuth:
         hostname: str,
         username: Optional[str],
         password: Optional[str],
-        client_private_key: Optional[paramiko.AgentKey],
+        client_private_key: Optional[paramiko.RSAKey],
         connection_options: Optional[CnOpts],
     ):
         self.hostname = hostname
@@ -111,11 +111,11 @@ class SftpAuth:
         username = secrets.get_secret(f"{prefix}_username")
         password = secrets.get_secret(f"{prefix}_password")
 
-        raw_client_private_key = secrets.get_secret(f"{prefix}_sftp_client_private_key")
+        raw_client_private_key = secrets.get_secret(f"{prefix}_client_private_key")
         client_private_key = (
             None
             if not raw_client_private_key
-            else paramiko.AgentKey.from_private_key(io.StringIO(raw_client_private_key))
+            else paramiko.RSAKey.from_private_key(io.StringIO(raw_client_private_key))
         )
 
         connection_options = SftpAuth.set_up_connection_options(prefix, host)
@@ -229,11 +229,16 @@ class DownloadFilesFromSftpController:
                     content_type=BYTES_CONTENT_TYPE,
                 )
                 logging.info("Post processing %s", path.uri())
-                self.downloaded_items.append(
-                    (
-                        self.delegate.post_process_downloads(path, self.gcsfs),
-                        file_timestamp,
-                    )
+                self.downloaded_items.extend(
+                    [
+                        (
+                            downloaded_file,
+                            file_timestamp,
+                        )
+                        for downloaded_file in self.delegate.post_process_downloads(
+                            path, self.gcsfs
+                        )
+                    ]
                 )
             except IOError as e:
                 logging.info(
