@@ -1047,7 +1047,9 @@ class TestDirectIngestControl(unittest.TestCase):
             filter_paths=lambda _, candidate_paths: candidate_paths,
             post_process_downloads=lambda _, download_directory_path: None,
         )
-        mock_sftp_auth.return_value = SftpAuth("host", "username", "password", CnOpts())
+        mock_sftp_auth.return_value = SftpAuth(
+            "host", "username", "password", None, CnOpts()
+        )
 
         response = self.client.post(
             "/upload_from_sftp", query_string=request_args, headers=headers
@@ -1108,7 +1110,9 @@ class TestDirectIngestControl(unittest.TestCase):
             filter_paths=lambda _, candidate_paths: candidate_paths,
             post_process_downloads=lambda _, download_directory_path: None,
         )
-        mock_sftp_auth.return_value = SftpAuth("host", "username", "password", CnOpts())
+        mock_sftp_auth.return_value = SftpAuth(
+            "host", "username", "password", None, CnOpts()
+        )
 
         response = self.client.post(
             "/upload_from_sftp", query_string=request_args, headers=headers
@@ -1169,7 +1173,9 @@ class TestDirectIngestControl(unittest.TestCase):
             filter_paths=lambda _, candidate_paths: candidate_paths,
             post_process_downloads=lambda _, download_directory_path: None,
         )
-        mock_sftp_auth.return_value = SftpAuth("host", "username", "password", CnOpts())
+        mock_sftp_auth.return_value = SftpAuth(
+            "host", "username", "password", None, CnOpts()
+        )
 
         response = self.client.post(
             "/upload_from_sftp", query_string=request_args, headers=headers
@@ -1229,7 +1235,9 @@ class TestDirectIngestControl(unittest.TestCase):
             filter_paths=lambda _, candidate_paths: candidate_paths,
             post_process_downloads=lambda _, download_directory_path: None,
         )
-        mock_sftp_auth.return_value = SftpAuth("host", "username", "password", CnOpts())
+        mock_sftp_auth.return_value = SftpAuth(
+            "host", "username", "password", None, CnOpts()
+        )
 
         response = self.client.post(
             "/upload_from_sftp", query_string=request_args, headers=headers
@@ -1277,7 +1285,9 @@ class TestDirectIngestControl(unittest.TestCase):
             filter_paths=lambda _, candidate_paths: candidate_paths,
             post_process_downloads=lambda _, download_directory_path: None,
         )
-        mock_sftp_auth.return_value = SftpAuth("host", "username", "password", CnOpts())
+        mock_sftp_auth.return_value = SftpAuth(
+            "host", "username", "password", None, CnOpts()
+        )
 
         mock_download_controller.return_value = create_autospec(
             DownloadFilesFromSftpController
@@ -1346,7 +1356,9 @@ class TestDirectIngestControl(unittest.TestCase):
             filter_paths=lambda _, candidate_paths: candidate_paths,
             post_process_downloads=lambda _, download_directory_path: None,
         )
-        mock_sftp_auth.return_value = SftpAuth("host", "username", "password", CnOpts())
+        mock_sftp_auth.return_value = SftpAuth(
+            "host", "username", "password", None, CnOpts()
+        )
 
         mock_download_controller.return_value = create_autospec(
             DownloadFilesFromSftpController
@@ -1401,7 +1413,9 @@ class TestDirectIngestControl(unittest.TestCase):
             filter_paths=lambda _, candidate_paths: candidate_paths,
             post_process_downloads=lambda _, download_directory_path: None,
         )
-        mock_sftp_auth.return_value = SftpAuth("host", "username", "password", CnOpts())
+        mock_sftp_auth.return_value = SftpAuth(
+            "host", "username", "password", None, CnOpts()
+        )
 
         mock_download_controller.return_value = create_autospec(
             DownloadFilesFromSftpController
@@ -1458,7 +1472,9 @@ class TestDirectIngestControl(unittest.TestCase):
             filter_paths=lambda _, candidate_paths: candidate_paths,
             post_process_downloads=lambda _, download_directory_path: None,
         )
-        mock_sftp_auth.return_value = SftpAuth("host", "username", "password", CnOpts())
+        mock_sftp_auth.return_value = SftpAuth(
+            "host", "username", "password", None, CnOpts()
+        )
 
         mock_download_controller.return_value = create_autospec(
             DownloadFilesFromSftpController
@@ -1527,7 +1543,9 @@ class TestDirectIngestControl(unittest.TestCase):
             filter_paths=lambda _, candidate_paths: candidate_paths,
             post_process_downloads=lambda _, download_directory_path: None,
         )
-        mock_sftp_auth.return_value = SftpAuth("host", "username", "password", CnOpts())
+        mock_sftp_auth.return_value = SftpAuth(
+            "host", "username", "password", None, CnOpts()
+        )
 
         mock_download_controller.return_value = create_autospec(
             DownloadFilesFromSftpController

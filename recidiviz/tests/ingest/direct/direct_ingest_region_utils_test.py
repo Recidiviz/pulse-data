@@ -20,8 +20,8 @@ from unittest.mock import MagicMock, patch
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_region_utils import (
-    get_direct_ingest_states_with_sftp_queue,
     get_direct_ingest_states_launched_in_env,
+    get_direct_ingest_states_with_sftp_queue,
 )
 from recidiviz.tests.utils.fake_region import fake_region
 
@@ -72,4 +72,4 @@ class TestDirectIngestRegionUtils(unittest.TestCase):
     def test_get_direct_ingest_states_with_sftp_queue(self) -> None:
         """Tests the get_direct_ingest_states_with_sftp_queue returns the correct state codes"""
         state_codes = set(get_direct_ingest_states_with_sftp_queue())
-        self.assertEqual(state_codes, {StateCode.US_ID})
+        self.assertEqual(state_codes, {StateCode.US_ID, StateCode.US_PA})
