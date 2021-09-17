@@ -18,6 +18,18 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.county.views.vera import county_names
+from recidiviz.calculator.query.county.views.vera import (
+    county_names,
+    region_fips_map,
+    scraper_success_rate,
+    total_resident_population_counts,
+    urbanicity,
+)
 
-VERA_VIEW_BUILDERS: List[BigQueryViewBuilder] = [county_names.COUNTY_NAMES_VIEW_BUILDER]
+VERA_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    county_names.COUNTY_NAMES_VIEW_BUILDER,
+    region_fips_map.REGION_FIPS_MAP_VIEW_BUILDER,
+    scraper_success_rate.SCRAPER_SUCCESS_RATE_VIEW_BUILDER,
+    total_resident_population_counts.TOTAL_RESIDENT_POPULATION_COUNTS_VIEW_BUILDER,
+    urbanicity.URBANICITY_VIEW_BUILDER,
+]
