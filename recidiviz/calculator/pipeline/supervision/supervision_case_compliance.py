@@ -77,11 +77,6 @@ class SupervisionCaseCompliance(BuildableAttr):
     # The number of home visits conducted on this person by the date of the evaluation
     home_visit_count: int = attr.ib(default=None)
 
-    # Whether or not the supervision officer has conducted home visits with the person on supervision recently
-    # enough to satisfy compliance measures. Should be unset if we do not know the
-    # home visit compliance standards for this person.
-    home_visit_frequency_sufficient: Optional[bool] = attr.ib(default=None)
-
     # If the person on supervision is eligible for a downgrade, this stores the level
     # they should be downgraded to.
     # This value is set to None if we do not know how to calculate recommended

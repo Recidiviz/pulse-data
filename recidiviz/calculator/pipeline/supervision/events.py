@@ -166,16 +166,28 @@ class SupervisionPopulationEvent(
         return self.case_compliance.most_recent_home_visit_date
 
     @property
+    def next_recommended_home_visit_date(self) -> Optional[date]:
+        if not self.case_compliance:
+            return None
+        return self.case_compliance.next_recommended_home_visit_date
+
+    @property
+    def most_recent_treatment_collateral_contact_date(self) -> Optional[date]:
+        if not self.case_compliance:
+            return None
+        return self.case_compliance.most_recent_treatment_collateral_contact_date
+
+    @property
+    def next_recommended_treatment_collateral_contact_date(self) -> Optional[date]:
+        if not self.case_compliance:
+            return None
+        return self.case_compliance.next_recommended_treatment_collateral_contact_date
+
+    @property
     def home_visit_count(self) -> Optional[int]:
         if not self.case_compliance:
             return None
         return self.case_compliance.home_visit_count
-
-    @property
-    def home_visit_frequency_sufficient(self) -> Optional[bool]:
-        if not self.case_compliance:
-            return None
-        return self.case_compliance.home_visit_frequency_sufficient
 
     @property
     def recommended_supervision_downgrade_level(
