@@ -50,6 +50,7 @@ from recidiviz.persistence.entity.state.deserialize_entity_factories import (
     StateSentenceGroupFactory,
     StateSupervisionContactFactory,
     StateSupervisionPeriodFactory,
+    StateSupervisionSentenceFactory,
     StateSupervisionViolationFactory,
     StateSupervisionViolationResponseFactory,
 )
@@ -311,7 +312,9 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             supervision_sentence_builder, ingest_supervision_sentence
         )
 
-        return supervision_sentence_builder.build()
+        return supervision_sentence_builder.build(
+            StateSupervisionSentenceFactory.deserialize
+        )
 
     def _convert_incarceration_sentence(
         self, ingest_incarceration_sentence: StateIncarcerationSentence

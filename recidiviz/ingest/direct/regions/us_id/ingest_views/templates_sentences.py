@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helper templates for the US_ID sentence queries."""
-from enum import auto, Enum
+from enum import Enum, auto
 
 
 class SentenceType(Enum):
@@ -34,9 +34,6 @@ PROBATION_SENTENCES_QUERY = """
         {sentprob}
     USING
         (mitt_srl, sent_no)
-    ORDER BY
-        CAST(mitt_srl AS INT64),
-        CAST(sent_no AS INT64)
 """
 
 # Gets all incarceration sentences
