@@ -205,13 +205,13 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
         )
 
 
-class TestContactFrequencySufficient(unittest.TestCase):
-    """Tests the _contact_frequency_is_sufficient function."""
+class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
+    """Tests the _next_recommended_face_to_face_date function."""
 
     def setUp(self) -> None:
         self.person = StatePerson.new_with_defaults(state_code="US_PA")
 
-    def test_face_to_face_frequency_sufficient_start_of_supervision(self) -> None:
+    def test_next_recommended_face_to_face_date_start_of_supervision(self) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -257,7 +257,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
         assert next_face_to_face_date is not None
         self.assertTrue(next_face_to_face_date > evaluation_date)
 
-    def test_face_to_face_frequency_sufficient_contacts_before_supervision_start(
+    def test_next_recommended_face_to_face_date_contacts_before_supervision_start(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -305,7 +305,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertEqual(next_face_to_face, date(2018, 3, 7))
 
-    def test_face_to_face_frequency_sufficient_contacts_attempted(self) -> None:
+    def test_next_recommended_face_to_face_date_contacts_attempted(self) -> None:
         start_of_supervision = date(2018, 3, 5)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -351,7 +351,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertEqual(next_face_to_face, date(2018, 3, 7))
 
-    def test_face_to_face_frequency_sufficient_contacts_invalid_contact_type(
+    def test_next_recommended_face_to_face_date_contacts_invalid_contact_type(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -399,7 +399,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertEqual(next_face_to_face, date(2018, 3, 7))
 
-    def test_face_to_face_frequency_sufficient_contacts_monitored_level_with_contact(
+    def test_next_recommended_face_to_face_date_contacts_monitored_level_with_contact(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -444,7 +444,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertIsNone(next_face_to_face)
 
-    def test_face_to_face_frequency_sufficient_contacts_monitored_level_no_contacts(
+    def test_next_recommended_face_to_face_date_contacts_monitored_level_no_contacts(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -482,7 +482,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertIsNone(next_face_to_face)
 
-    def test_face_to_face_frequency_sufficient_contacts_limited_level(
+    def test_next_recommended_face_to_face_date_contacts_limited_level(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -527,7 +527,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertIsNone(face_to_face_frequency_sufficient)
 
-    def test_face_to_face_frequency_sufficient_contacts_minimum_level(
+    def test_next_recommended_face_to_face_date_contacts_minimum_level(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -572,7 +572,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_face_to_face_frequency_not_sufficient_contacts_minimum_level_no_contacts(
+    def test_next_recommended_face_to_face_date_contacts_minimum_level_no_contacts(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -610,7 +610,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertEqual(next_face_to_face, date(2018, 3, 7))
 
-    def test_face_to_face_frequency_not_sufficient_contacts_minimum_level_out_of_bounds(
+    def test_next_recommended_face_to_face_date_contacts_minimum_level_out_of_bounds(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -655,7 +655,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertEqual(next_face_to_face, date(2018, 7, 3))
 
-    def test_face_to_face_frequency_sufficient_contacts_medium_level(
+    def test_next_recommended_face_to_face_date_contacts_medium_level(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -700,7 +700,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_face_to_face_frequency_not_sufficient_contacts_medium_level_no_contacts(
+    def test_next_recommended_face_to_face_date_contacts_medium_level_no_contacts(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -738,7 +738,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertEqual(next_face_to_face, date(2018, 3, 7))
 
-    def test_face_to_face_frequency_not_sufficient_contacts_medium_level_out_of_bounds(
+    def test_next_recommended_face_to_face_date_contacts_medium_level_out_of_bounds(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -783,7 +783,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertEqual(next_face_to_face, date(2018, 4, 24))
 
-    def test_face_to_face_frequency_sufficient_contacts_maxiumum_level(
+    def test_next_recommended_face_to_face_date_contacts_maxiumum_level(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -834,7 +834,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_face_to_face_frequency_not_sufficient_contacts_maximum_level_no_contacts(
+    def test_next_recommended_face_to_face_date_contacts_maximum_level_no_contacts(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -872,7 +872,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertEqual(next_face_to_face, date(2018, 3, 7))
 
-    def test_face_to_face_frequency_not_sufficient_contacts_maximum_level_out_of_bounds(
+    def test_next_recommended_face_to_face_date_contacts_maximum_level_out_of_bounds(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -925,7 +925,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertEqual(next_face_to_face, date(2018, 4, 24))
 
-    def test_face_to_face_frequency_sufficient_contacts_high_level(
+    def test_next_recommended_face_to_face_date_contacts_high_level(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -988,7 +988,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_face_to_face_frequency_not_sufficient_contacts_high_level_no_contacts(
+    def test_next_recommended_face_to_face_date_contacts_high_level_no_contacts(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -1026,7 +1026,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertEqual(next_face_to_face, date(2018, 3, 7))
 
-    def test_face_to_face_frequency_not_sufficient_contacts_high_level_out_of_bounds(
+    def test_next_recommended_face_to_face_date_contacts_high_level_out_of_bounds(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -1079,7 +1079,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertEqual(next_face_to_face, date(2018, 4, 4))
 
-    def test_face_to_face_frequency_sufficient_contacts_new_case_opened_on_friday(
+    def test_next_recommended_face_to_face_date_contacts_new_case_opened_on_friday(
         self,
     ) -> None:
         start_of_supervision = date(1999, 8, 13)  # This was a Friday
@@ -1117,6 +1117,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
+
+class TestNextRecommendedHomeVisitDate(unittest.TestCase):
+    """Tests the next_recommended_home_visit_date function."""
+
+    def setUp(self) -> None:
+        self.person = StatePerson.new_with_defaults(state_code="US_PA")
+
     @parameterized.expand(
         [
             ("monitoring", StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY),
@@ -1124,7 +1131,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
             ("minimum", StateSupervisionLevel.MINIMUM),
         ]
     )
-    def test_home_visit_frequency_sufficient_contacts_not_required(
+    def test_next_recommended_home_visit_date_contacts_not_required(
         self, _name: str, supervision_level: StateSupervisionLevel
     ) -> None:
         start_of_supervision = date(2000, 1, 21)
@@ -1152,13 +1159,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=supervision_contacts,
         )
 
-        home_visit_frequency_sufficient = (
-            us_pa_supervision_compliance._home_visit_frequency_is_sufficient(
+        next_recommended_home_visit_date = (
+            us_pa_supervision_compliance._next_recommended_home_visit_date(
                 evaluation_date
             )
         )
 
-        self.assertTrue(home_visit_frequency_sufficient)
+        self.assertIsNone(next_recommended_home_visit_date)
 
     @parameterized.expand(
         [
@@ -1167,7 +1174,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
             ("high", StateSupervisionLevel.HIGH),
         ]
     )
-    def test_home_visit_frequency_sufficient_no_contacts(
+    def test_next_recommended_home_visit_date_no_contacts(
         self, _name: str, supervision_level: StateSupervisionLevel
     ) -> None:
         start_of_supervision = date(2000, 1, 21)
@@ -1197,15 +1204,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=supervision_contacts,
         )
 
-        home_visit_frequency_sufficient = (
-            us_pa_supervision_compliance._home_visit_frequency_is_sufficient(
+        next_recommended_home_visit_date = (
+            us_pa_supervision_compliance._next_recommended_home_visit_date(
                 evaluation_date
             )
         )
 
-        self.assertFalse(home_visit_frequency_sufficient)
+        self.assertIsNotNone(next_recommended_home_visit_date)
 
-    def test_home_visit_frequency_sufficient_contacts_medium_level(self) -> None:
+    def test_next_recommended_home_visit_date_contacts_medium_level(self) -> None:
         start_of_supervision = date(2000, 1, 21)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -1239,15 +1246,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=supervision_contacts,
         )
 
-        home_visit_frequency_sufficient = (
-            us_pa_supervision_compliance._home_visit_frequency_is_sufficient(
+        next_recommended_home_visit_date = (
+            us_pa_supervision_compliance._next_recommended_home_visit_date(
                 evaluation_date
             )
         )
 
-        self.assertTrue(home_visit_frequency_sufficient)
+        self.assertTrue(next_recommended_home_visit_date)
 
-    def test_home_visit_frequency_not_sufficient_contacts_medium_level_out_of_bounds(
+    def test_next_recommended_home_visit_date_contacts_medium_level_out_of_bounds(
         self,
     ) -> None:
         start_of_supervision = date(2000, 1, 21)
@@ -1284,15 +1291,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=supervision_contacts,
         )
 
-        home_visit_frequency_sufficient = (
-            us_pa_supervision_compliance._home_visit_frequency_is_sufficient(
+        next_recommended_home_visit_date = (
+            us_pa_supervision_compliance._next_recommended_home_visit_date(
                 evaluation_date
             )
         )
 
-        self.assertFalse(home_visit_frequency_sufficient)
+        self.assertIsNotNone(next_recommended_home_visit_date)
 
-    def test_home_visit_frequency_sufficient_contacts_maximum_level(self) -> None:
+    def test_next_recommended_home_visit_date_contacts_maximum_level(self) -> None:
         start_of_supervision = date(2000, 1, 21)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -1326,15 +1333,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=supervision_contacts,
         )
 
-        home_visit_frequency_sufficient = (
-            us_pa_supervision_compliance._home_visit_frequency_is_sufficient(
+        next_recommended_home_visit_date = (
+            us_pa_supervision_compliance._next_recommended_home_visit_date(
                 evaluation_date
             )
         )
 
-        self.assertTrue(home_visit_frequency_sufficient)
+        self.assertTrue(next_recommended_home_visit_date)
 
-    def test_home_visit_frequency_not_sufficient_contacts_maximum_level_out_of_bounds(
+    def test_next_recommended_home_visit_date_contacts_maximum_level_out_of_bounds(
         self,
     ) -> None:
         start_of_supervision = date(2000, 1, 21)
@@ -1370,15 +1377,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=supervision_contacts,
         )
 
-        home_visit_frequency_sufficient = (
-            us_pa_supervision_compliance._home_visit_frequency_is_sufficient(
+        next_recommended_home_visit_date = (
+            us_pa_supervision_compliance._next_recommended_home_visit_date(
                 evaluation_date
             )
         )
 
-        self.assertFalse(home_visit_frequency_sufficient)
+        self.assertIsNotNone(next_recommended_home_visit_date)
 
-    def test_home_visit_frequency_sufficient_contacts_high_level(self) -> None:
+    def test_next_recommended_home_visit_date_contacts_high_level(self) -> None:
         start_of_supervision = date(2000, 1, 21)
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -1412,15 +1419,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=supervision_contacts,
         )
 
-        home_visit_frequency_sufficient = (
-            us_pa_supervision_compliance._home_visit_frequency_is_sufficient(
+        next_recommended_home_visit_date = (
+            us_pa_supervision_compliance._next_recommended_home_visit_date(
                 evaluation_date
             )
         )
 
-        self.assertTrue(home_visit_frequency_sufficient)
+        self.assertTrue(next_recommended_home_visit_date)
 
-    def test_home_visit_frequency_not_sufficient_contacts_high_level_out_of_bounds(
+    def test_next_recommended_home_visit_date_contacts_high_level_out_of_bounds(
         self,
     ) -> None:
         start_of_supervision = date(2000, 1, 21)
@@ -1456,13 +1463,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_contacts=supervision_contacts,
         )
 
-        home_visit_frequency_sufficient = (
-            us_pa_supervision_compliance._home_visit_frequency_is_sufficient(
+        next_recommended_home_visit_date = (
+            us_pa_supervision_compliance._next_recommended_home_visit_date(
                 evaluation_date
             )
         )
 
-        self.assertFalse(home_visit_frequency_sufficient)
+        self.assertIsNotNone(next_recommended_home_visit_date)
 
 
 class TestGuidelinesApplicableForCase(unittest.TestCase):

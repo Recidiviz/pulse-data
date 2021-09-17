@@ -183,7 +183,7 @@ class TestCaseCompliance(unittest.TestCase):
                 face_to_face_count=0,
                 next_recommended_face_to_face_date=date(2018, 5, 31),
                 home_visit_count=0,
-                home_visit_frequency_sufficient=True,
+                next_recommended_home_visit_date=date(2018, 6, 3),
             ),
             compliance,
         )
@@ -238,7 +238,7 @@ class TestCaseCompliance(unittest.TestCase):
                 face_to_face_count=0,
                 next_recommended_face_to_face_date=date(2018, 5, 31),
                 home_visit_count=0,
-                home_visit_frequency_sufficient=False,
+                next_recommended_home_visit_date=date(2018, 6, 3),
             ),
             compliance,
         )
@@ -292,7 +292,7 @@ class TestCaseCompliance(unittest.TestCase):
                 next_recommended_assessment_date=date(2018, 3, 7),
                 face_to_face_count=0,
                 next_recommended_face_to_face_date=date(2018, 4, 30),
-                home_visit_frequency_sufficient=False,
+                next_recommended_home_visit_date=date(2018, 5, 6),
                 home_visit_count=0,
             ),
             compliance,
@@ -348,7 +348,7 @@ class TestCaseCompliance(unittest.TestCase):
                 face_to_face_count=0,
                 next_recommended_face_to_face_date=date(2018, 4, 30),
                 home_visit_count=0,
-                home_visit_frequency_sufficient=False,
+                next_recommended_home_visit_date=date(2018, 5, 6),
             ),
             compliance,
         )
