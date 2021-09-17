@@ -35,6 +35,7 @@ from recidiviz.common.constants.state.state_incarceration import StateIncarcerat
 from recidiviz.common.constants.state.state_incarceration_incident import (
     StateIncarcerationIncidentOutcomeType,
 )
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
@@ -207,6 +208,7 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                     StateSupervisionPeriod,
                     normalized_county_code,
                 ),
+                self._normalize_completed_sentence_status,
             ],
             "docstars_offensestable": [
                 self._parse_docstars_charge_classification,
@@ -792,6 +794,21 @@ class UsNdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                     agent_to_create, extracted_object, "supervising_officer"
                 )
                 extracted_object.supervision_site = officer_siteid
+
+    @staticmethod
+    def _normalize_completed_sentence_status(
+        _gating_context: IngestGatingContext,
+        _row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
+        """In ND, completion dates are always in the past, so we can set the status to
+        COMPLETED when we see a completion date, if a status is not yet set.
+        """
+        for obj in extracted_objects:
+            if isinstance(obj, StateSupervisionSentence):
+                if not obj.status and obj.completion_date:
+                    obj.status = StateSentenceStatus.COMPLETED.value
 
     # TODO(#1882): Specify this mapping in the YAML once a single csv column can
     # can be mapped to multiple fields.

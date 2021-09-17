@@ -24,6 +24,9 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StateSupervisionSentenceFactory,
+)
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
     state_supervision_sentence,
 )
@@ -35,7 +38,7 @@ METADATA = FakeIngestMetadata.for_state(region="us_nd")
 class StateSupervisionSentenceConverterTest(unittest.TestCase):
     """Tests for converting state supervision sentences."""
 
-    def testParseStateSupervisionSentence(self):
+    def testParseStateSupervisionSentence(self) -> None:
         # Arrange
         ingest_supervision = ingest_info_pb2.StateSupervisionSentence(
             status="SUSPENDED",
@@ -43,7 +46,8 @@ class StateSupervisionSentenceConverterTest(unittest.TestCase):
             state_supervision_sentence_id="SENTENCE_ID",
             date_imposed="2000-12-13",
             start_date="20010101",
-            completion_date="1/2/2111",
+            completion_date="1/2/2011",
+            projected_completion_date="1/2/2012",
             county_code="CO",
             min_length="90D",
             max_length="180D",
@@ -54,7 +58,7 @@ class StateSupervisionSentenceConverterTest(unittest.TestCase):
         state_supervision_sentence.copy_fields_to_builder(
             supervision_builder, ingest_supervision, METADATA
         )
-        result = supervision_builder.build()
+        result = supervision_builder.build(StateSupervisionSentenceFactory.deserialize)
 
         # Assert
         expected_result = entities.StateSupervisionSentence(
@@ -65,12 +69,12 @@ class StateSupervisionSentenceConverterTest(unittest.TestCase):
             external_id="SENTENCE_ID",
             date_imposed=date(year=2000, month=12, day=13),
             start_date=date(year=2001, month=1, day=1),
-            completion_date=None,
-            projected_completion_date=date(year=2111, month=1, day=2),
+            completion_date=date(year=2011, month=1, day=2),
+            projected_completion_date=date(year=2012, month=1, day=2),
             state_code="US_ND",
             county_code="CO",
             min_length_days=90,
             max_length_days=180,
         )
 
-        self.assertEqual(result, expected_result)
+        self.assertEqual(expected_result, result)
