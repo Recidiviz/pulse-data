@@ -87,7 +87,7 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
     """Tests for _completed_assessments_on_date."""
 
     def setUp(self) -> None:
-        self.person = StatePerson.new_with_defaults(state_code="US_XX")
+        self.person = StatePerson.new_with_defaults(state_code="US_ID")
 
     def test_completed_assessments_in_compliance_month(self) -> None:
         evaluation_date = date(2018, 4, 30)
@@ -159,7 +159,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
     """Tests for _face_to_face_contacts_on_dates."""
 
     def setUp(self) -> None:
-        self.person = StatePerson.new_with_defaults(state_code="US_XX")
+        self.person = StatePerson.new_with_defaults(state_code="US_ID")
 
     def test_face_to_face_contacts_in_compliance_month(self) -> None:
         evaluation_date = date(2018, 4, 30)
@@ -238,13 +238,13 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
         )
 
 
-class TestContactFrequencySufficient(unittest.TestCase):
-    """Tests the _contact_frequency_is_sufficient function."""
+class TestNextRecommendedFaceToFaceContactDate(unittest.TestCase):
+    """Tests the _next_recommended_face_to_face_date function."""
 
     def setUp(self) -> None:
-        self.person = StatePerson.new_with_defaults(state_code="US_XX")
+        self.person = StatePerson.new_with_defaults(state_code="US_ID")
 
-    def test_face_to_face_frequency_sufficient_start_of_supervision_general_case(
+    def test_next_recommended_face_to_face_date_start_of_supervision_general_case(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday
@@ -292,7 +292,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_face_to_face_frequency_sufficient_contacts_before_supervision_start_general_case(
+    def test_next_recommended_face_to_face_date_contacts_before_supervision_start_general_case(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -341,7 +341,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertEqual(next_face_to_face, date(2018, 3, 8))
 
-    def test_face_to_face_frequency_sufficient_contacts_attempted_general_case(
+    def test_next_recommended_face_to_face_date_contacts_attempted_general_case(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -390,7 +390,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertEqual(next_face_to_face, date(2018, 3, 8))
 
-    def test_face_to_face_frequency_sufficient_contacts_invalid_contact_type_general_case(
+    def test_next_recommended_face_to_face_date_contacts_invalid_contact_type_general_case(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -439,7 +439,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertEqual(next_face_to_face, date(2018, 3, 8))
 
-    def test_face_to_face_frequency_sufficient_contacts_minimum_level_general_case(
+    def test_next_recommended_face_to_face_date_contacts_minimum_level_general_case(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -487,7 +487,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_face_to_face_frequency_sufficient_contacts_minimum_level_deprecated_general_case(
+    def test_next_recommended_face_to_face_date_contacts_minimum_level_deprecated_general_case(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -535,7 +535,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertIsNone(next_face_to_face)
 
-    def test_face_to_face_frequency_sufficient_contacts_maximum_level_up_to_date_one_contact_general_case(
+    def test_next_recommended_face_to_face_date_contacts_maximum_level_up_to_date_one_contact_general_case(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -585,7 +585,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_face_to_face_frequency_sufficient_contacts_maximum_level_up_to_date_two_contacts_general_case(
+    def test_next_recommended_face_to_face_date_contacts_maximum_level_up_to_date_two_contacts_general_case(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -637,7 +637,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_face_to_face_frequency_sufficient_contacts_high_level_general_case(
+    def test_next_recommended_face_to_face_date_contacts_high_level_general_case(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -697,7 +697,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_face_to_face_frequency_sufficient_contacts_high_level_deprecated_general_case(
+    def test_next_recommended_face_to_face_date_contacts_high_level_deprecated_general_case(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -759,7 +759,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_face_to_face_frequency_sufficient_contacts_maximum_level_not_up_to_date_general_case(
+    def test_next_recommended_face_to_face_date_contacts_maximum_level_not_up_to_date_general_case(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -811,7 +811,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertEqual(next_face_to_face, date(2018, 3, 8))
 
-    def test_face_to_face_frequency_sufficient_contacts_high_level_up_to_date_general_case(
+    def test_next_recommended_face_to_face_date_contacts_high_level_up_to_date_general_case(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -859,7 +859,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_face_to_face_frequency_sufficient_contacts_high_level_up_to_date_deprecated_general_case(
+    def test_next_recommended_face_to_face_date_contacts_high_level_up_to_date_deprecated_general_case(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -907,7 +907,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_face_to_face_frequency_sufficient_contacts_high_level_not_up_to_date_general_case(
+    def test_next_recommended_face_to_face_date_contacts_high_level_not_up_to_date_general_case(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -965,7 +965,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertEqual(next_face_to_face, date(2018, 4, 4))
 
-    def test_face_to_face_frequency_sufficient_contacts_high_level_not_up_to_date_deprecated_general_case(
+    def test_next_recommended_face_to_face_date_contacts_high_level_not_up_to_date_deprecated_general_case(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -1013,7 +1013,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertEqual(next_face_to_face, date(2018, 4, 4))
 
-    def test_face_to_face_frequency_sufficient_contacts_medium_level_up_to_date_general_case(
+    def test_next_recommended_face_to_face_date_contacts_medium_level_up_to_date_general_case(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -1061,7 +1061,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_face_to_face_frequency_sufficient_contacts_medium_level_up_to_date_deprecated_general_case(
+    def test_next_recommended_face_to_face_date_contacts_medium_level_up_to_date_deprecated_general_case(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -1111,7 +1111,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_face_to_face_frequency_sufficient_contacts_medium_level_not_up_to_date_general_case(
+    def test_next_recommended_face_to_face_date_contacts_medium_level_not_up_to_date_general_case(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -1169,7 +1169,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertEqual(next_face_to_face, date(2018, 6, 3))
 
-    def test_face_to_face_frequency_sufficient_contacts_medium_level_not_up_to_date_deprecated_general_case(
+    def test_next_recommended_face_to_face_date_contacts_medium_level_not_up_to_date_deprecated_general_case(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -1219,7 +1219,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertEqual(next_face_to_face, date(2018, 9, 1))
 
-    def test_face_to_face_frequency_sufficient_contacts_new_case_opened_on_friday_general_case(
+    def test_next_recommended_face_to_face_date_contacts_new_case_opened_on_friday_general_case(
         self,
     ) -> None:
         start_of_supervision = date(1999, 8, 13)  # This was a Friday
@@ -1258,7 +1258,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_face_to_face_frequency_sufficient_contacts_new_case_opened_on_friday_deprecated_general_case(
+    def test_next_recommended_face_to_face_date_contacts_new_case_opened_on_friday_deprecated_general_case(
         self,
     ) -> None:
         start_of_supervision = date(1999, 8, 13)  # This was a Friday
@@ -1297,7 +1297,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_face_to_face_frequency_sufficient_contacts_minimum_level_sex_offense_case(
+    def test_next_recommended_face_to_face_date_contacts_minimum_level_sex_offense_case(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -1345,7 +1345,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertIsNone(next_face_to_face)
 
-    def test_face_to_face_frequency_sufficient_contacts_minimum_level_sex_offense_case_not_met(
+    def test_next_recommended_face_to_face_date_contacts_minimum_level_sex_offense_case_not_met(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -1393,7 +1393,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertEqual(next_face_to_face_date, date(2018, 6, 4))
 
-    def test_face_to_face_frequency_sufficient_contacts_medium_level_sex_offense_case(
+    def test_next_recommended_face_to_face_date_contacts_medium_level_sex_offense_case(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -1441,7 +1441,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_face_to_face_frequency_sufficient_contacts_medium_level_sex_offense_case_not_met(
+    def test_next_recommended_face_to_face_date_contacts_medium_level_sex_offense_case_not_met(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -1489,7 +1489,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertEqual(next_face_to_face, date(2018, 4, 5))
 
-    def test_face_to_face_frequency_sufficient_contacts_high_level_sex_offense_case(
+    def test_next_recommended_face_to_face_date_contacts_high_level_sex_offense_case(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -1549,7 +1549,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
         self.assertTrue(face_to_face_frequency_sufficient)
 
-    def test_face_to_face_frequency_sufficient_contacts_high_level_sex_offense_case_not_met(
+    def test_next_recommended_face_to_face_date_contacts_high_level_sex_offense_case_not_met(
         self,
     ) -> None:
         start_of_supervision = date(2018, 3, 5)
@@ -1641,7 +1641,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
     """Tests the guidelines_applicable_for_case function."""
 
     def setUp(self) -> None:
-        self.person = StatePerson.new_with_defaults(state_code="US_XX")
+        self.person = StatePerson.new_with_defaults(state_code="US_ID")
 
     def test_guidelines_applicable_for_case_general(self) -> None:
         start_date = date(2018, 3, 5)
@@ -1910,7 +1910,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
     """Tests the reassessment_requirements_are_met function."""
 
     def setUp(self) -> None:
-        self.person = StatePerson.new_with_defaults(state_code="US_XX")
+        self.person = StatePerson.new_with_defaults(state_code="US_ID")
 
     def test_next_recommended_reassessment_general_minimum(self) -> None:
         start_of_supervision = date(2018, 3, 5)  # This was a Monday

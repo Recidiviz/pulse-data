@@ -292,11 +292,13 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             period_days,
         ) = self._get_required_face_to_face_contacts_and_period_days_for_level()
 
-        return self._default_next_recommended_face_to_face_date_given_requirements(
+        return self._default_next_recommended_contact_date_given_requirements(
             compliance_evaluation_date,
             required_contacts,
             period_days,
             NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS,
+            self._get_applicable_face_to_face_contacts_between_dates,
+            use_business_days=True,
         )
 
     def _get_required_face_to_face_contacts_and_period_days_for_level(
@@ -369,13 +371,12 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
 
         return supervision_level_raw_text in ("LOW", "MODERATE", "HIGH")
 
-    def _home_visit_frequency_is_sufficient(
+    def _next_recommended_home_visit_date(
         self,
-        compliance_evaluation_date: date,
-    ) -> Optional[bool]:
-        """Calculates whether the frequency of home visits between the officer and the person on supervision
-        is sufficient with respect to the state standards for the level of supervision of the case.
-        """
+        _compliance_evaluation_date: date,
+    ) -> Optional[date]:
+        """Returns when the next home visit should be. Returns None if compliance standards are
+        unknown or no subsequent home visits are required."""
         # There are no home visit standards for US_ID
         return None
 

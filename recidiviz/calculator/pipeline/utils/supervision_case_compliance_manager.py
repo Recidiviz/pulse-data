@@ -20,9 +20,10 @@
 """
 import abc
 from datetime import date, timedelta
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 import numpy as np
+from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
@@ -114,7 +115,7 @@ class StateSupervisionCaseComplianceManager:
 
         next_recommended_assessment_date = None
         next_recommended_face_to_face_date = None
-        home_visit_frequency_sufficient = None
+        next_recommended_home_visit_date = None
 
         if self._guidelines_applicable_for_case(compliance_evaluation_date):
             next_recommended_assessment_date = self._next_recommended_assessment_date(
@@ -125,7 +126,7 @@ class StateSupervisionCaseComplianceManager:
                 self._next_recommended_face_to_face_date(compliance_evaluation_date)
             )
 
-            home_visit_frequency_sufficient = self._home_visit_frequency_is_sufficient(
+            next_recommended_home_visit_date = self._next_recommended_home_visit_date(
                 compliance_evaluation_date
             )
 
@@ -142,8 +143,8 @@ class StateSupervisionCaseComplianceManager:
             most_recent_home_visit_date=self._most_recent_home_visit_contact(
                 compliance_evaluation_date
             ),
+            next_recommended_home_visit_date=next_recommended_home_visit_date,
             home_visit_count=home_visit_count,
-            home_visit_frequency_sufficient=home_visit_frequency_sufficient,
             recommended_supervision_downgrade_level=self._get_recommended_supervision_downgrade_level(
                 compliance_evaluation_date
             ),
@@ -321,12 +322,16 @@ class StateSupervisionCaseComplianceManager:
 
         return recommended_level
 
-    def _default_next_recommended_face_to_face_date_given_requirements(
+    def _default_next_recommended_contact_date_given_requirements(
         self,
         compliance_evaluation_date: date,
         required_contacts_per_period: int,
         period_length_days: int,
-        new_supervision_contact_deadline_business_days: int,
+        new_supervision_contact_deadline_days: int,
+        get_applicable_contacts_function: Callable[
+            [date, date], List[StateSupervisionContact]
+        ],
+        use_business_days: bool,
     ) -> Optional[date]:
         """Provides a base implementation, describing when the next face-to-face contact
         should be. Returns None if compliance standards are unknown or no subsequent
@@ -335,10 +340,8 @@ class StateSupervisionCaseComplianceManager:
         if required_contacts_per_period == 0:
             return None
 
-        contacts_since_supervision_start = (
-            self._get_applicable_face_to_face_contacts_between_dates(
-                self.start_of_supervision, compliance_evaluation_date
-            )
+        contacts_since_supervision_start = get_applicable_contacts_function(
+            self.start_of_supervision, compliance_evaluation_date
         )
         contact_dates = sorted(
             [
@@ -348,12 +351,19 @@ class StateSupervisionCaseComplianceManager:
             ]
         )
         if not contact_dates:
-            # No contacts. First contact required is within NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS.
-            return np.busday_offset(
-                self.start_of_supervision,
-                new_supervision_contact_deadline_business_days,
-                roll="forward",
-            ).astype(date)
+            # No contacts. First contact required is within NEW_SUPERVISION_CONTACT_DEADLINE_DAYS.
+            return (
+                np.busday_offset(
+                    self.start_of_supervision,
+                    new_supervision_contact_deadline_days,
+                    roll="forward",
+                ).astype(date)
+                if use_business_days
+                else (
+                    self.start_of_supervision
+                    + relativedelta(days=new_supervision_contact_deadline_days)
+                )
+            )
 
         # TODO(#8637): Have this method operate also take in a unit of time for face-to-face
         # frequency so we can fold in ND logic here as well.
@@ -395,13 +405,12 @@ class StateSupervisionCaseComplianceManager:
         """Returns when the next face-to-face contact should be. Returns None if compliance standards are
         unknown or no subsequent face-to-face contacts are required."""
 
-    # TODO(#9159): Replace this with _next_recommended_home_visit_date
     @abc.abstractmethod
-    def _home_visit_frequency_is_sufficient(
+    def _next_recommended_home_visit_date(
         self, compliance_evaluation_date: date
-    ) -> Optional[bool]:
-        """Returns whether the frequency of home visits between the officer and the person on supervision
-        is sufficient with respect to the state standards for the level of supervision of the case."""
+    ) -> Optional[date]:
+        """Returns when the next home visit should be. Returns None if the compliance standards are unknown or
+        no subsequent home visits are required."""
 
     @abc.abstractmethod
     def _get_supervision_level_policy(

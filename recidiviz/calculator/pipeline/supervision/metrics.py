@@ -379,10 +379,20 @@ The calculation of the attributes of this metric relies entirely on the state-sp
     # The date that the last home visit contact happened. If no meetings have yet happened, this is None.
     most_recent_home_visit_date: Optional[date] = attr.ib(default=None)
 
-    # Whether or not the supervision officer has conducted home visits with the person on supervision recently
-    # enough to satisfy compliance measures. Should be unset if we do not know the
-    # home visit compliance standards for this person.
-    home_visit_frequency_sufficient: Optional[bool] = attr.ib(default=None)
+    # When the next recommended home visit should happen according to compliance standards.
+    # SHould be unset if we do not know the compliance standards for this person, or no further contact is required.
+    next_recommended_home_visit_date: Optional[date] = attr.ib(default=None)
+
+    # The date that the last collateral contact happened with a treatment provider. If no meetings have yet happened, this is None.
+    most_recent_treatment_collateral_contact_date: Optional[date] = attr.ib(
+        default=None
+    )
+
+    # When the next recommended treatment provider collateral contact should happen according to compliance standards.
+    # Should be unset if we do not know the compliance standards for this person or no further contact is required.
+    next_recommended_treatment_collateral_contact_date: Optional[date] = attr.ib(
+        default=None
+    )
 
     # If the person on supervision is eligible for a downgrade, the level they should be
     # downgraded to.

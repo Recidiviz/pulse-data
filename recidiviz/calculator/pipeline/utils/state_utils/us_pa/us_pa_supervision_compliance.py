@@ -166,11 +166,13 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             period_days,
         ) = self._get_required_face_to_face_contacts_and_period_days_for_level()
 
-        return self._default_next_recommended_face_to_face_date_given_requirements(
+        return self._default_next_recommended_contact_date_given_requirements(
             compliance_evaluation_date,
             required_contacts,
             period_days,
             NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS,
+            self._get_applicable_face_to_face_contacts_between_dates,
+            use_business_days=True,
         )
 
     def _get_required_face_to_face_contacts_and_period_days_for_level(
@@ -188,63 +190,32 @@ class UsPaSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             supervision_level
         ]
 
-    def _home_visit_frequency_is_sufficient(
+    def _next_recommended_home_visit_date(
         self, compliance_evaluation_date: date
-    ) -> Optional[bool]:
-        """Calculates whether the frequency of home visits between the officer and the person on supervision
-        is sufficient with respect to the state standards for the level of supervision of the case.
-        """
+    ) -> Optional[date]:
+        """Returns when the next home visit should be. Returns None if compliance standards are
+        unknown or no subsequent home visits are required."""
         # No home visits are required for these supervision levels
         if self.supervision_period.supervision_level in (
             StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY,
             StateSupervisionLevel.LIMITED,
             StateSupervisionLevel.MINIMUM,
         ):
-            return True
-
-        days_since_start = (compliance_evaluation_date - self.start_of_supervision).days
-
-        if days_since_start <= NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS:
-            # This is a recently started supervision period, and the person has not yet hit the number of days
-            # from the start of their supervision at which the officer is required to have made a home visit.
-            logging.debug(
-                "Supervision period %d started %d business days before the compliance date %s. Home visit is not "
-                "overdue.",
-                self.supervision_period.supervision_period_id,
-                days_since_start,
-                compliance_evaluation_date,
-            )
-            return True
-
-        # Get applicable home visits that occurred between the start of supervision and the
-        # compliance_evaluation_date (inclusive)
-        applicable_visits = self._get_applicable_home_visits_between_dates(
-            self.start_of_supervision, compliance_evaluation_date
-        )
-
-        if not applicable_visits:
-            # This person has been on supervision for longer than the allowed number of days without an initial
-            # home visit. The initial home visit standard is not in compliance.
-            return False
+            return None
 
         (
             required_contacts,
             period_days,
         ) = self._get_required_home_visits_and_period_days()
 
-        if days_since_start < period_days:
-            # If they've had a visit since the start of their supervision, and they have been on supervision for less
-            # than the number of days in which they would need another contact, then the case is in compliance
-            return True
-
-        visits_within_period = [
-            visit
-            for visit in applicable_visits
-            if visit.contact_date is not None
-            and (compliance_evaluation_date - visit.contact_date).days < period_days
-        ]
-
-        return len(visits_within_period) >= required_contacts
+        return self._default_next_recommended_contact_date_given_requirements(
+            compliance_evaluation_date,
+            required_contacts,
+            period_days,
+            NEW_SUPERVISION_HOME_VISIT_DEADLINE_DAYS,
+            self._get_applicable_home_visits_between_dates,
+            use_business_days=False,
+        )
 
     def _get_required_home_visits_and_period_days(self) -> Tuple[int, int]:
         """Returns the number of home visits that are required within time period (in days) for a supervision case"""
