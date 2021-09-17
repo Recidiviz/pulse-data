@@ -17,21 +17,15 @@
 
 """Converts an ingest_info proto StateSupervisionSentence to a
 persistence entity."""
+from recidiviz.common import common_utils
+from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
+    DefaultingAndNormalizingEnumParser,
+)
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import normalize, parse_date, parse_days
 from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionSentence
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn,
-    parse_completion_date,
-    parse_external_id,
-    parse_region_code_with_override,
-)
-from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
-    IngestInfoProtoEnumMapper,
-)
 
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
@@ -48,41 +42,33 @@ def copy_fields_to_builder(
     """
     new = supervision_sentence_builder
 
-    enum_fields = {
-        "status": StateSentenceStatus,
-        "supervision_type": StateSupervisionType,
-    }
-    proto_enum_mapper = IngestInfoProtoEnumMapper(
-        proto, enum_fields, metadata.enum_overrides
-    )
-
     # Enum mappings
-    new.status = proto_enum_mapper.get(
-        StateSentenceStatus, default=StateSentenceStatus.PRESENT_WITHOUT_INFO
+    new.status = DefaultingAndNormalizingEnumParser(
+        getattr(proto, "status"),
+        StateSentenceStatus,
+        metadata.enum_overrides,
     )
-    new.status_raw_text = fn(normalize, "status", proto)
-    new.supervision_type = proto_enum_mapper.get(StateSupervisionType)
-    new.supervision_type_raw_text = fn(normalize, "supervision_type", proto)
+    new.status_raw_text = getattr(proto, "status")
+    new.supervision_type = DefaultingAndNormalizingEnumParser(
+        getattr(proto, "supervision_type"),
+        StateSupervisionType,
+        metadata.enum_overrides,
+    )
+    new.supervision_type_raw_text = getattr(proto, "supervision_type")
 
     # 1-to-1 mappings
-    new.external_id = fn(parse_external_id, "state_supervision_sentence_id", proto)
-    new.date_imposed = fn(parse_date, "date_imposed", proto)
-    new.start_date = fn(parse_date, "start_date", proto)
-    new.completion_date, new.projected_completion_date = parse_completion_date(
-        proto, metadata
+
+    state_supervision_sentence_id = getattr(proto, "state_supervision_sentence_id")
+    new.external_id = (
+        None
+        if common_utils.is_generated_id(state_supervision_sentence_id)
+        else state_supervision_sentence_id
     )
-    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
-    new.county_code = fn(normalize, "county_code", proto)
-    new.min_length_days = fn(parse_days, "min_length", proto)
-    new.max_length_days = fn(parse_days, "max_length", proto)
-
-    set_status_if_needed(new)
-
-
-def set_status_if_needed(builder):
-    # completion_date is guaranteed to be in the past by parse_completion_date
-    if (
-        builder.completion_date
-        and builder.status is StateSentenceStatus.PRESENT_WITHOUT_INFO
-    ):
-        builder.status = StateSentenceStatus.COMPLETED
+    new.date_imposed = getattr(proto, "date_imposed")
+    new.start_date = getattr(proto, "start_date")
+    new.completion_date = getattr(proto, "completion_date")
+    new.projected_completion_date = getattr(proto, "projected_completion_date")
+    new.state_code = metadata.region
+    new.county_code = getattr(proto, "county_code")
+    new.min_length_days = getattr(proto, "min_length")
+    new.max_length_days = getattr(proto, "max_length")

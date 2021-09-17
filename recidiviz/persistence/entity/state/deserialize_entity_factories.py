@@ -222,7 +222,7 @@ class StateIncarcerationSentenceFactory(EntityFactory):
             converter_overrides={
                 "min_length_days": EntityFieldConverter(str, parse_days),
                 "max_length_days": EntityFieldConverter(str, parse_days),
-                # Note: other date fields on this class (initial_time_served_days,
+                # Note: other day count fields on this class (initial_time_served_days,
                 # good_time_days, earned_time_days) should be formatted as integers
                 # (e.g. not 'xxY xxM xxD' format) in the ingest view and will be parsed
                 # normally as integers.
@@ -230,6 +230,24 @@ class StateIncarcerationSentenceFactory(EntityFactory):
             defaults={
                 "status": StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 "incarceration_type": StateIncarcerationType.STATE_PRISON,
+            },
+            **kwargs
+        )
+
+
+class StateSupervisionSentenceFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: Optional[Union[str, EnumParser]]
+    ) -> entities.StateSupervisionSentence:
+        return entity_deserialize(
+            cls=entities.StateSupervisionSentence,
+            converter_overrides={
+                "min_length_days": EntityFieldConverter(str, parse_days),
+                "max_length_days": EntityFieldConverter(str, parse_days),
+            },
+            defaults={
+                "status": StateSentenceStatus.PRESENT_WITHOUT_INFO,
             },
             **kwargs
         )

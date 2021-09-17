@@ -1500,6 +1500,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                             state_supervision_sentences=[
                                 StateSupervisionSentence(
                                     state_supervision_sentence_id="117109",
+                                    status="COMPLETED",
                                     supervision_type="Pre-Trial",
                                     start_date="1/1/2013",
                                     projected_completion_date="3/3/2013",
@@ -1531,6 +1532,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                                 ),
                                 StateSupervisionSentence(
                                     state_supervision_sentence_id="117111",
+                                    status="COMPLETED",
                                     supervision_type="Parole",
                                     start_date="7/17/2014",
                                     projected_completion_date="8/7/2015",
@@ -1566,6 +1568,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                             state_supervision_sentences=[
                                 StateSupervisionSentence(
                                     state_supervision_sentence_id="140408",
+                                    status="COMPLETED",
                                     supervision_type="Suspended",
                                     start_date="3/24/2017",
                                     projected_completion_date="3/23/2019",
@@ -1586,6 +1589,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                                 ),
                                 StateSupervisionSentence(
                                     state_supervision_sentence_id="147777",
+                                    status="COMPLETED",
                                     supervision_type="Suspended",
                                     start_date="3/24/2013",
                                     projected_completion_date="3/23/2015",
@@ -3645,6 +3649,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 max_length_days=59,
                 state_code=_STATE_CODE,
                 status=StateSentenceStatus.COMPLETED,
+                status_raw_text="COMPLETED",
                 person=sentence_group_placeholder_ss.person,
                 sentence_group=sentence_group_placeholder_ss,
             )
@@ -3738,6 +3743,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 max_length_days=580,
                 state_code=_STATE_CODE,
                 status=StateSentenceStatus.COMPLETED,
+                status_raw_text="COMPLETED",
                 person=sentence_group_placeholder_ss.person,
                 sentence_group=sentence_group_placeholder_ss,
             )
@@ -3853,6 +3859,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 completion_date=datetime.date(year=2018, month=2, day=27),
                 state_code=_STATE_CODE,
                 status=StateSentenceStatus.COMPLETED,
+                status_raw_text="COMPLETED",
                 person=sentence_group_person_2_placeholder_ss.person,
                 sentence_group=sentence_group_person_2_placeholder_ss,
             )
@@ -3947,6 +3954,7 @@ class TestUsNdController(BaseDirectIngestControllerTests):
                 completion_date=datetime.date(year=2016, month=2, day=27),
                 state_code=_STATE_CODE,
                 status=StateSentenceStatus.COMPLETED,
+                status_raw_text="COMPLETED",
                 person=sentence_group_person_2_placeholder_ss.person,
                 sentence_group=sentence_group_person_2_placeholder_ss,
             )
