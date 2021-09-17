@@ -127,6 +127,7 @@ def _parse_facility_table(filename: str) -> pd.DataFrame:
             "Number Misdemeanor Pretrial": "number_misdemeanor_pretrial",
         },
     )
+    result = result[result["facility_name"] != "Total"]
     result = result.replace("Detention\rFacility\rName", None).dropna(how="all")
 
     result["average_daily_population"] = (
