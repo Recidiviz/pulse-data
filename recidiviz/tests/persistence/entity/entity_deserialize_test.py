@@ -93,6 +93,13 @@ class TestEntityDeserialize(TestCase):
                 _NotAnAttr, converter_overrides={}, defaults={}, an_int_field="1"
             )
 
+    def test_entity_deserialize_bad_arg(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Unexpected kwargs for class \[MyEntity\]: \{'bad_arg'\}",
+        ):
+            MyEntityFactory.deserialize(bad_arg="FOO")
+
     def test_entity_deserialize_use_normal_constructor(self) -> None:
         with self.assertRaises(TypeError):
             _ = MyEntity(int_with_default="3")  # type: ignore[arg-type]

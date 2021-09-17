@@ -18,19 +18,18 @@
 persistence entity."""
 
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import normalize
 from recidiviz.ingest.models.ingest_info_pb2 import (
     StateSupervisionViolatedConditionEntry,
 )
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn,
-    parse_region_code_with_override,
-)
-
 
 # TODO(#8905): Delete this file once all states have been migrated to v2 ingest
 #  mappings.
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StateSupervisionViolatedConditionEntryFactory,
+)
+
+
 def convert(
     proto: StateSupervisionViolatedConditionEntry, metadata: IngestMetadata
 ) -> entities.StateSupervisionViolatedConditionEntry:
@@ -39,7 +38,7 @@ def convert(
     new = entities.StateSupervisionViolatedConditionEntry.builder()
 
     # 1-to-1 mappings
-    new.condition = fn(normalize, "condition", proto)
-    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
+    new.condition = getattr(proto, "condition")
+    new.state_code = metadata.region
 
-    return new.build()
+    return new.build(StateSupervisionViolatedConditionEntryFactory.deserialize)

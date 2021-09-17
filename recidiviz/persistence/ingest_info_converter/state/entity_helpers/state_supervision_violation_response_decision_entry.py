@@ -17,22 +17,19 @@
 """Converts an ingest_info proto
 StateSupervisionViolationResponseDecisionEntry to a persistence entity.
 """
-
+from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
+    DefaultingAndNormalizingEnumParser,
+)
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import normalize
 from recidiviz.ingest.models.ingest_info_pb2 import (
     StateSupervisionViolationResponseDecisionEntry,
 )
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn,
-    parse_region_code_with_override,
-)
-from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
-    IngestInfoProtoEnumMapper,
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StateSupervisionViolationResponseDecisionEntryFactory,
 )
 
 
@@ -46,18 +43,15 @@ def convert(
     """
     new = entities.StateSupervisionViolationResponseDecisionEntry.builder()
 
-    enum_fields = {
-        "decision": StateSupervisionViolationResponseDecision,
-    }
-    proto_enum_mapper = IngestInfoProtoEnumMapper(
-        proto, enum_fields, metadata.enum_overrides
-    )
-
     # Enum mappings
-    new.decision = proto_enum_mapper.get(StateSupervisionViolationResponseDecision)
-    new.decision_raw_text = fn(normalize, "decision", proto)
+    new.decision = DefaultingAndNormalizingEnumParser(
+        getattr(proto, "decision"),
+        StateSupervisionViolationResponseDecision,
+        metadata.enum_overrides,
+    )
+    new.decision_raw_text = getattr(proto, "decision")
 
     # 1-to-1 mappings
-    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
+    new.state_code = metadata.region
 
-    return new.build()
+    return new.build(StateSupervisionViolationResponseDecisionEntryFactory.deserialize)

@@ -48,6 +48,7 @@ from recidiviz.persistence.entity.base_entity import (
 )
 from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.county import entities as county_entities
+from recidiviz.persistence.entity.entity_deserialize import EntityFactory
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import StatePersonExternalId
@@ -236,6 +237,21 @@ def get_all_entity_classes_in_module(entities_module: ModuleType) -> Set[Type[En
                 and attribute is not EnumEntity
                 and issubclass(attribute, Entity)
             ):
+                expected_classes.add(attribute)
+
+    return expected_classes
+
+
+def get_all_entity_factory_classes_in_module(
+    factories_module: ModuleType,
+) -> Set[Type[EntityFactory]]:
+    """Returns a set of all subclasses of EntityFactory that are defined in the
+    given module."""
+    expected_classes: Set[Type[EntityFactory]] = set()
+    for attribute_name in dir(factories_module):
+        attribute = getattr(factories_module, attribute_name)
+        if inspect.isclass(attribute):
+            if attribute is not EntityFactory and issubclass(attribute, EntityFactory):
                 expected_classes.add(attribute)
 
     return expected_classes
