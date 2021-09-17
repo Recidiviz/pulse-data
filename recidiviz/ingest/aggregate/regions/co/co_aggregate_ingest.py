@@ -50,6 +50,7 @@ def _parse_table(filename: str) -> pd.DataFrame:
     """
 
     data = pd.read_csv(filename, encoding="cp1252")
+    data = data[data["County"] != "Statewide"]
     county_names = data.County
     data = fips.add_column_to_df(data, county_names, us.states.CO)  # type: ignore
 
