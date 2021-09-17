@@ -19,3 +19,4 @@
 VERA_DATASET: str = "vera_data"
 INCARCERATION_TRENDS_TABLE: str = "incarceration_trends"
 IOB_RACE_GENDER_POP_TABLE: str = "iob_race_gender_pop"
+BRIDGED_RACE_POPULATION_ESTIMATED_TABLE: str = "bridged_race_population_estimates"
