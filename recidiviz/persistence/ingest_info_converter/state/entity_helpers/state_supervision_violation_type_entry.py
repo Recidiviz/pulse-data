@@ -16,20 +16,17 @@
 # =============================================================================
 """Converts an ingest_info proto StateSupervisionViolationTypeEntry to a
 persistence entity."""
-
+from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
+    DefaultingAndNormalizingEnumParser,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.common.str_field_utils import normalize
 from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionViolationTypeEntry
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn,
-    parse_region_code_with_override,
-)
-from recidiviz.persistence.ingest_info_converter.utils.ingest_info_proto_enum_mapper import (
-    IngestInfoProtoEnumMapper,
+from recidiviz.persistence.entity.state.deserialize_entity_factories import (
+    StateSupervisionViolationTypeEntryFactory,
 )
 
 
@@ -42,18 +39,15 @@ def convert(
     persistence entity."""
     new = entities.StateSupervisionViolationTypeEntry.builder()
 
-    enum_fields = {
-        "violation_type": StateSupervisionViolationType,
-    }
-    proto_enum_mapper = IngestInfoProtoEnumMapper(
-        proto, enum_fields, metadata.enum_overrides
-    )
-
     # Enum mappings
-    new.violation_type = proto_enum_mapper.get(StateSupervisionViolationType)
-    new.violation_type_raw_text = fn(normalize, "violation_type", proto)
+    new.violation_type = DefaultingAndNormalizingEnumParser(
+        getattr(proto, "violation_type"),
+        StateSupervisionViolationType,
+        metadata.enum_overrides,
+    )
+    new.violation_type_raw_text = getattr(proto, "violation_type")
 
     # 1-to-1 mappings
-    new.state_code = parse_region_code_with_override(proto, "state_code", metadata)
+    new.state_code = metadata.region
 
-    return new.build()
+    return new.build(StateSupervisionViolationTypeEntryFactory.deserialize)

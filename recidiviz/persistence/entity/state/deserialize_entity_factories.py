@@ -381,4 +381,40 @@ class StateSupervisionViolationResponseFactory(EntityFactory):
         )
 
 
-# TODO(#8909): Add factories for remainder of state schema here.
+class StateSupervisionViolatedConditionEntryFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: Optional[Union[str, EnumParser]]
+    ) -> entities.StateSupervisionViolatedConditionEntry:
+        return entity_deserialize(
+            cls=entities.StateSupervisionViolatedConditionEntry,
+            converter_overrides={},
+            defaults={},
+            **kwargs
+        )
+
+
+class StateSupervisionViolationResponseDecisionEntryFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: Optional[Union[str, EnumParser]]
+    ) -> entities.StateSupervisionViolationResponseDecisionEntry:
+        return entity_deserialize(
+            cls=entities.StateSupervisionViolationResponseDecisionEntry,
+            converter_overrides={},
+            defaults={},
+            **kwargs
+        )
+
+
+class StateSupervisionViolationTypeEntryFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: Optional[Union[str, EnumParser]]
+    ) -> entities.StateSupervisionViolationTypeEntry:
+        return entity_deserialize(
+            cls=entities.StateSupervisionViolationTypeEntry,
+            converter_overrides={},
+            defaults={},
+            **kwargs
+        )

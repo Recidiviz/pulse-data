@@ -122,12 +122,22 @@ def entity_deserialize(
         raise ValueError(f"Unsupported field {field.name}")
 
     converted_args = {}
+    fields = set()
     for field_name, field_ in attr.fields_dict(cls).items():
         if field_name in kwargs:
             converted_args[field_name] = convert_field_value(field_, kwargs[field_name])
         if field_name in defaults:
             if converted_args.get(field_name, None) is None:
                 converted_args[field_name] = defaults[field_name]
+        fields.add(field_name)
+
+    unexpected_kwargs = set(kwargs.keys()).difference(fields)
+    if unexpected_kwargs:
+        # Throw if there are unexpected args. NOTE: if there are missing required args,
+        # that will be caught by the object construction itself.
+        raise ValueError(
+            f"Unexpected kwargs for class [{cls.__name__}]: {unexpected_kwargs}"
+        )
 
     return cls(**converted_args)  # type: ignore[call-arg]
 
