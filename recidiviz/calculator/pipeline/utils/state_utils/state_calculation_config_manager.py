@@ -24,12 +24,6 @@ from typing import List, Optional
 from recidiviz.calculator.pipeline.utils.incarceration_period_pre_processing_manager import (
     StateSpecificIncarcerationPreProcessingDelegate,
 )
-from recidiviz.calculator.pipeline.utils.pre_processed_incarceration_period_index import (
-    PreProcessedIncarcerationPeriodIndex,
-)
-from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index import (
-    PreProcessedSupervisionPeriodIndex,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
 )
@@ -51,9 +45,11 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_com
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_delegate import (
     UsIdSupervisionDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_pre_processing_delegate import (
+    UsIdSupervisionPreProcessingDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_utils import (
     us_id_get_post_incarceration_supervision_type,
-    us_id_get_supervision_period_admission_override,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_violation_response_preprocessing_delegate import (
     UsIdViolationResponsePreprocessingDelegate,
@@ -69,6 +65,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_incarceration_p
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_delegate import (
     UsMoSupervisionDelegate,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_period_pre_processing_delegate import (
+    UsMoSupervisionPreProcessingDelegate,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_utils import (
     us_mo_get_month_supervision_type,
@@ -93,9 +92,11 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_com
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_delegate import (
     UsNdSupervisionDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_pre_processing_delegate import (
+    UsNdSupervisionPreProcessingDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_utils import (
     us_nd_get_post_incarceration_supervision_type,
-    us_nd_infer_supervision_period_admission,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_violation_response_preprocessing_delegate import (
     UsNdViolationResponsePreprocessingDelegate,
@@ -115,6 +116,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_com
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_delegate import (
     UsPaSupervisionDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_supervision_period_pre_processing_delegate import (
+    UsPaSupervisionPreProcessingDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violation_response_preprocessing_delegate import (
     UsPaViolationResponsePreprocessingDelegate,
 )
@@ -124,6 +128,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_violations_dele
 from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import (
     StateSupervisionCaseComplianceManager,
 )
+from recidiviz.calculator.pipeline.utils.supervision_period_pre_processing_manager import (
+    StateSpecificSupervisionPreProcessingDelegate,
+)
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
     get_month_supervision_type_default,
 )
@@ -132,7 +139,6 @@ from recidiviz.calculator.pipeline.utils.supervision_violation_responses_pre_pro
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.common.constants.states import StateCode
@@ -313,7 +319,7 @@ def get_state_specific_case_compliance_manager(
 def get_state_specific_incarceration_period_pre_processing_delegate(
     state_code: str,
 ) -> StateSpecificIncarcerationPreProcessingDelegate:
-    """Returns the type of IncarcerationPreProcessingManager that should be used for
+    """Returns the type of IncarcerationPreProcessingDelegate that should be used for
     pre-processing StateIncarcerationPeriod entities from a given |state_code|."""
     if state_code == StateCode.US_ID.value:
         return UsIdIncarcerationPreProcessingDelegate()
@@ -323,6 +329,23 @@ def get_state_specific_incarceration_period_pre_processing_delegate(
         return UsMoIncarcerationPreProcessingDelegate()
     if state_code == StateCode.US_PA.value:
         return UsPaIncarcerationPreProcessingDelegate()
+
+    raise ValueError(f"Unexpected state code [{state_code}]")
+
+
+def get_state_specific_supervision_period_pre_processing_delegate(
+    state_code: str,
+) -> StateSpecificSupervisionPreProcessingDelegate:
+    """Returns the type of SupervisionPreProcessingDelegate that should be used for
+    pre-processing StateSupervisionPeriod entities from a given |state_code|."""
+    if state_code == StateCode.US_ID.value:
+        return UsIdSupervisionPreProcessingDelegate()
+    if state_code == StateCode.US_ND.value:
+        return UsNdSupervisionPreProcessingDelegate()
+    if state_code == StateCode.US_PA.value:
+        return UsPaSupervisionPreProcessingDelegate()
+    if state_code == StateCode.US_MO.value:
+        return UsMoSupervisionPreProcessingDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
 
@@ -393,23 +416,3 @@ def get_state_specific_supervision_delegate(
         return UsPaSupervisionDelegate()
 
     raise ValueError(f"Unexpected state code [{state_code}]")
-
-
-def state_specific_supervision_admission_reason_override(
-    state_code: str,
-    supervision_period: StateSupervisionPeriod,
-    supervision_period_index: PreProcessedSupervisionPeriodIndex,
-    incarceration_period_index: PreProcessedIncarcerationPeriodIndex,
-) -> Optional[StateSupervisionPeriodAdmissionReason]:
-    if state_code == "US_ID":
-        return us_id_get_supervision_period_admission_override(
-            supervision_period=supervision_period,
-            supervision_period_index=supervision_period_index,
-        )
-    if state_code == "US_ND":
-        return us_nd_infer_supervision_period_admission(
-            supervision_period=supervision_period,
-            supervision_period_index=supervision_period_index,
-            incarceration_period_index=incarceration_period_index,
-        )
-    return supervision_period.admission_reason

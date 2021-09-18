@@ -49,6 +49,9 @@ from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarcera
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_period_pre_processing_delegate import (
+    UsXxSupervisionPreProcessingDelegate,
+)
 
 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS = {
     999: {"agent_id": 000, "agent_external_id": "XXX", "supervision_period_id": 999}
@@ -72,12 +75,25 @@ class TestFindProgramEvents(unittest.TestCase):
             StateAssessmentType.ORAS_COMMUNITY_SUPERVISION
         ]
 
-        self.pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_incarceration_period_pre_processing_delegate"
+        self.incarceration_pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
+            ".get_state_specific_incarceration_period_pre_processing_delegate"
         )
-        self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
-        self.mock_pre_processing_delegate.return_value = (
+        self.mock_incarceration_pre_processing_delegate = (
+            self.incarceration_pre_processing_delegate_patcher.start()
+        )
+        self.mock_incarceration_pre_processing_delegate.return_value = (
             UsXxIncarcerationPreProcessingDelegate()
+        )
+        self.supervision_pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
+            ".get_state_specific_supervision_period_pre_processing_delegate"
+        )
+        self.mock_supervision_pre_processing_delegate = (
+            self.supervision_pre_processing_delegate_patcher.start()
+        )
+        self.mock_supervision_pre_processing_delegate.return_value = (
+            UsXxSupervisionPreProcessingDelegate()
         )
         self.supervision_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.program.identifier.get_state_specific_supervision_delegate"
@@ -88,7 +104,8 @@ class TestFindProgramEvents(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.assessment_types_patcher.stop()
-        self.pre_processing_delegate_patcher.stop()
+        self.incarceration_pre_processing_delegate_patcher.stop()
+        self.supervision_pre_processing_delegate_patcher.stop()
         self.supervision_delegate_patcher.stop()
 
     @freeze_time("2020-01-02")
