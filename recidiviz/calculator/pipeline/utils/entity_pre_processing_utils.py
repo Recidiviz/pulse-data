@@ -29,6 +29,7 @@ from recidiviz.calculator.pipeline.utils.pre_processed_supervision_period_index 
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_state_specific_incarceration_period_pre_processing_delegate,
+    get_state_specific_supervision_period_pre_processing_delegate,
     get_state_specific_violation_response_preprocessing_delegate,
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_pre_processing_manager import (
@@ -65,6 +66,9 @@ def pre_processing_managers_for_calculations(
     """
     state_ip_pre_processing_manager_delegate = (
         get_state_specific_incarceration_period_pre_processing_delegate(state_code)
+    )
+    state_sp_pre_processing_manager_delegate = (
+        get_state_specific_supervision_period_pre_processing_delegate(state_code)
     )
 
     if supervision_periods is None:
@@ -104,6 +108,7 @@ def pre_processing_managers_for_calculations(
     if supervision_periods is not None:
         sp_pre_processing_manager = SupervisionPreProcessingManager(
             supervision_periods=supervision_periods,
+            delegate=state_sp_pre_processing_manager_delegate,
             earliest_death_date=earliest_death_date,
         )
 

@@ -45,6 +45,9 @@ from recidiviz.persistence.entity.state.entities import (
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_period_pre_processing_delegate import (
+    UsXxSupervisionPreProcessingDelegate,
+)
 
 _COUNTY_OF_RESIDENCE = "county"
 _COUNTY_OF_RESIDENCE_ROWS = [
@@ -60,17 +63,31 @@ class TestClassifyReleaseEvents(unittest.TestCase):
     """Tests for the find_release_events function."""
 
     def setUp(self) -> None:
-        self.pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_incarceration_period_pre_processing_delegate"
+        self.incarceration_pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
+            ".get_state_specific_incarceration_period_pre_processing_delegate"
         )
-        self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
-        self.mock_pre_processing_delegate.return_value = (
+        self.mock_incarceration_pre_processing_delegate = (
+            self.incarceration_pre_processing_delegate_patcher.start()
+        )
+        self.mock_incarceration_pre_processing_delegate.return_value = (
             UsXxIncarcerationPreProcessingDelegate()
+        )
+        self.supervision_pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
+            ".get_state_specific_supervision_period_pre_processing_delegate"
+        )
+        self.mock_supervision_pre_processing_delegate = (
+            self.supervision_pre_processing_delegate_patcher.start()
+        )
+        self.mock_supervision_pre_processing_delegate.return_value = (
+            UsXxSupervisionPreProcessingDelegate()
         )
         self.identifier = identifier.RecidivismIdentifier()
 
     def tearDown(self) -> None:
-        self.pre_processing_delegate_patcher.stop()
+        self.incarceration_pre_processing_delegate_patcher.stop()
+        self.supervision_pre_processing_delegate_patcher.stop()
 
     def _test_find_release_events(
         self,

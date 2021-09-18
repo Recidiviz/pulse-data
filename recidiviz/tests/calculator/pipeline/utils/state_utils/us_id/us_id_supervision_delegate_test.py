@@ -32,7 +32,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 
 
 class TestUsIdSupervisionDelegate(unittest.TestCase):
-    """Unit tests for TestUsIdSupervisionDelegate"""
+    """Unit tests for UsIdSupervisionDelegate"""
 
     def setUp(self) -> None:
         self.supervision_delegate = UsIdSupervisionDelegate()

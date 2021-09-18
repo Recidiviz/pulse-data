@@ -121,6 +121,9 @@ from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarcera
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_delegate import (
     UsXxSupervisionDelegate,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_period_pre_processing_delegate import (
+    UsXxSupervisionPreProcessingDelegate,
+)
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_violation_response_preprocessing_delegate import (
     UsXxViolationResponsePreprocessingDelegate,
 )
@@ -175,6 +178,16 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         self.mock_incarceration_pre_processing_delegate.return_value = (
             UsXxIncarcerationPreProcessingDelegate()
         )
+        self.supervision_pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
+            ".get_state_specific_supervision_period_pre_processing_delegate"
+        )
+        self.mock_supervision_pre_processing_delegate = (
+            self.supervision_pre_processing_delegate_patcher.start()
+        )
+        self.mock_supervision_pre_processing_delegate.return_value = (
+            UsXxSupervisionPreProcessingDelegate()
+        )
         self.identifier = identifier.IncarcerationIdentifier()
 
         self.commitment_from_supervision_delegate_patcher = mock.patch(
@@ -211,6 +224,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
 
     def _stop_state_specific_delegate_patchers(self) -> None:
         self.incarceration_pre_processing_delegate_patcher.stop()
+        self.supervision_pre_processing_delegate_patcher.stop()
         self.commitment_from_supervision_delegate_patcher.stop()
         self.violation_delegate_patcher.stop()
         self.violation_pre_processing_delegate_patcher.stop()

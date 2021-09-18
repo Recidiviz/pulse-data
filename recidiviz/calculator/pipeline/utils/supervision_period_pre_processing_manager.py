@@ -16,6 +16,7 @@
 # =============================================================================
 """Contains the default logic for pre-processing StateSupervisionPeriod entities so
 that they are ready to be used in pipeline calculations."""
+import abc
 import datetime
 import logging
 from copy import deepcopy
@@ -35,18 +36,37 @@ from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
 
+# pylint: disable=unused-argument
+class StateSpecificSupervisionPreProcessingDelegate(abc.ABC):
+    """Interface for state-specific decisions involved in pre-processing
+    supervision periods for calculations."""
+
+    def supervision_admission_reason_override(
+        self,
+        supervision_period: StateSupervisionPeriod,
+        supervision_periods: List[StateSupervisionPeriod],
+    ) -> Optional[StateSupervisionPeriodAdmissionReason]:
+        """States may have specific logic that determines the admission reason for a
+        supervision period.
+        By default, uses the one on the supervision period as ingested."""
+        return supervision_period.admission_reason
+
+
 class SupervisionPreProcessingManager:
     """Handles the pre-processing of StateSupervisionPeriods for use in calculations."""
 
     def __init__(
         self,
         supervision_periods: List[StateSupervisionPeriod],
+        delegate: StateSpecificSupervisionPreProcessingDelegate,
         earliest_death_date: Optional[datetime.date] = None,
     ):
         self._supervision_periods = deepcopy(supervision_periods)
         self._pre_processed_supervision_period_index: Optional[
             PreProcessedSupervisionPeriodIndex
         ] = None
+
+        self.delegate = delegate
 
         # The end date of the earliest incarceration or supervision period ending in
         # death. None if no periods end in death.
@@ -84,6 +104,13 @@ class SupervisionPreProcessingManager:
                     )
                 )
 
+            # Process fields on final supervision period set
+            mid_processing_periods = (
+                self._process_fields_on_final_supervision_period_set(
+                    mid_processing_periods
+                )
+            )
+
             self._pre_processed_supervision_period_index = (
                 PreProcessedSupervisionPeriodIndex(
                     supervision_periods=mid_processing_periods
@@ -102,8 +129,9 @@ class SupervisionPreProcessingManager:
     def _infer_missing_dates_and_statuses(
         supervision_periods: List[StateSupervisionPeriod],
     ) -> List[StateSupervisionPeriod]:
-        """First, sorts the supervision_periods in chronological order of the start and termination dates. Then, for any
-        periods missing dates and statuses, infers this information given the other supervision periods.
+        """First, sorts the supervision_periods in chronological order of the start and
+        termination dates. Then, for any periods missing dates and statuses, infers this
+        information given the other supervision periods.
         """
         standard_date_sort_for_supervision_periods(supervision_periods)
 
@@ -117,16 +145,16 @@ class SupervisionPreProcessingManager:
                     sp.termination_date = sp.start_date
 
                     logging.warning(
-                        "No termination_date for supervision period (%d) with nonnull termination_reason (%s) "
-                        "or termination_reason_raw_text (%s)",
+                        "No termination_date for supervision period (%d) with nonnull "
+                        "termination_reason (%s) or termination_reason_raw_text (%s)",
                         sp.supervision_period_id,
                         sp.termination_reason,
                         sp.termination_reason_raw_text,
                     )
 
             elif sp.termination_date > datetime.date.today():
-                # This is an erroneous termination_date in the future. For the purpose of calculations, clear the
-                # termination_date and the termination_reason.
+                # This is an erroneous termination_date in the future. For the purpose
+                # of calculations, clear the termination_date and the termination_reason.
                 sp.termination_date = None
                 sp.termination_reason = None
 
@@ -169,10 +197,12 @@ class SupervisionPreProcessingManager:
     ) -> List[StateSupervisionPeriod]:
         """Updates supervision periods for people who are deceased by
         - Dropping open supervision periods that start after the |earliest_death_date|
-        - Setting supervision periods with termination dates after the |earliest_death_date| to have a termination
-          date of |earliest_death_date| and a termination reason of DEATH
-        - Closing any open supervision period that start before the |earliest_death_date| to have a termination date
-          of |earliest_death_date| and a termination reason of DEATH"""
+        - Setting supervision periods with termination dates after the
+          |earliest_death_date| to have a termination date of |earliest_death_date| and
+          a termination reason of DEATH
+        - Closing any open supervision period that start before the |earliest_death_date|
+          to have a termination date of |earliest_death_date| and a termination reason
+          of DEATH"""
         if not self.earliest_death_date:
             raise ValueError(
                 "This function should only be called when we have a set "
@@ -198,6 +228,22 @@ class SupervisionPreProcessingManager:
                 sp.termination_date = self.earliest_death_date
                 sp.termination_reason = StateSupervisionPeriodTerminationReason.DEATH
 
+            updated_periods.append(sp)
+
+        return updated_periods
+
+    def _process_fields_on_final_supervision_period_set(
+        self, supervision_periods: List[StateSupervisionPeriod]
+    ) -> List[StateSupervisionPeriod]:
+        """After all supervision periods are sorted and dropped as necessary, continue to
+        update fields of remaining supervision periods prior to adding to the index by
+            - Updating any admission reasons based on state-specific logic."""
+        updated_periods: List[StateSupervisionPeriod] = []
+
+        for sp in supervision_periods:
+            sp.admission_reason = self.delegate.supervision_admission_reason_override(
+                sp, supervision_periods
+            )
             updated_periods.append(sp)
 
         return updated_periods

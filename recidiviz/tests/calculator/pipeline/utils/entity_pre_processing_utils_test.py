@@ -41,6 +41,9 @@ from recidiviz.persistence.entity.state.entities import (
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_period_pre_processing_delegate import (
+    UsXxSupervisionPreProcessingDelegate,
+)
 
 
 class TestIncarcerationPreProcessingDelegate(UsXxIncarcerationPreProcessingDelegate):
@@ -55,17 +58,30 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
     """Tests the pre_processing_managers_for_calculations function."""
 
     def setUp(self) -> None:
-        self.pre_processing_delegate_patcher = mock.patch(
+        self.incarceration_pre_processing_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
             ".get_state_specific_incarceration_period_pre_processing_delegate"
         )
-        self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
-        self.mock_pre_processing_delegate.return_value = (
+        self.mock_incarceration_pre_processing_delegate = (
+            self.incarceration_pre_processing_delegate_patcher.start()
+        )
+        self.mock_incarceration_pre_processing_delegate.return_value = (
             UsXxIncarcerationPreProcessingDelegate()
+        )
+        self.supervision_pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
+            ".get_state_specific_supervision_period_pre_processing_delegate"
+        )
+        self.mock_supervision_pre_processing_delegate = (
+            self.supervision_pre_processing_delegate_patcher.start()
+        )
+        self.mock_supervision_pre_processing_delegate.return_value = (
+            UsXxSupervisionPreProcessingDelegate()
         )
 
     def tearDown(self) -> None:
-        self.pre_processing_delegate_patcher.stop()
+        self.incarceration_pre_processing_delegate_patcher.stop()
+        self.supervision_pre_processing_delegate_patcher.stop()
 
     def test_pre_processing_managers_for_calculations(self) -> None:
         state_code = "US_XX"
@@ -154,7 +170,7 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
     def test_pre_processing_managers_for_calculations_no_sps_state_requires(
         self,
     ) -> None:
-        self.mock_pre_processing_delegate.return_value = (
+        self.mock_incarceration_pre_processing_delegate.return_value = (
             TestIncarcerationPreProcessingDelegate()
         )
         state_code = "US_XX"
@@ -183,7 +199,7 @@ class TestPreProcessingManagersForCalculations(unittest.TestCase):
     def test_pre_processing_managers_for_calculations_no_violation_responses_state_requires(
         self,
     ) -> None:
-        self.mock_pre_processing_delegate.return_value = (
+        self.mock_incarceration_pre_processing_delegate.return_value = (
             TestIncarcerationPreProcessingDelegate()
         )
         state_code = "US_XX"

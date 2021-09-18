@@ -58,7 +58,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     get_state_specific_case_compliance_manager,
     get_state_specific_supervision_delegate,
     get_state_specific_violation_delegate,
-    state_specific_supervision_admission_reason_override,
     terminating_supervision_period_supervision_type,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
@@ -604,14 +603,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             supervision_delegate,
         )
 
-        state_code = supervision_period.state_code
-        admission_reason = state_specific_supervision_admission_reason_override(
-            state_code=state_code,
-            supervision_period=supervision_period,
-            supervision_period_index=supervision_period_index,
-            incarceration_period_index=incarceration_period_index,
-        )
-
         deprecated_supervising_district_external_id = (
             level_2_supervision_location_external_id
             or level_1_supervision_location_external_id
@@ -634,7 +625,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
         return SupervisionStartEvent(
             state_code=supervision_period.state_code,
-            admission_reason=admission_reason,
+            admission_reason=supervision_period.admission_reason,
             event_date=start_date,
             year=start_date.year,
             month=start_date.month,
