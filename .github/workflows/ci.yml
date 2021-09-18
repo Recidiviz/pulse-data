@@ -14,7 +14,10 @@ jobs:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
         with:
-          # Need sufficient depth in order for merge-base to work
+          # This clones the repo and checks out the SHA that triggered this action.
+          # We set fetch-depth 0 to fetch all branches and history so that merge-base
+          # is guaranteed to be able to find the common ancestor with the base branch.
+          # See https://github.com/actions/checkout#readme
           fetch-depth: 0
       - uses: actions/setup-python@v2
         with:
