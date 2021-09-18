@@ -40,3 +40,15 @@ num_allowed_rows_overrides:
   - validation_name: supervision_termination_prior_to_start
     hard_num_allowed_rows_override: 300
     override_reason: TODO(#5803) - Needs investigation.
+  - validation_name: invalid_admission_reasons_for_temporary_custody
+    hard_num_allowed_rows_override: 75
+    override_reason: Needs investigation.
+  - validation_name: supervision_success_by_month_dashboard_comparison_completion
+    hard_num_allowed_rows_override: 36
+    override_reason: Needs investigation.
+  - validation_name: supervision_success_by_period_dashboard_comparison_completion
+    hard_num_allowed_rows_override: 1
+    override_reason: Needs investigation.
+  - validation_name: supervision_success_by_period_dashboard_comparison_termination
+    hard_num_allowed_rows_override: 1
+    override_reason: Needs investigation.

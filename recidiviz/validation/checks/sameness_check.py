@@ -19,7 +19,7 @@
 columns are not the same."""
 import datetime
 from enum import Enum
-from typing import Dict, Generic, List, Optional, Set, Tuple, Type, TypeVar
+from typing import Dict, List, Optional, Set, Tuple, Type, TypeVar
 
 import attr
 from google.cloud.bigquery import QueryJob
@@ -157,16 +157,13 @@ class SamenessDataValidationCheck(DataValidationCheck):
         )
 
 
-RowValueType = TypeVar("RowValueType", float, str)
-
-
 @attr.s(frozen=True, kw_only=True)
-class ResultRow(Generic[RowValueType]):
+class ResultRow:
     # Values from the non-comparison columns
     label_values: Tuple[str, ...] = attr.ib()
 
     # Values from the comparison columns
-    comparison_values: Tuple[RowValueType, ...] = attr.ib()
+    comparison_values: Tuple[float, ...] = attr.ib()
 
 
 @attr.s(frozen=True, kw_only=True)
@@ -194,12 +191,28 @@ class SamenessPerViewValidationResultDetails(DataValidationJobResultDetails):
     ] = attr.ib()
 
     @property
+    def has_data(self) -> bool:
+        return self.total_num_rows > 0
+
+    @property
+    def error_amount(self) -> float:
+        return self.error_rate
+
+    @property
     def error_rate(self) -> float:
         return (
             (self.num_error_rows / self.total_num_rows)
             if self.total_num_rows > 0
             else 0.0
         )
+
+    @property
+    def hard_failure_amount(self) -> float:
+        return self.hard_max_allowed_error
+
+    @property
+    def soft_failure_amount(self) -> float:
+        return self.soft_max_allowed_error
 
     def validation_result_status(self) -> ValidationResultStatus:
         return validate_result_status(
@@ -235,29 +248,43 @@ class SamenessPerRowValidationResultDetails(DataValidationJobResultDetails):
 
     # List of failed rows, where each entry is a tuple containing the row and the amount
     # of error for that row.
-    failed_rows: List[Tuple[ResultRow[float], float]] = attr.ib()
+    failed_rows: List[Tuple[ResultRow, float]] = attr.ib()
     hard_max_allowed_error: float = attr.ib()
     soft_max_allowed_error: float = attr.ib()
 
     @property
-    def highest_error(self) -> Optional[float]:
+    def has_data(self) -> bool:
+        return True
+
+    @property
+    def error_amount(self) -> float:
+        return self.highest_error
+
+    @property
+    def hard_failure_amount(self) -> float:
+        return self.hard_max_allowed_error
+
+    @property
+    def soft_failure_amount(self) -> float:
+        return self.soft_max_allowed_error
+
+    @property
+    def highest_error(self) -> float:
         return (
-            round(max(row[1] for row in self.failed_rows), 4)
-            if self.failed_rows
-            else None
+            round(max(row[1] for row in self.failed_rows), 4) if self.failed_rows else 0
         )
 
     @property
-    def rows_soft_failure(self) -> Optional[List[Tuple[ResultRow[float], float]]]:
+    def rows_soft_failure(self) -> Optional[List[Tuple[ResultRow, float]]]:
         return self._filter_row_of_result_status(ValidationResultStatus.FAIL_SOFT)
 
     @property
-    def rows_hard_failure(self) -> Optional[List[Tuple[ResultRow[float], float]]]:
+    def rows_hard_failure(self) -> Optional[List[Tuple[ResultRow, float]]]:
         return self._filter_row_of_result_status(ValidationResultStatus.FAIL_HARD)
 
     def _filter_row_of_result_status(
         self, result_status_filter: ValidationResultStatus
-    ) -> Optional[List[Tuple[ResultRow[float], float]]]:
+    ) -> Optional[List[Tuple[ResultRow, float]]]:
         return (
             [
                 row
@@ -372,7 +399,7 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
     ) -> SamenessPerRowValidationResultDetails:
         """Performs the validation check for sameness check types, where the values being compares are numbers (either
         ints or floats)."""
-        failed_rows: List[Tuple[ResultRow[float], float]] = []
+        failed_rows: List[Tuple[ResultRow, float]] = []
 
         row: Row
         for row in query_job:

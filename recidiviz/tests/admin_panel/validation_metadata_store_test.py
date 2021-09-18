@@ -23,6 +23,7 @@ from mock import MagicMock, patch
 from werkzeug.exceptions import ServiceUnavailable
 
 from recidiviz.admin_panel.validation_metadata_store import (
+    ResultDetailsTypes,
     ValidationStatusRecord,
     ValidationStatusResult,
     ValidationStatusResults,
@@ -61,8 +62,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
                 "did_run": True,
                 "validation_result_status": ValidationResultStatus.SUCCESS,
                 "result_details_type": "SamenessPerViewValidationResultDetails",
-                "has_data": True,
-                "error_amount": 0.123456,
+                "result_details": '{"num_error_rows": 12, "total_num_rows":1000, "hard_max_allowed_error": 0.02, "soft_max_allowed_error": 0.02, "non_null_counts_per_column_per_partition": []}',
             },
             {
                 "run_id": "abc123",
@@ -74,8 +74,8 @@ class ValidationStatusStoreTest(unittest.TestCase):
                 "did_run": True,
                 "validation_result_status": ValidationResultStatus.FAIL_HARD,
                 "result_details_type": "SamenessPerViewValidationResultDetails",
-                "has_data": True,
-                "error_amount": 0.999,
+                "result_details": '{"num_error_rows": 999, "total_num_rows":1000, "hard_max_allowed_error": 0.02, "soft_max_allowed_error": 0.02, "non_null_counts_per_column_per_partition": []}',
+                "failure_description": "",
             },
             {
                 "run_id": "abc123",
@@ -87,8 +87,7 @@ class ValidationStatusStoreTest(unittest.TestCase):
                 "did_run": False,
                 "validation_result_status": None,
                 "result_details_type": None,
-                "has_data": None,
-                "error_amount": None,
+                "result_details": None,
             },
         ]
 
@@ -97,7 +96,6 @@ class ValidationStatusStoreTest(unittest.TestCase):
         results = store.get_most_recent_validation_results()
 
         self.assertEqual(
-            results,
             ValidationStatusResults(
                 runId="abc123",
                 runDatetime=datetime.datetime(2000, 1, 1, 0, 0, 0),
@@ -108,15 +106,25 @@ class ValidationStatusStoreTest(unittest.TestCase):
                         resultsByState={
                             "US_XX": ValidationStatusRecord(
                                 didRun=True,
+                                softFailureAmount=0.02,
+                                hardFailureAmount=0.02,
                                 validationResultStatus=ValidationResultStatus.SUCCESS,
                                 hasData=True,
-                                errorAmount="12.3%",
+                                errorAmount=0.012,
+                                failureDescription=None,
+                                isPercentage=True,
+                                resultDetailsType=ResultDetailsTypes.SAMENESS_PER_VIEW_VALIDATION_RESULT_DETAILS,
                             ),
                             "US_YY": ValidationStatusRecord(
                                 didRun=True,
+                                softFailureAmount=0.02,
+                                hardFailureAmount=0.02,
                                 validationResultStatus=ValidationResultStatus.FAIL_HARD,
                                 hasData=True,
-                                errorAmount="99.9%",
+                                errorAmount=0.999,
+                                isPercentage=True,
+                                failureDescription="",
+                                resultDetailsType=ResultDetailsTypes.SAMENESS_PER_VIEW_VALIDATION_RESULT_DETAILS,
                             ),
                         },
                     ),
@@ -125,14 +133,20 @@ class ValidationStatusStoreTest(unittest.TestCase):
                         resultsByState={
                             "US_XX": ValidationStatusRecord(
                                 didRun=False,
+                                softFailureAmount=None,
+                                hardFailureAmount=None,
+                                isPercentage=None,
                                 validationResultStatus=None,
                                 hasData=None,
                                 errorAmount=None,
+                                failureDescription=None,
+                                resultDetailsType=None,
                             )
                         },
                     ),
                 },
             ),
+            results,
         )
 
     @patch("recidiviz.admin_panel.validation_metadata_store.BigQueryClientImpl")
@@ -150,9 +164,8 @@ class ValidationStatusStoreTest(unittest.TestCase):
                 "region_code": "US_XX",
                 "did_run": True,
                 "validation_result_status": "SUCCESS",
-                "result_details_type": "SamenessNumbersValidationResultDetails",
-                "has_data": True,
-                "error_amount": 0.123456,
+                "result_details_type": "SamenessPerViewValidationResultDetails",
+                "result_details": '{"num_error_rows": 12, "total_num_rows":1000, "hard_max_allowed_error": 0.02, "soft_max_allowed_error": 0.02, "non_null_counts_per_column_per_partition": []}',
             },
             {
                 "run_id": "def456",
@@ -162,10 +175,10 @@ class ValidationStatusStoreTest(unittest.TestCase):
                 "validation_name": "test_view",
                 "region_code": "US_YY",
                 "did_run": True,
-                "validation_result_status": False,
-                "result_details_type": "SamenessNumbersValidationResultDetails",
-                "has_data": True,
-                "error_amount": 0.999999,
+                "validation_result_status": ValidationResultStatus.FAIL_HARD,
+                "result_details_type": "SamenessPerViewValidationResultDetails",
+                "result_details": '{"num_error_rows": 99, "total_num_rows":1000, "hard_max_allowed_error": 0.02, "soft_max_allowed_error": 0.02, "non_null_counts_per_column_per_partition": []}',
+                "failure_description": "",
             },
         ]
 
