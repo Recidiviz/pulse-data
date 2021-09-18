@@ -52,8 +52,6 @@ class ValidationResultForStorage:
     region_code: str = attr.ib()
 
     did_run: bool = attr.ib()
-
-    was_successful: Optional[bool] = attr.ib()
     validation_result_status: Optional[ValidationResultStatus] = attr.ib()
     failure_description: Optional[str] = attr.ib()
     result_details_type: Optional[str] = attr.ib()
@@ -83,7 +81,6 @@ class ValidationResultForStorage:
             validation_name=result.validation_job.validation.validation_name,
             region_code=result.validation_job.region_code,
             did_run=True,
-            was_successful=result.was_successful,
             validation_result_status=result.validation_result_status,
             failure_description=result.result_details.failure_description(),
             result_details_type=result.result_details.__class__.__name__,
@@ -107,7 +104,6 @@ class ValidationResultForStorage:
             validation_name=job.validation.validation_name,
             region_code=job.region_code,
             did_run=False,
-            was_successful=None,
             validation_result_status=None,
             failure_description=None,
             result_details_type=None,

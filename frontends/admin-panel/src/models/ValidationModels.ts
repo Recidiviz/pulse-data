@@ -20,3 +20,10 @@ export enum ValidationResultStatus {
   FAIL_SOFT = "FAIL_SOFT",
   FAIL_HARD = "FAIL_HARD",
 }
+
+export interface ValidationFailureMetadataRecord {
+  name: string;
+  category: string;
+  stateCode: string;
+  result: ValidationStatus;
+}

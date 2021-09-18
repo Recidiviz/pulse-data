@@ -61,10 +61,14 @@ interface ValidationStatusResults {
 
 interface ValidationStatus {
   didRun: boolean;
+  hardFailureAmount: number;
+  softFailureAmount: number;
+  isPercentage: boolean;
   validationResultStatus?: ValidationResultStatus;
   failureDescription?: string;
   hasData?: boolean;
-  errorAmount?: string;
+  errorAmount?: number;
+  resultDetailsType?: string;
 }
 
 // PO Feedback responses

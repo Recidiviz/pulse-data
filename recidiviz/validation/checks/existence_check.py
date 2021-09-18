@@ -84,9 +84,28 @@ class ExistenceDataValidationCheck(DataValidationCheck):
 
 @attr.s(frozen=True, kw_only=True)
 class ExistenceValidationResultDetails(DataValidationJobResultDetails):
+    """A type of validation check which identifies validation issues through the number of invalid rows returned by the
+    validation query."""
+
     num_invalid_rows: int = attr.ib()
     hard_num_allowed_rows: int = attr.ib()
     soft_num_allowed_rows: int = attr.ib()
+
+    @property
+    def has_data(self) -> bool:
+        return True
+
+    @property
+    def error_amount(self) -> float:
+        return self.num_invalid_rows
+
+    @property
+    def hard_failure_amount(self) -> float:
+        return self.hard_num_allowed_rows
+
+    @property
+    def soft_failure_amount(self) -> float:
+        return self.soft_num_allowed_rows
 
     def validation_result_status(self) -> ValidationResultStatus:
         return validate_result_status(
