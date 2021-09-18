@@ -32,6 +32,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_period_pre_processing_delegate import (
+    UsXxSupervisionPreProcessingDelegate,
+)
 
 
 class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
@@ -44,6 +47,7 @@ class TestPreProcessedSupervisionPeriodsForCalculations(unittest.TestCase):
     ) -> List[StateSupervisionPeriod]:
         sp_pre_processing_manager = SupervisionPreProcessingManager(
             supervision_periods=supervision_periods,
+            delegate=UsXxSupervisionPreProcessingDelegate(),
             earliest_death_date=earliest_death_date,
         )
 

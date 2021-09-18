@@ -155,7 +155,8 @@ def supervising_officer_and_location_info(
     supervision_delegate: StateSpecificSupervisionDelegate,
 ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """
-    Extracts supervising officer and location information associated with a supervision_period in the given state.
+    Extracts supervising officer and location information associated with a
+    supervision_period in the given state.
 
     Returns a tuple of supervising_officer_external_id and level 1/2 location information.
     """

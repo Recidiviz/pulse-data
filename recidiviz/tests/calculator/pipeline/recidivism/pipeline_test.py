@@ -85,6 +85,9 @@ from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
 from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_incarceration_period_pre_processing_delegate import (
     UsXxIncarcerationPreProcessingDelegate,
 )
+from recidiviz.tests.calculator.pipeline.utils.state_utils.us_xx.us_xx_supervision_period_pre_processing_delegate import (
+    UsXxSupervisionPreProcessingDelegate,
+)
 from recidiviz.tests.persistence.database import database_test_utils
 
 _COUNTY_OF_RESIDENCE = "county"
@@ -108,16 +111,30 @@ class TestRecidivismPipeline(unittest.TestCase):
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
         self.fake_bq_sink_factory = FakeWriteToBigQueryFactory(FakeWriteToBigQuery)
 
-        self.pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_incarceration_period_pre_processing_delegate"
+        self.incarceration_pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
+            ".get_state_specific_incarceration_period_pre_processing_delegate"
         )
-        self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
-        self.mock_pre_processing_delegate.return_value = (
+        self.mock_incarceration_pre_processing_delegate = (
+            self.incarceration_pre_processing_delegate_patcher.start()
+        )
+        self.mock_incarceration_pre_processing_delegate.return_value = (
             UsXxIncarcerationPreProcessingDelegate()
+        )
+        self.supervision_pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
+            ".get_state_specific_supervision_period_pre_processing_delegate"
+        )
+        self.mock_supervision_pre_processing_delegate = (
+            self.supervision_pre_processing_delegate_patcher.start()
+        )
+        self.mock_supervision_pre_processing_delegate.return_value = (
+            UsXxSupervisionPreProcessingDelegate()
         )
 
     def tearDown(self) -> None:
-        self.pre_processing_delegate_patcher.stop()
+        self.incarceration_pre_processing_delegate_patcher.stop()
+        self.supervision_pre_processing_delegate_patcher.stop()
 
     @staticmethod
     def build_data_dict(fake_person_id: int) -> Dict[str, List]:
@@ -514,17 +531,31 @@ class TestClassifyReleaseEvents(unittest.TestCase):
     """Tests the ClassifyReleaseEvents DoFn in the pipeline."""
 
     def setUp(self) -> None:
-        self.pre_processing_delegate_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils.get_state_specific_incarceration_period_pre_processing_delegate"
+        self.incarceration_pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
+            ".get_state_specific_incarceration_period_pre_processing_delegate"
         )
-        self.mock_pre_processing_delegate = self.pre_processing_delegate_patcher.start()
-        self.mock_pre_processing_delegate.return_value = (
+        self.mock_incarceration_pre_processing_delegate = (
+            self.incarceration_pre_processing_delegate_patcher.start()
+        )
+        self.mock_incarceration_pre_processing_delegate.return_value = (
             UsXxIncarcerationPreProcessingDelegate()
+        )
+        self.supervision_pre_processing_delegate_patcher = mock.patch(
+            "recidiviz.calculator.pipeline.utils.entity_pre_processing_utils"
+            ".get_state_specific_supervision_period_pre_processing_delegate"
+        )
+        self.mock_supervision_pre_processing_delegate = (
+            self.supervision_pre_processing_delegate_patcher.start()
+        )
+        self.mock_supervision_pre_processing_delegate.return_value = (
+            UsXxSupervisionPreProcessingDelegate()
         )
         self.identifier = identifier.RecidivismIdentifier()
 
     def tearDown(self) -> None:
-        self.pre_processing_delegate_patcher.stop()
+        self.incarceration_pre_processing_delegate_patcher.stop()
+        self.supervision_pre_processing_delegate_patcher.stop()
 
     def testClassifyReleaseEvents(self) -> None:
         """Tests the ClassifyReleaseEvents DoFn when there are two instances
