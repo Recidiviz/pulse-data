@@ -115,7 +115,30 @@ def get_test_validations() -> List[DataValidationJob]:
 
 @attr.s(frozen=True, kw_only=True)
 class FakeValidationResultDetails(DataValidationJobResultDetails):
+    """ Fake implementation of DataValidationJobResultDetails"""
+
     validation_status: ValidationResultStatus = attr.ib()
+
+    @property
+    def has_data(self) -> bool:
+        return True
+
+    @property
+    def error_amount(self) -> float:
+        validation_result_status = self.validation_result_status()
+        if validation_result_status == ValidationResultStatus.FAIL_SOFT:
+            return 0.2
+        if validation_result_status == ValidationResultStatus.FAIL_HARD:
+            return 0.3
+        return 0
+
+    @property
+    def hard_failure_amount(self) -> float:
+        return 0.02
+
+    @property
+    def soft_failure_amount(self) -> float:
+        return 0.01
 
     def validation_result_status(self) -> ValidationResultStatus:
         return self.validation_status

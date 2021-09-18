@@ -117,6 +117,27 @@ def validate_result_status(
 
 
 class DataValidationJobResultDetails(abc.ABC):
+    @property
+    @abc.abstractmethod
+    def has_data(self) -> bool:
+        """Whether there is data to show the result details for"""
+
+    @property
+    @abc.abstractmethod
+    def error_amount(self) -> float:
+        """Returns the amount of error"""
+
+    @property
+    @abc.abstractmethod
+    def hard_failure_amount(self) -> float:
+        """Returns the error amount that would be considered a hard failure if exceeded"""
+
+    @property
+    @abc.abstractmethod
+    def soft_failure_amount(self) -> float:
+        """Returns the error amount that would be considered either a soft or hard failure if exceeded.
+        If not exceeded,it should be considered a success"""
+
     @abc.abstractmethod
     def validation_result_status(self) -> ValidationResultStatus:
         """Describes if the validation error was acceptable or unacceptable (and to what degree)"""
@@ -140,11 +161,6 @@ class DataValidationJobResult:
     def validation_result_status(self) -> ValidationResultStatus:
         """Whether or not the validation was successful"""
         return self.result_details.validation_result_status()
-
-    @property
-    def was_successful(self) -> bool:
-        """Whether or not the validation was successful"""
-        return self.validation_result_status != ValidationResultStatus.FAIL_HARD
 
     def __str__(self) -> str:
         return (
