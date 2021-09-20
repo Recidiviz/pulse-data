@@ -111,6 +111,9 @@ from recidiviz.calculator.query.state.views.analyst_data.supervision_super_sessi
 from recidiviz.calculator.query.state.views.analyst_data.system_sessions import (
     SYSTEM_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_behavior_responses import (
+    US_ID_BEHAVIOR_RESPONSES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_employment_sessions import (
     US_ID_EMPLOYMENT_SESSIONS_VIEW_BUILDER,
 )
@@ -137,6 +140,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_ppo_metrics
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_raw_lsir_assessments import (
     US_ID_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_raw_supervision_contacts import (
+    US_ID_RAW_SUPERVISION_CONTACTS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_id_incarceration_population_metrics_preprocessed import (
     US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
@@ -208,4 +214,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_ID_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
     US_ND_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
     ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
+    US_ID_BEHAVIOR_RESPONSES_VIEW_BUILDER,
+    US_ID_RAW_SUPERVISION_CONTACTS_VIEW_BUILDER,
 ]
