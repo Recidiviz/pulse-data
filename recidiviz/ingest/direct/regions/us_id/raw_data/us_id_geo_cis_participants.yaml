@@ -1,0 +1,29 @@
+file_tag: geo_cis_participants
+file_description: |-
+  A table containing rows for every unique participant and period of participation in the GEO Connection & Intervention
+  Station (CIS) program.
+primary_key_cols:
+  - person_external_id
+  - start_date
+columns:
+  - name: person_external_id
+    description: |-
+      ID of person participating in program
+  - name: name
+    description: |-
+      Name of person participating in program
+  - name: start_date
+    is_datetime: True
+    description: |-
+      Date of start of program participation
+  - name: end_date
+    is_datetime: True
+    description: |-
+      Date of termination of program participation
+  - name: lsi_start
+    description: |-
+      LSI-R score for person assessed after start of program participation
+  - name: lsi_secondary
+  - name: length_of_stay
+    description: |-
+      Duration of participation in days, for those who terminate participation
