@@ -23,12 +23,12 @@ import us
 from numpy import NaN
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
+from recidiviz.common import fips
 from recidiviz.common.constants.aggregate import enum_canonical_strings as enum_strings
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
-from recidiviz.common import fips
 from recidiviz.persistence.database.schema.aggregate.schema import (
-    PaFacilityPopAggregate,
     PaCountyPreSentencedAggregate,
+    PaFacilityPopAggregate,
 )
 
 
@@ -130,7 +130,7 @@ def _to_numeric(column):
     # "N/A" means a value could never be set, so set it explicitly to 0
     column = column.map(lambda cell: 0 if cell == "N/A" else cell)
 
-    # "N/R" means "Not Reported", so write null to the database with NaN
-    column = column.map(lambda cell: NaN if cell == "N/R" else cell)
+    # "Closed" and "N/R" means "Not Reported", so write null to the database with NaN
+    column = column.map(lambda cell: NaN if cell in ("Closed 11/2019", "N/R") else cell)
 
     return pd.to_numeric(column)
