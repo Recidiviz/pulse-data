@@ -1,0 +1,36 @@
+{% extends "common/card.html.jinja2" %}
+
+{% block children %}
+{{ components.layout_table_start() }}
+<tr>
+  <td valign="middle" style="
+    font-family: 'Libre Franklin', sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    color: #006C67;
+  ">{{outcome.heading}}</td>
+  <td valign="middle" style="width: 40px;">
+    <img src="{{ static_image_path }}/{{outcome.icon}}" alt="" width="40" height="40">
+  </td>
+</tr>
+{{components.y_padding(8)}}
+<tr>
+  {{components.card_heading(
+    outcome.main_text.format(
+      "<strong>{:n}</strong>".format(outcome.total)
+    ), 
+    size='md'
+  )}}
+</tr>
+{% if outcome.supplemental_text %}
+  {{components.y_padding(16)}}
+  <tr>
+    <td style="font-family: 'Libre Franklin', sans-serif; color: rgba(53, 83, 98, 0.85); font-weight: 500; font-size: 16px;">
+      {{outcome.supplemental_text}}
+    </td>
+  </tr>
+{% endif %}
+{{ components.layout_table_end() }}
+{% endblock children %}

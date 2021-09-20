@@ -27,7 +27,8 @@ python -m recidiviz.reporting.context.po_monthly_report.context
 """
 import copy
 import os
-from typing import Dict, List
+from datetime import date
+from typing import Dict, List, Optional
 
 from jinja2 import Environment, FileSystemLoader, Template
 
@@ -47,6 +48,9 @@ from recidiviz.reporting.context.context_utils import (
 from recidiviz.reporting.context.po_monthly_report.constants import (
     CRIME_REVOCATIONS,
     DEFAULT_MESSAGE_BODY_KEY,
+    EARNED_DISCHARGES,
+    POS_DISCHARGES,
+    SUPERVISION_DOWNGRADES,
     TECHNICAL_REVOCATIONS,
     TOTAL_REVOCATIONS,
     ReportType,
@@ -54,6 +58,7 @@ from recidiviz.reporting.context.po_monthly_report.constants import (
 from recidiviz.reporting.context.po_monthly_report.state_utils.po_monthly_report_metrics_delegate_factory import (
     PoMonthlyReportMetricsDelegateFactory,
 )
+from recidiviz.reporting.context.po_monthly_report.types import DecarceralMetricContext
 from recidiviz.reporting.context.report_context import ReportContext
 from recidiviz.reporting.recipient import Recipient
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -75,6 +80,8 @@ class PoMonthlyReportContext(ReportContext):
         self.jinja_env = Environment(
             loader=FileSystemLoader(self._get_context_templates_folder())
         )
+
+        self.state_name = state_code.get_state().name
 
     @property
     def attachment_template(self) -> Template:
@@ -115,13 +122,9 @@ class PoMonthlyReportContext(ReportContext):
 
         self._convert_month_to_name("review_month")
 
-        self._set_base_metric_color(self.metrics_delegate.base_metrics_for_display)
+        self._set_base_metric_color(self.metrics_delegate.client_outcome_metrics)
         self._set_averages_metric_color(
             self.metrics_delegate.average_metrics_for_display
-        )
-
-        self._set_month_to_month_change_metrics(
-            self.metrics_delegate.month_to_month_change_metrics
         )
 
         self._set_congratulations_section()
@@ -136,6 +139,9 @@ class PoMonthlyReportContext(ReportContext):
         )
         self._set_compliance_goals()
         self._prepare_attachment_content()
+
+        for metric in self.metrics_delegate.decarceral_actions_metrics:
+            self.prepared_data[metric] = getattr(self, f"_get_{metric}")()
 
         return self.prepared_data
 
@@ -282,53 +288,9 @@ class PoMonthlyReportContext(ReportContext):
             else:
                 self.prepared_data[color_key] = self.properties["red"]
 
-    def _set_month_to_month_change_metrics(self, metrics: List[str]) -> None:
-        """Sets the value and color for metrics that display the month-to-month change value. If the metric improved
-        from last month's value, the color will be gray, otherwise it will be red.
-        """
-        for metric_key in metrics:
-            metric_improves_on_increase = (
-                metric_key in self.metrics_delegate.metrics_improve_on_increase
-            )
-            base_key = f"{metric_key}_change"
-            color_key = f"{metric_key}_change_color"
-            metric_value = float(self.recipient_data[metric_key])
-            last_month_value = float(self.recipient_data[f"{metric_key}_last_month"])
-            change_value = float(metric_value - last_month_value)
-
-            self._set_color_and_text_for_change_metrics(
-                change_value, base_key, color_key, metric_improves_on_increase
-            )
-
     def _singular_or_plural_section_headers(self) -> None:
         """Ensures that each of the given labels will be made singular or plural, based on the value it is labelling."""
         allowed_metrics = self.metrics_delegate.singular_or_plural_metrics
-        singular_or_plural(
-            self.prepared_data,
-            allowed_metrics,
-            "pos_discharges",
-            "pos_discharges_label",
-            "Successful&nbsp;Case Completion",
-            "Successful&nbsp;Case Completions",
-        )
-
-        singular_or_plural(
-            self.prepared_data,
-            allowed_metrics,
-            "earned_discharges",
-            "earned_discharges_label",
-            "Early Discharge",
-            "Early Discharges",
-        )
-
-        singular_or_plural(
-            self.prepared_data,
-            allowed_metrics,
-            "supervision_downgrades",
-            "supervision_downgrades_label",
-            "Supervision Downgrade",
-            "Supervision Downgrades",
-        )
 
         singular_or_plural(
             self.prepared_data,
@@ -369,49 +331,6 @@ class PoMonthlyReportContext(ReportContext):
             self.prepared_data[float_key] = round_float_value_to_number_of_digits(
                 self.recipient_data[float_key], number_of_digits
             )
-
-    def _set_color_and_text_for_change_metrics(
-        self,
-        change_value: float,
-        base_key: str,
-        color_key: str,
-        metric_improves_on_increase: bool,
-    ) -> None:
-        """Sets text and color properties for the given value and key based on the value and whether we want
-        the coloring to apply on increase or on decrease. Also ensures that all displayed values are rounded to the
-        nearest integer."""
-        int_value = int(round(change_value))
-        gray = self.properties["gray"]
-        red = self.properties["red"]
-
-        increase_text = self.properties["increase"]
-        decrease_text = self.properties["decrease"]
-        encouragement_text = self.properties["encouragement"]
-
-        if metric_improves_on_increase:
-            if change_value >= 0:
-                self.prepared_data[color_key] = gray
-                self.prepared_data[
-                    base_key
-                ] = f"{str(int_value)} {increase_text} {encouragement_text}"
-            else:
-                self.prepared_data[color_key] = red
-                self.prepared_data[base_key] = f"{str(abs(int_value))} {decrease_text}"
-        else:
-            if change_value <= 0:
-                self.prepared_data[color_key] = gray
-                self.prepared_data[
-                    base_key
-                ] = f"{str(abs(int_value))} {decrease_text} {encouragement_text}"
-            else:
-                self.prepared_data[color_key] = red
-                self.prepared_data[base_key] = f"{str(int_value)} {increase_text}"
-
-        # If it's the same (a float which rounds up or down to the integer 0 is effectively "the same"),
-        # then we override the text and color
-        if change_value == 0 or int_value == 0:
-            self.prepared_data[color_key] = gray
-            self.prepared_data[base_key] = self.properties["same"]
 
     def _set_compliance_goals(self) -> None:
         """Examines data to determine whether compliance goal prompts should be active
@@ -511,6 +430,115 @@ class PoMonthlyReportContext(ReportContext):
             },
         }
 
+    def _caseload_or_district_outcome_text(self, metric: str) -> Optional[str]:
+        district_total = int(self.recipient_data[f"{metric}_district_total"])
+        recipient_total = int(self.recipient_data[metric])
+
+        if recipient_total:
+            return f"{recipient_total:n} from your caseload"
+
+        if district_total:
+            return f"{district_total:n} from your district"
+
+        return None
+
+    def _get_pos_discharges(self) -> DecarceralMetricContext:
+        """Creates context data for the Successful Completions card"""
+        state_total = int(self.recipient_data[f"{POS_DISCHARGES}_state_total"])
+        main_text = (
+            f"{{}} people completed supervision in {self.state_name} this month."
+        )
+
+        supplemental_text = self._caseload_or_district_outcome_text(POS_DISCHARGES)
+
+        action_text = (
+            "These clients are within 30 days of their "
+            f"{self.metrics_delegate.completion_date_label}:"
+        )
+
+        action_clients = self.recipient_data["upcoming_release_date_clients"]
+
+        action_table = (
+            [
+                (
+                    f'{client["full_name"]} ({client["person_external_id"]})',
+                    "{d:%B} {d.day}".format(
+                        d=date.fromisoformat(client["projected_end_date"])
+                    ),
+                )
+                for client in action_clients
+            ]
+            if len(action_clients)
+            else None
+        )
+
+        return {
+            "heading": "Successful Completions",
+            "icon": "ic_case-completions-v2.png",
+            "main_text": main_text,
+            "total": state_total,
+            "supplemental_text": supplemental_text,
+            "action_text": action_text,
+            "action_table": action_table,
+        }
+
+    def _get_earned_discharges(self) -> DecarceralMetricContext:
+        """Creates context data for the Early Releases card"""
+        state_total = int(self.recipient_data[f"{EARNED_DISCHARGES}_state_total"])
+        main_text = (
+            f"{{}} early discharge requests were filed across {self.state_name}."
+        )
+
+        supplemental_text = self._caseload_or_district_outcome_text(EARNED_DISCHARGES)
+
+        return {
+            "heading": "Early Releases",
+            "icon": "ic_early-discharges-v2.png",
+            "main_text": main_text,
+            "total": state_total,
+            "supplemental_text": supplemental_text,
+            "action_text": None,
+            "action_table": None,
+        }
+
+    def _get_supervision_downgrades(self) -> DecarceralMetricContext:
+        """Creates context data for the Successful Completions card"""
+        state_total = int(self.recipient_data[f"{SUPERVISION_DOWNGRADES}_state_total"])
+
+        main_text = "{} clients had their supervision downgraded this month."
+
+        supplemental_text = self._caseload_or_district_outcome_text(
+            SUPERVISION_DOWNGRADES
+        )
+
+        action_text = (
+            "These clients may be downgraded based on their latest assessment:"
+        )
+
+        action_clients = self.recipient_data["mismatches"]
+
+        action_table = (
+            [
+                (
+                    f'{client["name"]} ({client["person_external_id"]})',
+                    f"{client['current_supervision_level']} &rarr; {client['recommended_level']}",
+                )
+                for client in action_clients
+            ]
+            if len(action_clients)
+            else None
+        )
+
+        return {
+            "heading": "Supervision Downgrades",
+            "icon": "ic_supervision-downgrades-v2.png",
+            "main_text": main_text,
+            "total": state_total,
+            "supplemental_text": supplemental_text,
+            "action_text": action_text,
+            "action_table": action_table,
+        }
+
 
 if __name__ == "__main__":
     context = PoMonthlyReportContext(
@@ -522,7 +550,7 @@ if __name__ == "__main__":
                 utils.KEY_DISTRICT: "US_ID_D3",
                 "pos_discharges": 0,
                 "earned_discharges": 0,
-                "supervision_downgrades": 0,
+                "supervision_downgrades": 2,
                 "technical_revocations": 0,
                 "crime_revocations": 0,
                 "absconsions": 0,
@@ -532,6 +560,12 @@ if __name__ == "__main__":
                 "earned_discharges_state_average": 0,
                 "supervision_downgrades_district_average": 0,
                 "supervision_downgrades_state_average": 0,
+                "pos_discharges_district_total": 38,
+                "pos_discharges_state_total": 273,
+                "earned_discharges_district_total": 0,
+                "earned_discharges_state_total": 163,
+                "supervision_downgrades_district_total": 56,
+                "supervision_downgrades_state_total": 391,
                 "technical_revocations_district_average": 0,
                 "technical_revocations_state_average": 0,
                 "crime_revocations_district_average": 0,
@@ -551,6 +585,18 @@ if __name__ == "__main__":
                 "assessments_out_of_date_clients": [],
                 "facetoface_out_of_date_clients": [],
                 "revocations_clients": [],
+                "upcoming_release_date_clients": [
+                    {
+                        "full_name": "Hansen, Linet",
+                        "person_external_id": "105",
+                        "projected_end_date": "2021-05-07",
+                    },
+                    {
+                        "full_name": "Cortes, Rebekah",
+                        "person_external_id": "142",
+                        "projected_end_date": "2021-05-18",
+                    },
+                ],
                 "assessments": "7",
                 "assessments_percent": 96,
                 "overdue_assessments_goal": "1",

@@ -101,7 +101,6 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       SELECT
         state_code, year, month,
         district,
-        # TODO(#9186): remove unused averages for positive outcomes
         AVG(pos_discharges) AS avg_pos_discharges,
         AVG(earned_discharges) AS avg_earned_discharges,
         AVG(supervision_downgrades) AS avg_supervision_downgrades,

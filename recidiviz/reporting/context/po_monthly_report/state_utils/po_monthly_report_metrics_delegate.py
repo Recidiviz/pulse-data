@@ -70,6 +70,11 @@ class PoMonthlyReportMetricsDelegate(abc.ABC):
         """Denotes percentage thresholds below which goal is active for the given metric."""
 
     @property
+    @abc.abstractmethod
+    def completion_date_label(self) -> str:
+        """Denotes preferred terminology for completion in this state."""
+
+    @property
     def revocation_metrics(self) -> List[str]:
         """Denotes metrics that measure revocation."""
         return [
@@ -104,7 +109,19 @@ class PoMonthlyReportMetricsDelegate(abc.ABC):
             itertools.chain(
                 *[
                     [f"{base_metric}_district_average", f"{base_metric}_state_average"]
-                    for base_metric in self.base_metrics_for_display
+                    for base_metric in self.client_outcome_metrics
+                ]
+            )
+        )
+
+    @property
+    def total_metrics_for_display(self) -> List[str]:
+        """Denotes both state and district totals to display."""
+        return list(
+            itertools.chain(
+                *[
+                    [f"{base_metric}_district_total", f"{base_metric}_state_total"]
+                    for base_metric in self.decarceral_actions_metrics
                 ]
             )
         )
@@ -160,11 +177,6 @@ class PoMonthlyReportMetricsDelegate(abc.ABC):
         ]
 
     @property
-    def month_to_month_change_metrics(self) -> List[str]:
-        """Denotes which metrics are to be displayed on a month-to-month change."""
-        return self.decarceral_actions_metrics
-
-    @property
     def singular_or_plural_metrics(self) -> List[str]:
         """Denotes which metrics are to be displayed with titles that are adjusted based on value."""
         return (
@@ -179,6 +191,7 @@ class PoMonthlyReportMetricsDelegate(abc.ABC):
         return (
             self.base_metrics_for_display
             + self.average_metrics_for_display
+            + self.total_metrics_for_display
             + self.last_month_metrics
             + self.client_fields
             + self.raw_and_percentage_compliance_metrics
