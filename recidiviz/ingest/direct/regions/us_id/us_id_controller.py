@@ -167,6 +167,7 @@ from recidiviz.ingest.models.ingest_info import (
     StateSupervisionViolationTypeEntry,
 )
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
+from recidiviz.utils.environment import in_gcp_staging
 from recidiviz.utils.params import str_to_bool
 
 
@@ -184,7 +185,8 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         # TODO(#8999): Replace once rerun is successful for supervision contacts
         self.enum_overrides = (
             self.generate_enum_overrides_v2()
-            if self.ingest_instance == DirectIngestInstance.SECONDARY
+            if in_gcp_staging()
+            or self.ingest_instance == DirectIngestInstance.SECONDARY
             else self.generate_enum_overrides()
         )
         early_discharge_deleted_rows_processors = [
@@ -712,7 +714,7 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "early_discharge_supervision_sentence_deleted_rows",
         ]
         # TODO(#8999): Remove once rerun is successful for supervision contacts
-        if self.ingest_instance == DirectIngestInstance.SECONDARY:
+        if in_gcp_staging() or self.ingest_instance == DirectIngestInstance.SECONDARY:
             # Rerun first in secondary staging
             shared_file_tags += ["sprvsn_cntc_v2"]
         else:
