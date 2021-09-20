@@ -1,0 +1,113 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2021 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""View pulling from raw data in US_ID that captures PO actions corresponding to the IDOC Behavior Response Matrix"""
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    STATE_BASE_DATASET,
+)
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
+
+US_ID_BEHAVIOR_RESPONSES_VIEW_NAME = "us_id_behavior_responses"
+
+US_ID_RAW_DATASET = "us_id_raw_data_up_to_date_views"
+
+US_ID_BEHAVIOR_RESPONSES_VIEW_DESCRIPTION = "View pulling from raw data in US_ID that captures PO actions corresponding to the IDOC Behavior Response Matrix"
+
+US_ID_BEHAVIOR_RESPONSES_QUERY_TEMPLATE = """
+    /*{description}*/
+    WITH combined AS (
+        SELECT  
+            pei.person_id,
+            behavior_eval.ofndr_num,
+            behavior_eval.ofndr_behavior_evaluation_id AS evaluation_id,
+            behavior_response.ofndr_behavior_evaluation_response_id AS response_id,
+            obs_behavior_response_cd.observed_behavior_response_desc AS response_type,
+            SAFE_CAST(obs_behavior_response_cd.observed_behavior_response_level as INT) AS response_level,
+            SAFE_CAST(obs_behavior_response_cd.observed_behavior_response_rank as INT) AS response_rank_within_level,
+            obs_behavior_type_cd.observed_behavior_typ_desc AS response_reward_sanction,
+            -- Action date is nearly always the same as supervision contact date
+            DATE(SAFE.PARSE_DATETIME("%Y-%m-%d %X", eval_action_dates.action_dtd)) AS action_date,
+            DATE_TRUNC(DATE(SAFE.PARSE_DATETIME("%Y-%m-%d %X", eval_action_dates.action_dtd)), MONTH) AS action_month,
+            DATE_TRUNC(DATE(SAFE.PARSE_DATETIME("%Y-%m-%d %X", eval_action_dates.action_dtd)), YEAR) AS action_year,
+            location_raw_text as contact_location,
+            contact_date,
+            status_raw_text as contact_status,
+            contact_type_raw_text as contact_type,
+            contact_reason_raw_text as contact_reason,
+            contacts.sprvsn_cntc_id as contact_id
+        -- All but 71 evaluations have a response so doing an inner join here
+        FROM `{project_id}.{raw_dataset}.ofndr_behavior_evaluation_latest` behavior_eval
+        INNER JOIN `{project_id}.{raw_dataset}.ofndr_behavior_evaluation_response_latest` behavior_response
+            USING(ofndr_behavior_evaluation_id)
+        INNER JOIN `{project_id}.{raw_dataset}.observed_behavior_response_cd_latest` obs_behavior_response_cd
+            USING(observed_behavior_response_cd)
+        INNER JOIN `{project_id}.{raw_dataset}.observed_behavior_typ_cd_latest` obs_behavior_type_cd
+            USING(observed_behavior_typ)
+        INNER JOIN `{project_id}.{raw_dataset}.behavior_evaluation_action_dates_latest` eval_action_dates
+            USING(ofndr_behavior_evaluation_id)
+        INNER JOIN `{project_id}.{raw_dataset}.behavior_evaluation_actions_latest` eval_actions
+            USING(behavior_evaluation_action_id)
+        -- About 1% of behavior responses are missing a corresponding supervision contact (where there is a value for source id but no corresponding
+        -- contact id). This arises when a PO completes the matrix response portion of the supervision contact form, but doesn't save the overall 
+        -- record of the supervision contact, either because they forgot or decided not to save it for some other reason. We do a join here
+        -- to drop those records since we're not sure they intended to be saved. Bringing the contact information allows us to get more context
+        -- about the contact that result in a reward/sanction being used
+        INNER JOIN `{project_id}.{analyst_dataset}.us_id_raw_supervision_contacts_materialized` contacts
+            ON contacts.ofndr_num = behavior_eval.ofndr_num
+            AND contacts.sprvsn_cntc_id = behavior_eval.source_id
+        INNER JOIN `{project_id}.{base_dataset}.state_person_external_id` pei
+            ON pei.external_id = behavior_eval.ofndr_num
+            AND pei.state_code = "US_ID"
+        -- Action dates appear to be autogenerated. Each evaluation has 2 entries with the same action date, with 
+        -- action = 'SUBMIT' and action = 'UPDATE'. Here I limit to just 'UPDATE' for deduping purposes
+        WHERE eval_actions.action = 'UPDATE'
+    )
+    SELECT 
+    -- If person_id, date, and response type are the same, count distinct values and dedup
+    COUNT(DISTINCT response_id) OVER(PARTITION BY combined.person_id, contact_date, response_type) AS distinct_response_id,
+    COUNT(DISTINCT evaluation_id) OVER(PARTITION BY combined.person_id, contact_date, response_type) AS distinct_evaluation_id,
+    COUNT(DISTINCT contact_id) OVER(PARTITION BY combined.person_id, contact_date, response_type) AS distinct_contact_id,
+    combined.*, 
+    session_id, 
+    last_day_of_data,
+    compartment_level_1, 
+    compartment_level_2 
+    FROM combined
+    INNER JOIN `{project_id}.{analyst_dataset}.compartment_sessions_materialized` cs
+        ON combined.person_id = ss.person_id
+        AND combined.action_date BETWEEN ss.start_date AND COALESCE(ss.end_date,'9999-01-01')
+    -- sparse responses data before 2016
+    WHERE EXTRACT(YEAR from action_date) >= 2016
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY combined.person_id, contact_date, response_type ORDER BY contact_id, evaluation_id, response_id) = 1
+    """
+
+US_ID_BEHAVIOR_RESPONSES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+    dataset_id=ANALYST_VIEWS_DATASET,
+    view_id=US_ID_BEHAVIOR_RESPONSES_VIEW_NAME,
+    view_query_template=US_ID_BEHAVIOR_RESPONSES_QUERY_TEMPLATE,
+    description=US_ID_BEHAVIOR_RESPONSES_VIEW_DESCRIPTION,
+    analyst_dataset=ANALYST_VIEWS_DATASET,
+    raw_dataset=US_ID_RAW_DATASET,
+    base_dataset=STATE_BASE_DATASET,
+    should_materialize=True,
+)
+
+if __name__ == "__main__":
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        US_ID_BEHAVIOR_RESPONSES_VIEW_BUILDER.build_and_print()
