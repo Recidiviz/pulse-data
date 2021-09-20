@@ -90,8 +90,8 @@ US_ID_BEHAVIOR_RESPONSES_QUERY_TEMPLATE = """
     compartment_level_2 
     FROM combined
     INNER JOIN `{project_id}.{analyst_dataset}.compartment_sessions_materialized` cs
-        ON combined.person_id = ss.person_id
-        AND combined.action_date BETWEEN ss.start_date AND COALESCE(ss.end_date,'9999-01-01')
+        ON combined.person_id = cs.person_id
+        AND combined.action_date BETWEEN cs.start_date AND COALESCE(cs.end_date,'9999-01-01')
     -- sparse responses data before 2016
     WHERE EXTRACT(YEAR from action_date) >= 2016
     QUALIFY ROW_NUMBER() OVER(PARTITION BY combined.person_id, contact_date, response_type ORDER BY contact_id, evaluation_id, response_id) = 1
