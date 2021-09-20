@@ -245,7 +245,7 @@ class EnumFieldManifest(ManifestNode[StrictEnumParser]):
 
         enum_overrides = cls._build_field_enum_overrides(
             enum_cls,
-            ignores_list=field_enum_mappings_manifest.pop_list(
+            ignores_list=field_enum_mappings_manifest.pop_list_optional(
                 EnumFieldManifest.IGNORES_KEY, str
             ),
             raw_mappings_manifest=field_enum_mappings_manifest.pop_dict(
@@ -264,9 +264,12 @@ class EnumFieldManifest(ManifestNode[StrictEnumParser]):
             raw_text_field_manifest=raw_text_field_manifest,
         )
 
-    @staticmethod
+    @classmethod
     def _build_field_enum_overrides(
-        enum_cls: Type[Enum], ignores_list: List[str], raw_mappings_manifest: YAMLDict
+        cls,
+        enum_cls: Type[Enum],
+        ignores_list: Optional[List[str]],
+        raw_mappings_manifest: YAMLDict,
     ) -> EnumOverrides:
         """Builds the enum mappings object that should be used to parse the enum value."""
 
@@ -299,10 +302,16 @@ class EnumFieldManifest(ManifestNode[StrictEnumParser]):
                     raw_text, enum_cls[enum_name], normalize_label=False
                 )
 
-        for raw_text_value in ignores_list:
-            enum_overrides_builder.ignore(
-                raw_text_value, enum_cls, normalize_label=False
-            )
+        if ignores_list is not None:
+            if not ignores_list:
+                raise ValueError(
+                    f"Found empty {cls.IGNORES_KEY} list. If there are no ignores, the "
+                    f"key should be omitted entirely."
+                )
+            for raw_text_value in ignores_list:
+                enum_overrides_builder.ignore(
+                    raw_text_value, enum_cls, normalize_label=False
+                )
 
         return enum_overrides_builder.build()
 

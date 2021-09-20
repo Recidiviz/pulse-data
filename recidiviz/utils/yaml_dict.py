@@ -47,87 +47,157 @@ class YAMLDict:
             return YAMLDict(loaded_raw_yaml)
 
     @classmethod
-    def _assert_type(cls, field: str, value: Any, value_type: Type[T]) -> Optional[T]:
-        if value is not None and not isinstance(value, value_type):
+    def _assert_type(cls, field: str, value: Any, value_type: Type[T]) -> T:
+        if value is None or not isinstance(value, value_type):
             raise ValueError(
-                f"The {field} must be of type {value_type.__name__}. Invalid {field}, expected "
-                f"{value_type} but received: {repr(value)}"
+                f"The field [{field}] must be of type [{value_type}]. Invalid "
+                f"[{field}] value, expected type [{value_type}] but received: "
+                f"{type(value)}"
             )
         return value
 
-    @classmethod
-    def _assert_type_non_optional(
-        cls, field: str, value: Any, value_type: Type[T]
-    ) -> T:
-        value = cls._assert_type(field, value, value_type)
-        if value is None:
-            raise ValueError(f"Found unexpected None value in field [{field}].")
-        return value
-
     def pop_optional(self, field: str, value_type: Type[T]) -> Optional[T]:
-        return self._assert_type(field, self.raw_yaml.pop(field, None), value_type)
+        """Returns the object at the given key |field| without popping it from the
+        YAMLDict. Will return None if the field does not exist or if the value at that
+        field is None. Throws if the value is nonnull but the type is not the expected
+        |value_type|.
+        """
+        value = self.raw_yaml.pop(field, None)
+        if value is None:
+            return None
+        return self._assert_type(field, value, value_type)
 
     def pop(self, field: str, value_type: Type[T]) -> T:
-        value = self.pop_optional(field, value_type)
-        if value is None:
-            raise KeyError(f"Expected {field} in input: {repr(self.raw_yaml)}")
-        return value
+        """Returns the object at the given key |field| after popping it from the
+        YAMLDict. Throws if the value is nonnull but the type is not the expected
+        |value_type|, or if the field does not exist, or if the value at that field is
+        None.
+        """
+        try:
+            value = self.raw_yaml.pop(field)
+        except KeyError as e:
+            raise KeyError(
+                f"Expected nonnull [{field}] in input: {self.raw_yaml}"
+            ) from e
+        return self._assert_type(field, value, value_type)
 
     def pop_dict(self, field: str) -> "YAMLDict":
+        """Returns the dictionary at the given key |field| after popping it from the
+        YAMLDict. Throws if the value is nonnull but the type is not a dictionary, or
+        if the field does not exist, or if the value at that field is None.
+        """
         return YAMLDict(self.pop(field, dict))
 
     def pop_dict_optional(self, field: str) -> Optional["YAMLDict"]:
-        raw_yaml = self.pop_optional(field, dict)
-        if not raw_yaml:
+        """Returns the dictionary at the given key |field| without popping it from the
+        YAMLDict. Will return None if the field does not exist or if the value at that
+        field is None. Throws if the value is nonnull but is not a dictionary.
+        """
+        try:
+            raw_yaml = self.pop(field, dict)
+            return YAMLDict(raw_yaml)
+        except (KeyError, ValueError):
             return None
-        return YAMLDict(raw_yaml)
 
     @classmethod
     def _transform_dicts(cls, field: str, raw_yamls: List) -> List["YAMLDict"]:
         dicts = []
         for raw_yaml in raw_yamls:
             raw_yaml = cls._assert_type(field, raw_yaml, dict)
-            if raw_yaml is None:
-                raise ValueError(f"Received entry in list that is None: {raw_yamls}")
             dicts.append(YAMLDict(raw_yaml))
         return dicts
 
     def pop_dicts(self, field: str) -> List["YAMLDict"]:
+        """Returns the list of dictionaries at the given key |field| after popping it
+        from the YAMLDict. Throws if the value is nonnull but the type is not a
+        list, if any of the list values are not dictionaries, if the field does not
+        exist, or if the value at that field is None.
+        """
         return self._transform_dicts(field, self.pop(field, list))
 
     def pop_dicts_optional(self, field: str) -> Optional[List["YAMLDict"]]:
-        raw_yamls = self.pop_optional(field, list)
-        if not raw_yamls:
+        """Returns the list of dictionaries at the given key |field| after popping it
+        from the YAMLDict. Throws if the value is nonnull but the type is not a
+        list or if any of the list values are not dictionaries. If the field does not
+        exist, or if the value at that field is None, returns None.
+        """
+        try:
+            raw_yamls = self.pop(field, list)
+        except (KeyError, ValueError):
             return None
         return self._transform_dicts(field, raw_yamls)
 
     def pop_list(self, field: str, list_values_type: Type[T]) -> List[T]:
+        """Returns the list of dictionaries at the given key |field| after popping it
+        from the YAMLDict. Throws if the value is nonnull but the type is not a
+        list, if any of the list values are not the expected |list_values_type|, if the
+        field does not exist, or if the value at that field is None.
+        """
         raw_yamls = self.pop(field, list)
         return [
-            self._assert_type_non_optional(field, raw_val, list_values_type)
-            for raw_val in raw_yamls
+            self._assert_type(field, raw_val, list_values_type) for raw_val in raw_yamls
+        ]
+
+    def pop_list_optional(
+        self, field: str, list_values_type: Type[T]
+    ) -> Optional[List[T]]:
+        """Returns the list of dictionaries at the given key |field| after popping it
+        from the YAMLDict. Throws if the value is nonnull but the type is not a
+        list or if any of the list values are not the expected |list_values_type|. If
+        the field does not exist, or if the value at that field is None, returns None.
+        """
+        try:
+            raw_yamls = self.pop(field, list)
+        except (KeyError, ValueError):
+            return None
+        return [
+            self._assert_type(field, raw_val, list_values_type) for raw_val in raw_yamls
         ]
 
     def peek_optional(self, field: str, value_type: Type[T]) -> Optional[T]:
-        return self._assert_type(field, self.raw_yaml.get(field, None), value_type)
+        """Returns the object at the given key |field| without popping it from the
+        YAMLDict. Will return None if the field does not exist or if the value at that
+        field is None.
+        """
+        try:
+            return self.peek(field, value_type)
+        except (KeyError, ValueError):
+            return None
 
     def peek(self, field: str, value_type: Type[T]) -> T:
-        value = self.peek_optional(field, value_type)
-        if value is None:
-            raise KeyError(f"Expected {field} in input: {repr(self.raw_yaml)}")
-        return value
+        """Returns the object at the given key |field| without popping it from the
+        YAMLDict. Throws if the field does not exist or if the value at that field is
+        None.
+        """
+        try:
+            value = self.raw_yaml[field]
+        except KeyError as e:
+            raise KeyError(
+                f"Expected nonnull [{field}] in input: {self.raw_yaml}"
+            ) from e
+        return self._assert_type(field, value, value_type)
 
     def peek_type(self, field: str) -> Type:
-        """Returns the type of the object at |field|. Throws if no such field exists."""
+        """Returns the type of the object at |field|. Throws if no such field exists or
+        if the value at |field| is None.
+        """
         return type(self.peek(field, object))
 
     def __len__(self) -> int:
         return len(self.raw_yaml)
 
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, YAMLDict):
+            return False
+
+        return self.get() == other.get()
+
     def get(self) -> YAMLDictType:
+        """Returns the underlying raw dictionary representation of the YAML."""
         return self.raw_yaml
 
     def keys(self) -> List[str]:
+        """Returns a list of keys in this YAMLDict."""
         return list(self.raw_yaml.keys())
 
     def copy(self) -> "YAMLDict":

@@ -141,8 +141,9 @@ class ValidationConfigTest(unittest.TestCase):
         # Act
         with self.assertRaisesRegex(
             ValueError,
-            r"^The hard_max_allowed_error_override must be of type float. "
-            r"Invalid hard_max_allowed_error_override, expected <class 'float'> but received: '0.3.0'$",
+            r"^The field \[hard_max_allowed_error_override\] must be of type \[<class 'float'>\]. "
+            r"Invalid \[hard_max_allowed_error_override\] value, expected type "
+            r"\[<class 'float'>\] but received: <class 'str'>$",
         ):
             _ = ValidationRegionConfig.from_yaml(yaml_path)
 

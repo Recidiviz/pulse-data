@@ -618,6 +618,45 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
+    def test_simple_enum_parsing_no_ignores(self) -> None:
+        expected_output = [
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.FEMALE,
+                gender_raw_text="F",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="1", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                gender=FakeGender.MALE,
+                gender_raw_text="M",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="2", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+            # No gender for this person because they had a null gender in the input CSV.
+            FakePerson(
+                fake_state_code="US_XX",
+                external_ids=[
+                    FakePersonExternalId(
+                        fake_state_code="US_XX", external_id="3", id_type="ID_TYPE"
+                    )
+                ],
+            ),
+        ]
+
+        # Act
+        parsed_output = self._run_parse_for_tag("simple_enums_no_ignores")
+
+        # Assert
+        self.assertEqual(expected_output, parsed_output)
+
     def test_enum_parsing_complex_capitalization(self) -> None:
         expected_output = [
             FakePerson(

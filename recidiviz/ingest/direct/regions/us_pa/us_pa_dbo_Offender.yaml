@@ -19,7 +19,6 @@ output:
       $mappings:
         Gender.MALE: M
         Gender.FEMALE: F
-      $ignore: []
     races:
       - $foreach: races_ethnicities_list
         StatePersonRace:
