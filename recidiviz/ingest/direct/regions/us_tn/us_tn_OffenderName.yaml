@@ -30,7 +30,6 @@ output:
       $mappings:
         Gender.MALE: M
         Gender.FEMALE: F
-      $ignore: []
     races:
       - StatePersonRace:
           race:
@@ -40,7 +39,6 @@ output:
               Race.BLACK: B
               Race.AMERICAN_INDIAN_ALASKAN_NATIVE: I
               Race.WHITE: W
-            $ignore: []
     ethnicities:
       - StatePersonEthnicity:
           ethnicity:
@@ -48,4 +46,3 @@ output:
             $mappings:
               Ethnicity.HISPANIC: HISPANIC
               Ethnicity.NOT_HISPANIC: NOT_HISPANIC
-            $ignore: []

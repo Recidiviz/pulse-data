@@ -124,7 +124,7 @@ class StateIngestViewParserTestBase:
             try:
                 manifest_ast = parser.parse_manifest(manifest_path)
             except KeyError as e:
-                if "Expected manifest_language in input" in str(e):
+                if "Expected nonnull [manifest_language] in input" in str(e):
                     # TODO(#8905): Remove this check once all files have been migrated to
                     #  v2 structure.
                     continue
