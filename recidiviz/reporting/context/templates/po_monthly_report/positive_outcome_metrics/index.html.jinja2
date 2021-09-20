@@ -1,0 +1,20 @@
+
+{{ components.layout_table_start() }}
+{% for outcome in [pos_discharges, supervision_downgrades, earned_discharges] %}
+  <tr>
+    <td>
+      {% include "po_monthly_report/positive_outcome_metrics/outcome_card.html.jinja2" %}
+    </td>
+  </tr>
+  {% if outcome.action_table %}
+  {{components.y_padding(2)}}
+  <tr>
+    <td>
+      {% include "po_monthly_report/positive_outcome_metrics/table_card.html.jinja2" %}
+    </td>
+  </tr>
+  {% endif %}
+  {{components.y_padding(24)}}
+{% endfor %}
+{{components.y_padding(16)}}
+{{ components.layout_table_end() }}
