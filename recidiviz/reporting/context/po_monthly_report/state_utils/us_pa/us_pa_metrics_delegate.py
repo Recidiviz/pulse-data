@@ -52,3 +52,7 @@ class UsPaMetricsDelegate(PoMonthlyReportMetricsDelegate):
             ASSESSMENTS: 95,
             FACE_TO_FACE: 90,
         }
+
+    @property
+    def completion_date_label(self) -> str:
+        return "max date"

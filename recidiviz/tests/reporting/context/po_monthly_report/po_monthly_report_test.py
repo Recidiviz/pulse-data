@@ -20,17 +20,22 @@
 import json
 import os
 import textwrap
-from copy import deepcopy
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting.context.po_monthly_report.constants import (
-    DEFAULT_MESSAGE_BODY_KEY,
+    EARNED_DISCHARGES,
+    POS_DISCHARGES,
+    SUPERVISION_DOWNGRADES,
     ReportType,
 )
 from recidiviz.reporting.context.po_monthly_report.context import PoMonthlyReportContext
 from recidiviz.reporting.recipient import Recipient
+from recidiviz.tests.reporting.context.po_monthly_report.po_monthly_report_expected_data import (
+    expected_us_id,
+    expected_us_pa,
+)
 
 FIXTURE_FILE = "po_monthly_report_data_fixture.json"
 
@@ -105,7 +110,7 @@ class PoMonthlyReportContextTests(TestCase):
         self.assertEqual("none", actual["display_congratulations"])
 
     def test_message_body_override(self) -> None:
-        """Test that the message body is overriden by the message_body_override"""
+        """Test that the message body is overridden by the message_body_override"""
         recipient_data = {
             "pos_discharges": "0",
             "earned_discharges": "0",
@@ -251,150 +256,22 @@ class PoMonthlyReportContextTests(TestCase):
         self.assertEqual(expected, actual["attachment_content"])
 
     def test_prepare_for_generation(self) -> None:
-        context = PoMonthlyReportContext(StateCode.US_ID, self.recipient)
-        actual = context.get_prepared_data()
-        red = "#A43939"
-        gray = "#7D9897"
-        default_color = "#00413E"
+        """Smoke test for the entire template context with fixture data."""
+        # these dicts are big, need to see the whole thing if something fails
+        self.maxDiff = None
 
-        expected = deepcopy(self.recipient.data)
-        expected[
-            "static_image_path"
-        ] = "http://123.456.7.8/US_ID/po_monthly_report/static"
-        expected["message_body"] = context.properties[DEFAULT_MESSAGE_BODY_KEY]
-        expected["review_month"] = "May"
-        expected["greeting"] = "Hey there, Christopher!"
-
-        # No client data returns None for attachment_content
-        expected["attachment_content"] = None
-
-        # [improved] More pos_discharges than district and state average
-        # [improved] Higher district average than state average
-        expected["pos_discharges"] = "5"
-        expected["pos_discharges_color"] = default_color
-        expected["pos_discharges_change"] = "2 more than last month. You're on a roll!"
-        expected["pos_discharges_change_color"] = gray
-        expected["pos_discharges_district_average"] = "1.148"
-        expected["pos_discharges_district_average_color"] = default_color
-        expected["pos_discharges_state_average"] = "0.95"
-
-        # [improved] More early discharges than district average
-        # Lower district average compared to state average
-        expected["earned_discharges"] = "1"
-        expected["earned_discharges_color"] = red
-        expected["earned_discharges_change"] = "2 fewer than last month."
-        expected["earned_discharges_change_color"] = red
-        expected["earned_discharges_district_average"] = "0.86"
-        expected["earned_discharges_district_average_color"] = red
-        expected["earned_discharges_state_average"] = "1.657"
-
-        # [improved] More supervision downgrades than district average
-        # Higher district average compared to state average
-        expected["supervision_downgrades"] = "5"
-        expected["supervision_downgrades_color"] = default_color
-        expected[
-            "supervision_downgrades_change"
-        ] = "2 more than last month. You're on a roll!"
-        expected["supervision_downgrades_change_color"] = gray
-        expected["supervision_downgrades_district_average"] = "2.346"
-        expected["supervision_downgrades_district_average_color"] = default_color
-        expected["supervision_downgrades_state_average"] = "1.765"
-
-        # [improved] Less technical revocations
-        # [improved] Lower district average than state average
-        expected["technical_revocations"] = "0"
-        expected["technical_revocations_color"] = default_color
-        expected["technical_revocations_district_average"] = "2.022"
-        expected["technical_revocations_district_average_color"] = default_color
-        expected["technical_revocations_state_average"] = "2.095"
-
-        # [improved] Less crime revocations than district and state averages
-        # [improved] Lower district average than state average
-        expected["crime_revocations"] = "2"
-        expected["crime_revocations_color"] = default_color
-        expected["crime_revocations_district_average"] = "3.353"
-        expected["crime_revocations_district_average_color"] = default_color
-        expected["crime_revocations_state_average"] = "3.542"
-
-        # Higher absconsions than district or state average
-        # higher district average than state average
-        expected["absconsions"] = "2"
-        expected["absconsions_color"] = red
-        expected["absconsions_district_average"] = "0.22"
-        expected["absconsions_district_average_color"] = red
-        expected["absconsions_state_average"] = "0.14"
-
-        expected["total_revocations"] = "2"
-        expected["assessments_percent"] = "73"
-        expected["overdue_assessments_goal_percent"] = "81"
-        expected["assessments_goal_enabled"] = True
-        expected["assessments_goal_met"] = False
-        expected["facetoface_percent"] = "N/A"
-        expected["overdue_facetoface_goal_percent"] = "N/A"
-        expected["facetoface_goal_enabled"] = False
-        expected["facetoface_goal_met"] = False
-
-        expected["pos_discharges_label"] = "Successful&nbsp;Case Completions"
-        expected["earned_discharges_label"] = "Early Discharge"
-        expected["supervision_downgrades_label"] = "Supervision Downgrades"
-        expected["total_revocations_label"] = "Revocations"
-        expected["absconsions_label"] = "Absconsions"
-
-        expected["display_congratulations"] = "inherit"
-        expected["congratulations_text"] = (
-            "You improved from last month across 4 metrics and out-performed other "
-            "officers like you across 5 metrics."
-        )
-        expected[
-            "learn_more_link"
-        ] = "https://docs.google.com/document/d/1kgG5LiIrFQaBupHYfoIwo59TCmYH5f_aIpRzGrtOkhU/edit#heading=h.r6s5tyc7ut6c"
-
-        for key, value in expected.items():
-            if key not in actual:
-                print(f"Missing key: {key}")
-            self.assertTrue(key in actual)
-
-        for key, value in actual.items():
-            self.assertEqual(expected[key], value, f"key = {key}")
-
-        # Testing an instance where some metrics are not populated
-        expected[
-            "static_image_path"
-        ] = "http://123.456.7.8/US_PA/po_monthly_report/static"
-        del expected["earned_discharges_color"]
-        del expected["earned_discharges_change"]
-        del expected["earned_discharges_change_color"]
-        del expected["earned_discharges_district_average_color"]
-        del expected["earned_discharges_label"]
-
-        expected["earned_discharges"] = 0
-        expected["earned_discharges_last_month"] = 0
-        expected["earned_discharges_district_average"] = 0.0
-        expected["earned_discharges_state_average"] = 0.0
-
-        expected["congratulations_text"] = (
-            "You improved from last month across 4 metrics and out-performed other "
-            "officers like you across 4 metrics."
+        self.assertEqual(
+            expected_us_id,
+            PoMonthlyReportContext(StateCode.US_ID, self.recipient).get_prepared_data(),
         )
 
-        recipient = self.recipient.create_derived_recipient(
-            {
-                "earned_discharges": 0,
-                "earned_discharges_last_month": 0,
-                "earned_discharges_district_average": 0.0,
-                "earned_discharges_state_average": 0.0,
-            }
+        pa_recipient = self.recipient.create_derived_recipient(
+            {"state_code": StateCode.US_PA.value}
         )
-        context = PoMonthlyReportContext(StateCode.US_PA, recipient)
-        actual = context.get_prepared_data()
-
-        for key, value in expected.items():
-            if key not in actual:
-                print(f"Missing key: {key}")
-            self.assertTrue(key in actual)
-
-        for key, value in actual.items():
-            self.assertEqual(expected[key], value, f"key = {key}")
+        self.assertEqual(
+            expected_us_pa,
+            PoMonthlyReportContext(StateCode.US_PA, pa_recipient).get_prepared_data(),
+        )
 
     def test_compliance_goals_enabled(self) -> None:
         """Test that compliance goals are enabled if below baseline threshold"""
@@ -443,3 +320,130 @@ class PoMonthlyReportContextTests(TestCase):
 
         self.assertFalse(actual["assessments_goal_met"])
         self.assertFalse(actual["facetoface_goal_met"])
+
+    def test_completions(self) -> None:
+        """Test that completions context is populated according to input data."""
+
+        happy_path_data = PoMonthlyReportContext(
+            StateCode.US_ID, self.recipient
+        ).get_prepared_data()[POS_DISCHARGES]
+
+        self.assertIn(
+            "273", happy_path_data["main_text"].format(happy_path_data["total"])
+        )
+        self.assertEqual(
+            happy_path_data["supplemental_text"],
+            "5 from your caseload",
+        )
+        self.assertEqual(
+            happy_path_data["action_table"],
+            [("Hansen, Linet (105)", "June 7"), ("Cortes, Rebekah (142)", "June 18")],
+        )
+
+        no_caseload_data = PoMonthlyReportContext(
+            StateCode.US_ID,
+            self.recipient.create_derived_recipient({POS_DISCHARGES: "0"}),
+        ).get_prepared_data()[POS_DISCHARGES]
+        self.assertEqual(
+            no_caseload_data["supplemental_text"],
+            "38 from your district",
+        )
+
+        no_local_data = PoMonthlyReportContext(
+            StateCode.US_ID,
+            self.recipient.create_derived_recipient(
+                {POS_DISCHARGES: "0", f"{POS_DISCHARGES}_district_total": 0}
+            ),
+        ).get_prepared_data()[POS_DISCHARGES]
+        self.assertIsNone(no_local_data["supplemental_text"])
+
+        no_action_items_data = no_local_data = PoMonthlyReportContext(
+            StateCode.US_ID,
+            self.recipient.create_derived_recipient(
+                {"upcoming_release_date_clients": []}
+            ),
+        ).get_prepared_data()[POS_DISCHARGES]
+        self.assertIsNone(no_action_items_data["action_table"])
+
+    def test_downgrades(self) -> None:
+        """Test that downgrades context is populated according to input data."""
+
+        happy_path_data = PoMonthlyReportContext(
+            StateCode.US_ID, self.recipient
+        ).get_prepared_data()[SUPERVISION_DOWNGRADES]
+
+        self.assertIn(
+            "314", happy_path_data["main_text"].format(happy_path_data["total"])
+        )
+        self.assertEqual(
+            happy_path_data["supplemental_text"],
+            "5 from your caseload",
+        )
+        self.assertEqual(
+            happy_path_data["action_table"],
+            [
+                ("Tonye Thompson (189472)", "Medium &rarr; Low"),
+                ("Linet Hansen (47228)", "Medium &rarr; Low"),
+                ("Rebekah Cortes (132878)", "High &rarr; Medium"),
+                ("Taryn Berry (147872)", "High &rarr; Low"),
+            ],
+        )
+
+        no_caseload_data = PoMonthlyReportContext(
+            StateCode.US_ID,
+            self.recipient.create_derived_recipient({SUPERVISION_DOWNGRADES: "0"}),
+        ).get_prepared_data()[SUPERVISION_DOWNGRADES]
+        self.assertEqual(
+            no_caseload_data["supplemental_text"],
+            "51 from your district",
+        )
+
+        no_local_data = PoMonthlyReportContext(
+            StateCode.US_ID,
+            self.recipient.create_derived_recipient(
+                {
+                    SUPERVISION_DOWNGRADES: "0",
+                    f"{SUPERVISION_DOWNGRADES}_district_total": 0,
+                }
+            ),
+        ).get_prepared_data()[SUPERVISION_DOWNGRADES]
+        self.assertIsNone(no_local_data["supplemental_text"])
+
+        no_action_items_data = no_local_data = PoMonthlyReportContext(
+            StateCode.US_ID,
+            self.recipient.create_derived_recipient({"mismatches": []}),
+        ).get_prepared_data()[SUPERVISION_DOWNGRADES]
+        self.assertIsNone(no_action_items_data["action_table"])
+
+    def test_early_discharges(self) -> None:
+        """Test that early discharge context is populated according to input data."""
+
+        happy_path_data = PoMonthlyReportContext(
+            StateCode.US_ID, self.recipient
+        ).get_prepared_data()[EARNED_DISCHARGES]
+
+        self.assertIn(
+            "106", happy_path_data["main_text"].format(happy_path_data["total"])
+        )
+        self.assertEqual(
+            happy_path_data["supplemental_text"],
+            "1 from your caseload",
+        )
+        self.assertIsNone(happy_path_data["action_table"])
+
+        no_caseload_data = PoMonthlyReportContext(
+            StateCode.US_ID,
+            self.recipient.create_derived_recipient({EARNED_DISCHARGES: "0"}),
+        ).get_prepared_data()[EARNED_DISCHARGES]
+        self.assertEqual(
+            no_caseload_data["supplemental_text"],
+            "18 from your district",
+        )
+
+        no_local_data = PoMonthlyReportContext(
+            StateCode.US_ID,
+            self.recipient.create_derived_recipient(
+                {EARNED_DISCHARGES: "0", f"{EARNED_DISCHARGES}_district_total": 0}
+            ),
+        ).get_prepared_data()[EARNED_DISCHARGES]
+        self.assertIsNone(no_local_data["supplemental_text"])

@@ -44,5 +44,57 @@
   "facetoface": "0",
   "facetoface_percent": "NaN",
   "overdue_facetoface_goal": "9",
-  "overdue_facetoface_goal_percent": "NaN"
+  "overdue_facetoface_goal_percent": "NaN",
+  "pos_discharges_district_total": 38,
+  "pos_discharges_state_total": 273,
+  "earned_discharges_district_total": 18,
+  "earned_discharges_state_total": 106,
+  "supervision_downgrades_district_total": 51,
+  "supervision_downgrades_state_total": 314,
+  "upcoming_release_date_clients": [
+    {
+      "full_name": "Hansen, Linet",
+      "person_external_id": "105",
+      "projected_end_date": "2021-06-07"
+    },
+    {
+      "full_name": "Cortes, Rebekah",
+      "person_external_id": "142",
+      "projected_end_date": "2021-06-18"
+    }
+  ],
+  "mismatches": [
+    {
+      "name": "Tonye Thompson",
+      "person_external_id": "189472",
+      "last_score": 14,
+      "last_assessment_date": "10/12/20",
+      "current_supervision_level": "Medium",
+      "recommended_level": "Low"
+    },
+    {
+      "name": "Linet Hansen",
+      "person_external_id": "47228",
+      "last_assessment_date": "1/12/21",
+      "last_score": 8,
+      "current_supervision_level": "Medium",
+      "recommended_level": "Low"
+    },
+    {
+      "name": "Rebekah Cortes",
+      "person_external_id": "132878",
+      "last_assessment_date": "3/14/20",
+      "last_score": 10,
+      "current_supervision_level": "High",
+      "recommended_level": "Medium"
+    },
+    {
+      "name": "Taryn Berry",
+      "person_external_id": "147872",
+      "last_assessment_date": "3/13/20",
+      "last_score": 4,
+      "current_supervision_level": "High",
+      "recommended_level": "Low"
+    }
+  ]
 }
