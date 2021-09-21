@@ -17,7 +17,7 @@
 """Data to populate the monthly PO report email.
 
 To generate the BQ view, run:
-    python -m recidiviz.calculator.query.state.views.po_report.po_monthly_report_data
+python -m recidiviz.calculator.query.state.views.po_report.po_monthly_report_data
 """
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
@@ -97,6 +97,71 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       FROM `{project_id}.{po_report_dataset}.report_data_by_person_by_month_materialized`
       GROUP BY state_code, year, month, officer_external_id
     ),
+    goals AS (
+      SELECT 
+        state_code, 
+        officer_external_id,
+        year,
+        month,
+        COALESCE(LEAST(3, ARRAY_LENGTH(assessments_out_of_date_clients)), 0) as overdue_assessments_goal,
+        COALESCE(LEAST(9, ARRAY_LENGTH(facetoface_out_of_date_clients)), 0) as overdue_facetoface_goal,
+      FROM report_data_per_officer
+    ),
+    last_month AS (
+      SELECT
+        * EXCEPT (year, month),
+        # Project this year/month data onto the next month to calculate the MoM change
+        EXTRACT(YEAR FROM DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH)) AS year,
+        EXTRACT(MONTH FROM DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH)) AS month,
+      FROM report_data_per_officer
+    ),
+    streaks AS (
+      SELECT
+        state_code,
+        officer_external_id,
+        year,
+        month,
+        # compute length of the active streaks for a given month, only if they are streaks of zero
+        IF( 
+          technical_revocations = 0,
+          COUNT(1) OVER (PARTITION BY state_code, officer_external_id, technical_revocations_block ORDER BY year, month),
+          0 
+        ) AS technical_revocations_zero_streak,
+        IF( 
+          crime_revocations = 0,
+          COUNT(1) OVER (PARTITION BY state_code, officer_external_id, crime_revocations_block ORDER BY year, month),
+          0 
+        ) AS crime_revocations_zero_streak,
+        IF (
+          absconsions = 0,
+          COUNT(1) OVER (PARTITION BY state_code, officer_external_id, absconsions_block ORDER BY year, month),
+          0 
+        ) AS absconsions_zero_streak
+      FROM (
+        SELECT
+          report_month.*,
+          # divide history of the metric's value into numbered streaks
+          COUNTIF(
+            # start a new streak when these values don't match.
+            # can be null when we don't have a value for the previous month, which also breaks a streak
+            # (there may be gaps in historical data, or officer may not have had a caseload that month)
+            IFNULL(report_month.technical_revocations != last_month.technical_revocations,
+              TRUE)) OVER (officer_history) AS technical_revocations_block,
+          COUNTIF( IFNULL(report_month.crime_revocations != last_month.crime_revocations,
+              TRUE)) OVER (officer_history) AS crime_revocations_block,
+          COUNTIF( IFNULL(report_month.absconsions != last_month.absconsions,
+              TRUE)) OVER (officer_history) AS absconsions_block,
+        FROM
+          report_data_per_officer report_month
+        LEFT JOIN last_month
+          USING (state_code, year, month, officer_external_id)
+        WINDOW
+          officer_history AS (
+            PARTITION BY state_code, officer_external_id
+            ORDER BY year, month
+          )
+      )
+    ),
     aggregates_by_state_and_district AS (
       SELECT
         state_code, year, month,
@@ -109,22 +174,20 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
         AVG(absconsions) AS avg_absconsions,
         SUM(pos_discharges) AS total_pos_discharges,
         SUM(earned_discharges) AS total_earned_discharges,
-        SUM(supervision_downgrades) AS total_supervision_downgrades
+        SUM(supervision_downgrades) AS total_supervision_downgrades,
+        MAX(pos_discharges) AS max_pos_discharges,
+        MAX(earned_discharges) AS max_earned_discharges,
+        MAX(supervision_downgrades) AS max_supervision_downgrades,
+        MAX(technical_revocations_zero_streak) AS max_technical_revocations_zero_streak,
+        MAX(crime_revocations_zero_streak) AS max_crime_revocations_zero_streak,
+        MAX(absconsions_zero_streak) AS max_absconsions_zero_streak,
       FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association_materialized`
       LEFT JOIN report_data_per_officer
+        USING (state_code, year, month, officer_external_id)
+      LEFT JOIN streaks
         USING (state_code, year, month, officer_external_id),
       {district_dimension}
       GROUP BY state_code, year, month, district
-    ),
-    goals AS (
-      SELECT 
-        state_code, 
-        officer_external_id,
-        year,
-        month,
-        COALESCE(LEAST(3, ARRAY_LENGTH(assessments_out_of_date_clients)), 0) as overdue_assessments_goal,
-        COALESCE(LEAST(9, ARRAY_LENGTH(facetoface_out_of_date_clients)), 0) as overdue_facetoface_goal,
-      FROM report_data_per_officer
     ),
     agents AS (
       SELECT
@@ -145,36 +208,51 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       IFNULL(last_month.pos_discharges, 0) AS pos_discharges_last_month,
       district_agg.avg_pos_discharges AS pos_discharges_district_average,
       district_agg.total_pos_discharges AS pos_discharges_district_total,
+      district_agg.max_pos_discharges AS pos_discharges_district_max,
       state_agg.avg_pos_discharges AS pos_discharges_state_average,
       state_agg.total_pos_discharges AS pos_discharges_state_total,
+      state_agg.max_pos_discharges AS pos_discharges_state_max,
       report_month.supervision_downgrades_clients,
       report_month.supervision_downgrades,
       IFNULL(last_month.supervision_downgrades, 0) AS supervision_downgrades_last_month,
       district_agg.avg_supervision_downgrades AS supervision_downgrades_district_average,
       district_agg.total_supervision_downgrades AS supervision_downgrades_district_total,
+      district_agg.max_supervision_downgrades AS supervision_downgrades_district_max,
       state_agg.avg_supervision_downgrades AS supervision_downgrades_state_average,
       state_agg.total_supervision_downgrades AS supervision_downgrades_state_total,
+      state_agg.max_supervision_downgrades AS supervision_downgrades_state_max,
       report_month.earned_discharges_clients,
       report_month.earned_discharges,
       IFNULL(last_month.earned_discharges, 0) AS earned_discharges_last_month,
       district_agg.avg_earned_discharges AS earned_discharges_district_average,
       district_agg.total_earned_discharges AS earned_discharges_district_total,
+      district_agg.max_earned_discharges AS earned_discharges_district_max,
       state_agg.avg_earned_discharges AS earned_discharges_state_average,
       state_agg.total_earned_discharges AS earned_discharges_state_total,
+      state_agg.max_earned_discharges AS earned_discharges_state_max,
       report_month.revocations_clients,
       report_month.technical_revocations,
       IFNULL(last_month.technical_revocations, 0) AS technical_revocations_last_month,
       district_agg.avg_technical_revocations AS technical_revocations_district_average,
       state_agg.avg_technical_revocations AS technical_revocations_state_average,
+      technical_revocations_zero_streak,
+      district_agg.max_technical_revocations_zero_streak AS technical_revocations_zero_streak_district_max,
+      state_agg.max_technical_revocations_zero_streak AS technical_revocations_zero_streak_state_max,
       report_month.crime_revocations,
       IFNULL(last_month.crime_revocations, 0) AS crime_revocations_last_month,
       district_agg.avg_crime_revocations AS crime_revocations_district_average,
       state_agg.avg_crime_revocations AS crime_revocations_state_average,
+      crime_revocations_zero_streak,
+      district_agg.max_crime_revocations_zero_streak AS crime_revocations_zero_streak_district_max,
+      state_agg.max_crime_revocations_zero_streak AS crime_revocations_zero_streak_state_max,
       report_month.absconsions_clients,
       report_month.absconsions,
       IFNULL(last_month.absconsions, 0) AS absconsions_last_month,
       district_agg.avg_absconsions AS absconsions_district_average,
       state_agg.avg_absconsions AS absconsions_state_average,
+      absconsions_zero_streak,
+      district_agg.max_absconsions_zero_streak AS absconsions_zero_streak_district_max,
+      state_agg.max_absconsions_zero_streak AS absconsions_zero_streak_state_max,
       report_month.assessments_out_of_date_clients,
       report_month.assessments,
       report_month.caseload_count,
@@ -211,14 +289,9 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = """
       WHERE district = 'ALL'
     ) state_agg
       USING (state_code, year, month)
-    LEFT JOIN (
-      SELECT
-        * EXCEPT (year, month),
-        -- Project this year/month data onto the next month to calculate the MoM change
-        EXTRACT(YEAR FROM DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH)) AS year,
-        EXTRACT(MONTH FROM DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH)) AS month,
-      FROM report_data_per_officer
-    ) last_month
+    LEFT JOIN last_month
+      USING (state_code, year, month, officer_external_id)
+    LEFT JOIN streaks
       USING (state_code, year, month, officer_external_id)
     LEFT JOIN agents
       USING (state_code, officer_external_id)
