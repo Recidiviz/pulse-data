@@ -17,101 +17,14 @@
 
 """Tests for context_utils.py."""
 import textwrap
-from copy import copy
 from datetime import datetime
 from unittest import TestCase
 
-from recidiviz.reporting.context.context_utils import (
-    align_columns,
-    format_date,
-    singular_or_plural,
-)
-
-_PREPARED_DATA: dict = {
-    "singular_value": "1",
-    "plural_value": "2",
-    "zero_value": "0",
-    "non_allowed_value": "0",
-}
-ALLOWED_METRICS = ["singular_value", "plural_value", "zero_value"]
-
-SINGULAR_TEXT = "Monstera Deliciosa"
-PLURAL_TEXT = "Monsteras Deliciosa"
+from recidiviz.reporting.context.context_utils import align_columns, format_date
 
 
 class ContextUtilsTest(TestCase):
     """Tests for context_utils.py."""
-
-    def test_singular_or_plural_singular(self) -> None:
-        expected = SINGULAR_TEXT
-        prepared_data = copy(_PREPARED_DATA)
-
-        singular_or_plural(
-            prepared_data,
-            ALLOWED_METRICS,
-            "singular_value",
-            "final_text",
-            SINGULAR_TEXT,
-            PLURAL_TEXT,
-        )
-        actual = prepared_data["final_text"]
-        self.assertEqual(expected, actual)
-
-    def test_singular_or_plural_plural(self) -> None:
-        expected = PLURAL_TEXT
-        prepared_data = copy(_PREPARED_DATA)
-
-        singular_or_plural(
-            prepared_data,
-            ALLOWED_METRICS,
-            "plural_value",
-            "final_text",
-            SINGULAR_TEXT,
-            PLURAL_TEXT,
-        )
-        actual = prepared_data["final_text"]
-        self.assertEqual(expected, actual)
-
-    def test_singular_or_plural_zero(self) -> None:
-        expected = PLURAL_TEXT
-        prepared_data = copy(_PREPARED_DATA)
-
-        singular_or_plural(
-            prepared_data,
-            ALLOWED_METRICS,
-            "zero_value",
-            "final_text",
-            SINGULAR_TEXT,
-            PLURAL_TEXT,
-        )
-        actual = prepared_data["final_text"]
-        self.assertEqual(expected, actual)
-
-    def test_singular_or_plural_nonexistent(self) -> None:
-        prepared_data = copy(_PREPARED_DATA)
-
-        singular_or_plural(
-            prepared_data,
-            ALLOWED_METRICS,
-            "nonexistent_value",
-            "final_text",
-            SINGULAR_TEXT,
-            PLURAL_TEXT,
-        )
-        self.assertNotIn("final_text", prepared_data)
-
-    def test_singular_or_plural_nonallowed(self) -> None:
-        prepared_data = copy(_PREPARED_DATA)
-
-        singular_or_plural(
-            prepared_data,
-            ALLOWED_METRICS,
-            "nonallowed_value",
-            "final_text",
-            SINGULAR_TEXT,
-            PLURAL_TEXT,
-        )
-        self.assertNotIn("final_text", prepared_data)
 
     def test_format_date(self) -> None:
         date = datetime.strptime("20201205112344", "%Y%m%d%H%M%S")

@@ -14,7 +14,9 @@
     </td>
   </tr>
   {% endif %}
-  {{components.y_padding(24)}}
+  {% if not loop.last %}
+    {{components.y_padding(8)}}
+  {% endif %}
 {% endfor %}
-{{components.y_padding(16)}}
+{{components.y_padding(40)}}
 {{ components.layout_table_end() }}

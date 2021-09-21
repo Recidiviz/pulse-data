@@ -20,7 +20,6 @@ import itertools
 from typing import Dict, List
 
 from recidiviz.reporting.context.po_monthly_report.constants import (
-    ABSCONSIONS,
     DISTRICT,
     EMAIL_ADDRESS,
     OFFICER_EXTERNAL_ID,
@@ -28,7 +27,6 @@ from recidiviz.reporting.context.po_monthly_report.constants import (
     REVIEW_MONTH,
     REVOCATIONS_CLIENTS,
     STATE_CODE,
-    TOTAL_REVOCATIONS,
 )
 
 REQUIRED_RECIPIENT_DATA_FIELDS = [
@@ -175,15 +173,6 @@ class PoMonthlyReportMetricsDelegate(abc.ABC):
             ],
             *[f"{goal}_percent" for goal in self.compliance_action_metric_goals],
         ]
-
-    @property
-    def singular_or_plural_metrics(self) -> List[str]:
-        """Denotes which metrics are to be displayed with titles that are adjusted based on value."""
-        return (
-            self.decarceral_actions_metrics
-            + self.compliance_action_metrics
-            + [TOTAL_REVOCATIONS, ABSCONSIONS]
-        )
 
     @property
     def required_recipient_data_fields(self) -> List[str]:
