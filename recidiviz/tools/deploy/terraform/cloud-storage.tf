@@ -26,7 +26,7 @@ module "direct-ingest-state-storage" {
 
   project_id    = var.project_id
   location      = var.direct_ingest_region
-  storage_class = "REGIONAL"
+  storage_class = "NEARLINE"
   name_suffix   = "direct-ingest-state-storage"
 }
 
