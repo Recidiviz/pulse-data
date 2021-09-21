@@ -43,22 +43,21 @@ from recidiviz.reporting.context.context_utils import (
     month_number_to_name,
     round_float_value_to_int,
     round_float_value_to_number_of_digits,
-    singular_or_plural,
 )
 from recidiviz.reporting.context.po_monthly_report.constants import (
-    CRIME_REVOCATIONS,
     DEFAULT_MESSAGE_BODY_KEY,
     EARNED_DISCHARGES,
     POS_DISCHARGES,
     SUPERVISION_DOWNGRADES,
-    TECHNICAL_REVOCATIONS,
-    TOTAL_REVOCATIONS,
     ReportType,
 )
 from recidiviz.reporting.context.po_monthly_report.state_utils.po_monthly_report_metrics_delegate_factory import (
     PoMonthlyReportMetricsDelegateFactory,
 )
-from recidiviz.reporting.context.po_monthly_report.types import DecarceralMetricContext
+from recidiviz.reporting.context.po_monthly_report.types import (
+    AdverseOutcomeContext,
+    DecarceralMetricContext,
+)
 from recidiviz.reporting.context.report_context import ReportContext
 from recidiviz.reporting.recipient import Recipient
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -122,14 +121,7 @@ class PoMonthlyReportContext(ReportContext):
 
         self._convert_month_to_name("review_month")
 
-        self._set_base_metric_color(self.metrics_delegate.client_outcome_metrics)
-        self._set_averages_metric_color(
-            self.metrics_delegate.average_metrics_for_display
-        )
-
         self._set_congratulations_section()
-        self._set_total_revocations()
-        self._singular_or_plural_section_headers()
         self._round_float_values_to_ints(
             self.metrics_delegate.float_metrics_to_round_to_int
         )
@@ -142,6 +134,9 @@ class PoMonthlyReportContext(ReportContext):
 
         for metric in self.metrics_delegate.decarceral_actions_metrics:
             self.prepared_data[metric] = getattr(self, f"_get_{metric}")()
+
+        for metric in self.metrics_delegate.client_outcome_metrics:
+            self.prepared_data[metric] = self._get_adverse_outcome(metric)
 
         return self.prepared_data
 
@@ -195,12 +190,6 @@ class PoMonthlyReportContext(ReportContext):
 
         return num_metrics_outperformed_region_averages
 
-    def _set_total_revocations(self) -> None:
-        self.prepared_data[TOTAL_REVOCATIONS] = str(
-            int(self.recipient_data[TECHNICAL_REVOCATIONS])
-            + int(self.recipient_data[CRIME_REVOCATIONS])
-        )
-
     def _get_metric_text_singular_or_plural(self, metric_value: int) -> str:
         metric_text = (
             "metric_text_singular" if metric_value == 1 else "metric_text_plural"
@@ -248,67 +237,6 @@ class PoMonthlyReportContext(ReportContext):
             congratulations_text = ""
 
         self.prepared_data["congratulations_text"] = congratulations_text
-
-    def _set_averages_metric_color(self, metrics: List[str]) -> None:
-        """Sets the color for the district averages displayed in each section. Color will be the red if it didn't
-        improve compared to the state average, otherwise it will be the default color.
-        """
-        for metric_key in metrics:
-            if metric_key.endswith("state_average"):
-                # Only set the color for district averages
-                continue
-
-            color_key = f"{metric_key}_color"
-            metric_value = float(self.recipient_data[metric_key])
-            state_average = float(
-                self.recipient_data[
-                    metric_key.replace("district_average", "state_average")
-                ]
-            )
-            metric_improved = self._metric_improved(
-                metric_key, metric_value, state_average
-            )
-
-            if metric_improved:
-                self.prepared_data[color_key] = self.properties["default_color"]
-            else:
-                self.prepared_data[color_key] = self.properties["red"]
-
-    def _set_base_metric_color(self, metrics: List[str]) -> None:
-        """Sets the color for the base metrics displayed in each section. Color will be the red if it didn't
-        improve compared to either the district or state averages, otherwise it will be the default color.
-        """
-        for metric_key in metrics:
-            color_key = f"{metric_key}_color"
-
-            if self._improved_over_district_average(
-                metric_key
-            ) and self._improved_over_state_average(metric_key):
-                self.prepared_data[color_key] = self.properties["default_color"]
-            else:
-                self.prepared_data[color_key] = self.properties["red"]
-
-    def _singular_or_plural_section_headers(self) -> None:
-        """Ensures that each of the given labels will be made singular or plural, based on the value it is labelling."""
-        allowed_metrics = self.metrics_delegate.singular_or_plural_metrics
-
-        singular_or_plural(
-            self.prepared_data,
-            allowed_metrics,
-            "total_revocations",
-            "total_revocations_label",
-            "Revocation",
-            "Revocations",
-        )
-
-        singular_or_plural(
-            self.prepared_data,
-            allowed_metrics,
-            "absconsions",
-            "absconsions_label",
-            "Absconsion",
-            "Absconsions",
-        )
 
     def _convert_month_to_name(self, month_key: str) -> None:
         """Converts the number at the given key, representing a calendar month, into the name of that month."""
@@ -539,6 +467,28 @@ class PoMonthlyReportContext(ReportContext):
             "action_table": action_table,
         }
 
+    def _get_adverse_outcome(self, data_key: str) -> AdverseOutcomeContext:
+        label = self.properties[f"{data_key}_label"]
+        count = int(self.recipient_data[data_key])
+
+        outcome_context: AdverseOutcomeContext = {
+            "label": label,
+            "count": count,
+        }
+
+        zero_streak = int(self.recipient_data[f"{data_key}_zero_streak"])
+        if zero_streak > 1:
+            outcome_context["zero_streak"] = zero_streak
+        else:
+            district_average = float(
+                self.recipient_data[f"{data_key}_district_average"]
+            )
+            diff = count - district_average
+            if diff >= 1:
+                outcome_context["amount_above_average"] = diff
+
+        return outcome_context
+
 
 if __name__ == "__main__":
     context = PoMonthlyReportContext(
@@ -552,8 +502,8 @@ if __name__ == "__main__":
                 "earned_discharges": 0,
                 "supervision_downgrades": 2,
                 "technical_revocations": 0,
-                "crime_revocations": 0,
-                "absconsions": 0,
+                "crime_revocations": 1,
+                "absconsions": 2,
                 "pos_discharges_district_average": 0,
                 "pos_discharges_state_average": 0,
                 "earned_discharges_district_average": 0,
@@ -568,9 +518,9 @@ if __name__ == "__main__":
                 "supervision_downgrades_state_total": 391,
                 "technical_revocations_district_average": 0,
                 "technical_revocations_state_average": 0,
-                "crime_revocations_district_average": 0,
+                "crime_revocations_district_average": 1.356,
                 "crime_revocations_state_average": 0,
-                "absconsions_district_average": 0,
+                "absconsions_district_average": 0.5743,
                 "absconsions_state_average": 0,
                 "pos_discharges_last_month": 0,
                 "earned_discharges_last_month": 0,
@@ -578,6 +528,9 @@ if __name__ == "__main__":
                 "technical_revocations_last_month": 0,
                 "crime_revocations_last_month": 0,
                 "absconsions_last_month": 0,
+                "technical_revocations_zero_streak": 5,
+                "crime_revocations_zero_streak": 0,
+                "absconsions_zero_streak": 0,
                 "pos_discharges_clients": [],
                 "earned_discharges_clients": [],
                 "supervision_downgrades_clients": [],

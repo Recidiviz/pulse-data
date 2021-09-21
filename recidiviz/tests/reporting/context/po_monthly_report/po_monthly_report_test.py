@@ -25,9 +25,12 @@ from unittest.mock import MagicMock, patch
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.reporting.context.po_monthly_report.constants import (
+    ABSCONSIONS,
+    CRIME_REVOCATIONS,
     EARNED_DISCHARGES,
     POS_DISCHARGES,
     SUPERVISION_DOWNGRADES,
+    TECHNICAL_REVOCATIONS,
     ReportType,
 )
 from recidiviz.reporting.context.po_monthly_report.context import PoMonthlyReportContext
@@ -256,7 +259,6 @@ class PoMonthlyReportContextTests(TestCase):
         self.assertEqual(expected, actual["attachment_content"])
 
     def test_prepare_for_generation(self) -> None:
-        """Smoke test for the entire template context with fixture data."""
         # these dicts are big, need to see the whole thing if something fails
         self.maxDiff = None
 
@@ -447,3 +449,85 @@ class PoMonthlyReportContextTests(TestCase):
             ),
         ).get_prepared_data()[EARNED_DISCHARGES]
         self.assertIsNone(no_local_data["supplemental_text"])
+
+    def _adverse_outcome_test(self, context_key: str) -> None:
+        """Verifies possible conditions of adverse outcome data"""
+
+        labels = {
+            TECHNICAL_REVOCATIONS: "Technical Revocations",
+            CRIME_REVOCATIONS: "New Crime Revocations",
+            ABSCONSIONS: "Absconsions",
+        }
+        label = labels[context_key]
+
+        below_alert_threshold = PoMonthlyReportContext(
+            StateCode.US_ID,
+            self.recipient.create_derived_recipient(
+                {
+                    context_key: 2,
+                    f"{context_key}_district_average": 1.3,
+                    f"{context_key}_zero_streak": 0,
+                }
+            ),
+        ).get_prepared_data()[context_key]
+        self.assertEqual(below_alert_threshold, {"label": label, "count": 2})
+
+        below_average = PoMonthlyReportContext(
+            StateCode.US_ID,
+            self.recipient.create_derived_recipient(
+                {
+                    context_key: 1,
+                    f"{context_key}_district_average": 1.3,
+                    f"{context_key}_zero_streak": 0,
+                }
+            ),
+        ).get_prepared_data()[context_key]
+        self.assertEqual(below_average, {"label": label, "count": 1})
+
+        short_streak = PoMonthlyReportContext(
+            StateCode.US_ID,
+            self.recipient.create_derived_recipient(
+                {
+                    context_key: 0,
+                    f"{context_key}_zero_streak": 1,
+                }
+            ),
+        ).get_prepared_data()[context_key]
+        self.assertEqual(short_streak, {"label": label, "count": 0})
+
+        above_average = PoMonthlyReportContext(
+            StateCode.US_ID,
+            self.recipient.create_derived_recipient(
+                {
+                    context_key: 3,
+                    f"{context_key}_district_average": 1.36,
+                    f"{context_key}_zero_streak": 0,
+                }
+            ),
+        ).get_prepared_data()[context_key]
+        self.assertEqual(
+            above_average, {"label": label, "count": 3, "amount_above_average": 1.64}
+        )
+
+        long_streak = PoMonthlyReportContext(
+            StateCode.US_ID,
+            self.recipient.create_derived_recipient(
+                {
+                    context_key: 0,
+                    f"{context_key}_zero_streak": 2,
+                }
+            ),
+        ).get_prepared_data()[context_key]
+        self.assertEqual(long_streak, {"label": label, "count": 0, "zero_streak": 2})
+
+    def test_technical_revocations(self) -> None:
+        """Test that technical revocations context is populated according to input data."""
+        self._adverse_outcome_test(TECHNICAL_REVOCATIONS)
+
+    def test_crime_revocations(self) -> None:
+        """Test that crime revocations context is populated according to input data."""
+        self._adverse_outcome_test(CRIME_REVOCATIONS)
+
+    def test_absconsions(self) -> None:
+        """Test that absconsions context is populated according to input data."""
+        self._adverse_outcome_test(ABSCONSIONS)

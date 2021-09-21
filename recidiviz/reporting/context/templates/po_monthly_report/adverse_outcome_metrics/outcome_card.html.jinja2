@@ -1,0 +1,42 @@
+{% extends "common/card.html.jinja2" %}
+
+{% block children %}
+{{components.layout_table_start()}}
+<tr>
+    {{components.card_heading(outcome.label, size="md")}}
+    {{components.card_heading(outcome.count, size="md", align="right")}}
+</tr>
+{% if outcome.zero_streak or outcome.amount_above_average %}
+    {{components.y_padding(4)}}
+    <tr>
+        <td 
+            colspan="2" 
+            valign="middle" 
+            style="
+                font-family: 'Libre Franklin', sans-serif;
+                color: rgba(53, 83, 98, 0.85);
+                font-size: 16px;
+                font-weight: 500;
+                letter-spacing: -0.01em;
+            "
+        >
+            <img 
+                width="16" 
+                alt="" 
+                src="{{static_image_path}}/{% if outcome.zero_streak %}star-circle{% else %}warning{% endif %}.png"
+                style="
+                    vertical-align: top; 
+                    width: 16px; 
+                    height: auto;"
+            />&nbsp;
+            {% if outcome.zero_streak %}
+            {{outcome.zero_streak}} months in a row
+            {% else %}
+            {{"{:.2n}".format(outcome.amount_above_average)}} higher than district average
+            {% endif %}
+            
+        </td>
+    </tr>
+{% endif %}
+{{components.layout_table_end()}}
+{% endblock children %}
