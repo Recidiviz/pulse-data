@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Direct ingest controller implementation for US_XX."""
+"""Direct ingest controller implementation for US_ME."""
 from enum import Enum
 from typing import Dict, List, Optional, Type
 
@@ -45,12 +45,12 @@ from recidiviz.ingest.extractor.csv_data_extractor import (
 
 # TODO(#8908): Delete LegacyIngestViewProcessorDelegate superclass once ingest mappings
 #   overhaul is ready for new states going forward.
-class UsXxController(BaseDirectIngestController, LegacyIngestViewProcessorDelegate):
-    """Direct ingest controller implementation for US_XX."""
+class UsMeController(BaseDirectIngestController, LegacyIngestViewProcessorDelegate):
+    """Direct ingest controller implementation for US_ME."""
 
     @classmethod
     def region_code(cls) -> str:
-        return StateCode.US_XX.value.lower()
+        return StateCode.US_ME.value.lower()
 
     def __init__(self, ingest_bucket_path: GcsfsBucketPath):
         super().__init__(ingest_bucket_path)
@@ -79,7 +79,7 @@ class UsXxController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
         return []
 
     def generate_enum_overrides(self) -> EnumOverrides:
-        """Provides US_XX-specific overrides for enum mappings."""
+        """Provides US_ME-specific overrides for enum mappings."""
         base_overrides = super().get_enum_overrides()
         return update_overrides_from_maps(
             base_overrides,

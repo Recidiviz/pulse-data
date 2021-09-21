@@ -14,29 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Ingest view parser tests for US_XX direct ingest."""
-import unittest
-
+"""Contains logic for US_ME specific entity matching overrides."""
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.schema_utils import SchemaType
-from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
-    StateIngestViewParserTestBase,
+from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
+    BaseStateMatchingDelegate,
 )
 
 
-class UsXxIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase):
-    """Parser unit tests for each US_XX ingest view file to be ingested."""
+class UsMeMatchingDelegate(BaseStateMatchingDelegate):
+    """Class that contains matching logic specific to US_ME."""
 
-    @classmethod
-    def schema_type(cls) -> SchemaType:
-        raise NotImplementedError("Choose one of STATE or JAILS")
-
-    @classmethod
-    def region_code(cls) -> str:
-        return StateCode.US_XX.value.upper()
-
-    @property
-    def test(self) -> unittest.TestCase:
-        return self
-
-    # Add parsing tests for new ingest view files here #
+    def __init__(self) -> None:
+        super().__init__(StateCode.US_ME.value.lower())
