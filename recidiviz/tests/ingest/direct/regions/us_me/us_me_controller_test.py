@@ -14,29 +14,32 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Ingest view parser tests for US_XX direct ingest."""
-import unittest
+"""Unit and integration tests for US_ME direct ingest."""
+from typing import Type
 
-from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
+    BaseDirectIngestController,
+)
+from recidiviz.ingest.direct.regions.us_me.us_me_controller import UsMeController
 from recidiviz.persistence.database.schema_utils import SchemaType
-from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
-    StateIngestViewParserTestBase,
+from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import (
+    BaseDirectIngestControllerTests,
 )
 
+_REGION_CODE_UPPER = "US_ME"
 
-class UsXxIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase):
-    """Parser unit tests for each US_XX ingest view file to be ingested."""
 
-    @classmethod
-    def schema_type(cls) -> SchemaType:
-        raise NotImplementedError("Choose one of STATE or JAILS")
+class TestUsMeController(BaseDirectIngestControllerTests):
+    """Unit tests for each US_ME file to be ingested."""
 
     @classmethod
     def region_code(cls) -> str:
-        return StateCode.US_XX.value.upper()
+        return _REGION_CODE_UPPER.lower()
 
-    @property
-    def test(self) -> unittest.TestCase:
-        return self
+    @classmethod
+    def controller_cls(cls) -> Type[BaseDirectIngestController]:
+        return UsMeController
 
-    # Add parsing tests for new ingest view files here #
+    @classmethod
+    def schema_type(cls) -> SchemaType:
+        return SchemaType.STATE

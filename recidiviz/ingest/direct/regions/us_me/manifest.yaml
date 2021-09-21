@@ -1,0 +1,6 @@
+agency_name: Maine Department of Corrections
+agency_type: prison
+base_url: unused
+timezone: America/New_York
+environment: staging
+jurisdiction_id: unknown

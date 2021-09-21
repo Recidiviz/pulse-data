@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Ingest view parser tests for US_XX direct ingest."""
+"""Ingest view parser tests for US_ME direct ingest."""
 import unittest
 
 from recidiviz.common.constants.states import StateCode
@@ -24,16 +24,16 @@ from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base im
 )
 
 
-class UsXxIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase):
-    """Parser unit tests for each US_XX ingest view file to be ingested."""
+class UsMeIngestViewParserTest(StateIngestViewParserTestBase, unittest.TestCase):
+    """Parser unit tests for each US_ME ingest view file to be ingested."""
 
     @classmethod
     def schema_type(cls) -> SchemaType:
-        raise NotImplementedError("Choose one of STATE or JAILS")
+        return SchemaType.STATE
 
     @classmethod
     def region_code(cls) -> str:
-        return StateCode.US_XX.value.upper()
+        return StateCode.US_ME.value.upper()
 
     @property
     def test(self) -> unittest.TestCase:
