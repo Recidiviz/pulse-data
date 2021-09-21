@@ -42,25 +42,6 @@ def format_violation_type(violation_type: str) -> str:
     return violation_types[violation_type]
 
 
-def singular_or_plural(
-    prepared_data: dict,
-    allowed_metrics: List[str],
-    value_key: str,
-    text_key: str,
-    singular: str,
-    plural: str,
-) -> None:
-    """Sets the text at the given text key in the prepared_data dictionary to either the singular or plural
-    copy, based on the value at the provided value key."""
-    if value_key in prepared_data and value_key in allowed_metrics:
-        value = int(prepared_data[value_key])
-
-        if value == 1:
-            prepared_data[text_key] = singular
-        else:
-            prepared_data[text_key] = plural
-
-
 def month_number_to_name(month_number: str) -> str:
     """Converts the 1-based month number to the name of the month, titular-capitalized.
 

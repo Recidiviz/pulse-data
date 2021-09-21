@@ -11,5 +11,8 @@
   "met_goal_text": "improved from last month {metric_text}",
   "outperformed_region_averages_text": "out-performed other officers like you {metric_text}",
   "metric_text_singular": "for {metric} metric",
-  "metric_text_plural": "across {metric} metrics"
+  "metric_text_plural": "across {metric} metrics",
+  "technical_revocations_label": "Technical Revocations",
+  "crime_revocations_label": "New Crime Revocations",
+  "absconsions_label": "Absconsions"
 }

@@ -32,3 +32,13 @@ DecarceralMetricContext = TypedDict(
         "action_text": Optional[str],
     },
 )
+
+
+class _AdverseOutcomeRequired(TypedDict):
+    label: str
+    count: int
+
+
+class AdverseOutcomeContext(_AdverseOutcomeRequired, total=False):
+    zero_streak: int
+    amount_above_average: float
