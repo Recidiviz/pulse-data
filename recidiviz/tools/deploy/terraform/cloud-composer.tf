@@ -49,6 +49,12 @@ resource "google_composer_environment" "default" {
       image_version  = "composer-1.13.0-airflow-1.10.12"
       python_version = "3"
     }
+
+    private_environment_config {
+      # Ensure that access to the public endpoint of the GKE cluster is denied
+      enable_private_endpoint = true
+    }
+
   }
 
 }
