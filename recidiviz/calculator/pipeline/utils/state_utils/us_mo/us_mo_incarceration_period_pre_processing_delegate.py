@@ -34,7 +34,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.str_field_utils import normalize
-from recidiviz.ingest.direct.regions.us_mo.us_mo_enum_helpers import (
+from recidiviz.ingest.direct.regions.us_mo.us_mo_legacy_enum_helpers import (
     SHOCK_SANCTION_STATUS_CODES,
     TREATMENT_SANCTION_STATUS_CODES,
 )

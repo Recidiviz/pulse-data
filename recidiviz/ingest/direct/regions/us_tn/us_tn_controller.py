@@ -31,7 +31,7 @@ from recidiviz.ingest.direct.controllers.legacy_ingest_view_processor import (
     IngestRowPrehookCallable,
     LegacyIngestViewProcessorDelegate,
 )
-from recidiviz.ingest.direct.regions.us_tn.us_tn_enum_helpers import (
+from recidiviz.ingest.direct.regions.us_tn.us_tn_legacy_enum_helpers import (
     generate_enum_overrides,
 )
 

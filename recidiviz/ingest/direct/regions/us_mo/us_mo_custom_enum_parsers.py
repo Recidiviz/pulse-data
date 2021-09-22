@@ -14,9 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Custom enum parsers functions for US_ME. Can be referenced in an ingest view manifest
+"""Custom enum parsers functions for US_MO. Can be referenced in an ingest view manifest
 like this:
+
 my_enum_field:
     $raw_text: MY_CSV_COL
-    $custom_parser: us_me_custom_enum_parsers.<function name>
+    $custom_parser: us_mo_custom_enum_parsers.<function name>
 """

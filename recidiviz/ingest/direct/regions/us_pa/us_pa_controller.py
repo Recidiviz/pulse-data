@@ -94,7 +94,7 @@ from recidiviz.ingest.direct.direct_ingest_controller_utils import (
 from recidiviz.ingest.direct.regions.us_pa.us_pa_assessment_level_reference import (
     set_date_specific_lsir_fields,
 )
-from recidiviz.ingest.direct.regions.us_pa.us_pa_enum_helpers import (
+from recidiviz.ingest.direct.regions.us_pa.us_pa_legacy_enum_helpers import (
     assessment_level_mapper,
     concatenate_ccis_incarceration_period_end_codes,
     concatenate_ccis_incarceration_period_purpose_codes,
