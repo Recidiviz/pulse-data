@@ -69,6 +69,9 @@ from recidiviz.calculator.query.state.views.analyst_data.location_sessions impor
 from recidiviz.calculator.query.state.views.analyst_data.person_demographics import (
     PERSON_DEMOGRAPHICS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.projected_discharges import (
+    PROJECTED_DISCHARGES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.reincarceration_cohort_sessions import (
     REINCARCERATION_COHORT_SESSIONS_VIEW_BUILDER,
 )
@@ -216,4 +219,5 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     ASSESSMENT_LSIR_RESPONSES_VIEW_BUILDER,
     US_ID_BEHAVIOR_RESPONSES_VIEW_BUILDER,
     US_ID_RAW_SUPERVISION_CONTACTS_VIEW_BUILDER,
+    PROJECTED_DISCHARGES_VIEW_BUILDER,
 ]
